@@ -161,7 +161,6 @@ public class OMRSCohortManager
                                                localOrganizationName,
                                                outboundRegistryEventProcessor,
                                                cohortRegistryStore,
-                                               localRepository.getTypeDefValidator(),
                                                connectionConsumer);
 
                 localRepositoryEventManager = localRepository.getOutboundRepositoryEventManager();
@@ -210,7 +209,6 @@ public class OMRSCohortManager
                                                localOrganizationName,
                                                outboundRegistryEventProcessor,
                                                null,
-                                               null,
                                                connectionConsumer);
             }
 
@@ -244,6 +242,7 @@ public class OMRSCohortManager
                                                                               this.cohortRepositoryEventManager,
                                                                               this.cohortRepositoryEventManager);
                 cohortTopicConnector.registerListener(cohortEventListener);
+                cohortTopicConnector.start();
                 this.cohortTopicConnector = cohortTopicConnector;
                 this.cohortEventListener = cohortEventListener;
 
@@ -259,7 +258,15 @@ public class OMRSCohortManager
         catch (Throwable   error)
         {
             this.cohortConnectionStatus = CohortConnectionStatus.CONFIGURATION_ERROR;
-            throw error;
+
+            OMRSAuditCode auditCode = OMRSAuditCode.COHORT_CONFIG_ERROR;
+            auditLog.logRecord(actionDescription,
+                               auditCode.getLogMessageId(),
+                               auditCode.getSeverity(),
+                               auditCode.getFormattedLogMessage(cohortName, error.getMessage()),
+                               null,
+                               auditCode.getSystemAction(),
+                               auditCode.getUserAction());
         }
 
         if (log.isDebugEnabled())

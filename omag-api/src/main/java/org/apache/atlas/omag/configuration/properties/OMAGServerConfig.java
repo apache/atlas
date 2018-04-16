@@ -44,7 +44,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
  *     </li>
  *     <li>
  *         localServerType - descriptive type name for the local server.  Again this is useful information for the
- *         administrator to understand which vendor implementation, or versionName of the vendor implementation, is
+ *         administrator to understand which vendor implementation, or version of the vendor implementation, is
  *         in operation.
  *
  *         The default value is "Open Metadata and Governance Server".

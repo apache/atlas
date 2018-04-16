@@ -222,15 +222,15 @@ public abstract class InstanceAuditHeader extends InstanceElementHeader
     /**
      * Return the version number for this instance.
      *
-     * @return Long versionName number
+     * @return Long version number
      */
     public long getVersion() { return version; }
 
 
     /**
-     * Set up the versionName number for this instance.
+     * Set up the version number for this instance.
      *
-     * @param version - Long versionName number
+     * @param version - Long version number
      */
     public void setVersion(long version) { this.version = version; }
 
@@ -268,7 +268,7 @@ public abstract class InstanceAuditHeader extends InstanceElementHeader
                 ", updatedBy='" + updatedBy + '\'' +
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +
-                ", versionName=" + version +
+                ", version=" + version +
                 ", statusOnDelete=" + statusOnDelete +
                 '}';
     }

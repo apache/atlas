@@ -34,9 +34,9 @@ import java.util.*;
  */
 public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelper
 {
-    private static OMRSRepositoryContentManager    defaultRepositoryContentManager = null;
+    private static OMRSRepositoryContentManager defaultRepositoryContentManager = null;
 
-    private        OMRSRepositoryContentManager    repositoryContentManager;
+    private OMRSRepositoryContentManager repositoryContentManager;
 
 
     /**
@@ -46,7 +46,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      *
      * @param repositoryContentManager - link to repository content manager.
      */
-    public static synchronized void setRepositoryContentManager(OMRSRepositoryContentManager    repositoryContentManager)
+    public static synchronized void setRepositoryContentManager(OMRSRepositoryContentManager repositoryContentManager)
     {
         OMRSRepositoryHelper.defaultRepositoryContentManager = repositoryContentManager;
     }
@@ -86,7 +86,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      */
     public TypeDefGallery getActiveTypeDefGallery()
     {
-        final String  methodName = "getActiveTypeDefGallery()";
+        final String methodName = "getActiveTypeDefGallery";
 
         if (repositoryContentManager != null)
         {
@@ -97,8 +97,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -115,9 +115,9 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      *
      * @return TypeDef gallery
      */
-    public TypeDefGallery   getKnownTypeDefGallery()
+    public TypeDefGallery getKnownTypeDefGallery()
     {
-        final String  methodName = "getKnownTypeDefGallery()";
+        final String methodName = "getKnownTypeDefGallery";
 
         if (repositoryContentManager != null)
         {
@@ -128,8 +128,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -146,14 +146,14 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * validating the actual types of the repository with the known open metadata types - looking specifically
      * for types of the same name but with different content.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName  - source of the request (used for logging)
      * @param typeDefName - unique name for the TypeDef
      * @return TypeDef object or null if TypeDef is not known.
      */
-    public TypeDef  getTypeDefByName (String    sourceName,
-                                      String    typeDefName)
+    public TypeDef getTypeDefByName(String sourceName,
+                                    String typeDefName)
     {
-        final String  methodName = "getTypeDefByName()";
+        final String methodName = "getTypeDefByName";
 
         if (repositoryContentManager != null)
         {
@@ -164,8 +164,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -182,14 +182,14 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * validating the actual types of the repository with the known open metadata types - looking specifically
      * for types of the same name but with different content.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName           - source of the request (used for logging)
      * @param attributeTypeDefName - unique name for the TypeDef
      * @return AttributeTypeDef object or null if AttributeTypeDef is not known.
      */
-    public AttributeTypeDef getAttributeTypeDefByName (String    sourceName,
-                                                       String    attributeTypeDefName)
+    public AttributeTypeDef getAttributeTypeDefByName(String sourceName,
+                                                      String attributeTypeDefName)
     {
-        final String  methodName = "getAttributeTypeDefByName()";
+        final String methodName = "getAttributeTypeDefByName";
 
         if (repositoryContentManager != null)
         {
@@ -200,8 +200,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -215,16 +215,16 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
 
     /**
      * Return the TypeDefs identified by the name supplied by the caller.  The TypeDef name may have wild
-     * card characters in it such as * and & which is why the results are returned in a list.
+     * card characters in it which is why the results are returned in a list.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName  - source of the request (used for logging)
      * @param typeDefName - unique name for the TypeDef
      * @return TypeDef object or null if TypeDef is not known.
      */
-    public TypeDefGallery getActiveTypesByWildCardName (String    sourceName,
-                                                           String    typeDefName)
+    public TypeDefGallery getActiveTypesByWildCardName(String sourceName,
+                                                       String typeDefName)
     {
-        final String  methodName = "getActiveTypesByWildCardName()";
+        final String methodName = "getActiveTypesByWildCardName";
 
         if (repositoryContentManager != null)
         {
@@ -235,8 +235,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -252,15 +252,15 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Return the TypeDef identified by the guid supplied by the caller.  This call is used when
      * retrieving a type that only the guid is known.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName  - source of the request (used for logging)
      * @param typeDefGUID - unique identifier for the TypeDef
      * @return TypeDef object
      * @throws TypeErrorException - unknown or invalid type
      */
-    public TypeDef  getTypeDef (String    sourceName,
-                                String    typeDefGUID) throws TypeErrorException
+    public TypeDef getTypeDef(String sourceName,
+                              String typeDefGUID) throws TypeErrorException
     {
-        final String  methodName = "getTypeDef()";
+        final String methodName = "getTypeDef";
 
         if (repositoryContentManager != null)
         {
@@ -271,8 +271,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -288,15 +288,15 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Return the AttributeTypeDef identified by the guid and name supplied by the caller.  This call is used when
      * retrieving a type that only the guid is known.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName           - source of the request (used for logging)
      * @param attributeTypeDefGUID - unique identifier for the AttributeTypeDef
      * @return TypeDef object
      * @throws TypeErrorException - unknown or invalid type
      */
-    public AttributeTypeDef  getAttributeTypeDef (String    sourceName,
-                                                  String    attributeTypeDefGUID) throws TypeErrorException
+    public AttributeTypeDef getAttributeTypeDef(String sourceName,
+                                                String attributeTypeDefGUID) throws TypeErrorException
     {
-        final String  methodName = "getAttributeTypeDef()";
+        final String methodName = "getAttributeTypeDef";
 
         if (repositoryContentManager != null)
         {
@@ -307,8 +307,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -324,17 +324,17 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Return the TypeDef identified by the guid and name supplied by the caller.  This call is used when
      * retrieving a type that should exist.  For example, retrieving the type of a metadata instance.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName  - source of the request (used for logging)
      * @param typeDefGUID - unique identifier for the TypeDef
      * @param typeDefName - unique name for the TypeDef
      * @return TypeDef object
      * @throws TypeErrorException - unknown or invalid type
      */
-    public TypeDef  getTypeDef (String    sourceName,
-                                String    typeDefGUID,
-                                String    typeDefName) throws TypeErrorException
+    public TypeDef getTypeDef(String sourceName,
+                              String typeDefGUID,
+                              String typeDefName) throws TypeErrorException
     {
-        final String  methodName = "getTypeDef()";
+        final String methodName = "getTypeDef";
 
         if (repositoryContentManager != null)
         {
@@ -345,8 +345,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -363,17 +363,17 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * retrieving a type that should exist.  For example, retrieving the type definition of a metadata instance's
      * property.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName           - source of the request (used for logging)
      * @param attributeTypeDefGUID - unique identifier for the AttributeTypeDef
      * @param attributeTypeDefName - unique name for the AttributeTypeDef
      * @return TypeDef object
      * @throws TypeErrorException - unknown or invalid type
      */
-    public AttributeTypeDef  getAttributeTypeDef (String    sourceName,
-                                                  String    attributeTypeDefGUID,
-                                                  String    attributeTypeDefName) throws TypeErrorException
+    public AttributeTypeDef getAttributeTypeDef(String sourceName,
+                                                String attributeTypeDefGUID,
+                                                String attributeTypeDefName) throws TypeErrorException
     {
-        final String  methodName = "getAttributeTypeDef()";
+        final String methodName = "getAttributeTypeDef";
 
         if (repositoryContentManager != null)
         {
@@ -384,8 +384,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -402,21 +402,21 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * the patch is incompatible with the original TypeDef.  For example, if there is a mismatch between
      * the type or version that either represents.
      *
-     * @param sourceName - source of the TypeDef (used for logging)
-     * @param typeDefPatch - patch to apply
+     * @param sourceName      - source of the TypeDef (used for logging)
+     * @param typeDefPatch    - patch to apply
      * @param originalTypeDef - typeDef to patch
      * @return updated TypeDef
-     * @throws PatchErrorException - the patch is either badly formatted, or does not apply to the supplied TypeDef
+     * @throws PatchErrorException       - the patch is either badly formatted, or does not apply to the supplied TypeDef
      * @throws InvalidParameterException - the TypeDefPatch is null.
      */
-    public TypeDef   applyPatch(String       sourceName,
-                                TypeDef      originalTypeDef,
-                                TypeDefPatch typeDefPatch) throws PatchErrorException,
-                                                                  InvalidParameterException
+    public TypeDef applyPatch(String       sourceName,
+                              TypeDef      originalTypeDef,
+                              TypeDefPatch typeDefPatch) throws PatchErrorException,
+                                                                InvalidParameterException
     {
 
-        TypeDef    clonedTypeDef   = null;
-        TypeDef    updatedTypeDef  = null;
+        TypeDef clonedTypeDef  = null;
+        TypeDef updatedTypeDef = null;
 
         /*
          * Begin with simple validation of the typeDef patch.
@@ -432,7 +432,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
             // TODO PatchError
         }
 
-        TypeDefPatchAction   patchAction = typeDefPatch.getAction();
+        TypeDefPatchAction patchAction = typeDefPatch.getAction();
         if (patchAction == null)
         {
             // TODO patch error
@@ -474,7 +474,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
                     break;
             }
         }
-        catch (ClassCastException  castError)
+        catch (ClassCastException castError)
         {
             // TODO Throw PatchError - base type is messed up
         }
@@ -543,27 +543,27 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Add the supplied attributes to the properties definition for the cloned typedef.
      *
-     * @param clonedTypeDef - TypeDef object to update
+     * @param clonedTypeDef     - TypeDef object to update
      * @param typeDefAttributes - new attributes to add.
      * @return updated TypeDef
      * @throws PatchErrorException - problem adding attributes
      */
-    private TypeDef patchTypeDefAttributes(TypeDef                     clonedTypeDef,
-                                           List<TypeDefAttribute>      typeDefAttributes) throws PatchErrorException
+    private TypeDef patchTypeDefAttributes(TypeDef clonedTypeDef,
+                                           List<TypeDefAttribute> typeDefAttributes) throws PatchErrorException
     {
-        List<TypeDefAttribute>  propertyDefinitions = clonedTypeDef.getPropertiesDefinition();
+        List<TypeDefAttribute> propertyDefinitions = clonedTypeDef.getPropertiesDefinition();
 
         if (propertyDefinitions == null)
         {
             propertyDefinitions = new ArrayList<>();
         }
 
-        for (TypeDefAttribute  newAttribute : typeDefAttributes)
+        for (TypeDefAttribute newAttribute : typeDefAttributes)
         {
             if (newAttribute != null)
             {
-                String            attributeName = newAttribute.getAttributeName();
-                AttributeTypeDef  attributeType = newAttribute.getAttributeType();
+                String           attributeName = newAttribute.getAttributeName();
+                AttributeTypeDef attributeType = newAttribute.getAttributeType();
 
                 if ((attributeName != null) && (attributeType != null))
                 {
@@ -597,13 +597,12 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
 
 
     /**
-     *
-     * @param clonedTypeDef - TypeDef object to update
+     * @param clonedTypeDef  - TypeDef object to update
      * @param typeDefOptions - new options to add
      * @return updated TypeDef
      * @throws PatchErrorException - problem adding options
      */
-    private TypeDef patchTypeDefNewOptions(TypeDef             clonedTypeDef,
+    private TypeDef patchTypeDefNewOptions(TypeDef clonedTypeDef,
                                            Map<String, String> typeDefOptions) throws PatchErrorException
     {
         // TODO
@@ -612,14 +611,13 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
 
 
     /**
-     *
-     * @param clonedTypeDef - TypeDef object to update
+     * @param clonedTypeDef  - TypeDef object to update
      * @param typeDefOptions - options to update
      * @return updated TypeDef
      * @throws PatchErrorException - problem updating options
      */
-    private TypeDef patchTypeDefUpdateOptions(TypeDef                clonedTypeDef,
-                                              Map<String, String>    typeDefOptions) throws PatchErrorException
+    private TypeDef patchTypeDefUpdateOptions(TypeDef clonedTypeDef,
+                                              Map<String, String> typeDefOptions) throws PatchErrorException
     {
         // TODO
         return null;
@@ -627,14 +625,13 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
 
 
     /**
-     *
-     * @param clonedTypeDef - TypeDef object to update
+     * @param clonedTypeDef  - TypeDef object to update
      * @param typeDefOptions - options to delete
      * @return updated TypeDef
      * @throws PatchErrorException - problem deleting options
      */
-    private TypeDef patchTypeDefDeleteOptions(TypeDef                clonedTypeDef,
-                                              Map<String, String>    typeDefOptions) throws PatchErrorException
+    private TypeDef patchTypeDefDeleteOptions(TypeDef clonedTypeDef,
+                                              Map<String, String> typeDefOptions) throws PatchErrorException
     {
         // TODO
         return null;
@@ -644,14 +641,14 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Add new mappings to external standards to the TypeDef.
      *
-     * @param clonedTypeDef - TypeDef object to update
+     * @param clonedTypeDef            - TypeDef object to update
      * @param externalStandardMappings - new mappings to add
      * @return updated TypeDef
      * @throws PatchErrorException - problem adding mapping(s)
      */
-    private TypeDef patchTypeDefAddExternalStandards(TypeDef                       clonedTypeDef,
+    private TypeDef patchTypeDefAddExternalStandards(TypeDef clonedTypeDef,
                                                      List<ExternalStandardMapping> externalStandardMappings,
-                                                     List<TypeDefAttribute>        typeDefAttributes) throws PatchErrorException
+                                                     List<TypeDefAttribute> typeDefAttributes) throws PatchErrorException
     {
         // TODO
         return null;
@@ -661,14 +658,14 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Update the supplied mappings from the TypeDef.
      *
-     * @param clonedTypeDef - TypeDef object to update
+     * @param clonedTypeDef            - TypeDef object to update
      * @param externalStandardMappings - mappings to update
      * @return updated TypeDef
      * @throws PatchErrorException - problem updating mapping(s)
      */
-    private TypeDef patchTypeDefUpdateExternalStandards(TypeDef                       clonedTypeDef,
+    private TypeDef patchTypeDefUpdateExternalStandards(TypeDef clonedTypeDef,
                                                         List<ExternalStandardMapping> externalStandardMappings,
-                                                        List<TypeDefAttribute>        typeDefAttributes) throws PatchErrorException
+                                                        List<TypeDefAttribute> typeDefAttributes) throws PatchErrorException
     {
         // TODO
         return null;
@@ -678,14 +675,14 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Delete the supplied mappings from the TypeDef.
      *
-     * @param clonedTypeDef - TypeDef object to update
+     * @param clonedTypeDef            - TypeDef object to update
      * @param externalStandardMappings - list of mappings to delete
      * @return updated TypeDef
      * @throws PatchErrorException - problem deleting mapping(s)
      */
-    private TypeDef patchTypeDefDeleteExternalStandards(TypeDef                       clonedTypeDef,
+    private TypeDef patchTypeDefDeleteExternalStandards(TypeDef clonedTypeDef,
                                                         List<ExternalStandardMapping> externalStandardMappings,
-                                                        List<TypeDefAttribute>        typeDefAttributes) throws PatchErrorException
+                                                        List<TypeDefAttribute> typeDefAttributes) throws PatchErrorException
     {
         // TODO
         return null;
@@ -696,15 +693,15 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Update the descriptions for the TypeDef or any of its attributes.  If the description values are null, they are
      * not changes in the TypeDef.  This means there is no way to clear a description - just update it for a better one.
      *
-     * @param clonedTypeDef - TypeDef object to update
-     * @param description - new description
+     * @param clonedTypeDef   - TypeDef object to update
+     * @param description     - new description
      * @param descriptionGUID - new unique identifier for glossary term that provides detailed description of TypeDef
      * @return updated TypeDef
      * @throws PatchErrorException - problem adding new description
      */
-    private TypeDef patchTypeDefNewDescriptions(TypeDef                clonedTypeDef,
-                                                String                 description,
-                                                String                 descriptionGUID,
+    private TypeDef patchTypeDefNewDescriptions(TypeDef clonedTypeDef,
+                                                String description,
+                                                String descriptionGUID,
                                                 List<TypeDefAttribute> typeDefAttributes) throws PatchErrorException
     {
         if (description != null)
@@ -718,22 +715,22 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
 
         if (typeDefAttributes != null)
         {
-            List<TypeDefAttribute>  propertiesDefinition = clonedTypeDef.getPropertiesDefinition();
+            List<TypeDefAttribute> propertiesDefinition = clonedTypeDef.getPropertiesDefinition();
 
             if (propertiesDefinition == null)
             {
                 // TODO throw patch error - attempting to Patch TypeDef with no properties
             }
 
-            for (TypeDefAttribute  patchTypeDefAttribute : typeDefAttributes)
+            for (TypeDefAttribute patchTypeDefAttribute : typeDefAttributes)
             {
                 if (patchTypeDefAttribute != null)
                 {
-                    String     patchTypeDefAttributeName = patchTypeDefAttribute.getAttributeName();
+                    String patchTypeDefAttributeName = patchTypeDefAttribute.getAttributeName();
 
                     if (patchTypeDefAttributeName != null)
                     {
-                        for (TypeDefAttribute  existingProperty : propertiesDefinition)
+                        for (TypeDefAttribute existingProperty : propertiesDefinition)
                         {
                             if (existingProperty != null)
                             {
@@ -773,21 +770,21 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Return an entity with the header and type information filled out.  The caller only needs to add properties
      * and classifications to complete the set up of the entity.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName           - source of the request (used for logging)
      * @param metadataCollectionId - unique identifier for the home metadata collection
-     * @param provenanceType - origin of the entity
-     * @param userName - name of the creator
-     * @param typeName - name of the type
+     * @param provenanceType       - origin of the entity
+     * @param userName             - name of the creator
+     * @param typeName             - name of the type
      * @return partially filled out entity - needs classifications and properties
      * @throws TypeErrorException - the type name is not recognized.
      */
-    public EntityDetail getSkeletonEntity(String                  sourceName,
-                                          String                  metadataCollectionId,
-                                          InstanceProvenanceType  provenanceType,
-                                          String                  userName,
-                                          String                  typeName) throws TypeErrorException
+    public EntityDetail getSkeletonEntity(String sourceName,
+                                          String metadataCollectionId,
+                                          InstanceProvenanceType provenanceType,
+                                          String userName,
+                                          String typeName) throws TypeErrorException
     {
-        final String methodName = "getSkeletonEntity()";
+        final String methodName = "getSkeletonEntity";
 
         if (repositoryContentManager != null)
         {
@@ -809,8 +806,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -826,19 +823,19 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Return a classification with the header and type information filled out.  The caller only needs to add properties
      * and possibility origin information if it is propagated to complete the set up of the classification.
      *
-     * @param sourceName - source of the request (used for logging)
-     * @param userName - name of the creator
+     * @param sourceName             - source of the request (used for logging)
+     * @param userName               - name of the creator
      * @param classificationTypeName - name of the classification type
-     * @param entityTypeName - name of the type for the entity that this classification is to be attached to.
+     * @param entityTypeName         - name of the type for the entity that this classification is to be attached to.
      * @return partially filled out classification - needs properties and possibly origin information
      * @throws TypeErrorException - the type name is not recognized as a classification type.
      */
-    public Classification getSkeletonClassification(String       sourceName,
-                                                    String       userName,
-                                                    String       classificationTypeName,
-                                                    String       entityTypeName) throws TypeErrorException
+    public Classification getSkeletonClassification(String sourceName,
+                                                    String userName,
+                                                    String classificationTypeName,
+                                                    String entityTypeName) throws TypeErrorException
     {
-        final String  methodName = "getSkeletonClassification()";
+        final String methodName = "getSkeletonClassification";
 
         if (repositoryContentManager != null)
         {
@@ -868,7 +865,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
                 {
                     OMRSErrorCode errorCode = OMRSErrorCode.INVALID_CLASSIFICATION_FOR_ENTITY;
                     String errorMessage = errorCode.getErrorMessageId()
-                                        + errorCode.getFormattedErrorMessage(classificationTypeName, entityTypeName);
+                            + errorCode.getFormattedErrorMessage(classificationTypeName, entityTypeName);
 
                     throw new TypeErrorException(errorCode.getHTTPErrorCode(),
                                                  this.getClass().getName(),
@@ -882,7 +879,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
             {
                 OMRSErrorCode errorCode = OMRSErrorCode.UNKNOWN_CLASSIFICATION;
                 String errorMessage = errorCode.getErrorMessageId()
-                                    + errorCode.getFormattedErrorMessage(classificationTypeName);
+                        + errorCode.getFormattedErrorMessage(classificationTypeName);
 
                 throw new TypeErrorException(errorCode.getHTTPErrorCode(),
                                              this.getClass().getName(),
@@ -894,8 +891,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -911,27 +908,27 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Return a relationship with the header and type information filled out.  The caller only needs to add properties
      * to complete the set up of the relationship.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName           - source of the request (used for logging)
      * @param metadataCollectionId - unique identifier for the home metadata collection
-     * @param provenanceType - origin type of the relationship
-     * @param userName - name of the creator
-     * @param typeName - name of the relationship's type
+     * @param provenanceType       - origin type of the relationship
+     * @param userName             - name of the creator
+     * @param typeName             - name of the relationship's type
      * @return partially filled out relationship - needs properties
      * @throws TypeErrorException - the type name is not recognized as a relationship type.
      */
-    public Relationship getSkeletonRelationship(String                  sourceName,
-                                                String                  metadataCollectionId,
-                                                InstanceProvenanceType  provenanceType,
-                                                String                  userName,
-                                                String                  typeName) throws TypeErrorException
+    public Relationship getSkeletonRelationship(String sourceName,
+                                                String metadataCollectionId,
+                                                InstanceProvenanceType provenanceType,
+                                                String userName,
+                                                String typeName) throws TypeErrorException
     {
-        final String  methodName = "getSkeletonRelationship()";
+        final String methodName = "getSkeletonRelationship";
 
 
         if (repositoryContentManager != null)
         {
             Relationship relationship = new Relationship();
-            String       guid = UUID.randomUUID().toString();
+            String       guid         = UUID.randomUUID().toString();
 
             relationship.setInstanceProvenanceType(provenanceType);
             relationship.setMetadataCollectionId(metadataCollectionId);
@@ -950,8 +947,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -967,15 +964,15 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Return a relationship with the header and type information filled out.  The caller only needs to add properties
      * to complete the set up of the relationship.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName     - source of the request (used for logging)
      * @param typeDefSummary - details of the new type
      * @return instance type
      * @throws TypeErrorException - the type name is not recognized as a relationship type.
      */
-    public InstanceType getNewInstanceType(String                  sourceName,
-                                           TypeDefSummary          typeDefSummary) throws TypeErrorException
+    public InstanceType getNewInstanceType(String sourceName,
+                                           TypeDefSummary typeDefSummary) throws TypeErrorException
     {
-        final String  methodName = "getNewInstanceType()";
+        final String methodName = "getNewInstanceType";
 
         if (repositoryContentManager != null)
         {
@@ -985,8 +982,8 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            OMRSErrorCode errorCode = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            OMRSErrorCode errorCode    = OMRSErrorCode.LOCAL_REPOSITORY_CONFIGURATION_ERROR;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
                                               this.getClass().getName(),
@@ -1001,23 +998,23 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Return a filled out entity.  It just needs to add the classifications.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName           - source of the request (used for logging)
      * @param metadataCollectionId - unique identifier for the home metadata collection
-     * @param provenanceType - origin of the entity
-     * @param userName - name of the creator
-     * @param typeName - name of the type
-     * @param properties - properties for the entity
-     * @param classifications - list of classifications for the entity
+     * @param provenanceType       - origin of the entity
+     * @param userName             - name of the creator
+     * @param typeName             - name of the type
+     * @param properties           - properties for the entity
+     * @param classifications      - list of classifications for the entity
      * @return an entity that is filled out
      * @throws TypeErrorException - the type name is not recognized as an entity type
      */
-    public EntityDetail getNewEntity(String                    sourceName,
-                                     String                    metadataCollectionId,
-                                     InstanceProvenanceType    provenanceType,
-                                     String                    userName,
-                                     String                    typeName,
-                                     InstanceProperties        properties,
-                                     List<Classification>      classifications) throws TypeErrorException
+    public EntityDetail getNewEntity(String sourceName,
+                                     String metadataCollectionId,
+                                     InstanceProvenanceType provenanceType,
+                                     String userName,
+                                     String typeName,
+                                     InstanceProperties properties,
+                                     List<Classification> classifications) throws TypeErrorException
     {
         EntityDetail entity = this.getSkeletonEntity(sourceName,
                                                      metadataCollectionId,
@@ -1035,21 +1032,21 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Return a filled out relationship - just needs the entity proxies added.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName           - source of the request (used for logging)
      * @param metadataCollectionId - unique identifier for the home metadata collection
-     * @param provenanceType - origin of the relationship
-     * @param userName - name of the creator
-     * @param typeName - name of the type
-     * @param properties - properties for the relationship
+     * @param provenanceType       - origin of the relationship
+     * @param userName             - name of the creator
+     * @param typeName             - name of the type
+     * @param properties           - properties for the relationship
      * @return a relationship that is filled out
      * @throws TypeErrorException - the type name is not recognized as a relationship type
      */
-    public Relationship getNewRelationship(String                  sourceName,
-                                           String                  metadataCollectionId,
-                                           InstanceProvenanceType  provenanceType,
-                                           String                  userName,
-                                           String                  typeName,
-                                           InstanceProperties      properties) throws TypeErrorException
+    public Relationship getNewRelationship(String sourceName,
+                                           String metadataCollectionId,
+                                           InstanceProvenanceType provenanceType,
+                                           String userName,
+                                           String typeName,
+                                           InstanceProperties properties) throws TypeErrorException
     {
         Relationship relationship = this.getSkeletonRelationship(sourceName,
                                                                  metadataCollectionId,
@@ -1067,21 +1064,21 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Return a classification with the header and type information filled out.  The caller only needs to add properties
      * to complete the set up of the classification.
      *
-     * @param sourceName - source of the request (used for logging)
-     * @param userName - name of the creator
-     * @param typeName - name of the type
+     * @param sourceName     - source of the request (used for logging)
+     * @param userName       - name of the creator
+     * @param typeName       - name of the type
      * @param entityTypeName - name of the type for the entity that this classification is to be attached to.
-     * @param properties - properties for the classification
+     * @param properties     - properties for the classification
      * @return partially filled out classification - needs properties and possibly origin information
      * @throws TypeErrorException - the type name is not recognized as a classification type.
      */
-    public Classification getNewClassification(String               sourceName,
-                                               String               userName,
-                                               String               typeName,
-                                               String               entityTypeName,
+    public Classification getNewClassification(String sourceName,
+                                               String userName,
+                                               String typeName,
+                                               String entityTypeName,
                                                ClassificationOrigin classificationOrigin,
-                                               String               classificationOriginGUID,
-                                               InstanceProperties   properties) throws TypeErrorException
+                                               String classificationOriginGUID,
+                                               InstanceProperties properties) throws TypeErrorException
     {
         Classification classification = this.getSkeletonClassification(sourceName,
                                                                        userName,
@@ -1099,30 +1096,30 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Add a classification to an existing entity.
      *
-     * @param sourceName - source of the request (used for logging)
-     * @param entity - entity to update
+     * @param sourceName        - source of the request (used for logging)
+     * @param entity            - entity to update
      * @param newClassification - classification to update
-     * @param methodName - calling method
+     * @param methodName        - calling method
      * @return updated entity
      */
-    public EntityDetail addClassificationToEntity(String         sourceName,
-                                                  EntityDetail   entity,
+    public EntityDetail addClassificationToEntity(String sourceName,
+                                                  EntityDetail entity,
                                                   Classification newClassification,
-                                                  String         methodName)
+                                                  String methodName)
     {
-        EntityDetail  updatedEntity = new EntityDetail(entity);
+        EntityDetail updatedEntity = new EntityDetail(entity);
 
         if (newClassification != null)
         {
             /*
              * Duplicate classifications are not allowed so a hash map is used to remove duplicates.
              */
-            HashMap<String, Classification>   entityClassificationsMap = new HashMap<>();
-            List<Classification>              entityClassifications = updatedEntity.getClassifications();
+            HashMap<String, Classification> entityClassificationsMap = new HashMap<>();
+            List<Classification>            entityClassifications    = updatedEntity.getClassifications();
 
             if (entityClassifications != null)
             {
-                for (Classification  existingClassification : entityClassifications)
+                for (Classification existingClassification : entityClassifications)
                 {
                     if (existingClassification != null)
                     {
@@ -1148,7 +1145,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            final String  thisMethodName = "addClassificationToEntity";
+            final String thisMethodName = "addClassificationToEntity";
 
             OMRSErrorCode errorCode = OMRSErrorCode.NULL_CLASSIFICATION_CREATED;
             String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(sourceName,
@@ -1168,19 +1165,19 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Return the names classification from an existing entity.
      *
-     * @param sourceName - source of the request (used for logging)
-     * @param entity - entity to update
+     * @param sourceName         - source of the request (used for logging)
+     * @param entity             - entity to update
      * @param classificationName - classification to retrieve
-     * @param methodName - calling method
+     * @param methodName         - calling method
      * @return located classification
      * @throws ClassificationErrorException - the classification is not attached to the entity
      */
-    public  Classification  getClassificationFromEntity(String       sourceName,
-                                                        EntityDetail entity,
-                                                        String       classificationName,
-                                                        String       methodName) throws ClassificationErrorException
+    public Classification getClassificationFromEntity(String sourceName,
+                                                      EntityDetail entity,
+                                                      String classificationName,
+                                                      String methodName) throws ClassificationErrorException
     {
-        final String  thisMethodName = "getClassificationFromEntity";
+        final String thisMethodName = "getClassificationFromEntity";
 
         if ((entity == null) || (classificationName == null))
         {
@@ -1197,11 +1194,11 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
                                               errorCode.getUserAction());
         }
 
-        List<Classification>   entityClassifications = entity.getClassifications();
+        List<Classification> entityClassifications = entity.getClassifications();
 
         if (entityClassifications != null)
         {
-            for (Classification  entityClassification : entityClassifications)
+            for (Classification entityClassification : entityClassifications)
             {
                 if (classificationName.equals(entityClassification.getName()))
                 {
@@ -1211,10 +1208,10 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
 
         OMRSErrorCode errorCode = OMRSErrorCode.ENTITY_NOT_CLASSIFIED;
-        String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
-                                                                                                        sourceName,
-                                                                                                        classificationName,
-                                                                                                        entity.getGUID());
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 sourceName,
+                                                                                                 classificationName,
+                                                                                                 entity.getGUID());
         throw new ClassificationErrorException(errorCode.getHTTPErrorCode(),
                                                this.getClass().getName(),
                                                methodName,
@@ -1227,22 +1224,22 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Replace an existing classification with a new one
      *
-     * @param sourceName - source of the request (used for logging)
-     * @param userName - name of the editor
-     * @param entity - entity to update
+     * @param sourceName        - source of the request (used for logging)
+     * @param userName          - name of the editor
+     * @param entity            - entity to update
      * @param newClassification - classification to update
-     * @param methodName - calling method
+     * @param methodName        - calling method
      * @return updated entity
      */
-    public EntityDetail updateClassificationInEntity(String         sourceName,
-                                                     String         userName,
-                                                     EntityDetail   entity,
+    public EntityDetail updateClassificationInEntity(String sourceName,
+                                                     String userName,
+                                                     EntityDetail entity,
                                                      Classification newClassification,
-                                                     String         methodName)
+                                                     String methodName)
     {
         if (newClassification != null)
         {
-            Classification   updatedClassification = new Classification(newClassification);
+            Classification updatedClassification = new Classification(newClassification);
 
             incrementVersion(userName, newClassification, updatedClassification);
 
@@ -1250,7 +1247,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            final String  thisMethodName = "updateClassificationInEntity";
+            final String thisMethodName = "updateClassificationInEntity";
 
             OMRSErrorCode errorCode = OMRSErrorCode.NULL_CLASSIFICATION_CREATED;
             String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(sourceName,
@@ -1271,31 +1268,31 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Return a oldClassification with the header and type information filled out.  The caller only needs to add properties
      * to complete the set up of the oldClassification.
      *
-     * @param sourceName - source of the request (used for logging)
-     * @param entity - entity to update
+     * @param sourceName            - source of the request (used for logging)
+     * @param entity                - entity to update
      * @param oldClassificationName - classification to remove
-     * @param methodName - calling method
+     * @param methodName            - calling method
      * @return updated entity
      * @throws ClassificationErrorException - the entity was not classified with this classification
      */
-    public EntityDetail deleteClassificationFromEntity(String         sourceName,
-                                                       EntityDetail   entity,
-                                                       String         oldClassificationName,
-                                                       String         methodName) throws ClassificationErrorException
+    public EntityDetail deleteClassificationFromEntity(String sourceName,
+                                                       EntityDetail entity,
+                                                       String oldClassificationName,
+                                                       String methodName) throws ClassificationErrorException
     {
-        EntityDetail  updatedEntity = new EntityDetail(entity);
+        EntityDetail updatedEntity = new EntityDetail(entity);
 
         if (oldClassificationName != null)
         {
             /*
              * Duplicate classifications are not allowed so a hash map is used to remove duplicates.
              */
-            HashMap<String, Classification>   entityClassificationsMap = new HashMap<>();
-            List<Classification>              entityClassifications = updatedEntity.getClassifications();
+            HashMap<String, Classification> entityClassificationsMap = new HashMap<>();
+            List<Classification>            entityClassifications    = updatedEntity.getClassifications();
 
             if (entityClassifications != null)
             {
-                for (Classification  existingClassification : entityClassifications)
+                for (Classification existingClassification : entityClassifications)
                 {
                     if (existingClassification != null)
                     {
@@ -1336,7 +1333,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
         }
         else
         {
-            final String  thisMethodName = "deleteClassificationFromEntity";
+            final String thisMethodName = "deleteClassificationFromEntity";
 
             OMRSErrorCode errorCode = OMRSErrorCode.NULL_CLASSIFICATION_NAME;
             String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(sourceName,
@@ -1344,11 +1341,11 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
                                                                                                      methodName);
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction());
         }
     }
 
@@ -1356,16 +1353,16 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Merge two sets of instance properties.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName         - source of the request (used for logging)
      * @param existingProperties - current set of properties
-     * @param newProperties - properties to add/update
+     * @param newProperties      - properties to add/update
      * @return merged properties
      */
-    public InstanceProperties  mergeInstanceProperties(String               sourceName,
-                                                       InstanceProperties   existingProperties,
-                                                       InstanceProperties   newProperties)
+    public InstanceProperties mergeInstanceProperties(String sourceName,
+                                                      InstanceProperties existingProperties,
+                                                      InstanceProperties newProperties)
     {
-        InstanceProperties   mergedProperties;
+        InstanceProperties mergedProperties;
 
         if (existingProperties == null)
         {
@@ -1381,7 +1378,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
 
                 while (newPropertyNames.hasNext())
                 {
-                    String  newPropertyName = newPropertyNames.next();
+                    String newPropertyName = newPropertyNames.next();
 
                     mergedProperties.setProperty(newPropertyName, newProperties.getPropertyValue(newPropertyName));
                 }
@@ -1395,19 +1392,19 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
     /**
      * Changes the control information to reflect an update in an instance.
      *
-     * @param userId - user making the change.
+     * @param userId           - user making the change.
      * @param originalInstance - original instance before the change
-     * @param updatedInstance - new version of the instance that needs updating
+     * @param updatedInstance  - new version of the instance that needs updating
      */
-    public void  incrementVersion(String               userId,
-                                  InstanceAuditHeader  originalInstance,
-                                  InstanceAuditHeader  updatedInstance)
+    public void incrementVersion(String userId,
+                                 InstanceAuditHeader originalInstance,
+                                 InstanceAuditHeader updatedInstance)
     {
         updatedInstance.setUpdatedBy(userId);
         updatedInstance.setUpdateTime(new Date());
 
         long currentVersion = originalInstance.getVersion();
-        updatedInstance.setVersion(currentVersion ++);
+        updatedInstance.setVersion(currentVersion++);
     }
 
 
@@ -1415,12 +1412,12 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
      * Generate an entity proxy from an entity and its TypeDef.
      *
      * @param sourceName - source of the request (used for logging)
-     * @param entity - entity instance
+     * @param entity     - entity instance
      * @return - new entity proxy
      * @throws RepositoryErrorException - logic error in the repository - corrupted entity
      */
-    public EntityProxy  getNewEntityProxy(String       sourceName,
-                                          EntityDetail entity) throws RepositoryErrorException
+    public EntityProxy getNewEntityProxy(String sourceName,
+                                         EntityDetail entity) throws RepositoryErrorException
     {
 
         if (entity != null)
@@ -1435,10 +1432,10 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
                                                                           type.getTypeDefGUID(),
                                                                           type.getTypeDefName());
 
-                    EntityProxy                 entityProxy          = new EntityProxy(entity);
-                    InstanceProperties          entityProperties     = entity.getProperties();
-                    List<TypeDefAttribute>      propertiesDefinition = typeDef.getPropertiesDefinition();
-                    InstanceProperties          uniqueAttributes     = new InstanceProperties();
+                    EntityProxy            entityProxy          = new EntityProxy(entity);
+                    InstanceProperties     entityProperties     = entity.getProperties();
+                    List<TypeDefAttribute> propertiesDefinition = typeDef.getPropertiesDefinition();
+                    InstanceProperties     uniqueAttributes     = new InstanceProperties();
 
                     for (TypeDefAttribute typeDefAttribute : propertiesDefinition)
                     {
@@ -1467,7 +1464,7 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
                 }
                 catch (TypeErrorException error)
                 {
-                    final String  methodName = "getNewEntityProxy";
+                    final String methodName = "getNewEntityProxy";
 
                     OMRSErrorCode errorCode = OMRSErrorCode.REPOSITORY_LOGIC_ERROR;
                     String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(sourceName,
@@ -1475,15 +1472,413 @@ public class OMRSRepositoryHelper implements OMRSTypeDefHelper, OMRSInstanceHelp
                                                                                                              error.getErrorMessage());
 
                     throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                      this.getClass().getName(),
-                                                      methodName,
-                                                      errorMessage,
-                                                      errorCode.getSystemAction(),
-                                                      errorCode.getUserAction());
+                                                       this.getClass().getName(),
+                                                       methodName,
+                                                       errorMessage,
+                                                       errorCode.getSystemAction(),
+                                                       errorCode.getUserAction());
                 }
             }
         }
 
         return null;
+    }
+
+
+    /**
+     * Return boolean true if entity is linked by this relationship.
+     *
+     * @param sourceName   - name of source requesting help
+     * @param entityGUID   - unique identifier of entity
+     * @param relationship - relationship to test
+     * @return boolean indicating whether the entity is mentioned in the relationship
+     */
+    public boolean relatedEntity(String sourceName,
+                                 String entityGUID,
+                                 Relationship relationship)
+    {
+        if (relationship != null)
+        {
+            EntityProxy entityOneProxy = relationship.getEntityOneProxy();
+            EntityProxy entityTwoProxy = relationship.getEntityTwoProxy();
+
+            if (entityOneProxy != null)
+            {
+                if (entityGUID.equals(entityOneProxy.getGUID()))
+                {
+                    return true;
+                }
+            }
+
+            if (entityTwoProxy != null)
+            {
+                if (entityGUID.equals(entityTwoProxy.getGUID()))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * Return the requested property or null if property is not found.  If the property is not
+     * a string property then a logic exception is thrown
+     *
+     * @param sourceName - source of call
+     * @param propertyName - name of requested property
+     * @param properties - properties from the instance.
+     * @param methodName - method of caller
+     * @return string property value or null
+     */
+    public String getStringProperty(String             sourceName,
+                                    String             propertyName,
+                                    InstanceProperties properties,
+                                    String             methodName)
+    {
+        final String  thisMethodName = "getStringProperty";
+
+        if (properties != null)
+        {
+            InstancePropertyValue instancePropertyValue = properties.getPropertyValue(propertyName);
+
+            try
+            {
+                if (instancePropertyValue.getInstancePropertyCategory() == InstancePropertyCategory.PRIMITIVE)
+                {
+                    PrimitivePropertyValue primitivePropertyValue = (PrimitivePropertyValue) instancePropertyValue;
+
+                    if (primitivePropertyValue.getPrimitiveDefCategory() == PrimitiveDefCategory.OM_PRIMITIVE_TYPE_STRING)
+                    {
+                        return primitivePropertyValue.getPrimitiveValue().toString();
+                    }
+                }
+            }
+            catch (Throwable  error)
+            {
+                throwHelperLogicError(sourceName, methodName, thisMethodName);
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
+     * Return the requested property or null if property is not found.  If the property is not
+     * a string property then a logic exception is thrown
+     *
+     * @param sourceName - source of call
+     * @param propertyName - name of requested property
+     * @param properties - properties from the instance.
+     * @param methodName - method of caller
+     * @return string property value or null
+     */
+    public InstanceProperties getMapProperty(String             sourceName,
+                                             String             propertyName,
+                                             InstanceProperties properties,
+                                             String             methodName)
+    {
+        final String  thisMethodName = "getMapProperty";
+
+        if (properties != null)
+        {
+            InstancePropertyValue instancePropertyValue = properties.getPropertyValue(propertyName);
+
+            try
+            {
+                if (instancePropertyValue.getInstancePropertyCategory() == InstancePropertyCategory.MAP)
+                {
+                    MapPropertyValue mapPropertyValue = (MapPropertyValue) instancePropertyValue;
+
+                    return mapPropertyValue.getMapValues();
+                }
+            }
+            catch (Throwable  error)
+            {
+                throwHelperLogicError(sourceName, methodName, thisMethodName);
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
+     * Return the requested property or 0 if property is not found.  If the property is not
+     * a int property then a logic exception is thrown
+     *
+     * @param sourceName - source of call
+     * @param propertyName - name of requested property
+     * @param properties - properties from the instance.
+     * @param methodName - method of caller
+     * @return string property value or null
+     */
+    public int    getIntProperty(String             sourceName,
+                                 String             propertyName,
+                                 InstanceProperties properties,
+                                 String             methodName)
+    {
+        final String  thisMethodName = "getIntProperty";
+
+        if (properties != null)
+        {
+            InstancePropertyValue instancePropertyValue = properties.getPropertyValue(propertyName);
+
+            try
+            {
+                if (instancePropertyValue.getInstancePropertyCategory() == InstancePropertyCategory.PRIMITIVE)
+                {
+                    PrimitivePropertyValue primitivePropertyValue = (PrimitivePropertyValue) instancePropertyValue;
+
+                    if (primitivePropertyValue.getPrimitiveDefCategory() == PrimitiveDefCategory.OM_PRIMITIVE_TYPE_INT)
+                    {
+                        return Integer.valueOf(primitivePropertyValue.getPrimitiveValue().toString());
+                    }
+                }
+            }
+            catch (Throwable  error)
+            {
+                throwHelperLogicError(sourceName, methodName, thisMethodName);
+            }
+        }
+
+        return 0;
+    }
+
+
+    /**
+     * Return the requested property or false if property is not found.  If the property is not
+     * a boolean property then a logic exception is thrown
+     *
+     * @param sourceName - source of call
+     * @param propertyName - name of requested property
+     * @param properties - properties from the instance.
+     * @param methodName - method of caller
+     * @return string property value or null
+     */
+    public boolean getBooleanProperty(String             sourceName,
+                                      String             propertyName,
+                                      InstanceProperties properties,
+                                      String             methodName)
+    {
+        final String  thisMethodName = "getBooleanProperty";
+
+        if (properties != null)
+        {
+            InstancePropertyValue instancePropertyValue = properties.getPropertyValue(propertyName);
+
+            try
+            {
+                if (instancePropertyValue.getInstancePropertyCategory() == InstancePropertyCategory.PRIMITIVE)
+                {
+                    PrimitivePropertyValue primitivePropertyValue = (PrimitivePropertyValue) instancePropertyValue;
+
+                    if (primitivePropertyValue.getPrimitiveDefCategory() == PrimitiveDefCategory.OM_PRIMITIVE_TYPE_BOOLEAN)
+                    {
+                        return Boolean.valueOf(primitivePropertyValue.getPrimitiveValue().toString());
+                    }
+                }
+            }
+            catch (Throwable  error)
+            {
+                throwHelperLogicError(sourceName, methodName, thisMethodName);
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * Add the supplied property to an instance properties object.  If the instance property object
+     * supplied is null, a new instance properties object is created.
+     *
+     * @param sourceName - name of caller
+     * @param properties - properties object to add property to - may be null.
+     * @param propertyName - name of property
+     * @param propertyValue - value of property
+     * @param methodName - calling method name
+     * @return instance properties object.
+     */
+    public InstanceProperties addStringPropertyToInstance(String             sourceName,
+                                                          InstanceProperties properties,
+                                                          String             propertyName,
+                                                          String             propertyValue,
+                                                          String             methodName)
+    {
+        InstanceProperties  resultingProperties;
+
+        if (properties == null)
+        {
+            resultingProperties = new InstanceProperties();
+        }
+        else
+        {
+            resultingProperties = properties;
+        }
+
+
+        PrimitivePropertyValue primitivePropertyValue = new PrimitivePropertyValue();
+
+        primitivePropertyValue.setPrimitiveDefCategory(PrimitiveDefCategory.OM_PRIMITIVE_TYPE_STRING);
+        primitivePropertyValue.setPrimitiveValue(propertyValue);
+
+        resultingProperties.setProperty(propertyName, primitivePropertyValue);
+
+        return resultingProperties;
+    }
+
+
+    /**
+     * Add the supplied property to an instance properties object.  If the instance property object
+     * supplied is null, a new instance properties object is created.
+     *
+     * @param sourceName - name of caller
+     * @param properties - properties object to add property to - may be null.
+     * @param propertyName - name of property
+     * @param propertyValue - value of property
+     * @param methodName - calling method name
+     * @return instance properties object.
+     */
+    public InstanceProperties addIntPropertyToInstance(String             sourceName,
+                                                       InstanceProperties properties,
+                                                       String             propertyName,
+                                                       int                propertyValue,
+                                                       String             methodName)
+    {
+        InstanceProperties  resultingProperties;
+
+        if (properties == null)
+        {
+            resultingProperties = new InstanceProperties();
+        }
+        else
+        {
+            resultingProperties = properties;
+        }
+
+
+        PrimitivePropertyValue primitivePropertyValue = new PrimitivePropertyValue();
+
+        primitivePropertyValue.setPrimitiveDefCategory(PrimitiveDefCategory.OM_PRIMITIVE_TYPE_INT);
+        primitivePropertyValue.setPrimitiveValue(propertyValue);
+
+        resultingProperties.setProperty(propertyName, primitivePropertyValue);
+
+        return resultingProperties;
+    }
+
+
+    /**
+     * Add the supplied property to an instance properties object.  If the instance property object
+     * supplied is null, a new instance properties object is created.
+     *
+     * @param sourceName - name of caller
+     * @param properties - properties object to add property to - may be null.
+     * @param propertyName - name of property
+     * @param propertyValue - value of property
+     * @param methodName - calling method name
+     * @return instance properties object.
+     */
+    public InstanceProperties addBooleanPropertyToInstance(String             sourceName,
+                                                           InstanceProperties properties,
+                                                           String             propertyName,
+                                                           boolean            propertyValue,
+                                                           String             methodName)
+    {
+        InstanceProperties  resultingProperties;
+
+        if (properties == null)
+        {
+            resultingProperties = new InstanceProperties();
+        }
+        else
+        {
+            resultingProperties = properties;
+        }
+
+
+        PrimitivePropertyValue primitivePropertyValue = new PrimitivePropertyValue();
+
+        primitivePropertyValue.setPrimitiveDefCategory(PrimitiveDefCategory.OM_PRIMITIVE_TYPE_BOOLEAN);
+        primitivePropertyValue.setPrimitiveValue(propertyValue);
+
+        resultingProperties.setProperty(propertyName, primitivePropertyValue);
+
+        return resultingProperties;
+    }
+
+
+    /**
+     * Add the supplied property to an instance properties object.  If the instance property object
+     * supplied is null, a new instance properties object is created.
+     *
+     * @param sourceName - name of caller
+     * @param properties - properties object to add property to - may be null.
+     * @param propertyName - name of property
+     * @param ordinal - numeric value of property
+     * @param symbolicName - String value of property
+     * @param description - String description of property value
+     * @param methodName - calling method name
+     * @return instance properties object.
+     */
+    public InstanceProperties addEnumPropertyToInstance(String             sourceName,
+                                                        InstanceProperties properties,
+                                                        String             propertyName,
+                                                        int                ordinal,
+                                                        String             symbolicName,
+                                                        String             description,
+                                                        String             methodName)
+    {
+        InstanceProperties  resultingProperties;
+
+        if (properties == null)
+        {
+            resultingProperties = new InstanceProperties();
+        }
+        else
+        {
+            resultingProperties = properties;
+        }
+
+
+        EnumPropertyValue enumPropertyValue = new EnumPropertyValue();
+
+        enumPropertyValue.setOrdinal(ordinal);
+        enumPropertyValue.setSymbolicName(symbolicName);
+        enumPropertyValue.setDescription(description);
+
+        resultingProperties.setProperty(propertyName, enumPropertyValue);
+
+        return resultingProperties;
+    }
+
+
+    /**
+     * Throws a logic error exception when the repository helper is called with invalid parameters.
+     * Normally this means the repository helper methods have been called in the wrong order.
+     *
+     * @param sourceName - name of the calling repository or service
+     * @param originatingMethodName - method that called the repository validator
+     * @param localMethodName - local method that deleted the error
+     */
+    private void throwHelperLogicError(String     sourceName,
+                                       String     originatingMethodName,
+                                       String     localMethodName)
+    {
+        OMRSErrorCode errorCode = OMRSErrorCode.HELPER_LOGIC_ERROR;
+        String errorMessage     = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(sourceName,
+                                                                                                     localMethodName,
+                                                                                                     originatingMethodName);
+
+        throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                          this.getClass().getName(),
+                                          localMethodName,
+                                          errorMessage,
+                                          errorCode.getSystemAction(),
+                                          errorCode.getUserAction());
     }
 }

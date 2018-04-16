@@ -45,7 +45,7 @@ public class OMRSEventV1RegistrySection implements Serializable
     private OMRSRegistryEventType     registryEventType     = null;
     private Date                      registrationTimestamp = null;
     private Connection                remoteConnection      = null;
-    private ArrayList<TypeDefSummary> typeDefList           = null;
+
 
     public OMRSEventV1RegistrySection()
     {
@@ -79,29 +79,5 @@ public class OMRSEventV1RegistrySection implements Serializable
     public void setRemoteConnection(Connection remoteConnection)
     {
         this.remoteConnection = remoteConnection;
-    }
-
-    public List<TypeDefSummary> getTypeDefList()
-    {
-        if (typeDefList == null)
-        {
-            return null;
-        }
-        else
-        {
-            return new ArrayList<>(typeDefList);
-        }
-    }
-
-    public void setTypeDefList(List<TypeDefSummary> typeDefList)
-    {
-        if (typeDefList == null)
-        {
-            this.typeDefList = null;
-        }
-        else
-        {
-            this.typeDefList = new ArrayList<>(typeDefList);
-        }
     }
 }

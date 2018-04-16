@@ -40,8 +40,8 @@ import org.slf4j.LoggerFactory;
  */
 public class OMRSEventListener implements OMRSTopicListener
 {
-    private  String                                 cohortName = null;
-    private  String                                 localMetadataCollectionId = null;
+    private String cohortName                = null;
+    private String localMetadataCollectionId = null;
 
     /*
      * There is an event processor for each category of event.  The OMRSEventListener passes appropriate events to these
@@ -86,7 +86,7 @@ public class OMRSEventListener implements OMRSTopicListener
     /**
      * Process an incoming event.  This method is called by the OMRSTopicConnector.  The processing is careful of nulls
      * and ignores an event that is incorrectly formatted.  The assumption is that the unformatted part of the message
-     * is an extension from a newer versionName of the protocol and can be ignored.
+     * is an extension from a newer version of the protocol and can be ignored.
      *
      * @param event Version 1 of the OMRSEvent that defines the category and payload of the incoming event.
      */
@@ -219,8 +219,7 @@ public class OMRSEventListener implements OMRSTopicListener
                                                                         registryEventOriginator.getServerType(),
                                                                         registryEventOriginator.getOrganizationName(),
                                                                         registryEvent.getRegistrationTimestamp(),
-                                                                        registryEvent.getRemoteConnection(),
-                                                                        registryEvent.getTypeDefSummaries());
+                                                                        registryEvent.getRemoteConnection());
                         break;
 
                     case RE_REGISTRATION_EVENT:
@@ -230,8 +229,7 @@ public class OMRSEventListener implements OMRSTopicListener
                                                                           registryEventOriginator.getServerType(),
                                                                           registryEventOriginator.getOrganizationName(),
                                                                           registryEvent.getRegistrationTimestamp(),
-                                                                          registryEvent.getRemoteConnection(),
-                                                                          registryEvent.getTypeDefSummaries());
+                                                                          registryEvent.getRemoteConnection());
                         break;
 
                     case REFRESH_REGISTRATION_REQUEST:
@@ -808,7 +806,7 @@ public class OMRSEventListener implements OMRSTopicListener
                     default:
                         if (log.isDebugEnabled())
                         {
-                            log.debug("Ignored TypeDef event - unknown type");
+                            log.debug("Ignored Instance event - unknown type");
                         }
                         break;
                 }

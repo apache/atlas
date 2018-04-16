@@ -58,7 +58,7 @@ public class ClassificationDef extends TypeDef
      * @param guid        - unique id for the TypeDef
      * @param name        - unique name for the TypeDef
      * @param version     - active version number for the TypeDef
-     * @param versionName - unique name for the TypeDef
+     * @param versionName - name for active version of the TypeDef
      */
     public ClassificationDef(TypeDefCategory category,
                              String          guid,

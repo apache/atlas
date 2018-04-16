@@ -104,8 +104,17 @@ public class OMRSRepositoryRESTServices
     public static void setLocalRepository(LocalOMRSRepositoryConnector    localRepositoryConnector,
                                           String                          localServerURL)
     {
-        OMRSRepositoryRESTServices.localRepositoryConnector = localRepositoryConnector;
-        OMRSRepositoryRESTServices.localMetadataCollection = localRepositoryConnector.getMetadataCollection();
+        try
+        {
+            OMRSRepositoryRESTServices.localRepositoryConnector = localRepositoryConnector;
+            OMRSRepositoryRESTServices.localMetadataCollection = localRepositoryConnector.getMetadataCollection();
+        }
+        catch (Throwable error)
+        {
+            OMRSRepositoryRESTServices.localRepositoryConnector = null;
+            OMRSRepositoryRESTServices.localMetadataCollection = null;
+        }
+
         OMRSRepositoryRESTServices.localServerURL = localServerURL;
     }
 
@@ -433,7 +442,7 @@ public class OMRSRepositoryRESTServices
      * RepositoryErrorException - there is a problem communicating with the metadata repository or
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    @RequestMapping(method = RequestMethod.GET, path = "/{userId}/types/typedefs/by-search-criteria")
+    @RequestMapping(method = RequestMethod.GET, path = "/{userId}/types/typedefs/by-property-value")
 
     public TypeDefListResponse searchForTypeDefs(@PathVariable String userId,
                                                  @RequestParam String searchCriteria)
@@ -1492,11 +1501,11 @@ public class OMRSRepositoryRESTServices
 
 
     /**
-     * Return a historical versionName of an entity - includes the header, classifications and properties of the entity.
+     * Return a historical version of an entity - includes the header, classifications and properties of the entity.
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the entity.
-     * @param asOfTime - the time used to determine which versionName of the entity that is desired.
+     * @param asOfTime - the time used to determine which version of the entity that is desired.
      * @return EnityDetailResponse:
      * EntityDetail structure or
      * InvalidParameterException - the guid or date is null or the asOfTime property is for a future time or
@@ -1926,9 +1935,12 @@ public class OMRSRepositoryRESTServices
 
 
     /**
-     * Return a list of entities matching the search criteria.
+     * Return a list of entities whose string based property values match the search criteria.  The
+     * search criteria may include regex style wild cards.
      *
      * @param userId - unique identifier for requesting user.
+     * @param entityTypeGUID - GUID of the type of entity to search for. Null means all types will
+     *                       be searched (could be slow so not recommended).
      * @param searchCriteria - String expression of the characteristics of the required relationships.
      * @param fromEntityElement - the starting element number of the entities to return.
      *                                This is used when retrieving elements
@@ -1955,19 +1967,20 @@ public class OMRSRepositoryRESTServices
      * FunctionNotSupportedException - the repository does not support satOfTime parameter or
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    @RequestMapping(method = RequestMethod.GET, path = "/{userId}/instances/entities/by-search-criteria")
+    @RequestMapping(method = RequestMethod.GET, path = "/{userId}/instances/entities/by-property-value")
 
-    public  EntityListResponse searchForEntities(@PathVariable                   String                          userId,
-                                                 @RequestParam                   String                          searchCriteria,
-                                                 @RequestParam(required = false) int                             fromEntityElement,
-                                                 @RequestParam(required = false) List<InstanceStatus>            limitResultsByStatus,
-                                                 @RequestParam(required = false) List<String>                    limitResultsByClassification,
-                                                 @RequestParam(required = false) Date                            asOfTime,
-                                                 @RequestParam(required = false) String                          sequencingProperty,
-                                                 @RequestParam(required = false) SequencingOrder                 sequencingOrder,
-                                                 @RequestParam(required = false) int                             pageSize)
+    public  EntityListResponse fndEntitiesByPropertyValue(@PathVariable                   String                  userId,
+                                                          @RequestParam(required = false) String                  entityTypeGUID,
+                                                          @RequestParam                   String                  searchCriteria,
+                                                          @RequestParam(required = false) int                     fromEntityElement,
+                                                          @RequestParam(required = false) List<InstanceStatus>    limitResultsByStatus,
+                                                          @RequestParam(required = false) List<String>            limitResultsByClassification,
+                                                          @RequestParam(required = false) Date                    asOfTime,
+                                                          @RequestParam(required = false) String                  sequencingProperty,
+                                                          @RequestParam(required = false) SequencingOrder         sequencingOrder,
+                                                          @RequestParam(required = false) int                     pageSize)
     {
-        final  String   methodName = "searchForEntities";
+        final  String   methodName = "findEntitiesByPropertyValue";
 
         EntityListResponse response = new EntityListResponse();
 
@@ -1975,15 +1988,16 @@ public class OMRSRepositoryRESTServices
         {
             validateLocalRepository(methodName);
 
-            List<EntityDetail>  entities = localMetadataCollection.searchForEntities(userId,
-                                                                                     searchCriteria,
-                                                                                     fromEntityElement,
-                                                                                     limitResultsByStatus,
-                                                                                     limitResultsByClassification,
-                                                                                     asOfTime,
-                                                                                     sequencingProperty,
-                                                                                     sequencingOrder,
-                                                                                     pageSize);
+            List<EntityDetail>  entities = localMetadataCollection.findEntitiesByPropertyValue(userId,
+                                                                                               entityTypeGUID,
+                                                                                               searchCriteria,
+                                                                                               fromEntityElement,
+                                                                                               limitResultsByStatus,
+                                                                                               limitResultsByClassification,
+                                                                                               asOfTime,
+                                                                                               sequencingProperty,
+                                                                                               sequencingOrder,
+                                                                                               pageSize);
             response.setEntities(entities);
             if (entities != null)
             {
@@ -1991,7 +2005,7 @@ public class OMRSRepositoryRESTServices
                 response.setPageSize(pageSize);
                 if (entities.size() == pageSize)
                 {
-                    final String urlTemplate = "{0}/instances/entities/by-search-criteria?searchCriteria={1}?fromEntityElement={2}&limitResultsByStatus={3}&limitResultsByClassification={4}&asOfTime={5}&sequencingProperty={6}&sequencingOrder={7}&pageSize={8}";
+                    final String urlTemplate = "{0}/instances/entities/by-property-value?entityTypeGUID={1}&searchCriteria={2}&fromEntityElement={3}&limitResultsByStatus={4}&limitResultsByClassification={5}&asOfTime={6}&sequencingProperty={7}&sequencingOrder={8}&pageSize={9}";
 
                     response.setNextPageURL(formatNextPageURL(localServerURL + urlTemplate,
                                                               userId,
@@ -2157,7 +2171,7 @@ public class OMRSRepositoryRESTServices
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the relationship.
-     * @param asOfTime - the time used to determine which versionName of the entity that is desired.
+     * @param asOfTime - the time used to determine which version of the entity that is desired.
      * @return RelationshipResponse:
      * a relationship structure or
      * InvalidParameterException - the guid or date is null or the asOfTime property is for a future time or
@@ -2335,6 +2349,7 @@ public class OMRSRepositoryRESTServices
      * Return a list of relationships that match the search criteria.  The results can be paged.
      *
      * @param userId - unique identifier for requesting user.
+     * @param relationshipTypeGUID - unique identifier of a relationship type (or null for all types of relationship.
      * @param searchCriteria - String expression of the characteristics of the required relationships.
      * @param fromRelationshipElement - Element number of the results to skip to when building the results list
      *                                to return.  Zero means begin at the start of the results.  This is used
@@ -2359,18 +2374,19 @@ public class OMRSRepositoryRESTServices
      * FunctionNotSupportedException - the repository does not support satOfTime parameter or
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    @RequestMapping(method = RequestMethod.GET, path = "/{userId}/instances/relationships/by-search-criteria")
+    @RequestMapping(method = RequestMethod.GET, path = "/{userId}/instances/relationships/by-property-value")
 
-    public  RelationshipListResponse searchForRelationships(@PathVariable                   String                    userId,
-                                                            @RequestParam                   String                    searchCriteria,
-                                                            @RequestParam(required = false) int                       fromRelationshipElement,
-                                                            @RequestParam(required = false) List<InstanceStatus>      limitResultsByStatus,
-                                                            @RequestParam(required = false) Date                      asOfTime,
-                                                            @RequestParam(required = false) String                    sequencingProperty,
-                                                            @RequestParam(required = false) SequencingOrder           sequencingOrder,
-                                                            @RequestParam(required = false) int                       pageSize)
+    public  RelationshipListResponse findRelationshipsByPropertyValue(@PathVariable                   String                    userId,
+                                                                      @RequestParam(required = false) String                    relationshipTypeGUID,
+                                                                      @RequestParam                   String                    searchCriteria,
+                                                                      @RequestParam(required = false) int                       fromRelationshipElement,
+                                                                      @RequestParam(required = false) List<InstanceStatus>      limitResultsByStatus,
+                                                                      @RequestParam(required = false) Date                      asOfTime,
+                                                                      @RequestParam(required = false) String                    sequencingProperty,
+                                                                      @RequestParam(required = false) SequencingOrder           sequencingOrder,
+                                                                      @RequestParam(required = false) int                       pageSize)
     {
-        final  String   methodName = "searchForRelationships";
+        final  String   methodName = "findRelationshipsByPropertyValue";
 
         RelationshipListResponse response = new RelationshipListResponse();
 
@@ -2378,14 +2394,15 @@ public class OMRSRepositoryRESTServices
         {
             validateLocalRepository(methodName);
 
-            List<Relationship>  relationships = localMetadataCollection.searchForRelationships(userId,
-                                                                                               searchCriteria,
-                                                                                               fromRelationshipElement,
-                                                                                               limitResultsByStatus,
-                                                                                               asOfTime,
-                                                                                               sequencingProperty,
-                                                                                               sequencingOrder,
-                                                                                               pageSize);
+            List<Relationship>  relationships = localMetadataCollection.findRelationshipsByPropertyValue(userId,
+                                                                                                         relationshipTypeGUID,
+                                                                                                         searchCriteria,
+                                                                                                         fromRelationshipElement,
+                                                                                                         limitResultsByStatus,
+                                                                                                         asOfTime,
+                                                                                                         sequencingProperty,
+                                                                                                         sequencingOrder,
+                                                                                                         pageSize);
             response.setRelationships(relationships);
             if (relationships != null)
             {
@@ -2393,7 +2410,7 @@ public class OMRSRepositoryRESTServices
                 response.setPageSize(pageSize);
                 if (response.getRelationships().size() == pageSize)
                 {
-                    final String urlTemplate = "{0}/instances/relationships/by-search-criteria?searchCriteria={1}?fromRelationshipElement={2}&limitResultsByStatus={3}&asOfTime={4}&sequencingProperty={5}&sequencingOrder={6}&pageSize={7}";
+                    final String urlTemplate = "{0}/instances/relationships/by-property-value?relationshipTypeGUID={1}&searchCriteria={2}?fromRelationshipElement={3}&limitResultsByStatus={4}&asOfTime={5}&sequencingProperty={6}&sequencingOrder={7}&pageSize={8}";
 
                     response.setNextPageURL(formatNextPageURL(localServerURL + urlTemplate,
                                                               userId,
@@ -4314,7 +4331,7 @@ public class OMRSRepositoryRESTServices
      * Save the entity as a reference copy.  The id of the home metadata collection is already set up in the
      * entity.
      *
-     * @param serverName - unique identifier for requesting user.
+     * @param userId - unique identifier for requesting user.
      * @param entity - details of the entity to save.
      * @return VoidResponse:
      * void or
@@ -4332,9 +4349,9 @@ public class OMRSRepositoryRESTServices
      * FunctionNotSupportedException - the repository does not support instance reference copies or
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    @RequestMapping(method = RequestMethod.PATCH, path = "/{serverName}/instances/entities/reference-copy")
+    @RequestMapping(method = RequestMethod.PATCH, path = "/{userId}/instances/entities/reference-copy")
 
-    public VoidResponse saveEntityReferenceCopy(@PathVariable String         serverName,
+    public VoidResponse saveEntityReferenceCopy(@PathVariable String         userId,
                                                 @RequestParam EntityDetail   entity)
     {
         final  String   methodName = "saveEntityReferenceCopy";
@@ -4345,7 +4362,7 @@ public class OMRSRepositoryRESTServices
         {
             validateLocalRepository(methodName);
 
-            localMetadataCollection.saveEntityReferenceCopy(serverName, entity);
+            localMetadataCollection.saveEntityReferenceCopy(userId, entity);
         }
         catch (RepositoryErrorException  error)
         {
@@ -4393,7 +4410,7 @@ public class OMRSRepositoryRESTServices
      * remove reference copies from the local cohort, repositories that have left the cohort,
      * or entities that have come from open metadata archives.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entityGUID - the unique identifier for the entity.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
@@ -4409,9 +4426,9 @@ public class OMRSRepositoryRESTServices
      * FunctionNotSupportedException - the repository does not support instance reference copies or
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    @RequestMapping(method = RequestMethod.PATCH, path = "/{serverName}/instances/entities/reference-copy/{entityGUID}/purge")
+    @RequestMapping(method = RequestMethod.PATCH, path = "/{userId}/instances/entities/reference-copy/{entityGUID}/purge")
 
-    public VoidResponse purgeEntityReferenceCopy(@PathVariable String   serverName,
+    public VoidResponse purgeEntityReferenceCopy(@PathVariable String   userId,
                                                  @PathVariable String   entityGUID,
                                                  @RequestParam String   typeDefGUID,
                                                  @RequestParam String   typeDefName,
@@ -4425,7 +4442,7 @@ public class OMRSRepositoryRESTServices
         {
             validateLocalRepository(methodName);
 
-            localMetadataCollection.purgeEntityReferenceCopy(serverName,
+            localMetadataCollection.purgeEntityReferenceCopy(userId,
                                                              entityGUID,
                                                              typeDefGUID,
                                                              typeDefName,
@@ -4463,7 +4480,7 @@ public class OMRSRepositoryRESTServices
      * The local repository has requested that the repository that hosts the home metadata collection for the
      * specified entity sends out the details of this entity so the local repository can create a reference copy.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entityGUID - unique identifier of requested entity.
      * @param typeDefGUID - unique identifier of requested entity's TypeDef.
      * @param typeDefName - unique name of requested entity's TypeDef.
@@ -4479,9 +4496,9 @@ public class OMRSRepositoryRESTServices
      * FunctionNotSupportedException - the repository does not support instance reference copies or
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    @RequestMapping(method = RequestMethod.PATCH, path = "/{serverName}/instances/entities/reference-copy/{entityGUID}/refresh")
+    @RequestMapping(method = RequestMethod.PATCH, path = "/{userId}/instances/entities/reference-copy/{entityGUID}/refresh")
 
-    public VoidResponse refreshEntityReferenceCopy(@PathVariable String   serverName,
+    public VoidResponse refreshEntityReferenceCopy(@PathVariable String   userId,
                                                    @PathVariable String   entityGUID,
                                                    @RequestParam String   typeDefGUID,
                                                    @RequestParam String   typeDefName,
@@ -4495,7 +4512,7 @@ public class OMRSRepositoryRESTServices
         {
             validateLocalRepository(methodName);
 
-            localMetadataCollection.refreshEntityReferenceCopy(serverName,
+            localMetadataCollection.refreshEntityReferenceCopy(userId,
                                                                entityGUID,
                                                                typeDefGUID,
                                                                typeDefName,
@@ -4533,7 +4550,7 @@ public class OMRSRepositoryRESTServices
      * Save the relationship as a reference copy.  The id of the home metadata collection is already set up in the
      * relationship.
      *
-     * @param serverName - unique identifier for requesting serverName.
+     * @param userId - unique identifier for requesting userId.
      * @param relationship - relationship to save.
      * @return VoidResponse:
      * void or
@@ -4553,9 +4570,9 @@ public class OMRSRepositoryRESTServices
      * FunctionNotSupportedException - the repository does not support instance reference copies or
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    @RequestMapping(method = RequestMethod.PATCH, path = "/{serverName}/instances/relationships/reference-copy")
+    @RequestMapping(method = RequestMethod.PATCH, path = "/{userId}/instances/relationships/reference-copy")
 
-    public VoidResponse saveRelationshipReferenceCopy(@PathVariable String         serverName,
+    public VoidResponse saveRelationshipReferenceCopy(@PathVariable String         userId,
                                                       @RequestParam Relationship   relationship)
     {
         final  String   methodName = "saveRelationshipReferenceCopy";
@@ -4566,7 +4583,7 @@ public class OMRSRepositoryRESTServices
         {
             validateLocalRepository(methodName);
 
-            localMetadataCollection.saveRelationshipReferenceCopy(serverName, relationship);
+            localMetadataCollection.saveRelationshipReferenceCopy(userId, relationship);
         }
         catch (RepositoryErrorException  error)
         {
@@ -4620,7 +4637,7 @@ public class OMRSRepositoryRESTServices
      * remove reference copies from the local cohort, repositories that have left the cohort,
      * or relationships that have come from open metadata archives.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param relationshipGUID - the unique identifier for the relationship.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
@@ -4636,9 +4653,9 @@ public class OMRSRepositoryRESTServices
      * FunctionNotSupportedException - the repository does not support instance reference copies or
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    @RequestMapping(method = RequestMethod.PATCH, path = "/{serverName}/instances/relationships/reference-copy/{relationshipGUID}/purge")
+    @RequestMapping(method = RequestMethod.PATCH, path = "/{userId}/instances/relationships/reference-copy/{relationshipGUID}/purge")
 
-    public VoidResponse purgeRelationshipReferenceCopy(@PathVariable String   serverName,
+    public VoidResponse purgeRelationshipReferenceCopy(@PathVariable String   userId,
                                                        @PathVariable String   relationshipGUID,
                                                        @RequestParam String   typeDefGUID,
                                                        @RequestParam String   typeDefName,
@@ -4652,7 +4669,7 @@ public class OMRSRepositoryRESTServices
         {
             validateLocalRepository(methodName);
 
-            localMetadataCollection.purgeRelationshipReferenceCopy(serverName,
+            localMetadataCollection.purgeRelationshipReferenceCopy(userId,
                                                                    relationshipGUID,
                                                                    typeDefGUID,
                                                                    typeDefName,
@@ -4691,7 +4708,7 @@ public class OMRSRepositoryRESTServices
      * specified relationship sends out the details of this relationship so the local repository can create a
      * reference copy.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param relationshipGUID - unique identifier of the relationship.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
@@ -4707,9 +4724,9 @@ public class OMRSRepositoryRESTServices
      * FunctionNotSupportedException - the repository does not support instance reference copies or
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    @RequestMapping(method = RequestMethod.PATCH, path = "/{serverName}/instances/relationships/reference-copy/{relationshipGUID}/refresh")
+    @RequestMapping(method = RequestMethod.PATCH, path = "/{userId}/instances/relationships/reference-copy/{relationshipGUID}/refresh")
 
-    public VoidResponse refreshRelationshipReferenceCopy(@PathVariable String serverName,
+    public VoidResponse refreshRelationshipReferenceCopy(@PathVariable String userId,
                                                          @PathVariable String relationshipGUID,
                                                          @RequestParam String typeDefGUID,
                                                          @RequestParam String typeDefName,
@@ -4723,7 +4740,7 @@ public class OMRSRepositoryRESTServices
         {
             validateLocalRepository(methodName);
 
-            localMetadataCollection.refreshRelationshipReferenceCopy(serverName,
+            localMetadataCollection.refreshRelationshipReferenceCopy(userId,
                                                                      relationshipGUID,
                                                                      typeDefGUID,
                                                                      typeDefName,
@@ -5148,8 +5165,11 @@ public class OMRSRepositoryRESTServices
      *
      * @param response - REST Response
      * @param error returned response.
+     * @param exceptionClassName - class name of the exception to recreate
      */
-    private void captureCheckedException(OMRSRESTAPIResponse response, OMRSCheckedExceptionBase error, String exceptionClassName)
+    private void captureCheckedException(OMRSRESTAPIResponse      response,
+                                         OMRSCheckedExceptionBase error,
+                                         String                   exceptionClassName)
     {
         response.setRelatedHTTPCode(error.getReportedHTTPCode());
         response.setExceptionClassName(exceptionClassName);

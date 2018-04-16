@@ -20,6 +20,7 @@ package org.apache.atlas.omrs.auditlog.store.file;
 import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
 import org.apache.atlas.omrs.auditlog.store.OMRSAuditLogRecord;
 import org.apache.atlas.omrs.auditlog.store.OMRSAuditLogStoreConnectorBase;
+import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.PagingErrorException;
 import org.apache.atlas.omrs.ffdc.exception.InvalidParameterException;
 import org.slf4j.Logger;
@@ -56,9 +57,19 @@ public class FileBasedAuditLogStoreConnector extends OMRSAuditLogStoreConnectorB
      */
     public String storeLogRecord(OMRSAuditLogRecord logRecord) throws InvalidParameterException
     {
+        final String   methodName = "storeLogRecord";
+
         if (logRecord == null)
         {
-            // TODO Throw PropertyErrorException
+            OMRSErrorCode errorCode    = OMRSErrorCode.NULL_LOG_RECORD;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+
+            throw new InvalidParameterException(errorCode.getHTTPErrorCode(),
+                                                this.getClass().getName(),
+                                                methodName,
+                                                errorMessage,
+                                                errorCode.getSystemAction(),
+                                                errorCode.getUserAction());
         }
 
         if (log.isDebugEnabled())
@@ -79,10 +90,6 @@ public class FileBasedAuditLogStoreConnector extends OMRSAuditLogStoreConnectorB
      */
     public OMRSAuditLogRecord  getAuditLogRecord(String     logRecordId) throws InvalidParameterException
     {
-        if (logRecordId == null)
-        {
-            // TODO Throw PropertyErrorException
-        }
 
         return null;
     }

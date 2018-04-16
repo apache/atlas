@@ -33,7 +33,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class BooleanResponse extends OMRSRESTAPIResponse
 {
-    boolean   flag = false;
+    private boolean   flag = false;
 
 
     /**

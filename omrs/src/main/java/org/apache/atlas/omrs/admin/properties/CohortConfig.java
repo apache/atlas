@@ -52,7 +52,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
  *         This is used to send/receive events between members of the open metadata repository cohort.
  *     </li>
  *     <li>
- *         cohortOMRSTopicProtocolVersion defines the versionName of the event payload to use when communicating with other
+ *         cohortOMRSTopicProtocolVersion defines the version of the event payload to use when communicating with other
  *         members of the cohort through the OMRS Topic.
  *     </li>
  *     <li>
@@ -176,9 +176,9 @@ public class CohortConfig
 
 
     /**
-     * Return the protocol versionName to use when exchanging events amongst the cohort members.
+     * Return the protocol version to use when exchanging events amongst the cohort members.
      *
-     * @return protocol versionName enum
+     * @return protocol version enum
      */
     public OpenMetadataEventProtocolVersion getCohortOMRSTopicProtocolVersion()
     {
@@ -187,9 +187,9 @@ public class CohortConfig
 
 
     /**
-     * Set up the protocol versionName to use when exchanging events amongst the cohort members.
+     * Set up the protocol version to use when exchanging events amongst the cohort members.
      *
-     * @param cohortOMRSTopicProtocolVersion - protocol versionName enum
+     * @param cohortOMRSTopicProtocolVersion - protocol version enum
      */
     public void setCohortOMRSTopicProtocolVersion(OpenMetadataEventProtocolVersion cohortOMRSTopicProtocolVersion)
     {

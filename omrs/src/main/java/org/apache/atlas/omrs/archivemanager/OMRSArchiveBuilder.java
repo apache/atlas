@@ -179,6 +179,7 @@ public class OMRSArchiveBuilder
      * Retrieve a PrimitiveDef from the archive.
      *
      * @param primitiveDefName - primitive to retrieve
+     * @return PrimitiveDef type
      */
     public PrimitiveDef getPrimitiveDef(String   primitiveDefName)
     {
@@ -306,6 +307,7 @@ public class OMRSArchiveBuilder
      * Retrieve a CollectionDef from the archive.
      *
      * @param collectionDefName - type to retrieve
+     * @return CollectionDef type
      */
     public CollectionDef getCollectionDef(String  collectionDefName)
     {

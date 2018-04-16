@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.omrs.localrepository.repositorycontentmanager;
 
+import org.apache.atlas.omrs.ffdc.exception.RepositoryErrorException;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.*;
 
 import java.util.ArrayList;
@@ -65,12 +66,31 @@ public interface OMRSTypeDefValidator
      * A valid TypeDef is one that matches name, GUID and version to the full list of TypeDefs.
      * If a new TypeDef is present, it is added to the enterprise list.
      *
-     * @param sourceName - source of the request (used for logging)
+     * @param sourceName - source of the TypeDef (used for logging)
      * @param typeDefs - list of TypeDefs.
-     * @return boolean flag
+     * @param methodName - name of calling method
+     * @throws RepositoryErrorException - a conflicting or invalid TypeDef has been returned
      */
-    boolean   validateEnterpriseTypeDefs(String             sourceName,
-                                         List<TypeDef>      typeDefs);
+    void   validateEnterpriseTypeDefs(String        sourceName,
+                                      List<TypeDef> typeDefs,
+                                      String        methodName) throws RepositoryErrorException;
+
+
+    /**
+     * Return a boolean flag indicating whether the list of TypeDefs passed are compatible with the
+     * all known typedefs.
+     *
+     * A valid TypeDef is one that matches name, GUID and version to the full list of TypeDefs.
+     * If a new TypeDef is present, it is added to the enterprise list.
+     *
+     * @param sourceName - source of the TypeDef (used for logging)
+     * @param attributeTypeDefs - list of AttributeTypeDefs.
+     * @param methodName - name of calling method
+     * @throws RepositoryErrorException - a conflicting or invalid AttributeTypeDef has been returned
+     */
+    void   validateEnterpriseAttributeTypeDefs(String                 sourceName,
+                                               List<AttributeTypeDef> attributeTypeDefs,
+                                               String                 methodName) throws RepositoryErrorException;
 
 
     /**
@@ -156,7 +176,7 @@ public interface OMRSTypeDefValidator
      * @param sourceName - source of the request (used for logging)
      * @param typeDefGUID - unique identifier of the TypeDef
      * @param typeDefName - unique name of the TypeDef
-     * @param typeDefVersion - versionName of the type
+     * @param typeDefVersion - version of the type
      * @param category - category for the TypeDef
      * @return boolean result
      */
@@ -173,7 +193,7 @@ public interface OMRSTypeDefValidator
      * @param sourceName - source of the request (used for logging)
      * @param attributeTypeDefGUID - unique identifier of the TypeDef
      * @param attributeTypeDefName - unique name of the TypeDef
-     * @param attributeTypeDefVersion - versionName of the type
+     * @param attributeTypeDefVersion - version of the type
      * @param category - category for the TypeDef
      * @return boolean result
      */

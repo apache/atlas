@@ -44,7 +44,7 @@ public class OMRSAuditLogRecord
     private OMRSAuditLogReportingComponent reportingComponent    = null;
     private String                         messageId             = null;
     private String                         messageText           = null;
-    private ArrayList<String>              additionalInformation = null;
+    private List<String>                   additionalInformation = null;
     private String                         systemAction          = null;
     private String                         userAction            = null;
 
@@ -75,7 +75,7 @@ public class OMRSAuditLogRecord
                               String                         severity,
                               String                         messageId,
                               String                         messageText,
-                              ArrayList<String>              additionalInformation,
+                              List<String>                   additionalInformation,
                               String                         systemAction,
                               String                         userAction)
     {
@@ -124,6 +124,17 @@ public class OMRSAuditLogRecord
 
 
     /**
+     * Set up the time stamp for when the audit log record was created.
+     *
+     * @param timeStamp Date object
+     */
+    public void setTimeStamp(Date timeStamp)
+    {
+        this.timeStamp = timeStamp;
+    }
+
+
+    /**
      * Return details of the originator of the log record.
      *
      * @return OMRSAuditLogRecordOriginator object
@@ -135,6 +146,16 @@ public class OMRSAuditLogRecord
 
 
     /**
+     * Set up details of the originator of the log record.
+     *
+     * @param originator
+     */
+    public void setOriginator(OMRSAuditLogRecordOriginator originator)
+    {
+        this.originator = originator;
+    }
+
+    /**
      * Return the severity of the situation recorded in the log record.
      *
      * @return String severity
@@ -142,6 +163,17 @@ public class OMRSAuditLogRecord
     public String getSeverity()
     {
         return severity;
+    }
+
+
+    /**
+     * Set up the severity of the situation recorded in the log record.
+     *
+     * @param severity - String severity
+     */
+    public void setSeverity(String severity)
+    {
+        this.severity = severity;
     }
 
 
@@ -157,13 +189,35 @@ public class OMRSAuditLogRecord
 
 
     /**
+     * Set up the name of the component that reported the situation recorded in the log record.
+     *
+     * @param reportingComponent - OMRSAuditLogReportingComponent object
+     */
+    public void setReportingComponent(OMRSAuditLogReportingComponent reportingComponent)
+    {
+        this.reportingComponent = reportingComponent;
+    }
+
+
+    /**
      * Return the identifier of the message within the log record.
      *
-     * @return String message Id
+     * @return String message id
      */
     public String getMessageId()
     {
         return messageId;
+    }
+
+
+    /**
+     * Set up  the identifier of the message within the log record.
+     *
+     * @param messageId - String message id
+     */
+    public void setMessageId(String messageId)
+    {
+        this.messageId = messageId;
     }
 
 
@@ -179,9 +233,20 @@ public class OMRSAuditLogRecord
 
 
     /**
+     * Set up the text of the message within the log record.
+     *
+     * @param messageText - String message text
+     */
+    public void setMessageText(String messageText)
+    {
+        this.messageText = messageText;
+    }
+
+
+    /**
      * Return any additional information in the audit log record.
      *
-     * @return String additional information
+     * @return List of String additional information
      */
     public List<String> getAdditionalInformation()
     {
@@ -189,46 +254,22 @@ public class OMRSAuditLogRecord
     }
 
 
-
-
-
-    public void setTimeStamp(Date timeStamp)
-    {
-        this.timeStamp = timeStamp;
-    }
-
-    public void setOriginator(OMRSAuditLogRecordOriginator originator)
-    {
-        this.originator = originator;
-    }
-
-    public void setSeverity(String severity)
-    {
-        this.severity = severity;
-    }
-
-    public void setReportingComponent(OMRSAuditLogReportingComponent reportingComponent)
-    {
-        this.reportingComponent = reportingComponent;
-    }
-
-    public void setMessageId(String messageId)
-    {
-        this.messageId = messageId;
-    }
-
-    public void setMessageText(String messageText)
-    {
-        this.messageText = messageText;
-    }
-
-    public void setAdditionalInformation(ArrayList<String> additionalInformation)
+    /**
+     * Set up any additional information in the audit log record.
+     *
+     * @param additionalInformation - List of String additional information
+     */
+    public void setAdditionalInformation(List<String> additionalInformation)
     {
         this.additionalInformation = additionalInformation;
     }
 
 
-
+    /**
+     * Return the description of the actions taken by the local server as a result of the reported situation.
+     *
+     * @return string description
+     */
     public String getSystemAction()
     {
         return systemAction;
@@ -238,7 +279,7 @@ public class OMRSAuditLogRecord
     /**
      * Set up the description of the actions taken by the local server as a result of the reported situation.
      *
-     * @param systemAction
+     * @param systemAction - a description of the actions taken by the system as a result of the error.
      */
     public void setSystemAction(String systemAction)
     {

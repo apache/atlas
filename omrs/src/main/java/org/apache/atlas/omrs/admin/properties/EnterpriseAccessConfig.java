@@ -70,7 +70,7 @@ public class EnterpriseAccessConfig
      * @param enterpriseMetadataCollectionId - unique identifier for the combined metadata collection covered by the
      *                                      connected open metadata repositories.
      * @param enterpriseOMRSTopicConnection - connection for the OMRS Topic connector.
-     * @param enterpriseOMRSTopicProtocolVersion - protocol versionName enum
+     * @param enterpriseOMRSTopicProtocolVersion - protocol version enum
      */
     public EnterpriseAccessConfig(String                           enterpriseMetadataCollectionName,
                                   String                           enterpriseMetadataCollectionId,
@@ -155,9 +155,9 @@ public class EnterpriseAccessConfig
 
 
     /**
-     * Return the protocol versionName to use on the EnterpriseOMRSTopicConnector.
+     * Return the protocol version to use on the EnterpriseOMRSTopicConnector.
      *
-     * @return protocol versionName enum
+     * @return protocol version enum
      */
     public OpenMetadataEventProtocolVersion getEnterpriseOMRSTopicProtocolVersion()
     {
@@ -166,9 +166,9 @@ public class EnterpriseAccessConfig
 
 
     /**
-     * Set up the protocol versionName to use on the EnterpriseOMRSTopicConnector.
+     * Set up the protocol version to use on the EnterpriseOMRSTopicConnector.
      *
-     * @param enterpriseOMRSTopicProtocolVersion - protocol versionName enum
+     * @param enterpriseOMRSTopicProtocolVersion - protocol version enum
      */
     public void setEnterpriseOMRSTopicProtocolVersion(OpenMetadataEventProtocolVersion enterpriseOMRSTopicProtocolVersion)
     {

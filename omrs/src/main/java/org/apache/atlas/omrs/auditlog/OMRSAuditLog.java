@@ -88,6 +88,26 @@ public class OMRSAuditLog
      * Typical constructor - Each component using the Audit log will create their own OMRSAuditLog instance and
      * will push log records to it.
      *
+     * @param componentId - numerical identifier for the component.
+     * @param componentName - display name for the component.
+     * @param componentDescription - description of the component.
+     * @param componentWikiURL - link to more information.
+     */
+    public OMRSAuditLog(int    componentId,
+                        String componentName,
+                        String componentDescription,
+                        String componentWikiURL)
+    {
+        this.reportingComponent = new OMRSAuditLogReportingComponent(componentId,
+                                                                     componentName,
+                                                                     componentDescription,
+                                                                     componentWikiURL);
+    }
+
+
+    /**
+     * External constructor - used to create an audit log for a component outside of OMRS
+     *
      * @param reportingComponent - information about the component that will use this instance of the audit log.
      */
     public OMRSAuditLog(OMRSAuditingComponent reportingComponent)
@@ -140,7 +160,7 @@ public class OMRSAuditLog
             {
                 if (auditLogStore != null)
                 {
-                    ArrayList<String> additionalInformationArray = null;
+                    List<String> additionalInformationArray = null;
 
                     if (additionalInformation != null)
                     {

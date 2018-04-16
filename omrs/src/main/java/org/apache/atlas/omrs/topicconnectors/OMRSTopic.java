@@ -21,7 +21,7 @@ package org.apache.atlas.omrs.topicconnectors;
 import org.apache.atlas.omrs.eventmanagement.events.v1.OMRSEventV1;
 
 /**
- * OMRSTopic defines the interface to the messaging Topic for OMRS Events.  It implemented by the OMTSTopicConnector.
+ * OMRSTopic defines the interface to the messaging Topic for OMRS Events.  It implemented by the OMRSTopicConnector.
  */
 public interface OMRSTopic
 {

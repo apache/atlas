@@ -59,7 +59,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      *
      * @param publisherName - name of the cohort (or enterprise virtual repository) that this event publisher
      *                      is sending events to.
-     * @param localProtocolVersion - protocol versionName to use
+     * @param localProtocolVersion - protocol version to use
      * @param topicConnector - OMRS Topic to send requests on
      */
     public OMRSEventPublisher(String                           publisherName,
@@ -69,7 +69,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
         String actionDescription = "Initialize event publisher";
 
         /*
-         * Save the publisherName and protocol versionName
+         * Save the publisherName and protocol version
          */
         this.eventProtocolVersion = localProtocolVersion;
         this.publisherName = publisherName;
@@ -269,7 +269,6 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
      * @param registrationTimestamp - the time that the server/repository issued the registration request.
      * @param remoteConnection - the Connection properties for the connector used to call the registering server.
-     * @param typeDefList - the list of TypeDefs supported by the registering server/repository.
      */
     public boolean processRegistrationEvent(String                    sourceName,
                                             String                    metadataCollectionId,
@@ -277,8 +276,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
                                             String                    originatorServerType,
                                             String                    originatorOrganizationName,
                                             Date                      registrationTimestamp,
-                                            Connection                remoteConnection,
-                                            List<TypeDefSummary>      typeDefList)
+                                            Connection                remoteConnection)
     {
         OMRSEventOriginator eventOriginator = new OMRSEventOriginator();
 
@@ -289,8 +287,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
 
         OMRSRegistryEvent registryEvent = new OMRSRegistryEvent(OMRSRegistryEventType.REGISTRATION_EVENT,
                                                                 registrationTimestamp,
-                                                                remoteConnection,
-                                                                typeDefList);
+                                                                remoteConnection);
 
         registryEvent.setEventOriginator(eventOriginator);
 
@@ -337,7 +334,6 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
      * @param registrationTimestamp - the time that the server/repository first registered with the cohort.
      * @param remoteConnection - the Connection properties for the connector used to call the registering server.
-     * @param typeDefList - the list of TypeDefs supported by the registering server/repository.
      */
     public boolean processReRegistrationEvent(String                    sourceName,
                                               String                    metadataCollectionId,
@@ -345,8 +341,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
                                               String                    originatorServerType,
                                               String                    originatorOrganizationName,
                                               Date                      registrationTimestamp,
-                                              Connection                remoteConnection,
-                                              List<TypeDefSummary>      typeDefList)
+                                              Connection                remoteConnection)
     {
         OMRSEventOriginator eventOriginator = new OMRSEventOriginator();
 
@@ -357,8 +352,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
 
         OMRSRegistryEvent registryEvent = new OMRSRegistryEvent(OMRSRegistryEventType.RE_REGISTRATION_EVENT,
                                                                 registrationTimestamp,
-                                                                remoteConnection,
-                                                                typeDefList);
+                                                                remoteConnection);
 
         registryEvent.setEventOriginator(eventOriginator);
 
@@ -557,7 +551,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param typeDefPatch - details of the new versionName of the TypeDef
+     * @param typeDefPatch - details of the new version of the TypeDef
      */
     public void processUpdatedTypeDefEvent(String       sourceName,
                                            String       originatorMetadataCollectionId,
@@ -829,9 +823,9 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
 
 
     /**
-     * A TypeDef from another member in the cohort is at a different versionName than the local repository.  This may
+     * A TypeDef from another member in the cohort is at a different version than the local repository.  This may
      * create some inconsistencies in the different copies of instances of this type in different members of the
-     * cohort.  The recommended action is to update all TypeDefs to the latest versionName.
+     * cohort.  The recommended action is to update all TypeDefs to the latest version.
      *
      * @param sourceName - name of the source of the event.  It may be the cohort name for incoming events or the
      *                   local repository, or event mapper name.
@@ -922,7 +916,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param entity - details of the new versionName of the entity.
+     * @param entity - details of the new version of the entity.
      */
     public void processUpdatedEntityEvent(String       sourceName,
                                           String       originatorMetadataCollectionId,
@@ -958,7 +952,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param entity - details of the versionName of the entity that has been restored.
+     * @param entity - details of the version of the entity that has been restored.
      */
     public void processUndoneEntityEvent(String       sourceName,
                                          String       originatorMetadataCollectionId,
@@ -1188,7 +1182,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param entity - details of the versionName of the entity that has been restored.
+     * @param entity - details of the version of the entity that has been restored.
      */
     public void processRestoredEntityEvent(String       sourceName,
                                            String       originatorMetadataCollectionId,
@@ -1459,7 +1453,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param relationship - details of the new versionName of the relationship.
+     * @param relationship - details of the new version of the relationship.
      */
     public void processUpdatedRelationshipEvent(String       sourceName,
                                                 String       originatorMetadataCollectionId,
@@ -1494,7 +1488,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param relationship - details of the versionName of the relationship that has been restored.
+     * @param relationship - details of the version of the relationship that has been restored.
      */
     public void processUndoneRelationshipEvent(String       sourceName,
                                                String       originatorMetadataCollectionId,
@@ -1611,7 +1605,7 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param relationship - details of the versionName of the relationship that has been restored.
+     * @param relationship - details of the version of the relationship that has been restored.
      */
     public void processRestoredRelationshipEvent(String       sourceName,
                                                  String       originatorMetadataCollectionId,
@@ -1914,8 +1908,8 @@ public class OMRSEventPublisher implements OMRSRegistryEventProcessor, OMRSTypeD
 
 
     /**
-     * An open metadata repository has detected an inconsistency in the versionName of the type used in an updated metadata
-     * instance compared to its stored versionName.
+     * An open metadata repository has detected an inconsistency in the version of the type used in an updated metadata
+     * instance compared to its stored version.
      *
      * @param sourceName - name of the source of the event.  It may be the cohort name for incoming events or the
      *                   local repository, or event mapper name.

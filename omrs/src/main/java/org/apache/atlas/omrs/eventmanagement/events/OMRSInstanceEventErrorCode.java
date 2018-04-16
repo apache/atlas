@@ -38,7 +38,7 @@ public enum OMRSInstanceEventErrorCode
                                            " have different types.",
                                OMRSEventErrorCode.CONFLICTING_INSTANCES),
     CONFLICTING_TYPE         (2, "Conflicting Type Version",
-                               "An instance can not be processed because there is a mismatch in the type definition (TypeDef) versionName.",
+                               "An instance can not be processed because there is a mismatch in the type definition (TypeDef) version.",
                                OMRSEventErrorCode.CONFLICTING_TYPE),
     UNKNOWN_ERROR_CODE        (99, "Unknown Error Code",
                                "Unrecognized error code from incoming event.",

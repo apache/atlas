@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.omrs.adapters.inmemory.repositoryconnector;
 
-import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
-import org.apache.atlas.omrs.ffdc.exception.InvalidParameterException;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.EntityDetail;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.EntityProxy;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.Relationship;
@@ -132,7 +130,7 @@ public class InMemoryOMRSMetadataStore
     /**
      * Return a list of entities from the store that are at the latest level.
      *
-     * @return
+     * @return list of EntityDetail objects
      */
     protected List<EntityDetail>   getEntities()
     {
@@ -168,40 +166,15 @@ public class InMemoryOMRSMetadataStore
      * Return an entity store that contains entities as they were at the time supplied in the asOfTime
      * parameter
      *
-     * @param methodName - name of the method requesting the store
      * @param asOfTime - time for the store (or null means now)
      * @return entity store for the requested time
-     * @throws InvalidParameterException - asOfTime is for the future.
      */
-    protected HashMap<String, EntityDetail>  timeWarpEntityStore(String       methodName,
-                                                                 Date         asOfTime) throws InvalidParameterException
+    protected HashMap<String, EntityDetail>  timeWarpEntityStore(Date         asOfTime)
     {
-        final  String   asOfTimeParameterName = "asOfTime";
-
         if (asOfTime == null)
         {
             return entityStore;
         }
-
-        Date   now = new Date();
-
-        if (asOfTime.after(now))
-        {
-            OMRSErrorCode errorCode = OMRSErrorCode.REPOSITORY_NOT_CRYSTAL_BALL;
-            String errorMessage = errorCode.getErrorMessageId()
-                    + errorCode.getFormattedErrorMessage(asOfTime.toString(),
-                                                         asOfTimeParameterName,
-                                                         methodName,
-                                                         repositoryName);
-
-            throw new InvalidParameterException(errorCode.getHTTPErrorCode(),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                errorMessage,
-                                                errorCode.getSystemAction(),
-                                                errorCode.getUserAction());
-        }
-
 
         HashMap<String, EntityDetail>  timeWarpedEntityStore = new HashMap<>();
 
@@ -299,38 +272,14 @@ public class InMemoryOMRSMetadataStore
      * Return a relationship store that contains relationships as they were at the time supplied in the asOfTime
      * parameter
      *
-     * @param methodName - name of the method requesting the store
      * @param asOfTime - time for the store (or null means now)
      * @return relationship store for the requested time
-     * @throws InvalidParameterException - asOfTime is for the future.
      */
-    protected HashMap<String, Relationship>  timeWarpRelationshipStore(String       methodName,
-                                                                     Date         asOfTime) throws InvalidParameterException
+    protected HashMap<String, Relationship>  timeWarpRelationshipStore(Date         asOfTime)
     {
-        final  String   asOfTimeParameterName = "asOfTime";
-
         if (asOfTime == null)
         {
             return relationshipStore;
-        }
-
-        Date   now = new Date();
-
-        if (asOfTime.after(now))
-        {
-            OMRSErrorCode errorCode = OMRSErrorCode.REPOSITORY_NOT_CRYSTAL_BALL;
-            String errorMessage = errorCode.getErrorMessageId()
-                                + errorCode.getFormattedErrorMessage(asOfTime.toString(),
-                                                                     asOfTimeParameterName,
-                                                                     methodName,
-                                                                     repositoryName);
-
-            throw new InvalidParameterException(errorCode.getHTTPErrorCode(),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                errorMessage,
-                                                errorCode.getSystemAction(),
-                                                errorCode.getUserAction());
         }
 
 
@@ -610,6 +559,22 @@ public class InMemoryOMRSMetadataStore
     }
 
     /**
+     * Remove a reference entity from the active store and add it to the history store.
+     *
+     * @param guid - entity to remove
+     */
+    protected void removeReferenceEntityFromStore(String     guid)
+    {
+        EntityDetail entity = entityStore.remove(guid);
+
+        if (entity != null)
+        {
+            entityHistoryStore.add(0, entity);
+        }
+    }
+
+
+    /**
      * Remove an entity from the active store and add it to the history store.
      *
      * @param guid - entity proxy to remove
@@ -629,6 +594,22 @@ public class InMemoryOMRSMetadataStore
     {
         relationshipStore.remove(relationship.getGUID());
         relationshipHistoryStore.add(0, relationship);
+    }
+
+
+    /**
+     * Remove a reference relationship from the active store and add it to the history store.
+     *
+     * @param guid - relationship to remove
+     */
+    protected void removeReferenceRelationshipFromStore(String     guid)
+    {
+        Relationship  relationship = relationshipStore.remove(guid);
+
+        if (relationship != null)
+        {
+            relationshipHistoryStore.add(0, relationship);
+        }
     }
 
 }

@@ -215,7 +215,7 @@ public class OMRSInstanceEvent extends OMRSEvent
      * @param targetMetadataCollectionId - metadata collection id of other repository with the conflicting instance
      * @param targetTypeDefSummary - details of the target instance's TypeDef
      * @param targetInstanceGUID - unique identifier for the source instance
-     *
+     * @param otherTypeDefSummary - details of the other TypeDef
      */
     public OMRSInstanceEvent(OMRSInstanceEventErrorCode errorCode,
                              String                     errorMessage,
@@ -371,7 +371,7 @@ public class OMRSInstanceEvent extends OMRSEvent
 
 
     /**
-     * Return the original versionName for this instance's TypeDef.  This is used if the type for the
+     * Return the original version for this instance's TypeDef.  This is used if the type for the
      * instance has been changed to resolve a conflict or to allow a change in the TypeDef Gallery.
      *
      * @return details of the original TypeDef

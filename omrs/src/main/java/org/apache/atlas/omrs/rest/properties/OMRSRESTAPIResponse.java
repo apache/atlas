@@ -33,7 +33,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown=true)
 public abstract class OMRSRESTAPIResponse
 {
-    protected int       relatedHTTPCode = 0;
+    protected int       relatedHTTPCode = 200;
     protected String    exceptionClassName = null;
     protected String    exceptionErrorMessage = null;
     protected String    exceptionSystemAction = null;

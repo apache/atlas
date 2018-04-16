@@ -19,6 +19,8 @@ package org.apache.atlas.omrs.topicconnectors;
 
 import org.apache.atlas.ocf.ConnectorBase;
 import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
+import org.apache.atlas.ocf.properties.Connection;
+import org.apache.atlas.ocf.properties.Endpoint;
 import org.apache.atlas.omrs.auditlog.OMRSAuditCode;
 import org.apache.atlas.omrs.auditlog.OMRSAuditLog;
 import org.apache.atlas.omrs.auditlog.OMRSAuditingComponent;
@@ -27,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -45,12 +48,21 @@ import java.util.ArrayList;
  *     </li>
  * </ul>
  */
-public abstract class OMRSTopicConnector extends ConnectorBase implements OMRSTopic
+public abstract class OMRSTopicConnector extends ConnectorBase implements OMRSTopic, Runnable
 {
     ArrayList<OMRSTopicListener> topicListeners     = new  ArrayList<>();
 
     private static final Logger       log      = LoggerFactory.getLogger(OMRSTopicConnector.class);
     private static final OMRSAuditLog auditLog = new OMRSAuditLog(OMRSAuditingComponent.OMRS_TOPIC_CONNECTOR);
+
+    private static final String       defaultThreadName = "OMRSTopicListener";
+    private static final String       defaultTopicName  = "OMRSTopic";
+
+    private volatile boolean keepRunning = false;
+
+    private String   listenerThreadName = defaultThreadName;
+    private String   topicName = defaultTopicName;
+    private int      sleepTime = 100;
 
     /**
      * Simple constructor
@@ -58,6 +70,68 @@ public abstract class OMRSTopicConnector extends ConnectorBase implements OMRSTo
     public OMRSTopicConnector()
     {
         super();
+    }
+
+
+    /**
+     * Return the name of the topic for this connector.
+     *
+     * @return String topic name.
+     */
+    public String getTopicName()
+    {
+        return topicName;
+    }
+
+    /**
+     * This is the method called by the listener thread when it starts.
+     */
+    public void run()
+    {
+        OMRSAuditCode auditCode = OMRSAuditCode.OMRS_TOPIC_LISTENER_START;
+        auditLog.logRecord(listenerThreadName,
+                           auditCode.getLogMessageId(),
+                           auditCode.getSeverity(),
+                           auditCode.getFormattedLogMessage(topicName),
+                           this.getConnection().toString(),
+                           auditCode.getSystemAction(),
+                           auditCode.getUserAction());
+
+        while (keepRunning)
+        {
+            try
+            {
+                List<OMRSEventV1> receivedEvents = this.checkForEvents();
+
+                if (receivedEvents != null)
+                {
+                    for (OMRSEventV1  event : receivedEvents)
+                    {
+                        if (event != null)
+                        {
+                            this.distributeEvent(event);
+                        }
+                    }
+                }
+                else
+                {
+                    Thread.sleep(sleepTime);
+                }
+            }
+            catch (InterruptedException   wakeUp)
+            {
+
+            }
+        }
+
+        auditCode = OMRSAuditCode.OMRS_TOPIC_LISTENER_SHUTDOWN;
+        auditLog.logRecord(listenerThreadName,
+                           auditCode.getLogMessageId(),
+                           auditCode.getSeverity(),
+                           auditCode.getFormattedLogMessage(topicName),
+                           this.getConnection().toString(),
+                           auditCode.getSystemAction(),
+                           auditCode.getUserAction());
     }
 
 
@@ -76,7 +150,7 @@ public abstract class OMRSTopicConnector extends ConnectorBase implements OMRSTo
             }
             catch (Throwable  error)
             {
-                final String   actionDescription = "Initialize Repository Operational Services";
+                final String   actionDescription = "distributeEvent";
 
                 OMRSAuditCode auditCode = OMRSAuditCode.EVENT_PROCESSING_ERROR;
                 auditLog.logRecord(actionDescription,
@@ -88,6 +162,17 @@ public abstract class OMRSTopicConnector extends ConnectorBase implements OMRSTo
                                    auditCode.getUserAction());
             }
         }
+    }
+
+
+    /**
+     * Look to see if there is one of more new events to process.
+     *
+     * @return a list of received events or null
+     */
+    protected List<OMRSEventV1> checkForEvents()
+    {
+        return null;
     }
 
 
@@ -113,6 +198,22 @@ public abstract class OMRSTopicConnector extends ConnectorBase implements OMRSTo
     public void start() throws ConnectorCheckedException
     {
         super.start();
+
+        keepRunning = true;
+
+        if (super.connection != null)
+        {
+            Endpoint endpoint = super.connection.getEndpoint();
+
+            if (endpoint != null)
+            {
+                topicName = endpoint.getAddress();
+                listenerThreadName = defaultThreadName + ": " + topicName;
+            }
+        }
+
+        Thread listenerThread = new Thread(this, listenerThreadName);
+        listenerThread.start();
     }
 
 
@@ -124,5 +225,7 @@ public abstract class OMRSTopicConnector extends ConnectorBase implements OMRSTo
     public  void disconnect() throws ConnectorCheckedException
     {
         super.disconnect();
+
+        keepRunning = false;
     }
 }

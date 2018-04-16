@@ -40,7 +40,7 @@ public class CohortMembership implements Serializable
     private static final long serialVersionUID = 1L;
 
     private MemberRegistration            localRegistration   = null;
-    private ArrayList<MemberRegistration> remoteRegistrations = null;
+    private List<MemberRegistration>      remoteRegistrations = null;
 
     /**
      * Default constructor

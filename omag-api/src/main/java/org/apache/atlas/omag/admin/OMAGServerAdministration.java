@@ -325,6 +325,8 @@ public interface OMAGServerAdministration
      *
      * @param userId - user that is issuing the request
      * @param serverName - local server name
+     * @throws OMAGNotAuthorizedException - the supplied userId is not authorized to issue this command.
+     * @throws OMAGInvalidParameterException - the server name is invalid
      * @throws OMAGConfigurationErrorException - there is a problem using the supplied configuration
      */
     void initialize (String        userId,

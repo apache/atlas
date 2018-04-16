@@ -19,7 +19,6 @@ package org.apache.atlas.omrs.metadatacollection.repositoryconnector;
 
 import org.apache.atlas.ocf.ConnectorBase;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
-import org.apache.atlas.omrs.ffdc.exception.OMRSLogicErrorException;
 import org.apache.atlas.omrs.ffdc.exception.RepositoryErrorException;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
@@ -34,6 +33,7 @@ public abstract class OMRSRepositoryConnector extends ConnectorBase implements O
 {
     protected OMRSRepositoryHelper    repositoryHelper     = null;
     protected OMRSRepositoryValidator repositoryValidator  = null;
+    protected String                  repositoryName       = null;
     protected String                  serverName           = null;
     protected String                  serverType           = null;
     protected String                  organizationName     = null;
@@ -54,11 +54,22 @@ public abstract class OMRSRepositoryConnector extends ConnectorBase implements O
     /**
      * Set up a repository helper object for the repository connector to use.
      *
-     * @param repositoryHelper - helper object for building TypeDefs and metadata instances.
+     * @param repositoryHelper - helper object for building and querying TypeDefs and metadata instances.
      */
     public void setRepositoryHelper(OMRSRepositoryHelper repositoryHelper)
     {
         this.repositoryHelper = repositoryHelper;
+    }
+
+
+    /**
+     * Return the repository helper for this connector.
+     *
+     * @return helper object for building and querying TypeDefs and metadata instances.
+     */
+    public OMRSRepositoryHelper getRepositoryHelper()
+    {
+        return repositoryHelper;
     }
 
 
@@ -74,6 +85,47 @@ public abstract class OMRSRepositoryConnector extends ConnectorBase implements O
 
 
     /**
+     * Return the repository validator for this connector.
+     *
+     * @return validator object to check the validity of TypeDefs and metadata instances.
+     */
+    public OMRSRepositoryValidator getRepositoryValidator()
+    {
+        return repositoryValidator;
+    }
+
+
+    /**
+     * Return the name of the repository where the metadata collection resides.
+     *
+     * @return String name
+     */
+    public String  getRepositoryName()
+    {
+        return this.repositoryName;
+    }
+
+
+    /**
+     * Set up the name of the repository where the metadata collection resides.
+     *
+     * @param repositoryName - String name
+     */
+    public void  setRepositoryName(String      repositoryName)
+    {
+        this.repositoryName = repositoryName;
+    }
+
+
+    /**
+     * Return the name of the server where the metadata collection resides.
+     *
+     * @return String name
+     */
+    public String getServerName() { return serverName; }
+
+
+    /**
      * Set up the name of the server where the metadata collection resides.
      *
      * @param serverName - String name
@@ -82,6 +134,15 @@ public abstract class OMRSRepositoryConnector extends ConnectorBase implements O
     {
         this.serverName = serverName;
     }
+
+
+    /**
+     * Return the descriptive string describing the type of the server.  This might be the
+     * name of the product, or similar identifier.
+     *
+     * @return String name
+     */
+    public String getServerType() { return serverType; }
 
 
     /**
@@ -97,13 +158,32 @@ public abstract class OMRSRepositoryConnector extends ConnectorBase implements O
 
 
     /**
-     * Set up the name of the organization that runs/owns the server.
+     * Return the name of the organization that runs/owns the server used to access the repository.
+     *
+     * @return String name
+     */
+    public String getOrganizationName() { return organizationName; }
+
+
+    /**
+     * Set up the name of the organization that runs/owns the server used to access the repository.
      *
      * @param organizationName - String organization name
      */
     public void setOrganizationName(String organizationName)
     {
         this.organizationName = organizationName;
+    }
+
+
+    /**
+     * Return the unique Id for this metadata collection.
+     *
+     * @return String unique Id
+     */
+    public String getMetadataCollectionId()
+    {
+        return this.metadataCollectionId;
     }
 
 
@@ -115,6 +195,17 @@ public abstract class OMRSRepositoryConnector extends ConnectorBase implements O
     public void setMetadataCollectionId(String         metadataCollectionId)
     {
         this.metadataCollectionId = metadataCollectionId;
+    }
+
+
+    /**
+     * Return the maximum PageSize
+     *
+     * @return maximum number of elements that can be retrieved on a request.
+     */
+    public int getMaxPageSize()
+    {
+        return this.maxPageSize;
     }
 
 
@@ -132,6 +223,7 @@ public abstract class OMRSRepositoryConnector extends ConnectorBase implements O
     /**
      * Throw a RepositoryErrorException if the connector is not active.
      *
+     * @param methodName - name of calling method
      * @throws RepositoryErrorException repository connector has not started or has been disconnected.
      */
     public void validateRepositoryIsActive(String  methodName) throws RepositoryErrorException
@@ -157,8 +249,9 @@ public abstract class OMRSRepositoryConnector extends ConnectorBase implements O
      * a metadata repository.
      *
      * @return OMRSMetadataCollection - metadata information retrieved from the metadata repository.
+     ** @throws RepositoryErrorException - no metadata collection
      */
-    public OMRSMetadataCollection getMetadataCollection()
+    public OMRSMetadataCollection getMetadataCollection() throws RepositoryErrorException
     {
         if (metadataCollection == null)
         {
@@ -168,12 +261,12 @@ public abstract class OMRSRepositoryConnector extends ConnectorBase implements O
             String        errorMessage = errorCode.getErrorMessageId()
                                        + errorCode.getFormattedErrorMessage(serverName);
 
-            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
-                                              this.getClass().getName(),
-                                              methodName,
-                                              errorMessage,
-                                              errorCode.getSystemAction(),
-                                              errorCode.getUserAction());
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
         }
 
         return metadataCollection;

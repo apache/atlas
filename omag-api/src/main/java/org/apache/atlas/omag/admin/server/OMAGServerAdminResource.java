@@ -29,8 +29,8 @@ import org.apache.atlas.omag.admin.OMAGServiceMode;
 import org.apache.atlas.omag.configuration.properties.AccessServiceConfig;
 import org.apache.atlas.omag.configuration.properties.OMAGServerConfig;
 import org.apache.atlas.omag.configuration.registration.AccessServiceAdmin;
-import org.apache.atlas.omag.configuration.registration.AccessServiceDescription;
 import org.apache.atlas.omag.configuration.registration.AccessServiceOperationalStatus;
+import org.apache.atlas.omag.configuration.registration.AccessServiceRegistration;
 import org.apache.atlas.omag.configuration.store.OMAGServerConfigStore;
 import org.apache.atlas.omag.configuration.store.file.FileBasedServerConfigStoreProvider;
 import org.apache.atlas.omag.ffdc.OMAGErrorCode;
@@ -43,6 +43,7 @@ import org.apache.atlas.omrs.admin.properties.CohortConfig;
 import org.apache.atlas.omrs.admin.properties.EnterpriseAccessConfig;
 import org.apache.atlas.omrs.admin.properties.LocalRepositoryConfig;
 import org.apache.atlas.omrs.admin.properties.RepositoryServicesConfig;
+import org.apache.atlas.omrs.topicconnectors.OMRSTopicConnector;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -81,8 +82,11 @@ import java.util.UUID;
 @RequestMapping("/omag/admin/{userId}/{serverName}")
 public class OMAGServerAdminResource implements OMAGServerAdministration
 {
-    private OMAGServerConfigStore   serverConfigStore   = null;
-    private OMRSOperationalServices operationalServices = null;
+    private OMAGServerConfigStore    serverConfigStore      = null;
+    private OMRSOperationalServices  operationalServices    = null;
+    private List<AccessServiceAdmin> accessServiceAdminList = new ArrayList<>();
+
+
 
     /*
      * =============================================================
@@ -260,19 +264,26 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
 
         if (serviceMode == OMAGServiceMode.ENABLED)
         {
+            List<AccessServiceRegistration> accessServiceRegistrationList = OMAGAccessServiceRegistration.getAccessServiceRegistrationList();
+
             /*
              * Set up the available access services.
              */
-            ArrayList<AccessServiceDescription> accessServiceList = AccessServiceDescription.getAccessServiceDescriptionList();
-
-            for (AccessServiceDescription accessServiceDescription : accessServiceList)
+            if (accessServiceRegistrationList != null)
             {
-                if (accessServiceDescription.getAccessServiceOperationalStatus() == AccessServiceOperationalStatus.ENABLED)
+                for (AccessServiceRegistration  registration : accessServiceRegistrationList)
                 {
-                    AccessServiceConfig accessServiceConfig = new AccessServiceConfig(accessServiceDescription);
-                    accessServiceConfigList.add(accessServiceConfig);
+                    if (registration != null)
+                    {
+                        if (registration.getAccessServiceOperationalStatus() == AccessServiceOperationalStatus.ENABLED)
+                        {
+                            AccessServiceConfig accessServiceConfig = new AccessServiceConfig(registration);
+                            accessServiceConfigList.add(accessServiceConfig);
+                        }
+                    }
                 }
             }
+
 
             /*
              * Now set up the enterprise repository services.
@@ -724,7 +735,7 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
                                          @RequestParam LocalRepositoryConfig localRepositoryConfig) throws OMAGNotAuthorizedException,
                                                                                                            OMAGInvalidParameterException
     {
-        final String methodName = "setLocalRepositoryConfig()";
+        final String methodName = "setLocalRepositoryConfig";
 
         validateServerName(serverName, methodName);
         validateUserId(userId, serverName, methodName);
@@ -774,7 +785,7 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
                                           @RequestParam EnterpriseAccessConfig enterpriseAccessConfig) throws OMAGNotAuthorizedException,
                                                                                                               OMAGInvalidParameterException
     {
-        final String methodName = "setEnterpriseAccessConfig()";
+        final String methodName = "setEnterpriseAccessConfig";
 
         validateServerName(serverName, methodName);
         validateUserId(userId, serverName, methodName);
@@ -819,7 +830,7 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
                                 @RequestParam CohortConfig cohortConfig) throws OMAGNotAuthorizedException,
                                                                                 OMAGInvalidParameterException
     {
-        final String methodName = "setCohortConfig()";
+        final String methodName = "setCohortConfig";
 
         validateServerName(serverName, methodName);
         validateUserId(userId, serverName, methodName);
@@ -916,7 +927,7 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
                                                     @PathVariable String serverName) throws OMAGNotAuthorizedException,
                                                                                             OMAGInvalidParameterException
     {
-        final String methodName = "getCurrentConfiguration()";
+        final String methodName = "getCurrentConfiguration";
 
         validateServerName(serverName, methodName);
         validateUserId(userId, serverName, methodName);
@@ -943,7 +954,7 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
                                                                    OMAGInvalidParameterException,
                                                                    OMAGConfigurationErrorException
     {
-        final String methodName = "initialize()";
+        final String methodName = "initialize";
 
         validateServerName(serverName, methodName);
         validateUserId(userId, serverName, methodName);
@@ -969,7 +980,7 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
                                                                                 OMAGInvalidParameterException,
                                                                                 OMAGConfigurationErrorException
     {
-        final String methodName = "initialize()";
+        final String methodName = "initialize";
 
         validateServerName(serverName, methodName);
         validateUserId(userId, serverName, methodName);
@@ -1024,14 +1035,8 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
         /*
          * Now initialize the open metadata access services
          */
-        List<AccessServiceConfig> accessServiceConfigList       = configuration.getAccessServicesConfig();
-        EnterpriseAccessConfig    enterpriseAccessConfig        = repositoryServicesConfig.getEnterpriseAccessConfig();
-        Connection                enterpriseOMRSTopicConnection = null;
-
-        if (enterpriseAccessConfig != null)
-        {
-            enterpriseOMRSTopicConnection = enterpriseAccessConfig.getEnterpriseOMRSTopicConnection();
-        }
+        List<AccessServiceConfig> accessServiceConfigList  = configuration.getAccessServicesConfig();
+        OMRSTopicConnector        enterpriseTopicConnector = operationalServices.getEnterpriseOMRSTopicConnector();
 
         if (accessServiceConfigList != null)
         {
@@ -1047,7 +1052,15 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
                         {
                             AccessServiceAdmin   accessServiceAdmin = (AccessServiceAdmin)Class.forName(accessServiceAdminClassName).newInstance();
 
-                            accessServiceAdmin.initialize(accessServiceConfig, enterpriseOMRSTopicConnection);
+                            accessServiceAdmin.initialize(accessServiceConfig,
+                                                          enterpriseTopicConnector,
+                                                          operationalServices.getEnterpriseOMRSRepositoryConnector(accessServiceConfig.getAccessServiceName()),
+                                                          operationalServices.getAuditLog(accessServiceConfig.getAccessServiceId(),
+                                                                                          accessServiceConfig.getAccessServiceName(),
+                                                                                          accessServiceConfig.getAccessServiceDescription(),
+                                                                                          accessServiceConfig.getAccessServiceWiki()),
+                                                          "OMASUser");
+                            accessServiceAdminList.add(accessServiceAdmin);
                         }
                         catch (Throwable  error)
                         {
@@ -1082,6 +1095,27 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
                 }
             }
         }
+
+        if (enterpriseTopicConnector != null)
+        {
+            try
+            {
+                enterpriseTopicConnector.start();
+            }
+            catch (Throwable  error)
+            {
+                OMAGErrorCode errorCode    = OMAGErrorCode.ENTERPRISE_TOPIC_START_FAILED;
+                String        errorMessage = errorCode.getErrorMessageId()
+                                           + errorCode.getFormattedErrorMessage(serverName, error.getMessage());
+
+                throw new OMAGConfigurationErrorException(errorCode.getHTTPErrorCode(),
+                                                          this.getClass().getName(),
+                                                          methodName,
+                                                          errorMessage,
+                                                          errorCode.getSystemAction(),
+                                                          errorCode.getUserAction());
+            }
+        }
     }
 
 
@@ -1101,11 +1135,28 @@ public class OMAGServerAdminResource implements OMAGServerAdministration
                           @RequestParam boolean permanent) throws OMAGNotAuthorizedException,
                                                                   OMAGInvalidParameterException
     {
-        final String methodName = "terminate()";
+        final String methodName = "terminate";
 
         validateServerName(serverName, methodName);
         validateUserId(userId, serverName, methodName);
 
+        /*
+         * Shutdown the access services
+         */
+        if (accessServiceAdminList != null)
+        {
+            for (AccessServiceAdmin  accessServiceAdmin : accessServiceAdminList)
+            {
+                if (accessServiceAdmin != null)
+                {
+                    accessServiceAdmin.shutdown();
+                }
+            }
+        }
+
+        /*
+         * Terminate the OMRS
+         */
         if (operationalServices != null)
         {
             operationalServices.disconnect(permanent);

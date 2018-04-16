@@ -26,7 +26,9 @@ import org.apache.atlas.omrs.metadatacollection.properties.MatchCriteria;
 import org.apache.atlas.omrs.metadatacollection.properties.SequencingOrder;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.*;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.*;
+import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnector;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Date;
@@ -66,41 +68,65 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
     /*
      * Private variables for a metadata collection instance
      */
-    private EnterpriseOMRSRepositoryConnector parentConnector;
-    private String                            enterpriseMetadataCollectionId;
-    private String                            enterpriseMetadataCollectionName;
-    private OMRSRepositoryValidator           repositoryValidator;
-    private OMRSRepositoryHelper              repositoryHelper;
+    private EnterpriseOMRSRepositoryConnector enterpriseParentConnector;
 
 
     /**
-     * Default constructor.
+     * Constructor ensures the metadata collection is linked to its connector and knows its metadata collection Id.
      *
-     * @param parentConnector - connector that this metadata collection supports.  The connector has the information
+     * @param enterpriseParentConnector - connector that this metadata collection supports.  The connector has the information
      *                        to call the metadata repository.
-     * @param enterpriseMetadataCollectionId - unique identifier for the metadata collection.
-     * @param enterpriseMetadataCollectionName - name of the metadata collection - used for messages.
+     * @param repositoryName - name of the repository - used for logging.
+     * @param repositoryHelper - class used to build type definitions and instances.
+     * @param repositoryValidator - class used to validate type definitions and instances.
+     * @param metadataCollectionId - unique Identifier of the metadata collection Id.
      */
-    public EnterpriseOMRSMetadataCollection(EnterpriseOMRSRepositoryConnector parentConnector,
+    public EnterpriseOMRSMetadataCollection(EnterpriseOMRSRepositoryConnector enterpriseParentConnector,
+                                            String                            repositoryName,
                                             OMRSRepositoryHelper              repositoryHelper,
                                             OMRSRepositoryValidator           repositoryValidator,
-                                            String                            enterpriseMetadataCollectionId,
-                                            String                            enterpriseMetadataCollectionName)
+                                            String                            metadataCollectionId)
     {
         /*
-         * The metadata collection Id is the unique Id for the metadata collection.  It is managed by the super class.
+         * The metadata collection Id is the unique identifier for the metadata collection.  It is managed by the super class.
          */
-        super(enterpriseMetadataCollectionId);
-        this.enterpriseMetadataCollectionId = enterpriseMetadataCollectionId;
-        this.enterpriseMetadataCollectionName = enterpriseMetadataCollectionName;
+        super(enterpriseParentConnector, repositoryName, metadataCollectionId, repositoryHelper, repositoryValidator);
 
         /*
-         * Save parentConnector and associated helper and validator since this has the connection information and
+         * Save enterpriseParentConnector since this has the connection information and
          * access to the metadata about the open metadata repository cohort.
          */
-        this.parentConnector = parentConnector;
-        this.repositoryHelper = repositoryHelper;
-        this.repositoryValidator = repositoryValidator;
+        this.enterpriseParentConnector = enterpriseParentConnector;
+
+    }
+
+
+    /* ======================================================================
+     * Group 1: Confirm the identity of the metadata repository being called.
+     */
+
+    /**
+     * Returns the identifier of the metadata repository.  This is the identifier used to register the
+     * metadata repository with the metadata repository cohort.  It is also the identifier used to
+     * identify the home repository of a metadata instance.
+     *
+     * @return String - metadata collection id.
+     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository.
+     */
+    public String      getMetadataCollectionId() throws RepositoryErrorException
+    {
+        final String methodName = "getMetadataCollectionId";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        /*
+         * Perform operation
+         */
+        return super.metadataCollectionId;
     }
 
 
@@ -122,167 +148,93 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
     public TypeDefGallery getAllTypes(String userId) throws RepositoryErrorException,
                                                             UserNotAuthorizedException
     {
-        final String                       methodName = "getTypeDefs()";
+        final String                       methodName = "getAllTypes";
 
         /*
-         * The list of metadata collections are retrieved for each request to ensure that any changes in
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
          * the shape of the cohort are reflected immediately.
          */
-        ArrayList<OMRSMetadataCollection>  metadataCollections = parentConnector.getMetadataCollections();
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
 
-        if (metadataCollections == null)
-        {
-            /*
-             * No repositories available
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_REPOSITORIES;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
-        }
 
         /*
          * Ready to process the request.  Search results need to come from all members of the cohort.
          * They need to be combined and then duplicates removed to create the final list of results.
-         * Some repositories may produce exceptions.  These exceptions are saved and may be returned if
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
          * there are no results from any repository.
          */
-        List<TypeDef>               combinedTypeDefResults          = new ArrayList<>();
-        List<AttributeTypeDef>      combinedAttributeTypeDefResults = new ArrayList<>();
+        HashMap<String, TypeDef>               combinedTypeDefResults          = new HashMap<>();
+        HashMap<String, AttributeTypeDef>      combinedAttributeTypeDefResults = new HashMap<>();
+
         UserNotAuthorizedException  userNotAuthorizedException      = null;
         RepositoryErrorException    repositoryErrorException        = null;
-        RuntimeException            anotherException                = null;
+        Throwable                   anotherException                = null;
 
         /*
          * Loop through the metadata collections extracting the typedefs from each repository.
          */
-        for (OMRSMetadataCollection metadataCollection : metadataCollections)
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            if (metadataCollection == null)
+            if (cohortConnector != null)
             {
-                /*
-                 * A problem in the set up of the metadata collection list.  Repository connectors implemented
-                 * with no metadata collection are tested for in the OMRSEnterpriseConnectorManager so something
-                 * else has gone wrong.
-                 */
-                OMRSErrorCode errorCode = OMRSErrorCode.NULL_ENTERPRISE_METADATA_COLLECTION;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
 
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
-            }
+                validateMetadataCollection(metadataCollection, methodName);
 
-            /*
-             * Process the retrieved metadata collection
-             */
-            try
-            {
-                TypeDefGallery     results = metadataCollection.getAllTypes(userId);
-
-                /*
-                 * Step through the list of returned TypeDefs and consolidate.
-                 */
-                if (results != null)
+                try
                 {
-                    List<TypeDef>           typeDefResults     = results.getTypeDefs();
-                    List<AttributeTypeDef>  attributeResults   = results.getAttributeTypeDefs();
+                    /*
+                     * Issue the request
+                     */
+                    TypeDefGallery     results = metadataCollection.getAllTypes(userId);
 
-                    if (typeDefResults != null)
+                    /*
+                     * Step through the list of returned TypeDefs and consolidate.
+                     */
+                    if (results != null)
                     {
-                        combinedTypeDefResults.addAll(typeDefResults);
-                    }
-
-                    if (attributeResults != null)
-                    {
-                        combinedAttributeTypeDefResults.addAll(attributeResults);
+                        combinedAttributeTypeDefResults = this.addUniqueAttributeTypeDefs(combinedAttributeTypeDefResults,
+                                                                                          results.getAttributeTypeDefs(),
+                                                                                          cohortConnector.getServerName(),
+                                                                                          cohortConnector.getMetadataCollectionId(),
+                                                                                          methodName);
+                        combinedTypeDefResults = this.addUniqueTypeDefs(combinedTypeDefResults,
+                                                                        results.getTypeDefs(),
+                                                                        cohortConnector.getServerName(),
+                                                                        cohortConnector.getMetadataCollectionId(),
+                                                                        methodName);
                     }
                 }
-            }
-            catch (RepositoryErrorException  error)
-            {
-                repositoryErrorException = error;
-            }
-            catch (UserNotAuthorizedException  error)
-            {
-                userNotAuthorizedException = error;
-            }
-            catch (RuntimeException   error)
-            {
-                anotherException = error;
-            }
-        }
-
-        int  resultCount = (combinedTypeDefResults.size() + combinedAttributeTypeDefResults.size());
-
-        /*
-         * Return any results, or exception if nothing is found.
-         */
-        if (resultCount > 0)
-        {
-            TypeDefGallery combinedResults = new TypeDefGallery();
-
-            combinedResults.setAttributeTypeDefs(combinedAttributeTypeDefResults);
-            combinedResults.setTypeDefs(combinedTypeDefResults);
-
-            if (repositoryValidator.validateEnterpriseTypeDefs(enterpriseMetadataCollectionName,
-                                                               combinedTypeDefResults))
-            {
-                return combinedResults;
-            }
-            else
-            {
-                OMRSErrorCode errorCode = OMRSErrorCode.CONFLICTING_ENTERPRISE_TYPEDEFS;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
             }
         }
-        else
-        {
-            /*
-             * A system with no defined TypeDefs is unbelievable.  Certainly not very useful :)
-             * This probably means that exceptions were thrown.  Re-throw any cached exceptions
-             * or, if no exceptions occurred then throw repository error because something is wrong.
-             */
-            if (userNotAuthorizedException != null)
-            {
-                throw userNotAuthorizedException;
-            }
-            else if (repositoryErrorException != null)
-            {
-                throw repositoryErrorException;
-            }
-            else if (anotherException != null)
-            {
-                throw anotherException;
-            }
-            else
-            {
-                OMRSErrorCode errorCode = OMRSErrorCode.NO_TYPEDEFS_DEFINED;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
-            }
-        }
+        return validatedTypeDefGalleryResults(repositoryName,
+                                              combinedTypeDefResults,
+                                              combinedAttributeTypeDefResults,
+                                              userNotAuthorizedException,
+                                              repositoryErrorException,
+                                              anotherException,
+                                              methodName);
     }
 
 
@@ -303,183 +255,95 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                 RepositoryErrorException,
                                                                 UserNotAuthorizedException
     {
-        final String                       methodName = "findTypeDefsByName()";
+        final String   methodName        = "findTypesByName";
+        final String   nameParameterName = "name";
 
         /*
-         * Validate that there is a name supplied.
+         * Validate parameters
          */
-        if (name == null)
-        {
-            /*
-             * No Name supplied so can not perform the search
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_TYPEDEF_NAME;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-            throw new InvalidParameterException(errorCode.getHTTPErrorCode(),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                errorMessage,
-                                                errorCode.getSystemAction(),
-                                                errorCode.getUserAction());
-        }
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeName(repositoryName, nameParameterName, name, methodName);
 
         /*
-         * The list of metadata collections are retrieved for each request to ensure that any changes in
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
          * the shape of the cohort are reflected immediately.
          */
-        List<OMRSMetadataCollection>  metadataCollections = parentConnector.getMetadataCollections();
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
 
-        if (metadataCollections == null)
-        {
-            /*
-             * No repositories available
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_REPOSITORIES;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
-        }
 
         /*
          * Ready to process the request.  Search results need to come from all members of the cohort.
          * They need to be combined and then duplicates removed to create the final list of results.
-         * Some repositories may produce exceptions.  These exceptions are saved and may be returned if
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
          * there are no results from any repository.
          */
-        List<TypeDef>               combinedTypeDefResults          = new ArrayList<>();
-        List<AttributeTypeDef>      combinedAttributeTypeDefResults = new ArrayList<>();
-        InvalidParameterException   invalidParameterException       = null;
+        HashMap<String, TypeDef>               combinedTypeDefResults          = new HashMap<>();
+        HashMap<String, AttributeTypeDef>      combinedAttributeTypeDefResults = new HashMap<>();
+
         UserNotAuthorizedException  userNotAuthorizedException      = null;
         RepositoryErrorException    repositoryErrorException        = null;
-        RuntimeException            anotherException                = null;
+        Throwable                   anotherException                = null;
 
         /*
          * Loop through the metadata collections extracting the typedefs from each repository.
          */
-        for (OMRSMetadataCollection metadataCollection : metadataCollections)
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            if (metadataCollection == null)
+            if (cohortConnector != null)
             {
-                /*
-                 * A problem in the set up of the metadata collection list.  Repository connectors implemented
-                 * with no metadata collection are tested for in the OMRSEnterpriseConnectorManager so something
-                 * else has gone wrong.
-                 */
-                OMRSErrorCode errorCode = OMRSErrorCode.NULL_ENTERPRISE_METADATA_COLLECTION;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
 
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
-            }
+                validateMetadataCollection(metadataCollection, methodName);
 
-            /*
-             * Process the retrieved metadata collection
-             */
-            try
-            {
-                TypeDefGallery     results              = metadataCollection.findTypesByName(userId, name);
-                String             metadataCollectionId = metadataCollection.getMetadataCollectionId();
-
-                /*
-                 * Combine the results from the metadata collection with those elements previously retrieved.
-                 */
-                if (results != null)
+                try
                 {
-                    List<TypeDef>           typeDefResults     = results.getTypeDefs();
-                    List<AttributeTypeDef>  attributeResults   = results.getAttributeTypeDefs();
+                    /*
+                     * Issue the request
+                     */
+                    TypeDefGallery     results = metadataCollection.findTypesByName(userId, name);
 
-                    if (typeDefResults != null)
+                    /*
+                     * Step through the list of returned TypeDefs and consolidate.
+                     */
+                    if (results != null)
                     {
-                        combinedTypeDefResults.addAll(typeDefResults);
-                    }
-
-                    if (attributeResults != null)
-                    {
-                        combinedAttributeTypeDefResults.addAll(attributeResults);
+                        combinedAttributeTypeDefResults = this.addUniqueAttributeTypeDefs(combinedAttributeTypeDefResults,
+                                                                                          results.getAttributeTypeDefs(),
+                                                                                          cohortConnector.getServerName(),
+                                                                                          cohortConnector.getMetadataCollectionId(),
+                                                                                          methodName);
+                        combinedTypeDefResults = this.addUniqueTypeDefs(combinedTypeDefResults,
+                                                                        results.getTypeDefs(),
+                                                                        cohortConnector.getServerName(),
+                                                                        cohortConnector.getMetadataCollectionId(),
+                                                                        methodName);
                     }
                 }
-            }
-            catch (InvalidParameterException  error)
-            {
-                invalidParameterException = error;
-            }
-            catch (RepositoryErrorException  error)
-            {
-                repositoryErrorException = error;
-            }
-            catch (UserNotAuthorizedException  error)
-            {
-                userNotAuthorizedException = error;
-            }
-            catch (RuntimeException   error)
-            {
-                anotherException = error;
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
             }
         }
 
-        int  resultCount = (combinedTypeDefResults.size() + combinedAttributeTypeDefResults.size());
-
-        /*
-         * Return any results, or exception if nothing is found.
-         */
-        if (resultCount > 0)
-        {
-            TypeDefGallery combinedResults = new TypeDefGallery();
-
-            combinedResults.setAttributeTypeDefs(combinedAttributeTypeDefResults);
-            combinedResults.setTypeDefs(combinedTypeDefResults);
-
-            if (repositoryValidator.validateEnterpriseTypeDefs(enterpriseMetadataCollectionName,
-                                                               combinedTypeDefResults))
-            {
-                return combinedResults;
-            }
-            else
-            {
-                OMRSErrorCode errorCode = OMRSErrorCode.CONFLICTING_ENTERPRISE_TYPEDEFS;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
-            }
-        }
-        else
-        {
-            if (userNotAuthorizedException != null)
-            {
-                throw userNotAuthorizedException;
-            }
-            else if (repositoryErrorException != null)
-            {
-                throw repositoryErrorException;
-            }
-            else if (invalidParameterException != null)
-            {
-                throw invalidParameterException;
-            }
-            else if (anotherException != null)
-            {
-                throw anotherException;
-            }
-            else
-            {
-                return null;
-            }
-        }
+        return validatedTypeDefGalleryResults(repositoryName,
+                                              combinedTypeDefResults,
+                                              combinedAttributeTypeDefResults,
+                                              userNotAuthorizedException,
+                                              repositoryErrorException,
+                                              anotherException,
+                                              methodName);
     }
 
 
@@ -487,176 +351,94 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * Returns all of the TypeDefs for a specific category.
      *
      * @param userId - unique identifier for requesting user.
-     * @param typeDefCategory - enum value for the category of TypeDef to return.
+     * @param category - enum value for the category of TypeDef to return.
      * @return TypeDefs list.
      * @throws InvalidParameterException - the TypeDefCategory is null.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
     public List<TypeDef> findTypeDefsByCategory(String          userId,
-                                                TypeDefCategory typeDefCategory) throws InvalidParameterException,
-                                                                                        RepositoryErrorException,
-                                                                                        UserNotAuthorizedException
+                                                TypeDefCategory category) throws InvalidParameterException,
+                                                                                 RepositoryErrorException,
+                                                                                 UserNotAuthorizedException
     {
-        final String                       methodName = "findTypeDefsByCategory()";
-
-        if (typeDefCategory == null)
-        {
-            /*
-             * No category supplied so can not perform the search
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_TYPEDEF_CATEGORY;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new InvalidParameterException(errorCode.getHTTPErrorCode(),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                errorMessage,
-                                                errorCode.getSystemAction(),
-                                                errorCode.getUserAction());
-        }
+        final String methodName            = "findTypeDefsByCategory";
+        final String categoryParameterName = "category";
 
         /*
-         * The list of metadata collections are retrieved for each request to ensure that any changes in
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefCategory(repositoryName, categoryParameterName, category, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
          * the shape of the cohort are reflected immediately.
          */
-        List<OMRSMetadataCollection>  metadataCollections = parentConnector.getMetadataCollections();
-
-        if (metadataCollections == null)
-        {
-            /*
-             * No repositories available
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_REPOSITORIES;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
-        }
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
 
         /*
          * Ready to process the request.  Search results need to come from all members of the cohort.
          * They need to be combined and then duplicates removed to create the final list of results.
-         * Some repositories may produce exceptions.  These exceptions are saved and may be returned if
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
          * there are no results from any repository.
          */
-        List<TypeDef>              combinedResults            = new ArrayList<>();
-        InvalidParameterException  invalidParameterException  = null;
+        HashMap<String, TypeDef>   combinedResults            = new HashMap<>();
         UserNotAuthorizedException userNotAuthorizedException = null;
         RepositoryErrorException   repositoryErrorException   = null;
-        RuntimeException           anotherException           = null;
+        Throwable                  anotherException           = null;
 
         /*
          * Loop through the metadata collections extracting the typedefs from each repository.
          */
-        for (OMRSMetadataCollection metadataCollection : metadataCollections)
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            if (metadataCollection == null)
+            if (cohortConnector != null)
             {
-                /*
-                 * A problem in the set up of the metadata collection list.  Repository connectors implemented
-                 * with no metadata collection are tested for in the OMRSEnterpriseConnectorManager so something
-                 * else has gone wrong.
-                 */
-                OMRSErrorCode errorCode = OMRSErrorCode.NULL_ENTERPRISE_METADATA_COLLECTION;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
 
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
-            }
+                validateMetadataCollection(metadataCollection, methodName);
 
-            /*
-             * Process the retrieved metadata collection
-             */
-            try
-            {
-                List<TypeDef>    results              = metadataCollection.findTypeDefsByCategory(userId, typeDefCategory);
-                String           metadataCollectionId = metadataCollection.getMetadataCollectionId();
-
-                /*
-                 * Step through the list of returned TypeDefs and remove duplicates.
-                 */
-                if (results != null)
+                try
                 {
-                    for (TypeDef returnedTypeDef : results)
-                    {
-                        combinedResults = this.addUniqueTypeDef(combinedResults,
-                                                                returnedTypeDef,
-                                                                metadataCollectionId);
-                    }
+                    /*
+                     * Issue the request
+                     */
+                    List<TypeDef> results  = metadataCollection.findTypeDefsByCategory(userId, category);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueTypeDefs(combinedResults,
+                                                             results,
+                                                             cohortConnector.getServerName(),
+                                                             cohortConnector.getMetadataCollectionId(),
+                                                             methodName);
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
                 }
             }
-            catch (InvalidParameterException  error)
-            {
-                invalidParameterException = error;
-            }
-            catch (RepositoryErrorException  error)
-            {
-                repositoryErrorException = error;
-            }
-            catch (UserNotAuthorizedException  error)
-            {
-                userNotAuthorizedException = error;
-            }
-            catch (RuntimeException   error)
-            {
-                anotherException = error;
-            }
         }
 
-        /*
-         * Return any results, or null if nothing is found.
-         */
-        if (combinedResults.size() > 0)
-        {
-            if (repositoryValidator.validateEnterpriseTypeDefs(enterpriseMetadataCollectionName, combinedResults))
-            {
-                return combinedResults;
-            }
-            else
-            {
-                OMRSErrorCode errorCode = OMRSErrorCode.CONFLICTING_ENTERPRISE_TYPEDEFS;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
-            }
-        }
-        else
-        {
-            if (userNotAuthorizedException != null)
-            {
-                throw userNotAuthorizedException;
-            }
-            else if (repositoryErrorException != null)
-            {
-                throw repositoryErrorException;
-            }
-            else if (invalidParameterException != null)
-            {
-                throw invalidParameterException;
-            }
-            else if (anotherException != null)
-            {
-                throw anotherException;
-            }
-            else
-            {
-                return null;
-            }
-        }
+        return validatedTypeDefListResults(repositoryName,
+                                           combinedResults,
+                                           userNotAuthorizedException,
+                                           repositoryErrorException,
+                                           anotherException,
+                                           methodName);
     }
 
 
@@ -675,7 +457,84 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                                             RepositoryErrorException,
                                                                                                             UserNotAuthorizedException
     {
-        return null;
+        final String methodName            = "findAttributeTypeDefsByCategory";
+        final String categoryParameterName = "category";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateAttributeTypeDefCategory(repositoryName, categoryParameterName, category, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
+         * there are no results from any repository.
+         */
+        HashMap<String, AttributeTypeDef>   combinedResults   = new HashMap<>();
+
+        UserNotAuthorizedException userNotAuthorizedException = null;
+        RepositoryErrorException   repositoryErrorException   = null;
+        Throwable                  anotherException           = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    List<AttributeTypeDef> results  = metadataCollection.findAttributeTypeDefsByCategory(userId, category);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueAttributeTypeDefs(combinedResults,
+                                                                      results,
+                                                                      cohortConnector.getServerName(),
+                                                                      cohortConnector.getMetadataCollectionId(),
+                                                                      methodName);
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        return validatedAttributeTypeDefListResults(repositoryName,
+                                                    combinedResults,
+                                                    userNotAuthorizedException,
+                                                    repositoryErrorException,
+                                                    anotherException,
+                                                    methodName);
     }
 
 
@@ -694,165 +553,83 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                         RepositoryErrorException,
                                                                                         UserNotAuthorizedException
     {
-        final String                       methodName = "findTypeDefsByProperty()";
-
-        if (matchCriteria == null)
-        {
-            /*
-             * No match criteria supplied so can not perform the search
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_MATCH_CRITERIA;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new InvalidParameterException(errorCode.getHTTPErrorCode(),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                errorMessage,
-                                                errorCode.getSystemAction(),
-                                                errorCode.getUserAction());
-        }
+        final String  methodName                 = "findTypeDefsByProperty";
+        final String  matchCriteriaParameterName = "matchCriteria";
 
         /*
-         * The list of metadata collections are retrieved for each request to ensure that any changes in
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateMatchCriteria(repositoryName, matchCriteriaParameterName, matchCriteria, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
          * the shape of the cohort are reflected immediately.
          */
-        List<OMRSMetadataCollection>  metadataCollections = parentConnector.getMetadataCollections();
-
-        if (metadataCollections == null)
-        {
-            /*
-             * No repositories available
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_REPOSITORIES;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
-        }
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
 
         /*
          * Ready to process the request.  Search results need to come from all members of the cohort.
          * They need to be combined and then duplicates removed to create the final list of results.
-         * Some repositories may produce exceptions.  These exceptions are saved and may be returned if
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
          * there are no results from any repository.
          */
-        List<TypeDef>              combinedResults            = new ArrayList<>();
-        InvalidParameterException  invalidParameterException  = null;
+        HashMap<String, TypeDef>   combinedResults            = new HashMap<>();
         UserNotAuthorizedException userNotAuthorizedException = null;
         RepositoryErrorException   repositoryErrorException   = null;
-        RuntimeException           anotherException           = null;
+        Throwable                  anotherException           = null;
 
         /*
          * Loop through the metadata collections extracting the typedefs from each repository.
          */
-        for (OMRSMetadataCollection metadataCollection : metadataCollections)
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            if (metadataCollection == null)
+            if (cohortConnector != null)
             {
-                /*
-                 * A problem in the set up of the metadata collection list.  Repository connectors implemented
-                 * with no metadata collection are tested for in the OMRSEnterpriseConnectorManager so something
-                 * else has gone wrong.
-                 */
-                OMRSErrorCode errorCode = OMRSErrorCode.NULL_ENTERPRISE_METADATA_COLLECTION;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
 
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
-            }
+                validateMetadataCollection(metadataCollection, methodName);
 
-            /*
-             * Process the retrieved metadata collection
-             */
-            try
-            {
-                List<TypeDef>      results              = metadataCollection.findTypeDefsByProperty(userId, matchCriteria);
-                String             metadataCollectionId = metadataCollection.getMetadataCollectionId();
-
-                /*
-                 * Step through the list of returned TypeDefs and remove duplicates.
-                 */
-                if (results != null)
+                try
                 {
-                    for (TypeDef returnedTypeDef : results)
-                    {
-                        combinedResults = this.addUniqueTypeDef(combinedResults,
-                                                                returnedTypeDef,
-                                                                metadataCollectionId);
-                    }
+                    /*
+                     * Issue the request
+                     */
+                    List<TypeDef> results  = metadataCollection.findTypeDefsByProperty(userId, matchCriteria);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueTypeDefs(combinedResults,
+                                                             results,
+                                                             cohortConnector.getServerName(),
+                                                             cohortConnector.getMetadataCollectionId(),
+                                                             methodName);
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
                 }
             }
-            catch (InvalidParameterException  error)
-            {
-                invalidParameterException = error;
-            }
-            catch (RepositoryErrorException  error)
-            {
-                repositoryErrorException = error;
-            }
-            catch (UserNotAuthorizedException  error)
-            {
-                userNotAuthorizedException = error;
-            }
-            catch (RuntimeException   error)
-            {
-                anotherException = error;
-            }
         }
 
-        /*
-         * Return any results, or null if nothing is found.
-         */
-        if (combinedResults.size() > 0)
-        {
-            if (repositoryValidator.validateEnterpriseTypeDefs(enterpriseMetadataCollectionName, combinedResults))
-            {
-                return combinedResults;
-            }
-            else
-            {
-                OMRSErrorCode errorCode = OMRSErrorCode.CONFLICTING_ENTERPRISE_TYPEDEFS;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
-            }
-        }
-        else
-        {
-            if (userNotAuthorizedException != null)
-            {
-                throw userNotAuthorizedException;
-            }
-            else if (repositoryErrorException != null)
-            {
-                throw repositoryErrorException;
-            }
-            else if (invalidParameterException != null)
-            {
-                throw invalidParameterException;
-            }
-            else if (anotherException != null)
-            {
-                throw anotherException;
-            }
-            else
-            {
-                return null;
-            }
-        }
+        return validatedTypeDefListResults(repositoryName,
+                                           combinedResults,
+                                           userNotAuthorizedException,
+                                           repositoryErrorException,
+                                           anotherException,
+                                           methodName);
     }
 
 
@@ -869,34 +646,89 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public List<TypeDef> findTypesByExternalID(String    userId,
+    public  List<TypeDef> findTypesByExternalID(String    userId,
                                                 String    standard,
                                                 String    organization,
                                                 String    identifier) throws InvalidParameterException,
                                                                              RepositoryErrorException,
                                                                              UserNotAuthorizedException
     {
-        final String                       methodName = "findTypeDefsByExternalID()";
+        final String                       methodName = "findTypesByExternalID";
 
-        if ((standard == null) && (organization == null) && (identifier == null))
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateExternalId(repositoryName, standard, organization, identifier, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        HashMap<String, TypeDef>   combinedResults            = new HashMap<>();
+        UserNotAuthorizedException userNotAuthorizedException = null;
+        RepositoryErrorException   repositoryErrorException   = null;
+        Throwable                  anotherException           = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            /*
-             * No external Id properties supplied so can not perform the search
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_EXTERNAL_ID;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
 
-            throw new InvalidParameterException(errorCode.getHTTPErrorCode(),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                errorMessage,
-                                                errorCode.getSystemAction(),
-                                                errorCode.getUserAction());
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    List<TypeDef> results  = metadataCollection.findTypesByExternalID(userId, standard, organization, identifier);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueTypeDefs(combinedResults,
+                                                             results,
+                                                             cohortConnector.getServerName(),
+                                                             cohortConnector.getMetadataCollectionId(),
+                                                             methodName);
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
         }
 
-        // todo
-
-        return null;
+        return validatedTypeDefListResults(repositoryName,
+                                           combinedResults,
+                                           userNotAuthorizedException,
+                                           repositoryErrorException,
+                                           anotherException,
+                                           methodName);
     }
 
 
@@ -916,165 +748,83 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                          RepositoryErrorException,
                                                                          UserNotAuthorizedException
     {
-        final String                       methodName = "searchForTypeDefs()";
-
-        if (searchCriteria == null)
-        {
-            /*
-             * No search criteria supplied so can not perform the search
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_SEARCH_CRITERIA;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new InvalidParameterException(errorCode.getHTTPErrorCode(),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                errorMessage,
-                                                errorCode.getSystemAction(),
-                                                errorCode.getUserAction());
-        }
+        final String methodName                  = "searchForTypeDefs";
+        final String searchCriteriaParameterName = "searchCriteria";
 
         /*
-         * The list of metadata collections are retrieved for each request to ensure that any changes in
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateSearchCriteria(repositoryName, searchCriteriaParameterName, searchCriteria, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
          * the shape of the cohort are reflected immediately.
          */
-        List<OMRSMetadataCollection>  metadataCollections = parentConnector.getMetadataCollections();
-
-        if (metadataCollections == null)
-        {
-            /*
-             * No repositories available
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_REPOSITORIES;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
-        }
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
 
         /*
          * Ready to process the request.  Search results need to come from all members of the cohort.
          * They need to be combined and then duplicates removed to create the final list of results.
-         * Some repositories may produce exceptions.  These exceptions are saved and may be returned if
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
          * there are no results from any repository.
          */
-        List<TypeDef>              combinedResults            = new ArrayList<>();
-        InvalidParameterException  invalidParameterException  = null;
+        HashMap<String, TypeDef>   combinedResults            = new HashMap<>();
         UserNotAuthorizedException userNotAuthorizedException = null;
         RepositoryErrorException   repositoryErrorException   = null;
-        RuntimeException           anotherException           = null;
+        Throwable                  anotherException           = null;
 
         /*
          * Loop through the metadata collections extracting the typedefs from each repository.
          */
-        for (OMRSMetadataCollection metadataCollection : metadataCollections)
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            if (metadataCollection == null)
+            if (cohortConnector != null)
             {
-                /*
-                 * A problem in the set up of the metadata collection list.  Repository connectors implemented
-                 * with no metadata collection are tested for in the OMRSEnterpriseConnectorManager so something
-                 * else has gone wrong.
-                 */
-                OMRSErrorCode errorCode = OMRSErrorCode.NULL_ENTERPRISE_METADATA_COLLECTION;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
 
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
-            }
+                validateMetadataCollection(metadataCollection, methodName);
 
-            /*
-             * Process the retrieved metadata collection
-             */
-            try
-            {
-                List<TypeDef> results              = metadataCollection.searchForTypeDefs(userId, searchCriteria);
-                String        metadataCollectionId = metadataCollection.getMetadataCollectionId();
-
-                /*
-                 * Step through the list of returned TypeDefs and remove duplicates.
-                 */
-                if (results != null)
+                try
                 {
-                    for (TypeDef returnedTypeDef : results)
-                    {
-                        combinedResults = this.addUniqueTypeDef(combinedResults,
-                                                                returnedTypeDef,
-                                                                metadataCollectionId);
-                    }
+                    /*
+                     * Issue the request
+                     */
+                    List<TypeDef> results  = metadataCollection.searchForTypeDefs(userId, searchCriteria);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueTypeDefs(combinedResults,
+                                                             results,
+                                                             cohortConnector.getServerName(),
+                                                             cohortConnector.getMetadataCollectionId(),
+                                                             methodName);
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
                 }
             }
-            catch (InvalidParameterException  error)
-            {
-                invalidParameterException = error;
-            }
-            catch (RepositoryErrorException  error)
-            {
-                repositoryErrorException = error;
-            }
-            catch (UserNotAuthorizedException  error)
-            {
-                userNotAuthorizedException = error;
-            }
-            catch (RuntimeException   error)
-            {
-                anotherException = error;
-            }
         }
 
-        /*
-         * Return any results, or null if nothing is found.
-         */
-        if (combinedResults.size() > 0)
-        {
-            if (repositoryValidator.validateEnterpriseTypeDefs(enterpriseMetadataCollectionName, combinedResults))
-            {
-                return combinedResults;
-            }
-            else
-            {
-                OMRSErrorCode errorCode = OMRSErrorCode.CONFLICTING_ENTERPRISE_TYPEDEFS;
-                String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-                throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                                   this.getClass().getName(),
-                                                   methodName,
-                                                   errorMessage,
-                                                   errorCode.getSystemAction(),
-                                                   errorCode.getUserAction());
-            }
-        }
-        else
-        {
-            if (userNotAuthorizedException != null)
-            {
-                throw userNotAuthorizedException;
-            }
-            else if (repositoryErrorException != null)
-            {
-                throw repositoryErrorException;
-            }
-            else if (invalidParameterException != null)
-            {
-                throw invalidParameterException;
-            }
-            else if (anotherException != null)
-            {
-                throw anotherException;
-            }
-            else
-            {
-                return null;
-            }
-        }
+        return validatedTypeDefListResults(repositoryName,
+                                           combinedResults,
+                                           userNotAuthorizedException,
+                                           repositoryErrorException,
+                                           anotherException,
+                                           methodName);
     }
 
 
@@ -1096,119 +846,78 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                            TypeDefNotKnownException,
                                                            UserNotAuthorizedException
     {
-        final String    methodName = "getTypeDefByGUID()";
-
-        if (guid == null)
-        {
-            /*
-             * No guid supplied so can not perform the search
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_GUID;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new InvalidParameterException(errorCode.getHTTPErrorCode(),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                errorMessage,
-                                                errorCode.getSystemAction(),
-                                                errorCode.getUserAction());
-        }
-
-        List<OMRSMetadataCollection>  metadataCollections = parentConnector.getMetadataCollections();
-
-        if (metadataCollections == null)
-        {
-            /*
-             * No repositories available
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_REPOSITORIES;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
-        }
-
-        TypeDefNotKnownException   typeDefNotKnownException = null;
-        UserNotAuthorizedException userNotAuthorizedException = null;
-        RepositoryErrorException   repositoryErrorException = null;
-        RuntimeException           anotherException = null;
+        final String methodName        = "getTypeDefByGUID";
+        final String guidParameterName = "guid";
 
         /*
-         * Loop through the metadata collections requesting the typedef from each repository.
-         * The first TypeDef retrieved is returned to the caller.
+         * Validate parameters
          */
-        for (OMRSMetadataCollection metadataCollection : metadataCollections)
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        TypeDefNotKnownException   typeDefNotKnownException   = null;
+        UserNotAuthorizedException userNotAuthorizedException = null;
+        RepositoryErrorException   repositoryErrorException   = null;
+        Throwable                  anotherException           = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            if (metadataCollection != null)
+            if (cohortConnector != null)
             {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
                 try
                 {
-                    TypeDef retrievedTypeDef = getTypeDefByGUID(userId, guid);
-
-                    if (retrievedTypeDef != null)
-                    {
-                        return retrievedTypeDef;
-                    }
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    return metadataCollection.getTypeDefByGUID(userId, guid);
                 }
-                catch (TypeDefNotKnownException  error)
+                catch (TypeDefNotKnownException error)
                 {
                     typeDefNotKnownException = error;
-                }
-                catch (UserNotAuthorizedException error)
-                {
-                    userNotAuthorizedException = error;
                 }
                 catch (RepositoryErrorException error)
                 {
                     repositoryErrorException = error;
                 }
-                catch (RuntimeException error)
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
                 {
                     anotherException = error;
                 }
             }
         }
 
-        /*
-         * The TypeDef has not been found. Process the exceptions.
-         */
-        if (typeDefNotKnownException != null)
-        {
-            throw typeDefNotKnownException;
-        }
-        else if (userNotAuthorizedException != null)
-        {
-            throw userNotAuthorizedException;
-        }
-        else if (repositoryErrorException != null)
-        {
-            throw repositoryErrorException;
-        }
-        else if (anotherException != null)
-        {
-            throw anotherException;
-        }
-        else
-        {
-            /*
-             * All of the repositories have returned a null TypeDef so default to TypeDefNotKnownException.
-             */
-            // todo - bad parms for message
-            OMRSErrorCode errorCode = OMRSErrorCode.TYPEDEF_NOT_KNOWN;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(guid);
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedTypeDefNotKnownException(typeDefNotKnownException);
 
-            throw new TypeDefNotKnownException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
-        }
-
+        return null;
     }
 
 
@@ -1230,6 +939,81 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                               TypeDefNotKnownException,
                                                                               UserNotAuthorizedException
     {
+        final String methodName        = "getAttributeTypeDefByGUID";
+        final String guidParameterName = "guid";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        TypeDefNotKnownException   typeDefNotKnownException   = null;
+        UserNotAuthorizedException userNotAuthorizedException = null;
+        RepositoryErrorException   repositoryErrorException   = null;
+        Throwable                  anotherException           = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    return metadataCollection.getAttributeTypeDefByGUID(userId, guid);
+                }
+                catch (TypeDefNotKnownException error)
+                {
+                    typeDefNotKnownException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+
+        if (typeDefNotKnownException != null)
+        {
+            throw typeDefNotKnownException;
+        }
+
         return null;
     }
 
@@ -1251,118 +1035,78 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                            TypeDefNotKnownException,
                                                            UserNotAuthorizedException
     {
-        final String    methodName = "getTypeDefByName()";
-
-        if (name == null)
-        {
-            /*
-             * No name supplied so can not perform the search
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_TYPEDEF_NAME;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new InvalidParameterException(errorCode.getHTTPErrorCode(),
-                                                this.getClass().getName(),
-                                                methodName,
-                                                errorMessage,
-                                                errorCode.getSystemAction(),
-                                                errorCode.getUserAction());
-        }
-
-        List<OMRSMetadataCollection>  metadataCollections = parentConnector.getMetadataCollections();
-
-        if (metadataCollections == null)
-        {
-            /*
-             * No repositories available
-             */
-            OMRSErrorCode errorCode = OMRSErrorCode.NO_REPOSITORIES;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
-
-            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
-        }
-
-        TypeDefNotKnownException   typeDefNotKnownException = null;
-        UserNotAuthorizedException userNotAuthorizedException = null;
-        RepositoryErrorException   repositoryErrorException = null;
-        RuntimeException           anotherException = null;
+        final String  methodName = "getTypeDefByName";
+        final String  nameParameterName = "name";
 
         /*
-         * Loop through the metadata collections requesting the typedef from each repository.
-         * The first TypeDef retrieved is returned to the caller.
+         * Validate parameters
          */
-        for (OMRSMetadataCollection metadataCollection : metadataCollections)
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeName(repositoryName, nameParameterName, name, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        TypeDefNotKnownException   typeDefNotKnownException   = null;
+        UserNotAuthorizedException userNotAuthorizedException = null;
+        RepositoryErrorException   repositoryErrorException   = null;
+        Throwable                  anotherException           = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            if (metadataCollection != null)
+            if (cohortConnector != null)
             {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
                 try
                 {
-                    TypeDef retrievedTypeDef = getTypeDefByName(userId, name);
-
-                    if (retrievedTypeDef != null)
-                    {
-                        return retrievedTypeDef;
-                    }
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    return metadataCollection.getTypeDefByName(userId, name);
                 }
-                catch (TypeDefNotKnownException  error)
+                catch (TypeDefNotKnownException error)
                 {
                     typeDefNotKnownException = error;
-                }
-                catch (UserNotAuthorizedException error)
-                {
-                    userNotAuthorizedException = error;
                 }
                 catch (RepositoryErrorException error)
                 {
                     repositoryErrorException = error;
                 }
-                catch (RuntimeException error)
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
                 {
                     anotherException = error;
                 }
             }
         }
 
-        /*
-         * The TypeDef has not been found. Process the exceptions.
-         */
-        if (typeDefNotKnownException != null)
-        {
-            throw typeDefNotKnownException;
-        }
-        else if (userNotAuthorizedException != null)
-        {
-            throw userNotAuthorizedException;
-        }
-        else if (repositoryErrorException != null)
-        {
-            throw repositoryErrorException;
-        }
-        else if (anotherException != null)
-        {
-            throw anotherException;
-        }
-        else
-        {
-            /*
-             * All of the repositories have returned a null TypeDef so default to TypeDefNotKnownException.
-             */
-            // todo - bad parms for message
-            OMRSErrorCode errorCode = OMRSErrorCode.TYPEDEF_NOT_KNOWN;
-            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(name);
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedTypeDefNotKnownException(typeDefNotKnownException);
 
-            throw new TypeDefNotKnownException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
-        }
+        return null;
     }
 
 
@@ -1384,6 +1128,77 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                               TypeDefNotKnownException,
                                                                               UserNotAuthorizedException
     {
+        final String  methodName = "getAttributeTypeDefByName";
+        final String  nameParameterName = "name";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeName(repositoryName, nameParameterName, name, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        TypeDefNotKnownException   typeDefNotKnownException   = null;
+        UserNotAuthorizedException userNotAuthorizedException = null;
+        RepositoryErrorException   repositoryErrorException   = null;
+        Throwable                  anotherException           = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    return metadataCollection.getAttributeTypeDefByName(userId, name);
+                }
+                catch (TypeDefNotKnownException error)
+                {
+                    typeDefNotKnownException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedTypeDefNotKnownException(typeDefNotKnownException);
+
         return null;
     }
 
@@ -1460,11 +1275,79 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                               InvalidTypeDefException,
                                                               UserNotAuthorizedException
     {
-        final String                       methodName = "verifyTypeDef()";
+        final String  methodName           = "verifyTypeDef";
+        final String  typeDefParameterName = "typeDef";
 
-        // todo
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return true;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDef(repositoryName, typeDefParameterName, typeDef, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        TypeDefNotSupportedException   typeDefNotSupportedException = null;
+        UserNotAuthorizedException     userNotAuthorizedException   = null;
+        RepositoryErrorException       repositoryErrorException     = null;
+        Throwable                      anotherException             = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds (TypeDefConflictException is also returned
+                     * immediately.)
+                     */
+                    return metadataCollection.verifyTypeDef(userId, typeDef);
+                }
+                catch (TypeDefNotSupportedException error)
+                {
+                    typeDefNotSupportedException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedTypeDefNotSupportedException(typeDefNotSupportedException);
+
+        return false;
     }
 
 
@@ -1490,11 +1373,79 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                       InvalidTypeDefException,
                                                                                       UserNotAuthorizedException
     {
-        final String                       methodName = "verifyAttributeTypeDef()";
+        final String  methodName           = "verifyAttributeTypeDef";
+        final String  typeDefParameterName = "attributeTypeDef";
 
-        // todo
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return true;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateAttributeTypeDef(repositoryName, typeDefParameterName, attributeTypeDef, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        TypeDefNotSupportedException   typeDefNotSupportedException = null;
+        UserNotAuthorizedException     userNotAuthorizedException   = null;
+        RepositoryErrorException       repositoryErrorException     = null;
+        Throwable                      anotherException             = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds (TypeDefConflictException is also returned
+                     * immediately.)
+                     */
+                    return metadataCollection.verifyAttributeTypeDef(userId, attributeTypeDef);
+                }
+                catch (TypeDefNotSupportedException error)
+                {
+                    typeDefNotSupportedException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedTypeDefNotSupportedException(typeDefNotSupportedException);
+
+        return false;
     }
 
 
@@ -1632,9 +1583,75 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                              RepositoryErrorException,
                                                              UserNotAuthorizedException
     {
-        final String                       methodName = "isEntityKnown()";
+        final String  methodName = "isEntityKnown";
+        final String  guidParameterName = "guid";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        UserNotAuthorizedException userNotAuthorizedException = null;
+        RepositoryErrorException   repositoryErrorException   = null;
+        Throwable                  anotherException           = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    EntityDetail     entity = this.isEntityKnown(userId, guid);
+
+                    repositoryValidator.validateEntityFromStore(repositoryName, guid, entity, methodName);
+
+                    return entity;
+                }
+
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
 
         return null;
     }
@@ -1658,26 +1675,82 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                  EntityNotKnownException,
                                                                  UserNotAuthorizedException
     {
-        EntityDetail     entity = this.isEntityKnown(userId, guid);
+        final String  methodName        = "getEntitySummary";
+        final String  guidParameterName = "guid";
 
-        if (entity == null)
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        EntityNotKnownException    entityNotKnownException    = null;
+        UserNotAuthorizedException userNotAuthorizedException = null;
+        RepositoryErrorException   repositoryErrorException   = null;
+        Throwable                  anotherException           = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            final String   methodName = "getEntitySummary()";
-            OMRSErrorCode  errorCode = OMRSErrorCode.ENTITY_NOT_KNOWN;
-            String         errorMessage = errorCode.getErrorMessageId()
-                                        + errorCode.getFormattedErrorMessage(guid,
-                                                                             enterpriseMetadataCollectionName + " (" +
-                                                                                     enterpriseMetadataCollectionId + ")");
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
 
-            throw new EntityNotKnownException(errorCode.getHTTPErrorCode(),
-                                                    this.getClass().getName(),
-                                                    methodName,
-                                                    errorMessage,
-                                                    errorCode.getSystemAction(),
-                                                    errorCode.getUserAction());
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    EntitySummary     entity = this.getEntitySummary(userId, guid);
+
+                    repositoryValidator.validateEntityFromStore(repositoryName, guid, entity, methodName);
+
+                    return entity;
+                }
+                catch (EntityNotKnownException error)
+                {
+                    entityNotKnownException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
         }
 
-        return entity;
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedEntityNotKnownException(entityNotKnownException);
+
+        return null;
     }
 
 
@@ -1701,35 +1774,97 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                EntityProxyOnlyException,
                                                                UserNotAuthorizedException
     {
-        EntityDetail     entity = this.isEntityKnown(userId, guid);
+        final String  methodName        = "getEntityDetail";
+        final String  guidParameterName = "guid";
 
-        if (entity == null)
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        EntityNotKnownException    entityNotKnownException    = null;
+        EntityProxyOnlyException   entityProxyOnlyException   = null;
+        UserNotAuthorizedException userNotAuthorizedException = null;
+        RepositoryErrorException   repositoryErrorException   = null;
+        Throwable                  anotherException           = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            final String   methodName = "getEntityDetail()";
-            OMRSErrorCode  errorCode = OMRSErrorCode.ENTITY_NOT_KNOWN;
-            String         errorMessage = errorCode.getErrorMessageId()
-                    + errorCode.getFormattedErrorMessage(guid,
-                                                         enterpriseMetadataCollectionName + " (" +
-                                                                 enterpriseMetadataCollectionId + ")");
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
 
-            throw new EntityNotKnownException(errorCode.getHTTPErrorCode(),
-                                              this.getClass().getName(),
-                                              methodName,
-                                              errorMessage,
-                                              errorCode.getSystemAction(),
-                                              errorCode.getUserAction());
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    EntityDetail     entity = this.getEntityDetail(userId, guid);
+
+                    repositoryValidator.validateEntityFromStore(repositoryName, guid, entity, methodName);
+
+                    return entity;
+                }
+                catch (EntityNotKnownException error)
+                {
+                    entityNotKnownException = error;
+                }
+                catch (EntityProxyOnlyException error)
+                {
+                    entityProxyOnlyException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
         }
 
-        return entity;
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedEntityNotKnownException(entityNotKnownException);
+        throwCapturedEntityProxyOnlyException(entityProxyOnlyException);
+
+        return null;
     }
 
 
     /**
-     * Return a historical versionName of an entity - includes the header, classifications and properties of the entity.
+     * Return a historical version of an entity - includes the header, classifications and properties of the entity.
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the entity.
-     * @param asOfTime - the time used to determine which versionName of the entity that is desired.
+     * @param asOfTime - the time used to determine which version of the entity that is desired.
      * @return EntityDetail structure.
      * @throws InvalidParameterException - the guid or date is null or the date is for a future time.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
@@ -1749,32 +1884,172 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                     FunctionNotSupportedException,
                                                                     UserNotAuthorizedException
     {
-        final String                       methodName = "isEntityKnown()";
+        final String  methodName        = "getEntityDetail";
+        final String  guidParameterName = "guid";
+        final String  asOfTimeParameter = "asOfTime";
 
-        EntityDetail entity = null;
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        // TODO - missing implementation
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
 
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
 
-        if (entity == null)
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        EntityNotKnownException         entityNotKnownException       = null;
+        EntityProxyOnlyException        entityProxyOnlyException      = null;
+        FunctionNotSupportedException   functionNotSupportedException = null;
+        UserNotAuthorizedException      userNotAuthorizedException    = null;
+        RepositoryErrorException        repositoryErrorException      = null;
+        Throwable                       anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            OMRSErrorCode  errorCode = OMRSErrorCode.ENTITY_NOT_KNOWN;
-            String         errorMessage = errorCode.getErrorMessageId()
-                                        + errorCode.getFormattedErrorMessage(guid,
-                                                         enterpriseMetadataCollectionName + " (" +
-                                                                 enterpriseMetadataCollectionId + ")");
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
 
-            throw new EntityNotKnownException(errorCode.getHTTPErrorCode(),
-                                              this.getClass().getName(),
-                                              methodName,
-                                              errorMessage,
-                                              errorCode.getSystemAction(),
-                                              errorCode.getUserAction());
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    EntityDetail     entity = this.getEntityDetail(userId, guid, asOfTime);
+
+                    repositoryValidator.validateEntityFromStore(repositoryName, guid, entity, methodName);
+
+                    return entity;
+                }
+                catch (EntityNotKnownException error)
+                {
+                    entityNotKnownException = error;
+                }
+                catch (EntityProxyOnlyException error)
+                {
+                    entityProxyOnlyException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
         }
+
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedEntityNotKnownException(entityNotKnownException);
+        throwCapturedEntityProxyOnlyException(entityProxyOnlyException);
+        throwCapturedFunctionNotSupportedException(functionNotSupportedException);
 
         return null;
     }
 
+
+    /**
+     * Return the header, classifications, properties and relationships for a specific entity.  The entity
+     * detail can come from any server.  The relationships may be distributed over all of the repositories.
+     *
+     * @param userId - unique identifier for requesting user.
+     * @param guid - String unique identifier for the entity.
+     * @return EntityUniverse structure.
+     * @throws InvalidParameterException - the guid is null.
+     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
+     *                                    the metadata collection is stored.
+     * @throws EntityProxyOnlyException - the requested entity instance is only a proxy in the metadata collection.
+     * @throws EntityNotKnownException - the requested entity instance is not known in the metadata collection.
+     * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
+     */
+    public EntityUniverse getEntityUniverse(String    userId,
+                                            String    guid) throws InvalidParameterException,
+                                                                   RepositoryErrorException,
+                                                                   EntityNotKnownException,
+                                                                   EntityProxyOnlyException,
+                                                                   UserNotAuthorizedException
+    {
+        final String     methodName     = "getEntityUniverse";
+
+        /*
+         * Retrieve the core entity details
+         */
+        EntityDetail     entityDetail   = this.getEntityDetail(userId, guid);
+
+        /*
+         * Step through the registered open metadata repositories to locate all of the active relationships.
+         */
+        List<Relationship>    relationships = null;
+
+        try
+        {
+            List<InstanceStatus>   instanceStatuses = new ArrayList<>();
+
+            instanceStatuses.add(InstanceStatus.ACTIVE);
+            relationships = this.getRelationshipsForEntity(userId,
+                                                           guid,
+                                                           null,
+                                                           0,
+                                                           instanceStatuses,
+                                                           null,
+                                                           null,
+                                                           null,
+                                                           0);
+        }
+        catch (RepositoryErrorException  error)
+        {
+            throw error;
+        }
+        catch (UserNotAuthorizedException error)
+        {
+            /*
+             * The user does not have access to the relationships so just return the entity detail
+             */
+            relationships = null;
+        }
+        catch (Throwable  error)
+        {
+            throwCapturedThrowableException(error, methodName);
+        }
+
+        /*
+         * The entity universe combines the entity detail and the relationship list.
+         */
+
+        EntityUniverse   entityUniverse = new EntityUniverse(entityDetail);
+        entityUniverse.setEntityRelationships(relationships);
+
+        return entityUniverse;
+    }
 
 
     /**
@@ -1822,11 +2097,132 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                                     FunctionNotSupportedException,
                                                                                                     UserNotAuthorizedException
     {
-        final String                       methodName = "getRelationshipsForEntity()";
+        final String  methodName        = "getRelationshipsForEntity";
+        final String  guidParameterName = "entityGUID";
+        final String  asOfTimeParameter = "asOfTime";
+        final String  pageSizeParameter = "pageSize";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, entityGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        /*
+         * Perform operation
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        HashMap<String, Relationship> combinedResults               = new HashMap<>();
+
+        InvalidParameterException     invalidParameterException     = null;
+        EntityNotKnownException       entityNotKnownException       = null;
+        FunctionNotSupportedException functionNotSupportedException = null;
+        PropertyErrorException        propertyErrorException        = null;
+        UserNotAuthorizedException    userNotAuthorizedException    = null;
+        RepositoryErrorException      repositoryErrorException      = null;
+        Throwable                     anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    List<Relationship> results = metadataCollection.getRelationshipsForEntity(userId,
+                                                                                              entityGUID,
+                                                                                              relationshipTypeGUID,
+                                                                                              fromRelationshipElement,
+                                                                                              limitResultsByStatus,
+                                                                                              asOfTime,
+                                                                                              sequencingProperty,
+                                                                                              sequencingOrder,
+                                                                                              pageSize);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueRelationships(combinedResults,
+                                                                  results,
+                                                                  cohortConnector.getServerName(),
+                                                                  cohortConnector.getMetadataCollectionId(),
+                                                                  methodName);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (EntityNotKnownException error)
+                {
+                    entityNotKnownException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+
+        if (combinedResults.isEmpty())
+        {
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedThrowableException(anotherException, methodName);
+            throwCapturedPropertyErrorException(propertyErrorException);
+            throwCapturedInvalidParameterException(invalidParameterException);
+            throwCapturedFunctionNotSupportedException(functionNotSupportedException);
+            throwCapturedEntityNotKnownException(entityNotKnownException);
+
+            return null;
+        }
+
+        return validatedRelationshipResults(repositoryName,
+                                            combinedResults,
+                                            sequencingProperty,
+                                            sequencingOrder,
+                                            pageSize,
+                                            methodName);
     }
 
 
@@ -1882,16 +2278,147 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                                  FunctionNotSupportedException,
                                                                                                  UserNotAuthorizedException
     {
-        final String                       methodName = "findEntitiesByProperty()";
+        final String  methodName                   = "findEntitiesByProperty";
+        final String  matchCriteriaParameterName   = "matchCriteria";
+        final String  matchPropertiesParameterName = "matchProperties";
+        final String  guidParameterName            = "entityTypeGUID";
+        final String  asOfTimeParameter            = "asOfTime";
+        final String  pageSizeParameter            = "pageSize";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, entityTypeGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+        repositoryValidator.validateMatchCriteria(repositoryName,
+                                                  matchCriteriaParameterName,
+                                                  matchPropertiesParameterName,
+                                                  matchCriteria,
+                                                  matchProperties,
+                                                  methodName);
+
+        /*
+         * Perform operation
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        HashMap<String, EntityDetail> combinedResults               = new HashMap<>();
+
+        InvalidParameterException     invalidParameterException     = null;
+        FunctionNotSupportedException functionNotSupportedException = null;
+        TypeErrorException            typeErrorException            = null;
+        PropertyErrorException        propertyErrorException        = null;
+        UserNotAuthorizedException    userNotAuthorizedException    = null;
+        RepositoryErrorException      repositoryErrorException      = null;
+        Throwable                     anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    List<EntityDetail> results = metadataCollection.findEntitiesByProperty(userId,
+                                                                                           entityTypeGUID,
+                                                                                           matchProperties,
+                                                                                           matchCriteria,
+                                                                                           fromEntityElement,
+                                                                                           limitResultsByStatus,
+                                                                                           limitResultsByClassification,
+                                                                                           asOfTime,
+                                                                                           sequencingProperty,
+                                                                                           sequencingOrder,
+                                                                                           pageSize);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueEntities(combinedResults,
+                                                             results,
+                                                             cohortConnector.getServerName(),
+                                                             cohortConnector.getMetadataCollectionId(),
+                                                             methodName);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (TypeErrorException error)
+                {
+                    typeErrorException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+
+        if (combinedResults.isEmpty())
+        {
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedThrowableException(anotherException, methodName);
+            throwCapturedTypeErrorException(typeErrorException);
+            throwCapturedPropertyErrorException(propertyErrorException);
+            throwCapturedInvalidParameterException(invalidParameterException);
+            throwCapturedFunctionNotSupportedException(functionNotSupportedException);
+
+            return null;
+        }
+
+        return validatedEntityListResults(repositoryName,
+                                          combinedResults,
+                                          sequencingProperty,
+                                          sequencingOrder,
+                                          pageSize,
+                                          methodName);
     }
 
 
     /**
-     * Return a list of entities that have the requested type of classification attached.
+     * Return a list of entities that have the requested type of classifications attached.
      *
      * @param userId - unique identifier for requesting user.
      * @param entityTypeGUID - unique identifier for the type of entity requested.  Null mans any type of entity.
@@ -1943,19 +2470,169 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                                        FunctionNotSupportedException,
                                                                                                        UserNotAuthorizedException
     {
-        final String                       methodName = "findEntitiesByProperty()";
+        final String  methodName                   = "findEntitiesByClassification";
+        final String  classificationParameterName  = "classificationName";
+        final String  entityTypeGUIDParameterName  = "entityTypeGUID";
 
-        // TODO - missing implementation
+        final String  matchCriteriaParameterName   = "matchCriteria";
+        final String  matchPropertiesParameterName = "matchClassificationProperties";
+        final String  asOfTimeParameter            = "asOfTime";
+        final String  pageSizeParameter            = "pageSize";
 
-        return null;
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityTypeGUIDParameterName, entityTypeGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        /*
+         * Validate TypeDef
+         */
+        TypeDef entityTypeDef = repositoryHelper.getTypeDef(repositoryName, entityTypeGUID);
+
+        repositoryValidator.validateTypeDefForInstance(repositoryName, entityTypeGUIDParameterName, entityTypeDef, methodName);
+
+        repositoryValidator.validateMatchCriteria(repositoryName,
+                                                  matchCriteriaParameterName,
+                                                  matchPropertiesParameterName,
+                                                  matchCriteria,
+                                                  matchClassificationProperties,
+                                                  methodName);
+        repositoryValidator.validateClassification(repositoryName,
+                                                   classificationParameterName,
+                                                   classificationName,
+                                                   entityTypeDef.getName(),
+                                                   methodName);
+
+        /*
+         * Perform operation
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        HashMap<String, EntityDetail> combinedResults               = new HashMap<>();
+
+        InvalidParameterException     invalidParameterException     = null;
+        FunctionNotSupportedException functionNotSupportedException = null;
+        TypeErrorException            typeErrorException            = null;
+        PropertyErrorException        propertyErrorException        = null;
+        UserNotAuthorizedException    userNotAuthorizedException    = null;
+        RepositoryErrorException      repositoryErrorException      = null;
+        Throwable                     anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    List<EntityDetail> results = metadataCollection.findEntitiesByClassification(userId,
+                                                                                                 entityTypeGUID,
+                                                                                                 classificationName,
+                                                                                                 matchClassificationProperties,
+                                                                                                 matchCriteria,
+                                                                                                 fromEntityElement,
+                                                                                                 limitResultsByStatus,
+                                                                                                 asOfTime,
+                                                                                                 sequencingProperty,
+                                                                                                 sequencingOrder,
+                                                                                                 pageSize);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueEntities(combinedResults,
+                                                             results,
+                                                             cohortConnector.getServerName(),
+                                                             cohortConnector.getMetadataCollectionId(),
+                                                             methodName);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (TypeErrorException error)
+                {
+                    typeErrorException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+
+        if (combinedResults.isEmpty())
+        {
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedThrowableException(anotherException, methodName);
+            throwCapturedTypeErrorException(typeErrorException);
+            throwCapturedPropertyErrorException(propertyErrorException);
+            throwCapturedInvalidParameterException(invalidParameterException);
+            throwCapturedFunctionNotSupportedException(functionNotSupportedException);
+
+            return null;
+        }
+
+        return validatedEntityListResults(repositoryName,
+                                          combinedResults,
+                                          sequencingProperty,
+                                          sequencingOrder,
+                                          pageSize,
+                                          methodName);
     }
 
 
     /**
-     * Return a list of entities matching the search criteria.
+     * Return a list of entities whose string based property values match the search criteria.  The
+     * search criteria may include regex style wild cards.
      *
      * @param userId - unique identifier for requesting user.
-     * @param searchCriteria - String expression of the characteristics of the required relationships.
+     * @param entityTypeGUID - GUID of the type of entity to search for. Null means all types will
+     *                       be searched (could be slow so not recommended).
+     * @param searchCriteria - String expression contained in any of the property values within the entities
+     *                       of the supplied type.
      * @param fromEntityElement - the starting element number of the entities to return.
      *                                This is used when retrieving elements
      *                                beyond the first page of results. Zero means start from the first element.
@@ -1980,26 +2657,143 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support the asOfTime parameter.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public  List<EntityDetail> searchForEntities(String                     userId,
-                                                 String                     searchCriteria,
-                                                 int                        fromEntityElement,
-                                                 List<InstanceStatus>       limitResultsByStatus,
-                                                 List<String>               limitResultsByClassification,
-                                                 Date                       asOfTime,
-                                                 String                     sequencingProperty,
-                                                 SequencingOrder            sequencingOrder,
-                                                 int                        pageSize) throws InvalidParameterException,
-                                                                                             RepositoryErrorException,
-                                                                                             PropertyErrorException,
-                                                                                             PagingErrorException,
-                                                                                             FunctionNotSupportedException,
-                                                                                             UserNotAuthorizedException
+    public List<EntityDetail> findEntitiesByPropertyValue(String                userId,
+                                                          String                entityTypeGUID,
+                                                          String                searchCriteria,
+                                                          int                   fromEntityElement,
+                                                          List<InstanceStatus>  limitResultsByStatus,
+                                                          List<String>          limitResultsByClassification,
+                                                          Date                  asOfTime,
+                                                          String                sequencingProperty,
+                                                          SequencingOrder       sequencingOrder,
+                                                          int                   pageSize) throws InvalidParameterException,
+                                                                                                 RepositoryErrorException,
+                                                                                                 PropertyErrorException,
+                                                                                                 PagingErrorException,
+                                                                                                 FunctionNotSupportedException,
+                                                                                                 UserNotAuthorizedException
     {
-        final String                       methodName = "searchForEntities()";
+        final String  methodName = "findEntitiesByPropertyValue";
+        final String  searchCriteriaParameterName = "searchCriteria";
+        final String  asOfTimeParameter = "asOfTime";
+        final String  pageSizeParameter = "pageSize";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateSearchCriteria(repositoryName, searchCriteriaParameterName, searchCriteria, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        /*
+         * Perform operation
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        HashMap<String, EntityDetail> combinedResults               = new HashMap<>();
+
+        InvalidParameterException     invalidParameterException     = null;
+        FunctionNotSupportedException functionNotSupportedException = null;
+        PropertyErrorException        propertyErrorException        = null;
+        UserNotAuthorizedException    userNotAuthorizedException    = null;
+        RepositoryErrorException      repositoryErrorException      = null;
+        Throwable                     anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    List<EntityDetail> results = metadataCollection.findEntitiesByPropertyValue(userId,
+                                                                                                entityTypeGUID,
+                                                                                                searchCriteria,
+                                                                                                fromEntityElement,
+                                                                                                limitResultsByStatus,
+                                                                                                limitResultsByClassification,
+                                                                                                asOfTime,
+                                                                                                sequencingProperty,
+                                                                                                sequencingOrder,
+                                                                                                pageSize);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueEntities(combinedResults,
+                                                             results,
+                                                             cohortConnector.getServerName(),
+                                                             cohortConnector.getMetadataCollectionId(),
+                                                             methodName);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+
+        if (combinedResults.isEmpty())
+        {
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedThrowableException(anotherException, methodName);
+            throwCapturedPropertyErrorException(propertyErrorException);
+            throwCapturedInvalidParameterException(invalidParameterException);
+            throwCapturedFunctionNotSupportedException(functionNotSupportedException);
+
+            return null;
+        }
+
+        return validatedEntityListResults(repositoryName,
+                                          combinedResults,
+                                          sequencingProperty,
+                                          sequencingOrder,
+                                          pageSize,
+                                          methodName);
     }
 
 
@@ -2019,9 +2813,74 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                     RepositoryErrorException,
                                                                     UserNotAuthorizedException
     {
-        final String                       methodName = "isRelationshipKnown()";
+        final String  methodName = "isRelationshipKnown";
+        final String  guidParameterName = "guid";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        UserNotAuthorizedException      userNotAuthorizedException    = null;
+        RepositoryErrorException        repositoryErrorException      = null;
+        Throwable                       anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    Relationship     relationship = this.isRelationshipKnown(userId, guid);
+
+                    repositoryValidator.validateRelationshipFromStore(repositoryName, guid, relationship, methodName);
+
+                    return relationship;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
 
         return null;
     }
@@ -2046,26 +2905,82 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                RelationshipNotKnownException,
                                                                UserNotAuthorizedException
     {
-        Relationship     relationship = this.isRelationshipKnown(userId, guid);
+        final String  methodName = "getRelationship";
+        final String  guidParameterName = "guid";
 
-        if (relationship == null)
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        RelationshipNotKnownException   relationshipNotKnownException = null;
+        UserNotAuthorizedException      userNotAuthorizedException    = null;
+        RepositoryErrorException        repositoryErrorException      = null;
+        Throwable                       anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
         {
-            final String   methodName = "getRelationship()";
-            OMRSErrorCode  errorCode = OMRSErrorCode.RELATIONSHIP_NOT_KNOWN;
-            String         errorMessage = errorCode.getErrorMessageId()
-                                        + errorCode.getFormattedErrorMessage(guid,
-                                                                             enterpriseMetadataCollectionName + " (" +
-                                                                                     enterpriseMetadataCollectionId + ")");
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
 
-            throw new RelationshipNotKnownException(errorCode.getHTTPErrorCode(),
-                                               this.getClass().getName(),
-                                               methodName,
-                                               errorMessage,
-                                               errorCode.getSystemAction(),
-                                               errorCode.getUserAction());
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    Relationship     relationship = this.getRelationship(userId, guid);
+
+                    repositoryValidator.validateRelationshipFromStore(repositoryName, guid, relationship, methodName);
+
+                    return relationship;
+                }
+                catch (RelationshipNotKnownException error)
+                {
+                    relationshipNotKnownException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
         }
 
-        return relationship;
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedRelationshipNotKnownException(relationshipNotKnownException);
+
+        return null;
     }
 
 
@@ -2074,7 +2989,7 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the relationship.
-     * @param asOfTime - the time used to determine which versionName of the entity that is desired.
+     * @param asOfTime - the time used to determine which version of the entity that is desired.
      * @return Relationship structure.
      * @throws InvalidParameterException - the guid or date is null or the date is for a future time.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
@@ -2092,16 +3007,95 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                     FunctionNotSupportedException,
                                                                     UserNotAuthorizedException
     {
-        final String                       methodName = "getRelationship()";
+        final String  methodName = "getRelationship";
+        final String  guidParameterName = "guid";
+        final String  asOfTimeParameter = "asOfTime";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        RelationshipNotKnownException   relationshipNotKnownException = null;
+        FunctionNotSupportedException   functionNotSupportedException = null;
+        UserNotAuthorizedException      userNotAuthorizedException    = null;
+        RepositoryErrorException        repositoryErrorException      = null;
+        Throwable                       anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    Relationship     relationship = this.getRelationship(userId, guid, asOfTime);
+
+                    repositoryValidator.validateRelationshipFromStore(repositoryName, guid, relationship, methodName);
+
+                    return relationship;
+                }
+                catch (RelationshipNotKnownException error)
+                {
+                    relationshipNotKnownException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedRelationshipNotKnownException(relationshipNotKnownException);
+        throwCapturedFunctionNotSupportedException(functionNotSupportedException);
 
         return null;
     }
 
 
     /**
-     * Return a list of relationships that match the requested properties by hte matching criteria.   The results
+     * Return a list of relationships that match the requested properties by the matching criteria.   The results
      * can be broken into pages.
      *
      * @param userId - unique identifier for requesting user.
@@ -2150,19 +3144,153 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                                       FunctionNotSupportedException,
                                                                                                       UserNotAuthorizedException
     {
-        final String                       methodName = "findRelationshipsByProperty()";
+        final String  methodName = "findRelationshipsByProperty";
+        final String  matchCriteriaParameterName = "matchCriteria";
+        final String  matchPropertiesParameterName = "matchProperties";
+        final String  guidParameterName = "relationshipTypeGUID";
+        final String  asOfTimeParameter = "asOfTime";
+        final String  pageSizeParameter = "pageSize";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, relationshipTypeGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+        repositoryValidator.validateMatchCriteria(repositoryName,
+                                                  matchCriteriaParameterName,
+                                                  matchPropertiesParameterName,
+                                                  matchCriteria,
+                                                  matchProperties,
+                                                  methodName);
+
+        /*
+         * Perform operation
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        HashMap<String, Relationship> combinedResults               = new HashMap<>();
+
+        InvalidParameterException     invalidParameterException     = null;
+        FunctionNotSupportedException functionNotSupportedException = null;
+        PropertyErrorException        propertyErrorException        = null;
+        TypeErrorException            typeErrorException            = null;
+        UserNotAuthorizedException    userNotAuthorizedException    = null;
+        RepositoryErrorException      repositoryErrorException      = null;
+        Throwable                     anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    List<Relationship> results = metadataCollection.findRelationshipsByProperty(userId,
+                                                                                                relationshipTypeGUID,
+                                                                                                matchProperties,
+                                                                                                matchCriteria,
+                                                                                                fromRelationshipElement,
+                                                                                                limitResultsByStatus,
+                                                                                                asOfTime,
+                                                                                                sequencingProperty,
+                                                                                                sequencingOrder,
+                                                                                                pageSize);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueRelationships(combinedResults,
+                                                                  results,
+                                                                  cohortConnector.getServerName(),
+                                                                  cohortConnector.getMetadataCollectionId(),
+                                                                  methodName);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (TypeErrorException error)
+                {
+                    typeErrorException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+
+        if (combinedResults.isEmpty())
+        {
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedThrowableException(anotherException, methodName);
+            throwCapturedPropertyErrorException(propertyErrorException);
+            throwCapturedInvalidParameterException(invalidParameterException);
+            throwCapturedFunctionNotSupportedException(functionNotSupportedException);
+            throwCapturedTypeErrorException(typeErrorException);
+
+            return null;
+        }
+
+        return validatedRelationshipResults(repositoryName,
+                                            combinedResults,
+                                            sequencingProperty,
+                                            sequencingOrder,
+                                            pageSize,
+                                            methodName);
     }
 
 
     /**
-     * Return a list of relationships that match the search criteria.  The results can be paged.
+     * Return a list of relationships whose string based property values match the search criteria.  The
+     * search criteria may include regex style wild cards.
      *
      * @param userId - unique identifier for requesting user.
-     * @param searchCriteria - String expression of the characteristics of the required relationships.
+     * @param relationshipTypeGUID - GUID of the type of entity to search for. Null means all types will
+     *                       be searched (could be slow so not recommended).
+     * @param searchCriteria - String expression contained in any of the property values within the entities
+     *                       of the supplied type.
      * @param fromRelationshipElement - Element number of the results to skip to when building the results list
      *                                to return.  Zero means begin at the start of the results.  This is used
      *                                to retrieve the results over a number of pages.
@@ -2185,25 +3313,139 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support the asOfTime parameter.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public  List<Relationship> searchForRelationships(String                    userId,
-                                                      String                    searchCriteria,
-                                                      int                       fromRelationshipElement,
-                                                      List<InstanceStatus>      limitResultsByStatus,
-                                                      Date                      asOfTime,
-                                                      String                    sequencingProperty,
-                                                      SequencingOrder           sequencingOrder,
-                                                      int                       pageSize) throws InvalidParameterException,
-                                                                                                 RepositoryErrorException,
-                                                                                                 PropertyErrorException,
-                                                                                                 PagingErrorException,
-                                                                                                 FunctionNotSupportedException,
-                                                                                                 UserNotAuthorizedException
+    public  List<Relationship> findRelationshipsByPropertyValue(String                    userId,
+                                                                String                    relationshipTypeGUID,
+                                                                String                    searchCriteria,
+                                                                int                       fromRelationshipElement,
+                                                                List<InstanceStatus>      limitResultsByStatus,
+                                                                Date                      asOfTime,
+                                                                String                    sequencingProperty,
+                                                                SequencingOrder           sequencingOrder,
+                                                                int                       pageSize) throws InvalidParameterException,
+                                                                                                            RepositoryErrorException,
+                                                                                                            PropertyErrorException,
+                                                                                                            PagingErrorException,
+                                                                                                            FunctionNotSupportedException,
+                                                                                                            UserNotAuthorizedException
     {
-        final String                       methodName = "searchForRelationships()";
+        final String  methodName = "findRelationshipsByPropertyValue";
+        final String  asOfTimeParameter = "asOfTime";
+        final String  pageSizeParameter = "pageSize";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        /*
+         * Perform operation
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        HashMap<String, Relationship> combinedResults               = new HashMap<>();
+
+        InvalidParameterException     invalidParameterException     = null;
+        FunctionNotSupportedException functionNotSupportedException = null;
+        PropertyErrorException        propertyErrorException        = null;
+        UserNotAuthorizedException    userNotAuthorizedException    = null;
+        RepositoryErrorException      repositoryErrorException      = null;
+        Throwable                     anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    List<Relationship> results = metadataCollection.findRelationshipsByPropertyValue(userId,
+                                                                                                     relationshipTypeGUID,
+                                                                                                     searchCriteria,
+                                                                                                     fromRelationshipElement,
+                                                                                                     limitResultsByStatus,
+                                                                                                     asOfTime,
+                                                                                                     sequencingProperty,
+                                                                                                     sequencingOrder,
+                                                                                                     pageSize);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueRelationships(combinedResults,
+                                                                  results,
+                                                                  cohortConnector.getServerName(),
+                                                                  cohortConnector.getMetadataCollectionId(),
+                                                                  methodName);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+
+        if (combinedResults.isEmpty())
+        {
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedThrowableException(anotherException, methodName);
+            throwCapturedPropertyErrorException(propertyErrorException);
+            throwCapturedInvalidParameterException(invalidParameterException);
+            throwCapturedFunctionNotSupportedException(functionNotSupportedException);
+
+            return null;
+        }
+
+        return validatedRelationshipResults(repositoryName,
+                                            combinedResults,
+                                            sequencingProperty,
+                                            sequencingOrder,
+                                            pageSize,
+                                            methodName);
     }
 
 
@@ -2239,11 +3481,121 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                         FunctionNotSupportedException,
                                                                                         UserNotAuthorizedException
     {
-        final String                       methodName = "getLinkingEntities()";
+        final String methodName                   = "getLinkingEntities";
+        final String startEntityGUIDParameterName = "startEntityGUID";
+        final String endEntityGUIDParameterName   = "entityGUID";
+        final String asOfTimeParameter            = "asOfTime";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, startEntityGUIDParameterName, startEntityGUID, methodName);
+        repositoryValidator.validateGUID(repositoryName, endEntityGUIDParameterName, endEntityGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        HashMap<String, EntityDetail>      combinedEntityResults       = new HashMap<>();
+        HashMap<String, Relationship>      combinedRelationshipResults = new HashMap<>();
+
+        EntityNotKnownException        entityNotKnownException         = null;
+        FunctionNotSupportedException  functionNotSupportedException   = null;
+        PropertyErrorException         propertyErrorException          = null;
+        UserNotAuthorizedException     userNotAuthorizedException      = null;
+        RepositoryErrorException       repositoryErrorException        = null;
+        Throwable                      anotherException                = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    InstanceGraph     results = metadataCollection.getLinkingEntities(userId,
+                                                                                      startEntityGUID,
+                                                                                      endEntityGUID,
+                                                                                      limitResultsByStatus,
+                                                                                      asOfTime);
+
+                    /*
+                     * Step through the list of returned TypeDefs and consolidate.
+                     */
+                    if (results != null)
+                    {
+                        combinedRelationshipResults = this.addUniqueRelationships(combinedRelationshipResults,
+                                                                                  results.getRelationships(),
+                                                                                  cohortConnector.getServerName(),
+                                                                                  cohortConnector.getMetadataCollectionId(),
+                                                                                  methodName);
+                        combinedEntityResults = this.addUniqueEntities(combinedEntityResults,
+                                                                       results.getEntities(),
+                                                                       cohortConnector.getServerName(),
+                                                                       cohortConnector.getMetadataCollectionId(),
+                                                                       methodName);
+                    }
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (EntityNotKnownException error)
+                {
+                    entityNotKnownException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        return validatedInstanceGraphResults(repositoryName,
+                                             combinedEntityResults,
+                                             combinedRelationshipResults,
+                                             userNotAuthorizedException,
+                                             propertyErrorException,
+                                             functionNotSupportedException,
+                                             entityNotKnownException,
+                                             repositoryErrorException,
+                                             anotherException,
+                                             methodName);
     }
 
 
@@ -2285,17 +3637,158 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                 Date                 asOfTime,
                                                 int                  level) throws InvalidParameterException,
                                                                                    RepositoryErrorException,
-                                                                                   TypeErrorException,
                                                                                    EntityNotKnownException,
+                                                                                   TypeErrorException,
                                                                                    PropertyErrorException,
                                                                                    FunctionNotSupportedException,
                                                                                    UserNotAuthorizedException
     {
-        final String                       methodName = "getEntityNeighborhood()";
+        final String methodName                                  = "getEntityNeighborhood";
+        final String entityGUIDParameterName                     = "entityGUID";
+        final String entityTypeGUIDParameterName                 = "entityTypeGUIDs";
+        final String relationshipTypeGUIDParameterName           = "relationshipTypeGUIDs";
+        final String limitedResultsByClassificationParameterName = "limitResultsByClassification";
+        final String asOfTimeParameter                           = "asOfTime";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+
+        if (entityTypeGUIDs != null)
+        {
+            for (String guid : entityTypeGUIDs)
+            {
+                repositoryValidator.validateGUID(repositoryName, entityTypeGUIDParameterName, guid, methodName);
+            }
+        }
+
+        if (relationshipTypeGUIDs != null)
+        {
+            for (String guid : relationshipTypeGUIDs)
+            {
+                repositoryValidator.validateGUID(repositoryName, relationshipTypeGUIDParameterName, guid, methodName);
+            }
+        }
+
+        if (relationshipTypeGUIDs != null)
+        {
+            for (String classificationName : limitResultsByClassification)
+            {
+                repositoryValidator.validateClassificationName(repositoryName,
+                                                               limitedResultsByClassificationParameterName,
+                                                               classificationName,
+                                                               methodName);
+            }
+        }
+
+        /*
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        HashMap<String, EntityDetail>      combinedEntityResults       = new HashMap<>();
+        HashMap<String, Relationship>      combinedRelationshipResults = new HashMap<>();
+
+        EntityNotKnownException        entityNotKnownException         = null;
+        FunctionNotSupportedException  functionNotSupportedException   = null;
+        PropertyErrorException         propertyErrorException          = null;
+        UserNotAuthorizedException     userNotAuthorizedException      = null;
+        RepositoryErrorException       repositoryErrorException        = null;
+        Throwable                      anotherException                = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    InstanceGraph     results = metadataCollection.getEntityNeighborhood(userId,
+                                                                                         entityGUID,
+                                                                                         entityTypeGUIDs,
+                                                                                         relationshipTypeGUIDs,
+                                                                                         limitResultsByStatus,
+                                                                                         limitResultsByClassification,
+                                                                                         asOfTime,
+                                                                                         level);
+
+                    /*
+                     * Step through the list of returned TypeDefs and consolidate.
+                     */
+                    if (results != null)
+                    {
+                        combinedRelationshipResults = this.addUniqueRelationships(combinedRelationshipResults,
+                                                                                  results.getRelationships(),
+                                                                                  cohortConnector.getServerName(),
+                                                                                  cohortConnector.getMetadataCollectionId(),
+                                                                                  methodName);
+                        combinedEntityResults = this.addUniqueEntities(combinedEntityResults,
+                                                                       results.getEntities(),
+                                                                       cohortConnector.getServerName(),
+                                                                       cohortConnector.getMetadataCollectionId(),
+                                                                       methodName);
+                    }
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (EntityNotKnownException error)
+                {
+                    entityNotKnownException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        return validatedInstanceGraphResults(repositoryName,
+                                             combinedEntityResults,
+                                             combinedRelationshipResults,
+                                             userNotAuthorizedException,
+                                             propertyErrorException,
+                                             functionNotSupportedException,
+                                             entityNotKnownException,
+                                             repositoryErrorException,
+                                             anotherException,
+                                             methodName);
     }
 
 
@@ -2350,12 +3843,141 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                         FunctionNotSupportedException,
                                                                                         UserNotAuthorizedException
     {
-        final String                       methodName = "getRelatedEntities()";
+        final String  methodName = "getRelatedEntities";
+        final String  entityGUIDParameterName  = "startEntityGUID";
+        final String  asOfTimeParameter = "asOfTime";
+        final String  pageSizeParameter = "pageSize";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, startEntityGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        /*
+         * Perform operation
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Search results need to come from all members of the cohort.
+         * They need to be combined and then duplicates removed to create the final list of results.
+         * Some repositories may produce exceptions.  These exceptions are saved and one selected to
+         * be returned if there are no results from any repository.
+         */
+        HashMap<String, EntityDetail> combinedResults               = new HashMap<>();
+
+        InvalidParameterException     invalidParameterException     = null;
+        EntityNotKnownException       entityNotKnownException       = null;
+        FunctionNotSupportedException functionNotSupportedException = null;
+        TypeErrorException            typeErrorException            = null;
+        PropertyErrorException        propertyErrorException        = null;
+        UserNotAuthorizedException    userNotAuthorizedException    = null;
+        RepositoryErrorException      repositoryErrorException      = null;
+        Throwable                     anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request
+                     */
+                    List<EntityDetail> results = metadataCollection.getRelatedEntities(userId,
+                                                                                       startEntityGUID,
+                                                                                       instanceTypes,
+                                                                                       fromEntityElement,
+                                                                                       limitResultsByStatus,
+                                                                                       limitResultsByClassification,
+                                                                                       asOfTime,
+                                                                                       sequencingProperty,
+                                                                                       sequencingOrder,
+                                                                                       pageSize);
+
+                    /*
+                     * Step through the list of returned TypeDefs and remove duplicates.
+                     */
+                    combinedResults = this.addUniqueEntities(combinedResults,
+                                                             results,
+                                                             cohortConnector.getServerName(),
+                                                             cohortConnector.getMetadataCollectionId(),
+                                                             methodName);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (EntityNotKnownException error)
+                {
+                    entityNotKnownException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (TypeErrorException error)
+                {
+                    typeErrorException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+
+        if (combinedResults.isEmpty())
+        {
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedThrowableException(anotherException, methodName);
+            throwCapturedTypeErrorException(typeErrorException);
+            throwCapturedPropertyErrorException(propertyErrorException);
+            throwCapturedInvalidParameterException(invalidParameterException);
+            throwCapturedFunctionNotSupportedException(functionNotSupportedException);
+            throwCapturedEntityNotKnownException(entityNotKnownException);
+
+            return null;
+        }
+
+        return validatedEntityListResults(repositoryName,
+                                          combinedResults,
+                                          sequencingProperty,
+                                          sequencingOrder,
+                                          pageSize,
+                                          methodName);
     }
+
 
 
     /* ======================================================
@@ -2397,9 +4019,129 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                    StatusNotSupportedException,
                                                                                    UserNotAuthorizedException
     {
-        final String                       methodName = "addEntity()";
+        final String  methodName                    = "addEntity";
+        final String  entityGUIDParameterName       = "entityTypeGUID";
+        final String  propertiesParameterName       = "initialProperties";
+        final String  classificationsParameterName  = "initialClassifications";
+        final String  initialStatusParameterName    = "initialStatus";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, entityGUIDParameterName, entityTypeGUID, methodName);
+
+        TypeDef  typeDef = repositoryHelper.getTypeDef(repositoryName, entityTypeGUID);
+
+        repositoryValidator.validateTypeDefForInstance(repositoryName, entityGUIDParameterName, typeDef, methodName);
+        repositoryValidator.validateClassificationList(repositoryName,
+                                                       classificationsParameterName,
+                                                       initialClassifications,
+                                                       typeDef.getName(),
+                                                       methodName);
+
+        repositoryValidator.validatePropertiesForType(repositoryName,
+                                                      propertiesParameterName,
+                                                      typeDef,
+                                                      initialProperties,
+                                                      methodName);
+
+        repositoryValidator.validateInstanceStatus(repositoryName,
+                                                   initialStatusParameterName,
+                                                   initialStatus,
+                                                   typeDef,
+                                                   methodName);
+
+        /*
+         * Validation complete - ok to create new instance
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Create requests occur in the first repository that accepts the call.
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
+         * there are no positive results from any repository.
+         */
+        InvalidParameterException    invalidParameterException    = null;
+        TypeErrorException           typeErrorException           = null;
+        PropertyErrorException       propertyErrorException       = null;
+        ClassificationErrorException classificationErrorException = null;
+        StatusNotSupportedException  statusNotSupportedException  = null;
+        UserNotAuthorizedException   userNotAuthorizedException   = null;
+        RepositoryErrorException     repositoryErrorException     = null;
+        Throwable                    anotherException             = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    return metadataCollection.addEntity(userId,
+                                                        entityTypeGUID,
+                                                        initialProperties,
+                                                        initialClassifications,
+                                                        initialStatus);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (ClassificationErrorException error)
+                {
+                    classificationErrorException = error;
+                }
+                catch (TypeErrorException error)
+                {
+                    typeErrorException = error;
+                }
+                catch (StatusNotSupportedException error)
+                {
+                    statusNotSupportedException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedTypeErrorException(typeErrorException);
+        throwCapturedClassificationErrorException(classificationErrorException);
+        throwCapturedPropertyErrorException(propertyErrorException);
+        throwCapturedStatusNotSupportedException(statusNotSupportedException);
+        throwCapturedInvalidParameterException(invalidParameterException);
 
         return null;
     }
@@ -2411,33 +4153,14 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      *
      * @param userId - unique identifier for requesting user.
      * @param entityProxy - details of entity to add.
-     * @throws InvalidParameterException - one of the parameters is invalid or null.
-     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
-     *                                    the metadata collection is stored.
-     * @throws TypeErrorException - the requested type is not known, or not supported in the metadata repository
-     *                            hosting the metadata collection.
-     * @throws PropertyErrorException - one or more of the requested properties are not defined, or have different
-     *                                characteristics in the TypeDef for this entity's type.
-     * @throws ClassificationErrorException - one or more of the requested classifications are either not known or
-     *                                         not defined for this entity type.
-     * @throws StatusNotSupportedException - the metadata repository hosting the metadata collection does not support
-     *                                     the requested status.
      * @throws FunctionNotSupportedException - the repository does not support entity proxies as first class elements.
-     * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
     public void addEntityProxy(String       userId,
-                               EntityProxy  entityProxy) throws InvalidParameterException,
-                                                                RepositoryErrorException,
-                                                                TypeErrorException,
-                                                                PropertyErrorException,
-                                                                ClassificationErrorException,
-                                                                StatusNotSupportedException,
-                                                                FunctionNotSupportedException,
-                                                                UserNotAuthorizedException
+                               EntityProxy  entityProxy) throws FunctionNotSupportedException
     {
-        final String                       methodName = "addEntityProxy()";
+        final String  methodName         = "addEntityProxy";
 
-        // TODO - missing implementation
+        throwNotEnterpriseFunction(methodName);
     }
 
 
@@ -2464,36 +4187,36 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                               StatusNotSupportedException,
                                                                               UserNotAuthorizedException
     {
-        final String   methodName = "updateEntityStatus()";
+        final String  methodName               = "updateEntityStatus";
+        final String  entityGUIDParameterName  = "entityGUID";
 
-        EntityDetail     entityDetail = this.isEntityKnown(userId, entityGUID);
-        EntityUniverse   entity = null;
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        if (entityDetail == null)
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        EntitySummary     entity = this.getEntitySummary(userId, entityGUID);
+
+        repositoryValidator.validateEntityFromStore(repositoryName, entityGUID, entity, methodName);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(entity, methodName);
+
+        if (homeRepositoryConnector == null)
         {
-            OMRSErrorCode  errorCode = OMRSErrorCode.ENTITY_NOT_KNOWN;
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
             String         errorMessage = errorCode.getErrorMessageId()
-                                        + errorCode.getFormattedErrorMessage(entityGUID,
-                                                         enterpriseMetadataCollectionName + " (" +
-                                                                 enterpriseMetadataCollectionId + ")");
-
-            throw new EntityNotKnownException(errorCode.getHTTPErrorCode(),
-                                              this.getClass().getName(),
-                                              methodName,
-                                              errorMessage,
-                                              errorCode.getSystemAction(),
-                                              errorCode.getUserAction());
-        }
-
-        String    homeMetadataCollectionId = entityDetail.getMetadataCollectionId();
-
-        if (homeMetadataCollectionId == null)
-        {
-            OMRSErrorCode  errorCode = OMRSErrorCode.NULL_HOME_METADATA_COLLECTION_ID;
-            String         errorMessage = errorCode.getErrorMessageId()
-                    + errorCode.getFormattedErrorMessage(entityGUID,
-                                                         enterpriseMetadataCollectionName + " (" +
-                                                                 enterpriseMetadataCollectionId + ")");
+                                        + errorCode.getFormattedErrorMessage(methodName, entityGUID, entity.getMetadataCollectionId());
 
             throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
                                                this.getClass().getName(),
@@ -2503,42 +4226,7 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                errorCode.getUserAction());
         }
 
-    /*
-     * Step through the registered open metadata repositories to locate the home.  Once it is found
-     * the update request can be made.
-     */
-        List<OMRSMetadataCollection>  metadataCollections = parentConnector.getMetadataCollections();
-        for (OMRSMetadataCollection  metadataCollection : metadataCollections)
-        {
-            if (metadataCollection != null)
-            {
-                String             metadataCollectionId = metadataCollection.getMetadataCollectionId();
-                if (homeMetadataCollectionId.equals(metadataCollectionId))
-                {
-                /*
-                 * Issue request
-                 */
-                }
-            }
-        }
-
-        if (entity == null)
-        {
-            OMRSErrorCode  errorCode = OMRSErrorCode.ENTITY_NOT_KNOWN;
-            String         errorMessage = errorCode.getErrorMessageId()
-                    + errorCode.getFormattedErrorMessage(entityGUID,
-                                                         enterpriseMetadataCollectionName + " (" +
-                                                                 enterpriseMetadataCollectionId + ")");
-
-            throw new EntityNotKnownException(errorCode.getHTTPErrorCode(),
-                                              this.getClass().getName(),
-                                              methodName,
-                                              errorMessage,
-                                              errorCode.getSystemAction(),
-                                              errorCode.getUserAction());
-        }
-
-        return entity;
+        return homeRepositoryConnector.getMetadataCollection().updateEntityStatus(userId, entityGUID, newStatus);
     }
 
 
@@ -2565,11 +4253,47 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                        PropertyErrorException,
                                                                                        UserNotAuthorizedException
     {
-        final String                       methodName = "updateEntityProperties()";
+        final String  methodName = "updateEntityProperties";
+        final String  entityGUIDParameterName  = "entityGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        EntitySummary     entity = this.getEntitySummary(userId, entityGUID);
+
+        repositoryValidator.validateEntityFromStore(repositoryName, entityGUID, entity, methodName);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(entity, methodName);
+
+        if (homeRepositoryConnector == null)
+        {
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     entityGUID,
+                                                                                                     entity.getMetadataCollectionId());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
+
+        return homeRepositoryConnector.getMetadataCollection().updateEntityProperties(userId, entityGUID, properties);
     }
 
 
@@ -2593,11 +4317,47 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                       FunctionNotSupportedException,
                                                                       UserNotAuthorizedException
     {
-        final String                       methodName = "undoEntityUpdate()";
+        final String  methodName = "undoEntityUpdate";
+        final String  entityGUIDParameterName  = "entityGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        EntitySummary     entity = this.getEntitySummary(userId, entityGUID);
+
+        repositoryValidator.validateEntityFromStore(repositoryName, entityGUID, entity, methodName);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(entity, methodName);
+
+        if (homeRepositoryConnector == null)
+        {
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     entityGUID,
+                                                                                                     entity.getMetadataCollectionId());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
+
+        return homeRepositoryConnector.getMetadataCollection().undoEntityUpdate(userId, entityGUID);
     }
 
 
@@ -2628,11 +4388,55 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                         FunctionNotSupportedException,
                                                                         UserNotAuthorizedException
     {
-        final String                       methodName = "deleteEntity()";
+        final String  methodName               = "deleteEntity";
+        final String  typeDefGUIDParameterName = "typeDefGUID";
+        final String  typeDefNameParameterName = "typeDefName";
+        final String  entityGUIDParameterName  = "obsoleteEntityGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               typeDefGUIDParameterName,
+                                               typeDefNameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, obsoleteEntityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        EntitySummary     entity = this.getEntitySummary(userId, obsoleteEntityGUID);
+
+        repositoryValidator.validateEntityFromStore(repositoryName, obsoleteEntityGUID, entity, methodName);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(entity, methodName);
+
+        if (homeRepositoryConnector == null)
+        {
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     obsoleteEntityGUID,
+                                                                                                     entity.getMetadataCollectionId());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
+
+        return homeRepositoryConnector.getMetadataCollection().deleteEntity(userId, typeDefGUID, typeDefName, obsoleteEntityGUID);
     }
 
 
@@ -2659,9 +4463,100 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                 EntityNotDeletedException,
                                                                 UserNotAuthorizedException
     {
-        final String                       methodName = "purgeEntity()";
+        final String  methodName               = "purgeEntity";
+        final String  typeDefGUIDParameterName = "typeDefGUID";
+        final String  typeDefNameParameterName = "typeDefName";
+        final String  entityGUIDParameterName  = "deletedEntityGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               typeDefGUIDParameterName,
+                                               typeDefNameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, deletedEntityGUID, methodName);
+
+        /*
+         * Validation complete - ok to purge the instance
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Purge requests occur in the first repository that accepts the call.
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
+         * there are no positive results from any repository.
+         */
+        InvalidParameterException  invalidParameterException  = null;
+        EntityNotKnownException    entityNotKnownException    = null;
+        EntityNotDeletedException  entityNotDeletedException  = null;
+        UserNotAuthorizedException userNotAuthorizedException = null;
+        RepositoryErrorException   repositoryErrorException   = null;
+        Throwable                  anotherException           = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    metadataCollection.purgeEntity(userId, typeDefGUID, typeDefName, deletedEntityGUID);
+                    return;
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (EntityNotKnownException error)
+                {
+                    entityNotKnownException = error;
+                }
+                catch (EntityNotDeletedException error)
+                {
+                    entityNotDeletedException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedEntityNotDeletedException(entityNotDeletedException);
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedEntityNotKnownException(entityNotKnownException);
+        throwCapturedInvalidParameterException(invalidParameterException);
+
+        return;
     }
 
 
@@ -2687,9 +4582,104 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                           FunctionNotSupportedException,
                                                                           UserNotAuthorizedException
     {
-        final String                       methodName = "restoreEntity()";
+        final String  methodName              = "restoreEntity";
+        final String  entityGUIDParameterName = "deletedEntityGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, deletedEntityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+        EntityDetail  entity  = this.isEntityKnown(userId, deletedEntityGUID);
+
+        repositoryValidator.validateEntityFromStore(repositoryName, deletedEntityGUID, entity, methodName);
+
+        repositoryValidator.validateEntityIsDeleted(repositoryName, entity, methodName);
+
+        /*
+         * Validation is complete.  It is ok to restore the entity.
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Restore requests occur in the first repository that accepts the call.
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
+         * there are no positive results from any repository.
+         */
+        InvalidParameterException     invalidParameterException     = null;
+        EntityNotKnownException       entityNotKnownException       = null;
+        EntityNotDeletedException     entityNotDeletedException     = null;
+        UserNotAuthorizedException    userNotAuthorizedException    = null;
+        RepositoryErrorException      repositoryErrorException      = null;
+        FunctionNotSupportedException functionNotSupportedException = null;
+        Throwable                     anotherException              = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    return metadataCollection.restoreEntity(userId, deletedEntityGUID);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (EntityNotKnownException error)
+                {
+                    entityNotKnownException = error;
+                }
+                catch (EntityNotDeletedException error)
+                {
+                    entityNotDeletedException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedEntityNotDeletedException(entityNotDeletedException);
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedEntityNotKnownException(entityNotKnownException);
+        throwCapturedInvalidParameterException(invalidParameterException);
+        throwCapturedFunctionNotSupportedException(functionNotSupportedException);
 
         return null;
     }
@@ -2723,11 +4713,50 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                              PropertyErrorException,
                                                                                              UserNotAuthorizedException
     {
-        final String                       methodName = "classifyEntity()";
+        final String  methodName                  = "classifyEntity";
+        final String  entityGUIDParameterName     = "entityGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        EntitySummary     entity = this.getEntitySummary(userId, entityGUID);
+
+        repositoryValidator.validateEntityFromStore(repositoryName, entityGUID, entity, methodName);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(entity, methodName);
+
+        if (homeRepositoryConnector == null)
+        {
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     entityGUID,
+                                                                                                     entity.getMetadataCollectionId());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
+
+        return homeRepositoryConnector.getMetadataCollection().classifyEntity(userId,
+                                                                              entityGUID,
+                                                                              classificationName,
+                                                                              classificationProperties);
     }
 
 
@@ -2753,11 +4782,52 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                               ClassificationErrorException,
                                                                               UserNotAuthorizedException
     {
-        final String                       methodName = "declassifyEntity()";
+        final String  methodName                  = "declassifyEntity";
+        final String  entityGUIDParameterName     = "entityGUID";
+        final String  classificationParameterName = "classificationName";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+        repositoryValidator.validateClassificationName(repositoryName,
+                                                       classificationParameterName,
+                                                       classificationName,
+                                                       methodName);
+
+        /*
+         * Locate entity
+         */
+
+        EntitySummary     entity = this.getEntitySummary(userId, entityGUID);
+
+        repositoryValidator.validateEntityFromStore(repositoryName, entityGUID, entity, methodName);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(entity, methodName);
+
+        if (homeRepositoryConnector == null)
+        {
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     entityGUID,
+                                                                                                     entity.getMetadataCollectionId());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
+
+        return homeRepositoryConnector.getMetadataCollection().declassifyEntity(userId, entityGUID, classificationName);
     }
 
 
@@ -2788,11 +4858,52 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                            PropertyErrorException,
                                                                                            UserNotAuthorizedException
     {
-        final String                       methodName = "updateEntityClassification()";
+        final String  methodName = "updateEntityClassification";
+        final String  entityGUIDParameterName     = "entityGUID";
+        final String  classificationParameterName = "classificationName";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+        repositoryValidator.validateClassificationName(repositoryName, classificationParameterName, classificationName, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        EntitySummary     entity = this.getEntitySummary(userId, entityGUID);
+
+        repositoryValidator.validateEntityFromStore(repositoryName, entityGUID, entity, methodName);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(entity, methodName);
+
+        if (homeRepositoryConnector == null)
+        {
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     entityGUID,
+                                                                                                     entity.getMetadataCollectionId());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
+
+        return homeRepositoryConnector.getMetadataCollection().updateEntityClassification(userId,
+                                                                                          entityGUID,
+                                                                                          classificationName,
+                                                                                          properties);
     }
 
 
@@ -2832,9 +4943,128 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                    StatusNotSupportedException,
                                                                                    UserNotAuthorizedException
     {
-        final String                       methodName = "addRelationship()";
+        final String  methodName = "addRelationship";
+        final String  guidParameterName = "relationshipTypeGUID";
+        final String  propertiesParameterName       = "initialProperties";
+        final String  initialStatusParameterName    = "initialStatus";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, relationshipTypeGUID, methodName);
+
+        TypeDef  typeDef = repositoryHelper.getTypeDef(repositoryName, relationshipTypeGUID);
+
+        repositoryValidator.validateTypeDefForInstance(repositoryName, guidParameterName, typeDef, methodName);
+
+
+        repositoryValidator.validatePropertiesForType(repositoryName,
+                                                      propertiesParameterName,
+                                                      typeDef,
+                                                      initialProperties,
+                                                      methodName);
+
+        repositoryValidator.validateInstanceStatus(repositoryName,
+                                                   initialStatusParameterName,
+                                                   initialStatus,
+                                                   typeDef,
+                                                   methodName);
+
+        /*
+         * Validation complete - ok to create new instance
+         */
+        /*
+         * Validation complete - ok to create new instance
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Create requests occur in the first repository that accepts the call.
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
+         * there are no positive results from any repository.
+         */
+        InvalidParameterException    invalidParameterException    = null;
+        EntityNotKnownException      entityNotKnownException      = null;
+        TypeErrorException           typeErrorException           = null;
+        PropertyErrorException       propertyErrorException       = null;
+        StatusNotSupportedException  statusNotSupportedException  = null;
+        UserNotAuthorizedException   userNotAuthorizedException   = null;
+        RepositoryErrorException     repositoryErrorException     = null;
+        Throwable                    anotherException             = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    return metadataCollection.addRelationship(userId,
+                                                              relationshipTypeGUID,
+                                                              initialProperties,
+                                                              entityOneGUID,
+                                                              entityTwoGUID,
+                                                              initialStatus);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (EntityNotKnownException error)
+                {
+                    entityNotKnownException = error;
+                }
+                catch (TypeErrorException error)
+                {
+                    typeErrorException = error;
+                }
+                catch (StatusNotSupportedException error)
+                {
+                    statusNotSupportedException = error;
+                }
+                catch (PropertyErrorException error)
+                {
+                    propertyErrorException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedEntityNotKnownException(entityNotKnownException);
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedTypeErrorException(typeErrorException);
+        throwCapturedPropertyErrorException(propertyErrorException);
+        throwCapturedStatusNotSupportedException(statusNotSupportedException);
+        throwCapturedInvalidParameterException(invalidParameterException);
 
         return null;
     }
@@ -2863,11 +5093,46 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                     StatusNotSupportedException,
                                                                                     UserNotAuthorizedException
     {
-        final String                       methodName = "updateRelationshipStatus()";
+        final String  methodName          = "updateRelationshipStatus";
+        final String  guidParameterName   = "relationshipGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, relationshipGUID, methodName);
+
+        /*
+         * Locate relationship
+         */
+        Relationship  relationship = this.getRelationship(userId, relationshipGUID);
+
+        repositoryValidator.validateInstanceType(repositoryName, relationship);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(relationship, methodName);
+
+        if (homeRepositoryConnector == null)
+        {
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     relationshipGUID,
+                                                                                                     relationship.getMetadataCollectionId());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
+
+        return homeRepositoryConnector.getMetadataCollection().updateRelationshipStatus(userId, relationshipGUID, newStatus);
     }
 
 
@@ -2894,11 +5159,46 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                              PropertyErrorException,
                                                                                              UserNotAuthorizedException
     {
-        final String                       methodName = "updateRelationshipProperties()";
+        final String  methodName = "updateRelationshipProperties";
+        final String  guidParameterName = "relationshipGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, relationshipGUID, methodName);
+
+        /*
+         * Locate relationship
+         */
+        Relationship  relationship = this.getRelationship(userId, relationshipGUID);
+
+        repositoryValidator.validateInstanceType(repositoryName, relationship);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(relationship, methodName);
+
+        if (homeRepositoryConnector == null)
+        {
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     relationshipGUID,
+                                                                                                     relationship.getMetadataCollectionId());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
+
+        return homeRepositoryConnector.getMetadataCollection().updateRelationshipProperties(userId, relationshipGUID, properties);
     }
 
 
@@ -2922,11 +5222,46 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                   FunctionNotSupportedException,
                                                                                   UserNotAuthorizedException
     {
-        final String                       methodName = "undoRelationshipUpdate()";
+        final String  methodName = "undoRelationshipUpdate";
+        final String  guidParameterName = "relationshipGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, relationshipGUID, methodName);
+
+        /*
+         * Locate relationship
+         */
+        Relationship  relationship = this.getRelationship(userId, relationshipGUID);
+
+        repositoryValidator.validateInstanceType(repositoryName, relationship);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(relationship, methodName);
+
+        if (homeRepositoryConnector == null)
+        {
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     relationshipGUID,
+                                                                                                     relationship.getMetadataCollectionId());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
+
+        return homeRepositoryConnector.getMetadataCollection().undoRelationshipUpdate(userId, relationshipGUID);
     }
 
 
@@ -2957,11 +5292,64 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                       FunctionNotSupportedException,
                                                                                       UserNotAuthorizedException
     {
-        final String                       methodName = "deleteRelationship()";
+        final String  methodName = "deleteRelationship";
+        final String  guidParameterName = "typeDefGUID";
+        final String  nameParameterName = "typeDefName";
+        final String  relationshipParameterName = "obsoleteRelationshipGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
 
-        return null;
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, relationshipParameterName, obsoleteRelationshipGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+
+        /*
+         * Locate relationship
+         */
+        Relationship  relationship  = this.getRelationship(userId, obsoleteRelationshipGUID);
+
+        repositoryValidator.validateTypeForInstanceDelete(repositoryName,
+                                                          typeDefGUID,
+                                                          typeDefName,
+                                                          relationship,
+                                                          methodName);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+        OMRSRepositoryConnector homeRepositoryConnector = enterpriseParentConnector.getHomeConnector(relationship, methodName);
+
+        if (homeRepositoryConnector == null)
+        {
+            OMRSErrorCode  errorCode = OMRSErrorCode.NO_HOME_FOR_INSTANCE;
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     obsoleteRelationshipGUID,
+                                                                                                     relationship.getMetadataCollectionId());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
+
+        /*
+         * A delete is a soft-delete that updates the status to DELETED.
+         */
+        return homeRepositoryConnector.getMetadataCollection().deleteRelationship(userId,
+                                                                                  typeDefGUID,
+                                                                                  typeDefName,
+                                                                                  obsoleteRelationshipGUID);
     }
 
 
@@ -2988,9 +5376,114 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                             RelationshipNotDeletedException,
                                                                             UserNotAuthorizedException
     {
-        final String                       methodName = "purgeRelationship()";
+        final String  methodName = "purgeRelationship";
+        final String  guidParameterName = "typeDefGUID";
+        final String  nameParameterName = "typeDefName";
+        final String  relationshipParameterName = "deletedRelationshipGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, relationshipParameterName, deletedRelationshipGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+
+        /*
+         * Locate relationship
+         */
+        Relationship  relationship  = this.getRelationship(userId, deletedRelationshipGUID);
+
+        repositoryValidator.validateTypeForInstanceDelete(repositoryName,
+                                                          typeDefGUID,
+                                                          typeDefName,
+                                                          relationship,
+                                                          methodName);
+
+        repositoryValidator.validateRelationshipIsDeleted(repositoryName, relationship, methodName);
+
+
+        /*
+         * Validation is complete.  It is ok to purge the relationship.
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Restore requests occur in the first repository that accepts the call.
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
+         * there are no positive results from any repository.
+         */
+        InvalidParameterException       invalidParameterException       = null;
+        RelationshipNotKnownException   relationshipNotKnownException   = null;
+        RelationshipNotDeletedException relationshipNotDeletedException = null;
+        UserNotAuthorizedException      userNotAuthorizedException      = null;
+        RepositoryErrorException        repositoryErrorException        = null;
+        Throwable                       anotherException                = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    metadataCollection.purgeRelationship(userId, typeDefGUID, typeDefName, deletedRelationshipGUID);
+                    return;
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (RelationshipNotKnownException error)
+                {
+                    relationshipNotKnownException = error;
+                }
+                catch (RelationshipNotDeletedException error)
+                {
+                    relationshipNotDeletedException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedRelationshipNotDeletedException(relationshipNotDeletedException);
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedRelationshipNotKnownException(relationshipNotKnownException);
+        throwCapturedInvalidParameterException(invalidParameterException);
+
+        return;
     }
 
 
@@ -3017,9 +5510,102 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                       FunctionNotSupportedException,
                                                                                       UserNotAuthorizedException
     {
-        final String                       methodName = "restoreRelationship()";
+        final String  methodName = "restoreRelationship";
+        final String  guidParameterName = "deletedRelationshipGUID";
 
-        // TODO - missing implementation
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, deletedRelationshipGUID, methodName);
+
+        /*
+         * Locate relationship
+         */
+        Relationship  relationship  = this.getRelationship(userId, deletedRelationshipGUID);
+
+        repositoryValidator.validateRelationshipIsDeleted(repositoryName, relationship, methodName);
+
+        /*
+         * Validation is complete.  It is ok to restore the relationship.
+         *
+         * The list of cohort connectors are retrieved for each request to ensure that any changes in
+         * the shape of the cohort are reflected immediately.
+         */
+        List<OMRSRepositoryConnector> cohortConnectors = enterpriseParentConnector.getCohortConnectors(methodName);
+
+        /*
+         * Ready to process the request.  Restore requests occur in the first repository that accepts the call.
+         * Some repositories may produce exceptions.  These exceptions are saved and will be returned if
+         * there are no positive results from any repository.
+         */
+        InvalidParameterException       invalidParameterException       = null;
+        RelationshipNotKnownException   relationshipNotKnownException   = null;
+        RelationshipNotDeletedException relationshipNotDeletedException = null;
+        UserNotAuthorizedException      userNotAuthorizedException      = null;
+        RepositoryErrorException        repositoryErrorException        = null;
+        FunctionNotSupportedException   functionNotSupportedException   = null;
+        Throwable                       anotherException                = null;
+
+        /*
+         * Loop through the metadata collections extracting the typedefs from each repository.
+         */
+        for (OMRSRepositoryConnector cohortConnector : cohortConnectors)
+        {
+            if (cohortConnector != null)
+            {
+                OMRSMetadataCollection   metadataCollection = cohortConnector.getMetadataCollection();
+
+                validateMetadataCollection(metadataCollection, methodName);
+
+                try
+                {
+                    /*
+                     * Issue the request and return if it succeeds
+                     */
+                    return metadataCollection.restoreRelationship(userId, deletedRelationshipGUID);
+                }
+                catch (InvalidParameterException error)
+                {
+                    invalidParameterException = error;
+                }
+                catch (FunctionNotSupportedException error)
+                {
+                    functionNotSupportedException = error;
+                }
+                catch (RelationshipNotKnownException error)
+                {
+                    relationshipNotKnownException = error;
+                }
+                catch (RelationshipNotDeletedException error)
+                {
+                    relationshipNotDeletedException = error;
+                }
+                catch (RepositoryErrorException error)
+                {
+                    repositoryErrorException = error;
+                }
+                catch (UserNotAuthorizedException error)
+                {
+                    userNotAuthorizedException = error;
+                }
+                catch (Throwable error)
+                {
+                    anotherException = error;
+                }
+            }
+        }
+
+        throwCapturedRelationshipNotDeletedException(relationshipNotDeletedException);
+        throwCapturedRepositoryErrorException(repositoryErrorException);
+        throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+        throwCapturedThrowableException(anotherException, methodName);
+        throwCapturedRelationshipNotKnownException(relationshipNotKnownException);
+        throwCapturedInvalidParameterException(invalidParameterException);
+        throwCapturedFunctionNotSupportedException(functionNotSupportedException);
 
         return null;
     }
@@ -3203,11 +5789,11 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * Save the entity as a reference copy.  The id of the home metadata collection is already set up in the
      * entity.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entity - details of the entity to save
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      */
-    public void saveEntityReferenceCopy(String         serverName,
+    public void saveEntityReferenceCopy(String userId,
                                         EntityDetail   entity) throws FunctionNotSupportedException
     {
         final String    methodName = "saveEntityReferenceCopy()";
@@ -3221,14 +5807,14 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * remove reference copies from the local cohort, repositories that have left the cohort,
      * or entities that have come from open metadata archives.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entityGUID - the unique identifier for the entity.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
      * @param homeMetadataCollectionId - identifier of the metadata collection that is the home to this entity.
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      */
-    public void purgeEntityReferenceCopy(String   serverName,
+    public void purgeEntityReferenceCopy(String userId,
                                          String   entityGUID,
                                          String   typeDefGUID,
                                          String   typeDefName,
@@ -3244,14 +5830,14 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * The local repository has requested that the repository that hosts the home metadata collection for the
      * specified entity sends out the details of this entity so the local repository can create a reference copy.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entityGUID - unique identifier of requested entity
      * @param typeDefGUID - unique identifier of requested entity's TypeDef
      * @param typeDefName - unique name of requested entity's TypeDef
      * @param homeMetadataCollectionId - identifier of the metadata collection that is the home to this entity.
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      */
-    public void refreshEntityReferenceCopy(String   serverName,
+    public void refreshEntityReferenceCopy(String userId,
                                            String   entityGUID,
                                            String   typeDefGUID,
                                            String   typeDefName,
@@ -3267,11 +5853,11 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * Save the relationship as a reference copy.  The id of the home metadata collection is already set up in the
      * relationship.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param relationship - relationship to save
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      */
-    public void saveRelationshipReferenceCopy(String         serverName,
+    public void saveRelationshipReferenceCopy(String userId,
                                               Relationship   relationship) throws FunctionNotSupportedException
     {
         final String    methodName = "saveRelationshipReferenceCopy()";
@@ -3285,14 +5871,14 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * remove reference copies from the local cohort, repositories that have left the cohort,
      * or relationships that have come from open metadata archives.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param relationshipGUID - the unique identifier for the relationship.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
      * @param homeMetadataCollectionId - unique identifier for the home repository for this relationship.
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      */
-    public void purgeRelationshipReferenceCopy(String   serverName,
+    public void purgeRelationshipReferenceCopy(String userId,
                                                String   relationshipGUID,
                                                String   typeDefGUID,
                                                String   typeDefName,
@@ -3309,14 +5895,14 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * specified relationship sends out the details of this relationship so the local repository can create a
      * reference copy.
      *
-     * @param serverName - unique identifier for requesting user.
+     * @param userId - unique identifier for requesting user.
      * @param relationshipGUID - unique identifier of the relationship
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
      * @param homeMetadataCollectionId - unique identifier for the home repository for this relationship.
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      */
-    public void refreshRelationshipReferenceCopy(String   serverName,
+    public void refreshRelationshipReferenceCopy(String userId,
                                                  String   relationshipGUID,
                                                  String   typeDefGUID,
                                                  String   typeDefName,
@@ -3333,108 +5919,292 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
      * Private validation and processing methods
      */
 
+
     /**
-     * Adds the returned TypeDef to the combined results if it is not already included.
-     * Also performs multiple validations since it is pulling metadata from a potentially heterogeneous
-     * metadata repository ecosystem.
+     * Build a combined list of AttributeTypeDefs.
      *
-     * @param currentResults - current list of TypeDefs
-     * @param returnedTypeDef - new TypeDef
-     * @param sourceMetadataCollectionId - identifier of the metadata collection where the returned TypeDef came from
-     * @return list of unique TypeDefs
-     * @throws RepositoryErrorException - if the returned TypeDef is not valid
+     * @param accumulatedResults - current accumulated AttributeTypeDefs
+     * @param newResults - newly received AttributeTypeDefs
+     * @param serverName - name of the server that provided the new AttributeTypeDefs
+     * @param metadataCollectionId - unique identifier for metadata collection that provided the new AttributeTypeDefs
+     * @param methodName - method name that returned the new AttributeTypeDefs
+     * @return combined results
      */
-    private  List<TypeDef>   addUniqueTypeDef(List<TypeDef> currentResults,
-                                              TypeDef            returnedTypeDef,
-                                              String             sourceMetadataCollectionId) throws RepositoryErrorException
+    private HashMap<String, AttributeTypeDef>   addUniqueAttributeTypeDefs(HashMap<String, AttributeTypeDef>   accumulatedResults,
+                                                                           List<AttributeTypeDef>              newResults,
+                                                                           String                              serverName,
+                                                                           String                              metadataCollectionId,
+                                                                           String                              methodName)
     {
-        if (returnedTypeDef  != null)
+        HashMap<String, AttributeTypeDef>  combinedResults = new HashMap<>(accumulatedResults);
+
+        if (newResults != null)
         {
-            String    returnedTypeDefGUID = returnedTypeDef.getGUID();
-            String    returnedTypeDefName = returnedTypeDef.getName();
-            long      returnedTypeDefVersion = returnedTypeDef.getVersion();
-
-            /*
-             * The returnedTypeDef is ignored if it does not have its header filled out properly.
-             */
-            if ((returnedTypeDefGUID != null) && (returnedTypeDefName != null))
+            for (AttributeTypeDef   attributeTypeDef : newResults)
             {
-                boolean isUnique = true;
-
-                for (TypeDef currentTypeDef : currentResults)
+                if (attributeTypeDef != null)
                 {
-                    if (currentTypeDef.getGUID().equals(returnedTypeDefGUID))
-                    {
-                        if (currentTypeDef.getName().equals(returnedTypeDefName))
-                        {
-                            if (currentTypeDef.getVersion() == returnedTypeDefVersion)
-                            {
-                                if (currentTypeDef.equals(returnedTypeDef))
-                                {
-                                    isUnique = false;
-                                }
-                                else
-                                {
-                                    /*
-                                     * There are differences in the contents of the TypeDef's values.
-                                     * This could cause an integrity problem.
-                                     * An exception is thrown and a message is logged to the administrator.
-                                     */
-
-                                }
-                            }
-                            else
-                            {
-                                /*
-                                 * Multiple versions of the same TypeDef are active.  If the patches are compatible it
-                                 * may not be a problem but there may be an issue.  Both versions of the TypeDef
-                                 * will be returned to the caller and a warning logged to the audit log.
-                                 */
-                            }
-                        }
-                        else
-                        {
-                            /*
-                             * Multiple TypeDefs with the same GUID are in operation.  This is a serious problem.
-                             * An exception is thrown and a message is logged to the administrator.
-                             */
-                        }
-                    }
-                    else /* GUIDs are different */
-                    {
-                        if (currentTypeDef.getName().equals(returnedTypeDefName))
-                        {
-                            /*
-                             * Multiple TypeDefs with the same name are in operation.This is a serious problem.
-                             * An exception is thrown and a message is logged to the administrator.
-                             */
-                        }
-                    }
-                }
-
-                /*
-                 * The returned Typedef is unique, so add it to the results.
-                 */
-                if (isUnique)
-                {
-                    currentResults.add(returnedTypeDef);
+                    combinedResults = addUniqueAttributeTypeDef(combinedResults,
+                                                                attributeTypeDef,
+                                                                serverName,
+                                                                metadataCollectionId,
+                                                                methodName);
                 }
             }
-            else
-            {
-                /*
-                 * Incomplete TypeDef returned
-                 */
-            }
-        }
-        else
-        {
-            /*
-             * Null TypeDef returned
-             */
         }
 
-        return currentResults;
+        return combinedResults;
+    }
+
+
+    /**
+     * Build a combined list of AttributeTypeDefs.
+     *
+     * @param accumulatedResults - current accumulated AttributeTypeDefs
+     * @param attributeTypeDef - newly received AttributeTypeDef
+     * @param serverName - name of the server that provided the new AttributeTypeDef
+     * @param metadataCollectionId - unique identifier for metadata collection that provided the new AttributeTypeDef
+     * @param methodName - method name that returned the new AttributeTypeDef
+     * @return combined results
+     */
+    private HashMap<String, AttributeTypeDef>   addUniqueAttributeTypeDef(HashMap<String, AttributeTypeDef>   accumulatedResults,
+                                                                          AttributeTypeDef                    attributeTypeDef,
+                                                                          String                              serverName,
+                                                                          String                              metadataCollectionId,
+                                                                          String                              methodName)
+    {
+        HashMap<String, AttributeTypeDef>  combinedResults = new HashMap<>(accumulatedResults);
+
+        if (attributeTypeDef != null)
+        {
+            AttributeTypeDef   existingAttributeTypeDef = combinedResults.put(attributeTypeDef.getGUID(), attributeTypeDef);
+
+            // todo validate that existing attributeTypeDef and the new one are copies
+
+        }
+
+        return combinedResults;
+    }
+
+
+    /**
+     * Build a combined list of TypeDefs.
+     *
+     * @param accumulatedResults - current accumulated TypeDefs
+     * @param returnedTypeDefs - newly received TypeDefs
+     * @param serverName - name of the server that provided the new TypeDefs
+     * @param metadataCollectionId - unique identifier for metadata collection that provided the new TypeDefs
+     * @param methodName - method name that returned the new TypeDefs
+     * @return combined results
+     */
+    private HashMap<String, TypeDef> addUniqueTypeDefs(HashMap<String, TypeDef> accumulatedResults,
+                                                       List<TypeDef>            returnedTypeDefs,
+                                                       String                   serverName,
+                                                       String                   metadataCollectionId,
+                                                       String                   methodName)
+    {
+        HashMap<String, TypeDef>  combinedResults = new HashMap<>(accumulatedResults);
+
+        if (returnedTypeDefs != null)
+        {
+            for (TypeDef returnedTypeDef : returnedTypeDefs)
+            {
+                combinedResults = this.addUniqueTypeDef(combinedResults,
+                                                        returnedTypeDef,
+                                                        serverName,
+                                                        metadataCollectionId,
+                                                        methodName);
+            }
+        }
+
+        return combinedResults;
+    }
+
+    /**
+     * Build a combined list of TypeDefs.
+     *
+     * @param accumulatedResults - current accumulated TypeDefs
+     * @param typeDef - newly received TypeDef
+     * @param serverName - name of the server that provided the new TypeDef
+     * @param metadataCollectionId - unique identifier for metadata collection that provided the new TypeDef
+     * @param methodName - method name that returned the new TypeDef
+     * @return combined results
+     */
+    private HashMap<String, TypeDef>   addUniqueTypeDef(HashMap<String, TypeDef>   accumulatedResults,
+                                                        TypeDef                    typeDef,
+                                                        String                     serverName,
+                                                        String                     metadataCollectionId,
+                                                        String                     methodName)
+    {
+        HashMap<String, TypeDef>  combinedResults = new HashMap<>(accumulatedResults);
+
+        if (typeDef != null)
+        {
+            TypeDef   existingTypeDef = combinedResults.put(typeDef.getGUID(), typeDef);
+
+            // todo validate that existing typeDef and the new one are copies
+        }
+
+        return combinedResults;
+    }
+
+
+    /**
+     * Build a combined list of entities.
+     *
+     * @param accumulatedResults - current accumulated entities
+     * @param results - newly received list of entities
+     * @param serverName - name of the server that provided the new entity
+     * @param metadataCollectionId - unique identifier for metadata collection that provided the new entity
+     * @param methodName - method name that returned the new entity
+     * @return combined results
+     */
+    private HashMap<String, EntityDetail> addUniqueEntities(HashMap<String, EntityDetail> accumulatedResults,
+                                                            List<EntityDetail>            results,
+                                                            String                        serverName,
+                                                            String                        metadataCollectionId,
+                                                            String                        methodName)
+    {
+        HashMap<String, EntityDetail>  combinedResults = new HashMap<>(accumulatedResults);
+
+        if (results != null)
+        {
+            for (EntityDetail returnedEntity : results)
+            {
+                combinedResults = this.addUniqueEntity(combinedResults,
+                                                       returnedEntity,
+                                                       serverName,
+                                                       metadataCollectionId,
+                                                       methodName);
+            }
+        }
+
+        return combinedResults;
+    }
+
+
+    /**
+     * Build a combined list of entities.
+     *
+     * @param accumulatedResults - current accumulated entities
+     * @param entity - newly received entity
+     * @param serverName - name of the server that provided the new entity
+     * @param metadataCollectionId - unique identifier for metadata collection that provided the new entity
+     * @param methodName - method name that returned the new entity
+     * @return combined results
+     */
+    private HashMap<String, EntityDetail> addUniqueEntity(HashMap<String, EntityDetail> accumulatedResults,
+                                                          EntityDetail                  entity,
+                                                          String                        serverName,
+                                                          String                        metadataCollectionId,
+                                                          String                        methodName)
+    {
+        HashMap<String, EntityDetail>  combinedResults = new HashMap<>(accumulatedResults);
+
+        if (entity != null)
+        {
+            EntityDetail   existingEntity = combinedResults.put(entity.getGUID(), entity);
+
+            // todo validate that existing entity and the new one are copies
+        }
+
+        return combinedResults;
+    }
+
+
+    /**
+     * Build a combined list of relationships.
+     *
+     * @param accumulatedResults - current accumulated relationships
+     * @param results - newly received list of relationships
+     * @param serverName - name of the server that provided the new relationship
+     * @param metadataCollectionId - unique identifier for metadata collection that provided the new relationship
+     * @param methodName - method name that returned the new relationship
+     * @return combined results
+     */
+    private HashMap<String, Relationship> addUniqueRelationships(HashMap<String, Relationship> accumulatedResults,
+                                                                 List<Relationship>            results,
+                                                                 String                        serverName,
+                                                                 String                        metadataCollectionId,
+                                                                 String                        methodName)
+    {
+        HashMap<String, Relationship>  combinedResults = new HashMap<>(accumulatedResults);
+
+        if (results != null)
+        {
+            for (Relationship returnedRelationship : results)
+            {
+                combinedResults = this.addUniqueRelationship(combinedResults,
+                                                             returnedRelationship,
+                                                             serverName,
+                                                             metadataCollectionId,
+                                                             methodName);
+            }
+        }
+
+        return combinedResults;
+    }
+
+
+    /**
+     * Build a combined list of relationships.
+     *
+     * @param accumulatedResults - current accumulated relationships
+     * @param relationship - newly received relationship
+     * @param serverName - name of the server that provided the new relationship
+     * @param metadataCollectionId - unique identifier for metadata collection that provided the new relationship
+     * @param methodName - method name that returned the new relationship
+     * @return combined results
+     */
+    private HashMap<String, Relationship> addUniqueRelationship(HashMap<String, Relationship> accumulatedResults,
+                                                                Relationship                  relationship,
+                                                                String                        serverName,
+                                                                String                        metadataCollectionId,
+                                                                String                        methodName)
+    {
+        HashMap<String, Relationship>  combinedResults = new HashMap<>(accumulatedResults);
+
+        if (relationship != null)
+        {
+            Relationship   existingRelationship = combinedResults.put(relationship.getGUID(), relationship);
+
+            // todo validate that existing relationship and the new one are copies
+        }
+
+        return combinedResults;
+    }
+
+
+    /**
+     * Verify that a cohort member's metadata collection is not null.
+     *
+     * @param cohortMetadataCollection - metadata collection
+     * @param methodName - name of method
+     * @throws RepositoryErrorException - null metadata collection
+     */
+    private void validateMetadataCollection(OMRSMetadataCollection  cohortMetadataCollection,
+                                            String                  methodName) throws RepositoryErrorException
+    {
+        /*
+         * The cohort metadata collection should not be null - in a real mess if this fails.
+         */
+        if (cohortMetadataCollection == null)
+        {
+            /*
+             * A problem in the set up of the metadata collection list.  Repository connectors implemented
+             * with no metadata collection are tested for in the OMRSEnterpriseConnectorManager so something
+             * else has gone wrong.
+             */
+            OMRSErrorCode errorCode    = OMRSErrorCode.NULL_ENTERPRISE_METADATA_COLLECTION;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
+        }
     }
 
 
@@ -3456,5 +6226,539 @@ public class EnterpriseOMRSMetadataCollection extends OMRSMetadataCollection
                                                 errorMessage,
                                                 errorCode.getSystemAction(),
                                                 errorCode.getUserAction());
+    }
+
+
+    /**
+     * Throw a TypeDefNotKnownException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws TypeDefNotKnownException - the type definition is not known in any of the federated repositories
+     */
+    private void throwCapturedTypeDefNotKnownException(TypeDefNotKnownException   exception) throws TypeDefNotKnownException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a InvalidParameterException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws InvalidParameterException - one of the parameters is invalid
+     */
+    private void throwCapturedInvalidParameterException(InvalidParameterException   exception) throws InvalidParameterException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a TypeErrorException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws TypeErrorException - the type definition of the instance is not known in any of the federated repositories
+     */
+    private void throwCapturedTypeErrorException(TypeErrorException   exception) throws TypeErrorException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a StatusNotSupportedException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws StatusNotSupportedException - the status is not known in any of the federated repositories
+     */
+    private void throwCapturedStatusNotSupportedException(StatusNotSupportedException   exception) throws StatusNotSupportedException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a ClassificationErrorException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws ClassificationErrorException - the classification is not known
+     */
+    private void throwCapturedClassificationErrorException(ClassificationErrorException   exception) throws ClassificationErrorException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a PropertyErrorException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws PropertyErrorException - the properties are not valid for the call
+     */
+    private void throwCapturedPropertyErrorException(PropertyErrorException   exception) throws PropertyErrorException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a EntityNotKnownException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws EntityNotKnownException - the entity is not known in any of the federated repositories
+     */
+    private void throwCapturedEntityNotKnownException(EntityNotKnownException   exception) throws EntityNotKnownException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a EntityNotDeletedException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws EntityNotDeletedException - the entity is not in deleted status
+     */
+    private void throwCapturedEntityNotDeletedException(EntityNotDeletedException   exception) throws EntityNotDeletedException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a EntityNotKnownException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws EntityProxyOnlyException - only entity proxies have been found in the available federated repositories
+     */
+    private void throwCapturedEntityProxyOnlyException(EntityProxyOnlyException   exception) throws EntityProxyOnlyException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a RelationshipNotKnownException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws RelationshipNotKnownException - the relationship is not known in any of the federated repositories
+     */
+    private void throwCapturedRelationshipNotKnownException(RelationshipNotKnownException   exception) throws RelationshipNotKnownException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a RelationshipNotDeletedException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws RelationshipNotDeletedException - the relationship is not in deleted status
+     */
+    private void throwCapturedRelationshipNotDeletedException(RelationshipNotDeletedException   exception) throws RelationshipNotDeletedException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a UserNotAuthorizedException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws TypeDefNotSupportedException - the type definition is not supported in any of the federated repositories
+     */
+    private void throwCapturedTypeDefNotSupportedException(TypeDefNotSupportedException   exception) throws TypeDefNotSupportedException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a FunctionNotSupportedException if it was returned by all of the calls to the cohort connectors.
+     *
+     * @param exception - captured exception
+     * @throws FunctionNotSupportedException - the requested function is not supported in any of the federated repositories
+     */
+    private void throwCapturedFunctionNotSupportedException(FunctionNotSupportedException   exception) throws FunctionNotSupportedException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a UserNotAuthorizedException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws UserNotAuthorizedException - the userId is not authorized in the server
+     */
+    private void throwCapturedUserNotAuthorizedException(UserNotAuthorizedException   exception) throws UserNotAuthorizedException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a RepositoryErrorException if it was returned by one of the calls to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws RepositoryErrorException - there was an error in the repository
+     */
+    private void throwCapturedRepositoryErrorException(RepositoryErrorException   exception) throws RepositoryErrorException
+    {
+        if (exception != null)
+        {
+            throw exception;
+        }
+    }
+
+
+    /**
+     * Throw a RepositoryErrorException if an unexpected Throwable exception was returned by one of the calls
+     * to a cohort connector.
+     *
+     * @param exception - captured exception
+     * @throws RepositoryErrorException - there was an unexpected error in the repository
+     */
+    private void throwCapturedThrowableException(Throwable   exception,
+                                                 String      methodName) throws RepositoryErrorException
+    {
+        if (exception != null)
+        {
+            OMRSErrorCode errorCode = OMRSErrorCode.UNEXPECTED_EXCEPTION_FROM_COHORT;
+
+            String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                     exception.getMessage());
+
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                                    this.getClass().getName(),
+                                                    methodName,
+                                                    errorMessage,
+                                                    errorCode.getSystemAction(),
+                                                    errorCode.getUserAction());
+        }
+    }
+
+
+    /**
+     * Take the results of the federated connectors and combine them into a valid TypeDef gallery or an
+     * exception.
+     *
+     * @param repositoryName - the name of this repository
+     * @param combinedTypeDefResults - TypeDefs returned by the federated connectors
+     * @param combinedAttributeTypeDefResults - AttributeTypeDefs returned by the federated connectors
+     * @param userNotAuthorizedException - captured user not authorized exception
+     * @param repositoryErrorException - captured repository error exception
+     * @param anotherException - captured Throwable
+     * @param methodName - name of the method issuing the request
+     * @return TypeDefGallery
+     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository.
+     * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
+     */
+    private TypeDefGallery validatedTypeDefGalleryResults(String                                 repositoryName,
+                                                          HashMap<String, TypeDef>               combinedTypeDefResults,
+                                                          HashMap<String, AttributeTypeDef>      combinedAttributeTypeDefResults,
+                                                          UserNotAuthorizedException             userNotAuthorizedException,
+                                                          RepositoryErrorException               repositoryErrorException,
+                                                          Throwable                              anotherException,
+                                                          String                                 methodName) throws RepositoryErrorException,
+                                                                                                                    UserNotAuthorizedException
+    {
+        int  resultCount = (combinedTypeDefResults.size() + combinedAttributeTypeDefResults.size());
+
+        /*
+         * Return any results, or exception if nothing is found.
+         */
+        if (resultCount > 0)
+        {
+            TypeDefGallery         typeDefGallery    = new TypeDefGallery();
+            List<AttributeTypeDef> attributeTypeDefs = new ArrayList<>(combinedAttributeTypeDefResults.values());
+            List<TypeDef>          typeDefs          = new ArrayList<>(combinedTypeDefResults.values());
+
+            repositoryValidator.validateEnterpriseTypeDefs(repositoryName, typeDefs, methodName);
+
+            typeDefGallery.setAttributeTypeDefs(attributeTypeDefs);
+            typeDefGallery.setTypeDefs(typeDefs);
+
+            return typeDefGallery;
+        }
+        else
+        {
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedThrowableException(anotherException, methodName);
+
+            /*
+             * Nothing went wrong - there are just no results.
+             */
+            return null;
+        }
+    }
+
+
+    /**
+     * Take the results of the federated connectors and combine them into a valid TypeDef list or an
+     * exception.
+     *
+     * @param repositoryName - the name of this repository
+     * @param combinedTypeDefResults - TypeDefs returned by the federated connectors
+     * @param userNotAuthorizedException - captured user not authorized exception
+     * @param repositoryErrorException - captured repository error exception
+     * @param anotherException - captured Throwable
+     * @param methodName - name of the method issuing the request
+     * @return list of TypeDefs
+     * @throws RepositoryErrorException - problem in one of the federated connectors
+     * @throws UserNotAuthorizedException - user not recognized or not granted access to the TypeDefs
+     */
+    private List<TypeDef> validatedTypeDefListResults(String                        repositoryName,
+                                                      HashMap<String, TypeDef>      combinedTypeDefResults,
+                                                      UserNotAuthorizedException    userNotAuthorizedException,
+                                                      RepositoryErrorException      repositoryErrorException,
+                                                      Throwable                     anotherException,
+                                                      String                        methodName) throws RepositoryErrorException,
+                                                                                                       UserNotAuthorizedException
+    {
+        /*
+         * Return any results, or null if nothing is found.
+         */
+        if (! combinedTypeDefResults.isEmpty())
+        {
+            List<TypeDef>    typeDefs = new ArrayList<>(combinedTypeDefResults.values());
+
+            repositoryValidator.validateEnterpriseTypeDefs(repositoryName, typeDefs, methodName);
+
+            return typeDefs;
+        }
+        else
+        {
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedThrowableException(anotherException, methodName);
+
+            /*
+             * Nothing went wrong - there are just no results.
+             */
+            return null;
+        }
+    }
+
+
+    /**
+     * Take the results of the federated connectors and combine them into a valid AttributeTypeDef list or an
+     * exception.
+     *
+     * @param repositoryName - the name of this repository
+     * @param combinedAttributeTypeDefResults - AttributeTypeDefs returned by the federated connectors
+     * @param userNotAuthorizedException - captured user not authorized exception
+     * @param repositoryErrorException - captured repository error exception
+     * @param anotherException - captured Throwable
+     * @param methodName - name of the method issuing the request
+     * @return list of AttributeTypeDefs
+     * @throws RepositoryErrorException - problem in one of the federated connectors
+     * @throws UserNotAuthorizedException - user not recognized or not granted access to the TypeDefs
+     */
+    private List<AttributeTypeDef> validatedAttributeTypeDefListResults(String                                 repositoryName,
+                                                                        HashMap<String, AttributeTypeDef>      combinedAttributeTypeDefResults,
+                                                                        UserNotAuthorizedException             userNotAuthorizedException,
+                                                                        RepositoryErrorException               repositoryErrorException,
+                                                                        Throwable                              anotherException,
+                                                                        String                                 methodName) throws RepositoryErrorException,
+                                                                                                                                  UserNotAuthorizedException
+    {
+        /*
+         * Return any results, or null if nothing is found.
+         */
+        if (! combinedAttributeTypeDefResults.isEmpty())
+        {
+            List<AttributeTypeDef>    attributeTypeDefs = new ArrayList<>(combinedAttributeTypeDefResults.values());
+
+            repositoryValidator.validateEnterpriseAttributeTypeDefs(repositoryName, attributeTypeDefs, methodName);
+
+            return attributeTypeDefs;
+        }
+        else
+        {
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedThrowableException(anotherException, methodName);
+
+            /*
+             * Nothing went wrong - there are just no results.
+             */
+            return null;
+        }
+    }
+
+    /**
+     * Return a validated, sorted list of search results.
+     *
+     * @param repositoryName - name of this repository
+     * @param combinedResults - results from all cohort repositories
+     * @param sequencingProperty - String name of the property that is to be used to sequence the results.
+     *                           Null means do not sequence on a property name (see SequencingOrder).
+     * @param sequencingOrder - Enum defining how the results should be ordered.
+     * @param pageSize - the maximum number of result entities that can be returned on this request.  Zero means
+     *                 unrestricted return results size.
+     * @param methodName - name of method called
+     * @return list of entities
+     * @throws RepositoryErrorException - there is a problem with the results
+     */
+    private List<EntityDetail> validatedEntityListResults(String                         repositoryName,
+                                                          HashMap<String, EntityDetail>  combinedResults,
+                                                          String                         sequencingProperty,
+                                                          SequencingOrder                sequencingOrder,
+                                                          int                            pageSize,
+                                                          String                         methodName) throws RepositoryErrorException
+    {
+        if (combinedResults.isEmpty())
+        {
+            return null;
+        }
+
+        List<EntityDetail>   actualResults = new ArrayList<>(combinedResults.values());
+
+        // todo - sort results and crop to max page size
+
+        return actualResults;
+    }
+
+
+    /**
+     * Return a validated, sorted list of search results.
+     *
+     * @param repositoryName - name of this repository
+     * @param combinedResults - relationships from all cohort repositories
+     * @param sequencingProperty - String name of the property that is to be used to sequence the results.
+     *                           Null means do not sequence on a property name (see SequencingOrder).
+     * @param sequencingOrder - Enum defining how the results should be ordered.
+     * @param pageSize - the maximum number of result entities that can be returned on this request.  Zero means
+     *                 unrestricted return results size.
+     * @param methodName - name of the method called
+     * @return list of relationships
+     * @throws RepositoryErrorException - there is a problem with the results
+     */
+    private List<Relationship> validatedRelationshipResults(String                         repositoryName,
+                                                            HashMap<String, Relationship>  combinedResults,
+                                                            String                         sequencingProperty,
+                                                            SequencingOrder                sequencingOrder,
+                                                            int                            pageSize,
+                                                            String                         methodName) throws RepositoryErrorException
+    {
+        if (combinedResults.isEmpty())
+        {
+            return null;
+        }
+
+        List<Relationship>   actualResults = new ArrayList<>(combinedResults.values());
+
+        // todo - sort results and crop to max page size
+
+        return actualResults;
+    }
+
+
+    /**
+     * Return a validated InstanceGraph.
+     *
+     * @param repositoryName - name of this repository
+     * @param accumulatedEntityResults - list of returned entities
+     * @param accumulatedRelationshipResults - list of returned relationships
+     * @param userNotAuthorizedException - captured exception
+     * @param propertyErrorException - captured exception
+     * @param functionNotSupportedException - captured exception
+     * @param entityNotKnownException - captured exception
+     * @param repositoryErrorException - captured exception
+     * @param anotherException - captured Throwable exception
+     * @param methodName - name of calling method
+     * @return InstanceGraph
+     */
+    private InstanceGraph validatedInstanceGraphResults(String                        repositoryName,
+                                                        HashMap<String, EntityDetail> accumulatedEntityResults,
+                                                        HashMap<String, Relationship> accumulatedRelationshipResults,
+                                                        UserNotAuthorizedException    userNotAuthorizedException,
+                                                        PropertyErrorException        propertyErrorException,
+                                                        FunctionNotSupportedException functionNotSupportedException,
+                                                        EntityNotKnownException       entityNotKnownException,
+                                                        RepositoryErrorException      repositoryErrorException,
+                                                        Throwable                     anotherException,
+                                                        String                        methodName) throws UserNotAuthorizedException,
+                                                                                                         PropertyErrorException,
+                                                                                                         FunctionNotSupportedException,
+                                                                                                         EntityNotKnownException,
+                                                                                                         RepositoryErrorException
+    {
+        int  resultCount = (accumulatedEntityResults.size() + accumulatedRelationshipResults.size());
+
+        /*
+         * Return any results, or exception if nothing is found.
+         */
+        if (resultCount > 0)
+        {
+            InstanceGraph         instanceGraph = new InstanceGraph();
+            List<EntityDetail>    entityDetails = new ArrayList<>(accumulatedEntityResults.values());
+            List<Relationship>    relationships = new ArrayList<>(accumulatedRelationshipResults.values());
+
+            // todo Validate the entities and relationships
+
+            instanceGraph.setEntities(entityDetails);
+            instanceGraph.setRelationships(relationships);
+
+            return instanceGraph;
+        }
+        else
+        {
+            throwCapturedUserNotAuthorizedException(userNotAuthorizedException);
+            throwCapturedRepositoryErrorException(repositoryErrorException);
+            throwCapturedPropertyErrorException(propertyErrorException);
+            throwCapturedThrowableException(anotherException, methodName);
+            throwCapturedFunctionNotSupportedException(functionNotSupportedException);
+            throwCapturedEntityNotKnownException(entityNotKnownException);
+
+            /*
+             * Nothing went wrong - there are just no results.
+             */
+            return null;
+        }
     }
 }

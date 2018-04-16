@@ -18,9 +18,7 @@
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.Objects;
 
@@ -38,6 +36,15 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = PrimitiveDef.class, name = "PrimitiveDef"),
+        @JsonSubTypes.Type(value = CollectionDef.class, name = "CollectionDef"),
+        @JsonSubTypes.Type(value = EnumDef.class, name = "EnumDef"),
+})
 public class AttributeTypeDef extends TypeDefElementHeader
 {
     protected long                     version         = 0L;

@@ -47,21 +47,20 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
 {
     static final private  String  defaultRepositoryName = "REST-connected Repository ";
 
-    private OMRSRESTRepositoryConnector       parentConnector;            /* Initialized in constructor */
-    private String                            metadataCollectionId;       /* Initialized in constructor */
-    private OMRSRepositoryHelper              repositoryHelper;           /* Initialized in constructor */
-    private OMRSRepositoryValidator           repositoryValidator;        /* Initialized in constructor */
-    private String                            repositoryName;             /* Initialized in constructor */
-    private String                            restURLRoot;                /* Initialized in constructor */
+    private String                restURLRoot;                /* Initialized in constructor */
 
     /**
      * Default constructor.
      *
      * @param parentConnector - connector that this metadata collection supports.  The connector has the information
      *                        to call the metadata repository.
+     * @param repositoryName - name of the repository - used for logging.
+     * @param repositoryHelper - class used to build type definitions and instances.
+     * @param repositoryValidator - class used to validate type definitions and instances.
      * @param metadataCollectionId - unique identifier for the metadata collection
      */
     public OMRSRESTMetadataCollection(OMRSRESTRepositoryConnector parentConnector,
+                                      String                      repositoryName,
                                       OMRSRepositoryHelper        repositoryHelper,
                                       OMRSRepositoryValidator     repositoryValidator,
                                       String                      metadataCollectionId)
@@ -69,21 +68,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
         /*
          * The metadata collection Id is the unique Id for the metadata collection.  It is managed by the super class.
          */
-        super(metadataCollectionId);
-        this.metadataCollectionId = metadataCollectionId;
-
-        /*
-         * Save parentConnector since this has the connection information and access to the metadata about the
-         * metadata cluster.
-         */
-        this.parentConnector = parentConnector;
-
-        /*
-         * Save the repository helper and validator as they reduce the implementation effort of the metadata
-         * collection.
-         */
-        this.repositoryHelper = repositoryHelper;
-        this.repositoryValidator = repositoryValidator;
+        super(parentConnector, repositoryName, metadataCollectionId, repositoryHelper, repositoryValidator);
 
         /*
          * The name of the repository comes from the connection
@@ -101,7 +86,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
             }
         }
 
-        this.repositoryName = defaultRepositoryName + endpointAddress;
+        super.repositoryName = defaultRepositoryName + endpointAddress;
         this.restURLRoot = endpointAddress;
     }
 
@@ -123,7 +108,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
         final String methodName = "getMetadataCollectionId";
         final String urlTemplate = "metadata-collection-id";
 
-        String restResult = "";
+        String restResult = null;
 
         try
         {
@@ -175,7 +160,8 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
         {
             OMRSErrorCode errorCode = OMRSErrorCode.NULL_METADATA_COLLECTION_ID;
             String        errorMessage = errorCode.getErrorMessageId()
-                    + errorCode.getFormattedErrorMessage(repositoryName, super.metadataCollectionId);
+                                       + errorCode.getFormattedErrorMessage(repositoryName,
+                                                                            super.metadataCollectionId);
 
             throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
                                                this.getClass().getName(),
@@ -403,7 +389,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
                                                                          UserNotAuthorizedException
     {
         final String methodName  = "searchForTypeDefs";
-        final String urlTemplate = "{0}/types/typedefs/by-search-criteria?searchCriteria={1}";
+        final String urlTemplate = "{0}/types/typedefs/by-property-value?searchCriteria={1}";
 
         TypeDefListResponse restResult = this.callTypeDefListGetRESTCall(methodName,
                                                                          restURLRoot + urlTemplate,
@@ -1119,11 +1105,11 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
 
 
     /**
-     * Return a historical versionName of an entity - includes the header, classifications and properties of the entity.
+     * Return a historical version of an entity - includes the header, classifications and properties of the entity.
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the entity.
-     * @param asOfTime - the time used to determine which versionName of the entity that is desired.
+     * @param asOfTime - the time used to determine which version of the entity that is desired.
      * @return EntityDetail structure.
      * @throws InvalidParameterException - the guid or date is null, or the asOfTime property is for a future time
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
@@ -1401,10 +1387,14 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
 
 
     /**
-     * Return a list of entities matching the search criteria.
+     * Return a list of entities whose string based property values match the search criteria.  The
+     * search criteria may include regex style wild cards.
      *
      * @param userId - unique identifier for requesting user.
-     * @param searchCriteria - String expression of the characteristics of the required relationships.
+     * @param entityTypeGUID - GUID of the type of entity to search for. Null means all types will
+     *                       be searched (could be slow so not recommended).
+     * @param searchCriteria - String expression contained in any of the property values within the entities
+     *                       of the supplied type.
      * @param fromEntityElement - the starting element number of the entities to return.
      *                                This is used when retrieving elements
      *                                beyond the first page of results. Zero means start from the first element.
@@ -1429,27 +1419,29 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support the asOfTime parameter.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public  List<EntityDetail> searchForEntities(String                     userId,
-                                                 String                     searchCriteria,
-                                                 int                        fromEntityElement,
-                                                 List<InstanceStatus>       limitResultsByStatus,
-                                                 List<String>               limitResultsByClassification,
-                                                 Date                       asOfTime,
-                                                 String                     sequencingProperty,
-                                                 SequencingOrder            sequencingOrder,
-                                                 int                        pageSize) throws InvalidParameterException,
-                                                                                             RepositoryErrorException,
-                                                                                             PropertyErrorException,
-                                                                                             PagingErrorException,
-                                                                                             FunctionNotSupportedException,
-                                                                                             UserNotAuthorizedException
+    public  List<EntityDetail> findEntitiesByPropertyValue(String                userId,
+                                                           String                entityTypeGUID,
+                                                           String                searchCriteria,
+                                                           int                   fromEntityElement,
+                                                           List<InstanceStatus>  limitResultsByStatus,
+                                                           List<String>          limitResultsByClassification,
+                                                           Date                  asOfTime,
+                                                           String                sequencingProperty,
+                                                           SequencingOrder       sequencingOrder,
+                                                           int                   pageSize) throws InvalidParameterException,
+                                                                                                  RepositoryErrorException,
+                                                                                                  PropertyErrorException,
+                                                                                                  PagingErrorException,
+                                                                                                  FunctionNotSupportedException,
+                                                                                                  UserNotAuthorizedException
     {
-        final String methodName  = "searchForEntities";
-        final String urlTemplate = "{0}/instances/entities/by-search-criteria?searchCriteria={1}?fromEntityElement={2}&limitResultsByStatus={3}&limitResultsByClassification={4}&asOfTime={5}&sequencingProperty={6}&sequencingOrder={7}&pageSize={8}";
+        final String methodName  = "findEntitiesByPropertyValue";
+        final String urlTemplate = "{0}/instances/entities/by-property-value?entityTypeGUID={1}&searchCriteria={2}?fromEntityElement={3}&limitResultsByStatus={4}&limitResultsByClassification={5}&asOfTime={6}&sequencingProperty={7}&sequencingOrder={8}&pageSize={9}";
 
         EntityListResponse restResult = this.callEntityListGetRESTCall(methodName,
                                                                        restURLRoot + urlTemplate,
                                                                        userId,
+                                                                       entityTypeGUID,
                                                                        searchCriteria,
                                                                        fromEntityElement,
                                                                        limitResultsByStatus,
@@ -1543,7 +1535,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the relationship.
-     * @param asOfTime - the time used to determine which versionName of the entity that is desired.
+     * @param asOfTime - the time used to determine which version of the entity that is desired.
      * @return Relationship structure.
      * @throws InvalidParameterException - the guid or date is null or the asOfTime property is for a future time.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
@@ -1658,10 +1650,14 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
 
 
     /**
-     * Return a list of relationships that match the search criteria.  The results can be paged.
+     * Return a list of relationships whose string based property values match the search criteria.  The
+     * search criteria may include regex style wild cards.
      *
      * @param userId - unique identifier for requesting user.
-     * @param searchCriteria - String expression of the characteristics of the required relationships.
+     * @param relationshipTypeGUID - GUID of the type of entity to search for. Null means all types will
+     *                       be searched (could be slow so not recommended).
+     * @param searchCriteria - String expression contained in any of the property values within the entities
+     *                       of the supplied type.
      * @param fromRelationshipElement - Element number of the results to skip to when building the results list
      *                                to return.  Zero means begin at the start of the results.  This is used
      *                                to retrieve the results over a number of pages.
@@ -1684,26 +1680,28 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support the asOfTime parameter.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public  List<Relationship> searchForRelationships(String                    userId,
-                                                      String                    searchCriteria,
-                                                      int                       fromRelationshipElement,
-                                                      List<InstanceStatus>      limitResultsByStatus,
-                                                      Date                      asOfTime,
-                                                      String                    sequencingProperty,
-                                                      SequencingOrder           sequencingOrder,
-                                                      int                       pageSize) throws InvalidParameterException,
-                                                                                                 RepositoryErrorException,
-                                                                                                 PropertyErrorException,
-                                                                                                 PagingErrorException,
-                                                                                                 FunctionNotSupportedException,
-                                                                                                 UserNotAuthorizedException
+    public  List<Relationship> findRelationshipsByPropertyValue(String                    userId,
+                                                                String                    relationshipTypeGUID,
+                                                                String                    searchCriteria,
+                                                                int                       fromRelationshipElement,
+                                                                List<InstanceStatus>      limitResultsByStatus,
+                                                                Date                      asOfTime,
+                                                                String                    sequencingProperty,
+                                                                SequencingOrder           sequencingOrder,
+                                                                int                       pageSize) throws InvalidParameterException,
+                                                                                                           RepositoryErrorException,
+                                                                                                           PropertyErrorException,
+                                                                                                           PagingErrorException,
+                                                                                                           FunctionNotSupportedException,
+                                                                                                           UserNotAuthorizedException
     {
-        final String methodName  = "searchForRelationships";
-        final String urlTemplate = "{0}/instances/relationships/by-search-criteria?searchCriteria={1}?fromRelationshipElement={2}&limitResultsByStatus={3}&asOfTime={4}&sequencingProperty={5}&sequencingOrder={6}&pageSize={7}";
+        final String methodName  = "findRelationshipsByPropertyValue";
+        final String urlTemplate = "{0}/instances/relationships/by-property-value?relationshipTypeGUID={1}&searchCriteria={2}&fromRelationshipElement={3}&limitResultsByStatus={4}&asOfTime={5}&sequencingProperty={6}&sequencingOrder={7}&pageSize={8}";
 
         RelationshipListResponse restResult = this.callRelationshipListGetRESTCall(methodName,
                                                                                    restURLRoot + urlTemplate,
                                                                                    userId,
+                                                                                   relationshipTypeGUID,
                                                                                    searchCriteria,
                                                                                    fromRelationshipElement,
                                                                                    limitResultsByStatus,
@@ -3068,7 +3066,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * Save the entity as a reference copy.  The id of the home metadata collection is already set up in the
      * entity.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entity - details of the entity to save.
      * @throws InvalidParameterException - the entity is null.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
@@ -3084,7 +3082,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public void saveEntityReferenceCopy(String         serverName,
+    public void saveEntityReferenceCopy(String userId,
                                         EntityDetail   entity) throws InvalidParameterException,
                                                                       RepositoryErrorException,
                                                                       TypeErrorException,
@@ -3100,7 +3098,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
 
         VoidResponse restResult = this.callVoidPatchRESTCall(methodName,
                                                              restURLRoot + urlTemplate,
-                                                             serverName,
+                                                             userId,
                                                              entity);
 
         this.detectAndThrowFunctionNotSupportedException(methodName, restResult);
@@ -3120,7 +3118,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * remove reference copies from the local cohort, repositories that have left the cohort,
      * or entities that have come from open metadata archives.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entityGUID - the unique identifier for the entity.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
@@ -3134,7 +3132,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the serverName is not permitted to perform this operation.
      */
-    public void purgeEntityReferenceCopy(String   serverName,
+    public void purgeEntityReferenceCopy(String userId,
                                          String   entityGUID,
                                          String   typeDefGUID,
                                          String   typeDefName,
@@ -3150,7 +3148,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
 
         VoidResponse restResult = this.callVoidPatchRESTCall(methodName,
                                                              restURLRoot + urlTemplate,
-                                                             serverName,
+                                                             userId,
                                                              entityGUID,
                                                              typeDefGUID,
                                                              typeDefName,
@@ -3169,7 +3167,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * The local repository has requested that the repository that hosts the home metadata collection for the
      * specified entity sends out the details of this entity so the local repository can create a reference copy.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entityGUID - unique identifier of requested entity.
      * @param typeDefGUID - unique identifier of requested entity's TypeDef.
      * @param typeDefName - unique name of requested entity's TypeDef.
@@ -3183,7 +3181,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the serverName is not permitted to perform this operation.
      */
-    public void refreshEntityReferenceCopy(String   serverName,
+    public void refreshEntityReferenceCopy(String userId,
                                            String   entityGUID,
                                            String   typeDefGUID,
                                            String   typeDefName,
@@ -3199,7 +3197,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
 
         VoidResponse restResult = this.callVoidPatchRESTCall(methodName,
                                                              restURLRoot + urlTemplate,
-                                                             serverName,
+                                                             userId,
                                                              entityGUID,
                                                              typeDefGUID,
                                                              typeDefName,
@@ -3218,7 +3216,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * Save the relationship as a reference copy.  The id of the home metadata collection is already set up in the
      * relationship.
      *
-     * @param serverName - unique identifier for requesting user.
+     * @param userId - unique identifier for requesting user.
      * @param relationship - relationship to save.
      * @throws InvalidParameterException - the relationship is null.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
@@ -3236,7 +3234,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the serverName is not permitted to perform this operation.
      */
-    public void saveRelationshipReferenceCopy(String         serverName,
+    public void saveRelationshipReferenceCopy(String userId,
                                               Relationship   relationship) throws InvalidParameterException,
                                                                                   RepositoryErrorException,
                                                                                   TypeErrorException,
@@ -3253,7 +3251,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
 
         VoidResponse restResult = this.callVoidPatchRESTCall(methodName,
                                                              restURLRoot + urlTemplate,
-                                                             serverName,
+                                                             userId,
                                                              relationship);
 
         this.detectAndThrowFunctionNotSupportedException(methodName, restResult);
@@ -3274,7 +3272,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * remove reference copies from the local cohort, repositories that have left the cohort,
      * or relationships that have come from open metadata archives.
      *
-     * @param serverName - unique identifier for requesting user.
+     * @param userId - unique identifier for requesting user.
      * @param relationshipGUID - the unique identifier for the relationship.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
@@ -3288,7 +3286,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the serverName is not permitted to perform this operation.
      */
-    public void purgeRelationshipReferenceCopy(String   serverName,
+    public void purgeRelationshipReferenceCopy(String userId,
                                                String   relationshipGUID,
                                                String   typeDefGUID,
                                                String   typeDefName,
@@ -3304,7 +3302,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
 
         VoidResponse restResult = this.callVoidPatchRESTCall(methodName,
                                                              restURLRoot + urlTemplate,
-                                                             serverName,
+                                                             userId,
                                                              relationshipGUID,
                                                              typeDefGUID,
                                                              typeDefName,
@@ -3324,7 +3322,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * specified relationship sends out the details of this relationship so the local repository can create a
      * reference copy.
      *
-     * @param serverName - unique identifier for requesting user.
+     * @param userId - unique identifier for requesting user.
      * @param relationshipGUID - unique identifier of the relationship.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
@@ -3338,7 +3336,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the serverName is not permitted to perform this operation.
      */
-    public void refreshRelationshipReferenceCopy(String   serverName,
+    public void refreshRelationshipReferenceCopy(String userId,
                                                  String   relationshipGUID,
                                                  String   typeDefGUID,
                                                  String   typeDefName,
@@ -3354,7 +3352,7 @@ public class OMRSRESTMetadataCollection extends OMRSMetadataCollection
 
         VoidResponse restResult = this.callVoidPatchRESTCall(methodName,
                                                              restURLRoot + urlTemplate,
-                                                             serverName,
+                                                             userId,
                                                              relationshipGUID,
                                                              typeDefGUID,
                                                              typeDefName,

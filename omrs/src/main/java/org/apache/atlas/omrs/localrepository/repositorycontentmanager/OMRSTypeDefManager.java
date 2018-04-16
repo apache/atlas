@@ -156,7 +156,7 @@ public interface OMRSTypeDefManager
      * @param sourceName - source of the request (used for logging)
      * @param category - category of type
      * @param typeName - String type name - the type name is not recognized or of the wrong category.
-     * @return InstanceType object containing TypeDef unique identifier (guid), typeDef name and versionName
+     * @return InstanceType object containing TypeDef unique identifier (guid), typeDef name and version
      * @throws TypeErrorException - the type name is not a recognized type or the category is incorrect or there
      *                              is an error in the type definition (TypeDef) cached.
      */

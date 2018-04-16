@@ -25,13 +25,13 @@ package org.apache.atlas.ocf.properties;
  */
 public class ElementType extends PropertyBase
 {
-    protected String                elementTypeId = null;
-    protected String                elementTypeName = null;
-    protected long                  elementTypeVersion = 0;
-    protected String                elementTypeDescription = null;
-    protected String                elementAccessServiceURL = null;
-    protected ElementOrigin         elementOrigin = null;
-    protected String                elementHomeMetadataCollectionId = null;
+    protected String        elementTypeId                   = null;
+    protected String        elementTypeName                 = null;
+    protected long          elementTypeVersion              = 0;
+    protected String        elementTypeDescription          = null;
+    protected String        elementSourceServer             = null;
+    protected ElementOrigin elementOrigin                   = null;
+    protected String        elementHomeMetadataCollectionId = null;
 
 
     /**
@@ -41,7 +41,7 @@ public class ElementType extends PropertyBase
      * @param elementTypeName - element type name
      * @param elementTypeVersion - version number for the element type
      * @param elementTypeDescription - description of element type
-     * @param elementAccessServiceURL - url of the OMAS server
+     * @param elementSourceServer - url of the OMAS server
      * @param elementOrigin - enum describing type of origin
      * @param elementHomeMetadataCollectionId - metadata collection id
      */
@@ -49,7 +49,7 @@ public class ElementType extends PropertyBase
                        String         elementTypeName,
                        long           elementTypeVersion,
                        String         elementTypeDescription,
-                       String         elementAccessServiceURL,
+                       String         elementSourceServer,
                        ElementOrigin  elementOrigin,
                        String         elementHomeMetadataCollectionId)
     {
@@ -59,7 +59,7 @@ public class ElementType extends PropertyBase
         this.elementTypeName = elementTypeName;
         this.elementTypeVersion = elementTypeVersion;
         this.elementTypeDescription = elementTypeDescription;
-        this.elementAccessServiceURL = elementAccessServiceURL;
+        this.elementSourceServer = elementSourceServer;
         this.elementOrigin = elementOrigin;
         this.elementHomeMetadataCollectionId = elementHomeMetadataCollectionId;
     }
@@ -83,7 +83,7 @@ public class ElementType extends PropertyBase
             this.elementTypeName = templateType.getElementTypeName();
             this.elementTypeVersion = templateType.getElementTypeVersion();
             this.elementTypeDescription = templateType.getElementTypeDescription();
-            this.elementAccessServiceURL = templateType.getElementAccessServiceURL();
+            this.elementSourceServer = templateType.getElementSourceServer();
             this.elementOrigin = templateType.getElementOrigin();
             this.elementHomeMetadataCollectionId = templateType.getElementHomeMetadataCollectionId();
         }
@@ -140,9 +140,9 @@ public class ElementType extends PropertyBase
      *
      * @return elementSourceServerURL - the url of the server where the element came from
      */
-    public String getElementAccessServiceURL()
+    public String getElementSourceServer()
     {
-        return elementAccessServiceURL;
+        return elementSourceServer;
     }
 
 
@@ -179,7 +179,7 @@ public class ElementType extends PropertyBase
                 ", elementTypeName='" + elementTypeName + '\'' +
                 ", elementTypeVersion=" + elementTypeVersion +
                 ", elementTypeDescription='" + elementTypeDescription + '\'' +
-                ", elementAccessServiceURL='" + elementAccessServiceURL + '\'' +
+                ", elementSourceServer='" + elementSourceServer + '\'' +
                 ", elementOrigin=" + elementOrigin +
                 ", elementHomeMetadataCollectionId='" + elementHomeMetadataCollectionId + '\'' +
                 '}';

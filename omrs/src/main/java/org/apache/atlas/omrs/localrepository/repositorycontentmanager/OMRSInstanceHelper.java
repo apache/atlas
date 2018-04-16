@@ -135,6 +135,8 @@ public interface OMRSInstanceHelper
      * @param userName - name of the creator
      * @param typeName - name of the type
      * @param entityTypeName - name of the type for the entity that this classification is to be attached to.
+     * @param classificationOrigin - origin of classification
+     * @param classificationOriginGUID - GUID of original classification if propagated
      * @param properties - properties for the classification
      * @return partially filled out classification - needs properties and possibly origin information
      * @throws TypeErrorException - the type name is not recognized as a classification type.

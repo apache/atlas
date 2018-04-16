@@ -73,7 +73,7 @@ public enum OMRSAuditCode
 
     COHORT_CONFIG_ERROR("OMRS-AUDIT-0006",
                       OMRSAuditLogRecordSeverity.EXCEPTION,
-                      "Configuration error detected while connecting to cohort {0}",
+                      "Configuration error detected while connecting to cohort {0}, error message was: {2}",
                       "The local server has started to initialize the communication with the named " +
                                 "open metadata repository cohort and a configuration error was detected.",
                       "Review the exception and resolve the issue it documents. " +
@@ -101,19 +101,19 @@ public enum OMRSAuditCode
 
     OMRS_DISCONNECTING("OMRS-AUDIT-0010",
                       OMRSAuditLogRecordSeverity.INFO,
-                      "The Open Metadata Repository Services (OMRS) is about to disconnect from the open metadata repositories.",
+                      "The Open Metadata Repository Services (OMRS) is disconnecting the open metadata repositories",
                       "The local server has completed the initialization of the OMRS.",
                       "No action is required.  This is part of the normal operation of the server."),
 
     OMRS_DISCONNECTED("OMRS-AUDIT-0011",
                       OMRSAuditLogRecordSeverity.INFO,
-                      "The Open Metadata Repository Services (OMRS) has disconnected from the open metadata repositories.",
+                      "The Open Metadata Repository Services (OMRS) has disconnected from the open metadata repositories",
                       "The local server has completed the disconnection of the OMRS.",
                       "No action is required.  This is part of the normal operation of the server."),
 
     NO_LOCAL_REPOSITORY("OMRS-AUDIT-0012",
                       OMRSAuditLogRecordSeverity.INFO,
-                      "No events will be sent to the open metadata repository cohort {0} because the local metadata collection id is null.",
+                      "No events will be sent to the open metadata repository cohort {0} because the local metadata collection id is null",
                       "The local server will not send outbound events because there is no local metadata repository.",
                       "Validate that the server is configured without a local metadata repository.  " +
                                 "If there should be a metadata repository then, verify the server configuration is" +
@@ -134,7 +134,19 @@ public enum OMRSAuditCode
                       "The local server may not shutdown cleanly.",
                       "Review previous error messages to determine the precise error. Correct the cause and restart the server. "),
 
-    NULL_TOPIC_CONNECTOR("OMRS-AUDIT-0015",
+    OMRS_TOPIC_LISTENER_START("OMRS-AUDIT-0015",
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "The listener thread for an OMRS Topic Connector for topic {0} has started",
+                      "The listener thread will process inbound events",
+                      "No action is required.  This is part of the normal operation of the server."),
+
+    OMRS_TOPIC_LISTENER_SHUTDOWN("OMRS-AUDIT-0016",
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "The listener thread for the OMRS Topic Connector for topic {0} has shutdown",
+                      "The listener thread will process inbound events",
+                      "No action is required.  This is part of the normal operation of the server."),
+
+    NULL_TOPIC_CONNECTOR("OMRS-AUDIT-0017",
                       OMRSAuditLogRecordSeverity.EXCEPTION,
                       "Unable to send or receive events for cohort {0} because the connector to the OMRS Topic failed to initialize",
                       "The local server will not connect to the cohort.",
@@ -143,29 +155,53 @@ public enum OMRSAuditCode
                                  "start up configuration. " +
                                  "Correct the configuration and reconnect the server to the cohort. "),
 
+    NEW_ENTERPRISE_CONNECTOR("OMRS-AUDIT-0018",
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "An enterprise OMRS Connector has been created for the {0} open metadata access service",
+                      "The connector will support access to the connected open metadata repositories.",
+                      "No action is required.  This is part of the normal operation of the server."),
+
+    STARTING_ENTERPRISE_CONNECTOR("OMRS-AUDIT-0019",
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "The enterprise OMRS Connector for the {0} open metadata access service has started",
+                      "The connector will support access to the connected open metadata repositories.",
+                      "No action is required.  This is part of the normal operation of the server."),
+
+    DISCONNECTING_ENTERPRISE_CONNECTOR("OMRS-AUDIT-0020",
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "The enterprise OMRS Connector for the {0} open metadata access service has shutdown",
+                      "The connector will support access to the connected open metadata repositories.",
+                      "No action is required.  This is part of the normal operation of the server."),
+
+    ENTERPRISE_CONNECTOR_FAILED("OMRS-AUDIT-0019",
+                      OMRSAuditLogRecordSeverity.INFO,
+                      "The create of an enterprise OMRS Connector for the {0} open metadata access service failed with this error message: {1}",
+                      "The connector will support access to the connected open metadata repositories.",
+                      "No action is required.  This is part of the normal operation of the server."),
+
     PROCESSING_ARCHIVE("OMRS-AUDIT-0050",
                        OMRSAuditLogRecordSeverity.INFO,
-                       "The Open Metadata Repository Services (OMRS) is about to process open metadata archive {0}.",
+                       "The Open Metadata Repository Services (OMRS) is about to process open metadata archive {0}",
                        "The local server is about to local types and instances from an open metadata archive.",
                        "No action is required.  This is part of the normal operation of the server."),
 
     EMPTY_ARCHIVE("OMRS-AUDIT-0051",
                        OMRSAuditLogRecordSeverity.ERROR,
-                       "The Open Metadata Repository Services (OMRS) is unable to process an open metadata archive because it is empty.",
+                       "The Open Metadata Repository Services (OMRS) is unable to process an open metadata archive because it is empty",
                        "The local server is skipping an open metadata archive because it is empty.",
                        "Review the list of archives for the server and determine which archive is in error.  " +
                           "Request a new version of the archive or remove it from the server's archive list."),
 
     NULL_PROPERTIES_IN_ARCHIVE("OMRS-AUDIT-0052",
                         OMRSAuditLogRecordSeverity.ERROR,
-                        "The Open Metadata Repository Services (OMRS) is unable to process an open metadata archive because it is empty.",
+                        "The Open Metadata Repository Services (OMRS) is unable to process an open metadata archive because it is empty",
                         "The local server is skipping an open metadata archive because it is empty.",
                         "Review the list of archives for the server and determine which archive is in error. " +
                            "Request a new version of the archive or remove it from the server's archive list."),
 
     COMPLETED_ARCHIVE("OMRS-AUDIT-0053",
                        OMRSAuditLogRecordSeverity.INFO,
-                       "The Open Metadata Repository Services (OMRS) has loaded {0} types and {1} instances from open metadata archive {2}.",
+                       "The Open Metadata Repository Services (OMRS) has loaded {0} types and {1} instances from open metadata archive {2}",
                        "The local server has completed the processing of the open metadata archive.",
                        "No action is required.  This is part of the normal operation of the server."),
 
@@ -334,8 +370,8 @@ public enum OMRSAuditCode
                       OMRSAuditLogRecordSeverity.ACTION,
                       "Registration request for this server in cohort {0} was rejected by server {1} that " +
                                             "hosts metadata collection {2} because TypeDef {3} ({4}) in the local " +
-                                            "server is at versionName {5} which is different from this TypeDef in the " +
-                                            "remote server which is at versionName {6}",
+                                            "server is at version {5} which is different from this TypeDef in the " +
+                                            "remote server which is at version {6}",
                       "The remote server may not be able to exchange metadata with this local server.",
                       "It is necessary to update the TypeDef to remove the conflict to ensure that the remote server " +
                                             "can exchange metadata with this server."),
@@ -352,9 +388,9 @@ public enum OMRSAuditCode
     OUTGOING_TYPEDEF_PATCH_MISMATCH("OMRS-AUDIT-0204",
                       OMRSAuditLogRecordSeverity.ACTION,
                       "The local server in cohort {0} has rejected a TypeDef update from server {1} that hosts metadata " +
-                                            "collection {2} because the versionName of TypeDef {3} ({4}) in the local server " +
-                                            "is at versionName {5} is different from this TypeDef in the remote server " +
-                                            "which is at versionName {6}",
+                                            "collection {2} because the version of TypeDef {3} ({4}) in the local server " +
+                                            "is at version {5} is different from this TypeDef in the remote server " +
+                                            "which is at version {6}",
                       "The local server will not exchange metadata with this remote server.",
                       "It is necessary to update the TypeDef to remove the conflict before the local server will " +
                                             "exchange metadata with the remote server."),
@@ -362,9 +398,9 @@ public enum OMRSAuditCode
     OUTGOING_TYPE_MISMATCH("OMRS-AUDIT-0205",
                       OMRSAuditLogRecordSeverity.ACTION,
                       "The local server in cohort {0} has rejected a TypeDef update from server {1} that hosts " +
-                                   "metadata collection {2} because the versionName of TypeDef {3} ({4}) in the local " +
-                                   "server is at versionName {5} is different from this TypeDef in the remote server " +
-                                   "which is at versionName {6}",
+                                   "metadata collection {2} because the version of TypeDef {3} ({4}) in the local " +
+                                   "server is at version {5} is different from this TypeDef in the remote server " +
+                                   "which is at version {6}",
                       "The local server will not exchange metadata with this remote server.",
                       "It is necessary to update the TypeDef to remove the conflict before the local server will " +
                                    "exchange metadata with the remote server."),
@@ -407,7 +443,7 @@ public enum OMRSAuditCode
                       "The local server has received an unknown event from another member of the metadata repository " +
                                   "cohort and is unable to process it. " +
                                   "This is possible if a server in the cohort is at a higher level than this server and " +
-                                  "is using a more advanced versionName of the protocol. " +
+                                  "is using a more advanced version of the protocol. " +
                                   "The local server should continue to operate correctly.",
                       "Verify that the event is a new event type introduced after this server was written."),
 

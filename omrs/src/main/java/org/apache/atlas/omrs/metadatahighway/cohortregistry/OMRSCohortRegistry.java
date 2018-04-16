@@ -27,15 +27,12 @@ import org.apache.atlas.omrs.metadatahighway.cohortregistry.store.OMRSCohortRegi
 import org.apache.atlas.omrs.metadatahighway.cohortregistry.store.properties.MemberRegistration;
 import org.apache.atlas.omrs.ffdc.exception.OMRSConfigErrorException;
 import org.apache.atlas.omrs.ffdc.exception.OMRSLogicErrorException;
-import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSTypeDefValidator;
 import org.apache.atlas.omrs.enterprise.connectormanager.OMRSConnectionConsumer;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.OMRSRuntimeException;
-import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -53,11 +50,7 @@ import java.util.List;
  *         in the cohort registry store to use for server restart.
  *     </li>
  *     <li>
- *         Interacting with the Local OMRS Connector and repository to verify that the type definitions
- *         (TypeDefs) used by other servers in the cohort are compatible with the local TypeDefs.
- *     </li>
- *     <li>
- *         Configuring the federation services (OMRS Federation Manager and Enterprise OMRS Connector) with
+ *         Configuring the federation services (OMRS Connection Manager and Enterprise OMRS Connector) with
  *         information about the other servers in the cohort as they register and unregister from the
  *         cohort.
  *     </li>
@@ -95,12 +88,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
      * list of remote partners that are part of the open metadata repository cohort.
      */
     private OMRSConnectionConsumer       connectionConsumer = null;
-
-    /*
-     * The typeDef manager provides the cohort registry with details of the TypeDefs supported by the local
-     * and also validates the compatibility of TypeDefs from other members of the open metadata repository cohort.
-     */
-    private OMRSTypeDefValidator         typeDefValidator = null;
 
     /*
      * The audit log provides a verifiable record of the membership of the open metadata repository cohort and the
@@ -217,8 +204,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
      *                              It is a descriptive name for informational purposes.
      * @param registryEventProcessor - used to send outbound registry events to the cohort.
      * @param cohortRegistryStore - the cohort registry store where details of members of the cohort are kept.
-     * @param typeDefValidator - TypeDef validator is used to validate typedefs across membership of the open
-     *                              metadata repository cohort.  If it is null then no TypeDef validation occurs.
      * @param connectionConsumer - The connection consumer is a component interested in maintaining details of the
      *                           connections to each of the members of the open metadata repository cohort.  If it is
      *                           null, the cohort registry does not publish connections for members of the open
@@ -232,7 +217,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                            String                     localOrganizationName,
                            OMRSRegistryEventProcessor registryEventProcessor,
                            OMRSCohortRegistryStore    cohortRegistryStore,
-                           OMRSTypeDefValidator       typeDefValidator,
                            OMRSConnectionConsumer     connectionConsumer)
     {
         String actionDescription = "Initialize cohort registry";
@@ -271,13 +255,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
          */
         this.validateLocalMetadataCollectionId(localMetadataCollectionId);
         this.localMetadataCollectionId = localMetadataCollectionId;
-
-        /*
-         * Save the TypeDef validator.  This object is able to generate the list of TypeDef
-         * summaries supported by this repository and validate the TypeDef summaries received
-         * from the remote members of the open metadata repository cluster.
-         */
-        this.typeDefValidator = typeDefValidator;
 
         /*
          * Save the connection consumer.  This component needs details of the current connections it should use
@@ -493,21 +470,13 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                            auditCode.getSystemAction(),
                            auditCode.getUserAction());
 
-        ArrayList<TypeDefSummary> typeDefSummaries = null;
-
-        if (typeDefValidator != null)
-        {
-            typeDefSummaries = typeDefValidator.getLocalTypeDefs();
-        }
-
         return outboundRegistryEventProcessor.processRegistrationEvent(cohortName,
                                                                        localRegistration.getMetadataCollectionId(),
                                                                        localRegistration.getServerName(),
                                                                        localRegistration.getServerType(),
                                                                        localRegistration.getOrganizationName(),
                                                                        localRegistration.getRegistrationTime(),
-                                                                       localRegistration.getRepositoryConnection(),
-                                                                       typeDefSummaries);
+                                                                       localRegistration.getRepositoryConnection());
     }
 
 
@@ -684,7 +653,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
      * @param registrationTimestamp - the time that the server/repository issued the registration request.
      * @param remoteConnection - the Connection properties for the connector used to call the registering server.
-     * @param typeDefList - the list of TypeDefs supported by the registering server/repository.
      */
     public boolean processRegistrationEvent(String                    sourceName,
                                             String                    originatorMetadataCollectionId,
@@ -692,8 +660,7 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                                             String                    originatorServerType,
                                             String                    originatorOrganizationName,
                                             Date                      registrationTimestamp,
-                                            Connection                remoteConnection,
-                                            List<TypeDefSummary>      typeDefList)
+                                            Connection                remoteConnection)
     {
         final String    actionDescription = "Receiving Registration event";
 
@@ -736,15 +703,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                                auditCode.getSystemAction(),
                                auditCode.getUserAction());
 
-            /*
-             * Check for incompatible TypeDefs occurring between this local repository and the new member.
-             * Incompatible TypeDefs are logged and managed by the typeDefValidator.
-             */
-            if ((typeDefValidator != null) && (typeDefList != null))
-            {
-                typeDefValidator.validateAgainstLocalTypeDefs(sourceName, typeDefList);
-            }
-
             return true;
         }
         else
@@ -776,13 +734,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
 
             if (localRegistration != null)
             {
-                ArrayList<TypeDefSummary> typeDefSummaries = null;
-
-                if (typeDefValidator != null)
-                {
-                    typeDefSummaries = typeDefValidator.getLocalTypeDefs();
-                }
-
                 OMRSAuditCode   auditCode = OMRSAuditCode.REFRESHING_REGISTRATION_WITH_COHORT;
                 auditLog.logRecord(actionDescription,
                                    auditCode.getLogMessageId(),
@@ -800,8 +751,7 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                                                                                  localRegistration.getServerType(),
                                                                                  localRegistration.getOrganizationName(),
                                                                                  localRegistration.getRegistrationTime(),
-                                                                                 localRegistration.getRepositoryConnection(),
-                                                                                 typeDefSummaries);
+                                                                                 localRegistration.getRepositoryConnection());
             }
             else
             {
@@ -836,7 +786,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
      * @param registrationTimestamp - the time that the server/repository first registered with the cohort.
      * @param remoteConnection - the Connection properties for the connector used to call the registering server.
-     * @param typeDefList - the list of TypeDefs supported by the registering server/repository.
      */
     public boolean processReRegistrationEvent(String                    sourceName,
                                               String                    originatorMetadataCollectionId,
@@ -844,8 +793,7 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                                               String                    originatorServerType,
                                               String                    originatorOrganizationName,
                                               Date                      registrationTimestamp,
-                                              Connection                remoteConnection,
-                                              List<TypeDefSummary>      typeDefList)
+                                              Connection                remoteConnection)
     {
         final String    actionDescription = "Receiving ReRegistration event";
 
@@ -889,15 +837,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                                null,
                                auditCode.getSystemAction(),
                                auditCode.getUserAction());
-
-            /*
-             * Check for incompatible TypeDefs occurring between this local repository and the new member.
-             * The TypeDefManager will drive any error handling.
-             */
-            if ((typeDefValidator != null) && (typeDefList != null))
-            {
-                typeDefValidator.validateAgainstLocalTypeDefs(sourceName, typeDefList);
-            }
 
             return true;
         }
@@ -1099,7 +1038,6 @@ public class OMRSCohortRegistry implements OMRSRegistryEventProcessor
                 ", registryStore=" + registryStore +
                 ", outboundRegistryEventProcessor=" + outboundRegistryEventProcessor +
                 ", connectionConsumer=" + connectionConsumer +
-                ", typeDefValidator=" + typeDefValidator +
                 '}';
     }
 }

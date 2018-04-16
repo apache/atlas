@@ -184,10 +184,19 @@ public class OMRSEnterpriseConnectorManager implements OMRSConnectionConsumer, O
 
         if (remoteConnector != null)
         {
+            OMRSMetadataCollection   metadataCollection = null;
+
             /*
              * Need to validate that this repository connector has a metadata collection.
              */
-            OMRSMetadataCollection   metadataCollection = remoteConnector.getMetadataCollection();
+            try
+            {
+                metadataCollection = remoteConnector.getMetadataCollection();
+            }
+            catch (Throwable  error)
+            {
+                metadataCollection = null;
+            }
 
             /*
              * Don't need to connector any more.

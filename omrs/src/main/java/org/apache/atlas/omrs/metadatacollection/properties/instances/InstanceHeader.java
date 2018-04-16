@@ -174,7 +174,7 @@ public abstract class InstanceHeader extends InstanceAuditHeader
                 ", updatedBy='" + updatedBy + '\'' +
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +
-                ", versionName=" + version +
+                ", version=" + version +
                 ", statusOnDelete=" + statusOnDelete +
                 ", GUID='" + getGUID() + '\'' +
                 '}';

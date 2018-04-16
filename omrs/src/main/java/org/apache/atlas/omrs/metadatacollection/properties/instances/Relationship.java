@@ -323,7 +323,7 @@ public class Relationship extends InstanceHeader
                 ", updatedBy='" + getUpdatedBy() + '\'' +
                 ", createTime=" + getCreateTime() +
                 ", updateTime=" + getUpdateTime() +
-                ", versionName=" + getVersion() +
+                ", version=" + getVersion() +
                 ", statusOnDelete=" + getStatusOnDelete() +
                 '}';
     }

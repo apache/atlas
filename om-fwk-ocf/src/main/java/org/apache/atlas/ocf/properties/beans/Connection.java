@@ -172,7 +172,7 @@ public class Connection extends org.apache.atlas.ocf.properties.Connection
     /**
      * Set up the secured properties for this Connection.
      *
-     * @param securedProperties
+     * @param securedProperties - properties that contain secret information such as log on information.
      */
     public void setSecuredProperties(AdditionalProperties securedProperties)
     {

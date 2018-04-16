@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.omrs.metadatacollection.repositoryconnector;
 
+import org.apache.atlas.omrs.ffdc.exception.RepositoryErrorException;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
 import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
@@ -47,11 +48,27 @@ public interface OMRSMetadataCollectionManager
 
 
     /**
-     * Set up the maximum PageSize
+     * Return the name of the repository where the metadata collection resides.
      *
-     * @param maxPageSize - maximum number of elements that can be retrieved on a request.
+     * @return String name
      */
-    void setMaxPageSize(int    maxPageSize);
+    String  getRepositoryName();
+
+
+    /**
+     * Set up the name of the repository where the metadata collection resides.
+     *
+     * @param repositoryName - String name
+     */
+    void  setRepositoryName(String      repositoryName);
+
+
+    /**
+     * Return the name of the server where the metadata collection resides.
+     *
+     * @return String name
+     */
+    String getServerName();
 
 
     /**
@@ -60,6 +77,15 @@ public interface OMRSMetadataCollectionManager
      * @param serverName - String name
      */
     void  setServerName(String      serverName);
+
+
+    /**
+     * Return the descriptive string describing the type of the server.  This might be the
+     * name of the product, or similar identifier.
+     *
+     * @return String name
+     */
+    String getServerType();
 
 
     /**
@@ -72,11 +98,43 @@ public interface OMRSMetadataCollectionManager
 
 
     /**
-     * Set up the name of the organization that runs/owns the server.
+     * Return the name of the organization that runs/owns the server used to access the repository.
+     *
+     * @return String name
+     */
+    String getOrganizationName();
+
+
+    /**
+     * Set up the name of the organization that runs/owns the server used to access the repository.
      *
      * @param organizationName - String organization name
      */
     void setOrganizationName(String organizationName);
+
+
+    /**
+     * Return the maximum PageSize
+     *
+     * @return maximum number of elements that can be retrieved on a request.
+     */
+    int getMaxPageSize();
+
+
+    /**
+     * Set up the maximum PageSize
+     *
+     * @param maxPageSize - maximum number of elements that can be retrieved on a request.
+     */
+    void setMaxPageSize(int    maxPageSize);
+
+
+    /**
+     * Return the unique Id for this metadata collection.
+     *
+     * @return String unique Id
+     */
+    String getMetadataCollectionId();
 
 
     /**
@@ -92,6 +150,7 @@ public interface OMRSMetadataCollectionManager
      * a metadata repository.
      *
      * @return OMRSMetadataCollection - metadata TypeDefs and instances retrieved from the metadata repository.
+     * @throws RepositoryErrorException - no metadata collection
      */
-    OMRSMetadataCollection getMetadataCollection();
+    OMRSMetadataCollection getMetadataCollection() throws RepositoryErrorException;
 }

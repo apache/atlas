@@ -40,6 +40,7 @@ public class ElementType extends org.apache.atlas.ocf.properties.ElementType
     public ElementType()
     {
         super(null);
+        elementOrigin = ElementOrigin.CONFIGURATION;
     }
 
 
@@ -105,7 +106,7 @@ public class ElementType extends org.apache.atlas.ocf.properties.ElementType
      */
     public void setElementAccessServiceURL(String elementAccessServiceURL)
     {
-        super.elementAccessServiceURL = elementAccessServiceURL;
+        super.elementSourceServer = elementAccessServiceURL;
     }
 
 

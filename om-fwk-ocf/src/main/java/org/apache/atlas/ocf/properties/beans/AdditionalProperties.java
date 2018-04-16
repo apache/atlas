@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -35,6 +36,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class AdditionalProperties extends org.apache.atlas.ocf.properties.AdditionalProperties
 {
+
     /**
      * Default constructor
      */
@@ -47,7 +49,7 @@ public class AdditionalProperties extends org.apache.atlas.ocf.properties.Additi
     /**
      * Set up the additional properties.
      *
-     * @param additionalProperties
+     * @param additionalProperties - property map
      */
     public void setAdditionalProperties(Map<String, Object> additionalProperties)
     {

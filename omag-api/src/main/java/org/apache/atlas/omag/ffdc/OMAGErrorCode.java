@@ -116,8 +116,13 @@ public enum OMAGErrorCode
     BAD_MAX_PAGE_SIZE(400, "OMAG-ADMIN-400-013 ",
             "The OMAG server {0} has been passed an invalid maximum page size of {1}",
             "The system has ignored this value.",
-            "The maximum page size must be a number greater than zero.  Retry the request with a valid value.")
-    ;
+            "The maximum page size must be a number greater than zero.  Retry the request with a valid value."),
+
+    ENTERPRISE_TOPIC_START_FAILED(400, "OMAG-ADMIN-400-014 ",
+            "The OMAG server {0} is unable to start the enterprise OMRS topic connector, error message was {1}",
+            "The open metadata access services will not be able to receive events from the connected repositories.",
+            "Review the error messages and once the source of the problem is resolved, restart the server and retry the request.")
+            ;
 
     private int    httpErrorCode;
     private String errorMessageId;

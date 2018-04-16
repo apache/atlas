@@ -18,6 +18,8 @@
 package org.apache.atlas.omrs.localrepository.repositorycontentmanager;
 
 import org.apache.atlas.omrs.metadatacollection.properties.instances.EntityDetail;
+import org.apache.atlas.omrs.metadatacollection.properties.instances.EntityProxy;
+import org.apache.atlas.omrs.metadatacollection.properties.instances.EntitySummary;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.Relationship;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefCategory;
 
@@ -28,6 +30,28 @@ import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefCateg
  */
 public interface OMRSInstanceValidator
 {
+    /**
+     * Test that the supplied entity is valid.
+     *
+     * @param sourceName - source of the entity (used for logging)
+     * @param entity - entity to test
+     * @return boolean result
+     */
+    boolean validEntity(String        sourceName,
+                        EntitySummary entity);
+
+
+    /**
+     * Test that the supplied entity is valid.
+     *
+     * @param sourceName - source of the entity (used for logging)
+     * @param entity - entity to test
+     * @return boolean result
+     */
+    boolean validEntity(String      sourceName,
+                        EntityProxy entity);
+
+
     /**
      * Test that the supplied entity is valid.
      *

@@ -76,7 +76,7 @@ public interface OMRSTypeDefHelper
 
     /**
      * Return the TypeDefs identified by the name supplied by the caller.  The TypeDef name may have wild
-     * card characters in it such as * and & which is why the results are returned in a list.
+     * card characters in it which is why the results are returned in a list.
      *
      * @param sourceName - source of the request (used for logging)
      * @param typeDefName - unique name for the TypeDef

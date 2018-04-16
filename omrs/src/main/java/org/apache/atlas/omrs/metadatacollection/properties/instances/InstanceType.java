@@ -43,9 +43,9 @@ public class InstanceType extends InstanceElementHeader
     private long                      typeDefVersion          = 0L;
     private String                    typeDefDescription      = null;
     private String                    typeDefDescriptionGUID  = null;
-    private ArrayList<TypeDefLink>    typeDefSuperTypes       = null;
-    private ArrayList<InstanceStatus> validStatusList         = null;
-    private ArrayList<String>         validInstanceProperties = null;
+    private List<TypeDefLink>         typeDefSuperTypes       = null;
+    private List<InstanceStatus>      validStatusList         = null;
+    private List<String>              validInstanceProperties = null;
 
     /**
      * Default constructor relies on initialization of variables in the declaration.
@@ -175,7 +175,7 @@ public class InstanceType extends InstanceElementHeader
 
 
     /**
-     * Set up the versionName for the TypeDef.
+     * Set up the version for the TypeDef.
      *
      * @param typeDefVersion - long version number
      */

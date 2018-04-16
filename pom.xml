@@ -738,6 +738,9 @@
         <module>om-fwk-ocf</module>
         <module>omrs</module>
         <module>omag-api</module>
+        <module>omag-server</module>
+        <module>omas-connectedasset</module>
+        <module>omas-assetconsumer</module>
         <module>intg</module>
         <module>common</module>
         <module>server-api</module>

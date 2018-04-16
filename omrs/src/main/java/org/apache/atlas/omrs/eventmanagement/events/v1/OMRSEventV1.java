@@ -33,7 +33,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 
 
 /**
- * OMRSEventV1 is the OMRSEvent payload for versionName 1 of the open metadata and governance message exchange.
+ * OMRSEventV1 is the OMRSEvent payload for version 1 of the open metadata and governance message exchange.
  */
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonInclude(JsonInclude.Include.NON_NULL)

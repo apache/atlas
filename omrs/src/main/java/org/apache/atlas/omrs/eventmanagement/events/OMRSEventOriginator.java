@@ -40,7 +40,7 @@ package org.apache.atlas.omrs.eventmanagement.events;
  *         of business partners then it may be their respective company names.  This is an optional field.
  *     </li>
  *     <li>
- *         ProtocolVersion - this is an enumeration that identifies which versionName of the OMRS event structure
+ *         ProtocolVersion - this is an enumeration that identifies which version of the OMRS event structure
  *         should be used.  In general it should be set to the highest level that all servers in the cohort
  *         can support.
  *     </li>

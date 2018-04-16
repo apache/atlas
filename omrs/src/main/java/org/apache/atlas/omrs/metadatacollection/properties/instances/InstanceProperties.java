@@ -115,6 +115,27 @@ public class InstanceProperties extends InstanceElementHeader
 
 
     /**
+     * Return the instance properties as a map.
+     *
+     * @return  instance properties map.
+     */
+    public Map<String, InstancePropertyValue> getInstanceProperties()
+    {
+        return instanceProperties;
+    }
+
+
+    /**
+     * Set up the instance properties map.
+     *
+     * @param instanceProperties - map of name valued properties
+     */
+    public void setInstanceProperties(Map<String, InstancePropertyValue> instanceProperties)
+    {
+        this.instanceProperties = instanceProperties;
+    }
+
+    /**
      * Returns a list of the instance properties for the element.
      * If no stored properties are present then null is returned.
      *

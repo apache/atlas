@@ -121,7 +121,7 @@ public class EntityProxy extends EntitySummary
                 ", updatedBy='" + getUpdatedBy() + '\'' +
                 ", createTime=" + getCreateTime() +
                 ", updateTime=" + getUpdateTime() +
-                ", versionName=" + getVersion() +
+                ", version=" + getVersion() +
                 ", statusOnDelete=" + getStatusOnDelete() +
                 '}';
     }

@@ -17,9 +17,11 @@
  */
 package org.apache.atlas.omag.configuration.registration;
 
-import org.apache.atlas.ocf.properties.Connection;
 import org.apache.atlas.omag.configuration.properties.AccessServiceConfig;
 import org.apache.atlas.omag.ffdc.exception.OMAGConfigurationErrorException;
+import org.apache.atlas.omrs.auditlog.OMRSAuditLog;
+import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnector;
+import org.apache.atlas.omrs.topicconnectors.OMRSTopicConnector;
 
 /**
  * AccessServiceAdmin is the interface that an access service implements to receive its configuration.
@@ -31,22 +33,18 @@ public interface AccessServiceAdmin
     /**
      * Initialize the access service.
      *
-     * @param configurationProperties - specific configuration properties for this access service.
-     * @throws OMAGConfigurationErrorException - invalid parameters in the configuration properties.
-
-     */
-    void initialize(AccessServiceConfig configurationProperties,
-                    Connection          enterpriseOMRSTopicConnector) throws OMAGConfigurationErrorException;
-
-
-    /**
-     * Refresh the configuration in the access service.
-     *
-     * @param configurationProperties - specific configuration properties for this access service.
+     * @param accessServiceConfigurationProperties - specific configuration properties for this access service.
+     * @param enterpriseOMRSTopicConnector - connector for receiving OMRS Events from the cohorts
+     * @param enterpriseOMRSRepositoryConnector - connector for querying the cohort repositories
+     * @param auditLog - audit log component for logging messages.
+     * @param serverUserName - user id to use on OMRS calls where there is no end user.
      * @throws OMAGConfigurationErrorException - invalid parameters in the configuration properties.
      */
-    void refreshConfiguration(AccessServiceConfig configurationProperties,
-                              Connection          enterpriseOMRSTopicConnector) throws OMAGConfigurationErrorException;
+    void initialize(AccessServiceConfig     accessServiceConfigurationProperties,
+                    OMRSTopicConnector      enterpriseOMRSTopicConnector,
+                    OMRSRepositoryConnector enterpriseOMRSRepositoryConnector,
+                    OMRSAuditLog            auditLog,
+                    String                  serverUserName) throws OMAGConfigurationErrorException;
 
 
     /**

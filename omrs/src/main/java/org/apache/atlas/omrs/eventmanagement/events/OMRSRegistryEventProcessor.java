@@ -19,11 +19,8 @@ package org.apache.atlas.omrs.eventmanagement.events;
 
 
 import org.apache.atlas.ocf.properties.beans.Connection;
-import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 /**
  * OMRSRegistryEventProcessor is an interface implemented by a component that is able to process
@@ -42,7 +39,6 @@ public interface OMRSRegistryEventProcessor
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
      * @param registrationTimestamp - the time that the server/repository issued the registration request.
      * @param remoteConnection - the Connection properties for the connector used to call the registering server.
-     * @param typeDefList - the list of TypeDefs supported by the registering server/repository.
      * @return flag indicating if the event was sent or not.
      */
     boolean processRegistrationEvent(String                    sourceName,
@@ -51,8 +47,7 @@ public interface OMRSRegistryEventProcessor
                                      String                    originatorServerType,
                                      String                    originatorOrganizationName,
                                      Date                      registrationTimestamp,
-                                     Connection                remoteConnection,
-                                     List<TypeDefSummary>      typeDefList);
+                                     Connection                remoteConnection);
 
 
     /**
@@ -82,7 +77,6 @@ public interface OMRSRegistryEventProcessor
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
      * @param registrationTimestamp - the time that the server/repository first registered with the cohort.
      * @param remoteConnection - the Connection properties for the connector used to call the registering server.
-     * @param typeDefList - the list of TypeDefs supported by the registering server/repository.
      * @return flag indicating if the event was sent or not.
      */
     boolean processReRegistrationEvent(String                    sourceName,
@@ -91,8 +85,7 @@ public interface OMRSRegistryEventProcessor
                                        String                    originatorServerType,
                                        String                    originatorOrganizationName,
                                        Date                      registrationTimestamp,
-                                       Connection                remoteConnection,
-                                       List<TypeDefSummary>      typeDefList);
+                                       Connection                remoteConnection);
 
 
     /**

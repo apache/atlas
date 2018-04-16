@@ -90,6 +90,7 @@ public class OMRSArchiveHelper
      * @param guid - unique identifier for the CollectionDef
      * @param description - short default description of the enum type
      * @param descriptionGUID - guid of the glossary term describing this collection type
+     * @param arrayType - type of the array.
      * @return Filled out CollectionDef
      */
     public CollectionDef getArrayCollectionDef(String                guid,
@@ -121,6 +122,7 @@ public class OMRSArchiveHelper
      * @param description - short default description of the enum type
      * @param descriptionGUID - guid of the glossary term describing this collection type
      * @param propertyKeyType - type of the key for the map.
+     * @param propertyValueType  - type of map value.
      * @return Filled out CollectionDef
      */
     public CollectionDef getMapCollectionDef(String                guid,
@@ -349,7 +351,7 @@ public class OMRSArchiveHelper
 
 
     /**
-     * Return an attribute with the supplied name and description that is of type "array<string>".
+     * Return an attribute with the supplied name and description that is an array of strings.
      * It is set up to be optional,
      * indexable (useful for searches) but the value does not need to be unique.
      * These are the typical values used for most open metadata attribute.
@@ -383,7 +385,7 @@ public class OMRSArchiveHelper
 
 
     /**
-     * Return an attribute with the supplied name and description that is of type "map<string, string>".
+     * Return an attribute with the supplied name and description that is of a map from string to string.
      * It is set up to be optional,
      * indexable (useful for searches) but the value does not need to be unique.
      * These are the typical values used for most open metadata attribute.

@@ -49,7 +49,7 @@ public class EntityDef extends TypeDef
      * @param guid        - unique id for the TypeDef
      * @param name        - unique name for the TypeDef
      * @param version     - active version number for the TypeDef
-     * @param versionName - unique name for the TypeDef
+     * @param versionName - name for the active version of the TypeDef
      */
     public EntityDef(TypeDefCategory category,
                      String          guid,

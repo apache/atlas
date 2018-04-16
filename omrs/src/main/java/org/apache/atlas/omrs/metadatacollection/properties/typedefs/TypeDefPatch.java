@@ -159,7 +159,7 @@ public class TypeDefPatch extends TypeDefElementHeader
 
 
     /**
-     * Set up the new versionName of the TypeDef.
+     * Set up the new version of the TypeDef.
      *
      * @param updateToVersion long version number
      */
@@ -387,7 +387,7 @@ public class TypeDefPatch extends TypeDefElementHeader
     }
 
     /**
-     * Validated that the GUID, name and versionName of a TypeDef are equal.
+     * Validated that the GUID, name and version of a TypeDef are equal.
      *
      * @param object to test
      * @return boolean flag to say object is the same TypeDefPatch

@@ -99,7 +99,17 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
 
         if (realLocalConnector != null)
         {
-            this.realMetadataCollection = realLocalConnector.getMetadataCollection();
+            try
+            {
+                this.realMetadataCollection = realLocalConnector.getMetadataCollection();
+            }
+            catch (Throwable  error)
+            {
+                /*
+                 * Nothing to do - will be logged in verifyEventProcessor
+                 */
+                this.realMetadataCollection = null;
+            }
         }
 
         this.verifyEventProcessor(methodName);
@@ -159,7 +169,7 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
      * @param originatorServerName           - name of the server that the event came from.
      * @param originatorServerType           - type of server that the event came from.
      * @param originatorOrganizationName     - name of the organization that owns the server that sent the event.
-     * @param entity                         - details of the new versionName of the entity.
+     * @param entity                         - details of the new version of the entity.
      */
     public void processUpdatedEntityEvent(String       sourceName,
                                           String       originatorMetadataCollectionId,
@@ -190,7 +200,7 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
      * @param originatorServerName           - name of the server that the event came from.
      * @param originatorServerType           - type of server that the event came from.
      * @param originatorOrganizationName     - name of the organization that owns the server that sent the event.
-     * @param entity                         - details of the versionName of the entity that has been restored.
+     * @param entity                         - details of the version of the entity that has been restored.
      */
     public void processUndoneEntityEvent(String       sourceName,
                                          String       originatorMetadataCollectionId,
@@ -390,7 +400,7 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
      * @param originatorServerName           - name of the server that the event came from.
      * @param originatorServerType           - type of server that the event came from.
      * @param originatorOrganizationName     - name of the organization that owns the server that sent the event.
-     * @param entity                         - details of the versionName of the entity that has been restored.
+     * @param entity                         - details of the version of the entity that has been restored.
      */
     public void processRestoredEntityEvent(String       sourceName,
                                            String       originatorMetadataCollectionId,
@@ -644,7 +654,7 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
      * @param originatorServerName           - name of the server that the event came from.
      * @param originatorServerType           - type of server that the event came from.
      * @param originatorOrganizationName     - name of the organization that owns the server that sent the event.
-     * @param relationship                   - details of the new versionName of the relationship.
+     * @param relationship                   - details of the new version of the relationship.
      */
     public void processUpdatedRelationshipEvent(String       sourceName,
                                                 String       originatorMetadataCollectionId,
@@ -675,7 +685,7 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
      * @param originatorServerName           - name of the server that the event came from.
      * @param originatorServerType           - type of server that the event came from.
      * @param originatorOrganizationName     - name of the organization that owns the server that sent the event.
-     * @param relationship                   - details of the versionName of the relationship that has been restored.
+     * @param relationship                   - details of the version of the relationship that has been restored.
      */
     public void processUndoneRelationshipEvent(String       sourceName,
                                                String       originatorMetadataCollectionId,
@@ -779,7 +789,7 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
      * @param originatorServerName           - name of the server that the event came from.
      * @param originatorServerType           - type of server that the event came from.
      * @param originatorOrganizationName     - name of the organization that owns the server that sent the event.
-     * @param relationship                   - details of the versionName of the relationship that has been restored.
+     * @param relationship                   - details of the version of the relationship that has been restored.
      */
     public void processRestoredRelationshipEvent(String       sourceName,
                                                  String       originatorMetadataCollectionId,
@@ -1034,8 +1044,8 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
 
 
     /**
-     * An open metadata repository has detected an inconsistency in the versionName of the type used in an updated metadata
-     * instance compared to its stored versionName.
+     * An open metadata repository has detected an inconsistency in the version of the type used in an updated metadata
+     * instance compared to its stored version.
      *
      * @param sourceName                     - name of the source of the event.  It may be the cohort name for incoming events or the
      *                                       local repository, or event mapper name.
@@ -1411,6 +1421,19 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
         if (realLocalConnector == null)
         {
             OMRSErrorCode errorCode    = OMRSErrorCode.NO_LOCAL_REPOSITORY;
+            String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction());
+        }
+
+        if (realMetadataCollection == null)
+        {
+            OMRSErrorCode errorCode    = OMRSErrorCode.NULL_LOCAL_METADATA_COLLECTION;
             String        errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage();
 
             throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),

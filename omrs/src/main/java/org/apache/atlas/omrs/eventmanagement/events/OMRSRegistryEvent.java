@@ -58,11 +58,6 @@ public class OMRSRegistryEvent extends OMRSEvent
     private  Connection                  remoteConnection                = null;
 
     /*
-     * Used in the registration process to enable the repositories to detect incompatible TypeDefs.
-     */
-    private List<TypeDefSummary>         typeDefSummaries = null;
-
-    /*
      * Specific variables only used in error reporting.  It defines the subset of error codes from OMRSEvent
      * that are specific to registry events.
      */
@@ -89,7 +84,6 @@ public class OMRSRegistryEvent extends OMRSEvent
             this.registryEventType     = registrySection.getRegistryEventType();
             this.registrationTimestamp = registrySection.getRegistrationTimestamp();
             this.remoteConnection      = registrySection.getRemoteConnection();
-            this.typeDefSummaries      = registrySection.getTypeDefList();
         }
 
         if (super.genericErrorCode != null)
@@ -118,19 +112,16 @@ public class OMRSRegistryEvent extends OMRSEvent
      * @param registryEventType - type of event (REGISTRATION_EVENT, REFRESH_REGISTRATION_REQUEST, RE_REGISTRATION_EVENT)
      * @param registrationTimestamp - time that the local repository registered.
      * @param remoteConnection - remote connection to this local repository.
-     * @param typeDefSummaries - Summary list of supported TypeDefs
      */
     public OMRSRegistryEvent(OMRSRegistryEventType          registryEventType,
                              Date                           registrationTimestamp,
-                             Connection                     remoteConnection,
-                             List<TypeDefSummary>           typeDefSummaries)
+                             Connection                     remoteConnection)
     {
         super(OMRSEventCategory.REGISTRY);
 
         this.registryEventType           = registryEventType;
         this.registrationTimestamp       = registrationTimestamp;
         this.remoteConnection            = remoteConnection;
-        this.typeDefSummaries            = typeDefSummaries;
     }
 
 
@@ -209,19 +200,6 @@ public class OMRSRegistryEvent extends OMRSEvent
 
 
     /**
-     * Return the list of TypeDef summaries included in the event.
-     * If this is a normal registry event then these TypeDefs are from the local repository.
-     * If this an error event, then these TypeDefs are from the targeted repository.
-     *
-     * @return TypeDefSummaries object
-     */
-    public List<TypeDefSummary> getTypeDefSummaries()
-    {
-        return typeDefSummaries;
-    }
-
-
-    /**
      * Return the error code for the event.  This property is only used for error events.
      *
      * @return OMRSRegistryEventErrorCode enum
@@ -246,7 +224,6 @@ public class OMRSRegistryEvent extends OMRSEvent
         registrySection.setRegistryEventType(this.registryEventType);
         registrySection.setRegistrationTimestamp(this.registrationTimestamp);
         registrySection.setRemoteConnection(this.remoteConnection);
-        registrySection.setTypeDefList(this.typeDefSummaries);
 
         omrsEvent.setRegistryEventSection(registrySection);
 
@@ -266,7 +243,6 @@ public class OMRSRegistryEvent extends OMRSEvent
                 "registryEventType=" + registryEventType +
                 ", registrationTimestamp=" + registrationTimestamp +
                 ", remoteConnection=" + remoteConnection +
-                ", typeDefSummaries=" + typeDefSummaries +
                 ", errorCode=" + errorCode +
                 ", eventTimestamp=" + eventTimestamp +
                 ", eventDirection=" + eventDirection +

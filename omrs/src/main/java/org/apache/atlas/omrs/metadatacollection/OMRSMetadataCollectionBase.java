@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.omrs.metadatacollection;
 
+import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.*;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
 import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
@@ -95,7 +96,10 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      *
      * @param parentConnector - connector that this metadata collection supports.  The connector has the information
      *                        to call the metadata repository.
-     * @param metadataCollectionId - unique Identifier of the metadata collection Id.
+     * @param repositoryName - name of this repository.
+     * @param repositoryHelper - helper class for building types and instances
+     * @param repositoryValidator - validator class for checking open metadata repository objects and parameters.
+     * @param metadataCollectionId - unique identifier of the metadata collection Id.
      */
     public OMRSMetadataCollectionBase(OMRSRepositoryConnector parentConnector,
                                       String                  repositoryName,
@@ -121,6 +125,17 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      */
     public String      getMetadataCollectionId() throws RepositoryErrorException
     {
+        final String methodName = "getMetadataCollectionId";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        /*
+         * Perform operation
+         */
         return super.metadataCollectionId;
     }
 
@@ -144,7 +159,31 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
     public TypeDefGallery getAllTypes(String   userId) throws RepositoryErrorException,
                                                               UserNotAuthorizedException
     {
-        return null;
+        final String                       methodName = "getAllTypes";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -165,7 +204,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                               RepositoryErrorException,
                                                               UserNotAuthorizedException
     {
-        return null;
+        final String   methodName        = "findTypesByName";
+        final String   nameParameterName = "name";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeName(repositoryName, nameParameterName, name, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -184,7 +249,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                  RepositoryErrorException,
                                                                                  UserNotAuthorizedException
     {
-        return null;
+        final String methodName            = "findTypeDefsByCategory";
+        final String categoryParameterName = "category";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefCategory(repositoryName, categoryParameterName, category, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -203,7 +294,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                                             RepositoryErrorException,
                                                                                                             UserNotAuthorizedException
     {
-        return null;
+        final String methodName            = "findAttributeTypeDefsByCategory";
+        final String categoryParameterName = "category";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateAttributeTypeDefCategory(repositoryName, categoryParameterName, category, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -222,7 +339,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                         RepositoryErrorException,
                                                                                         UserNotAuthorizedException
     {
-        return null;
+        final String  methodName                 = "findTypeDefsByProperty";
+        final String  matchCriteriaParameterName = "matchCriteria";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateMatchCriteria(repositoryName, matchCriteriaParameterName, matchCriteria, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -246,7 +389,32 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                              RepositoryErrorException,
                                                                              UserNotAuthorizedException
     {
-        return null;
+        final String                       methodName = "findTypesByExternalID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateExternalId(repositoryName, standard, organization, identifier, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -266,7 +434,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                          RepositoryErrorException,
                                                                          UserNotAuthorizedException
     {
-        return null;
+        final String methodName                  = "searchForTypeDefs";
+        final String searchCriteriaParameterName = "searchCriteria";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateSearchCriteria(repositoryName, searchCriteriaParameterName, searchCriteria, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -288,7 +482,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                            TypeDefNotKnownException,
                                                            UserNotAuthorizedException
     {
-        return null;
+        final String methodName        = "getTypeDefByGUID";
+        final String guidParameterName = "guid";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -310,7 +530,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                               TypeDefNotKnownException,
                                                                               UserNotAuthorizedException
     {
-        return null;
+        final String methodName        = "getAttributeTypeDefByGUID";
+        final String guidParameterName = "guid";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -332,7 +578,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                            TypeDefNotKnownException,
                                                            UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "getTypeDefByName";
+        final String  nameParameterName = "name";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeName(repositoryName, nameParameterName, name, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -354,7 +626,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                               TypeDefNotKnownException,
                                                                               UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "getAttributeTypeDefByName";
+        final String  nameParameterName = "name";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeName(repositoryName, nameParameterName, name, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -383,7 +681,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                     FunctionNotSupportedException,
                                                                     UserNotAuthorizedException
     {
+        final String  methodName = "addTypeDefGallery";
+        final String  galleryParameterName = "newTypes";
 
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefGallery(repositoryName, galleryParameterName, newTypes, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -414,7 +738,34 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                            FunctionNotSupportedException,
                                                            UserNotAuthorizedException
     {
+        final String  methodName = "addTypeDef";
+        final String  typeDefParameterName = "newTypeDef";
 
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDef(repositoryName, typeDefParameterName, newTypeDef, methodName);
+        repositoryValidator.validateUnknownTypeDef(repositoryName, typeDefParameterName, newTypeDef, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -443,7 +794,34 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                     FunctionNotSupportedException,
                                                                                     UserNotAuthorizedException
     {
+        final String  methodName           = "addAttributeTypeDef";
+        final String  typeDefParameterName = "newAttributeTypeDef";
 
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateAttributeTypeDef(repositoryName, typeDefParameterName, newAttributeTypeDef, methodName);
+        repositoryValidator.validateUnknownAttributeTypeDef(repositoryName, typeDefParameterName, newAttributeTypeDef, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -469,7 +847,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                               InvalidTypeDefException,
                                                               UserNotAuthorizedException
     {
-        return true;
+        final String  methodName           = "verifyTypeDef";
+        final String  typeDefParameterName = "typeDef";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDef(repositoryName, typeDefParameterName, typeDef, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -495,7 +899,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                       InvalidTypeDefException,
                                                                                       UserNotAuthorizedException
     {
-        return true;
+        final String  methodName           = "verifyAttributeTypeDef";
+        final String  typeDefParameterName = "attributeTypeDef";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateAttributeTypeDef(repositoryName, typeDefParameterName, attributeTypeDef, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -523,7 +953,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                    FunctionNotSupportedException,
                                                                    UserNotAuthorizedException
     {
-        return null;
+        final String  methodName           = "updateTypeDef";
+        final String  typeDefParameterName = "typeDefPatch";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefPatch(repositoryName, typeDefPatch, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -553,6 +1009,39 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                     FunctionNotSupportedException,
                                                                     UserNotAuthorizedException
     {
+        final String    methodName        = "deleteTypeDef";
+        final String    guidParameterName = "obsoleteTypeDefGUID";
+        final String    nameParameterName = "obsoleteTypeDefName";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               obsoleteTypeDefGUID,
+                                               obsoleteTypeDefName,
+                                               methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -582,6 +1071,39 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                              FunctionNotSupportedException,
                                                                              UserNotAuthorizedException
     {
+        final String    methodName        = "deleteAttributeTypeDef";
+        final String    guidParameterName = "obsoleteTypeDefGUID";
+        final String    nameParameterName = "obsoleteTypeDefName";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateAttributeTypeDefIds(repositoryName,
+                                                        guidParameterName,
+                                                        nameParameterName,
+                                                        obsoleteTypeDefGUID,
+                                                        obsoleteTypeDefName,
+                                                        methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -614,7 +1136,47 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                         FunctionNotSupportedException,
                                                                         UserNotAuthorizedException
     {
-        return null;
+        final String    methodName                = "reIdentifyTypeDef";
+        final String    originalGUIDParameterName = "originalTypeDefGUID";
+        final String    originalNameParameterName = "originalTypeDefName";
+        final String    newGUIDParameterName      = "newTypeDefGUID";
+        final String    newNameParameterName      = "newTypeDefName";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               originalGUIDParameterName,
+                                               originalNameParameterName,
+                                               originalTypeDefGUID,
+                                               originalTypeDefName,
+                                               methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               newGUIDParameterName,
+                                               newNameParameterName,
+                                               newTypeDefGUID,
+                                               newTypeDefName,
+                                               methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -647,7 +1209,47 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                                    FunctionNotSupportedException,
                                                                                                    UserNotAuthorizedException
     {
-        return null;
+        final String    methodName                = "reIdentifyAttributeTypeDef";
+        final String    originalGUIDParameterName = "originalAttributeTypeDefGUID";
+        final String    originalNameParameterName = "originalAttributeTypeDefName";
+        final String    newGUIDParameterName      = "newAttributeTypeDefGUID";
+        final String    newNameParameterName      = "newAttributeTypeDefName";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               originalGUIDParameterName,
+                                               originalNameParameterName,
+                                               originalAttributeTypeDefGUID,
+                                               originalAttributeTypeDefName,
+                                               methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               newGUIDParameterName,
+                                               newNameParameterName,
+                                               newAttributeTypeDefGUID,
+                                               newAttributeTypeDefName,
+                                               methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -672,7 +1274,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                RepositoryErrorException,
                                                                UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "isEntityKnown";
+        final String  guidParameterName = "guid";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -694,7 +1322,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                   EntityNotKnownException,
                                                                   UserNotAuthorizedException
     {
-        return null;
+        final String  methodName        = "getEntitySummary";
+        final String  guidParameterName = "guid";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -718,16 +1372,42 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                 EntityProxyOnlyException,
                                                                 UserNotAuthorizedException
     {
-        return null;
+        final String  methodName        = "getEntityDetail";
+        final String  guidParameterName = "guid";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
     /**
-     * Return a historical versionName of an entity - includes the header, classifications and properties of the entity.
+     * Return a historical version of an entity - includes the header, classifications and properties of the entity.
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the entity.
-     * @param asOfTime - the time used to determine which versionName of the entity that is desired.
+     * @param asOfTime - the time used to determine which version of the entity that is desired.
      * @return EntityDetail structure.
      * @throws InvalidParameterException - the guid or date is null or date is for a future time.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
@@ -747,7 +1427,35 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                      FunctionNotSupportedException,
                                                                      UserNotAuthorizedException
     {
-        return null;
+        final String  methodName        = "getEntityDetail";
+        final String  guidParameterName = "guid";
+        final String  asOfTimeParameter = "asOfTime";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -796,7 +1504,37 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                                     FunctionNotSupportedException,
                                                                                                     UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "getRelationshipsForEntity";
+        final String  guidParameterName = "entityGUID";
+        final String  asOfTimeParameter = "asOfTime";
+        final String  pageSizeParameter = "pageSize";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, entityGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -853,7 +1591,45 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                                  FunctionNotSupportedException,
                                                                                                  UserNotAuthorizedException
     {
-        return null;
+        final String  methodName                   = "findEntitiesByProperty";
+        final String  matchCriteriaParameterName   = "matchCriteria";
+        final String  matchPropertiesParameterName = "matchProperties";
+        final String  guidParameterName            = "entityTypeGUID";
+        final String  asOfTimeParameter            = "asOfTime";
+        final String  pageSizeParameter            = "pageSize";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, entityTypeGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+        repositoryValidator.validateMatchCriteria(repositoryName,
+                                                  matchCriteriaParameterName,
+                                                  matchPropertiesParameterName,
+                                                  matchCriteria,
+                                                  matchProperties,
+                                                  methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -910,15 +1686,72 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                                        FunctionNotSupportedException,
                                                                                                        UserNotAuthorizedException
     {
-        return null;
+        final String  methodName                   = "findEntitiesByClassification";
+        final String  classificationParameterName  = "classificationName";
+        final String  entityTypeGUIDParameterName  = "entityTypeGUID";
+
+        final String  matchCriteriaParameterName   = "matchCriteria";
+        final String  matchPropertiesParameterName = "matchClassificationProperties";
+        final String  asOfTimeParameter            = "asOfTime";
+        final String  pageSizeParameter            = "pageSize";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityTypeGUIDParameterName, entityTypeGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        /*
+         * Validate TypeDef
+         */
+        TypeDef entityTypeDef = repositoryHelper.getTypeDef(repositoryName, entityTypeGUID);
+
+        repositoryValidator.validateTypeDefForInstance(repositoryName, entityTypeGUIDParameterName, entityTypeDef, methodName);
+
+        repositoryValidator.validateMatchCriteria(repositoryName,
+                                                  matchCriteriaParameterName,
+                                                  matchPropertiesParameterName,
+                                                  matchCriteria,
+                                                  matchClassificationProperties,
+                                                  methodName);
+        repositoryValidator.validateClassification(repositoryName,
+                                                   classificationParameterName,
+                                                   classificationName,
+                                                   entityTypeDef.getName(),
+                                                   methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
     /**
-     * Return a list of entities matching the search criteria.
+     * Return a list of entities whose string based property values match the search criteria.  The
+     * search criteria may include regex style wild cards.
      *
      * @param userId - unique identifier for requesting user.
-     * @param searchCriteria - String expression of the characteristics of the required relationships.
+     * @param entityTypeGUID - GUID of the type of entity to search for. Null means all types will
+     *                       be searched (could be slow so not recommended).
+     * @param searchCriteria - String expression contained in any of the property values within the entities
+     *                       of the supplied type.
      * @param fromEntityElement - the starting element number of the entities to return.
      *                                This is used when retrieving elements
      *                                beyond the first page of results. Zero means start from the first element.
@@ -943,22 +1776,53 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support the asOfTime parameter.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public  List<EntityDetail> searchForEntities(String                    userId,
-                                                 String                    searchCriteria,
-                                                 int                       fromEntityElement,
-                                                 List<InstanceStatus>      limitResultsByStatus,
-                                                 List<String>              limitResultsByClassification,
-                                                 Date                      asOfTime,
-                                                 String                    sequencingProperty,
-                                                 SequencingOrder           sequencingOrder,
-                                                 int                       pageSize) throws InvalidParameterException,
-                                                                                            RepositoryErrorException,
-                                                                                            PropertyErrorException,
-                                                                                            PagingErrorException,
-                                                                                            FunctionNotSupportedException,
-                                                                                            UserNotAuthorizedException
+    public  List<EntityDetail> findEntitiesByPropertyValue(String                userId,
+                                                           String                entityTypeGUID,
+                                                           String                searchCriteria,
+                                                           int                   fromEntityElement,
+                                                           List<InstanceStatus>  limitResultsByStatus,
+                                                           List<String>          limitResultsByClassification,
+                                                           Date                  asOfTime,
+                                                           String                sequencingProperty,
+                                                           SequencingOrder       sequencingOrder,
+                                                           int                   pageSize) throws InvalidParameterException,
+                                                                                                  RepositoryErrorException,
+                                                                                                  PropertyErrorException,
+                                                                                                  PagingErrorException,
+                                                                                                  FunctionNotSupportedException,
+                                                                                                  UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "findEntitiesByPropertyValue";
+        final String  searchCriteriaParameterName = "searchCriteria";
+        final String  asOfTimeParameter = "asOfTime";
+        final String  pageSizeParameter = "pageSize";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateSearchCriteria(repositoryName, searchCriteriaParameterName, searchCriteria, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        /*
+         * Process operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -978,7 +1842,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                      RepositoryErrorException,
                                                                      UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "isRelationshipKnown";
+        final String  guidParameterName = "guid";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * Process operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1001,7 +1891,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                RelationshipNotKnownException,
                                                                UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "getRelationship";
+        final String  guidParameterName = "guid";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+
+        /*
+         * Process operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1010,7 +1926,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the relationship.
-     * @param asOfTime - the time used to determine which versionName of the entity that is desired.
+     * @param asOfTime - the time used to determine which version of the entity that is desired.
      * @return Relationship structure.
      * @throws InvalidParameterException - the guid or date is null or the date is for a future time
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
@@ -1028,7 +1944,35 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                     FunctionNotSupportedException,
                                                                     UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "getRelationship";
+        final String  guidParameterName = "guid";
+        final String  asOfTimeParameter = "asOfTime";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1082,15 +2026,57 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                                       FunctionNotSupportedException,
                                                                                                       UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "findRelationshipsByProperty";
+        final String  matchCriteriaParameterName = "matchCriteria";
+        final String  matchPropertiesParameterName = "matchProperties";
+        final String  guidParameterName = "relationshipTypeGUID";
+        final String  asOfTimeParameter = "asOfTime";
+        final String  pageSizeParameter = "pageSize";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, relationshipTypeGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+        repositoryValidator.validateMatchCriteria(repositoryName,
+                                                  matchCriteriaParameterName,
+                                                  matchPropertiesParameterName,
+                                                  matchCriteria,
+                                                  matchProperties,
+                                                  methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
     /**
-     * Return a list of relationships that match the search criteria.  The results can be paged.
+     * Return a list of relationships whose string based property values match the search criteria.  The
+     * search criteria may include regex style wild cards.
      *
      * @param userId - unique identifier for requesting user.
-     * @param searchCriteria - String expression of the characteristics of the required relationships.
+     * @param relationshipTypeGUID - GUID of the type of entity to search for. Null means all types will
+     *                       be searched (could be slow so not recommended).
+     * @param searchCriteria - String expression contained in any of the property values within the entities
+     *                       of the supplied type.
      * @param fromRelationshipElement - Element number of the results to skip to when building the results list
      *                                to return.  Zero means begin at the start of the results.  This is used
      *                                to retrieve the results over a number of pages.
@@ -1113,21 +2099,50 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support the asOfTime parameter.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public  List<Relationship> searchForRelationships(String                    userId,
-                                                      String                    searchCriteria,
-                                                      int                       fromRelationshipElement,
-                                                      List<InstanceStatus>      limitResultsByStatus,
-                                                      Date                      asOfTime,
-                                                      String                    sequencingProperty,
-                                                      SequencingOrder           sequencingOrder,
-                                                      int                       pageSize) throws InvalidParameterException,
-                                                                                                 RepositoryErrorException,
-                                                                                                 PropertyErrorException,
-                                                                                                 PagingErrorException,
-                                                                                                 FunctionNotSupportedException,
-                                                                                                 UserNotAuthorizedException
+    public  List<Relationship> findRelationshipsByPropertyValue(String                    userId,
+                                                                String                    relationshipTypeGUID,
+                                                                String                    searchCriteria,
+                                                                int                       fromRelationshipElement,
+                                                                List<InstanceStatus>      limitResultsByStatus,
+                                                                Date                      asOfTime,
+                                                                String                    sequencingProperty,
+                                                                SequencingOrder           sequencingOrder,
+                                                                int                       pageSize) throws InvalidParameterException,
+                                                                                                           RepositoryErrorException,
+                                                                                                           PropertyErrorException,
+                                                                                                           PagingErrorException,
+                                                                                                           FunctionNotSupportedException,
+                                                                                                           UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "findRelationshipsByPropertyName";
+        final String  asOfTimeParameter = "asOfTime";
+        final String  pageSizeParameter = "pageSize";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1163,7 +2178,37 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                         FunctionNotSupportedException,
                                                                                         UserNotAuthorizedException
     {
-        return null;
+        final String methodName                   = "getLinkingEntities";
+        final String startEntityGUIDParameterName = "startEntityGUID";
+        final String endEntityGUIDParameterName   = "entityGUID";
+        final String asOfTimeParameter            = "asOfTime";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, startEntityGUIDParameterName, startEntityGUID, methodName);
+        repositoryValidator.validateGUID(repositoryName, endEntityGUIDParameterName, endEntityGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1205,13 +2250,71 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                 Date                 asOfTime,
                                                 int                  level) throws InvalidParameterException,
                                                                                    RepositoryErrorException,
-                                                                                   TypeErrorException,
                                                                                    EntityNotKnownException,
+                                                                                   TypeErrorException,
                                                                                    PropertyErrorException,
                                                                                    FunctionNotSupportedException,
                                                                                    UserNotAuthorizedException
     {
-        return null;
+        final String methodName                                  = "getEntityNeighborhood";
+        final String entityGUIDParameterName                     = "entityGUID";
+        final String entityTypeGUIDParameterName                 = "entityTypeGUIDs";
+        final String relationshipTypeGUIDParameterName           = "relationshipTypeGUIDs";
+        final String limitedResultsByClassificationParameterName = "limitResultsByClassification";
+        final String asOfTimeParameter                           = "asOfTime";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+
+        if (entityTypeGUIDs != null)
+        {
+            for (String guid : entityTypeGUIDs)
+            {
+                repositoryValidator.validateGUID(repositoryName, entityTypeGUIDParameterName, guid, methodName);
+            }
+        }
+
+        if (relationshipTypeGUIDs != null)
+        {
+            for (String guid : relationshipTypeGUIDs)
+            {
+                repositoryValidator.validateGUID(repositoryName, relationshipTypeGUIDParameterName, guid, methodName);
+            }
+        }
+
+        if (relationshipTypeGUIDs != null)
+        {
+            for (String classificationName : limitResultsByClassification)
+            {
+                repositoryValidator.validateClassificationName(repositoryName,
+                                                               limitedResultsByClassificationParameterName,
+                                                               classificationName,
+                                                               methodName);
+            }
+        }
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1266,7 +2369,37 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                         FunctionNotSupportedException,
                                                                                         UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "getRelatedEntities";
+        final String  entityGUIDParameterName  = "startEntityGUID";
+        final String  asOfTimeParameter = "asOfTime";
+        final String  pageSizeParameter = "pageSize";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, startEntityGUID, methodName);
+        repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
+        repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        /*
+         * Perform operation
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1309,7 +2442,57 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                    StatusNotSupportedException,
                                                                                    UserNotAuthorizedException
     {
-        return null;
+        final String  methodName                    = "addEntity";
+        final String  entityGUIDParameterName       = "entityTypeGUID";
+        final String  propertiesParameterName       = "initialProperties";
+        final String  classificationsParameterName  = "initialClassifications";
+        final String  initialStatusParameterName    = "initialStatus";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, entityGUIDParameterName, entityTypeGUID, methodName);
+
+        TypeDef  typeDef = repositoryHelper.getTypeDef(repositoryName, entityTypeGUID);
+
+        repositoryValidator.validateTypeDefForInstance(repositoryName, entityGUIDParameterName, typeDef, methodName);
+        repositoryValidator.validateClassificationList(repositoryName,
+                                                       classificationsParameterName,
+                                                       initialClassifications,
+                                                       typeDef.getName(),
+                                                       methodName);
+
+        repositoryValidator.validatePropertiesForType(repositoryName,
+                                                      propertiesParameterName,
+                                                      typeDef,
+                                                      initialProperties,
+                                                      methodName);
+
+        repositoryValidator.validateInstanceStatus(repositoryName,
+                                                   initialStatusParameterName,
+                                                   initialStatus,
+                                                   typeDef,
+                                                   methodName);
+
+        /*
+         * Validation complete - ok to create new instance
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1343,6 +2526,63 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                 FunctionNotSupportedException,
                                                                 UserNotAuthorizedException
     {
+        final String  methodName         = "addEntityProxy";
+        final String  proxyParameterName = "entityProxy";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+
+        repositoryValidator.validateEntityProxy(repositoryName,
+                                                metadataCollectionId,
+                                                proxyParameterName,
+                                                entityProxy,
+                                                methodName);
+
+        repositoryValidator.validateInstanceType(repositoryName, entityProxy);
+
+        String entityTypeGUID = entityProxy.getType().getTypeDefGUID();
+
+        TypeDef  typeDef = repositoryHelper.getTypeDef(repositoryName, entityTypeGUID);
+
+        repositoryValidator.validateTypeDefForInstance(repositoryName, proxyParameterName, typeDef, methodName);
+        repositoryValidator.validateClassificationList(repositoryName,
+                                                       proxyParameterName,
+                                                       entityProxy.getClassifications(),
+                                                       typeDef.getName(),
+                                                       methodName);
+
+        repositoryValidator.validatePropertiesForType(repositoryName,
+                                                      proxyParameterName,
+                                                      typeDef,
+                                                      entityProxy.getUniqueProperties(),
+                                                      methodName);
+
+        repositoryValidator.validateInstanceStatus(repositoryName,
+                                                   proxyParameterName,
+                                                   entityProxy.getStatus(),
+                                                   typeDef,
+                                                   methodName);
+
+        /*
+         * Validation complete
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1369,7 +2609,35 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                               StatusNotSupportedException,
                                                                               UserNotAuthorizedException
     {
-        return null;
+        final String  methodName               = "updateEntityStatus";
+        final String  entityGUIDParameterName  = "entityGUID";
+        final String  statusParameterName      = "newStatus";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1396,7 +2664,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                        PropertyErrorException,
                                                                                        UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "updateEntityProperties";
+        final String  entityGUIDParameterName  = "entityGUID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1420,7 +2714,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                     FunctionNotSupportedException,
                                                                     UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "undoEntityUpdate";
+        final String  entityGUIDParameterName  = "entityGUID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+
+        /*
+         * Validation complete - ok to restore entity
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1452,7 +2772,42 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                          FunctionNotSupportedException,
                                                                          UserNotAuthorizedException
     {
-        return null;
+        final String  methodName               = "deleteEntity";
+        final String  typeDefGUIDParameterName = "typeDefGUID";
+        final String  typeDefNameParameterName = "typeDefName";
+        final String  entityGUIDParameterName  = "obsoleteEntityGUID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               typeDefGUIDParameterName,
+                                               typeDefNameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, obsoleteEntityGUID, methodName);
+
+        /*
+         * Locate Entity
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1479,6 +2834,42 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                 EntityNotDeletedException,
                                                                 UserNotAuthorizedException
     {
+        final String  methodName               = "purgeEntity";
+        final String  typeDefGUIDParameterName = "typeDefGUID";
+        final String  typeDefNameParameterName = "typeDefName";
+        final String  entityGUIDParameterName  = "deletedEntityGUID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               typeDefGUIDParameterName,
+                                               typeDefNameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, deletedEntityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1504,7 +2895,34 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                           FunctionNotSupportedException,
                                                                           UserNotAuthorizedException
     {
-        return null;
+        final String  methodName              = "restoreEntity";
+        final String  entityGUIDParameterName = "deletedEntityGUID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, deletedEntityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1536,7 +2954,35 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                              PropertyErrorException,
                                                                                              UserNotAuthorizedException
     {
-        return null;
+        final String  methodName                  = "classifyEntity";
+        final String  entityGUIDParameterName     = "entityGUID";
+        final String  classificationParameterName = "classificationName";
+        final String  propertiesParameterName     = "classificationProperties";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1562,7 +3008,39 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                             ClassificationErrorException,
                                                                             UserNotAuthorizedException
     {
-        return null;
+        final String  methodName                  = "declassifyEntity";
+        final String  entityGUIDParameterName     = "entityGUID";
+        final String  classificationParameterName = "classificationName";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+        repositoryValidator.validateClassificationName(repositoryName,
+                                                       classificationParameterName,
+                                                       classificationName,
+                                                       methodName);
+
+        /*
+         * Locate entity
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1593,7 +3071,63 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                            PropertyErrorException,
                                                                                            UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "updateEntityClassification";
+        final String  entityGUIDParameterName     = "entityGUID";
+        final String  classificationParameterName = "classificationName";
+        final String  propertiesParameterName = "properties";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, entityGUID, methodName);
+        repositoryValidator.validateClassificationName(repositoryName, classificationParameterName, classificationName, methodName);
+
+
+        try
+        {
+            repositoryValidator.validateClassificationProperties(repositoryName,
+                                                                 classificationName,
+                                                                 propertiesParameterName,
+                                                                 properties,
+                                                                 methodName);
+        }
+        catch (PropertyErrorException  error)
+        {
+            throw error;
+        }
+        catch (Throwable   error)
+        {
+            OMRSErrorCode errorCode = OMRSErrorCode.UNKNOWN_CLASSIFICATION;
+
+            throw new ClassificationErrorException(errorCode.getHTTPErrorCode(),
+                                                   this.getClass().getName(),
+                                                   methodName,
+                                                   error.getMessage(),
+                                                   errorCode.getSystemAction(),
+                                                   errorCode.getUserAction());
+        }
+
+
+        /*
+         * Locate entity
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1633,7 +3167,52 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                    StatusNotSupportedException,
                                                                                    UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "addRelationship";
+        final String  guidParameterName = "relationshipTypeGUID";
+        final String  propertiesParameterName       = "initialProperties";
+        final String  initialStatusParameterName    = "initialStatus";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, relationshipTypeGUID, methodName);
+
+        TypeDef  typeDef = repositoryHelper.getTypeDef(repositoryName, relationshipTypeGUID);
+
+        repositoryValidator.validateTypeDefForInstance(repositoryName, guidParameterName, typeDef, methodName);
+
+
+        repositoryValidator.validatePropertiesForType(repositoryName,
+                                                      propertiesParameterName,
+                                                      typeDef,
+                                                      initialProperties,
+                                                      methodName);
+
+        repositoryValidator.validateInstanceStatus(repositoryName,
+                                                   initialStatusParameterName,
+                                                   initialStatus,
+                                                   typeDef,
+                                                   methodName);
+
+        /*
+         * Validation complete - ok to create new instance
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1660,7 +3239,34 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                     StatusNotSupportedException,
                                                                                     UserNotAuthorizedException
     {
-        return null;
+        final String  methodName          = "updateRelationshipStatus";
+        final String  guidParameterName   = "relationshipGUID";
+        final String  statusParameterName = "newStatus";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, relationshipGUID, methodName);
+
+        /*
+         * Locate relationship
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1687,7 +3293,34 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                              PropertyErrorException,
                                                                                              UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "updateRelationshipProperties";
+        final String  guidParameterName = "relationshipGUID";
+        final String  propertiesParameterName = "properties";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, relationshipGUID, methodName);
+
+        /*
+         * Locate relationship
+         */
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1711,7 +3344,34 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                 FunctionNotSupportedException,
                                                                                 UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "undoRelationshipUpdate";
+        final String  guidParameterName = "relationshipGUID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, relationshipGUID, methodName);
+
+        /*
+         * Restore previous version
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1742,7 +3402,42 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                    FunctionNotSupportedException,
                                                                                    UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "deleteRelationship";
+        final String  guidParameterName = "typeDefGUID";
+        final String  nameParameterName = "typeDefName";
+        final String  relationshipParameterName = "obsoleteRelationshipGUID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, relationshipParameterName, obsoleteRelationshipGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+
+        /*
+         * Locate relationship
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1769,6 +3464,42 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                             RelationshipNotDeletedException,
                                                                             UserNotAuthorizedException
     {
+        final String  methodName = "purgeRelationship";
+        final String  guidParameterName = "typeDefGUID";
+        final String  nameParameterName = "typeDefName";
+        final String  relationshipParameterName = "deletedRelationshipGUID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, relationshipParameterName, deletedRelationshipGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+
+        /*
+         * Locate relationship
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1795,7 +3526,34 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                       FunctionNotSupportedException,
                                                                                       UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "restoreRelationship";
+        final String  guidParameterName = "deletedRelationshipGUID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, deletedRelationshipGUID, methodName);
+
+        /*
+         * Locate relationship
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1832,7 +3590,43 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                           FunctionNotSupportedException,
                                                                           UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "reIdentifyEntity";
+        final String  guidParameterName = "typeDefGUID";
+        final String  nameParameterName = "typeDefName";
+        final String  instanceParameterName = "deletedRelationshipGUID";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        parentConnector.validateRepositoryIsActive(methodName);
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, instanceParameterName, newEntityGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+
+        /*
+         * Locate entity
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1869,7 +3663,36 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                               FunctionNotSupportedException,
                                                                               UserNotAuthorizedException
     {
-        return null;
+        final String  methodName = "reTypeEntity";
+        final String  entityParameterName = "entityGUID";
+        final String  currentTypeDefParameterName = "currentTypeDefSummary";
+        final String  newTypeDefParameterName = "newTypeDefSummary";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityParameterName, entityGUID, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1903,7 +3726,46 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                         FunctionNotSupportedException,
                                                                                         UserNotAuthorizedException
     {
-        return null;
+        final String methodName                = "reHomeEntity";
+        final String guidParameterName         = "typeDefGUID";
+        final String nameParameterName         = "typeDefName";
+        final String entityParameterName       = "entityGUID";
+        final String homeParameterName         = "homeMetadataCollectionId";
+        final String newHomeParameterName      = "newHomeMetadataCollectionId";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, entityParameterName, entityGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateHomeMetadataGUID(repositoryName, homeParameterName, homeMetadataCollectionId, methodName);
+        repositoryValidator.validateHomeMetadataGUID(repositoryName, newHomeParameterName, newHomeMetadataCollectionId, methodName);
+
+        /*
+         * Locate entity
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1936,7 +3798,49 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                       FunctionNotSupportedException,
                                                                                       UserNotAuthorizedException
     {
-        return null;
+        final String methodName                   = "reIdentifyRelationship";
+        final String guidParameterName            = "typeDefGUID";
+        final String nameParameterName            = "typeDefName";
+        final String relationshipParameterName    = "relationshipGUID";
+        final String newRelationshipParameterName = "newHomeMetadataCollectionId";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, relationshipParameterName, relationshipGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateGUID(repositoryName, newRelationshipParameterName, newRelationshipGUID, methodName);
+
+        /*
+         * Locate relationship
+         */
+        Relationship  relationship  = this.getRelationship(userId, relationshipGUID);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -1972,7 +3876,57 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                     FunctionNotSupportedException,
                                                                                     UserNotAuthorizedException
     {
-        return null;
+        final String methodName = "reTypeRelationship";
+        final String relationshipParameterName = "relationshipGUID";
+        final String currentTypeDefParameterName = "currentTypeDefSummary";
+        final String newTypeDefParameterName = "newTypeDefSummary";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, relationshipParameterName, relationshipGUID, methodName);
+        repositoryValidator.validateType(repositoryName, currentTypeDefParameterName, currentTypeDefSummary, TypeDefCategory.RELATIONSHIP_DEF, methodName);
+        repositoryValidator.validateType(repositoryName, currentTypeDefParameterName, newTypeDefSummary, TypeDefCategory.RELATIONSHIP_DEF, methodName);
+
+        /*
+         * Locate relationship
+         */
+        Relationship  relationship  = this.getRelationship(userId, relationshipGUID);
+
+        repositoryValidator.validateInstanceType(repositoryName,
+                                                 relationship,
+                                                 currentTypeDefParameterName,
+                                                 currentTypeDefParameterName,
+                                                 currentTypeDefSummary.getGUID(),
+                                                 currentTypeDefSummary.getName());
+
+
+        repositoryValidator.validatePropertiesForType(repositoryName,
+                                                      newTypeDefParameterName,
+                                                      newTypeDefSummary,
+                                                      relationship.getProperties(),
+                                                      methodName);
+
+        /*
+         * Validation complete - ok to make changes
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -2007,7 +3961,46 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                         FunctionNotSupportedException,
                                                                                         UserNotAuthorizedException
     {
-        return null;
+        final String  methodName               = "reHomeRelationship";
+        final String guidParameterName         = "typeDefGUID";
+        final String nameParameterName         = "typeDefName";
+        final String relationshipParameterName = "relationshipGUID";
+        final String homeParameterName         = "homeMetadataCollectionId";
+        final String newHomeParameterName      = "newHomeMetadataCollectionId";
+
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateGUID(repositoryName, relationshipParameterName, relationshipGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateHomeMetadataGUID(repositoryName, homeParameterName, homeMetadataCollectionId, methodName);
+        repositoryValidator.validateHomeMetadataGUID(repositoryName, newHomeParameterName, newHomeMetadataCollectionId, methodName);
+
+        /*
+         * Locate relationship
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -2021,7 +4014,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * Save the entity as a reference copy.  The id of the home metadata collection is already set up in the
      * entity.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entity - details of the entity to save.
      * @throws InvalidParameterException - the entity is null.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
@@ -2037,7 +4030,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public void saveEntityReferenceCopy(String         serverName,
+    public void saveEntityReferenceCopy(String userId,
                                         EntityDetail   entity) throws InvalidParameterException,
                                                                       RepositoryErrorException,
                                                                       TypeErrorException,
@@ -2048,7 +4041,26 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                       FunctionNotSupportedException,
                                                                       UserNotAuthorizedException
     {
+        final String  methodName = "saveEntityReferenceCopy";
 
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -2057,7 +4069,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * remove reference copies from the local cohort, repositories that have left the cohort,
      * or entities that have come from open metadata archives.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entityGUID - the unique identifier for the entity.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
@@ -2071,7 +4083,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public void purgeEntityReferenceCopy(String   serverName,
+    public void purgeEntityReferenceCopy(String userId,
                                          String   entityGUID,
                                          String   typeDefGUID,
                                          String   typeDefName,
@@ -2082,7 +4094,43 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                    FunctionNotSupportedException,
                                                                                    UserNotAuthorizedException
     {
+        final String  methodName               = "purgeEntityReferenceCopy";
+        final String guidParameterName         = "typeDefGUID";
+        final String nameParameterName         = "typeDefName";
+        final String entityParameterName       = "entityGUID";
+        final String homeParameterName         = "homeMetadataCollectionId";
 
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateGUID(repositoryName, entityParameterName, entityGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateHomeMetadataGUID(repositoryName, homeParameterName, homeMetadataCollectionId, methodName);
+
+        /*
+         * Remove entity
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -2090,7 +4138,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * The local repository has requested that the repository that hosts the home metadata collection for the
      * specified entity sends out the details of this entity so the local repository can create a reference copy.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param entityGUID - unique identifier of requested entity.
      * @param typeDefGUID - unique identifier of requested entity's TypeDef.
      * @param typeDefName - unique name of requested entity's TypeDef.
@@ -2104,7 +4152,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public void refreshEntityReferenceCopy(String   serverName,
+    public void refreshEntityReferenceCopy(String userId,
                                            String   entityGUID,
                                            String   typeDefGUID,
                                            String   typeDefName,
@@ -2115,7 +4163,43 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                      FunctionNotSupportedException,
                                                                                      UserNotAuthorizedException
     {
+        final String methodName                = "refreshEntityReferenceCopy";
+        final String guidParameterName         = "typeDefGUID";
+        final String nameParameterName         = "typeDefName";
+        final String entityParameterName       = "entityGUID";
+        final String homeParameterName         = "homeMetadataCollectionId";
 
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateGUID(repositoryName, entityParameterName, entityGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateHomeMetadataGUID(repositoryName, homeParameterName, homeMetadataCollectionId, methodName);
+
+        /*
+         * Send refresh message
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -2123,7 +4207,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * Save the relationship as a reference copy.  The id of the home metadata collection is already set up in the
      * relationship.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param relationship - relationship to save.
      * @throws InvalidParameterException - the relationship is null.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
@@ -2141,7 +4225,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public void saveRelationshipReferenceCopy(String         serverName,
+    public void saveRelationshipReferenceCopy(String userId,
                                               Relationship   relationship) throws InvalidParameterException,
                                                                                   RepositoryErrorException,
                                                                                   TypeErrorException,
@@ -2153,7 +4237,33 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                   FunctionNotSupportedException,
                                                                                   UserNotAuthorizedException
     {
+        final String  methodName = "saveRelationshipReferenceCopy";
+        final String  instanceParameterName = "relationship";
 
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateReferenceInstanceHeader(repositoryName, metadataCollectionId, instanceParameterName, relationship, methodName);
+
+        /*
+         * Locate relationship
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -2162,7 +4272,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * remove reference copies from the local cohort, repositories that have left the cohort,
      * or relationships that have come from open metadata archives.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param relationshipGUID - the unique identifier for the relationship.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
@@ -2176,7 +4286,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public void purgeRelationshipReferenceCopy(String   serverName,
+    public void purgeRelationshipReferenceCopy(String userId,
                                                String   relationshipGUID,
                                                String   typeDefGUID,
                                                String   typeDefName,
@@ -2187,7 +4297,44 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                          FunctionNotSupportedException,
                                                                                          UserNotAuthorizedException
     {
+        final String methodName                = "purgeRelationshipReferenceCopy";
+        final String guidParameterName         = "typeDefGUID";
+        final String nameParameterName         = "typeDefName";
+        final String relationshipParameterName = "relationshipGUID";
+        final String homeParameterName         = "homeMetadataCollectionId";
 
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateGUID(repositoryName, relationshipParameterName, relationshipGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateHomeMetadataGUID(repositoryName, homeParameterName, homeMetadataCollectionId, methodName);
+
+
+        /*
+         * Purge relationship
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -2196,7 +4343,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * specified relationship sends out the details of this relationship so the local repository can create a
      * reference copy.
      *
-     * @param serverName - unique identifier for requesting server.
+     * @param userId - unique identifier for requesting server.
      * @param relationshipGUID - unique identifier of the relationship.
      * @param typeDefGUID - the guid of the TypeDef for the relationship - used to verify the relationship identity.
      * @param typeDefName - the name of the TypeDef for the relationship - used to verify the relationship identity.
@@ -2210,7 +4357,7 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
      * @throws FunctionNotSupportedException - the repository does not support reference copies of instances.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
-    public void refreshRelationshipReferenceCopy(String   serverName,
+    public void refreshRelationshipReferenceCopy(String userId,
                                                  String   relationshipGUID,
                                                  String   typeDefGUID,
                                                  String   typeDefName,
@@ -2221,6 +4368,42 @@ public abstract class OMRSMetadataCollectionBase extends OMRSMetadataCollection
                                                                                            FunctionNotSupportedException,
                                                                                            UserNotAuthorizedException
     {
+        final String methodName                = "refreshRelationshipReferenceCopy";
+        final String guidParameterName         = "typeDefGUID";
+        final String nameParameterName         = "typeDefName";
+        final String relationshipParameterName = "relationshipGUID";
+        final String homeParameterName         = "homeMetadataCollectionId";
 
+        /*
+         * Validate parameters
+         */
+        this.validateRepositoryConnector(methodName);
+        parentConnector.validateRepositoryIsActive(methodName);
+
+        repositoryValidator.validateGUID(repositoryName, relationshipParameterName, relationshipGUID, methodName);
+        repositoryValidator.validateTypeDefIds(repositoryName,
+                                               guidParameterName,
+                                               nameParameterName,
+                                               typeDefGUID,
+                                               typeDefName,
+                                               methodName);
+        repositoryValidator.validateHomeMetadataGUID(repositoryName, homeParameterName, homeMetadataCollectionId, methodName);
+
+        /*
+         * Process refresh request
+         */
+
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
+
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName,
+                                                                                                 this.getClass().getName(),
+                                                                                                 repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 }

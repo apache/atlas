@@ -105,7 +105,7 @@ public class OMRSRESTAPIPagedResponse extends OMRSRESTAPIResponse
     /**
      * Set up the maximum number of elements that can be returned on this request.
      *
-     * @param pageSize
+     * @param pageSize - integer number
      */
     public void setPageSize(int pageSize)
     {

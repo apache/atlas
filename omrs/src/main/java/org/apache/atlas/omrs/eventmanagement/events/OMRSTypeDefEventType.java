@@ -43,7 +43,7 @@ package org.apache.atlas.omrs.eventmanagement.events;
  */
 public enum OMRSTypeDefEventType
 {
-    UNKNOWN_TYPEDEF_EVENT                 (0,  "UnknownTypeDefEvent",          "An TypeDef event that is not recognized by the local server."),
+    UNKNOWN_TYPEDEF_EVENT                 (0,  "UnknownTypeDefEvent",          "A TypeDef event that is not recognized by the local server."),
     NEW_TYPEDEF_EVENT                     (1,  "NewTypeDef",                   "A new TypeDef has been defined."),
     NEW_ATTRIBUTE_TYPEDEF_EVENT           (2,  "NewAttributeTypeDef",          "A new AttributeTypeDef has been defined."),
     UPDATED_TYPEDEF_EVENT                 (3,  "UpdatedTypeDef",               "An existing TypeDef has been updated."),

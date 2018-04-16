@@ -25,11 +25,9 @@ import org.apache.atlas.omrs.eventmanagement.events.OMRSTypeDefEventProcessor;
 import org.apache.atlas.omrs.eventmanagement.repositoryeventmapper.OMRSRepositoryEventMapperConnector;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.OMRSLogicErrorException;
+import org.apache.atlas.omrs.ffdc.exception.RepositoryErrorException;
 import org.apache.atlas.omrs.localrepository.OMRSLocalRepository;
-import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryContentManager;
-import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryHelper;
-import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSRepositoryValidator;
-import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSTypeDefValidator;
+import org.apache.atlas.omrs.localrepository.repositorycontentmanager.*;
 import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
 import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnector;
 
@@ -47,14 +45,19 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
     private static final String   repositoryEventMapperName = "LocalRepositoryEventMapper";
     private static final String   repositoryName            = "LocalRepository";
 
-    private OMRSRepositoryContentManager       repositoryContentManager         = null;
+    /*
+     * The repository content manager is the TypeDefManager for the Local OMRS Metadata Collection,
+     * The TypeDefValidator for the CohortRegistry and the incoming TypeDef Event Processor for the Archive
+     * Manager and EventListener
+     */
+    private OMRSTypeDefValidator               typeDefValidator;
+    private OMRSTypeDefManager                 typeDefManager;
+    private OMRSTypeDefEventProcessor          incomingTypeDefEventProcessor;
 
     private OMRSInstanceEventProcessor         incomingInstanceEventProcessor   = null;
     private OMRSRepositoryEventProcessor       outboundRepositoryEventProcessor = null;
     private OMRSRepositoryEventManager         outboundRepositoryEventManager   = null;
     private OMRSRepositoryEventExchangeRule    saveExchangeRule                 = null;
-
-    private LocalOMRSMetadataCollection        metadataCollection               = null;
 
     private OMRSRepositoryConnector            realLocalConnector               = null;
     private OMRSRepositoryEventMapperConnector realEventMapper                  = null;
@@ -82,7 +85,14 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
         this.outboundRepositoryEventManager = outboundRepositoryEventManager;
         this.saveExchangeRule = saveExchangeRule;
 
-        this.repositoryContentManager = repositoryContentManager;
+        /*
+         * The repository content manager is the TypeDefManager for the Local OMRS Metadata Collection,
+         * The TypeDefValidator for the CohortRegistry and the incoming TypeDef Event Processor for the Archive
+         * Manager and EventListener
+         */
+        this.typeDefValidator = repositoryContentManager;
+        this.typeDefManager = repositoryContentManager;
+        this.incomingTypeDefEventProcessor = repositoryContentManager;
 
         /*
          * Incoming events are processed directly with real local connector to avoid the outbound event
@@ -296,6 +306,8 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
      */
     public void setMetadataCollectionId(String     metadataCollectionId)
     {
+        final String methodName = "setMetadataCollectionId";
+
         super.setMetadataCollectionId(metadataCollectionId);
 
         if (realLocalConnector != null)
@@ -316,16 +328,37 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
                                                                                   saveExchangeRule,
                                                                                   outboundRepositoryEventProcessor);
 
-        /*
-         * Initialize the metadata collection only once the connector is properly set up.
-         */
-        metadataCollection = new LocalOMRSMetadataCollection(metadataCollectionId,
-                                                             this.getLocalServerName(),
-                                                             this.getLocalServerType(),
-                                                             this.getOrganizationName(),
-                                                             realLocalConnector.getMetadataCollection(),
-                                                             outboundRepositoryEventProcessor,
-                                                             repositoryContentManager);
+        try
+        {
+            /*
+             * Initialize the metadata collection only once the connector is properly set up.
+             */
+            metadataCollection = new LocalOMRSMetadataCollection(this,
+                                                                 super.serverName,
+                                                                 super.repositoryHelper,
+                                                                 super.repositoryValidator,
+                                                                 metadataCollectionId,
+                                                                 this.getLocalServerName(),
+                                                                 this.getLocalServerType(),
+                                                                 this.getOrganizationName(),
+                                                                 realLocalConnector.getMetadataCollection(),
+                                                                 outboundRepositoryEventProcessor,
+                                                                 typeDefManager);
+        }
+        catch (Throwable   error)
+        {
+            OMRSErrorCode errorCode = OMRSErrorCode.NULL_METADATA_COLLECTION;
+            String        errorMessage = errorCode.getErrorMessageId()
+                                       + errorCode.getFormattedErrorMessage(realLocalConnector.getRepositoryName());
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                              this.getClass().getName(),
+                                              methodName,
+                                              errorMessage,
+                                              errorCode.getSystemAction(),
+                                              errorCode.getUserAction(),
+                                              error);
+        }
     }
 
     /**
@@ -333,8 +366,9 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
      * a metadata repository.
      *
      * @return OMRSMetadataCollection - metadata information retrieved from the metadata repository.
+     * @throws RepositoryErrorException - no metadata collection
      */
-    public OMRSMetadataCollection getMetadataCollection()
+    public OMRSMetadataCollection getMetadataCollection() throws RepositoryErrorException
     {
         final String      methodName = "getMetadataCollection";
 
@@ -344,12 +378,12 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
             String        errorMessage = errorCode.getErrorMessageId()
                                        + errorCode.getFormattedErrorMessage(repositoryName);
 
-            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
-                                              this.getClass().getName(),
-                                              methodName,
-                                              errorMessage,
-                                              errorCode.getSystemAction(),
-                                              errorCode.getUserAction());
+            throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                               this.getClass().getName(),
+                                               methodName,
+                                               errorMessage,
+                                               errorCode.getSystemAction(),
+                                               errorCode.getUserAction());
         }
 
         return metadataCollection;
@@ -391,7 +425,7 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
      */
     public OMRSTypeDefValidator getTypeDefValidator()
     {
-        return repositoryContentManager;
+        return typeDefValidator;
     }
 
 
@@ -414,7 +448,7 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
      */
     public OMRSTypeDefEventProcessor getIncomingTypeDefEventProcessor()
     {
-        return repositoryContentManager;
+        return incomingTypeDefEventProcessor;
     }
 
 

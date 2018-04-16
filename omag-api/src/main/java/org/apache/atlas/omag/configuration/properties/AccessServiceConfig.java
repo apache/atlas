@@ -27,6 +27,7 @@ import org.apache.atlas.ocf.properties.beans.ElementType;
 import org.apache.atlas.ocf.properties.beans.Endpoint;
 import org.apache.atlas.omag.configuration.registration.AccessServiceDescription;
 import org.apache.atlas.omag.configuration.registration.AccessServiceOperationalStatus;
+import org.apache.atlas.omag.configuration.registration.AccessServiceRegistration;
 import org.apache.atlas.omrs.topicconnectors.kafka.KafkaOMRSTopicProvider;
 
 import java.io.Serializable;
@@ -70,19 +71,20 @@ public class AccessServiceConfig implements Serializable
     /**
      * Set up the default values for an access service using an access service description.
      *
-     * @param accessServiceDescription - AccessServiceDescription enum
+     * @param accessServiceRegistration - AccessServiceDescription enum
      */
-    public AccessServiceConfig(AccessServiceDescription    accessServiceDescription)
+    public AccessServiceConfig(AccessServiceRegistration accessServiceRegistration)
     {
-        this.accessServiceId = accessServiceDescription.getAccessServiceCode();
-        this.accessServiceAdminClass = accessServiceDescription.getAccessServiceAdminClassName();
-        this.accessServiceName = accessServiceDescription.getAccessServiceDescription();
-        this.accessServiceWiki = accessServiceDescription.getAccessServiceWiki();
-        this.accessServiceOperationalStatus = accessServiceDescription.getAccessServiceOperationalStatus();
+        this.accessServiceId = accessServiceRegistration.getAccessServiceCode();
+        this.accessServiceName = accessServiceRegistration.getAccessServiceName();
+        this.accessServiceAdminClass = accessServiceRegistration.getAccessServiceAdminClassName();
+        this.accessServiceDescription = accessServiceRegistration.getAccessServiceDescription();
+        this.accessServiceWiki = accessServiceRegistration.getAccessServiceWiki();
+        this.accessServiceOperationalStatus = accessServiceRegistration.getAccessServiceOperationalStatus();
         this.accessServiceInTopic = this.getDefaultTopicConnection(defaultInTopicName,
-                                                                   accessServiceDescription.getAccessServiceInTopic());
+                                                                   accessServiceRegistration.getAccessServiceInTopic());
         this.accessServiceOutTopic = this.getDefaultTopicConnection(defaultOutTopicName,
-                                                                    accessServiceDescription.getAccessServiceOutTopic());
+                                                                    accessServiceRegistration.getAccessServiceOutTopic());
     }
 
 

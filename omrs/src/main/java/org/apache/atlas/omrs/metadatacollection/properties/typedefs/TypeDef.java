@@ -17,10 +17,8 @@
  */
 package org.apache.atlas.omrs.metadatacollection.properties.typedefs;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import org.apache.atlas.omrs.metadatacollection.properties.instances.InstanceStatus;
+import com.fasterxml.jackson.annotation.*;
+import org.apache.atlas.omrs.metadatacollection.properties.instances.*;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -39,6 +37,15 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = EntityDef.class, name = "EntityDef"),
+        @JsonSubTypes.Type(value = RelationshipDef.class, name = "RelationshipDef"),
+        @JsonSubTypes.Type(value = ClassificationDef.class, name = "ClassificationDef"),
+})
 public class TypeDef extends TypeDefSummary
 {
     protected TypeDefLink                        superType                = null;
@@ -84,7 +91,7 @@ public class TypeDef extends TypeDefSummary
      * @param guid        - unique id for the TypeDef
      * @param name        - unique name for the TypeDef
      * @param version     - active version number for the TypeDef
-     * @param versionName - unique name for the TypeDef
+     * @param versionName - name for the active version of the TypeDef
      */
     public TypeDef(TypeDefCategory category,
                    String          guid,

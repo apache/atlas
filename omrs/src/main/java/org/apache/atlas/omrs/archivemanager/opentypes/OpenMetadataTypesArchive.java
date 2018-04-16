@@ -633,7 +633,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element4Ordinal         = 3;
-        final String element4Value           = "Usage Guidance";
+        final String element4Value           = "UsageGuidance";
         final String element4Description     = "Provides guidance to a person on how to use the asset.";
         final String element4DescriptionGUID = null;
 
@@ -999,7 +999,7 @@ public class OpenMetadataTypesArchive
         EnumElementDef            elementDef;
 
         final int    element1Ordinal         = 0;
-        final String element1Value           = "Local Key";
+        final String element1Value           = "LocalKey";
         final String element1Description     = "Unique key allocated and used within the scope of a single system.";
         final String element1DescriptionGUID = null;
 
@@ -1007,7 +1007,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element2Ordinal         = 1;
-        final String element2Value           = "Recycled Key";
+        final String element2Value           = "RecycledKey";
         final String element2Description     = "Key allocated and used within the scope of a single system that is periodically reused for different records.";
         final String element2DescriptionGUID = null;
 
@@ -1015,7 +1015,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element3Ordinal         = 2;
-        final String element3Value           = "Natural Key";
+        final String element3Value           = "NaturalKey";
         final String element3Description     = "Key derived from an attribute of the entity, such as email address, passport number.";
         final String element3DescriptionGUID = null;
 
@@ -1023,7 +1023,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element4Ordinal         = 3;
-        final String element4Value           = "Mirror Key";
+        final String element4Value           = "MirrorKey";
         final String element4Description     = "Key value copied from another system.";
         final String element4DescriptionGUID = null;
 
@@ -1031,7 +1031,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element5Ordinal         = 4;
-        final String element5Value           = "Aggregate Key";
+        final String element5Value           = "AggregateKey";
         final String element5Description     = "Key formed by combining keys from multiple systems.";
         final String element5DescriptionGUID = null;
 
@@ -1039,7 +1039,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element6Ordinal         = 5;
-        final String element6Value           = "Caller's Key";
+        final String element6Value           = "CallersKey";
         final String element6Description     = "Key from another system can bey used if system name provided.";
         final String element6DescriptionGUID = null;
 
@@ -1047,7 +1047,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element7Ordinal         = 6;
-        final String element7Value           = "Stable Key";
+        final String element7Value           = "StableKey";
         final String element7Description     = "Key value will remain active even if records are merged.";
         final String element7DescriptionGUID = null;
 
@@ -1803,7 +1803,7 @@ public class OpenMetadataTypesArchive
         EnumElementDef            elementDef;
 
         final int    element1Ordinal         = 0;
-        final String element1Value           = "Big Endian";
+        final String element1Value           = "BigEndian";
         final String element1Description     = "Bits or bytes order from the big end.";
         final String element1DescriptionGUID = null;
 
@@ -1811,7 +1811,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element2Ordinal         = 1;
-        final String element2Value           = "Little Endian";
+        final String element2Value           = "LittleEndian";
         final String element2Description     = "Bits or bytes ordered from the little end.";
         final String element2DescriptionGUID = null;
 
@@ -3769,7 +3769,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element3Ordinal         = 2;
-        final String element3Value           = "Date Added";
+        final String element3Value           = "DateAdded";
         final String element3Description     = "Order by date added to the metadata collection.";
         final String element3DescriptionGUID = null;
 
@@ -3777,7 +3777,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element4Ordinal         = 3;
-        final String element4Value           = "Date Updated";
+        final String element4Value           = "DateUpdated";
         final String element4Description     = "Order by date that the asset was updated.";
         final String element4DescriptionGUID = null;
 
@@ -3785,7 +3785,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element5Ordinal         = 4;
-        final String element5Value           = "Date Created";
+        final String element5Value           = "DateCreated";
         final String element5Description     = "Order by date that the asset was created.";
         final String element5DescriptionGUID = null;
 
@@ -4536,7 +4536,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element2Ordinal         = 1;
-        final String element2Value           = "In progress";
+        final String element2Value           = "InProgress";
         final String element2Description     = "Work is underway to complete the action.";
         final String element2DescriptionGUID = null;
 
@@ -5200,7 +5200,7 @@ public class OpenMetadataTypesArchive
         EnumElementDef            elementDef;
 
         final int    element1Ordinal         = 0;
-        final String element1Value           = "Not Recommended";
+        final String element1Value           = "NotRecommended";
         final String element1Description     = "This content is not recommended.";
         final String element1DescriptionGUID = null;
 
@@ -5208,7 +5208,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element2Ordinal         = 1;
-        final String element2Value           = "*";
+        final String element2Value           = "OneStar";
         final String element2Description     = "One star rating.";
         final String element2DescriptionGUID = null;
 
@@ -5216,7 +5216,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element3Ordinal         = 2;
-        final String element3Value           = "**";
+        final String element3Value           = "TwoStar";
         final String element3Description     = "Two star rating.";
         final String element3DescriptionGUID = null;
 
@@ -5224,7 +5224,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element4Ordinal         = 3;
-        final String element4Value           = "***";
+        final String element4Value           = "ThreeStar";
         final String element4Description     = "Three star rating.";
         final String element4DescriptionGUID = null;
 
@@ -5232,7 +5232,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element5Ordinal         = 4;
-        final String element5Value           = "****";
+        final String element5Value           = "FourStar";
         final String element5Description     = "Four star rating.";
         final String element5DescriptionGUID = null;
 
@@ -5240,7 +5240,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element6Ordinal         = 5;
-        final String element6Value           = "*****";
+        final String element6Value           = "FiveStar";
         final String element6Description     = "Five star rating.";
         final String element6DescriptionGUID = null;
 
@@ -5266,7 +5266,7 @@ public class OpenMetadataTypesArchive
         EnumElementDef            elementDef;
 
         final int    element1Ordinal         = 0;
-        final String element1Value           = "General Comment";
+        final String element1Value           = "GeneralComment";
         final String element1Description     = "General comment.";
         final String element1DescriptionGUID = null;
 
@@ -10647,7 +10647,7 @@ public class OpenMetadataTypesArchive
     private RelationshipDef getSemanticAssignmentRelationship()
     {
         final String guid            = "e6670973-645f-441a-bec7-6f5570345b92";
-        final String name            = "Semantic Assignment";
+        final String name            = "SemanticAssignment";
         final String description     = "Links a glossary term to another element such as an asset or schema element to define its meaning.";
         final String descriptionGUID = null;
 
@@ -11276,8 +11276,8 @@ public class OpenMetadataTypesArchive
         final String attribute1Name            = "title";
         final String attribute1Description     = "Title describing the governance definition.";
         final String attribute1DescriptionGUID = null;
-        final String attribute2Name            = "abstract";
-        final String attribute2Description     = "Short description of the governance definition.";
+        final String attribute2Name            = "summary";
+        final String attribute2Description     = "Short summary of the governance definition.";
         final String attribute2DescriptionGUID = null;
         final String attribute3Name            = "description";
         final String attribute3Description     = "Detailed description of the governance definition.";
@@ -12100,7 +12100,7 @@ public class OpenMetadataTypesArchive
         enumDef.setDefaultValue(elementDef);
 
         final int    element2Ordinal         = 1;
-        final String element2Value           = "Ad hoc";
+        final String element2Value           = "AdHoc";
         final String element2Description     = "The data comes from an ad hoc process.";
         final String element2DescriptionGUID = null;
 
@@ -12182,7 +12182,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element3Ordinal         = 2;
-        final String element3Value           = "Project Lifetime";
+        final String element3Value           = "ProjectLifetime";
         final String element3Description     = "The data is needed for the lifetime of the referenced project.";
         final String element3DescriptionGUID = null;
 
@@ -12190,7 +12190,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element4Ordinal         = 3;
-        final String element4Value           = "Team Lifetime";
+        final String element4Value           = "TeamLifetime";
         final String element4Description     = "The data is needed for the lifetime of the referenced team.";
         final String element4DescriptionGUID = null;
 
@@ -12198,7 +12198,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element5Ordinal         = 4;
-        final String element5Value           = "Contract Lifetime";
+        final String element5Value           = "ContractLifetime";
         final String element5Description     = "The data is needed for the lifetime of the referenced contract.";
         final String element5DescriptionGUID = null;
 
@@ -12206,7 +12206,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element6Ordinal         = 5;
-        final String element6Value           = "Regulated Lifetime";
+        final String element6Value           = "RegulatedLifetime";
         final String element6Description     = "The retention period for the data is defined by the referenced regulation.";
         final String element6DescriptionGUID = null;
 
@@ -12214,7 +12214,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element7Ordinal         = 6;
-        final String element7Value           = "Time-boxed Lifetime";
+        final String element7Value           = "TimeBoxedLifetime";
         final String element7Description     = "The data is needed for the specified time.";
         final String element7DescriptionGUID = null;
 
@@ -13118,7 +13118,7 @@ public class OpenMetadataTypesArchive
         enumDef.setDefaultValue(elementDef);
 
         final int    element2Ordinal         = 1;
-        final String element2Value           = "Business Service";
+        final String element2Value           = "BusinessService";
         final String element2Description     = "A functional business capability.";
         final String element2DescriptionGUID = null;
 
@@ -13126,7 +13126,7 @@ public class OpenMetadataTypesArchive
         elementDefs.add(elementDef);
 
         final int    element3Ordinal         = 2;
-        final String element3Value           = "Business Area";
+        final String element3Value           = "BusinessArea";
         final String element3Description     = "A collection of related business services.";
         final String element3DescriptionGUID = null;
 
@@ -16046,13 +16046,14 @@ public class OpenMetadataTypesArchive
         this.archiveBuilder.addEntityDef(getRelationalDBSchemaTypeEntity());
         this.archiveBuilder.addEntityDef(getRelationalTableTypeEntity());
         this.archiveBuilder.addEntityDef(getRelationalTableEntity());
-        this.archiveBuilder.addEntityDef(getRelationalViewEntity());
         this.archiveBuilder.addEntityDef(getRelationalColumnEntity());
         this.archiveBuilder.addEntityDef(getRelationalColumnTypeEntity());
         this.archiveBuilder.addEntityDef(getDerivedRelationalColumnEntity());
 
         this.archiveBuilder.addClassificationDef(getPrimaryKeyClassification());
         this.archiveBuilder.addClassificationDef(getForeignKeyClassification());
+        this.archiveBuilder.addClassificationDef(getRelationalViewClassification());
+
     }
 
 
@@ -16095,23 +16096,6 @@ public class OpenMetadataTypesArchive
         final String guid            = "ce7e72b8-396a-4013-8688-f9d973067425";
         final String name            = "RelationalTable";
         final String description     = "A table within a relational database schema type.";
-        final String descriptionGUID = null;
-
-        final String superTypeName = "SchemaAttribute";
-
-        return archiveHelper.getDefaultEntityDef(guid,
-                                                 name,
-                                                 this.archiveBuilder.getEntityDef(superTypeName),
-                                                 description,
-                                                 descriptionGUID);
-    }
-
-
-    private EntityDef getRelationalViewEntity()
-    {
-        final String guid            = "4814bec8-482d-463d-8376-160b0358e129";
-        final String name            = "RelationalView";
-        final String description     = "A view within a relational database schema type.";
         final String descriptionGUID = null;
 
         final String superTypeName = "SchemaAttribute";
@@ -16229,6 +16213,24 @@ public class OpenMetadataTypesArchive
                                                   false);
     }
 
+
+    private ClassificationDef getRelationalViewClassification()
+    {
+        final String guid            = "4814bec8-482d-463d-8376-160b0358e129";
+        final String name            = "RelationalView";
+        final String description     = "A view within a relational database schema type.";
+        final String descriptionGUID = null;
+
+        final String linkedToEntity = "RelationalTable";
+
+        return archiveHelper.getClassificationDef(guid,
+                                                  name,
+                                                  null,
+                                                  description,
+                                                  descriptionGUID,
+                                                  this.archiveBuilder.getEntityDef(linkedToEntity),
+                                                  false);
+    }
 
     /*
      * -------------------------------------------------------------------------------------------------------

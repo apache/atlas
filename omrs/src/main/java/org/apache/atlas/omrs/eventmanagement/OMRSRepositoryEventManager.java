@@ -60,6 +60,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      * Constructor to initialize a repository event manager
      *
      * @param exchangeRule - this is the rule that determines which events are processed.
+     * @param repositoryValidator - validator class for checking open metadata repository objects and parameters.
      */
     public OMRSRepositoryEventManager(OMRSRepositoryEventExchangeRule exchangeRule,
                                       OMRSRepositoryValidator         repositoryValidator)
@@ -210,7 +211,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param typeDefPatch - details of the new versionName of the TypeDef
+     * @param typeDefPatch - details of the new version of the TypeDef
      */
     public void processUpdatedTypeDefEvent(String       sourceName,
                                            String       originatorMetadataCollectionId,
@@ -471,9 +472,9 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
     }
 
     /**
-     * A TypeDef from another member in the cohort is at a different versionName than the local repository.  This may
+     * A TypeDef from another member in the cohort is at a different version than the local repository.  This may
      * create some inconsistencies in the different copies of instances of this type in different members of the
-     * cohort.  The recommended action is to update all TypeDefs to the latest versionName.
+     * cohort.  The recommended action is to update all TypeDefs to the latest version.
      *
      * @param sourceName - name of the source of the event.  It may be the cohort name for incoming events or the
      *                   local repository, or event mapper name.
@@ -563,7 +564,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param entity - details of the new versionName of the entity.
+     * @param entity - details of the new version of the entity.
      */
     public void processUpdatedEntityEvent(String       sourceName,
                                           String       originatorMetadataCollectionId,
@@ -600,7 +601,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param entity - details of the versionName of the entity that has been restored.
+     * @param entity - details of the version of the entity that has been restored.
      */
     public void processUndoneEntityEvent(String       sourceName,
                                          String       originatorMetadataCollectionId,
@@ -838,7 +839,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param entity - details of the versionName of the entity that has been restored.
+     * @param entity - details of the version of the entity that has been restored.
      */
     public void processRestoredEntityEvent(String       sourceName,
                                            String       originatorMetadataCollectionId,
@@ -1122,7 +1123,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param relationship - details of the new versionName of the relationship.
+     * @param relationship - details of the new version of the relationship.
      */
     public void processUpdatedRelationshipEvent(String       sourceName,
                                                 String       originatorMetadataCollectionId,
@@ -1158,7 +1159,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param relationship - details of the versionName of the relationship that has been restored.
+     * @param relationship - details of the version of the relationship that has been restored.
      */
     public void processUndoneRelationshipEvent(String       sourceName,
                                                String       originatorMetadataCollectionId,
@@ -1282,7 +1283,7 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
      * @param originatorServerName - name of the server that the event came from.
      * @param originatorServerType - type of server that the event came from.
      * @param originatorOrganizationName - name of the organization that owns the server that sent the event.
-     * @param relationship - details of the versionName of the relationship that has been restored.
+     * @param relationship - details of the version of the relationship that has been restored.
      */
     public void processRestoredRelationshipEvent(String       sourceName,
                                                  String       originatorMetadataCollectionId,
@@ -1584,8 +1585,8 @@ public class OMRSRepositoryEventManager implements OMRSRepositoryEventProcessor
 
 
     /**
-     * An open metadata repository has detected an inconsistency in the versionName of the type used in an updated metadata
-     * instance compared to its stored versionName.
+     * An open metadata repository has detected an inconsistency in the version of the type used in an updated metadata
+     * instance compared to its stored version.
      *
      * @param sourceName - name of the source of the event.  It may be the cohort name for incoming events or the
      *                   local repository, or event mapper name.

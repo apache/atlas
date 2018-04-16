@@ -25,7 +25,9 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @SpringBootApplication
-@ComponentScan({"org.apache.atlas.omag.admin.server", "org.apache.atlas.omrs.rest.server"})
+@ComponentScan({"org.apache.atlas.omag.admin.server",
+                "org.apache.atlas.omrs.rest.server",
+                "org.apache.atlas.omas.*"})
 @Configuration
 
 public class OMAGApplication

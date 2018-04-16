@@ -63,6 +63,7 @@ public class EnterpriseOMRSConnectorProvider extends OMRSRepositoryConnectorProv
      * list of connectors to the repositories in the cohort.
      *
      * @param connectorManager - manager of the list of connectors to remote repositories.
+     * @param repositoryContentManager - manager of lists of active and known types with associated helper methods
      * @param localServerName - name of the local server for this connection.
      * @param localServerType - type of the local server.
      * @param owningOrganizationName - name of the organization the owns the remote server.
@@ -140,16 +141,16 @@ public class EnterpriseOMRSConnectorProvider extends OMRSRepositoryConnectorProv
         /*
          * Create and initialize a new connector.
          */
-        EnterpriseOMRSRepositoryConnector connector = new EnterpriseOMRSRepositoryConnector(EnterpriseOMRSConnectorProvider.connectorManager,
-                                                                                            enterpriseMetadataCollectionName);
+        EnterpriseOMRSRepositoryConnector connector = new EnterpriseOMRSRepositoryConnector(EnterpriseOMRSConnectorProvider.connectorManager);
 
         connector.initialize(this.getNewConnectorGUID(), connection);
         connector.setServerName(localServerName);
         connector.setServerType(localServerType);
+        connector.setRepositoryName(enterpriseMetadataCollectionName);
         connector.setOrganizationName(owningOrganizationName);
-        connector.setMetadataCollectionId(enterpriseMetadataCollectionId);
         connector.setRepositoryHelper(new OMRSRepositoryHelper(repositoryContentManager));
         connector.setRepositoryValidator(new OMRSRepositoryValidator(repositoryContentManager));
+        connector.setMetadataCollectionId(enterpriseMetadataCollectionId);
         connector.initializeConnectedAssetProperties(new EnterpriseOMRSConnectorProperties(connector,
                                                                                            EnterpriseOMRSConnectorProvider.connectorManager,
                                                                                            enterpriseMetadataCollectionId,

@@ -20,6 +20,7 @@ package org.apache.atlas.omrs.rest.repositoryconnector;
 import org.apache.atlas.ocf.ffdc.ConnectorCheckedException;
 import org.apache.atlas.omrs.ffdc.OMRSErrorCode;
 import org.apache.atlas.omrs.ffdc.exception.OMRSLogicErrorException;
+import org.apache.atlas.omrs.ffdc.exception.RepositoryErrorException;
 import org.apache.atlas.omrs.metadatacollection.repositoryconnector.OMRSRepositoryConnector;
 import org.apache.atlas.omrs.metadatacollection.OMRSMetadataCollection;
 
@@ -56,6 +57,7 @@ public class OMRSRESTRepositoryConnector extends OMRSRepositoryConnector
          * Initialize the metadata collection.
          */
         metadataCollection = new OMRSRESTMetadataCollection(this,
+                                                            super.repositoryName,
                                                             repositoryHelper,
                                                             repositoryValidator,
                                                             metadataCollectionId);
@@ -67,8 +69,9 @@ public class OMRSRESTRepositoryConnector extends OMRSRepositoryConnector
      * a metadata repository.
      *
      * @return OMRSMetadataCollection - metadata information retrieved from the metadata repository.
+     * @throws RepositoryErrorException - no metadata collection
      */
-    public OMRSMetadataCollection getMetadataCollection()
+    public OMRSMetadataCollection getMetadataCollection() throws RepositoryErrorException
     {
         if (metadataCollection == null)
         {

@@ -32,6 +32,7 @@ import org.apache.atlas.omrs.auditlog.store.file.FileBasedAuditLogStoreProvider;
 import org.apache.atlas.omrs.metadatahighway.cohortregistry.store.file.FileBasedRegistryStoreProvider;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
 import org.apache.atlas.omrs.rest.repositoryconnector.OMRSRESTRepositoryConnectorProvider;
+import org.apache.atlas.omrs.topicconnectors.inmemory.InMemoryOMRSTopicProvider;
 import org.apache.atlas.omrs.topicconnectors.kafka.KafkaOMRSTopicProvider;
 
 import java.util.ArrayList;
@@ -388,7 +389,7 @@ public class OMRSConfigurationFactory
 
 
         final String connectorTypeDescription   = "OMRS default enterprise connector type.";
-        final String connectorTypeJavaClassName = KafkaOMRSTopicProvider.class.getName();
+        final String connectorTypeJavaClassName = InMemoryOMRSTopicProvider.class.getName();
 
         String connectorTypeName = "DefaultEnterpriseTopic.ConnectorType." + localServerName;
 
@@ -698,6 +699,8 @@ public class OMRSConfigurationFactory
     /**
      * Return the local repository configuration for a repository proxy.
      *
+     * @param localServerName - name of local server
+     * @param localServerURL - url used to call local server
      * @return LocalRepositoryConfig object
      */
     public LocalRepositoryConfig getRepositoryProxyLocalRepositoryConfig(String localServerName, String localServerURL)

@@ -46,13 +46,16 @@ public class InMemoryOMRSRepositoryConnector extends OMRSRepositoryConnector
     {
         super.metadataCollectionId = metadataCollectionId;
 
-        /*
-         * Initialize the metadata collection only once the connector is properly set up.
-         */
-        super.metadataCollection = new InMemoryOMRSMetadataCollection(this,
-                                                                       super.serverName,
-                                                                       repositoryHelper,
-                                                                       repositoryValidator,
-                                                                       metadataCollectionId);
+        if (metadataCollectionId != null)
+        {
+            /*
+             * Initialize the metadata collection only once the connector is properly set up.
+             */
+            super.metadataCollection = new InMemoryOMRSMetadataCollection(this,
+                                                                          super.serverName,
+                                                                          repositoryHelper,
+                                                                          repositoryValidator,
+                                                                          metadataCollectionId);
+        }
     }
 }
