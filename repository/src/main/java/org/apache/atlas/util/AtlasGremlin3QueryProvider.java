@@ -66,6 +66,12 @@ public class AtlasGremlin3QueryProvider extends AtlasGremlin2QueryProvider {
                                            "inE().has('__state', 'ACTIVE').has('tagPropagation', within('TWO_TO_ONE', 'BOTH')).outV())" +
                             ".dedup().where(without('src')).simplePath()).emit().toList();";
 
+            case TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS:
+                return "g.V().has('__guid', guid).aggregate('src')" +
+                        ".repeat(union(outE().has('__state', 'ACTIVE').has('tagPropagation', within('ONE_TO_TWO', 'BOTH')).not(has('blockedPropagatedClassifications', org.janusgraph.core.attribute.Text.textContains(classificationId))).inV(), " +
+                                       "inE().has('__state', 'ACTIVE').has('tagPropagation', within('TWO_TO_ONE', 'BOTH')).not(has('blockedPropagatedClassifications', org.janusgraph.core.attribute.Text.textContains(classificationId))).outV())" +
+                        ".dedup().where(without('src')).simplePath()).emit().toList();";
+
             case TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL:
                 return "g.V().has('__guid', guid).aggregate('src')" +
                             ".repeat(union(outE().has('__state', 'ACTIVE').has('tagPropagation', within('ONE_TO_TWO', 'BOTH')).has('_r__guid', neq(relationshipGuid)).inV(), " +

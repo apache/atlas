@@ -33,6 +33,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
@@ -49,6 +50,7 @@ import java.util.*;
 
 import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
@@ -56,6 +58,9 @@ import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdges;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationName;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
@@ -353,36 +358,94 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
-        List<AtlasVertex> ret = new ArrayList<>();
+    public List<AtlasVertex> addTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> propagatedEntityVertices) {
+        List<AtlasVertex> ret = null;
 
-        if (classificationVertex != null) {
-            String          classificationName = getTypeName(classificationVertex);
-            List<AtlasEdge> propagatedEdges    = getPropagatedEdges(classificationVertex);
+        if (CollectionUtils.isNotEmpty(propagatedEntityVertices) && classificationVertex != null) {
+            String                  classificationName = getTypeName(classificationVertex);
+            AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classificationName);
 
-            if (CollectionUtils.isNotEmpty(propagatedEdges)) {
-                for (AtlasEdge propagatedEdge : propagatedEdges) {
-                    AtlasVertex propagatedEntityVertex = propagatedEdge.getOutVertex();
+            for (AtlasVertex propagatedEntityVertex : propagatedEntityVertices) {
+                AtlasEdge existingEdge = getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex);
 
+                if (existingEdge != null) {
+                    continue;
+                }
+
+                String          entityTypeName = getTypeName(propagatedEntityVertex);
+                AtlasEntityType entityType     = typeRegistry.getEntityTypeByName(entityTypeName);
+
+                if (classificationType.canApplyToEntityType(entityType)) {
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("Removing propagated classification: [{}] from: [{}][{}] with edge label: [{}]", classificationName,
-                                getTypeName(propagatedEntityVertex), GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
+                        LOG.debug(" --> Adding propagated classification: [{}] to {} ({}) using edge label: [{}]", classificationName, getTypeName(propagatedEntityVertex),
+                                GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
                     }
 
-                    if (getClassificationEdgeState(propagatedEdge) == ACTIVE) {
-                        removeFromPropagatedTraitNames(propagatedEntityVertex, classificationName);
+                    if (ret == null) {
+                        ret = new ArrayList<>();
                     }
-
-                    deleteEdge(propagatedEdge, true);
-
-                    updateModificationMetadata(propagatedEntityVertex);
 
                     ret.add(propagatedEntityVertex);
+
+                    graphHelper.addClassificationEdge(propagatedEntityVertex, classificationVertex, true);
+
+                    addToPropagatedTraitNames(propagatedEntityVertex, classificationName);
                 }
             }
         }
 
         return ret;
+    }
+
+    public List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        if (classificationVertex != null) {
+            List<AtlasEdge> propagatedEdges = getPropagatedEdges(classificationVertex);
+
+            if (CollectionUtils.isNotEmpty(propagatedEdges)) {
+                for (AtlasEdge propagatedEdge : propagatedEdges) {
+                    deletePropagatedEdge(propagatedEdge);
+
+                    ret.add(propagatedEdge.getOutVertex());
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public void removeTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> entityVertices) throws AtlasBaseException {
+        if (classificationVertex != null && CollectionUtils.isNotEmpty(entityVertices)) {
+            String classificationName = getClassificationName(classificationVertex);
+            String entityGuid         = getClassificationEntityGuid(classificationVertex);
+
+            for (AtlasVertex entityVertex : entityVertices) {
+                AtlasEdge propagatedEdge = getPropagatedClassificationEdge(entityVertex, classificationName, entityGuid);
+
+                if (propagatedEdge != null) {
+                    deletePropagatedEdge(propagatedEdge);
+                }
+            }
+        }
+    }
+
+    public void deletePropagatedEdge(AtlasEdge edge) throws AtlasBaseException {
+        String      classificationName = AtlasGraphUtilsV1.getProperty(edge, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class);
+        AtlasVertex entityVertex       = edge.getOutVertex();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Removing propagated classification: [{}] from: [{}][{}] with edge label: [{}]", classificationName,
+                       getTypeName(entityVertex), GraphHelper.getGuid(entityVertex), CLASSIFICATION_LABEL);
+        }
+
+        if (getClassificationEdgeState(edge) == ACTIVE) {
+            removeFromPropagatedTraitNames(entityVertex, classificationName);
+        }
+
+        deleteEdge(edge, true);
+
+        updateModificationMetadata(entityVertex);
     }
 
     private void removeFromPropagatedTraitNames(AtlasVertex entityVertex, String classificationName) {

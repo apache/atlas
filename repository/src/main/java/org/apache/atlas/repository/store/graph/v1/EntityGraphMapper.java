@@ -1362,7 +1362,7 @@ public class EntityGraphMapper {
                             LOG.debug("Propagating tag: [{}][{}] to {}", classificationName, entityTypeName, getTypeNames(entitiesToPropagateTo));
                         }
 
-                        List<AtlasVertex> entitiesPropagatedTo = addTagPropagation(classificationVertex, entitiesToPropagateTo);
+                        List<AtlasVertex> entitiesPropagatedTo = deleteHandler.addTagPropagation(classificationVertex, entitiesToPropagateTo);
 
                         if (entitiesPropagatedTo != null) {
                             for (AtlasVertex entityPropagatedTo : entitiesPropagatedTo) {
@@ -1427,7 +1427,7 @@ public class EntityGraphMapper {
 
             // remove classification from propagated entities if propagation is turned on
             if (isPropagationEnabled(classificationVertex)) {
-                List<AtlasVertex> impactedVertices = removeTagPropagation(classificationVertex);
+                List<AtlasVertex> impactedVertices = deleteHandler.removeTagPropagation(classificationVertex);
 
                 if (CollectionUtils.isNotEmpty(impactedVertices)) {
                     for (AtlasVertex impactedVertex : impactedVertices) {
@@ -1567,7 +1567,7 @@ public class EntityGraphMapper {
                             }
                         }
 
-                        List<AtlasVertex> entitiesPropagatedTo = addTagPropagation(classificationVertex, entitiesToPropagateTo);
+                        List<AtlasVertex> entitiesPropagatedTo = deleteHandler.addTagPropagation(classificationVertex, entitiesToPropagateTo);
 
                         if (entitiesPropagatedTo != null) {
                             for (AtlasVertex entityPropagatedTo : entitiesPropagatedTo) {
@@ -1576,7 +1576,7 @@ public class EntityGraphMapper {
                         }
                     }
                 } else {
-                    List<AtlasVertex> impactedVertices = removeTagPropagation(classificationVertex);
+                    List<AtlasVertex> impactedVertices = deleteHandler.removeTagPropagation(classificationVertex);
 
                     if (CollectionUtils.isNotEmpty(impactedVertices)) {
                         if (removedPropagations == null) {
@@ -1668,49 +1668,6 @@ public class EntityGraphMapper {
                 entityChangeNotifier.onClassificationAddedToEntity(entity, Collections.singletonList(classification));
             }
         }
-    }
-
-    private List<AtlasVertex> addTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> propagatedEntityVertices) {
-        List<AtlasVertex> ret = null;
-
-        if (CollectionUtils.isNotEmpty(propagatedEntityVertices) && classificationVertex != null) {
-            String                  classificationName = getTypeName(classificationVertex);
-            AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classificationName);
-
-            for (AtlasVertex propagatedEntityVertex : propagatedEntityVertices) {
-                AtlasEdge existingEdge = getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex);
-
-                if (existingEdge != null) {
-                    continue;
-                }
-
-                String          entityTypeName = getTypeName(propagatedEntityVertex);
-                AtlasEntityType entityType     = typeRegistry.getEntityTypeByName(entityTypeName);
-
-                if (classificationType.canApplyToEntityType(entityType)) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug(" --> Adding propagated classification: [{}] to {} ({}) using edge label: [{}]", classificationName, getTypeName(propagatedEntityVertex),
-                                   GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
-                    }
-
-                    if (ret == null) {
-                        ret = new ArrayList<>();
-                    }
-
-                    ret.add(propagatedEntityVertex);
-
-                    graphHelper.addClassificationEdge(propagatedEntityVertex, classificationVertex, true);
-
-                    addToPropagatedTraitNames(propagatedEntityVertex, classificationName);
-                }
-            }
-        }
-
-        return ret;
-    }
-
-    private List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
-        return deleteHandler.removeTagPropagation(classificationVertex);
     }
 
     private AtlasEdge mapClassification(EntityOperation operation,  final EntityMutationContext context, AtlasClassification classification,

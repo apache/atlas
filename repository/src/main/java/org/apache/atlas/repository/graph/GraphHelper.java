@@ -79,6 +79,7 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_STATE_PR
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_NAME_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
@@ -86,6 +87,7 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS;
 
 /**
  * Utility class for graph operations.
@@ -479,6 +481,22 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static List<AtlasVertex> getAllPropagatedEntityVertices(AtlasVertex classificationVertex) {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        if (classificationVertex != null) {
+            List<AtlasEdge> edges = getPropagatedEdges(classificationVertex);
+
+            if (CollectionUtils.isNotEmpty(edges)) {
+                for (AtlasEdge edge : edges) {
+                    ret.add(edge.getOutVertex());
+                }
+            }
+        }
+
+        return ret;
+    }
+
     public static Iterator<AtlasEdge> getIncomingEdgesByLabel(AtlasVertex instanceVertex, String edgeLabel) {
         return getAdjacentEdgesByLabel(instanceVertex, AtlasEdgeDirection.IN, edgeLabel);
     }
@@ -849,6 +867,53 @@ public final class GraphHelper {
         return ret;
     }
 
+    public List<AtlasVertex> getPropagatedEntityVertices(AtlasVertex classificationVertex) throws AtlasBaseException {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        if (classificationVertex != null) {
+            String            entityGuid                             = getClassificationEntityGuid(classificationVertex);
+            String            classificationId                       = classificationVertex.getIdForDisplay();
+            List<AtlasVertex> impactedEntityVertices                 = getAllPropagatedEntityVertices(classificationVertex);
+            List<AtlasVertex> impactedEntityVerticesWithRestrictions = getImpactedVerticesWithRestrictions(entityGuid, classificationId);
+
+            if (impactedEntityVertices.size() > impactedEntityVerticesWithRestrictions.size()) {
+                ret = (List<AtlasVertex>) CollectionUtils.subtract(impactedEntityVertices, impactedEntityVerticesWithRestrictions);
+            } else {
+                ret = (List<AtlasVertex>) CollectionUtils.subtract(impactedEntityVerticesWithRestrictions, impactedEntityVertices);
+            }
+        }
+
+        return ret;
+    }
+
+    public List<AtlasVertex> getImpactedVerticesWithRestrictions(String guid, String classificationId) throws AtlasBaseException {
+        ScriptEngine      scriptEngine = graph.getGremlinScriptEngine();
+        Bindings          bindings     = scriptEngine.createBindings();
+        String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS);
+        List<AtlasVertex> ret          = new ArrayList<>();
+
+        bindings.put("g", graph);
+        bindings.put("guid", guid);
+        bindings.put("classificationId", classificationId);
+
+        try {
+            Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
+
+            if (resultObj instanceof List && CollectionUtils.isNotEmpty((List) resultObj)) {
+                List<?> results      = (List) resultObj;
+                Object  firstElement = results.get(0);
+
+                if (firstElement instanceof AtlasVertex) {
+                    ret = (List<AtlasVertex>) results;
+                }
+            }
+        } catch (ScriptException e) {
+            throw new AtlasBaseException(AtlasErrorCode.GREMLIN_SCRIPT_EXECUTION_FAILED, e);
+        }
+
+        return ret;
+    }
+
     public List<AtlasVertex> getImpactedVerticesWithReferences(String guid, String relationshipGuid) throws AtlasBaseException {
         ScriptEngine      scriptEngine = graph.getGremlinScriptEngine();
         Bindings          bindings     = scriptEngine.createBindings();
@@ -930,6 +995,49 @@ public final class GraphHelper {
                 AtlasEdge edge = iterator.next();
 
                 ret.add(AtlasGraphUtilsV1.getProperty(edge, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class));
+            }
+        }
+
+        return ret;
+    }
+
+    public static List<AtlasVertex> getClassificationVertices(AtlasEdge edge) {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        if (edge != null) {
+            PropagateTags propagateTags = getPropagateTags(edge);
+            AtlasVertex   outVertex     = edge.getOutVertex();
+            AtlasVertex   inVertex      = edge.getInVertex();
+
+            if (propagateTags == PropagateTags.ONE_TO_TWO || propagateTags == PropagateTags.BOTH) {
+                ret.addAll(getPropagationEnabledClassificationVertices(outVertex));
+            }
+
+            if (propagateTags == PropagateTags.TWO_TO_ONE || propagateTags == PropagateTags.BOTH) {
+                ret.addAll(getPropagationEnabledClassificationVertices(inVertex));
+            }
+        }
+
+        return ret;
+    }
+
+    public static List<AtlasVertex> getPropagationEnabledClassificationVertices(AtlasVertex entityVertex) {
+        List<AtlasVertex> ret   = new ArrayList<>();
+        Iterable          edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
+
+        if (edges != null) {
+            Iterator<AtlasEdge> iterator = edges.iterator();
+
+            while (iterator.hasNext()) {
+                AtlasEdge edge = iterator.next();
+
+                if (edge != null) {
+                    AtlasVertex classificationVertex = edge.getInVertex();
+
+                    if (isPropagationEnabled(classificationVertex)) {
+                        ret.add(classificationVertex);
+                    }
+                }
             }
         }
 
@@ -1031,6 +1139,14 @@ public final class GraphHelper {
 
     public static AtlasRelationship.Status getEdgeStatus(AtlasElement element) {
         return (getState(element) == Id.EntityState.DELETED) ? AtlasRelationship.Status.DELETED : AtlasRelationship.Status.ACTIVE;
+    }
+
+    public static String getClassificationName(AtlasVertex classificationVertex) {
+        return AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VERTEX_NAME_KEY, String.class);
+    }
+
+    public static String getClassificationEntityGuid(AtlasVertex classificationVertex) {
+        return AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class);
     }
 
     public static AtlasClassification.PropagationState getClassificationEdgeState(AtlasEdge edge) {

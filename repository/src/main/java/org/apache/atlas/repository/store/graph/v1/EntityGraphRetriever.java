@@ -81,7 +81,27 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VALIDITY_PERIODS_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
-import static org.apache.atlas.repository.graph.GraphHelper.*;
+import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
+import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getAdjacentEdgesByLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
+import static org.apache.atlas.repository.graph.GraphHelper.getAllTraitNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
+import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertices;
+import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
+import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getOutGoingEdgesByLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedClassificationEdge;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagationEnabledClassificationVertices;
+import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
+import static org.apache.atlas.repository.graph.GraphHelper.isPropagatedClassificationEdge;
+import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
+import static org.apache.atlas.repository.graph.GraphHelper.removeFromPropagatedTraitNames;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
@@ -453,29 +473,6 @@ public final class EntityGraphRetriever {
 
             struct.setAttribute(attribute.getName(), attrValue);
         }
-    }
-
-    public List<AtlasVertex> getPropagationEnabledClassificationVertices(AtlasVertex entityVertex) {
-        List<AtlasVertex> ret   = new ArrayList<>();
-        Iterable          edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
-
-        if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
-
-            while (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
-
-                if (edge != null) {
-                    AtlasVertex classificationVertex = edge.getInVertex();
-
-                    if (isPropagationEnabled(classificationVertex)) {
-                        ret.add(classificationVertex);
-                    }
-                }
-            }
-        }
-
-        return ret;
     }
 
     public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
@@ -1031,24 +1028,6 @@ public final class EntityGraphRetriever {
 
         relationship.setPropagatedClassifications(propagatedClassifications);
         relationship.setBlockedPropagatedClassifications(blockedClassifications);
-    }
-
-    public List<AtlasVertex> getClassificationVertices(AtlasEdge edge) {
-        List<AtlasVertex> ret = new ArrayList<>();
-
-        if (edge != null) {
-            PropagateTags propagateTags = getPropagateTags(edge);
-
-            if (propagateTags == PropagateTags.ONE_TO_TWO || propagateTags == PropagateTags.BOTH) {
-                ret.addAll(getPropagationEnabledClassificationVertices(edge.getOutVertex()));
-            }
-
-            if (propagateTags == PropagateTags.TWO_TO_ONE || propagateTags == PropagateTags.BOTH) {
-                ret.addAll(getPropagationEnabledClassificationVertices(edge.getInVertex()));
-            }
-        }
-
-        return ret;
     }
 
     private void mapAttributes(AtlasEdge edge, AtlasRelationship relationship) throws AtlasBaseException {
