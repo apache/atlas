@@ -695,6 +695,10 @@ public class EntityGraphMapper {
         }
 
         if (attributeVertex == null) {
+            if(context.isImport()) {
+                return null;
+            }
+
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, (ctx.getValue() == null ? null : ctx.getValue().toString()));
         }
 
@@ -733,7 +737,7 @@ public class EntityGraphMapper {
 
                     // for import use the relationship guid provided
                     if (context.isImport()) {
-                        AtlasGraphUtilsV1.setProperty(ret, Constants.GUID_PROPERTY_KEY, getRelationshipGuid(ctx.getValue()));
+                        AtlasGraphUtilsV1.setProperty(ret, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, getRelationshipGuid(ctx.getValue()));
                     }
 
                     // if relationship did not exist before and new relationship was created
@@ -869,14 +873,16 @@ public class EntityGraphMapper {
 
                 Object newEntry = mapCollectionElementsToVertex(arrCtx, context);
 
-                if (isReference && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
+                if (isReference && newEntry != null && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
                     // Update the inverse reference value.
                     AtlasEdge newEdge = (AtlasEdge) newEntry;
 
                     addInverseReference(inverseRefAttribute, newEdge, getRelationshipAttributes(ctx.getValue()));
                 }
 
-                newElementsCreated.add(newEntry);
+                if(newEntry != null) {
+                    newElementsCreated.add(newEntry);
+                }
             }
         }
 

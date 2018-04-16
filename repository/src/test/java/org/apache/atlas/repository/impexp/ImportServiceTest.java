@@ -202,8 +202,21 @@ public class ImportServiceTest {
         }
     }
 
-    @DataProvider(name = "relationship")
+    @DataProvider(name = "relationshipLineage")
     public static Object[][] getImportWithRelationships(ITestContext context) throws IOException {
+        return getZipSource("rel-lineage.zip");
+    }
+
+    @Test(dataProvider = "relationshipLineage")
+    public void importDB8(ZipSource zipSource) throws AtlasBaseException, IOException {
+        loadBaseModel();
+        loadHiveModel();
+        AtlasImportRequest request = getDefaultImportRequest();
+        runImportWithParameters(importService, request, zipSource);
+    }
+
+    @DataProvider(name = "relationship")
+    public static Object[][] getImportWithRelationshipsWithLineage(ITestContext context) throws IOException {
         return getZipSource("stocks-rel-2.zip");
     }
 
