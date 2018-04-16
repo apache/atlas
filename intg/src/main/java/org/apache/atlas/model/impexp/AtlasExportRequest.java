@@ -54,6 +54,7 @@ public class AtlasExportRequest implements Serializable {
     public static final String MATCH_TYPE_ENDS_WITH   = "endsWith";
     public static final String MATCH_TYPE_CONTAINS    = "contains";
     public static final String MATCH_TYPE_MATCHES     = "matches";
+    public static final String MATCH_TYPE_FOR_TYPE     = "forType";
 
     private List<AtlasObjectId> itemsToExport = new ArrayList<>();
     private Map<String, Object> options       = new HashMap<>();
