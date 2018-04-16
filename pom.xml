@@ -35,10 +35,6 @@
     <packaging>pom</packaging>
     <url>http://atlas.apache.org</url>
 
-    <prerequisites>
-        <maven>3.0.4</maven>
-    </prerequisites>
-
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
