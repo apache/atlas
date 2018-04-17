@@ -78,7 +78,7 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
             case GUID_PREFIX_FILTER:
                 return ".filter{it.'__guid'.matches(guid)}";
             case RELATIONSHIP_SEARCH:
-                return "g.V('__guid', guid).both(relation).has('__state', T.in, states)";
+                return "g.V('__guid', guid).copySplit(_().outE(relation).has('__state', 'ACTIVE').inV(), _().inE(relation).has('__state', 'ACTIVE').outV()).fairMerge().has('__state', T.in, states)";
             case RELATIONSHIP_SEARCH_ASCENDING_SORT:
                 return ".order{it.a.getProperty(sortAttributeName) <=> it.b.getProperty(sortAttributeName)}";
             case RELATIONSHIP_SEARCH_DESCENDING_SORT:
