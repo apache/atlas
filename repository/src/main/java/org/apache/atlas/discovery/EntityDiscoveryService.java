@@ -136,7 +136,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             if (firstElement instanceof AtlasVertex) {
                 for (Object element : queryResult) {
                     if (element instanceof AtlasVertex) {
-                        ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex)element));
+                        ret.addEntity(entityRetriever.toAtlasEntityHeaderWithClassifications((AtlasVertex)element));
                     } else {
                         LOG.warn("searchUsingDslQuery({}): expected an AtlasVertex; found unexpected entry in result {}", dslQuery, element);
                     }
