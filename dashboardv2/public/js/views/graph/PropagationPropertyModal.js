@@ -156,7 +156,7 @@ define(['require',
             this.ui.propagationOptions.attr("propagation", PropagationValue);
             var relationshipProp = {
                 "propagateTags": that.getPropagationFlow({
-                    "relationshipData": that.apiGuid[entityId],
+                    "relationshipData": _.extend(that.apiGuid[entityId], { 'propagateTags': PropagationValue }),
                     "graphData": { from: { guid: this.edgeInfo.obj.fromEntityId } }
                 })
             };
