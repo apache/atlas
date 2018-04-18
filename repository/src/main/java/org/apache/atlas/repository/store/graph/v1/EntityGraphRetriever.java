@@ -683,6 +683,13 @@ public final class EntityGraphRetriever {
         String edgeLabel = EDGE_LABEL_PREFIX + propertyName;
 
         for (Object element : arrayElements) {
+            // When internal types are deleted, sometimes the collection type attribute will contain a null value
+            // Graph layer does erroneous mapping of the null element, hence avoiding the processing of the null element
+            if (element == null) {
+                LOG.debug("Skipping null arrayElement");
+                continue;
+            }
+
             Object arrValue = mapVertexToCollectionEntry(entityVertex, arrayElementType, element, edgeLabel,
                                                          entityExtInfo, isOwnedAttribute, edgeDirection);
 

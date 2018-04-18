@@ -30,6 +30,8 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.repository.Constants;
@@ -48,6 +50,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.apache.atlas.util.AtlasRepositoryConfiguration.isV2EntityNotificationEnabled;
@@ -61,15 +64,20 @@ public class AtlasEntityChangeNotifier {
     private final Set<EntityChangeListenerV2> entityChangeListenersV2;
     private final AtlasInstanceConverter      instanceConverter;
     private final FullTextMapperV2            fullTextMapperV2;
+    private final AtlasTypeRegistry           atlasTypeRegistry;
 
 
     @Inject
-    public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners, Set<EntityChangeListenerV2> entityChangeListenersV2,
-                                     AtlasInstanceConverter instanceConverter, final FullTextMapperV2 fullTextMapperV2) {
+    public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
+                                     Set<EntityChangeListenerV2> entityChangeListenersV2,
+                                     AtlasInstanceConverter instanceConverter,
+                                     FullTextMapperV2 fullTextMapperV2,
+                                     AtlasTypeRegistry atlasTypeRegistry) {
         this.entityChangeListeners   = entityChangeListeners;
         this.entityChangeListenersV2 = entityChangeListenersV2;
         this.instanceConverter       = instanceConverter;
         this.fullTextMapperV2 = fullTextMapperV2;
+        this.atlasTypeRegistry = atlasTypeRegistry;
     }
 
     public void onEntitiesMutated(EntityMutationResponse entityMutationResponse, boolean isImport) throws AtlasBaseException {
@@ -282,6 +290,17 @@ public class AtlasEntityChangeNotifier {
         if (CollectionUtils.isNotEmpty(entityHeaders)) {
             for (AtlasEntityHeader entityHeader : entityHeaders) {
                 String                 entityGuid        = entityHeader.getGuid();
+                String                 typeName          = entityHeader.getTypeName();
+
+                // Skip all internal types as the HARD DELETE will cause lookup errors
+                AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(typeName);
+                if (Objects.nonNull(entityType) && entityType.isInternalType()) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Skipping internal type = {}", typeName);
+                    }
+                    continue;
+                }
+
                 AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(entityGuid);
 
                 if (entityWithExtInfo != null) {

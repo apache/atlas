@@ -45,6 +45,10 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Override
     protected void _deleteVertex(AtlasVertex instanceVertex, boolean force) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> SoftDeleteHandlerV1._deleteVertex({}, {})", GraphHelper.string(instanceVertex), force);
+        }
+
         if (force) {
             graphHelper.removeVertex(instanceVertex);
         } else {
@@ -60,6 +64,10 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Override
     protected void deleteEdge(AtlasEdge edge, boolean force) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})",GraphHelper.string(edge), force);
+        }
+
         if (force) {
             graphHelper.removeEdge(edge);
         } else {

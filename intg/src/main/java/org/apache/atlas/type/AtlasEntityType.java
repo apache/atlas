@@ -50,6 +50,8 @@ public class AtlasEntityType extends AtlasStructType {
     private final AtlasEntityDef entityDef;
     private final String         typeQryStr;
 
+    private static final String INTERNAL_TYPENAME = "__internal";
+
     private List<AtlasEntityType>                    superTypes                 = Collections.emptyList();
     private Set<String>                              allSuperTypes              = Collections.emptySet();
     private Set<String>                              subTypes                   = Collections.emptySet();
@@ -59,6 +61,7 @@ public class AtlasEntityType extends AtlasStructType {
     private Map<String, AtlasAttribute>              relationshipAttributes     = Collections.emptyMap();
     private Map<String, List<AtlasRelationshipType>> relationshipAttributesType = Collections.emptyMap();
     private String                                   typeAndAllSubTypesQryStr   = "";
+    private boolean                                  isInternalType             = false;
 
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
@@ -145,6 +148,10 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         for (String superTypeName : allSuperTypes) {
+            if (INTERNAL_TYPENAME.equals(superTypeName)) {
+                isInternalType = true;
+            }
+
             AtlasEntityType superType = typeRegistry.getEntityTypeByName(superTypeName);
 
             Map<String, AtlasAttribute> superTypeRelationshipAttributes = superType.getRelationshipAttributes();
@@ -204,6 +211,10 @@ public class AtlasEntityType extends AtlasStructType {
 
     public boolean isSubTypeOf(String entityTypeName) {
         return StringUtils.isNotEmpty(entityTypeName) && allSuperTypes.contains(entityTypeName);
+    }
+
+    public boolean isInternalType() {
+        return isInternalType;
     }
 
     public Map<String, AtlasAttribute> getRelationshipAttributes() { return relationshipAttributes; }

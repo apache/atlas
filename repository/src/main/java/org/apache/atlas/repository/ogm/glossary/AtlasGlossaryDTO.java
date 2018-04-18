@@ -21,7 +21,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,9 +68,7 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
             if (categoriesAttr instanceof Collection) {
                 for (Object o : (Collection) categoriesAttr) {
                     if (o instanceof AtlasRelatedObjectId) {
-                        if (((AtlasRelatedObjectId) o).getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
-                            ret.addCategory(constructRelatedCategoryId((AtlasRelatedObjectId) o));
-                        }
+                        ret.addCategory(constructRelatedCategoryId((AtlasRelatedObjectId) o));
                     }
                 }
             }
@@ -83,9 +80,7 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
             if (termsAttr instanceof Collection) {
                 for (Object o : (Collection) termsAttr) {
                     if (o instanceof AtlasRelatedObjectId) {
-                        if (((AtlasRelatedObjectId) o).getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
-                            ret.addTerm(constructRelatedTermId((AtlasRelatedObjectId) o));
-                        }
+                        ret.addTerm(constructRelatedTermId((AtlasRelatedObjectId) o));
                     }
                 }
             }

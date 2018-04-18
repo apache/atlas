@@ -21,7 +21,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
@@ -65,9 +64,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         Object anchor = entity.getRelationshipAttribute("anchor");
         if (anchor instanceof AtlasRelatedObjectId) {
             LOG.debug("Processing anchor");
-            if (((AtlasRelatedObjectId) anchor).getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
-                ret.setAnchor(constructGlossaryId((AtlasRelatedObjectId) anchor));
-            }
+            ret.setAnchor(constructGlossaryId((AtlasRelatedObjectId) anchor));
         }
 
         Object categories = entity.getRelationshipAttribute("categories");
@@ -75,9 +72,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
             LOG.debug("Processing categories");
             for (Object category : (Collection) categories) {
                 if (category instanceof AtlasRelatedObjectId) {
-                    if (((AtlasRelatedObjectId) category).getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
-                        ret.addCategory(constructTermCategorizationId((AtlasRelatedObjectId) category));
-                    }
+                    ret.addCategory(constructTermCategorizationId((AtlasRelatedObjectId) category));
                 }
             }
         }
@@ -90,9 +85,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
             for (Object assignedEntity : (Collection) assignedEntities) {
                 if (assignedEntity instanceof AtlasRelatedObjectId) {
                     AtlasRelatedObjectId id = (AtlasRelatedObjectId) assignedEntity;
-                    if (id.getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
-                        ret.addAssignedEntity(id);
-                    }
+                    ret.addAssignedEntity(id);
                 }
             }
         }

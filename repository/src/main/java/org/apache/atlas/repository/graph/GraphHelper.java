@@ -647,8 +647,8 @@ public final class GraphHelper {
     public static <T> T getSingleValuedProperty(AtlasElement element, String propertyName, Class<T> clazz) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Reading property {} from {}", actualPropertyName, string(element));
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Reading property {} from {}", actualPropertyName, string(element));
         }
 
         return element.getProperty(actualPropertyName, clazz);
@@ -658,8 +658,8 @@ public final class GraphHelper {
     public static Object getProperty(AtlasVertex<?,?> vertex, String propertyName) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Reading property {} from {}", actualPropertyName, string(vertex));
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Reading property {} from {}", actualPropertyName, string(vertex));
         }
 
         if(AtlasGraphProvider.getGraphInstance().isMultiProperty(actualPropertyName)) {
@@ -673,8 +673,8 @@ public final class GraphHelper {
     public static Object getProperty(AtlasEdge<?,?> edge, String propertyName) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Reading property {} from {}", actualPropertyName, string(edge));
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Reading property {} from {}", actualPropertyName, string(edge));
         }
 
         return edge.getProperty(actualPropertyName, Object.class);
@@ -736,18 +736,14 @@ public final class GraphHelper {
      * @param edge
      */
     public void removeEdge(AtlasEdge edge) {
-        String edgeString = null;
-
         if (LOG.isDebugEnabled()) {
-            edgeString = string(edge);
-
-            LOG.debug("Removing {}", edgeString);
+            LOG.debug("==> removeEdge({})", string(edge));
         }
 
         graph.removeEdge(edge);
 
         if (LOG.isDebugEnabled()) {
-            LOG.info("Removed {}", edgeString);
+            LOG.info("<== removeEdge()");
         }
     }
 
@@ -757,18 +753,14 @@ public final class GraphHelper {
      * @param vertex
      */
     public void removeVertex(AtlasVertex vertex) {
-        String vertexString = null;
-
         if (LOG.isDebugEnabled()) {
-            vertexString = string(vertex);
-
-            LOG.debug("Removing {}", vertexString);
+            LOG.debug("==> GraphHelper.removeVertex({})", string(vertex));
         }
 
         graph.removeVertex(vertex);
 
         if (LOG.isDebugEnabled()) {
-            LOG.info("Removed {}", vertexString);
+            LOG.debug("<== GraphHelper.removeVertex()");
         }
     }
 
@@ -1580,7 +1572,7 @@ public final class GraphHelper {
     }
 
     // newly added
-    public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName) {
+    public static List<Object>  getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName) {
         String encodedPropertyName = GraphHelper.encodePropertyKey(propertyName);
         if(AtlasGraphUtilsV1.isReference(elementType)) {
             return (List)instanceVertex.getListProperty(encodedPropertyName, AtlasEdge.class);

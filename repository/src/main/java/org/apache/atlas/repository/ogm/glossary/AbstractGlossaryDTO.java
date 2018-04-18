@@ -24,7 +24,6 @@ import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.ogm.AbstractDataTransferObject;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -151,9 +150,7 @@ public abstract class AbstractGlossaryDTO<T extends AtlasBaseModelObject> extend
             ret = new HashSet<>();
             for (Object t : (Collection) relatedObjectIds) {
                 if (t instanceof AtlasRelatedObjectId) {
-                    if (((AtlasRelatedObjectId) t).getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
-                        ret.add(constructRelatedTermId((AtlasRelatedObjectId) t));
-                    }
+                    ret.add(constructRelatedTermId((AtlasRelatedObjectId) t));
                 }
             }
         }

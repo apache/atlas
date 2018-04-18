@@ -60,17 +60,13 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
         Object anchor = entity.getRelationshipAttribute("anchor");
         if (anchor instanceof AtlasRelatedObjectId) {
             LOG.debug("Processing anchor");
-            if (((AtlasRelatedObjectId) anchor).getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
-                ret.setAnchor(constructGlossaryId((AtlasRelatedObjectId) anchor));
-            }
+            ret.setAnchor(constructGlossaryId((AtlasRelatedObjectId) anchor));
         }
 
         Object parentCategory = entity.getRelationshipAttribute("parentCategory");
         if (parentCategory instanceof AtlasRelatedObjectId) {
             LOG.debug("Processing parentCategory");
-            if (((AtlasRelatedObjectId) parentCategory).getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
-                ret.setParentCategory(constructRelatedCategoryId((AtlasRelatedObjectId) parentCategory));
-            }
+            ret.setParentCategory(constructRelatedCategoryId((AtlasRelatedObjectId) parentCategory));
         }
 
         Object childrenCategories = entity.getRelationshipAttribute("childrenCategories");
@@ -90,9 +86,7 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
             LOG.debug("Processing terms");
             for (Object term : (Collection) terms) {
                 if (term instanceof AtlasRelatedObjectId) {
-                    if (((AtlasRelatedObjectId) term).getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
-                        ret.addTerm(constructRelatedTermId((AtlasRelatedObjectId) term));
-                    }
+                    ret.addTerm(constructRelatedTermId((AtlasRelatedObjectId) term));
                 }
             }
         }

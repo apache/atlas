@@ -332,7 +332,7 @@ public class GlossaryServiceTest {
             try {
                 glossaryService.getGlossary(bankGlossary.getGuid());
             } catch (AtlasBaseException e) {
-                assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_DELETED);
+                assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
             }
         } catch (AtlasBaseException e) {
             fail("Glossary delete should've succeeded", e);
