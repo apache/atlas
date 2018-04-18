@@ -683,7 +683,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
     }
     CommonViewFunction.removeCategoryTermAssociation = function(options) {
         if (options) {
-            var selectedGuid = options.guid,
+            var selectedGuid = options.selectedGuid,
                 termGuid = options.termGuid,
                 isCategoryView = options.isCategoryView,
                 isTermView = options.isTermView,
@@ -728,9 +728,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 } else {
                     var data = _.extend({}, model);
                     if (isTermView) {
-                        data.categories = _.reject(data.categories, function(term) { return term.categoryGuid != selectedGuid });
+                        data.categories = _.reject(data.categories, function(term) { return term.categoryGuid == selectedGuid });
                     } else {
-                        data.terms = _.reject(data.terms, function(term) { return term.termGuid != selectedGuid });
+                        data.terms = _.reject(data.terms, function(term) { return term.termGuid == selectedGuid });
                     }
 
                     newModel[isTermView ? "createEditTerm" : "createEditCategory"](_.extend(ajaxOptions, {
