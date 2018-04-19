@@ -24,11 +24,13 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -91,9 +94,18 @@ public class ActiveInstanceState {
             HAConfiguration.ZookeeperProperties zookeeperProperties =
                     HAConfiguration.getZookeeperProperties(configuration);
             String atlasServerAddress = HAConfiguration.getBoundAddressForId(configuration, serverId);
-            List<ACL> acls = Arrays.asList(
-                    new ACL[]{AtlasZookeeperSecurityProperties.parseAcl(zookeeperProperties.getAcl(),
-                            ZooDefs.Ids.OPEN_ACL_UNSAFE.get(0))});
+
+            List<ACL> acls = new ArrayList<ACL>();
+            ACL parsedACL = AtlasZookeeperSecurityProperties.parseAcl(zookeeperProperties.getAcl(),
+                    ZooDefs.Ids.OPEN_ACL_UNSAFE.get(0));
+            acls.add(parsedACL);
+
+            //adding world read permission
+            if (StringUtils.isNotEmpty(zookeeperProperties.getAcl())) {
+                ACL worldReadPermissionACL = new ACL(ZooDefs.Perms.READ, new Id("world", "anyone"));
+                acls.add(worldReadPermissionACL);
+            }
+
             Stat serverInfo = client.checkExists().forPath(getZnodePath(zookeeperProperties));
             if (serverInfo == null) {
                 client.create().

@@ -114,9 +114,11 @@ public class ActiveInstanceStateTest {
         CreateBuilder createBuilder = mock(CreateBuilder.class);
         when(curatorFramework.create()).thenReturn(createBuilder);
         when(createBuilder.withMode(CreateMode.EPHEMERAL)).thenReturn(createBuilder);
-        ACL expectedAcl = new ACL(ZooDefs.Perms.ALL, new Id("sasl", "myclient@EXAMPLE.COM"));
+	ACL expectedAcl = new ACL(ZooDefs.Perms.ALL, new Id("sasl", "myclient@EXAMPLE.COM"));
+	ACL expectedAcl1 = new ACL(ZooDefs.Perms.READ, new Id("world", "anyone"));
         when(createBuilder.
-                withACL(Arrays.asList(new ACL[]{expectedAcl}))).thenReturn(createBuilder);
+                withACL(Arrays.asList(new ACL[]{expectedAcl,expectedAcl1}))).thenReturn(createBuilder);
+
 
         SetDataBuilder setDataBuilder = mock(SetDataBuilder.class);
         when(curatorFramework.setData()).thenReturn(setDataBuilder);
