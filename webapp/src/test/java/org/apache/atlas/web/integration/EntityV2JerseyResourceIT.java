@@ -464,6 +464,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
         classification.setEntityGuid(tableGuid);
         classification.addValityPeriod(validityPeriod);
+        classification.setPropagate(true);
 
         atlasClientV2.addClassifications(tableGuid, Collections.singletonList(classification));
 

@@ -54,7 +54,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String             entityGuid      = null;
-    private boolean            propagate       = true;
+    private Boolean            propagate       = null;
     private List<TimeBoundary> validityPeriods = null;
 
     public enum PropagationState { ACTIVE, DELETED }
@@ -94,11 +94,11 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         this.entityGuid = entityGuid;
     }
 
-    public boolean isPropagate() {
+    public Boolean isPropagate() {
         return propagate;
     }
 
-    public void setPropagate(boolean propagate) {
+    public void setPropagate(Boolean propagate) {
         this.propagate = propagate;
     }
 
@@ -129,7 +129,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         if (o == null || getClass() != o.getClass()) { return false; }
         if (!super.equals(o)) { return false; }
         AtlasClassification that = (AtlasClassification) o;
-        return propagate == that.propagate &&
+        return Objects.equals(propagate, that.propagate) &&
                Objects.equals(entityGuid, that.entityGuid) &&
                Objects.equals(validityPeriods, that.validityPeriods);
     }

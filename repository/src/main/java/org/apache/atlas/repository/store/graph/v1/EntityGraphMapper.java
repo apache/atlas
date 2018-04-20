@@ -1328,7 +1328,11 @@ public class EntityGraphMapper {
 
             for (AtlasClassification classification : classifications) {
                 String  classificationName = classification.getTypeName();
-                boolean propagateTags      = classification.isPropagate();
+                Boolean propagateTags      = classification.isPropagate();
+
+                if (propagateTags == null) {
+                    propagateTags = true;
+                }
 
                 // set associated entity id to classification
                 classification.setEntityGuid(guid);
@@ -1554,11 +1558,11 @@ public class EntityGraphMapper {
             mapClassification(EntityOperation.UPDATE, context, classification, entityType, entityVertex, classificationVertex);
 
             // handle update of 'propagate' flag
-            boolean currentTagPropagation = currentClassification.isPropagate();
-            boolean updatedTagPropagation = classification.isPropagate();
+            Boolean currentTagPropagation = currentClassification.isPropagate();
+            Boolean updatedTagPropagation = classification.isPropagate();
 
             // compute propagatedEntityVertices once and use it for subsequent iterations and notifications
-            if (currentTagPropagation != updatedTagPropagation) {
+            if (updatedTagPropagation != null && currentTagPropagation != updatedTagPropagation) {
                 if (updatedTagPropagation) {
                     if (CollectionUtils.isEmpty(entitiesToPropagateTo)) {
                         entitiesToPropagateTo = graphHelper.getImpactedVertices(guid);
@@ -1687,7 +1691,9 @@ public class EntityGraphMapper {
             // if 'null', don't update existing value in the classification
         }
 
-        AtlasGraphUtilsV1.setProperty(traitInstanceVertex, Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY, classification.isPropagate());
+        if (classification.isPropagate() != null) {
+            AtlasGraphUtilsV1.setProperty(traitInstanceVertex, Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY, classification.isPropagate());
+        }
 
         // map all the attributes to this newly created AtlasVertex
         mapAttributes(classification, traitInstanceVertex, operation, context);
