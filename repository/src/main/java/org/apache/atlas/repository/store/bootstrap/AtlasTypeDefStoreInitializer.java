@@ -64,8 +64,6 @@ import java.util.Map;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
-
 
 /**
  * Class that handles initial loading of models and patches into typedef store
@@ -90,9 +88,8 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     @PostConstruct
     public void init() throws AtlasBaseException {
         LOG.info("==> AtlasTypeDefStoreInitializer.init()");
-        boolean isMigrationEnabled = !StringUtils.isEmpty(conf.getString(ATLAS_MIGRATION_MODE_FILENAME));
 
-        if (!HAConfiguration.isHAEnabled(conf) || isMigrationEnabled) {
+        if (!HAConfiguration.isHAEnabled(conf)) {
             atlasTypeDefStore.init();
             loadBootstrapTypeDefs();
 

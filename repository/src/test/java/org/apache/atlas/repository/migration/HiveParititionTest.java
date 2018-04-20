@@ -43,7 +43,7 @@ public class HiveParititionTest extends  MigrationBaseAsserts {
 
     @Test
     public void fileImporterTest() throws IOException, AtlasBaseException {
-        final int EXPECTED_TOTAL_COUNT = 140;
+        final int EXPECTED_TOTAL_COUNT = 141;
         final int EXPECTED_DB_COUNT = 1;
         final int EXPECTED_TABLE_COUNT = 2;
         final int EXPECTED_COLUMN_COUNT = 7;

@@ -127,7 +127,7 @@ public class MigrationProgressServiceTest {
         }
 
         ReaderStatusManager rsm = new ReaderStatusManager(tg, tg);
-        rsm.update(tg, currentIndex);
+        rsm.update(tg, currentIndex, false);
         rsm.end(tg, totalIndex, status);
         return tg;
     }

@@ -38,6 +38,7 @@ public class MigrationStatus implements Serializable {
     private Date   startTime;
     private Date   endTime;
     private long   currentIndex;
+    private long   currentCounter;
     private long   totalCount;
 
     public void setOperationStatus(String operationStatus) {
@@ -80,11 +81,18 @@ public class MigrationStatus implements Serializable {
         return this.totalCount;
     }
 
-    public StringBuilder toString(StringBuilder sb) {
+    public void setCurrentCounter(long value) {
+        this.currentCounter = value;
+    }
+
+    public Long getCurrentCounter() { return this.currentCounter; }
+
+        public StringBuilder toString(StringBuilder sb) {
         sb.append(", operationStatus=").append(operationStatus);
         sb.append(", startTime=").append(startTime);
         sb.append(", endTime=").append(endTime);
         sb.append(", currentIndex=").append(currentIndex);
+        sb.append(", currentCounter=").append(currentCounter);
         sb.append(", totalCount=").append(totalCount);
 
         return sb;

@@ -187,23 +187,21 @@ public class JsonNodeProcessManager {
         private final Graph        bulkLoadGraph;
         private final ParseElement parseElement;
         private final int          batchSize;
-        private final long         startIndex;
+        private final boolean      isResuming;
 
-        public ConsumerBuilder(Graph graph, Graph bulkLoadGraph, ParseElement parseElement, int batchSize, long startIndex) {
+        public ConsumerBuilder(Graph graph, Graph bulkLoadGraph, ParseElement parseElement, int batchSize, boolean isResuming) {
             this.graph         = graph;
             this.bulkLoadGraph = bulkLoadGraph;
             this.batchSize     = batchSize;
             this.parseElement  = parseElement;
-            this.startIndex    = startIndex;
+            this.isResuming    = isResuming;
         }
 
         @Override
         public Consumer build(BlockingQueue<JsonNode> queue) {
-            if(startIndex == 0) {
-                return new Consumer(queue, graph, bulkLoadGraph, parseElement, batchSize);
-            }
-
-            return new ResumingConsumer(queue, graph, bulkLoadGraph, parseElement, batchSize);
+            return (isResuming)
+                    ? new ResumingConsumer(queue, graph, bulkLoadGraph, parseElement, batchSize)
+                    : new Consumer(queue, graph, bulkLoadGraph, parseElement, batchSize);
         }
     }
 
@@ -214,8 +212,8 @@ public class JsonNodeProcessManager {
     }
 
     public static WorkItemManager create(Graph rGraph, Graph bGraph,
-                                         ParseElement parseElement, int numWorkers, int batchSize, long startIndex) {
-        ConsumerBuilder cb = new ConsumerBuilder(rGraph, bGraph, parseElement, batchSize, startIndex);
+                                         ParseElement parseElement, int numWorkers, int batchSize, boolean isResuming) {
+        ConsumerBuilder cb = new ConsumerBuilder(rGraph, bGraph, parseElement, batchSize, isResuming);
 
         return new WorkItemManager(cb, batchSize, numWorkers);
     }

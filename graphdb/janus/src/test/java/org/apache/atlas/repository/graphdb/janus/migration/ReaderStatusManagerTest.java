@@ -34,10 +34,10 @@ public class ReaderStatusManagerTest {
 
         assertNotNull(tg.traversal().V(sm.migrationStatusId).next());
 
-        MigrationStatus ms = ReaderStatusManager.updateFromVertex(tg, null);
+        MigrationStatus ms = ReaderStatusManager.get(tg);
         assertEquals(ms.getCurrentIndex(), 0L);
         assertEquals(ms.getTotalCount(), 0L);
-        assertEquals(ms.getOperationStatus(), "NOT STARTED");
+        assertEquals(ms.getOperationStatus(), ReaderStatusManager.STATUS_NOT_STARTED);
         assertNotNull(ms.getStartTime());
         assertNotNull(ms.getEndTime());
     }
@@ -45,15 +45,15 @@ public class ReaderStatusManagerTest {
     @Test
     public void verifyUpdates() {
         long expectedTotalCount = 1001L;
-        String expectedOperationStatus = "SUCCESS";
+        String expectedOperationStatus = ReaderStatusManager.STATUS_SUCCESS;
 
         TinkerGraph tg = TinkerGraph.open();
         ReaderStatusManager sm = new ReaderStatusManager(tg, tg);
 
-        sm.update(tg, 1000L, "IN PROGRESS");
+        sm.update(tg, 1000L, ReaderStatusManager.STATUS_IN_PROGRESS);
         sm.end(tg, expectedTotalCount, expectedOperationStatus);
 
-        MigrationStatus ms = ReaderStatusManager.updateFromVertex(tg, null);
+        MigrationStatus ms = ReaderStatusManager.get(tg);
         assertEquals(ms.getCurrentIndex(), expectedTotalCount);
         assertEquals(ms.getTotalCount(), expectedTotalCount);
         assertEquals(ms.getOperationStatus(), expectedOperationStatus);

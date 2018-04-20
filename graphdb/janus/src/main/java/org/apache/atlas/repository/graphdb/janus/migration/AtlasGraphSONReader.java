@@ -87,12 +87,13 @@ public final class AtlasGraphSONReader {
                 switch (fieldName) {
                     case GraphSONTokensTP2.MODE:
                         parser.nextToken();
-
                         final String mode = parser.getText();
 
                         if (!mode.equals("EXTENDED")) {
                             throw new IllegalStateException("The legacy GraphSON must be generated with GraphSONMode.EXTENDED");
                         }
+
+                        counter.getAndIncrement();
                         break;
 
                     case GraphSONTokensTP2.VERTICES:
@@ -136,10 +137,15 @@ public final class AtlasGraphSONReader {
     }
 
     private void processElement(JsonParser parser, ParseElement parseElement, long startIndex) throws InterruptedException {
+        LOG.info("processElement: {}: Starting... : counter at: {}", parseElement.getMessage(), counter.get());
+
         try {
+            readerStatusManager.update(graph, counter.get(), true);
+
             parseElement.setContext(graphSONUtility);
 
-            WorkItemManager wim = JsonNodeProcessManager.create(graph, bulkLoadGraph, parseElement, numWorkers, batchSize, startIndex);
+            WorkItemManager wim = JsonNodeProcessManager.create(graph, bulkLoadGraph, parseElement,
+                                                                numWorkers, batchSize, shouldSkip(startIndex, counter.get()));
 
             parser.nextToken();
 
@@ -165,12 +171,12 @@ public final class AtlasGraphSONReader {
         } finally {
             LOG.info("processElement: {}: Done! : [{}]", parseElement.getMessage(), counter);
 
-            readerStatusManager.update(bulkLoadGraph, counter.get());
+            readerStatusManager.update(bulkLoadGraph, counter.get(), true);
         }
     }
 
     private void postProcess(long startIndex) {
-        LOG.info("postProcess: Starting...");
+        LOG.info("postProcess: Starting... : counter at: {}", counter.get());
 
         try {
             PostProcessManager.WorkItemsManager wim   = PostProcessManager.create(bulkLoadGraph, graphSONUtility,
@@ -186,9 +192,9 @@ public final class AtlasGraphSONReader {
 
                 Vertex v = (Vertex) query.next();
 
-                updateStatusConditionally(bulkLoadGraph, counter.get());
-
                 wim.produce(v.id());
+
+                updateStatusConditionally(bulkLoadGraph, counter.get());
             }
 
             wim.shutdown();
@@ -197,7 +203,7 @@ public final class AtlasGraphSONReader {
         } finally {
             LOG.info("postProcess: Done! : [{}]", counter.get());
 
-            readerStatusManager.update(bulkLoadGraph, counter.get());
+            readerStatusManager.update(bulkLoadGraph, counter.get(), true);
         }
     }
 
@@ -210,14 +216,14 @@ public final class AtlasGraphSONReader {
             return;
         }
 
-        readerStatusManager.update(graph, counter);
+        readerStatusManager.update(graph, counter, false);
         LOG.error("Thread interrupted: {}", counter);
         throw new InterruptedException();
     }
 
     private void updateStatusConditionally(Graph graph, long counter) {
         if(counter % batchSize == 0) {
-            readerStatusManager.update(graph, counter);
+            readerStatusManager.update(graph, counter, false);
         }
     }
 

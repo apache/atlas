@@ -35,13 +35,14 @@ public class ReaderStatusManager {
 
     private static final String MIGRATION_STATUS_TYPE_NAME = "__MigrationStatus";
     private static final String CURRENT_INDEX_PROPERTY     = "currentIndex";
+    private static final String CURRENT_COUNTER_PROPERTY   = "currentCounter";
     private static final String OPERATION_STATUS_PROPERTY  = "operationStatus";
     private static final String START_TIME_PROPERTY        = "startTime";
     private static final String END_TIME_PROPERTY          = "endTime";
     private static final String TOTAL_COUNT_PROPERTY       = "totalCount";
 
-    public static final String STATUS_NOT_STARTED = "NOT STARTED";
-    public static final String STATUS_IN_PROGRESS = "IN PROGRESS";
+    public static final String STATUS_NOT_STARTED = "NOT_STARTED";
+    public static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     public static final String STATUS_SUCCESS     = "SUCCESS";
     public static final String STATUS_FAILED      = "FAILED";
 
@@ -72,8 +73,12 @@ public class ReaderStatusManager {
         update(bGraph, counter, status);
     }
 
-    public void update(Graph graph, Long counter) {
-        migrationStatus.property(CURRENT_INDEX_PROPERTY, counter);
+    public void update(Graph graph, Long counter, boolean stageEnd) {
+        migrationStatus.property(CURRENT_COUNTER_PROPERTY, counter);
+
+        if(stageEnd) {
+            migrationStatus.property(CURRENT_INDEX_PROPERTY, counter);
+        }
 
         if(graph.features().graph().supportsTransactions()) {
             graph.tx().commit();
@@ -82,7 +87,7 @@ public class ReaderStatusManager {
 
     public void update(Graph graph, Long counter, String status) {
         migrationStatus.property(OPERATION_STATUS_PROPERTY, status);
-        update(graph, counter);
+        update(graph, counter, true);
     }
 
     public void clear() {
@@ -107,6 +112,7 @@ public class ReaderStatusManager {
 
         long longValue = 0L;
         v.property(Constants.ENTITY_TYPE_PROPERTY_KEY, MIGRATION_STATUS_TYPE_NAME);
+        v.property(CURRENT_COUNTER_PROPERTY, longValue);
         v.property(CURRENT_INDEX_PROPERTY, longValue);
         v.property(TOTAL_COUNT_PROPERTY, longValue);
         v.property(OPERATION_STATUS_PROPERTY, STATUS_NOT_STARTED);
@@ -122,35 +128,25 @@ public class ReaderStatusManager {
         LOG.info("migrationStatus vertex created! v[{}]", migrationStatusId);
     }
 
-    public static MigrationStatus updateFromVertex(Graph graph, MigrationStatus ms) {
-        Vertex vertex = fetchUsingTypeName(graph.traversal());
-
-        if(ms == null) {
-            ms = new MigrationStatus();
+    public static MigrationStatus get(Graph graph) {
+        MigrationStatus ms = new MigrationStatus();
+        try {
+            setValues(ms, fetchUsingTypeName(graph.traversal()));
+        } catch (Exception ex) {
+            if(LOG.isDebugEnabled()) {
+                LOG.error("get: failed!", ex);
+            }
         }
-
-        ms.setStartTime((Date) vertex.property(START_TIME_PROPERTY).value());
-        ms.setEndTime((Date) vertex.property(END_TIME_PROPERTY).value());
-        ms.setCurrentIndex((Long) vertex.property(CURRENT_INDEX_PROPERTY).value());
-        ms.setOperationStatus((String) vertex.property(OPERATION_STATUS_PROPERTY).value());
-        ms.setTotalCount((Long) vertex.property(TOTAL_COUNT_PROPERTY).value());
 
         return ms;
     }
 
-    public static MigrationStatus get(Graph graph) {
-        MigrationStatus ms = new MigrationStatus();
-        try {
-            Vertex v = fetchUsingTypeName(graph.traversal());
-            ms.setStartTime((Date) v.property(START_TIME_PROPERTY).value());
-            ms.setEndTime((Date) v.property(END_TIME_PROPERTY).value());
-            ms.setCurrentIndex((long) v.property(CURRENT_INDEX_PROPERTY).value());
-            ms.setOperationStatus((String) v.property(OPERATION_STATUS_PROPERTY).value());
-            ms.setTotalCount((long) v.property(TOTAL_COUNT_PROPERTY).value());
-        } catch (Exception ex) {
-            LOG.error("get: failed!", ex);
-        }
-
-        return ms;
+    private static void setValues(MigrationStatus ms, Vertex vertex) {
+        ms.setStartTime((Date) vertex.property(START_TIME_PROPERTY).value());
+        ms.setEndTime((Date) vertex.property(END_TIME_PROPERTY).value());
+        ms.setCurrentIndex((Long) vertex.property(CURRENT_INDEX_PROPERTY).value());
+        ms.setCurrentCounter((Long) vertex.property(CURRENT_COUNTER_PROPERTY).value());
+        ms.setOperationStatus((String) vertex.property(OPERATION_STATUS_PROPERTY).value());
+        ms.setTotalCount((Long) vertex.property(TOTAL_COUNT_PROPERTY).value());
     }
 }

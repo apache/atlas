@@ -44,11 +44,13 @@ public class PathTest extends MigrationBaseAsserts {
 
     @Test
     public void migrationImport() throws IOException, AtlasBaseException {
+        final int EXPECTED_TOTAL_COUNT = 89;
+
         runFileImporter("path_db");
 
         AtlasVertex v = assertHdfsPathVertices(1);
         assertVertexProperties(v);
-        assertMigrationStatus(88);
+        assertMigrationStatus(EXPECTED_TOTAL_COUNT);
     }
 
     private void assertVertexProperties(AtlasVertex v) {

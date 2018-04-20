@@ -32,6 +32,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.service.Service;
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -100,6 +101,10 @@ public class DataMigrationService implements Service {
 
         public void performImport() throws AtlasBaseException {
             try {
+                if(!performAccessChecks(importDirectory)) {
+                    return;
+                }
+
                 performInit();
 
                 FileInputStream fs = new FileInputStream(getFileFromImportDirectory(importDirectory, ATLAS_MIGRATION_DATA_NAME));
@@ -111,10 +116,28 @@ public class DataMigrationService implements Service {
             }
         }
 
+        private boolean performAccessChecks(String path) {
+            boolean ret = false;
+            if(StringUtils.isEmpty(path)) {
+                ret = false;
+            } else {
+                File f = new File(path);
+                ret = f.exists() && f.isDirectory() && f.canRead();
+            }
+
+            if (ret) {
+                LOG.info("will migrate data in directory {}", importDirectory);
+            } else {
+                LOG.error("cannot read migration data in directory {}", importDirectory);
+            }
+
+            return ret;
+        }
+
         private void performInit() throws AtlasBaseException, AtlasException {
-            storeInitializer.init();
-            processIncomingTypesDef(getFileFromImportDirectory(importDirectory, ATLAS_MIGRATION_TYPESDEF_NAME));
             indexer.instanceIsActive();
+            storeInitializer.instanceIsActive();
+            processIncomingTypesDef(getFileFromImportDirectory(importDirectory, ATLAS_MIGRATION_TYPESDEF_NAME));
         }
 
         @VisibleForTesting

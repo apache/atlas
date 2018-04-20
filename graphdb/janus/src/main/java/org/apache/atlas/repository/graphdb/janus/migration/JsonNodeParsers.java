@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static org.apache.atlas.repository.Constants.EDGE_ID_IN_IMPORT_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_ID_IN_IMPORT_KEY;
@@ -103,10 +104,16 @@ public class JsonNodeParsers {
         Element getByOriginalId(Graph gr, Object id) {
             try {
                 return gr.traversal().E().has(EDGE_ID_IN_IMPORT_KEY, id).next();
-            } catch (Exception ex) {
-                LOG.error("fetchEdge: fetchFromDB failed: {}", id);
-                return null;
+            } catch (NoSuchElementException ex) {
+                if(LOG.isDebugEnabled()) {
+                    LOG.debug("getByOriginalId: {}: failed: {}", getMessage(), id, ex);
+                }
             }
+            catch (Exception ex) {
+                LOG.error("getByOriginalId: {}: failed: {}", getMessage(), id, ex);
+            }
+
+            return null;
         }
 
         @Override
@@ -148,10 +155,15 @@ public class JsonNodeParsers {
         Element getByOriginalId(Graph gr, Object id) {
             try {
                 return gr.traversal().V().has(VERTEX_ID_IN_IMPORT_KEY, id).next();
+            } catch (NoSuchElementException ex) {
+                if(LOG.isDebugEnabled()) {
+                    LOG.debug("getByOriginalId: {}: failed: {}", getMessage(), id, ex);
+                }
             } catch (Exception ex) {
-                LOG.error("getByOriginalId failed: {}", id);
-                return null;
+                LOG.error("getByOriginalId: {}: failed: {}", getMessage(), id, ex);
             }
+
+            return null;
         }
 
         @Override
