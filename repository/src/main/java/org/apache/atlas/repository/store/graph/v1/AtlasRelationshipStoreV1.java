@@ -315,10 +315,7 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
     private AtlasRelationship updateRelationship(AtlasEdge relationshipEdge, AtlasRelationship relationship) throws AtlasBaseException {
         AtlasRelationshipType relationType = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
 
-        updateTagPropagations(relationshipEdge, relationship.getPropagateTags());
-
-        // update blocked propagated classifications
-        handleBlockedClassifications(relationshipEdge, relationship.getBlockedPropagatedClassifications());
+        updateTagPropagations(relationshipEdge, relationship);
 
         if (MapUtils.isNotEmpty(relationType.getAllAttributes())) {
             for (AtlasAttribute attr : relationType.getAllAttributes().values()) {
@@ -422,9 +419,9 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         }
     }
 
-    private void updateTagPropagations(AtlasEdge edge, PropagateTags tagPropagation) throws AtlasBaseException {
+    private void updateTagPropagations(AtlasEdge edge, AtlasRelationship relationship) throws AtlasBaseException {
         PropagateTags oldTagPropagation = getPropagateTags(edge);
-        PropagateTags newTagPropagation = tagPropagation;
+        PropagateTags newTagPropagation = relationship.getPropagateTags();
 
         if (newTagPropagation != oldTagPropagation) {
             List<AtlasVertex>                   currentClassificationVertices = getClassificationVertices(edge);
@@ -472,6 +469,9 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
             for (AtlasVertex classificationVertex : removePropagationsMap.keySet()) {
                 deleteHandler.removeTagPropagation(classificationVertex, removePropagationsMap.get(classificationVertex));
             }
+        } else {
+            // update blocked propagated classifications only if there is no change is tag propagation (don't update both)
+            handleBlockedClassifications(edge, relationship.getBlockedPropagatedClassifications());
         }
     }
 
