@@ -1,0 +1,21 @@
+{
+  "patches": [
+    {
+      "action": "ADD_ATTRIBUTE",
+      "typeName": "kafka_topic",
+      "applyToVersion": "1.0",
+      "updateToVersion": "1.1",
+      "params": null,
+      "attributeDefs": [
+        {
+          "name": "partitionCount",
+          "typeName": "int",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ]
+}
