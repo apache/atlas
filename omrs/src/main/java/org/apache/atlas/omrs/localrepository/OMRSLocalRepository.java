@@ -21,7 +21,6 @@ import org.apache.atlas.ocf.properties.beans.Connection;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSInstanceEventProcessor;
 import org.apache.atlas.omrs.eventmanagement.OMRSRepositoryEventManager;
 import org.apache.atlas.omrs.eventmanagement.events.OMRSTypeDefEventProcessor;
-import org.apache.atlas.omrs.localrepository.repositorycontentmanager.OMRSTypeDefValidator;
 
 
 /**
@@ -45,15 +44,6 @@ public interface OMRSLocalRepository
      * @return Connection object
      */
     Connection getLocalRepositoryRemoteConnection();
-
-
-    /**
-     * Return the TypeDefManager.  This is used to validate that a list of type definitions (TypeDefs) are
-     * compatible with the local repository.
-     *
-     * @return OMRSTypeDefValidator object for the local repository.
-     */
-    OMRSTypeDefValidator getTypeDefValidator();
 
 
     /**

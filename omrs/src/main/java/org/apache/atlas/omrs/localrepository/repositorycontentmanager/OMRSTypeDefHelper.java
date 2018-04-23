@@ -17,13 +17,10 @@
  */
 package org.apache.atlas.omrs.localrepository.repositorycontentmanager;
 
-import org.apache.atlas.omrs.ffdc.exception.InvalidParameterException;
-import org.apache.atlas.omrs.ffdc.exception.PatchErrorException;
 import org.apache.atlas.omrs.ffdc.exception.TypeErrorException;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.AttributeTypeDef;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDef;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefGallery;
-import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefPatch;
 
 
 /**
@@ -91,12 +88,16 @@ public interface OMRSTypeDefHelper
      * retrieving a type that only the guid is known.
      *
      * @param sourceName - source of the request (used for logging)
+     * @param parameterName - name of parameter
      * @param typeDefGUID - unique identifier for the TypeDef
+     * @param methodName - calling method
      * @return TypeDef object
      * @throws TypeErrorException - unknown or invalid type
      */
     TypeDef  getTypeDef (String    sourceName,
-                         String    typeDefGUID) throws TypeErrorException;
+                         String    parameterName,
+                         String    typeDefGUID,
+                         String    methodName) throws TypeErrorException;
 
 
     /**
@@ -109,7 +110,8 @@ public interface OMRSTypeDefHelper
      * @throws TypeErrorException - unknown or invalid type
      */
     AttributeTypeDef  getAttributeTypeDef (String    sourceName,
-                                           String    attributeTypeDefGUID) throws TypeErrorException;
+                                           String    attributeTypeDefGUID,
+                                           String    methodName) throws TypeErrorException;
 
 
 
@@ -118,14 +120,20 @@ public interface OMRSTypeDefHelper
      * retrieving a type that should exist.  For example, retrieving the type of a metadata instance.
      *
      * @param sourceName - source of the request (used for logging)
+     * @param guidParameterName - name of guid parameter
+     * @param nameParameterName - name of name parameter
      * @param typeDefGUID - unique identifier for the TypeDef
      * @param typeDefName - unique name for the TypeDef
+     * @param methodName - calling method
      * @return TypeDef object
      * @throws TypeErrorException - unknown or invalid type
      */
     TypeDef  getTypeDef (String    sourceName,
+                         String    guidParameterName,
+                         String    nameParameterName,
                          String    typeDefGUID,
-                         String    typeDefName) throws TypeErrorException;
+                         String    typeDefName,
+                         String    methodName) throws TypeErrorException;
 
 
     /**
@@ -136,10 +144,12 @@ public interface OMRSTypeDefHelper
      * @param sourceName - source of the request (used for logging)
      * @param attributeTypeDefGUID - unique identifier for the AttributeTypeDef
      * @param attributeTypeDefName - unique name for the AttributeTypeDef
+     * @param methodName - calling method
      * @return TypeDef object
      * @throws TypeErrorException - unknown or invalid type
      */
     AttributeTypeDef  getAttributeTypeDef (String    sourceName,
                                            String    attributeTypeDefGUID,
-                                           String    attributeTypeDefName) throws TypeErrorException;
+                                           String    attributeTypeDefName,
+                                           String    methodName) throws TypeErrorException;
 }

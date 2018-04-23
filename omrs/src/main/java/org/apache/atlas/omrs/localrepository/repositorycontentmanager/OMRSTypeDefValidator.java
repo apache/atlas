@@ -20,7 +20,6 @@ package org.apache.atlas.omrs.localrepository.repositorycontentmanager;
 import org.apache.atlas.omrs.ffdc.exception.RepositoryErrorException;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,37 +27,6 @@ import java.util.List;
  */
 public interface OMRSTypeDefValidator
 {
-    /**
-     * Return a summary list of the TypeDefs supported by the local metadata repository.  This is
-     * broadcast to the other servers/repositories in the cohort during the membership registration exchanges
-     * managed by the cohort registries.
-     *
-     * @return TypeDefSummary list
-     */
-    ArrayList<TypeDefSummary> getLocalTypeDefs();
-
-
-    /**
-     * Return a boolean flag indicating whether the list of TypeDefs passed are compatible with the
-     * local metadata repository.  A true response means it is ok; false means conflicts have been found.
-     *
-     * A valid TypeDef is one that:
-     * <ul>
-     *     <li>
-     *         Matches name, GUID and version to a TypeDef in the local repository, or
-     *     </li>
-     *     <li>
-     *         Is not defined in the local repository.
-     *     </li>
-     * </ul>
-     *
-     * @param sourceName - source of the request (used for logging)
-     * @param typeDefSummaries - list of summary information about the TypeDefs.
-     */
-    void validateAgainstLocalTypeDefs(String                    sourceName,
-                                      List<TypeDefSummary>      typeDefSummaries);
-
-
     /**
      * Return a boolean flag indicating whether the list of TypeDefs passed are compatible with the
      * all known typedefs.
@@ -94,14 +62,24 @@ public interface OMRSTypeDefValidator
 
 
     /**
-     * Return boolean indicating whether the TypeDef or AttributeTypeDef is one of the standard open metadata types.
+     * Return boolean indicating whether the TypeDef is one of the standard open metadata types.
      *
      * @param sourceName - source of the request (used for logging)
-     * @param typeDefGUID - unique identifier of the type
-     * @param typeDefName - unique name of the type
+     * @param typeGUID - unique identifier of the type
+     * @param typeName - unique name of the type
      * @return boolean result
      */
-    boolean isOpenType(String  sourceName, String   typeDefGUID, String   typeDefName);
+    boolean isOpenType(String  sourceName, String   typeGUID, String   typeName);
+
+
+    /**
+     * Return boolean indicating whether the TypeDef is one of the standard open metadata types.
+     *
+     * @param sourceName - source of the request (used for logging)
+     * @param typeGUID - unique identifier of the type
+     * @return boolean result
+     */
+    boolean isOpenTypeId(String  sourceName, String   typeGUID);
 
 
     /**
@@ -109,35 +87,56 @@ public interface OMRSTypeDefValidator
      * by one or more of the members of the cohort.
      *
      * @param sourceName - source of the request (used for logging)
-     * @param typeDefGUID - unique identifier of the type
-     * @param typeDefName - unique name of the type
+     * @param typeGUID - unique identifier of the type
+     * @param typeName - unique name of the type
      * @return boolean result
      */
-    boolean isKnownType(String  sourceName, String   typeDefGUID, String   typeDefName);
+    boolean isKnownType(String  sourceName, String   typeGUID, String   typeName);
+
+
+    /**
+     * Return boolean indicating whether the TypeDef/AttributeTypeDef is known, either as an open type, or one defined
+     * by one or more of the members of the cohort.
+     *
+     * @param sourceName - source of the request (used for logging)
+     * @param typeGUID - unique identifier of the type
+     * @return boolean result
+     */
+    boolean isKnownTypeId(String  sourceName, String   typeGUID);
 
 
     /**
      * Return boolean indicating whether the TypeDef/AttributeTypeDef is in use in the local repository.
      *
      * @param sourceName - source of the request (used for logging)
-     * @param typeDefGUID - unique identifier of the type
-     * @param typeDefName - unique name of the type
+     * @param typeGUID - unique identifier of the type
+     * @param typeName - unique name of the type
      * @return boolean result
      */
-    boolean isActiveType(String  sourceName, String   typeDefGUID, String   typeDefName);
+    boolean isActiveType(String  sourceName, String   typeGUID, String   typeName);
+
+
+    /**
+     * Return boolean indicating whether the TypeDef/AttributeTypeDef is in use in the local repository.
+     *
+     * @param sourceName - source of the request (used for logging)
+     * @param typeGUID - unique identifier of the type
+     * @return boolean result
+     */
+    boolean isActiveTypeId(String  sourceName, String   typeGUID);
 
 
     /**
      * Return boolean indicating whether the TypeDef/AttributeTypeDef identifiers are from a single known type or not.
      *
      * @param sourceName - source of the request (used for logging)
-     * @param typeDefGUID - unique identifier of the TypeDef
-     * @param typeDefName - unique name of the TypeDef
+     * @param typeGUID - unique identifier of the TypeDef
+     * @param typeName - unique name of the TypeDef
      * @return boolean result
      */
     boolean validTypeId(String          sourceName,
-                        String          typeDefGUID,
-                        String          typeDefName);
+                        String          typeGUID,
+                        String          typeName);
 
 
     /**

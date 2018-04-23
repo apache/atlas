@@ -692,7 +692,8 @@ public abstract class OMRSMetadataCollection
 
 
     /**
-     * Returns a boolean indicating if the entity is stored in the metadata collection.
+     * Returns a boolean indicating if the entity is stored in the metadata collection.  This entity may be a full
+     * entity object, or an entity proxy.
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the entity
@@ -709,7 +710,8 @@ public abstract class OMRSMetadataCollection
 
 
     /**
-     * Return the header and classifications for a specific entity.
+     * Return the header and classifications for a specific entity.  The returned entity summary may be from
+     * a full entity object or an entity proxy.
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the entity
@@ -729,7 +731,8 @@ public abstract class OMRSMetadataCollection
 
 
     /**
-     * Return the header, classifications and properties of a specific entity.
+     * Return the header, classifications and properties of a specific entity.  This requires the full entity
+     * object to be available.
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the entity.
@@ -797,6 +800,7 @@ public abstract class OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return Relationships list.  Null means no relationships associated with the entity.
      * @throws InvalidParameterException - a parameter is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored.
      * @throws EntityNotKnownException - the requested entity instance is not known in the metadata collection.
@@ -814,6 +818,7 @@ public abstract class OMRSMetadataCollection
                                                                  String                     sequencingProperty,
                                                                  SequencingOrder            sequencingOrder,
                                                                  int                        pageSize) throws InvalidParameterException,
+                                                                                                             TypeErrorException,
                                                                                                              RepositoryErrorException,
                                                                                                              EntityNotKnownException,
                                                                                                              PropertyErrorException,
@@ -847,10 +852,10 @@ public abstract class OMRSMetadataCollection
      * @return a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection.
      * @throws InvalidParameterException - a parameter is invalid or null.
-     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
-     *                                    the metadata collection is stored.
      * @throws TypeErrorException - the type guid passed on the request is not known by the
      *                              metadata collection.
+     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
+     *                                    the metadata collection is stored.
      * @throws PropertyErrorException - the properties specified are not valid for any of the requested types of
      *                                  entity.
      * @throws PagingErrorException - the paging/sequencing parameters are set up incorrectly.
@@ -900,10 +905,10 @@ public abstract class OMRSMetadataCollection
      * @return a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection.
      * @throws InvalidParameterException - a parameter is invalid or null.
-     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
-     *                                    the metadata collection is stored.
      * @throws TypeErrorException - the type guid passed on the request is not known by the
      *                              metadata collection.
+     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
+     *                                    the metadata collection is stored.
      * @throws ClassificationErrorException - the classification request is not known to the metadata collection.
      * @throws PropertyErrorException - the properties specified are not valid for the requested type of
      *                                  classification.
@@ -922,8 +927,8 @@ public abstract class OMRSMetadataCollection
                                                                     String                    sequencingProperty,
                                                                     SequencingOrder           sequencingOrder,
                                                                     int                       pageSize) throws InvalidParameterException,
-                                                                                                               RepositoryErrorException,
                                                                                                                TypeErrorException,
+                                                                                                               RepositoryErrorException,
                                                                                                                ClassificationErrorException,
                                                                                                                PropertyErrorException,
                                                                                                                PagingErrorException,
@@ -956,6 +961,8 @@ public abstract class OMRSMetadataCollection
      * @return a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection.
      * @throws InvalidParameterException - a parameter is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the
+     *                              metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored.
      * @throws PropertyErrorException - the sequencing property specified is not valid for any of the requested types of
@@ -974,6 +981,7 @@ public abstract class OMRSMetadataCollection
                                                                    String                sequencingProperty,
                                                                    SequencingOrder       sequencingOrder,
                                                                    int                   pageSize) throws InvalidParameterException,
+                                                                                                          TypeErrorException,
                                                                                                           RepositoryErrorException,
                                                                                                           PropertyErrorException,
                                                                                                           PagingErrorException,
@@ -1066,10 +1074,10 @@ public abstract class OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return a list of relationships.  Null means no matching relationships.
      * @throws InvalidParameterException - one of the parameters is invalid or null.
-     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
-     *                                    the metadata collection is stored.
      * @throws TypeErrorException - the type guid passed on the request is not known by the
      *                              metadata collection.
+     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
+     *                                    the metadata collection is stored.
      * @throws PropertyErrorException - the properties specified are not valid for any of the requested types of
      *                                  relationships.
      * @throws PagingErrorException - the paging/sequencing parameters are set up incorrectly.
@@ -1086,8 +1094,8 @@ public abstract class OMRSMetadataCollection
                                                                    String                    sequencingProperty,
                                                                    SequencingOrder           sequencingOrder,
                                                                    int                       pageSize) throws InvalidParameterException,
-                                                                                                              RepositoryErrorException,
                                                                                                               TypeErrorException,
+                                                                                                              RepositoryErrorException,
                                                                                                               PropertyErrorException,
                                                                                                               PagingErrorException,
                                                                                                               FunctionNotSupportedException,
@@ -1118,6 +1126,8 @@ public abstract class OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return a list of relationships.  Null means no matching relationships.
      * @throws InvalidParameterException - one of the parameters is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the
+     *                              metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored.
      * @throws PropertyErrorException - there is a problem with one of the other parameters.
@@ -1134,11 +1144,12 @@ public abstract class OMRSMetadataCollection
                                                                         String                    sequencingProperty,
                                                                         SequencingOrder           sequencingOrder,
                                                                         int                       pageSize) throws InvalidParameterException,
-                                                                                                                    RepositoryErrorException,
-                                                                                                                    PropertyErrorException,
-                                                                                                                    PagingErrorException,
-                                                                                                                    FunctionNotSupportedException,
-                                                                                                                    UserNotAuthorizedException;
+                                                                                                                   TypeErrorException,
+                                                                                                                   RepositoryErrorException,
+                                                                                                                   PropertyErrorException,
+                                                                                                                   PagingErrorException,
+                                                                                                                   FunctionNotSupportedException,
+                                                                                                                   UserNotAuthorizedException;
 
 
     /**
@@ -1194,10 +1205,10 @@ public abstract class OMRSMetadataCollection
      *              gather results.
      * @return InstanceGraph - the sub-graph that represents the returned linked entities and their relationships.
      * @throws InvalidParameterException - one of the parameters is invalid or null.
+     * @throws TypeErrorException - one of the type guids passed on the request is not known by the
+     *                              metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored.
-     * @throws TypeErrorException - one or more of the type guids passed on the request is not known by the
-     *                              metadata collection.
      * @throws EntityNotKnownException - the entity identified by the entityGUID is not found in the metadata collection.
      * @throws PropertyErrorException - there is a problem with one of the other parameters.
      * @throws FunctionNotSupportedException - the repository does not support the asOfTime parameter.
@@ -1211,8 +1222,8 @@ public abstract class OMRSMetadataCollection
                                                         List<String>         limitResultsByClassification,
                                                         Date                 asOfTime,
                                                         int                  level) throws InvalidParameterException,
-                                                                                           RepositoryErrorException,
                                                                                            TypeErrorException,
+                                                                                           RepositoryErrorException,
                                                                                            EntityNotKnownException,
                                                                                            PropertyErrorException,
                                                                                            FunctionNotSupportedException,
@@ -1225,7 +1236,7 @@ public abstract class OMRSMetadataCollection
      *
      * @param userId - unique identifier for requesting user.
      * @param startEntityGUID - unique identifier of the starting entity.
-     * @param instanceTypes - list of types to search for.  Null means any type.
+     * @param instanceTypes - list of guids for types to search for.  Null means any type.
      * @param fromEntityElement - starting element for results list.  Used in paging.  Zero means first element.
      * @param limitResultsByStatus - By default, relationships in all statuses are returned.  However, it is possible
      *                             to specify a list of statuses (eg ACTIVE) to restrict the results to.  Null means all
@@ -1240,10 +1251,10 @@ public abstract class OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return list of entities either directly or indirectly connected to the start entity
      * @throws InvalidParameterException - one of the parameters is invalid or null.
+     * @throws TypeErrorException - one of the type guid passed on the request is not known by the
+     *                              metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored.
-     * @throws TypeErrorException - the requested type is not known, or not supported in the metadata repository
-     *                              hosting the metadata collection.
      * @throws EntityNotKnownException - the entity identified by the startEntityGUID
      *                                   is not found in the metadata collection.
      * @throws PropertyErrorException - the sequencing property specified is not valid for any of the requested types of
@@ -1262,8 +1273,8 @@ public abstract class OMRSMetadataCollection
                                                           String                    sequencingProperty,
                                                           SequencingOrder           sequencingOrder,
                                                           int                       pageSize) throws InvalidParameterException,
-                                                                                                     RepositoryErrorException,
                                                                                                      TypeErrorException,
+                                                                                                     RepositoryErrorException,
                                                                                                      EntityNotKnownException,
                                                                                                      PropertyErrorException,
                                                                                                      PagingErrorException,
@@ -1320,24 +1331,12 @@ public abstract class OMRSMetadataCollection
      * @throws InvalidParameterException - the entity proxy is null.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored.
-     * @throws TypeErrorException - the requested type is not known, or not supported in the metadata repository
-     *                            hosting the metadata collection.
-     * @throws PropertyErrorException - one or more of the requested properties are not defined, or have different
-     *                                characteristics in the TypeDef for this entity's type.
-     * @throws ClassificationErrorException - one or more of the requested classifications are either not known or
-     *                                         not defined for this entity type.
-     * @throws StatusNotSupportedException - the metadata repository hosting the metadata collection does not support
-     *                                     the requested status.
      * @throws FunctionNotSupportedException - the repository does not support entity proxies as first class elements.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
     public abstract void addEntityProxy(String       userId,
                                         EntityProxy  entityProxy) throws InvalidParameterException,
                                                                          RepositoryErrorException,
-                                                                         TypeErrorException,
-                                                                         PropertyErrorException,
-                                                                         ClassificationErrorException,
-                                                                         StatusNotSupportedException,
                                                                          FunctionNotSupportedException,
                                                                          UserNotAuthorizedException;
 

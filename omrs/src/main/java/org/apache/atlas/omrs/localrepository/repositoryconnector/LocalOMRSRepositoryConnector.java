@@ -418,18 +418,6 @@ public class LocalOMRSRepositoryConnector extends OMRSRepositoryConnector implem
 
 
     /**
-     * Return the TypeDefValidator.  This is used to validate that a list of type definitions (TypeDefs) are
-     * compatible with the local repository.
-     *
-     * @return OMRSTypeDefValidator object for the local repository.
-     */
-    public OMRSTypeDefValidator getTypeDefValidator()
-    {
-        return typeDefValidator;
-    }
-
-
-    /**
      * Return the event manager that the local repository uses to distribute events from the local repository.
      *
      * @return outbound repository event manager

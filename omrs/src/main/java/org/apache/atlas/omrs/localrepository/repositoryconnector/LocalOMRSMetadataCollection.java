@@ -422,7 +422,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
-        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, guid, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
 
         /*
          * Perform operation
@@ -460,7 +460,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
-        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, guid, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
 
         /*
          * Perform operation
@@ -1205,11 +1205,12 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
 
 
     /**
-     * Returns a boolean indicating if the entity is stored in the metadata collection.
+     * Returns a boolean indicating if the entity is stored in the metadata collection.  This entity may be a full
+     * entity object, or an entity proxy.
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the entity
-     * @return entity details if the entity is found in the metadata collection; otherwise return null
+     * @return the entity details if the entity is found in the metadata collection; otherwise return null
      * @throws InvalidParameterException - the guid is null.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored.
@@ -1258,7 +1259,8 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
 
 
     /**
-     * Return the header and classifications for a specific entity.
+     * Return the header and classifications for a specific entity.  The returned entity summary may be from
+     * a full entity object or an entity proxy.
      *
      * @param userId - unique identifier for requesting user.
      * @param guid - String unique identifier for the entity
@@ -1454,6 +1456,8 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return Relationships list.  Null means no relationships associated with the entity.
      * @throws InvalidParameterException - a parameter is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the
+     *                              metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored.
      * @throws EntityNotKnownException - the requested entity instance is not known in the metadata collection.
@@ -1471,6 +1475,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
                                                         String                     sequencingProperty,
                                                         SequencingOrder            sequencingOrder,
                                                         int                        pageSize) throws InvalidParameterException,
+                                                                                                    TypeErrorException,
                                                                                                     RepositoryErrorException,
                                                                                                     EntityNotKnownException,
                                                                                                     PropertyErrorException,
@@ -1481,6 +1486,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         final String  methodName = "getRelationshipsForEntity";
         final String  guidParameterName = "entityGUID";
         final String  asOfTimeParameter = "asOfTime";
+        final String  typeGUIDParameter = "relationshipTypeGUID";
         final String  pageSizeParameter = "pageSize";
 
         /*
@@ -1491,6 +1497,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
         repositoryValidator.validateGUID(repositoryName, guidParameterName, entityGUID, methodName);
+        repositoryValidator.validateOptionalTypeGUID(repositoryName, typeGUIDParameter, relationshipTypeGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
 
@@ -1534,10 +1541,10 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
      * @return a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection.
      * @throws InvalidParameterException - a parameter is invalid or null.
-     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
-     *                                    the metadata collection is stored.
      * @throws TypeErrorException - the type guid passed on the request is not known by the
      *                              metadata collection.
+     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
+     *                                    the metadata collection is stored.
      * @throws PropertyErrorException - the properties specified are not valid for any of the requested types of
      *                                  entity.
      * @throws PagingErrorException - the paging/sequencing parameters are set up incorrectly.
@@ -1555,8 +1562,8 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
                                                       String                    sequencingProperty,
                                                       SequencingOrder           sequencingOrder,
                                                       int                       pageSize) throws InvalidParameterException,
-                                                                                                 RepositoryErrorException,
                                                                                                  TypeErrorException,
+                                                                                                 RepositoryErrorException,
                                                                                                  PropertyErrorException,
                                                                                                  PagingErrorException,
                                                                                                  FunctionNotSupportedException,
@@ -1576,7 +1583,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
-        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, entityTypeGUID, methodName);
+        repositoryValidator.validateOptionalTypeGUID(repositoryName, guidParameterName, entityTypeGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
         repositoryValidator.validateMatchCriteria(repositoryName,
@@ -1627,10 +1634,10 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
      * @return a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection.
      * @throws InvalidParameterException - a parameter is invalid or null.
-     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
-     *                                    the metadata collection is stored.
      * @throws TypeErrorException - the type guid passed on the request is not known by the
      *                              metadata collection.
+     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
+     *                                    the metadata collection is stored.
      * @throws ClassificationErrorException - the classification request is not known to the metadata collection.
      * @throws PropertyErrorException - the properties specified are not valid for the requested type of
      *                                  classification.
@@ -1649,8 +1656,8 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
                                                             String                    sequencingProperty,
                                                             SequencingOrder           sequencingOrder,
                                                             int                       pageSize) throws InvalidParameterException,
-                                                                                                       RepositoryErrorException,
                                                                                                        TypeErrorException,
+                                                                                                       RepositoryErrorException,
                                                                                                        ClassificationErrorException,
                                                                                                        PropertyErrorException,
                                                                                                        PagingErrorException,
@@ -1674,16 +1681,31 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
-        repositoryValidator.validateGUID(repositoryName, entityTypeGUIDParameterName, entityTypeGUID, methodName);
+        repositoryValidator.validateOptionalTypeGUID(repositoryName, entityTypeGUIDParameterName, entityTypeGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
 
         /*
          * Validate TypeDef
          */
-        TypeDef entityTypeDef = repositoryHelper.getTypeDef(repositoryName, entityTypeGUID);
+        if (entityTypeGUID != null)
+        {
+            TypeDef entityTypeDef = repositoryHelper.getTypeDef(repositoryName,
+                                                                entityTypeGUIDParameterName,
+                                                                entityTypeGUID,
+                                                                methodName);
 
-        repositoryValidator.validateTypeDefForInstance(repositoryName, entityTypeGUIDParameterName, entityTypeDef, methodName);
+            repositoryValidator.validateTypeDefForInstance(repositoryName,
+                                                           entityTypeGUIDParameterName,
+                                                           entityTypeDef,
+                                                           methodName);
+
+            repositoryValidator.validateClassification(repositoryName,
+                                                       classificationParameterName,
+                                                       classificationName,
+                                                       entityTypeDef.getName(),
+                                                       methodName);
+        }
 
         repositoryValidator.validateMatchCriteria(repositoryName,
                                                   matchCriteriaParameterName,
@@ -1691,11 +1713,6 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
                                                   matchCriteria,
                                                   matchClassificationProperties,
                                                   methodName);
-        repositoryValidator.validateClassification(repositoryName,
-                                                   classificationParameterName,
-                                                   classificationName,
-                                                   entityTypeDef.getName(),
-                                                   methodName);
 
         /*
          * Perform operation
@@ -1740,6 +1757,8 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
      * @return a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection.
      * @throws InvalidParameterException - a parameter is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the
+     *                              metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored.
      * @throws PropertyErrorException - the sequencing property specified is not valid for any of the requested types of
@@ -1758,6 +1777,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
                                                            String                sequencingProperty,
                                                            SequencingOrder       sequencingOrder,
                                                            int                   pageSize) throws InvalidParameterException,
+                                                                                                  TypeErrorException,
                                                                                                   RepositoryErrorException,
                                                                                                   PropertyErrorException,
                                                                                                   PagingErrorException,
@@ -1767,6 +1787,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         final String  methodName = "findEntitiesByPropertyValue";
         final String  searchCriteriaParameterName = "searchCriteria";
         final String  asOfTimeParameter = "asOfTime";
+        final String  guidParameterName = "entityTypeGUID";
         final String  pageSizeParameter = "pageSize";
 
         /*
@@ -1777,6 +1798,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
         repositoryValidator.validateSearchCriteria(repositoryName, searchCriteriaParameterName, searchCriteria, methodName);
+        repositoryValidator.validateOptionalTypeGUID(repositoryName, guidParameterName, entityTypeGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
 
@@ -1940,10 +1962,10 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return a list of relationships.  Null means no matching relationships.
      * @throws InvalidParameterException - one of the parameters is invalid or null.
-     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
-     *                                    the metadata collection is stored.
      * @throws TypeErrorException - the type guid passed on the request is not known by the
      *                              metadata collection.
+     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
+     *                                    the metadata collection is stored.
      * @throws PropertyErrorException - the properties specified are not valid for any of the requested types of
      *                                  relationships.
      * @throws PagingErrorException - the paging/sequencing parameters are set up incorrectly.
@@ -1960,8 +1982,8 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
                                                            String                    sequencingProperty,
                                                            SequencingOrder           sequencingOrder,
                                                            int                       pageSize) throws InvalidParameterException,
-                                                                                                      RepositoryErrorException,
                                                                                                       TypeErrorException,
+                                                                                                      RepositoryErrorException,
                                                                                                       PropertyErrorException,
                                                                                                       PagingErrorException,
                                                                                                       FunctionNotSupportedException,
@@ -1981,7 +2003,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
-        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, relationshipTypeGUID, methodName);
+        repositoryValidator.validateOptionalTypeGUID(repositoryName, guidParameterName, relationshipTypeGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
         repositoryValidator.validateMatchCriteria(repositoryName,
@@ -2032,6 +2054,8 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return a list of relationships.  Null means no matching relationships.
      * @throws InvalidParameterException - one of the parameters is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the
+     *                              metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored.
      * @throws PropertyErrorException - there is a problem with one of the other parameters.
@@ -2048,6 +2072,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
                                                                 String                    sequencingProperty,
                                                                 SequencingOrder           sequencingOrder,
                                                                 int                       pageSize) throws InvalidParameterException,
+                                                                                                           TypeErrorException,
                                                                                                            RepositoryErrorException,
                                                                                                            PropertyErrorException,
                                                                                                            PagingErrorException,
@@ -2056,6 +2081,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
     {
         final String  methodName = "findRelationshipsByPropertyValue";
         final String  asOfTimeParameter = "asOfTime";
+        final String  guidParameter = "relationshipTypeGUID";
         final String  pageSizeParameter = "pageSize";
 
         /*
@@ -2065,6 +2091,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
+        repositoryValidator.validateOptionalTypeGUID(repositoryName, guidParameter, relationshipTypeGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
 
@@ -2164,10 +2191,10 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
      *              gather results.
      * @return InstanceGraph - the sub-graph that represents the returned linked entities and their relationships.
      * @throws InvalidParameterException - one of the parameters is invalid or null.
-     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
-     *                                  the metadata collection is stored.
      * @throws TypeErrorException - one or more of the type guids passed on the request is not known by the
      *                              metadata collection.
+     * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
+     *                                  the metadata collection is stored.
      * @throws EntityNotKnownException - the entity identified by the entityGUID is not found in the metadata collection.
      * @throws PropertyErrorException - there is a problem with one of the other parameters.
      * @throws FunctionNotSupportedException - the repository does not support the asOfTime parameter.
@@ -2181,9 +2208,9 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
                                                 List<String>         limitResultsByClassification,
                                                 Date                 asOfTime,
                                                 int                  level) throws InvalidParameterException,
+                                                                                   TypeErrorException,
                                                                                    RepositoryErrorException,
                                                                                    EntityNotKnownException,
-                                                                                   TypeErrorException,
                                                                                    PropertyErrorException,
                                                                                    FunctionNotSupportedException,
                                                                                    UserNotAuthorizedException
@@ -2209,7 +2236,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         {
             for (String guid : entityTypeGUIDs)
             {
-                repositoryValidator.validateGUID(repositoryName, entityTypeGUIDParameterName, guid, methodName);
+                repositoryValidator.validateTypeGUID(repositoryName, entityTypeGUIDParameterName, guid, methodName);
             }
         }
 
@@ -2217,11 +2244,11 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         {
             for (String guid : relationshipTypeGUIDs)
             {
-                repositoryValidator.validateGUID(repositoryName, relationshipTypeGUIDParameterName, guid, methodName);
+                repositoryValidator.validateTypeGUID(repositoryName, relationshipTypeGUIDParameterName, guid, methodName);
             }
         }
 
-        if (relationshipTypeGUIDs != null)
+        if (limitResultsByClassification != null)
         {
             for (String classificationName : limitResultsByClassification)
             {
@@ -2253,7 +2280,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
      *
      * @param userId - unique identifier for requesting user.
      * @param startEntityGUID - unique identifier of the starting entity
-     * @param instanceTypes - list of types to search for.  Null means any type.
+     * @param instanceTypes - list of guids of types to search for.  Null means any type.
      * @param fromEntityElement - starting element for results list.  Used in paging.  Zero means first element.
      * @param limitResultsByStatus - By default, relationships in all statuses are returned.  However, it is possible
      *                             to specify a list of statuses (eg ACTIVE) to restrict the results to.  Null means all
@@ -2268,10 +2295,10 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return list of entities either directly or indirectly connected to the start entity
      * @throws InvalidParameterException - one of the parameters is invalid or null.
+     * @throws TypeErrorException - one of the requested type guids passed on the request is not known by the
+     *                              metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored.
-     * @throws TypeErrorException - the requested type is not known, or not supported in the metadata repository
-     *                              hosting the metadata collection.
      * @throws EntityNotKnownException - the entity identified by the startEntityGUID
      *                                   is not found in the metadata collection.
      * @throws PropertyErrorException - the sequencing property specified is not valid for any of the requested types of
@@ -2290,8 +2317,8 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
                                                   String               sequencingProperty,
                                                   SequencingOrder      sequencingOrder,
                                                   int                  pageSize) throws InvalidParameterException,
-                                                                                        RepositoryErrorException,
                                                                                         TypeErrorException,
+                                                                                        RepositoryErrorException,
                                                                                         EntityNotKnownException,
                                                                                         PropertyErrorException,
                                                                                         PagingErrorException,
@@ -2300,6 +2327,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
     {
         final String  methodName = "getRelatedEntities";
         final String  entityGUIDParameterName  = "startEntityGUID";
+        final String  instanceTypeParameter = "InstanceTypes";
         final String  asOfTimeParameter = "asOfTime";
         final String  pageSizeParameter = "pageSize";
 
@@ -2313,6 +2341,14 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         repositoryValidator.validateGUID(repositoryName, entityGUIDParameterName, startEntityGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        if (instanceTypes != null)
+        {
+            for (String guid : instanceTypes)
+            {
+                repositoryValidator.validateTypeGUID(repositoryName, instanceTypeParameter, guid, methodName);
+            }
+        }
 
         /*
          * Perform operation
@@ -2385,7 +2421,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
         repositoryValidator.validateTypeGUID(repositoryName, entityGUIDParameterName, entityTypeGUID, methodName);
 
-        TypeDef  typeDef = repositoryHelper.getTypeDef(repositoryName, entityTypeGUID);
+        TypeDef  typeDef = repositoryHelper.getTypeDef(repositoryName, entityGUIDParameterName, entityTypeGUID, methodName);
 
         repositoryValidator.validateTypeDefForInstance(repositoryName, entityGUIDParameterName, typeDef, methodName);
         repositoryValidator.validateClassificationList(repositoryName,
@@ -2457,24 +2493,12 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
      * @throws InvalidParameterException - the entity proxy is null.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored.
-     * @throws TypeErrorException - the requested type is not known, or not supported in the metadata repository
-     *                            hosting the metadata collection.
-     * @throws PropertyErrorException - one or more of the requested properties are not defined, or have different
-     *                                characteristics in the TypeDef for this entity's type.
-     * @throws ClassificationErrorException - one or more of the requested classifications are either not known or
-     *                                         not defined for this entity type.
-     * @throws StatusNotSupportedException - the metadata repository hosting the metadata collection does not support
-     *                                     the requested status.
      * @throws FunctionNotSupportedException - the repository does not support entity proxies as first class elements.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
     public void addEntityProxy(String       userId,
                                EntityProxy  entityProxy) throws InvalidParameterException,
                                                                 RepositoryErrorException,
-                                                                TypeErrorException,
-                                                                PropertyErrorException,
-                                                                ClassificationErrorException,
-                                                                StatusNotSupportedException,
                                                                 FunctionNotSupportedException,
                                                                 UserNotAuthorizedException
     {
@@ -2495,36 +2519,11 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
                                                 entityProxy,
                                                 methodName);
 
-        repositoryValidator.validateInstanceType(repositoryName, entityProxy);
-
-        String entityTypeGUID = entityProxy.getType().getTypeDefGUID();
-
-        TypeDef  typeDef = repositoryHelper.getTypeDef(repositoryName, entityTypeGUID);
-
-        repositoryValidator.validateTypeDefForInstance(repositoryName, proxyParameterName, typeDef, methodName);
-        repositoryValidator.validateClassificationList(repositoryName,
-                                                       proxyParameterName,
-                                                       entityProxy.getClassifications(),
-                                                       typeDef.getName(),
-                                                       methodName);
-
-        repositoryValidator.validatePropertiesForType(repositoryName,
-                                                      proxyParameterName,
-                                                      typeDef,
-                                                      entityProxy.getUniqueProperties(),
-                                                      methodName);
-
-        repositoryValidator.validateInstanceStatus(repositoryName,
-                                                   proxyParameterName,
-                                                   entityProxy.getStatus(),
-                                                   typeDef,
-                                                   methodName);
-
         /*
          * Validation complete
          *
          * EntityProxies are used to store a relationship where the entity at one end of the relationship is
-         * not stored locally.
+         * not stored locally.  Its type may not be supported locally either.
          */
         realMetadataCollection.addEntityProxy(userId, entityProxy);
     }
@@ -3259,7 +3258,7 @@ public class LocalOMRSMetadataCollection extends OMRSMetadataCollection
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
         repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, relationshipTypeGUID, methodName);
 
-        TypeDef  typeDef = repositoryHelper.getTypeDef(repositoryName, relationshipTypeGUID);
+        TypeDef  typeDef = repositoryHelper.getTypeDef(repositoryName, guidParameterName, relationshipTypeGUID, methodName);
 
         repositoryValidator.validateTypeDefForInstance(repositoryName, guidParameterName, typeDef, methodName);
 

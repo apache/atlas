@@ -77,7 +77,7 @@ public enum AssetConsumerErrorCode
             "The system is unable to process the request.",
             "Verify the access rights of the user."),
     PROPERTY_SERVER_ERROR(400, "OMAS-ASSETCONSUMER-400-009 ",
-            "An unexpected error with message \'{0}\' was returned by the property server during {1} request for open metadata access service {2} on server {3}",
+            "An unexpected error was returned by the property server during {1} request for open metadata access service {2} on server {3}; message was {0}",
             "The system is unable to process the request.",
             "Verify the access rights of the user."),
     NULL_ENUM(400, "OMAS-ASSETCONSUMER-400-010 ",

@@ -267,6 +267,13 @@ public class OMRSOperationalServices
         List<CohortConfig>      cohortConfigList       = repositoryServicesConfig.getCohortConfigList();
 
         /*
+         * The local repository is optional.  However, the repository content manager is still
+         * used to manage the validation of TypeDefs and the creation of metadata instances.
+         * It is loaded with any TypeDefs from the archives to seed its in-memory TypeDef cache.
+         */
+        localRepositoryContentManager = new OMRSRepositoryContentManager();
+
+        /*
          * Begin with the enterprise repository services.  They are always needed since the
          * Open Metadata Access Services (OMAS) is dependent on them.  There are 2 modes of operation: local only
          * and enterprise access.  Enterprise access provide an enterprise view of metadata
@@ -285,13 +292,6 @@ public class OMRSOperationalServices
          * The archive manager loads pre-defined types and instances that are stored in open metadata archives.
          */
         archiveManager = initializeOpenMetadataArchives(repositoryServicesConfig.getOpenMetadataArchiveConnections());
-
-        /*
-         * The local repository is optional.  However, the repository content manager is still
-         * used to manage the validation of TypeDefs and the creation of metadata instances.
-         * It is loaded with any TypeDefs from the archives to seed its in-memory TypeDef cache.
-         */
-        localRepositoryContentManager = new OMRSRepositoryContentManager();
 
         /*
          * The repository validator and helper are used by repository connectors to verify the types and instances

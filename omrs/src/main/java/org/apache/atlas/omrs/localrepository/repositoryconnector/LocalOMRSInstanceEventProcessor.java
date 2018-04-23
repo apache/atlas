@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -1119,11 +1120,11 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
      * @param entities             - the retrieved relationships
      * @return the validated and processed relationships
      */
-    public ArrayList<EntityDetail> processRetrievedEntities(String                  sourceName,
-                                                            String                  metadataCollectionId,
-                                                            ArrayList<EntityDetail> entities)
+    public List<EntityDetail> processRetrievedEntities(String                  sourceName,
+                                                       String                  metadataCollectionId,
+                                                       List<EntityDetail>      entities)
     {
-        ArrayList<EntityDetail> processedEntities = new ArrayList<>();
+        List<EntityDetail> processedEntities = new ArrayList<>();
 
         for (EntityDetail  entity : entities)
         {
@@ -1221,11 +1222,11 @@ public class LocalOMRSInstanceEventProcessor implements OMRSInstanceEventProcess
      * @param relationships        - the list of retrieved relationships
      * @return the validated and processed relationships
      */
-    public ArrayList<Relationship> processRetrievedRelationships(String                  sourceName,
-                                                                 String                  metadataCollectionId,
-                                                                 ArrayList<Relationship> relationships)
+    public List<Relationship> processRetrievedRelationships(String             sourceName,
+                                                            String             metadataCollectionId,
+                                                            List<Relationship> relationships)
     {
-        ArrayList<Relationship> processedRelationships = new ArrayList<>();
+        List<Relationship> processedRelationships = new ArrayList<>();
 
         for (Relationship  relationship : relationships)
         {

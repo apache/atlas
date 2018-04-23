@@ -58,15 +58,6 @@ public interface OMRSTypeDefManager
 
 
     /**
-     * Update one or more properties of a cached TypeDef.
-     *
-     * @param sourceName - source of the request (used for logging)
-     * @param attributeTypeDef - AttributeTypeDef structure.
-     */
-    void updateAttributeTypeDef(String  sourceName, AttributeTypeDef   attributeTypeDef);
-
-
-    /**
      * Delete a cached TypeDef.
      *
      * @param sourceName - source of the request (used for logging)
@@ -82,12 +73,12 @@ public interface OMRSTypeDefManager
      * Delete a cached AttributeTypeDef.
      *
      * @param sourceName - source of the request (used for logging)
-     * @param obsoleteTypeDefGUID - String unique identifier for the AttributeTypeDef.
-     * @param obsoleteTypeDefName - String unique name for the AttributeTypeDef.
+     * @param obsoleteAttributeTypeDefGUID - String unique identifier for the AttributeTypeDef.
+     * @param obsoleteAttributeTypeDefName - String unique name for the AttributeTypeDef.
      */
     void deleteAttributeTypeDef(String    sourceName,
-                                String    obsoleteTypeDefGUID,
-                                String    obsoleteTypeDefName);
+                                String    obsoleteAttributeTypeDefGUID,
+                                String    obsoleteAttributeTypeDefName);
 
 
     /**
@@ -124,13 +115,15 @@ public interface OMRSTypeDefManager
      * @param sourceName - source of the request (used for logging)
      * @param category - TypeDefCategory enum value to test
      * @param typeName - type name to test
+     * @param methodName - name of calling method.
      * @return - boolean flag indicating that the type name is of the specified category
      * @throws TypeErrorException - the type name is not a recognized type or the category is incorrect or there
      *                              is an error in the type definition (TypeDef) cached.
      */
     boolean    isValidTypeCategory(String            sourceName,
                                    TypeDefCategory   category,
-                                   String            typeName) throws TypeErrorException;
+                                   String            typeName,
+                                   String            methodName) throws TypeErrorException;
 
 
     /**
@@ -140,13 +133,15 @@ public interface OMRSTypeDefManager
      * @param sourceName - source of the request (used for logging)
      * @param classificationTypeName - name of the classification's type (ClassificationDef)
      * @param entityTypeName - name of the entity's type (EntityDef)
+     * @param methodName - name of calling method.
      * @return boolean indicating if the classification is valid for the entity.
      * @throws TypeErrorException - the type name is not a recognized type or the category is incorrect or there
      *                              is an error in the type definition (TypeDef) cached.
      */
     boolean    isValidClassificationForEntity(String  sourceName,
                                               String  classificationTypeName,
-                                              String  entityTypeName) throws TypeErrorException;
+                                              String  entityTypeName,
+                                              String  methodName) throws TypeErrorException;
 
 
     /**
@@ -156,13 +151,15 @@ public interface OMRSTypeDefManager
      * @param sourceName - source of the request (used for logging)
      * @param category - category of type
      * @param typeName - String type name - the type name is not recognized or of the wrong category.
+     * @param methodName - name of calling method.
      * @return InstanceType object containing TypeDef unique identifier (guid), typeDef name and version
      * @throws TypeErrorException - the type name is not a recognized type or the category is incorrect or there
      *                              is an error in the type definition (TypeDef) cached.
      */
     InstanceType getInstanceType(String            sourceName,
                                  TypeDefCategory   category,
-                                 String            typeName) throws TypeErrorException;
+                                 String            typeName,
+                                 String            methodName) throws TypeErrorException;
 
 
     /**
@@ -173,17 +170,27 @@ public interface OMRSTypeDefManager
      * @return InstanceStatus enum
      * @throws TypeErrorException - the type name is not recognized.
      */
-    InstanceStatus getInitialStatus(String sourceName, String typeName) throws TypeErrorException;
+    InstanceStatus getInitialStatus(String sourceName,
+                                    String typeName,
+                                    String methodName) throws TypeErrorException;
 
 
     /**
-     * Return the URL string to use for direct access to the metadata instance.  This can be used for
-     * entities and relationships.  However, not all servers support direct access, in which case, this
-     * URL is null.
+     * Return the URL string to use for direct access to the metadata instance.
      *
      * @param sourceName - source of the request (used for logging)
      * @param guid - unique identifier for the instance.
      * @return String URL with placeholder for variables such as userId.
      */
-    String getInstanceURL(String sourceName, String guid);
+    String getEntityURL(String sourceName, String guid);
+
+
+    /**
+     * Return the URL string to use for direct access to the metadata instance.
+     *
+     * @param sourceName - source of the request (used for logging)
+     * @param guid - unique identifier for the instance.
+     * @return String URL with placeholder for variables such as userId.
+     */
+    String getRelationshipURL(String sourceName, String guid);
 }

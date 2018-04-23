@@ -26,7 +26,6 @@ import org.apache.atlas.omrs.metadatacollection.properties.instances.InstanceTyp
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDef;
 import org.apache.atlas.omrs.metadatacollection.properties.typedefs.TypeDefSummary;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -276,6 +275,9 @@ public class OMRSRepositoryEventExchangeRule
      */
     public boolean learnInstanceEvent(InstanceHeader instance)
     {
+        final String methodName = "learnInstanceEvent";
+        final String parameterName = "instance";
+
         if (repositoryContentManager == null)
         {
             /*
@@ -300,8 +302,11 @@ public class OMRSRepositoryEventExchangeRule
                         try
                         {
                             TypeDef typeDef = repositoryContentManager.getTypeDef(sourceName,
+                                                                                  parameterName,
+                                                                                  parameterName,
                                                                                   type.getTypeDefGUID(),
-                                                                                  type.getTypeDefName());
+                                                                                  type.getTypeDefName(),
+                                                                                  methodName);
 
                             if (typeDef != null)
                             {

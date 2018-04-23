@@ -511,7 +511,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
-        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, guid, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
 
         /*
          * Perform operation
@@ -525,7 +525,8 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
 
         OMRSErrorCode errorCode = OMRSErrorCode.TYPEDEF_ID_NOT_KNOWN;
 
-        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(guid, methodName, repositoryName);
+        String errorMessage = errorCode.getErrorMessageId()
+                            + errorCode.getFormattedErrorMessage(guid, guidParameterName, methodName, repositoryName);
 
         throw new TypeDefNotKnownException(errorCode.getHTTPErrorCode(),
                                            this.getClass().getName(),
@@ -565,7 +566,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
-        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, guid, methodName);
+        repositoryValidator.validateGUID(repositoryName, guidParameterName, guid, methodName);
 
         /*
          * Perform operation
@@ -579,7 +580,8 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
 
         OMRSErrorCode errorCode = OMRSErrorCode.TYPEDEF_ID_NOT_KNOWN;
 
-        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(guid, methodName, repositoryName);
+        String errorMessage = errorCode.getErrorMessageId()
+                            + errorCode.getFormattedErrorMessage(guid, guidParameterName, methodName, repositoryName);
 
         throw new TypeDefNotKnownException(errorCode.getHTTPErrorCode(),
                                            this.getClass().getName(),
@@ -1030,6 +1032,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
             String        errorMessage = errorCode.getErrorMessageId()
                                        + errorCode.getFormattedErrorMessage(typeDefPatch.getTypeDefGUID(),
                                                                             typeDefParameterName,
+                                                                            methodName,
                                                                             repositoryName);
 
             throw new TypeDefNotKnownException(errorCode.getHTTPErrorCode(),
@@ -1094,12 +1097,14 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
          * Perform operation
          */
         TypeDef typeDef = repositoryStore.getTypeDef(obsoleteTypeDefGUID);
+
         if (typeDef == null)
         {
             OMRSErrorCode errorCode    = OMRSErrorCode.TYPEDEF_ID_NOT_KNOWN;
             String        errorMessage = errorCode.getErrorMessageId()
                                        + errorCode.getFormattedErrorMessage(typeDef.getGUID(),
                                                                             guidParameterName,
+                                                                            methodName,
                                                                             repositoryName);
 
             throw new TypeDefNotKnownException(errorCode.getHTTPErrorCode(),
@@ -1171,12 +1176,14 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
          * Perform operation
          */
         AttributeTypeDef  attributeTypeDef = repositoryStore.getAttributeTypeDef(obsoleteTypeDefGUID);
+
         if (attributeTypeDef == null)
         {
             OMRSErrorCode errorCode    = OMRSErrorCode.TYPEDEF_ID_NOT_KNOWN;
             String        errorMessage = errorCode.getErrorMessageId()
                                        + errorCode.getFormattedErrorMessage(obsoleteTypeDefGUID,
                                                                             guidParameterName,
+                                                                            methodName,
                                                                             repositoryName);
 
             throw new TypeDefNotKnownException(errorCode.getHTTPErrorCode(),
@@ -1264,8 +1271,9 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         {
             OMRSErrorCode errorCode    = OMRSErrorCode.TYPEDEF_ID_NOT_KNOWN;
             String        errorMessage = errorCode.getErrorMessageId()
-                                       + errorCode.getFormattedErrorMessage(originalTypeDefName,
-                                                                            originalTypeDefGUID,
+                                       + errorCode.getFormattedErrorMessage(originalTypeDefGUID,
+                                                                            originalGUIDParameterName,
+                                                                            methodName,
                                                                             repositoryName);
 
             throw new TypeDefNotKnownException(errorCode.getHTTPErrorCode(),
@@ -1609,6 +1617,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return Relationships list.  Null means no relationships associated with the entity.
      * @throws InvalidParameterException - a parameter is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored.
      * @throws EntityNotKnownException - the requested entity instance is not known in the metadata collection.
@@ -1625,6 +1634,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                         String                     sequencingProperty,
                                                         SequencingOrder            sequencingOrder,
                                                         int                        pageSize) throws InvalidParameterException,
+                                                                                                    TypeErrorException,
                                                                                                     RepositoryErrorException,
                                                                                                     EntityNotKnownException,
                                                                                                     PropertyErrorException,
@@ -1633,6 +1643,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
     {
         final String  methodName = "getRelationshipsForEntity";
         final String  guidParameterName = "entityGUID";
+        final String  typeGUIDParameterName = "relationshipTypeGUID";
         final String  asOfTimeParameter = "asOfTime";
         final String  pageSizeParameter = "pageSize";
 
@@ -1646,6 +1657,8 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         repositoryValidator.validateGUID(repositoryName, guidParameterName, entityGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        this.validateTypeGUID(repositoryName, typeGUIDParameterName, relationshipTypeGUID, methodName);
 
         /*
          * Perform operation
@@ -1664,24 +1677,18 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
             {
                 repositoryValidator.validRelationship(repositoryName, storedRelationship);
 
-                if (relationshipTypeGUID != null)
-                {
-                    if (! relationshipTypeGUID.equals(storedRelationship.getType().getTypeDefGUID()))
-                    {
-                        if (repositoryHelper.relatedEntity(repositoryName,
-                                                           entityGUID,
-                                                           storedRelationship))
-                        {
-                            entityRelationships.add(storedRelationship);
-                        }
-                    }
-                }
-
                 if (repositoryHelper.relatedEntity(repositoryName,
                                                    entityGUID,
                                                    storedRelationship))
                 {
-                    entityRelationships.add(storedRelationship);
+                    if (relationshipTypeGUID == null)
+                    {
+                        entityRelationships.add(storedRelationship);
+                    }
+                    else if (relationshipTypeGUID.equals(storedRelationship.getType().getTypeDefGUID()))
+                    {
+                        entityRelationships.add(storedRelationship);
+                    }
                 }
             }
         }
@@ -1724,10 +1731,9 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
      * collection.
      *
      * @throws InvalidParameterException - a parameter is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored.
-     * @throws TypeErrorException - the type guid passed on the request is not known by the
-     *                              metadata collection.
      * @throws PropertyErrorException - the properties specified are not valid for any of the requested types of
      *                                  entity.
      * @throws PagingErrorException - the paging/sequencing parameters are set up incorrectly.
@@ -1764,7 +1770,6 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
-        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, entityTypeGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
         repositoryValidator.validateMatchCriteria(repositoryName,
@@ -1773,6 +1778,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                   matchCriteria,
                                                   matchProperties,
                                                   methodName);
+        this.validateTypeGUID(repositoryName, guidParameterName, entityTypeGUID, methodName);
 
         /*
          * Perform operation
@@ -1826,10 +1832,9 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
      * @return a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection.
      * @throws InvalidParameterException - a parameter is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored.
-     * @throws TypeErrorException - the type guid passed on the request is not known by the
-     *                              metadata collection.
      * @throws ClassificationErrorException - the classification is not known to the metadata collection.
      * @throws PropertyErrorException - the properties specified are not valid for the requested type of
      *                                  classification.
@@ -1847,8 +1852,8 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                             String                    sequencingProperty,
                                                             SequencingOrder           sequencingOrder,
                                                             int                       pageSize) throws InvalidParameterException,
-                                                                                                       RepositoryErrorException,
                                                                                                        TypeErrorException,
+                                                                                                       RepositoryErrorException,
                                                                                                        ClassificationErrorException,
                                                                                                        PropertyErrorException,
                                                                                                        PagingErrorException,
@@ -1871,16 +1876,36 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
-        repositoryValidator.validateGUID(repositoryName, entityTypeGUIDParameterName, entityTypeGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+        this.validateTypeGUID(repositoryName, entityTypeGUIDParameterName, entityTypeGUID, methodName);
 
         /*
          * Validate TypeDef
          */
-        TypeDef entityTypeDef = repositoryStore.getTypeDef(entityTypeGUID);
+        if (entityTypeGUID != null)
+        {
+            TypeDef entityTypeDef = repositoryStore.getTypeDef(entityTypeGUID);
 
-        repositoryValidator.validateTypeDefForInstance(repositoryName, entityTypeGUIDParameterName, entityTypeDef, methodName);
+            repositoryValidator.validateTypeDefForInstance(repositoryName,
+                                                           entityTypeGUIDParameterName,
+                                                           entityTypeDef,
+                                                           methodName);
+
+            repositoryValidator.validateClassification(repositoryName,
+                                                       classificationParameterName,
+                                                       classificationName,
+                                                       entityTypeDef.getName(),
+                                                       methodName);
+        }
+        else
+        {
+            repositoryValidator.validateClassification(repositoryName,
+                                                       classificationParameterName,
+                                                       classificationName,
+                                                       null,
+                                                       methodName);
+        }
 
         repositoryValidator.validateMatchCriteria(repositoryName,
                                                   matchCriteriaParameterName,
@@ -1888,11 +1913,6 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                   matchCriteria,
                                                   matchClassificationProperties,
                                                   methodName);
-        repositoryValidator.validateClassification(repositoryName,
-                                                   classificationParameterName,
-                                                   classificationName,
-                                                   entityTypeDef.getName(),
-                                                   methodName);
 
         /*
          * Perform operation
@@ -1972,6 +1992,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
      * @return a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection.
      * @throws InvalidParameterException - a parameter is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored.
      * @throws PropertyErrorException - the sequencing property specified is not valid for any of the requested types of
@@ -1990,6 +2011,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                            String                sequencingProperty,
                                                            SequencingOrder       sequencingOrder,
                                                            int                   pageSize) throws InvalidParameterException,
+                                                                                                  TypeErrorException,
                                                                                                   RepositoryErrorException,
                                                                                                   PropertyErrorException,
                                                                                                   PagingErrorException,
@@ -1999,6 +2021,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         final String  methodName = "findEntitiesByPropertyValue";
         final String  searchCriteriaParameterName = "searchCriteria";
         final String  asOfTimeParameter = "asOfTime";
+        final String  typeGUIDParameter = "entityTypeGUID";
         final String  pageSizeParameter = "pageSize";
 
         /*
@@ -2011,6 +2034,8 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         repositoryValidator.validateSearchCriteria(repositoryName, searchCriteriaParameterName, searchCriteria, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        this.validateTypeGUID(repositoryName, typeGUIDParameter, entityTypeGUID, methodName);
 
         /*
          * Process operation
@@ -2185,10 +2210,9 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return a list of relationships.  Null means no matching relationships.
      * @throws InvalidParameterException - one of the parameters is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored.
-     * @throws TypeErrorException - the type guid passed on the request is not known by the
-     *                              metadata collection.
      * @throws PropertyErrorException - the properties specified are not valid for any of the requested types of
      *                                  relationships.
      * @throws PagingErrorException - the paging/sequencing parameters are set up incorrectly.
@@ -2204,8 +2228,8 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                            String                    sequencingProperty,
                                                            SequencingOrder           sequencingOrder,
                                                            int                       pageSize) throws InvalidParameterException,
-                                                                                                      RepositoryErrorException,
                                                                                                       TypeErrorException,
+                                                                                                      RepositoryErrorException,
                                                                                                       PropertyErrorException,
                                                                                                       PagingErrorException,
                                                                                                       UserNotAuthorizedException
@@ -2224,7 +2248,6 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         parentConnector.validateRepositoryIsActive(methodName);
 
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
-        repositoryValidator.validateTypeGUID(repositoryName, guidParameterName, relationshipTypeGUID, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
         repositoryValidator.validateMatchCriteria(repositoryName,
@@ -2233,6 +2256,8 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                   matchCriteria,
                                                   matchProperties,
                                                   methodName);
+
+        this.validateTypeGUID(repositoryName, guidParameterName, relationshipTypeGUID, methodName);
 
         /*
          * Perform operation
@@ -2290,6 +2315,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
      *                 unrestricted return results size.
      * @return a list of relationships.  Null means no matching relationships.
      * @throws InvalidParameterException - one of the parameters is invalid or null.
+     * @throws TypeErrorException - the type guid passed on the request is not known by the metadata collection.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored.
      * @throws PropertyErrorException - there is a problem with one of the other parameters.
@@ -2305,6 +2331,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                                 String                    sequencingProperty,
                                                                 SequencingOrder           sequencingOrder,
                                                                 int                       pageSize) throws InvalidParameterException,
+                                                                                                           TypeErrorException,
                                                                                                            RepositoryErrorException,
                                                                                                            PropertyErrorException,
                                                                                                            PagingErrorException,
@@ -2313,6 +2340,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         final String  methodName = "findRelationshipsByPropertyValue";
         final String  asOfTimeParameter = "asOfTime";
         final String  pageSizeParameter = "pageSize";
+        final String  typeGUIDParameter = "relationshipTypeGUID";
 
         /*
          * Validate parameters
@@ -2323,6 +2351,8 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         repositoryValidator.validateUserId(repositoryName, userId, methodName);
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
+
+        this.validateTypeGUID(repositoryName, typeGUIDParameter, relationshipTypeGUID, methodName);
 
         /*
          * Perform operation
@@ -2405,8 +2435,16 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
          * Perform operation
          */
         // todo
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
 
-        return null;
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName, this.getClass().getName(), repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
     }
 
 
@@ -2473,7 +2511,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         {
             for (String guid : entityTypeGUIDs)
             {
-                repositoryValidator.validateGUID(repositoryName, entityTypeGUIDParameterName, guid, methodName);
+                this.validateTypeGUID(repositoryName, entityTypeGUIDParameterName, guid, methodName);
             }
         }
 
@@ -2481,11 +2519,11 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         {
             for (String guid : relationshipTypeGUIDs)
             {
-                repositoryValidator.validateGUID(repositoryName, relationshipTypeGUIDParameterName, guid, methodName);
+                this.validateTypeGUID(repositoryName, relationshipTypeGUIDParameterName, guid, methodName);
             }
         }
 
-        if (relationshipTypeGUIDs != null)
+        if (limitResultsByClassification != null)
         {
             for (String classificationName : limitResultsByClassification)
             {
@@ -2564,6 +2602,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
     {
         final String  methodName = "getRelatedEntities";
         final String  entityGUIDParameterName  = "startEntityGUID";
+        final String  instanceTypesParameter = "instanceTypes";
         final String  asOfTimeParameter = "asOfTime";
         final String  pageSizeParameter = "pageSize";
 
@@ -2578,14 +2617,32 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         repositoryValidator.validateAsOfTime(repositoryName, asOfTimeParameter, asOfTime, methodName);
         repositoryValidator.validatePageSize(repositoryName, pageSizeParameter, pageSize, methodName);
 
+        if (instanceTypes != null)
+        {
+            for (String guid : instanceTypes)
+            {
+                this.validateTypeGUID(repositoryName, instanceTypesParameter, guid, methodName);
+            }
+        }
+
         /*
          * Perform operation
          */
         List<EntityDetail>   relatedEntities = new ArrayList<>();
 
-        // todo
+        OMRSErrorCode errorCode = OMRSErrorCode.METHOD_NOT_IMPLEMENTED;
 
-        return formatEntityResults(relatedEntities, fromEntityElement, sequencingProperty, sequencingOrder, pageSize);
+        String errorMessage = errorCode.getErrorMessageId() + errorCode.getFormattedErrorMessage(methodName, this.getClass().getName(), repositoryName);
+
+        throw new RepositoryErrorException(errorCode.getHTTPErrorCode(),
+                                           this.getClass().getName(),
+                                           methodName,
+                                           errorMessage,
+                                           errorCode.getSystemAction(),
+                                           errorCode.getUserAction());
+
+
+        // return formatEntityResults(relatedEntities, fromEntityElement, sequencingProperty, sequencingOrder, pageSize);
     }
 
 
@@ -2705,23 +2762,11 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
      * @throws InvalidParameterException - the entity proxy is null.
      * @throws RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored.
-     * @throws TypeErrorException - the requested type is not known, or not supported in the metadata repository
-     *                            hosting the metadata collection.
-     * @throws PropertyErrorException - one or more of the requested properties are not defined, or have different
-     *                                characteristics in the TypeDef for this entity's type.
-     * @throws ClassificationErrorException - one or more of the requested classifications are either not known or
-     *                                         not defined for this entity type.
-     * @throws StatusNotSupportedException - the metadata repository hosting the metadata collection does not support
-     *                                     the requested status.
      * @throws UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
     public void addEntityProxy(String       userId,
                                EntityProxy  entityProxy) throws InvalidParameterException,
                                                                 RepositoryErrorException,
-                                                                TypeErrorException,
-                                                                PropertyErrorException,
-                                                                ClassificationErrorException,
-                                                                StatusNotSupportedException,
                                                                 UserNotAuthorizedException
     {
         final String  methodName         = "addEntityProxy";
@@ -2740,31 +2785,6 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                 proxyParameterName,
                                                 entityProxy,
                                                 methodName);
-
-        repositoryValidator.validateInstanceType(repositoryName, entityProxy);
-
-        String entityTypeGUID = entityProxy.getType().getTypeDefGUID();
-
-        TypeDef  typeDef = repositoryStore.getTypeDef(entityTypeGUID);
-
-        repositoryValidator.validateTypeDefForInstance(repositoryName, proxyParameterName, typeDef, methodName);
-        repositoryValidator.validateClassificationList(repositoryName,
-                                                       proxyParameterName,
-                                                       entityProxy.getClassifications(),
-                                                       typeDef.getName(),
-                                                       methodName);
-
-        repositoryValidator.validatePropertiesForType(repositoryName,
-                                                      proxyParameterName,
-                                                      typeDef,
-                                                      entityProxy.getUniqueProperties(),
-                                                      methodName);
-
-        repositoryValidator.validateInstanceStatus(repositoryName,
-                                                   proxyParameterName,
-                                                   entityProxy.getStatus(),
-                                                   typeDef,
-                                                   methodName);
 
         /*
          * Validation complete
@@ -2835,7 +2855,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
 
         updatedEntity.setStatus(newStatus);
 
-        repositoryHelper.incrementVersion(userId, entity, updatedEntity);
+        updatedEntity = repositoryHelper.incrementVersion(userId, entity, updatedEntity);
 
         repositoryStore.updateEntityInStore(updatedEntity);
 
@@ -2914,7 +2934,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                                              entity.getProperties(),
                                                                              properties));
 
-        repositoryHelper.incrementVersion(userId, entity, updatedEntity);
+        updatedEntity = repositoryHelper.incrementVersion(userId, entity, updatedEntity);
 
         repositoryStore.updateEntityInStore(updatedEntity);
 
@@ -3045,7 +3065,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         updatedEntity.setStatusOnDelete(entity.getStatus());
         updatedEntity.setStatus(InstanceStatus.DELETED);
 
-        repositoryHelper.incrementVersion(userId, entity, updatedEntity);
+        updatedEntity = repositoryHelper.incrementVersion(userId, entity, updatedEntity);
 
         repositoryStore.removeEntityFromStore(updatedEntity);
 
@@ -3285,7 +3305,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                 newClassification,
                                                                                 methodName);
 
-        repositoryHelper.incrementVersion(userId, entity, updatedEntity);
+        updatedEntity = repositoryHelper.incrementVersion(userId, entity, updatedEntity);
 
         repositoryStore.updateEntityInStore(updatedEntity);
 
@@ -3351,7 +3371,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                      classificationName,
                                                                                      methodName);
 
-        repositoryHelper.incrementVersion(userId, entity, updatedEntity);
+        updatedEntity = repositoryHelper.incrementVersion(userId, entity, updatedEntity);
 
         repositoryStore.updateEntityInStore(updatedEntity);
 
@@ -3468,7 +3488,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
                                                                                    newClassification,
                                                                                    methodName);
 
-        repositoryHelper.incrementVersion(userId, entity, updatedEntity);
+        updatedEntity = repositoryHelper.incrementVersion(userId, entity, updatedEntity);
 
         repositoryStore.updateEntityInStore(updatedEntity);
 
@@ -3647,7 +3667,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
 
         updatedRelationship.setStatus(newStatus);
 
-        repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
+        updatedRelationship = repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
 
         repositoryStore.updateRelationshipInStore(updatedRelationship);
 
@@ -3718,7 +3738,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         updatedRelationship.setProperties(repositoryHelper.mergeInstanceProperties(repositoryName,
                                                                             relationship.getProperties(),
                                                                             properties));
-        repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
+        updatedRelationship = repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
 
         repositoryStore.updateRelationshipInStore(updatedRelationship);
 
@@ -3830,7 +3850,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         updatedRelationship.setStatusOnDelete(relationship.getStatus());
         updatedRelationship.setStatus(InstanceStatus.DELETED);
 
-        repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
+        updatedRelationship = repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
 
         repositoryStore.removeRelationshipFromStore(updatedRelationship);
 
@@ -4020,7 +4040,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
 
         updatedEntity.setGUID(newEntityGUID);
 
-        repositoryHelper.incrementVersion(userId, entity, updatedEntity);
+        updatedEntity = repositoryHelper.incrementVersion(userId, entity, updatedEntity);
 
         repositoryStore.removeEntityFromStore(entity);
         repositoryStore.createEntityInStore(updatedEntity);
@@ -4116,7 +4136,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
 
         updatedEntity.setType(newInstanceType);
 
-        repositoryHelper.incrementVersion(userId, entity, updatedEntity);
+        updatedEntity = repositoryHelper.incrementVersion(userId, entity, updatedEntity);
 
         repositoryStore.updateEntityInStore(entity);
 
@@ -4199,7 +4219,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         updatedEntity.setMetadataCollectionId(newHomeMetadataCollectionId);
         updatedEntity.setInstanceProvenanceType(InstanceProvenanceType.LOCAL_COHORT);
 
-        repositoryHelper.incrementVersion(userId, entity, updatedEntity);
+        updatedEntity = repositoryHelper.incrementVersion(userId, entity, updatedEntity);
 
         repositoryStore.updateEntityInStore(updatedEntity);
 
@@ -4275,7 +4295,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
 
         updatedRelationship.setGUID(newRelationshipGUID);
 
-        repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
+        updatedRelationship = repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
 
         repositoryStore.removeRelationshipFromStore(relationship);
         repositoryStore.createRelationshipInStore(updatedRelationship);
@@ -4357,11 +4377,11 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
 
         updatedRelationship.setType(newInstanceType);
 
-        repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
+        updatedRelationship = repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
 
-        repositoryStore.updateRelationshipInStore(relationship);
+        repositoryStore.updateRelationshipInStore(updatedRelationship);
 
-        return null;
+        return updatedRelationship;
     }
 
 
@@ -4431,7 +4451,7 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         updatedRelationship.setMetadataCollectionId(newHomeMetadataCollectionId);
         updatedRelationship.setInstanceProvenanceType(InstanceProvenanceType.LOCAL_COHORT);
 
-        repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
+        updatedRelationship = repositoryHelper.incrementVersion(userId, relationship, updatedRelationship);
 
         repositoryStore.updateRelationshipInStore(updatedRelationship);
 
@@ -4856,5 +4876,38 @@ public class InMemoryOMRSMetadataCollection extends OMRSMetadataCollection
         }
 
         return new ArrayList<>(fullResults.subList(fromElement, fromElement + pageSize - 1));
+    }
+
+
+    /**
+     * Validate that type's identifier is not null.
+     *
+     * @param sourceName - source of the request (used for logging)
+     * @param guidParameterName - name of the parameter that passed the guid.
+     * @param guid - unique identifier for a type or an instance passed on the request
+     * @param methodName - method receiving the call
+     * @throws TypeErrorException - no guid provided
+     */
+    public  void validateTypeGUID(String sourceName,
+                                  String guidParameterName,
+                                  String guid,
+                                  String methodName) throws TypeErrorException
+    {
+        if  (guid != null)
+        {
+            if (repositoryStore.getTypeDef(guid) == null)
+            {
+                OMRSErrorCode errorCode    = OMRSErrorCode.TYPEDEF_ID_NOT_KNOWN;
+                String        errorMessage = errorCode.getErrorMessageId()
+                        + errorCode.getFormattedErrorMessage(guid, guidParameterName, methodName, sourceName);
+
+                throw new TypeErrorException(errorCode.getHTTPErrorCode(),
+                                             this.getClass().getName(),
+                                             methodName,
+                                             errorMessage,
+                                             errorCode.getSystemAction(),
+                                             errorCode.getUserAction());
+            }
+        }
     }
 }

@@ -20,7 +20,7 @@ package org.apache.atlas.omrs.localrepository.repositoryconnector;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.EntityDetail;
 import org.apache.atlas.omrs.metadatacollection.properties.instances.Relationship;
 
-import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -52,9 +52,9 @@ public interface OMRSInstanceRetrievalEventProcessor
      * @param entities - the retrieved relationships
      * @return the validated and processed relationships
      */
-    ArrayList<EntityDetail> processRetrievedEntities(String                    sourceName,
-                                                     String                    metadataCollectionId,
-                                                     ArrayList<EntityDetail>   entities);
+    List<EntityDetail> processRetrievedEntities(String                    sourceName,
+                                                String                    metadataCollectionId,
+                                                List<EntityDetail>        entities);
 
 
     /**
@@ -80,7 +80,7 @@ public interface OMRSInstanceRetrievalEventProcessor
      * @param relationships - the list of retrieved relationships
      * @return the validated and processed relationships
      */
-    ArrayList<Relationship> processRetrievedRelationships(String                    sourceName,
-                                                          String                    metadataCollectionId,
-                                                          ArrayList<Relationship>   relationships);
+    List<Relationship> processRetrievedRelationships(String               sourceName,
+                                                     String               metadataCollectionId,
+                                                     List<Relationship>   relationships);
 }

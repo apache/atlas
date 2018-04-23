@@ -120,6 +120,37 @@ public class OMRSRepositoryRESTServices
 
 
     /**
+     * Return the URL for the requested instance.
+     *
+     * @param guid - unique identifier of the instance
+     * @return url
+     */
+    public static String  getEntityURL(String   guid)
+    {
+        final String   urlTemplate = "/instances/entity/{0}";
+
+        MessageFormat mf = new MessageFormat(urlTemplate);
+
+        return localServerURL + mf.format(guid);
+    }
+
+
+    /**
+     * Return the URL for the requested instance.
+     *
+     * @param guid - unique identifier of the instance
+     * @return url
+     */
+    public static String  getRelationshipURL(String   guid)
+    {
+        final String   urlTemplate = "/instances/relationship/{0}";
+
+        MessageFormat mf = new MessageFormat(urlTemplate);
+
+        return localServerURL + mf.format(guid);
+    }
+
+    /**
      * Default constructor
      */
     public OMRSRepositoryRESTServices()
@@ -1332,15 +1363,15 @@ public class OMRSRepositoryRESTServices
 
 
     /**
-     * Returns a boolean indicating if the entity is stored in the metadata collection.
+     * Returns a boolean indicating if the entity is stored in the metadata collection.  This entity may be a full
+     * entity object, or an entity proxy.
      *
      * @param userId - unique identifier for requesting user.
-     * @param guid - String unique identifier for the entity.
-     * @return EntityDetailResponse:
-     * entity details if the entity is found in the metadata collection; otherwise return null or
-     * InvalidParameterException - the guid is null or
+     * @param guid - String unique identifier for the entity
+     * @return the entity details if the entity is found in the metadata collection; otherwise return null
+     * InvalidParameterException - the guid is null.
      * RepositoryErrorException - there is a problem communicating with the metadata repository where
-     *                                  the metadata collection is stored or
+     *                                  the metadata collection is stored.
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
     @RequestMapping(method = RequestMethod.GET, path = "/{userId}/instances/entity/{guid}/existence")
@@ -1376,16 +1407,16 @@ public class OMRSRepositoryRESTServices
 
 
     /**
-     * Return the header and classifications for a specific entity.
+     * Return the header and classifications for a specific entity.  The returned entity summary may be from
+     * a full entity object or an entity proxy.
      *
      * @param userId - unique identifier for requesting user.
-     * @param guid - String unique identifier for the entity.
-     * @return EntitySummaryResponse:
-     * EntitySummary structure or
-     * InvalidParameterException - the guid is null or
+     * @param guid - String unique identifier for the entity
+     * @return EntitySummary structure or
+     * InvalidParameterException - the guid is null.
      * RepositoryErrorException - there is a problem communicating with the metadata repository where
-     *                                  the metadata collection is stored or
-     * EntityNotKnownException - the requested entity instance is not known in the metadata collection or
+     *                                  the metadata collection is stored.
+     * EntityNotKnownException - the requested entity instance is not known in the metadata collection.
      * UserNotAuthorizedException - the userId is not permitted to perform this operation.
      */
     @RequestMapping(method = RequestMethod.GET, path = "/{userId}/instances/entity/{guid}/summary")
@@ -1585,6 +1616,7 @@ public class OMRSRepositoryRESTServices
      * @return RelationshipListResponse:
      * Relationships list.  Null means no relationships associated with the entity or
      * InvalidParameterException - a parameter is invalid or null or
+     * TypeErrorException - the type guid passed on the request is not known by the metadata collection or
      * RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored or
      * EntityNotKnownException - the requested entity instance is not known in the metadata collection or
@@ -1669,6 +1701,10 @@ public class OMRSRepositoryRESTServices
         {
             capturePropertyErrorException(response, error);
         }
+        catch (TypeErrorException error)
+        {
+            captureTypeErrorException(response, error);
+        }
         catch (PagingErrorException error)
         {
             capturePagingErrorException(response, error);
@@ -1703,10 +1739,9 @@ public class OMRSRepositoryRESTServices
      * a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection or
      * InvalidParameterException - a parameter is invalid or null or
+     * TypeErrorException - the type guid passed on the request is not known by the metadata collection or
      * RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored or
-     * TypeErrorException - the type guid passed on the request is not known by the
-     *                              metadata collection or
      * PropertyErrorException - the properties specified are not valid for any of the requested types of
      *                                  entity or
      * PagingErrorException - the paging/sequencing parameters are set up incorrectly or
@@ -1828,10 +1863,9 @@ public class OMRSRepositoryRESTServices
      * a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection or
      * InvalidParameterException - a parameter is invalid or null or
+     * TypeErrorException - the type guid passed on the request is not known by the metadata collection or
      * RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored or
-     * TypeErrorException - the type guid passed on the request is not known by the
-     *                              metadata collection or
      * ClassificationErrorException - the classification request is not known to the metadata collection.
      * PropertyErrorException - the properties specified are not valid for the requested type of
      *                                  classification or
@@ -1933,7 +1967,6 @@ public class OMRSRepositoryRESTServices
     }
 
 
-
     /**
      * Return a list of entities whose string based property values match the search criteria.  The
      * search criteria may include regex style wild cards.
@@ -1959,6 +1992,7 @@ public class OMRSRepositoryRESTServices
      * a list of entities matching the supplied criteria - null means no matching entities in the metadata
      * collection or
      * InvalidParameterException - a parameter is invalid or null or
+     * TypeErrorException - the type guid passed on the request is not known by the metadata collection or
      * RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored or
      * PropertyErrorException - the sequencing property specified is not valid for any of the requested types of
@@ -1969,16 +2003,16 @@ public class OMRSRepositoryRESTServices
      */
     @RequestMapping(method = RequestMethod.GET, path = "/{userId}/instances/entities/by-property-value")
 
-    public  EntityListResponse fndEntitiesByPropertyValue(@PathVariable                   String                  userId,
-                                                          @RequestParam(required = false) String                  entityTypeGUID,
-                                                          @RequestParam                   String                  searchCriteria,
-                                                          @RequestParam(required = false) int                     fromEntityElement,
-                                                          @RequestParam(required = false) List<InstanceStatus>    limitResultsByStatus,
-                                                          @RequestParam(required = false) List<String>            limitResultsByClassification,
-                                                          @RequestParam(required = false) Date                    asOfTime,
-                                                          @RequestParam(required = false) String                  sequencingProperty,
-                                                          @RequestParam(required = false) SequencingOrder         sequencingOrder,
-                                                          @RequestParam(required = false) int                     pageSize)
+    public  EntityListResponse findEntitiesByPropertyValue(@PathVariable                   String                  userId,
+                                                           @RequestParam(required = false) String                  entityTypeGUID,
+                                                           @RequestParam                   String                  searchCriteria,
+                                                           @RequestParam(required = false) int                     fromEntityElement,
+                                                           @RequestParam(required = false) List<InstanceStatus>    limitResultsByStatus,
+                                                           @RequestParam(required = false) List<String>            limitResultsByClassification,
+                                                           @RequestParam(required = false) Date                    asOfTime,
+                                                           @RequestParam(required = false) String                  sequencingProperty,
+                                                           @RequestParam(required = false) SequencingOrder         sequencingOrder,
+                                                           @RequestParam(required = false) int                     pageSize)
     {
         final  String   methodName = "findEntitiesByPropertyValue";
 
@@ -2040,6 +2074,10 @@ public class OMRSRepositoryRESTServices
         catch (PropertyErrorException error)
         {
             capturePropertyErrorException(response, error);
+        }
+        catch (TypeErrorException error)
+        {
+            captureTypeErrorException(response, error);
         }
         catch (PagingErrorException error)
         {
@@ -2247,10 +2285,9 @@ public class OMRSRepositoryRESTServices
      * @return RelationshipListResponse:
      * a list of relationships.  Null means no matching relationships or
      * InvalidParameterException - one of the parameters is invalid or null or
+     * TypeErrorException - the type guid passed on the request is not known by the metadata collection or
      * RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                    the metadata collection is stored or
-     * TypeErrorException - the type guid passed on the request is not known by the
-     *                              metadata collection or
      * PropertyErrorException - the properties specified are not valid for any of the requested types of
      *                                  relationships or
      * PagingErrorException - the paging/sequencing parameters are set up incorrectly or
@@ -2367,6 +2404,7 @@ public class OMRSRepositoryRESTServices
      * @return RelationshipListResponse:
      * a list of relationships.  Null means no matching relationships or
      * InvalidParameterException - one of the parameters is invalid or null or
+     * TypeErrorException - the type guid passed on the request is not known by the metadata collection or
      * RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored or
      * PropertyErrorException - there is a problem with one of the other parameters  or
@@ -2444,6 +2482,10 @@ public class OMRSRepositoryRESTServices
         catch (PropertyErrorException error)
         {
             capturePropertyErrorException(response, error);
+        }
+        catch (TypeErrorException error)
+        {
+            captureTypeErrorException(response, error);
         }
         catch (PagingErrorException error)
         {
@@ -2555,10 +2597,9 @@ public class OMRSRepositoryRESTServices
      * @return InstanceGraphResponse
      * the sub-graph that represents the returned linked entities and their relationships or
      * InvalidParameterException - one of the parameters is invalid or null or
+     * TypeErrorException - one of the type guids passed on the request is not known by the metadata collection or
      * RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored or
-     * TypeErrorException - one or more of the type guids passed on the request is not known by the
-     *                              metadata collection or
      * EntityNotKnownException - the entity identified by the entityGUID is not found in the metadata collection or
      * PropertyErrorException - there is a problem with one of the other parameters or
      * FunctionNotSupportedException - the repository does not support satOfTime parameter or
@@ -2653,6 +2694,7 @@ public class OMRSRepositoryRESTServices
      * @return EntityListResponse:
      * list of entities either directly or indirectly connected to the start entity or
      * InvalidParameterException - one of the parameters is invalid or null or
+     * TypeErrorException - one of the type guids passed on the request is not known by the metadata collection or
      * RepositoryErrorException - there is a problem communicating with the metadata repository where
      *                                  the metadata collection is stored or
      * TypeErrorException - the requested type is not known, or not supported in the metadata repository
@@ -2893,22 +2935,6 @@ public class OMRSRepositoryRESTServices
         catch (InvalidParameterException error)
         {
             captureInvalidParameterException(response, error);
-        }
-        catch (TypeErrorException error)
-        {
-            captureTypeDefErrorException(response, error);
-        }
-        catch (StatusNotSupportedException error)
-        {
-            captureStatusNotSupportedException(response, error);
-        }
-        catch (PropertyErrorException error)
-        {
-            capturePropertyErrorException(response, error);
-        }
-        catch (ClassificationErrorException error)
-        {
-            captureClassificationErrorException(response, error);
         }
 
         return response;
