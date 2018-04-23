@@ -43,10 +43,13 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
 public class MetricsServiceTest {
-    private Configuration             mockConfig        = mock(Configuration.class);
-    private AtlasTypeRegistry         mockTypeRegistry  = mock(AtlasTypeRegistry.class);
-    private AtlasGraph                mockGraph         = mock(AtlasGraph.class);
+    private Configuration             mockConfig       = mock(Configuration.class);
+    private Configuration             mockConfig1      = mock(Configuration.class);
+    private AtlasTypeRegistry         mockTypeRegistry = mock(AtlasTypeRegistry.class);
+    private AtlasGraph                mockGraph        = mock(AtlasGraph.class);
+    private AtlasGraph                mockGraph1       = mock(AtlasGraph.class);
     private MetricsService            metricsService;
+    private MetricsService            metricsService1;
 
     private List<Map> activeEntityCountList = new ArrayList<>();
     private List<Map> deletedEntityCountList = new ArrayList<>();
@@ -66,16 +69,18 @@ public class MetricsServiceTest {
             deletedEntityCount.put("b", 5);
             deletedEntityCountList.add(deletedEntityCount);
 
-            when(mockConfig.getInt(anyString(), anyInt())).thenReturn(5);
-            assertEquals(mockConfig.getInt("test", 1), 5);
-            when(mockConfig.getString(anyString(), anyString())).thenReturn("toList()", "toList()");
+            when(mockConfig.getInt(eq(MetricsService.METRIC_QUERY_GREMLIN_TYPES_BATCH_SIZE), anyInt())).thenReturn(25);
+            when(mockConfig.getInt(eq(MetricsService.METRIC_QUERY_CACHE_TTL), anyInt())).thenReturn(900);
+            when(mockConfig1.getInt(eq(MetricsService.METRIC_QUERY_GREMLIN_TYPES_BATCH_SIZE), anyInt())).thenReturn(2);
+
             when(mockTypeRegistry.getAllTypeNames()).thenReturn(Arrays.asList("a", "b", "c", "d", "e", "f"));
             when(mockTypeRegistry.getAllEntityDefNames()).thenReturn(Arrays.asList("a", "b", "c"));
             when(mockTypeRegistry.getAllClassificationDefNames()).thenReturn(Arrays.asList("d", "e", "f"));
-//            when(mockTypeRegistry.getAllEntityDefNames()).thenReturn(Arrays.asList("a", "b", "c"));
+
             setupMockGraph();
 
             metricsService = new MetricsService(mockConfig, mockGraph, mockTypeRegistry, new AtlasGremlin3QueryProvider());
+            metricsService1 = new MetricsService(mockConfig1, mockGraph1, mockTypeRegistry, new AtlasGremlin3QueryProvider());
         }
         catch(Exception e) {
             throw new SkipException("MetricsServicesTest: init failed!", e);
@@ -91,9 +96,21 @@ public class MetricsServiceTest {
 
     private void setupMockGraph() throws AtlasBaseException {
         if (mockGraph == null) mockGraph = mock(AtlasGraph.class);
-        when(mockGraph.executeGremlinScript(anyString(), eq(false)))
-                .thenReturn(activeEntityCountList)
-                .thenReturn(deletedEntityCountList);
+        if (mockGraph1 == null) mockGraph1 = mock(AtlasGraph.class);
+        when(mockGraph.executeGremlinScript(anyString(), eq(false))).thenAnswer(invocationOnMock -> {
+            if (((String)invocationOnMock.getArguments()[0]).contains("ACTIVE")) {
+                return activeEntityCountList;
+            } else {
+                return deletedEntityCountList;
+            }
+        });
+        when(mockGraph1.executeGremlinScript(anyString(), eq(false))).thenAnswer(invocationOnMock -> {
+            if (((String)invocationOnMock.getArguments()[0]).contains("ACTIVE")) {
+                return activeEntityCountList;
+            } else {
+                return deletedEntityCountList;
+            }
+        });
     }
 
     @Test
@@ -124,7 +141,14 @@ public class MetricsServiceTest {
         assertEquals(taggedEntityMetric.get("e"), 10);
         assertEquals(taggedEntityMetric.get("f"), 15);
 
-        verify(mockGraph, atLeastOnce()).executeGremlinScript(anyString(), anyBoolean());
+        // 2 calls for entity types and 2 calls for classification types
+        verify(mockGraph, times(4)).executeGremlinScript(anyString(), anyBoolean());
+
+        // Test batched calls
+        metricsService1.getMetrics(false);
+        // 3 classifications, 3 entity types & batch size = 2 and 2 calls per batch, total batches = 4, total calls = 8
+        // 2 for entity and 2 for classification
+        verify(mockGraph1, times(8)).executeGremlinScript(anyString(), anyBoolean());
 
         // Subsequent call within the cache timeout window
         metricsService.getMetrics(false);

@@ -24,10 +24,8 @@ import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
-import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +35,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.INSTANCE;
 
 @AtlasService
 public class MetricsService {
@@ -62,9 +64,12 @@ public class MetricsService {
     protected static final String METRIC_TAG_COUNT        = TAG + "Count";
     protected static final String METRIC_ENTITIES_PER_TAG = TAG + "Entities";
 
-    public static final String METRIC_QUERY_PREFIX       = "atlas.metric.query.";
-    public static final String METRIC_QUERY_CACHE_TTL    = "atlas.metric.query.cache.ttlInSecs";
-    public static final int    DEFAULT_CACHE_TTL_IN_SECS = 900;
+    public static final String METRIC_QUERY_PREFIX                   = "atlas.metric.query.";
+    public static final String METRIC_QUERY_CACHE_TTL                = "atlas.metric.query.cache.ttlInSecs";
+    public static final String METRIC_QUERY_GREMLIN_TYPES_BATCH_SIZE = "atlas.metric.query.gremlin.typesBatchSize";
+
+    public static final int DEFAULT_CACHE_TTL_IN_SECS  = 900;
+    public static final int DEFAULT_GREMLIN_BATCH_SIZE = 25;
 
     public static final String METRIC_COLLECTION_TIME = "collectionTime";
 
@@ -74,6 +79,7 @@ public class MetricsService {
     private final AtlasGraph        atlasGraph;
     private final AtlasTypeRegistry typeRegistry;
     private final int               cacheTTLInSecs;
+    private final int               gremlinBatchSize;
 
     private AtlasMetrics cachedMetrics       = null;
     private long         cacheExpirationTime = 0;
@@ -81,7 +87,7 @@ public class MetricsService {
 
     @Inject
     public MetricsService(final Configuration configuration, final AtlasGraph graph, final AtlasTypeRegistry typeRegistry) {
-        this(configuration, graph, typeRegistry, AtlasGremlinQueryProvider.INSTANCE);
+        this(configuration, graph, typeRegistry, INSTANCE);
     }
 
     @VisibleForTesting
@@ -90,6 +96,8 @@ public class MetricsService {
         atlasGraph = graph;
         cacheTTLInSecs = configuration != null ? configuration.getInt(METRIC_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS)
                                  : DEFAULT_CACHE_TTL_IN_SECS;
+        gremlinBatchSize = configuration != null ? configuration.getInt(METRIC_QUERY_GREMLIN_TYPES_BATCH_SIZE, DEFAULT_GREMLIN_BATCH_SIZE)
+                                   : DEFAULT_GREMLIN_BATCH_SIZE;
         gremlinQueryProvider = queryProvider;
         this.typeRegistry = typeRegistry;
     }
@@ -109,36 +117,41 @@ public class MetricsService {
 
             int tagCount = 0;
 
-            Collection<String> classificationDefNames = typeRegistry.getAllClassificationDefNames()
-                                                                    .stream()
-                                                                    .map(x -> "'" + x + "'")
-                                                                    .collect(Collectors.toSet());
-            String             classificationNamesCSV = StringUtils.join(classificationDefNames, ',');
+            Map<String, Number> activeCountMap  = new HashMap<>();
+            Map<String, Number> deletedCountMap = new HashMap<>();
+
+            List<String> classificationDefNames = typeRegistry.getAllClassificationDefNames()
+                                                              .stream()
+                                                              .map(x -> "'" + x + "'")
+                                                              .collect(Collectors.toList());
+
             if (CollectionUtils.isNotEmpty(classificationDefNames)) {
                 tagCount = classificationDefNames.size();
             }
             metrics.addMetric(GENERAL, METRIC_TAG_COUNT, tagCount);
 
-            Collection<String> entityDefNames                  = typeRegistry.getAllEntityDefNames()
-                                                                             .stream()
-                                                                             .map(x -> "'" + x + "'")
-                                                                             .collect(Collectors.toList());
-            String             entityNamesCSV                  = StringUtils.join(entityDefNames, ',');
-            String             entityAndClassificationNamesCSV = entityNamesCSV + "," + classificationNamesCSV;
+            IntStream
+                    .range(0, (classificationDefNames.size() + gremlinBatchSize - 1) / gremlinBatchSize)
+                    .mapToObj(i -> classificationDefNames.subList(i * gremlinBatchSize, Math.min(classificationDefNames.size(), (i + 1) * gremlinBatchSize)))
+                    .forEach(batch -> captureCounts(batch, activeCountMap, deletedCountMap));
 
-            String query = String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.ENTITY_ACTIVE_METRIC), entityAndClassificationNamesCSV);
-            Map<String, Number> activeCountMap = extractCounts(query);
 
-            query = String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.ENTITY_DELETED_METRIC), entityAndClassificationNamesCSV);
-            Map<String, Number> deletedCountMap = extractCounts(query);
+            List<String> entityDefNames = typeRegistry.getAllEntityDefNames()
+                                                      .stream()
+                                                      .map(x -> "'" + x + "'")
+                                                      .collect(Collectors.toList());
+            IntStream
+                    .range(0, (entityDefNames.size() + gremlinBatchSize - 1) / gremlinBatchSize)
+                    .mapToObj(i -> entityDefNames.subList(i * gremlinBatchSize, Math.min(entityDefNames.size(), (i + 1) * gremlinBatchSize)))
+                    .forEach(batch -> captureCounts(batch, activeCountMap, deletedCountMap));
 
             int totalEntities = 0;
 
-            Map<String, Number> activeEntityCount = new HashMap<>();
+            Map<String, Number> activeEntityCount  = new HashMap<>();
             Map<String, Number> deletedEntityCount = new HashMap<>();
 
             for (String entityDefName : typeRegistry.getAllEntityDefNames()) {
-                Number activeCount = activeCountMap.getOrDefault(entityDefName, null);
+                Number activeCount  = activeCountMap.getOrDefault(entityDefName, null);
                 Number deletedCount = deletedCountMap.getOrDefault(entityDefName, null);
 
                 if (activeCount != null) {
@@ -179,6 +192,16 @@ public class MetricsService {
         }
 
         return cachedMetrics;
+    }
+
+    private void captureCounts(List<String> typeNames, Map<String, Number> activeCountMap, Map<String, Number> deletedCountMap) {
+        String typeNamesAsStr = String.join(",", typeNames);
+        String query          = String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.ENTITY_ACTIVE_METRIC), typeNamesAsStr);
+        activeCountMap.putAll(extractCounts(query));
+
+        query = String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.ENTITY_DELETED_METRIC), typeNamesAsStr);
+        deletedCountMap.putAll(extractCounts(query));
+
     }
 
     private Map<String, Number> extractCounts(final String query) {
