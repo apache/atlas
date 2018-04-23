@@ -56,7 +56,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'actionCallBack'));
+                _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'actionCallBack', 'fetchCollection'));
                 this.collection = new VLineageList();
                 this.lineageData = null;
                 this.typeMap = {};
@@ -68,6 +68,9 @@ define(['require',
                 var that = this;
                 this.$('.fontLoader').show();
                 this.fetchGraphData();
+                if (platform.name === "IE") {
+                    this.$('svg').css('opacity', '0');
+                }
                 if (this.layoutRendered) {
                     this.layoutRendered();
                 }
@@ -178,6 +181,14 @@ define(['require',
                             that.checkForLineageOrImpactFlag(relations, node.toEntityId);
                         }
                     });
+                }
+            },
+            toggleInformationSlider: function(options) {
+                if (options.open && !this.$('.lineage-edge-details').hasClass("open")) {
+                    this.$('.lineage-edge-details').addClass('open');
+                } else if (options.close && this.$('.lineage-edge-details').hasClass("open")) {
+                    d3.selectAll('circle').attr("stroke", "none");
+                    this.$('.lineage-edge-details').removeClass('open');
                 }
             },
             setGraphZoomPositionCal: function(argument) {
@@ -371,6 +382,9 @@ define(['require',
 
                 svg.call(zoom)
                     .call(tooltip);
+                if (platform.name !== "IE") {
+                    this.$('.fontLoader').hide();
+                }
                 render(svgGroup, this.g);
                 svg.on("dblclick.zoom", null)
                     .on("wheel.zoom", null);
@@ -429,7 +443,8 @@ define(['require',
                             edgeInfo: data,
                             relationshipId: relationshipId,
                             lineageData: that.lineageData,
-                            apiGuid: that.apiGuid
+                            apiGuid: that.apiGuid,
+                            detailPageFetchCollection: that.fetchCollection
                         });
                     });
                 })
@@ -446,6 +461,23 @@ define(['require',
                 this.setGraphZoomPositionCal();
                 zoom.event(svg);
                 //svg.attr('height', this.g.graph().height * initialScale + 40);
+                if (platform.name === "IE") {
+                    this.IEGraphRenderDone = 0;
+                    this.$('svg .edgePath').each(function(argument) {
+                        var childNode = $(this).find('marker');
+                        $(this).find('marker').remove();
+                        var eleRef = this;
+                        ++that.IEGraphRenderDone;
+                        setTimeout(function(argument) {
+                            $(eleRef).find('defs').append(childNode);
+                            --that.IEGraphRenderDone;
+                            if (that.IEGraphRenderDone === 0) {
+                                this.$('.fontLoader').hide();
+                                this.$('svg').fadeTo(1000, 1)
+                            }
+                        }, 1000);
+                    });
+                }
             }
         });
     return LineageLayoutView;

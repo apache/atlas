@@ -242,6 +242,7 @@ define(['require',
                         this.renderLineageLayoutView({
                             guid: this.id,
                             entityDefCollection: this.entityDefCollection,
+                            fetchCollection: this.fetchCollection.bind(this),
                             actionCallBack: function() {
                                 that.$('#expand_collapse_panel').click();
                             }

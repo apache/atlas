@@ -15,38 +15,54 @@
  * limitations under the License.
 -->
 <div class="lineage-edge-details" data-id="PropagationToolTip">
-    <h4 class="title"><span data-id="edgeDetailName"></span></h4>
-    <div class="overlay show">
-        <div class="fontLoader show">
-            <i class="fa fa-refresh fa-spin-custom"></i>
+    <div class="col-sm-12">
+        <div class="row">
+            <div class="col-sm-9" style="margin-top: 5px;">
+                <span class="pull-left">Propagation flow</span>
+                <label class="switch pull-left">
+                    <input type="checkbox" class="switch-input" name="editPropagationType" value="text">
+                    <span class="switch-slider"></span>
+                </label>
+                <span class="pull-left">Block propagation</span>
+            </div>
+        </div>
+        <hr style="margin-top: 0px;">
+    </div>
+    <div class="editPropagation col-sm-12">
+        <h4 class="title"><span data-id="edgeDetailName"></span></h4>
+        <div class="overlay show">
+            <div class="fontLoader show">
+                <i class="fa fa-refresh fa-spin-custom"></i>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <ul data-id="propagationOptions" class="propagation-list">
+                <li>
+                    <div class="radio">
+                        <input type="radio" name="propagateRelation" value="ONE_TO_TWO" id="ONE_TO_TWO">
+                        <label class="padding-left-0" for="ONE_TO_TWO">ONE TO TWO</label>
+                    </div>
+                </li>
+                <li>
+                    <div class="radio">
+                        <input type="radio" name="propagateRelation" value="TWO_TO_ONE" id="TWO_TO_ONE">
+                        <label class="padding-left-0" for="TWO_TO_ONE">TWO TO ONE</label>
+                    </div>
+                </li>
+                <li>
+                    <div class="radio">
+                        <input type="radio" name="propagateRelation" value="BOTH" id="BOTH">
+                        <label class="padding-left-0" for="BOTH">BOTH</label>
+                    </div>
+                </li>
+                <li>
+                    <div class="radio">
+                        <input type="radio" name="propagateRelation" value="NONE" id="NONE">
+                        <label class="padding-left-0" for="NONE">None</label>
+                    </div>
+                </li>
+            </ul>
         </div>
     </div>
-    <div class="col-md-12">
-        <ul data-id="propagationOptions" class="propagation-list">
-            <li>
-                <div class="radio">
-                    <input type="radio" name="propagateRelation" value="ONE_TO_TWO" id="ONE_TO_TWO">
-                    <label class="padding-left-0" for="ONE_TO_TWO">ONE TO TWO</label>
-                </div>
-            </li>
-            <li>
-                <div class="radio">
-                    <input type="radio" name="propagateRelation" value="TWO_TO_ONE" id="TWO_TO_ONE">
-                    <label class="padding-left-0" for="TWO_TO_ONE">TWO TO ONE</label>
-                </div>
-            </li>
-            <li>
-                <div class="radio">
-                    <input type="radio" name="propagateRelation" value="BOTH" id="BOTH">
-                    <label class="padding-left-0" for="BOTH">BOTH</label>
-                </div>
-            </li>
-            <li>
-                <div class="radio">
-                    <input type="radio" name="propagateRelation" value="NONE" id="NONE">
-                    <label class="padding-left-0" for="NONE">None</label>
-                </div>
-            </li>
-        </ul>
-    </div>
+    <div data-id="PropagatedClassificationTable" class="propagatedClassificationTable col-sm-12" style="display: none"></div>
 </div>

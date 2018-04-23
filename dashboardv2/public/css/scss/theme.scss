@@ -137,14 +137,17 @@ header {
 
 a {
     color: $color_jungle_green_approx;
+    cursor: pointer;
     &:focus {
         color: $color_puerto_rico_approx;
         text-decoration: none;
         outline: none;
+        cursor: pointer;
     }
     &:hover {
         color: $color_puerto_rico_approx;
         text-decoration: none;
+        cursor: pointer;
     }
 }
 
