@@ -251,7 +251,6 @@ public class UserProfileServiceTest {
         List<AtlasUserSavedSearch> savedSearchList = userProfileService.getSavedSearches(userName);
         assertEquals(savedSearchList.size(), new_max_searches - 1);
     }
-
     @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser", "verifyQueryNameListForUser"})
     void deleteUser() throws AtlasBaseException {
         String userName = getIndexBasedUserName(1);

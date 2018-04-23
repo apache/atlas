@@ -29,10 +29,13 @@ import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.impexp.ZipFileResourceTestUtils;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
@@ -93,6 +96,15 @@ public class GlossaryServiceTest {
             ZipFileResourceTestUtils.loadAllModels("0000-Area0", typeDefStore, typeRegistry);
         } catch (AtlasBaseException | IOException e) {
             throw new SkipException("SubjectArea model loading failed");
+        }
+
+        try {
+            AtlasClassificationDef classificationDef = new AtlasClassificationDef("TestClassification", "Test only classification");
+            AtlasTypesDef          typesDef          = new AtlasTypesDef();
+            typesDef.setClassificationDefs(Arrays.asList(classificationDef));
+            typeDefStore.createTypesDef(typesDef);
+        } catch (AtlasBaseException e) {
+            throw new SkipException("Test classification creation failed");
         }
 
         // Glossary
@@ -342,6 +354,7 @@ public class GlossaryServiceTest {
     @Test(groups = "Glossary.UPDATE", dependsOnGroups = "Glossary.CREATE")
     public void testUpdateGlossaryTerm() {
         List<AtlasGlossaryTerm> glossaryTerms = new ArrayList<>();
+        AtlasClassification classification = new AtlasClassification("TestClassification");
         for (AtlasGlossaryTerm term : Arrays.asList(checkingAccount, savingsAccount, fixedRateMortgage, adjustableRateMortgage)) {
             try {
                 glossaryTerms.add(glossaryService.getTerm(term.getGuid()));
@@ -354,9 +367,13 @@ public class GlossaryServiceTest {
                 t.setShortDescription("Updated short description");
                 t.setLongDescription("Updated long description");
 
+                entityStore.addClassifications(t.getGuid(), Arrays.asList(classification));
+
                 AtlasGlossaryTerm updatedTerm = glossaryService.updateTerm(t);
                 assertNotNull(updatedTerm);
                 assertEquals(updatedTerm.getGuid(), t.getGuid());
+                assertNotNull(updatedTerm.getClassifications());
+                assertEquals(updatedTerm.getClassifications().size(), 1);
             } catch (AtlasBaseException e) {
                 fail("Glossary term fetch/update should've succeeded", e);
             }

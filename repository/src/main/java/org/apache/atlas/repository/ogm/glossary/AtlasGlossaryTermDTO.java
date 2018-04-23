@@ -168,6 +168,13 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
             ret.setValidValuesFor(toRelatedTermIdsSet(validValuesFor));
         }
 
+        if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Processing term classifications");
+            }
+            ret.setClassifications(entity.getClassifications());
+        }
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasGlossaryTermDTO.from() : {}", ret);
         }
@@ -205,6 +212,13 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         ret.setAttribute("longDescription", obj.getLongDescription());
         ret.setAttribute("examples", obj.getExamples());
         ret.setAttribute("abbreviation", obj.getAbbreviation());
+
+        if (CollectionUtils.isNotEmpty(obj.getClassifications())) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Processing term classifications");
+            }
+            ret.setClassifications(obj.getClassifications());
+        }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasGlossaryTermDTO.toEntity() : {}", ret);
