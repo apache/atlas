@@ -57,11 +57,13 @@ capabilities around these data assets for data scientists, analysts and the data
    * [[Configuration][Configuration]]
    * Notification
       * [[Notification-Entity][Entity Notification]]
-   * Bridges
-      * [[Bridge-Hive][Hive Bridge]]
-      * [[Bridge-Sqoop][Sqoop Bridge]]
-      * [[Bridge-Falcon][Falcon Bridge]]
-      * [[StormAtlasHook][Storm Bridge]]
+   * Hooks & Bridges
+      * [[Bridge-HBase][HBase Hook & Bridge]]
+      * [[Bridge-Hive][Hive Hook & Bridge]]
+      * [[Bridge-Kafka][Kafka Bridge]]
+      * [[Bridge-Sqoop][Sqoop Hook]]
+      * [[StormAtlasHook][Storm Hook]]
+      * [[Bridge-Falcon][Falcon Hook]]
    * [[HighAvailability][Fault Tolerance And High Availability Options]]
 
 ---++ API Documentation
