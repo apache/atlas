@@ -79,6 +79,30 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
     public AtlasGlossaryTerm() {
     }
 
+    public AtlasGlossaryTerm(final AtlasGlossaryTerm other) {
+        super(other);
+        this.examples = other.examples;
+        this.abbreviation = other.abbreviation;
+        this.usage = other.usage;
+        this.anchor = other.anchor;
+        this.assignedEntities = other.assignedEntities;
+        this.categories = other.categories;
+        this.seeAlso = other.seeAlso;
+        this.synonyms = other.synonyms;
+        this.antonyms = other.antonyms;
+        this.preferredTerms = other.preferredTerms;
+        this.preferredToTerms = other.preferredToTerms;
+        this.replacementTerms = other.replacementTerms;
+        this.replacedBy = other.replacedBy;
+        this.translationTerms = other.translationTerms;
+        this.translatedTerms = other.translatedTerms;
+        this.isA = other.isA;
+        this.classifies = other.classifies;
+        this.validValues = other.validValues;
+        this.validValuesFor = other.validValuesFor;
+        this.hasTerms = other.hasTerms;
+    }
+
     public List<String> getExamples() {
         return examples;
     }
@@ -291,33 +315,6 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
         }
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("AtlasGlossaryTerm{");
-        sb.append("examples=").append(examples);
-        sb.append(", abbreviation='").append(abbreviation).append('\'');
-        sb.append(", usage='").append(usage).append('\'');
-        sb.append(", anchor=").append(anchor);
-        sb.append(", assignedEntities=").append(assignedEntities);
-        sb.append(", categories=").append(categories);
-        sb.append(", seeAlso=").append(seeAlso);
-        sb.append(", synonyms=").append(synonyms);
-        sb.append(", antonyms=").append(antonyms);
-        sb.append(", preferredTerms=").append(preferredTerms);
-        sb.append(", preferredToTerms=").append(preferredToTerms);
-        sb.append(", replacementTerms=").append(replacementTerms);
-        sb.append(", replacedBy=").append(replacedBy);
-        sb.append(", translationTerms=").append(translationTerms);
-        sb.append(", translatedTerms=").append(translatedTerms);
-        sb.append(", isA=").append(isA);
-        sb.append(", classifies=").append(classifies);
-        sb.append(", validValues=").append(validValues);
-        sb.append(", validValuesFor=").append(validValuesFor);
-        sb.append(", hasTerms=").append(hasTerms);
-        sb.append('}');
-        return sb.toString();
-    }
-
     @JsonIgnore
     public Map<Relation, Set<AtlasRelatedTermHeader>> getRelatedTerms() {
         Map<Relation, Set<AtlasRelatedTermHeader>> ret = new HashMap<>();
@@ -379,7 +376,29 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     @Override
     protected StringBuilder toString(final StringBuilder sb) {
-        return sb == null ? new StringBuilder(toString()) : sb.append(toString());
+        sb.append("{");
+        sb.append("examples=").append(examples);
+        sb.append(", abbreviation='").append(abbreviation).append('\'');
+        sb.append(", usage='").append(usage).append('\'');
+        sb.append(", anchor=").append(anchor);
+        sb.append(", assignedEntities=").append(assignedEntities);
+        sb.append(", categories=").append(categories);
+        sb.append(", seeAlso=").append(seeAlso);
+        sb.append(", synonyms=").append(synonyms);
+        sb.append(", antonyms=").append(antonyms);
+        sb.append(", preferredTerms=").append(preferredTerms);
+        sb.append(", preferredToTerms=").append(preferredToTerms);
+        sb.append(", replacementTerms=").append(replacementTerms);
+        sb.append(", replacedBy=").append(replacedBy);
+        sb.append(", translationTerms=").append(translationTerms);
+        sb.append(", translatedTerms=").append(translatedTerms);
+        sb.append(", isA=").append(isA);
+        sb.append(", classifies=").append(classifies);
+        sb.append(", validValues=").append(validValues);
+        sb.append(", validValuesFor=").append(validValuesFor);
+        sb.append('}');
+
+        return sb;
     }
 
     @Override

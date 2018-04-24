@@ -49,14 +49,13 @@ public class AtlasGlossaryHeader {
         if (!(o instanceof AtlasGlossaryHeader)) return false;
         final AtlasGlossaryHeader that = (AtlasGlossaryHeader) o;
         return Objects.equals(glossaryGuid, that.glossaryGuid) &&
-                       Objects.equals(relationGuid, that.relationGuid) &&
-                       Objects.equals(displayText, that.displayText);
+                       Objects.equals(relationGuid, that.relationGuid);
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(glossaryGuid, displayText);
+        return Objects.hash(glossaryGuid, relationGuid);
     }
 
     @Override

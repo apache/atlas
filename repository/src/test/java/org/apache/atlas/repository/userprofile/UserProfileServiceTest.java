@@ -78,11 +78,8 @@ public class UserProfileServiceTest {
     @Test
     public void filterInternalType() throws AtlasBaseException {
         SearchFilter searchFilter = new SearchFilter();
-        AtlasTypesDef filteredTypeDefs = typeDefStore.searchTypesDef(searchFilter);
-        int maxTypeDefs = filteredTypeDefs.getEntityDefs().size();
-
         FilterUtil.addParamsToHideInternalType(searchFilter);
-        filteredTypeDefs = typeDefStore.searchTypesDef(searchFilter);
+        AtlasTypesDef filteredTypeDefs = typeDefStore.searchTypesDef(searchFilter);
 
         assertNotNull(filteredTypeDefs);
         Optional<AtlasEntityDef> anyInternal = filteredTypeDefs.getEntityDefs().stream().filter(e -> e.getSuperTypes().contains("__internal")).findAny();

@@ -27,14 +27,27 @@ import java.util.List;
 import java.util.Objects;
 
 public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
+
     // Core attributes
-    protected String                    displayName;
-    protected String                    shortDescription;
-    protected String                    longDescription;
+    protected      String     displayName;
+    protected      String     shortDescription;
+    protected      String     longDescription;
 
     // Classifications
     protected List<AtlasClassification> classifications;
     private   String                    qualifiedName;
+
+    public AtlasGlossaryBaseObject() {
+    }
+
+    public AtlasGlossaryBaseObject(final AtlasGlossaryBaseObject other) {
+        super(other);
+        this.displayName = other.displayName;
+        this.shortDescription = other.shortDescription;
+        this.longDescription = other.longDescription;
+        this.classifications = other.classifications;
+        this.qualifiedName = other.qualifiedName;
+    }
 
     public String getQualifiedName() {
         return qualifiedName;
@@ -115,15 +128,15 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
     }
 
     @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("AtlasGlossaryBaseObject{");
+    protected StringBuilder toString(final StringBuilder sb) {
+        sb.append("{");
         sb.append("displayName='").append(displayName).append('\'');
         sb.append(", shortDescription='").append(shortDescription).append('\'');
         sb.append(", longDescription='").append(longDescription).append('\'');
         sb.append(", classifications=").append(classifications);
         sb.append(", qualifiedName='").append(qualifiedName).append('\'');
         sb.append('}');
-        return sb.toString();
-    }
 
+        return sb;
+    }
 }

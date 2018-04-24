@@ -31,8 +31,8 @@ import java.util.Set;
 
 @AtlasJSON
 public class AtlasGlossary extends AtlasGlossaryBaseObject {
-    private String                      language;
-    private String                      usage;
+    private String language;
+    private String usage;
 
     private Set<AtlasRelatedTermHeader>     terms;
     private Set<AtlasRelatedCategoryHeader> categories;
@@ -41,6 +41,7 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
     }
 
     public AtlasGlossary(final AtlasGlossary other) {
+        super(other);
         super.setQualifiedName(other.getQualifiedName());
         super.setGuid(other.getGuid());
         super.setDisplayName(other.displayName);
@@ -145,9 +146,33 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
 
     @Override
     protected StringBuilder toString(final StringBuilder sb) {
-        return sb == null ? new StringBuilder(toString()) : sb.append(toString());
+        sb.append("{");
+        sb.append("language='").append(language).append('\'');
+        sb.append(", usage='").append(usage).append('\'');
+        sb.append(", terms=").append(terms);
+        sb.append(", categories=").append(categories);
+        sb.append('}');
+
+        return sb;
     }
 
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AtlasGlossary)) return false;
+        if (!super.equals(o)) return false;
+        final AtlasGlossary glossary = (AtlasGlossary) o;
+        return Objects.equals(language, glossary.language) &&
+                       Objects.equals(usage, glossary.usage) &&
+                       Objects.equals(terms, glossary.terms) &&
+                       Objects.equals(categories, glossary.categories);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(super.hashCode(), language, usage, terms, categories);
+    }
 
     @AtlasJSON
     public static class AtlasGlossaryExtInfo extends AtlasGlossary {
@@ -208,13 +233,14 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
         }
 
         @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("AtlasGlossaryExtInfo{");
-            sb.append(super.toString());
+        public StringBuilder toString(StringBuilder sb) {
+            sb.append("{");
+            super.toString(sb);
             sb.append(", termInfo=").append(termInfo);
             sb.append(", categoryInfo=").append(categoryInfo);
             sb.append('}');
-            return sb.toString();
+
+            return sb;
         }
 
 

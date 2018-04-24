@@ -74,14 +74,13 @@ public class AtlasTermCategorizationHeader {
         return Objects.equals(categoryGuid, that.categoryGuid) &&
                        Objects.equals(relationGuid, that.relationGuid) &&
                        Objects.equals(description, that.description) &&
-                       Objects.equals(displayText, that.displayText) &&
                        status == that.status;
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(categoryGuid, relationGuid, description, displayText, status);
+        return Objects.hash(categoryGuid, relationGuid, description, status);
     }
 
     @Override

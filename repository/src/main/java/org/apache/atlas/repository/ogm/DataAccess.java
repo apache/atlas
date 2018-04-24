@@ -71,6 +71,14 @@ public class DataAccess {
                 throw new AtlasBaseException(AtlasErrorCode.DATA_ACCESS_SAVE_FAILED, obj.toString());
             }
 
+            // Update GUID assignment for newly created entity
+            if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {
+                String assignedGuid = entityMutationResponse.getGuidAssignments().get(obj.getGuid());
+                if (!obj.getGuid().equals(assignedGuid)) {
+                    obj.setGuid(assignedGuid);
+                }
+            }
+
             return this.load(obj);
 
         } finally {
@@ -147,11 +155,13 @@ public class DataAccess {
 
             AtlasEntityWithExtInfo entityWithExtInfo;
 
-            if (StringUtils.isNotEmpty(obj.getGuid())) {
+            String guid = obj.getGuid();
+            // GUID can be null/empty/-ve
+            if (StringUtils.isNotEmpty(guid) && guid.charAt(0) != '-') {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Load using GUID");
                 }
-                entityWithExtInfo = entityStore.getById(obj.getGuid());
+                entityWithExtInfo = entityStore.getById(guid);
             } else {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Load using unique attributes");
@@ -159,8 +169,15 @@ public class DataAccess {
                 entityWithExtInfo = entityStore.getByUniqueAttributes(dto.getEntityType(), dto.getUniqueAttributes(obj));
             }
 
+            // Since GUID alone can't be used to determine what ENTITY TYPE is loaded from the graph
+            String actualTypeName   = entityWithExtInfo.getEntity().getTypeName();
+            String expectedTypeName = dto.getEntityType().getTypeName();
+            if (!actualTypeName.equals(expectedTypeName)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, expectedTypeName, actualTypeName);
+            }
+
             if (!loadDeleted && entityWithExtInfo.getEntity().getStatus() == AtlasEntity.Status.DELETED) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_DELETED, obj.getGuid());
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_DELETED, guid);
             }
 
             return dto.from(entityWithExtInfo);
@@ -170,6 +187,7 @@ public class DataAccess {
         }
 
     }
+
     public void delete(String guid) throws AtlasBaseException {
         Objects.requireNonNull(guid, "guid");
         AtlasPerfTracer perf = null;

@@ -255,13 +255,13 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         // remove tag propagations
         List<AtlasVertex> propagatedClassificationVertices = getClassificationVertices(edge);
 
+        deleteHandler.deleteRelationships(Collections.singleton(edge));
+
         for (AtlasVertex classificationVertex : propagatedClassificationVertices) {
             List<AtlasVertex> removePropagationFromVertices = graphHelper.getPropagatedEntityVertices(classificationVertex);
 
             deleteHandler.removeTagPropagation(classificationVertex, removePropagationFromVertices);
         }
-
-        deleteHandler.deleteRelationships(Collections.singleton(edge));
 
         // notify entities for added/removed classification propagation
         entityChangeNotifier.notifyPropagatedEntities();
@@ -562,13 +562,22 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
     }
 
     private void validateRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, String relationshipName, Map<String, Object> attributes) throws AtlasBaseException {
-        String                end1TypeName     = AtlasGraphUtilsV1.getTypeName(end1Vertex);
-        String                end2TypeName     = AtlasGraphUtilsV1.getTypeName(end2Vertex);
         AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipName);
 
         if (relationshipType == null) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "unknown relationship type'" + relationshipName + "'");
         }
+
+        if (end1Vertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_END_IS_NULL, relationshipType.getEnd1Type().getTypeName());
+        }
+
+        if (end2Vertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_END_IS_NULL, relationshipType.getEnd2Type().getTypeName());
+        }
+
+        String                end1TypeName     = AtlasGraphUtilsV1.getTypeName(end1Vertex);
+        String                end2TypeName     = AtlasGraphUtilsV1.getTypeName(end2Vertex);
 
         boolean validEndTypes = false;
 

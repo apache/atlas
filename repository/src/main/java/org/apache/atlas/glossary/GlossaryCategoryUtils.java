@@ -30,11 +30,13 @@ import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -218,11 +220,19 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
     }
 
     private Map<String, AtlasRelatedTermHeader> getTerms(final AtlasGlossaryCategory category) {
-        return Objects.nonNull(category.getTerms()) ?
-                       category.getTerms()
-                               .stream()
-                               .collect(Collectors.toMap(AtlasRelatedTermHeader::getTermGuid, t -> t)) :
-                       Collections.EMPTY_MAP;
+        if (Objects.nonNull(category.getTerms())) {
+            Map<String, AtlasRelatedTermHeader> map = new HashMap<>();
+            for (AtlasRelatedTermHeader t : category.getTerms()) {
+                AtlasRelatedTermHeader header = map.get(t.getTermGuid());
+                if (header == null) {
+                    map.put(t.getTermGuid(), t);
+                } else if (StringUtils.isEmpty(header.getRelationGuid()) && StringUtils.isNotEmpty(t.getRelationGuid())) {
+                    map.put(t.getTermGuid(), t);
+                }
+            }
+            return map;
+        }
+        else return Collections.emptyMap();
     }
 
     private void createTermCategorizationRelationships(AtlasGlossaryCategory existing, Collection<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
@@ -333,11 +343,19 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
     }
 
     private Map<String, AtlasRelatedCategoryHeader> getChildren(final AtlasGlossaryCategory category) {
-        return Objects.nonNull(category.getChildrenCategories()) ?
-                       category.getChildrenCategories()
-                               .stream()
-                               .collect(Collectors.toMap(AtlasRelatedCategoryHeader::getCategoryGuid, c -> c)) :
-                       Collections.EMPTY_MAP;
+        if (Objects.nonNull(category.getChildrenCategories())) {
+            Map<String, AtlasRelatedCategoryHeader> map = new HashMap<>();
+            for (AtlasRelatedCategoryHeader c : category.getChildrenCategories()) {
+                AtlasRelatedCategoryHeader header = map.get(c.getCategoryGuid());
+                if (header == null) {
+                    map.put(c.getCategoryGuid(), c);
+                } else if (StringUtils.isEmpty(header.getRelationGuid()) && StringUtils.isNotEmpty(c.getRelationGuid())) {
+                    map.put(c.getCategoryGuid(), c);
+                }
+            }
+            return map;
+        }
+        else return Collections.emptyMap();
     }
 
     private void createCategoryRelationships(AtlasGlossaryCategory existing, Collection<AtlasRelatedCategoryHeader> newChildren) throws AtlasBaseException {

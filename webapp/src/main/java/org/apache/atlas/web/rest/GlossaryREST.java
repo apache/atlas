@@ -391,7 +391,11 @@ public class GlossaryREST {
 
             AtlasGlossary glossary = glossaryService.getGlossary(glossaryGuid);
             for (Map.Entry<String, String> entry : partialUpdates.entrySet()) {
-                glossary.setAttribute(entry.getKey(), entry.getValue());
+                try {
+                    glossary.setAttribute(entry.getKey(), entry.getValue());
+                } catch (IllegalArgumentException e) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARTIAL_UPDATE_ATTR, "Glossary", entry.getKey());
+                }
             }
             return glossaryService.updateGlossary(glossary);
         } finally {
@@ -452,7 +456,11 @@ public class GlossaryREST {
 
             AtlasGlossaryTerm glossaryTerm = glossaryService.getTerm(termGuid);
             for (Map.Entry<String, String> entry : partialUpdates.entrySet()) {
-                glossaryTerm.setAttribute(entry.getKey(), entry.getValue());
+                try {
+                    glossaryTerm.setAttribute(entry.getKey(), entry.getValue());
+                } catch (IllegalArgumentException e) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARTIAL_UPDATE_ATTR, "Glossary Term", entry.getKey());
+                }
             }
             return glossaryService.updateTerm(glossaryTerm);
         } finally {
@@ -513,7 +521,11 @@ public class GlossaryREST {
 
             AtlasGlossaryCategory glossaryCategory = glossaryService.getCategory(categoryGuid);
             for (Map.Entry<String, String> entry : partialUpdates.entrySet()) {
-                glossaryCategory.setAttribute(entry.getKey(), entry.getValue());
+                try {
+                    glossaryCategory.setAttribute(entry.getKey(), entry.getValue());
+                } catch (IllegalArgumentException e) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARTIAL_UPDATE_ATTR, "Glossary Category", entry.getKey());
+                }
             }
             return glossaryService.updateCategory(glossaryCategory);
         } finally {
@@ -601,9 +613,9 @@ public class GlossaryREST {
     @GET
     @Path("/{glossaryGuid}/terms")
     public List<AtlasGlossaryTerm> getGlossaryTerms(@PathParam("glossaryGuid") String glossaryGuid,
-                                                    @DefaultValue("-1") @QueryParam("limit") String limit,
-                                                    @DefaultValue("0") @QueryParam("offset") String offset,
-                                                    @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
+                                                         @DefaultValue("-1") @QueryParam("limit") String limit,
+                                                         @DefaultValue("0") @QueryParam("offset") String offset,
+                                                         @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
         Servlets.validateQueryParamLength("glossaryGuid", glossaryGuid);
         AtlasPerfTracer perf = null;
         try {
@@ -612,6 +624,37 @@ public class GlossaryREST {
             }
 
             return glossaryService.getGlossaryTerms(glossaryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort));
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Get term headers belonging to a specific glossary
+     * @param glossaryGuid unique identifier for glossary
+     * @param limit page size - by default there is no paging
+     * @param offset starting offset for loading terms
+     * @param sort ASC(default) or DESC
+     * @return List of terms associated with the glossary
+     * @throws AtlasBaseException
+     * @HTTP 200 List of glossary terms for the given glossary or an empty list
+     * @HTTP 404 If glossary guid in invalid
+     */
+    @GET
+    @Path("/{glossaryGuid}/terms/headers")
+    public List<AtlasRelatedTermHeader> getGlossaryTermHeaders(@PathParam("glossaryGuid") String glossaryGuid,
+                                                         @DefaultValue("-1") @QueryParam("limit") String limit,
+                                                         @DefaultValue("0") @QueryParam("offset") String offset,
+                                                         @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("glossaryGuid", glossaryGuid);
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.getGlossaryTermHeaders(" + glossaryGuid + ")");
+            }
+
+            return glossaryService.getGlossaryTermsHeaders(glossaryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort));
 
         } finally {
             AtlasPerfTracer.log(perf);
@@ -631,7 +674,7 @@ public class GlossaryREST {
      */
     @GET
     @Path("/{glossaryGuid}/categories")
-    public List<AtlasRelatedCategoryHeader> getGlossaryCategories(@PathParam("glossaryGuid") String glossaryGuid,
+    public List<AtlasGlossaryCategory> getGlossaryCategories(@PathParam("glossaryGuid") String glossaryGuid,
                                                                   @DefaultValue("-1") @QueryParam("limit") String limit,
                                                                   @DefaultValue("0") @QueryParam("offset") String offset,
                                                                   @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
@@ -643,6 +686,37 @@ public class GlossaryREST {
             }
 
             return glossaryService.getGlossaryCategories(glossaryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort));
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Get the categories belonging to a specific glossary
+     * @param glossaryGuid unique identifier for glossary term
+     * @param limit page size - by default there is no paging
+     * @param offset offset for pagination purpose
+     * @param sort ASC (default) or DESC
+     * @return List of associated categories
+     * @throws AtlasBaseException
+     * @HTTP 200 List of glossary categories for the given glossary or an empty list
+     * @HTTP 404 If glossary guid in invalid
+     */
+    @GET
+    @Path("/{glossaryGuid}/categories/headers")
+    public List<AtlasRelatedCategoryHeader> getGlossaryCategoriesHeaders(@PathParam("glossaryGuid") String glossaryGuid,
+                                                                  @DefaultValue("-1") @QueryParam("limit") String limit,
+                                                                  @DefaultValue("0") @QueryParam("offset") String offset,
+                                                                  @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("glossaryGuid", glossaryGuid);
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.getGlossaryCategoriesHeaders(" + glossaryGuid + ")");
+            }
+
+            return glossaryService.getGlossaryCategoriesHeaders(glossaryGuid, Integer.parseInt(offset), Integer.parseInt(limit), toSortOrder(sort));
 
         } finally {
             AtlasPerfTracer.log(perf);

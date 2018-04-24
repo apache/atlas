@@ -86,12 +86,6 @@ public class AtlasRelatedTermHeader {
     }
 
     @Override
-    public int hashCode() {
-
-        return Objects.hash(termGuid, displayText, description, expression, steward, source, status);
-    }
-
-    @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
         if (!(o instanceof AtlasRelatedTermHeader)) return false;
@@ -99,11 +93,16 @@ public class AtlasRelatedTermHeader {
         return Objects.equals(termGuid, that.termGuid) &&
                        Objects.equals(relationGuid, that.relationGuid) &&
                        Objects.equals(description, that.description) &&
-                       Objects.equals(displayText, that.displayText) &&
                        Objects.equals(expression, that.expression) &&
                        Objects.equals(steward, that.steward) &&
                        Objects.equals(source, that.source) &&
                        status == that.status;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(termGuid, relationGuid, description, expression, steward, source, status);
     }
 
     @Override

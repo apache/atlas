@@ -63,14 +63,14 @@ public class AtlasRelatedCategoryHeader {
         final AtlasRelatedCategoryHeader that = (AtlasRelatedCategoryHeader) o;
         return Objects.equals(categoryGuid, that.categoryGuid) &&
                        Objects.equals(parentCategoryGuid, that.parentCategoryGuid) &&
-                       Objects.equals(displayText, that.displayText) &&
+                       Objects.equals(relationGuid, that.relationGuid) &&
                        Objects.equals(description, that.description);
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(categoryGuid, parentCategoryGuid, displayText, description);
+        return Objects.hash(categoryGuid, parentCategoryGuid, relationGuid, description);
     }
 
     @Override

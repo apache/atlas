@@ -43,6 +43,14 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
     public AtlasGlossaryCategory() {
     }
 
+    public AtlasGlossaryCategory(final AtlasGlossaryCategory other) {
+        super(other);
+        this.anchor = other.anchor;
+        this.parentCategory = other.parentCategory;
+        this.childrenCategories = other.childrenCategories;
+        this.terms = other.terms;
+    }
+
     public AtlasGlossaryHeader getAnchor() {
         return anchor;
     }
@@ -129,8 +137,8 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
     }
 
     @Override
-    public String toString() {
-        final StringBuffer sb = new StringBuffer("AtlasGlossaryCategory{");
+    protected StringBuilder toString(final StringBuilder sb) {
+        sb.append("{");
         sb.append("displayName='").append(getDisplayName()).append('\'');
         sb.append(", shortDescription='").append(getShortDescription()).append('\'');
         sb.append(", longDescription='").append(getLongDescription()).append('\'');
@@ -140,12 +148,8 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
         sb.append(", terms=").append(terms);
         sb.append(", classifications=").append(getClassifications());
         sb.append('}');
-        return sb.toString();
-    }
 
-    @Override
-    protected StringBuilder toString(final StringBuilder sb) {
-        return sb == null ? new StringBuilder(toString()) : sb.append(toString());
+        return sb;
     }
 
     @Override
@@ -154,21 +158,15 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
         if (!(o instanceof AtlasGlossaryCategory)) return false;
         if (!super.equals(o)) return false;
         final AtlasGlossaryCategory category = (AtlasGlossaryCategory) o;
-        return Objects.equals(getDisplayName(), category.getDisplayName()) &&
-                       Objects.equals(getShortDescription(), category.getShortDescription()) &&
-                       Objects.equals(getLongDescription(), category.getLongDescription()) &&
-                       Objects.equals(anchor, category.anchor) &&
+        return Objects.equals(anchor, category.anchor) &&
                        Objects.equals(parentCategory, category.parentCategory) &&
                        Objects.equals(childrenCategories, category.childrenCategories) &&
-                       Objects.equals(terms, category.terms) &&
-                       Objects.equals(getClassifications(), category.getClassifications());
+                       Objects.equals(terms, category.terms);
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(super.hashCode(), getDisplayName(), getShortDescription(), getLongDescription(),
-                            anchor, parentCategory, childrenCategories,
-                            terms, getClassifications());
+        return Objects.hash(super.hashCode(), anchor, parentCategory, childrenCategories, terms);
     }
 }

@@ -17,18 +17,29 @@
  */
 package org.apache.atlas.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.atlas.model.annotation.AtlasJSON;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 @AtlasJSON
 public abstract class AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    @JsonIgnore
+    private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
+
     private String guid;
 
-    protected AtlasBaseModelObject() {}
+    protected void init() {
+        setGuid("-" + Long.toString(s_nextId.incrementAndGet()));
+    }
+
+    protected AtlasBaseModelObject() {
+        init();
+    }
 
     public String getGuid() {
         return this.guid;
@@ -38,9 +49,14 @@ public abstract class AtlasBaseModelObject implements Serializable {
         this.guid = guid;
     }
 
+    public AtlasBaseModelObject(final AtlasBaseModelObject other) {
+        this.guid = other.guid;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        sb.append(this.getClass().getSimpleName());
         sb.append("{");
         sb.append("guid=").append(guid);
         toString(sb);
