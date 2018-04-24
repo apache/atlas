@@ -305,9 +305,7 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
         List<String> visitedAttributes = new ArrayList<>();
 
         // visit relationship attributes
-        if(!(this.discoveryContext.getEntityStream() instanceof EntityImportStream)) {
-            visitRelationships(entityType, entity, visitedAttributes);
-        }
+        visitRelationships(entityType, entity, visitedAttributes);
 
         // visit struct attributes
         for (AtlasAttribute attribute : entityType.getAllAttributes().values()) {

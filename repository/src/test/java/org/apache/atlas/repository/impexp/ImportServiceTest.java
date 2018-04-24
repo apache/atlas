@@ -22,13 +22,16 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.lang.StringUtils;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
@@ -42,6 +45,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
@@ -54,6 +58,7 @@ import static org.testng.Assert.assertNotNull;
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ImportServiceTest {
     private static final Logger LOG = LoggerFactory.getLogger(ImportServiceTest.class);
+    private static final int DEFAULT_LIMIT = 25;
     private final ImportService importService;
 
     @Inject
@@ -61,6 +66,9 @@ public class ImportServiceTest {
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
+
+    @Inject
+    private EntityDiscoveryService discoveryService;
 
     @Inject
     public ImportServiceTest(ImportService importService) {
@@ -102,10 +110,6 @@ public class ImportServiceTest {
     public void importDB2(ZipSource zipSource) throws AtlasBaseException, IOException {
         loadBaseModel();
         runAndVerifyQuickStart_v1_Import(importService, zipSource);
-    }
-
-    private void loadBaseModel() throws IOException, AtlasBaseException {
-        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
     }
 
     @DataProvider(name = "logging")
@@ -180,6 +184,28 @@ public class ImportServiceTest {
         runImportWithNoParameters(importService, zipSource);
     }
 
+    @DataProvider(name = "stocks-glossary")
+    public static Object[][] getDataFromGlossary(ITestContext context) throws IOException {
+        return getZipSource("stocks-glossary.zip");
+    }
+
+    @Test(dataProvider = "stocks-glossary")
+    public void importGlossary(ZipSource zipSource) throws IOException, AtlasBaseException {
+        loadBaseModel();
+        loadGlossary();
+        runImportWithNoParameters(importService, zipSource);
+
+        assertEntityCount("__AtlasGlossary", "40c80052-3129-4f7c-8f2f-391677935416", 1);
+        assertEntityCount("__AtlasGlossaryTerm", "e93ac426-de04-4d54-a7c9-d76c1e96369b", 1);
+        assertEntityCount("__AtlasGlossaryTerm", "93ad3bf6-23dc-4e3f-b70e-f8fad6438203", 1);
+        assertEntityCount("__AtlasGlossaryTerm", "105533b6-c125-4a87-bed5-cdf67fb68c39", 1);
+    }
+
+    private List<AtlasEntityHeader> getEntitiesFromDB(String query, String guid) throws AtlasBaseException {
+        String q = StringUtils.isEmpty(guid) ? query : String.format("%s where __guid = '%s'", query, guid);
+        return discoveryService.searchUsingDslQuery(q, DEFAULT_LIMIT, 0).getEntities();
+    }
+
     @DataProvider(name = "hdfs_path1")
     public static Object[][] getDataFromHdfsPath1(ITestContext context) throws IOException {
         return getZipSource("hdfs_path1.zip");
@@ -226,6 +252,20 @@ public class ImportServiceTest {
         loadHiveModel();
         AtlasImportRequest request = getDefaultImportRequest();
         runImportWithParameters(importService, request, zipSource);
+
+        assertEntityCount("hive_db", "d7dc0848-fbba-4d63-9264-a460798361f5", 1);
+        assertEntityCount("hive_table", "2fb31eaa-4bb2-4eb8-b333-a888ba7c84fe", 1);
+        assertEntityCount("hive_column", "13422f0c-9265-4960-91a9-290ffd83b7f1",1);
+        assertEntityCount("hive_column", "c1ae870f-ce0c-44ae-832f-ff77035b1f7e",1);
+        assertEntityCount("hive_column", "b84baab3-0664-4f13-82f1-e81d043db02f",1);
+        assertEntityCount("hive_column", "53ea1991-6ca8-44f2-a75e-61b8d4866fc8",1);
+        assertEntityCount("hive_column", "a973c04c-aa42-49f4-877c-66fbe6754fb5",1);
+        assertEntityCount("hive_column", "a4550803-f18e-4072-a1e8-1201e6022a58",1);
+        assertEntityCount("hive_column", "6c4f196a-4046-493b-8c3a-2b1a9ef255a2",1);
+    }
+
+    private void assertEntityCount(String entityType, String guid, int expectedCount) throws AtlasBaseException {
+        assertEquals(getEntitiesFromDB(entityType, guid).size(), expectedCount);
     }
 
     @Test
@@ -233,11 +273,8 @@ public class ImportServiceTest {
         ImportService importService = new ImportService(typeDefStore, typeRegistry, null);
         AtlasImportRequest req = mock(AtlasImportRequest.class);
 
-        Answer<Map> answer = new Answer<Map>() {
-            @Override
-            public Map answer(InvocationOnMock invocationOnMock) throws Throwable {
-                throw new IOException("file is read only");
-            }
+        Answer<Map> answer = invocationOnMock -> {
+            throw new IOException("file is read only");
         };
 
         when(req.getFileName()).thenReturn("some-file.zip");
@@ -257,5 +294,13 @@ public class ImportServiceTest {
 
     private void loadHiveModel() throws IOException, AtlasBaseException {
         loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
+    }
+
+    private void loadBaseModel() throws IOException, AtlasBaseException {
+        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
+    }
+
+    private void loadGlossary() throws IOException, AtlasBaseException {
+        loadModelFromJson("0000-Area0/0011-glossary_model.json", typeDefStore, typeRegistry);
     }
 }
