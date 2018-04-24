@@ -6,7 +6,7 @@
         {
             "name": "hbase_namespace",
             "superTypes": [
-                "DataSet"
+                "Asset"
             ],
             "typeVersion": "1.0",
             "attributeDefs": [
@@ -51,6 +51,14 @@
             ],
             "typeVersion": "1.1",
             "attributeDefs": [
+                {
+                    "name": "namespace",
+                    "typeName": "hbase_namespace",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
                 {
                     "name": "uri",
                     "typeName": "string",
@@ -139,6 +147,25 @@
         }
     ],
     "relationshipDefs": [
+        {
+            "name": "hbase_namespace_tables",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hbase_namespace",
+                "name": "tables",
+                "isContainer": true,
+                "cardinality": "SET"
+            },
+            "endDef2": {
+                "type": "hbase_table",
+                "name": "namespace",
+                "isContainer": false,
+                "cardinality": "SINGLE",
+                "isLegacyAttribute": true
+            },
+            "propagateTags": "NONE"
+        },
         {
             "name": "hbase_table_column_families",
             "typeVersion": "1.0",

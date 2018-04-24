@@ -8,14 +8,6 @@
       "params": null,
       "attributeDefs": [
         {
-          "name": "namespace",
-          "typeName": "hbase_namespace",
-          "cardinality": "SINGLE",
-          "isIndexable": false,
-          "isOptional": true,
-          "isUnique": false
-        },
-        {
           "name": "parameters",
           "typeName": "map<string,string>",
           "cardinality": "SINGLE",
