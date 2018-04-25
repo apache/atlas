@@ -66,7 +66,7 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
     }
 
     @Override
-    @Bean
+    @Bean(destroyMethod = "")
     public AtlasGraph get() throws RepositoryException {
         return getGraphInstance();
     }
