@@ -82,6 +82,9 @@ public abstract class AtlasRelationshipStoreV1Test {
     @Inject
     EntityGraphMapper graphMapper;
 
+    @Inject
+    AtlasEntityChangeNotifier entityNotifier;
+
     AtlasEntityStore          entityStore;
     AtlasRelationshipStore    relationshipStore;
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
@@ -116,7 +119,7 @@ public abstract class AtlasRelationshipStoreV1Test {
     @BeforeTest
     public void init() throws Exception {
         entityStore       = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
-        relationshipStore = new AtlasRelationshipStoreV1(typeRegistry, deleteHandler);
+        relationshipStore = new AtlasRelationshipStoreV1(typeRegistry, deleteHandler, entityNotifier);
 
         RequestContextV1.clear();
         RequestContextV1.get().setUser(TestUtilsV2.TEST_USER, null);

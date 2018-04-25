@@ -27,9 +27,6 @@ import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
-import org.apache.atlas.listener.ActiveStateChangeHandler;
-import org.apache.atlas.service.Service;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -57,11 +54,8 @@ import javax.inject.Singleton;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 /**
  * HBase based repository for entity audit events
@@ -110,9 +104,12 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         try {
             table = connection.getTable(tableName);
             List<Put> puts = new ArrayList<>(events.size());
-            for (EntityAuditEvent event : events) {
+
+            for (int index = 0; index < events.size(); index++) {
+                EntityAuditEvent event = events.get(index);
+
                 LOG.debug("Adding entity audit event {}", event);
-                Put put = new Put(getKey(event.getEntityId(), event.getTimestamp()));
+                Put put = new Put(getKey(event.getEntityId(), event.getTimestamp(), index));
                 addColumn(put, COLUMN_ACTION, event.getAction());
                 addColumn(put, COLUMN_USER, event.getUser());
                 addColumn(put, COLUMN_DETAIL, event.getDetails());
@@ -141,12 +138,14 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             table          = connection.getTable(tableName);
             List<Put> puts = new ArrayList<>(events.size());
 
-            for (EntityAuditEventV2 event : events) {
+            for (int index = 0; index < events.size(); index++) {
+                EntityAuditEventV2 event = events.get(index);
+
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Adding entity audit event {}", event);
                 }
 
-                Put put = new Put(getKey(event.getEntityId(), event.getTimestamp()));
+                Put put = new Put(getKey(event.getEntityId(), event.getTimestamp(), index));
 
                 addColumn(put, COLUMN_ACTION, event.getAction());
                 addColumn(put, COLUMN_USER, event.getUser());
@@ -197,7 +196,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
             if (StringUtils.isEmpty(startKey)) {
                 //Set start row to entity id + max long value
-                byte[] entityBytes = getKey(entityId, Long.MAX_VALUE);
+                byte[] entityBytes = getKey(entityId, Long.MAX_VALUE, Integer.MAX_VALUE);
                 scan = scan.setStartRow(entityBytes);
             } else {
                 scan = scan.setStartRow(Bytes.toBytes(startKey));
@@ -287,7 +286,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
                                   .setSmall(true);
             if (StringUtils.isEmpty(startKey)) {
                 //Set start row to entity id + max long value
-                byte[] entityBytes = getKey(entityId, Long.MAX_VALUE);
+                byte[] entityBytes = getKey(entityId, Long.MAX_VALUE, Integer.MAX_VALUE);
                 scan = scan.setStartRow(entityBytes);
             } else {
                 scan = scan.setStartRow(Bytes.toBytes(startKey));

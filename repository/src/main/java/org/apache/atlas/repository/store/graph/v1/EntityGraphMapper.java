@@ -1462,34 +1462,47 @@ public class EntityGraphMapper {
 
         validateClassificationExists(traitNames, classificationNames);
 
-        Map<AtlasVertex, List<String>> removedClassifications = new HashMap<>();
+        Map<AtlasVertex, List<AtlasClassification>> removedClassifications = new HashMap<>();
 
         for (String classificationName : classificationNames) {
-            AtlasVertex classificationVertex = getClassificationVertex(entityVertex, classificationName);
+            AtlasVertex         classificationVertex = getClassificationVertex(entityVertex, classificationName);
+            AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
 
             // remove classification from propagated entities if propagation is turned on
             if (isPropagationEnabled(classificationVertex)) {
-                List<AtlasVertex> impactedVertices = deleteHandler.removeTagPropagation(classificationVertex);
+                List<AtlasVertex> propagatedEntityVertices = deleteHandler.removeTagPropagation(classificationVertex);
 
-                if (CollectionUtils.isNotEmpty(impactedVertices)) {
-                    for (AtlasVertex impactedVertex : impactedVertices) {
-                        List<String> classifications = removedClassifications.get(impactedVertex);
+                // add propagated entities and deleted classification details to removeClassifications map
+                if (CollectionUtils.isNotEmpty(propagatedEntityVertices)) {
+                    for (AtlasVertex propagatedEntityVertex : propagatedEntityVertices) {
+                        List<AtlasClassification> classifications = removedClassifications.get(propagatedEntityVertex);
 
                         if (classifications == null) {
                             classifications = new ArrayList<>();
 
-                            removedClassifications.put(impactedVertex, classifications);
+                            removedClassifications.put(propagatedEntityVertex, classifications);
                         }
 
-                        classifications.add(classificationName);
+                        classifications.add(classification);
                     }
                 }
             }
 
+            // add associated entity and deleted classification details to removeClassifications map
+            List<AtlasClassification> classifications = removedClassifications.get(entityVertex);
+
+            if (classifications == null) {
+                classifications = new ArrayList<>();
+
+                removedClassifications.put(entityVertex, classifications);
+            }
+
+            classifications.add(classification);
+
             // remove classifications from associated entity
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Removing classification: [{}] from: [{}][{}] with edge label: [{}]", classificationName,
-                        getTypeName(entityVertex), entityGuid, CLASSIFICATION_LABEL);
+                           getTypeName(entityVertex), entityGuid, CLASSIFICATION_LABEL);
             }
 
             AtlasEdge edge = getClassificationEdge(entityVertex, classificationVertex);
@@ -1499,17 +1512,15 @@ public class EntityGraphMapper {
             traitNames.remove(classificationName);
         }
 
-        removedClassifications.put(entityVertex, classificationNames);
-
         updateTraitNamesProperty(entityVertex, traitNames);
 
         updateModificationMetadata(entityVertex);
 
-        for (Map.Entry<AtlasVertex, List<String>> entry : removedClassifications.entrySet()) {
-            String                 guid                       = GraphHelper.getGuid(entry.getKey());
-            List<String>           deletedClassificationNames = entry.getValue();
-            AtlasEntityWithExtInfo entityWithExtInfo          = instanceConverter.getAndCacheEntity(guid);
-            AtlasEntity            entity                     = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+        for (Map.Entry<AtlasVertex, List<AtlasClassification>> entry : removedClassifications.entrySet()) {
+            String                    guid                       = GraphHelper.getGuid(entry.getKey());
+            List<AtlasClassification> deletedClassificationNames = entry.getValue();
+            AtlasEntityWithExtInfo    entityWithExtInfo          = instanceConverter.getAndCacheEntity(guid);
+            AtlasEntity               entity                     = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
 
             entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassificationNames);
         }
@@ -1532,11 +1543,15 @@ public class EntityGraphMapper {
         List<AtlasVertex>         entitiesToPropagateTo  = new ArrayList<>();
 
         Map<AtlasVertex, List<AtlasClassification>> addedPropagations   = null;
-        Map<AtlasVertex, List<String>>              removedPropagations = null;
+        Map<AtlasVertex, List<AtlasClassification>> removedPropagations = null;
 
         for (AtlasClassification classification : classifications) {
             String classificationName       = classification.getTypeName();
             String classificationEntityGuid = classification.getEntityGuid();
+
+            if (StringUtils.isEmpty(classificationEntityGuid)) {
+                classification.setEntityGuid(guid);
+            }
 
             if (StringUtils.isNotEmpty(classificationEntityGuid) && !StringUtils.equalsIgnoreCase(guid, classificationEntityGuid)) {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY, classificationName);
@@ -1597,7 +1612,7 @@ public class EntityGraphMapper {
             if (updatedTagPropagation != null && currentTagPropagation != updatedTagPropagation) {
                 if (updatedTagPropagation) {
                     if (CollectionUtils.isEmpty(entitiesToPropagateTo)) {
-                        entitiesToPropagateTo = graphHelper.getImpactedVertices(guid);
+                        entitiesToPropagateTo = graphHelper.getImpactedVerticesWithRestrictions(guid, classificationVertex.getIdForDisplay());
                     }
 
                     if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
@@ -1625,7 +1640,7 @@ public class EntityGraphMapper {
                             removedPropagations = new HashMap<>();
 
                             for (AtlasVertex impactedVertex : impactedVertices) {
-                                List<String> removedClassifications = removedPropagations.get(impactedVertex);
+                                List<AtlasClassification> removedClassifications = removedPropagations.get(impactedVertex);
 
                                 if (removedClassifications == null) {
                                     removedClassifications = new ArrayList<>();
@@ -1633,7 +1648,7 @@ public class EntityGraphMapper {
                                     removedPropagations.put(impactedVertex, removedClassifications);
                                 }
 
-                                removedClassifications.add(classification.getTypeName());
+                                removedClassifications.add(classification);
                             }
                         }
                     }
@@ -1651,21 +1666,20 @@ public class EntityGraphMapper {
         }
 
         for (AtlasVertex vertex : notificationVertices) {
-            String                    entityGuid                = GraphHelper.getGuid(vertex);
-            AtlasEntityWithExtInfo    entityWithExtInfo         = instanceConverter.getAndCacheEntity(entityGuid);
-            AtlasEntity               entity                    = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
-            List<AtlasClassification> updatedClassificationList = StringUtils.equals(entityGuid, guid) ? updatedClassifications : Collections.emptyList();
+            String                    entityGuid        = GraphHelper.getGuid(vertex);
+            AtlasEntityWithExtInfo    entityWithExtInfo = instanceConverter.getAndCacheEntity(entityGuid);
+            AtlasEntity               entity            = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
 
-            entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassificationList);
+            entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
         }
 
         if (removedPropagations != null) {
-            for (Map.Entry<AtlasVertex, List<String>> entry : removedPropagations.entrySet()) {
-                AtlasVertex            vertex                 = entry.getKey();
-                List<String>           removedClassifications = entry.getValue();
-                String                 entityGuid             = GraphHelper.getGuid(vertex);
-                AtlasEntityWithExtInfo entityWithExtInfo      = instanceConverter.getAndCacheEntity(entityGuid);
-                AtlasEntity            entity                 = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+            for (Map.Entry<AtlasVertex, List<AtlasClassification>> entry : removedPropagations.entrySet()) {
+                AtlasVertex               vertex                 = entry.getKey();
+                List<AtlasClassification> removedClassifications = entry.getValue();
+                String                    entityGuid             = GraphHelper.getGuid(vertex);
+                AtlasEntityWithExtInfo    entityWithExtInfo      = instanceConverter.getAndCacheEntity(entityGuid);
+                AtlasEntity               entity                 = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
 
                 entityChangeNotifier.onClassificationDeletedFromEntity(entity, removedClassifications);
             }
@@ -1701,11 +1715,14 @@ public class EntityGraphMapper {
 
             AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(entityGuid);
             AtlasEntity            entity            = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+            AtlasClassification    classification;
 
             if (updatedState == PropagationState.DELETED) {
-                entityChangeNotifier.onClassificationDeletedFromEntity(entity, Collections.singletonList(classificationName));
+                classification = entityRetriever.toAtlasClassification(getClassificationVertex(entityVertex, classificationName));
+
+                entityChangeNotifier.onClassificationDeletedFromEntity(entity, Collections.singletonList(classification));
             } else {
-                AtlasClassification classification = entityRetriever.toAtlasClassification(propagatedEdge.getInVertex());
+                classification = entityRetriever.toAtlasClassification(propagatedEdge.getInVertex());
 
                 entityChangeNotifier.onClassificationAddedToEntity(entity, Collections.singletonList(classification));
             }

@@ -74,8 +74,8 @@ public interface EntityChangeListenerV2 {
      * This is upon deleting classifications from an entity.
      *
      * @param entity              the entity
-     * @param classificationNames classifications names for the instance that needs to be deleted from entity
+     * @param classifications classifications that needs to be updated for an entity
      * @throws AtlasBaseException if the listener notification fails
      */
-    void onClassificationsDeleted(AtlasEntity entity, List<String> classificationNames) throws AtlasBaseException;
+    void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException;
 }

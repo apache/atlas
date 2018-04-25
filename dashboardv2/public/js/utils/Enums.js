@@ -28,6 +28,9 @@ define(['require'], function(require) {
         TAG_ADD: "Classification Added",
         TAG_DELETE: "Classification Deleted",
         TAG_UPDATE: "Classification Updated",
+        PROPAGATED_TAG_ADD: "Propagated Classification Added",
+        PROPAGATED_TAG_DELETE: "Propagated Classification Deleted",
+        PROPAGATED_TAG_UPDATE: "Propagated Classification Updated",
         ENTITY_IMPORT_CREATE: "Entity Created by import",
         ENTITY_IMPORT_UPDATE: "Entity Updated by import",
         ENTITY_IMPORT_DELETE: "Entity Deleted by import"

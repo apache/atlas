@@ -47,6 +47,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class EntityAuditEvent implements Serializable {
     public enum EntityAuditAction {
         ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, TAG_ADD, TAG_DELETE, TAG_UPDATE,
+        PROPAGATED_TAG_ADD, PROPAGATED_TAG_DELETE, PROPAGATED_TAG_UPDATE,
         ENTITY_IMPORT_CREATE, ENTITY_IMPORT_UPDATE, ENTITY_IMPORT_DELETE;
 
         public static EntityAuditAction fromString(String strValue) {
@@ -72,6 +73,12 @@ public class EntityAuditEvent implements Serializable {
                 case "CLASSIFICATION_UPDATE":
                 case "TAG_UPDATE":
                     return TAG_UPDATE;
+                case "PROPAGATED_TAG_ADD":
+                    return PROPAGATED_TAG_ADD;
+                case "PROPAGATED_TAG_DELETE":
+                    return PROPAGATED_TAG_DELETE;
+                case "PROPAGATED_TAG_UPDATE":
+                    return PROPAGATED_TAG_UPDATE;
             }
 
             throw new IllegalArgumentException("No enum constant " + EntityAuditAction.class.getCanonicalName() + "." + strValue);

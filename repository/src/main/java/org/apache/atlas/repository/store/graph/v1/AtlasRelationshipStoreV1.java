@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -80,16 +81,18 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
 
     private static final Long DEFAULT_RELATIONSHIP_VERSION = 0L;
 
-    private final AtlasTypeRegistry    typeRegistry;
-    private final EntityGraphRetriever entityRetriever;
-    private final DeleteHandlerV1      deleteHandler;
-    private final GraphHelper          graphHelper = GraphHelper.getInstance();
+    private final AtlasTypeRegistry         typeRegistry;
+    private final EntityGraphRetriever      entityRetriever;
+    private final DeleteHandlerV1           deleteHandler;
+    private final GraphHelper               graphHelper = GraphHelper.getInstance();
+    private final AtlasEntityChangeNotifier entityChangeNotifier;
 
     @Inject
-    public AtlasRelationshipStoreV1(AtlasTypeRegistry typeRegistry, DeleteHandlerV1 deleteHandler) {
-        this.typeRegistry    = typeRegistry;
-        this.entityRetriever = new EntityGraphRetriever(typeRegistry);
-        this.deleteHandler   = deleteHandler;
+    public AtlasRelationshipStoreV1(AtlasTypeRegistry typeRegistry, DeleteHandlerV1 deleteHandler, AtlasEntityChangeNotifier entityChangeNotifier) {
+        this.typeRegistry         = typeRegistry;
+        this.entityRetriever      = new EntityGraphRetriever(typeRegistry);
+        this.deleteHandler        = deleteHandler;
+        this.entityChangeNotifier = entityChangeNotifier;
     }
 
     @Override
@@ -111,6 +114,9 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== create({}): {}", relationship, ret);
         }
+
+        // notify entities for added/removed classification propagation
+        entityChangeNotifier.notifyPropagatedEntities();
 
         return ret;
     }
@@ -181,6 +187,9 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
 
         AtlasRelationship ret = updateRelationship(edge, relationship);
 
+        // notify entities for added/removed classification propagation
+        entityChangeNotifier.notifyPropagatedEntities();
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== update({}): {}", relationship, ret);
         }
@@ -229,7 +238,19 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
         }
 
+        // remove tag propagations
+        List<AtlasVertex> propagatedClassificationVertices = getClassificationVertices(edge);
+
+        for (AtlasVertex classificationVertex : propagatedClassificationVertices) {
+            List<AtlasVertex> removePropagationFromVertices = graphHelper.getPropagatedEntityVertices(classificationVertex);
+
+            deleteHandler.removeTagPropagation(classificationVertex, removePropagationFromVertices);
+        }
+
         deleteHandler.deleteRelationships(Collections.singleton(edge));
+
+        // notify entities for added/removed classification propagation
+        entityChangeNotifier.notifyPropagatedEntities();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== deleteById({}): {}", guid);
@@ -698,7 +719,7 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
             handleBlockedClassifications(ret, relationship.getBlockedPropagatedClassifications());
 
             // propagate tags
-            entityRetriever.addTagPropagation(ret, tagPropagation);
+            deleteHandler.addTagPropagation(ret, tagPropagation);
         }
 
         return ret;

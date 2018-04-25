@@ -20,9 +20,11 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.EntityChangeListenerV2;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 
@@ -41,6 +43,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +53,12 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_ADD;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_DELETE;
 import static org.apache.atlas.util.AtlasRepositoryConfiguration.isV2EntityNotificationEnabled;
 
 
@@ -100,6 +106,8 @@ public class AtlasEntityChangeNotifier {
         notifyListeners(updatedEntities, EntityOperation.UPDATE, isImport);
         notifyListeners(partiallyUpdatedEntities, EntityOperation.PARTIAL_UPDATE, isImport);
         notifyListeners(deletedEntities, EntityOperation.DELETE, isImport);
+
+        notifyPropagatedEntities();
     }
 
     public void onClassificationAddedToEntity(AtlasEntity entity, List<AtlasClassification> addedClassifications) throws AtlasBaseException {
@@ -156,30 +164,61 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
-    public void onClassificationDeletedFromEntity(AtlasEntity entity, List<String> deletedClassificationNames) throws AtlasBaseException {
+    public void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
         if (isV2EntityNotificationEnabled()) {
             doFullTextMapping(entity.getGuid());
 
             for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-                listener.onClassificationsDeleted(entity, deletedClassificationNames);
+                listener.onClassificationsDeleted(entity, deletedClassifications);
             }
         } else {
             doFullTextMapping(entity.getGuid());
 
             Referenceable entityRef = toReferenceable(entity.getGuid());
+            List<Struct>  traits    = toStruct(deletedClassifications);
 
-            if (entityRef == null || CollectionUtils.isEmpty(deletedClassificationNames)) {
+            if (entityRef == null || CollectionUtils.isEmpty(deletedClassifications)) {
                 return;
             }
 
             for (EntityChangeListener listener : entityChangeListeners) {
                 try {
-                    listener.onTraitsDeleted(entityRef, deletedClassificationNames);
+                    listener.onTraitsDeleted(entityRef, traits);
                 } catch (AtlasException e) {
                     throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitDelete");
                 }
             }
 
+        }
+    }
+
+    public void notifyPropagatedEntities() throws AtlasBaseException {
+        RequestContextV1                       context             = RequestContextV1.get();
+        Map<String, List<AtlasClassification>> addedPropagations   = context.getAddedPropagations();
+        Map<String, List<AtlasClassification>> removedPropagations = context.getRemovedPropagations();
+
+        notifyPropagatedEntities(addedPropagations, PROPAGATED_CLASSIFICATION_ADD);
+        notifyPropagatedEntities(removedPropagations, PROPAGATED_CLASSIFICATION_DELETE);
+    }
+
+    private void notifyPropagatedEntities(Map<String, List<AtlasClassification>> entityPropagationMap, EntityAuditAction action) throws AtlasBaseException {
+        if (MapUtils.isEmpty(entityPropagationMap) || action == null) {
+            return;
+        }
+
+        for (String guid : entityPropagationMap.keySet()) {
+            AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(guid);
+            AtlasEntity            entity            = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
+
+            if (entity == null) {
+                continue;
+            }
+
+            if (action == PROPAGATED_CLASSIFICATION_ADD) {
+                onClassificationAddedToEntity(entity, entityPropagationMap.get(guid));
+            } else if (action == PROPAGATED_CLASSIFICATION_DELETE) {
+                onClassificationDeletedFromEntity(entity, entityPropagationMap.get(guid));
+            }
         }
     }
 

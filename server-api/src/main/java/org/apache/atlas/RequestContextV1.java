@@ -18,8 +18,10 @@
 
 package org.apache.atlas;
 
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +32,12 @@ public class RequestContextV1 {
 
     private static final ThreadLocal<RequestContextV1> CURRENT_CONTEXT = new ThreadLocal<>();
 
-    private final Map<String, AtlasObjectId>          updatedEntities = new HashMap<>();
-    private final Map<String, AtlasObjectId>          deletedEntities = new HashMap<>();
-    private final Map<String, AtlasEntityWithExtInfo> entityCacheV2   = new HashMap<>();
-    private final long                                requestTime     = System.currentTimeMillis();
+    private final Map<String, AtlasObjectId>             updatedEntities     = new HashMap<>();
+    private final Map<String, AtlasObjectId>             deletedEntities     = new HashMap<>();
+    private final Map<String, AtlasEntityWithExtInfo>    entityCacheV2       = new HashMap<>();
+    private final Map<String, List<AtlasClassification>> addedPropagations   = new HashMap<>();
+    private final Map<String, List<AtlasClassification>> removedPropagations = new HashMap<>();
+    private final long                                   requestTime         = System.currentTimeMillis();
 
     private String      user;
     private Set<String> userGroups;
@@ -63,6 +67,8 @@ public class RequestContextV1 {
             instance.updatedEntities.clear();
             instance.deletedEntities.clear();
             instance.entityCacheV2.clear();
+            instance.addedPropagations.clear();
+            instance.removedPropagations.clear();
         }
 
         CURRENT_CONTEXT.remove();
@@ -99,6 +105,42 @@ public class RequestContextV1 {
         if (entity != null && entity.getGuid() != null) {
             deletedEntities.put(entity.getGuid(), entity);
         }
+    }
+
+    public void recordAddedPropagation(String guid, AtlasClassification classification) {
+        if (StringUtils.isNotEmpty(guid) && classification != null) {
+            List<AtlasClassification> classifications = addedPropagations.get(guid);
+
+            if (classifications == null) {
+                classifications = new ArrayList<>();
+            }
+
+            classifications.add(classification);
+
+            addedPropagations.put(guid, classifications);
+        }
+    }
+
+    public void recordRemovedPropagation(String guid, AtlasClassification classification) {
+        if (StringUtils.isNotEmpty(guid) && classification != null) {
+            List<AtlasClassification> classifications = removedPropagations.get(guid);
+
+            if (classifications == null) {
+                classifications = new ArrayList<>();
+            }
+
+            classifications.add(classification);
+
+            removedPropagations.put(guid, classifications);
+        }
+    }
+
+    public Map<String, List<AtlasClassification>> getAddedPropagations() {
+        return addedPropagations;
+    }
+
+    public Map<String, List<AtlasClassification>> getRemovedPropagations() {
+        return removedPropagations;
     }
 
     /**

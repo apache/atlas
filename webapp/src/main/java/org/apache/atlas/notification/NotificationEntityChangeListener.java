@@ -85,7 +85,7 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
     }
 
     @Override
-    public void onTraitsDeleted(Referenceable entity, Collection<String> traitNames) throws AtlasException {
+    public void onTraitsDeleted(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException {
         notifyOfEntityEvent(Collections.singleton(entity), OperationType.TRAIT_DELETE);
     }
 

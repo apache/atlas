@@ -62,11 +62,11 @@ public interface EntityChangeListener {
      * This is upon deleting a trait from a typed instance.
      *
      * @param entity        the entity
-     * @param traitNames    trait name for the instance that needs to be deleted from entity
+     * @param traits    trait that needs to be added to entity
      *
      * @throws AtlasException if the listener notification fails
      */
-    void onTraitsDeleted(Referenceable entity, Collection<String> traitNames) throws AtlasException;
+    void onTraitsDeleted(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException;
 
     /**
      * This is upon updating a trait from a typed instance.

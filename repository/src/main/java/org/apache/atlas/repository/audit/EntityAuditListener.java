@@ -94,10 +94,10 @@ public class EntityAuditListener implements EntityChangeListener {
     }
 
     @Override
-    public void onTraitsDeleted(Referenceable entity, Collection<String> traitNames) throws AtlasException {
-        if (traitNames != null) {
-            for (String traitName : traitNames) {
-                EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_DELETE, "Deleted trait: " + traitName);
+    public void onTraitsDeleted(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException {
+        if (traits != null) {
+            for (Struct trait : traits) {
+                EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_DELETE, "Deleted trait: " + trait.getTypeName());
 
                 auditRepository.putEventsV1(event);
             }

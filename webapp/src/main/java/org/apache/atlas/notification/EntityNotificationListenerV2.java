@@ -89,7 +89,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
-    public void onClassificationsDeleted(AtlasEntity entity, List<String> classificationNames) throws AtlasBaseException {
+    public void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_DELETE);
     }
 

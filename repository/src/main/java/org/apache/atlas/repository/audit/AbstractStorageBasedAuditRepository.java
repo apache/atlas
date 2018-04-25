@@ -156,10 +156,10 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
     APPLICATION_PROPERTIES = config;
   }
 
-  protected byte[] getKey(String id, Long ts) {
-    assert id != null : "entity id can't be null";
-    assert ts != null : "timestamp can't be null";
-    String keyStr = id + FIELD_SEPARATOR + ts;
+  protected byte[] getKey(String id, Long ts, int index) {
+    assert id != null  : "entity id can't be null";
+    assert ts != null  : "timestamp can't be null";
+    String keyStr = id + FIELD_SEPARATOR + ts + FIELD_SEPARATOR + index;
     return Bytes.toBytes(keyStr);
   }
 

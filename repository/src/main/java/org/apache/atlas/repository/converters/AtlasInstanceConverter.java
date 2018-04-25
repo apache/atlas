@@ -375,6 +375,12 @@ public class AtlasInstanceConverter {
                 return EntityAuditEvent.EntityAuditAction.TAG_DELETE;
             case CLASSIFICATION_UPDATE:
                 return EntityAuditEvent.EntityAuditAction.TAG_UPDATE;
+            case PROPAGATED_CLASSIFICATION_ADD:
+                return EntityAuditEvent.EntityAuditAction.PROPAGATED_TAG_ADD;
+            case PROPAGATED_CLASSIFICATION_DELETE:
+                return EntityAuditEvent.EntityAuditAction.PROPAGATED_TAG_DELETE;
+            case PROPAGATED_CLASSIFICATION_UPDATE:
+                return EntityAuditEvent.EntityAuditAction.PROPAGATED_TAG_UPDATE;
         }
 
         return null;
@@ -400,6 +406,12 @@ public class AtlasInstanceConverter {
                 return EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_DELETE;
             case TAG_UPDATE:
                 return EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_UPDATE;
+            case PROPAGATED_TAG_ADD:
+                return EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_ADD;
+            case PROPAGATED_TAG_DELETE:
+                return EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_DELETE;
+            case PROPAGATED_TAG_UPDATE:
+                return EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_UPDATE;
         }
 
         return null;
