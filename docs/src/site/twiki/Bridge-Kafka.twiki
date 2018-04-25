@@ -1,0 +1,34 @@
+---+ Kafka Atlas Bridge
+
+---++ Kafka Model
+The default Kafka model includes the following types:
+   * Entity types:
+      * kafka_topic
+         * super-types: !DataSet
+         * attributes: name, owner, description, type, classifications, term, clustername, topic , partitionCount, qualifiedName
+
+The entities are created and de-duped using unique qualified name. They provide namespace and can be used for querying as well:
+   * topic.qualifiedName      - <topic>@<clusterName>
+
+
+---++ Setup
+      binary files are present in apache-atlas-<release-vesion>-SNAPSHOT-kafka-hook.tar.gz
+      Copy apache-atlas-kafka-hook-<release-verion>-SNAPSHOT/hook/kafka folder to <atlas package>/hook/    directory
+      Copy apache-atlas-kafka-hook-<release-verion>-SNAPSHOT/hook-bin folder to  <atlas package>/hook-bin/ directory
+
+    * Copy <atlas-conf>/atlas-application.properties to the Kafka conf directory.
+---++ Importing Kafka Metadata
+org.apache.atlas.Kafka.bridge.KafkaBridge imports the Kafka metadata into Atlas using the model defined above. import-kafka.sh command can be used to facilitate this.
+   <verbatim>
+   Usage 1: <atlas package>/hook-bin/import-kafka.sh
+   Usage 2: <atlas package>/hook-bin/import-kafka.sh [-n <namespace regex> OR --namespace <namespace regex >] [-t <table regex > OR --table <table regex>]
+   Usage 3: <atlas package>/hook-bin/import-kafka.sh [-f <filename>]
+            File Format:
+                topic1
+                topic2
+                topic3
+   </verbatim>
+
+The logs are in <atlas package>/logs/import-kafka.log
+
+Refer [[Configuration][Configuration]] for notification related configurations
