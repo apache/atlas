@@ -19,11 +19,9 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.model.instance.AtlasEntity;
 
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -126,5 +124,32 @@ public class EntityMutationContext {
             ", entityVsType=" + entityVsType +
             ", entityVsVertex=" + entityVsVertex +
             '}';
+    }
+
+    public AtlasEntity getCreatedEntity(String parentGuid) {
+        return getFromCollection(parentGuid, getCreatedEntities());
+    }
+
+    public AtlasEntity getUpdatedEntity(String parentGuid) {
+        return getFromCollection(parentGuid, getUpdatedEntities());
+    }
+
+    private AtlasEntity getFromCollection(String parentGuid, Collection<AtlasEntity> coll) {
+        for (AtlasEntity e : coll) {
+            if(e.getGuid().equalsIgnoreCase(parentGuid)) {
+                return e;
+            }
+        }
+
+        return null;
+    }
+
+    public AtlasEntity getCreatedOrUpdatedEntity(String parentGuid) {
+        AtlasEntity e = getCreatedEntity(parentGuid);
+        if(e == null) {
+            return getUpdatedEntity(parentGuid);
+        }
+
+        return e;
     }
 }

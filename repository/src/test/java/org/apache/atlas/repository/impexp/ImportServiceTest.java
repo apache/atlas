@@ -24,9 +24,13 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -49,10 +53,12 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
+import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
@@ -69,6 +75,9 @@ public class ImportServiceTest {
 
     @Inject
     private EntityDiscoveryService discoveryService;
+
+    @Inject
+    AtlasEntityStore entityStore;
 
     @Inject
     public ImportServiceTest(ImportService importService) {
@@ -99,6 +108,19 @@ public class ImportServiceTest {
     public void importDB1(ZipSource zipSource) throws AtlasBaseException, IOException {
         loadBaseModel();
         runAndVerifyQuickStart_v1_Import(importService, zipSource);
+
+        assertEntityCount("DB_v1", "bfe88eb8-7556-403c-8210-647013f44a44", 1);
+
+
+        List<AtlasEntityHeader> entityHeader = getEntitiesFromDB("Table_v1", "fe91bf93-eb0c-4638-8361-15937390c810");
+        assertEquals(entityHeader.size(), 1);
+
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = getEntity(entityHeader.get(0));
+        assertNotNull(entityWithExtInfo);
+
+        AtlasEntity entity = entityWithExtInfo.getEntity();
+        assertEquals(entity.getClassifications().size(), 1);
+        assertFalse(entity.getClassifications().get(0).isPropagate(), "Default propagate should be false");
     }
 
     @DataProvider(name = "reporting")
@@ -182,6 +204,31 @@ public class ImportServiceTest {
         loadHiveModel();
 
         runImportWithNoParameters(importService, zipSource);
+    }
+
+    @DataProvider(name = "stocks-legacy")
+    public static Object[][] getDataFromLegacyStocks(ITestContext context) throws IOException {
+        return getZipSource("stocks.zip");
+    }
+
+    @Test(dataProvider = "stocks-legacy")
+    public void importLegacy(ZipSource zipSource) throws IOException, AtlasBaseException {
+        loadBaseModel();
+        loadFsModel();
+        loadHiveModel();
+
+        runImportWithNoParameters(importService, zipSource);
+        List<AtlasEntityHeader> result = getEntitiesFromDB("hive_db", "886c5e9c-3ac6-40be-8201-fb0cebb64783");
+        assertEquals(result.size(), 1);
+
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = getEntity(result.get(0));
+        Map<String, Object> relationshipAttributes = entityWithExtInfo.getEntity().getRelationshipAttributes();
+        assertNotNull(relationshipAttributes);
+        assertNotNull(relationshipAttributes.get("tables"));
+
+        List<AtlasRelatedObjectId> relatedList = (List<AtlasRelatedObjectId>) relationshipAttributes.get("tables");
+        AtlasRelatedObjectId relatedObjectId = relatedList.get(0);
+        assertNotNull(relatedObjectId.getRelationshipGuid());
     }
 
     @DataProvider(name = "stocks-glossary")
@@ -302,5 +349,9 @@ public class ImportServiceTest {
 
     private void loadGlossary() throws IOException, AtlasBaseException {
         loadModelFromJson("0000-Area0/0011-glossary_model.json", typeDefStore, typeRegistry);
+    }
+
+    private AtlasEntity.AtlasEntityWithExtInfo getEntity(AtlasEntityHeader header) throws AtlasBaseException {
+        return entityStore.getById(header.getGuid());
     }
 }

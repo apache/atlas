@@ -76,7 +76,6 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PA
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
@@ -426,7 +425,7 @@ public class EntityGraphMapper {
                     // legacy case update inverse attribute
                     if (ctx.getAttribute().getInverseRefAttribute() != null) {
                         // Update the inverse reference using relationship on the target entity
-                        addInverseReference(ctx.getAttribute().getInverseRefAttribute(), newEdge, getRelationshipAttributes(ctx.getValue()));
+                        addInverseReference(context, ctx.getAttribute().getInverseRefAttribute(), newEdge, getRelationshipAttributes(ctx.getValue()));
                     }
                 }
 
@@ -473,7 +472,7 @@ public class EntityGraphMapper {
         }
     }
 
-    private void addInverseReference(AtlasAttribute inverseAttribute, AtlasEdge edge, Map<String, Object> relationshipAttributes) throws AtlasBaseException {
+    private void addInverseReference(EntityMutationContext context, AtlasAttribute inverseAttribute, AtlasEdge edge, Map<String, Object> relationshipAttributes) throws AtlasBaseException {
         AtlasStructType inverseType      = inverseAttribute.getDefinedInType();
         AtlasVertex     inverseVertex    = edge.getInVertex();
         String          inverseEdgeLabel = inverseAttribute.getRelationshipEdgeLabel();
@@ -481,7 +480,7 @@ public class EntityGraphMapper {
         String          propertyName     = AtlasGraphUtilsV1.getQualifiedAttributePropertyKey(inverseType, inverseAttribute.getName());
 
         // create new inverse reference
-        AtlasEdge newEdge = createInverseReferenceUsingRelationship(inverseAttribute, edge, relationshipAttributes);
+        AtlasEdge newEdge = createInverseReferenceUsingRelationship(context, inverseAttribute, edge, relationshipAttributes);
 
         boolean inverseUpdated = true;
         switch (inverseAttribute.getAttributeType().getTypeCategory()) {
@@ -532,7 +531,7 @@ public class EntityGraphMapper {
         }
     }
 
-    private AtlasEdge createInverseReferenceUsingRelationship(AtlasAttribute inverseAttribute, AtlasEdge edge, Map<String, Object> relationshipAttributes) throws AtlasBaseException {
+    private AtlasEdge createInverseReferenceUsingRelationship(EntityMutationContext context, AtlasAttribute inverseAttribute, AtlasEdge edge, Map<String, Object> relationshipAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createInverseReferenceUsingRelationship()");
         }
@@ -568,7 +567,32 @@ public class EntityGraphMapper {
             LOG.debug("<== createInverseReferenceUsingRelationship()");
         }
 
+        updateRelationshipGuidForImport(context, inverseAttributeName, inverseVertex, ret);
+
         return ret;
+    }
+
+    private void updateRelationshipGuidForImport(EntityMutationContext context, String inverseAttributeName, AtlasVertex inverseVertex, AtlasEdge edge) throws AtlasBaseException {
+        if (!context.isImport()) {
+            return;
+        }
+
+        String parentGuid = GraphHelper.getGuid(inverseVertex);
+        if(StringUtils.isEmpty(parentGuid)) {
+            return;
+        }
+
+        AtlasEntity entity = context.getCreatedOrUpdatedEntity(parentGuid);
+        if(entity == null) {
+            return;
+        }
+
+        String parentRelationshipGuid = getRelationshipGuid(entity.getRelationshipAttribute(inverseAttributeName));
+        if(StringUtils.isEmpty(parentRelationshipGuid)) {
+            return;
+        }
+
+        AtlasGraphUtilsV1.setProperty(edge, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, parentRelationshipGuid);
     }
 
     // legacy method to create edges for inverse reference
@@ -737,7 +761,10 @@ public class EntityGraphMapper {
 
                     // for import use the relationship guid provided
                     if (context.isImport()) {
-                        AtlasGraphUtilsV1.setProperty(ret, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, getRelationshipGuid(ctx.getValue()));
+                        String relationshipGuid = getRelationshipGuid(ctx.getValue());
+                        if(!StringUtils.isEmpty(relationshipGuid)) {
+                            AtlasGraphUtilsV1.setProperty(ret, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, relationshipGuid);
+                        }
                     }
 
                     // if relationship did not exist before and new relationship was created
@@ -813,7 +840,7 @@ public class EntityGraphMapper {
                     if (isReference && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
                         AtlasEdge newEdge = (AtlasEdge) newEntry;
 
-                        addInverseReference(inverseRefAttribute, newEdge, getRelationshipAttributes(ctx.getValue()));
+                        addInverseReference(context, inverseRefAttribute, newEdge, getRelationshipAttributes(ctx.getValue()));
                     }
                 }
             }
@@ -877,7 +904,7 @@ public class EntityGraphMapper {
                     // Update the inverse reference value.
                     AtlasEdge newEdge = (AtlasEdge) newEntry;
 
-                    addInverseReference(inverseRefAttribute, newEdge, getRelationshipAttributes(ctx.getValue()));
+                    addInverseReference(context, inverseRefAttribute, newEdge, getRelationshipAttributes(ctx.getValue()));
                 }
 
                 if(newEntry != null) {
@@ -1331,7 +1358,12 @@ public class EntityGraphMapper {
                 Boolean propagateTags      = classification.isPropagate();
 
                 if (propagateTags == null) {
-                    propagateTags = true;
+                    if(context.isImport()) {
+                        propagateTags = false;
+                        classification.setPropagate(propagateTags);
+                    } else {
+                        propagateTags = true;
+                    }
                 }
 
                 // set associated entity id to classification
