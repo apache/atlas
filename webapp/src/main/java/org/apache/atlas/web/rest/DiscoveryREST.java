@@ -17,14 +17,19 @@
  */
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -63,13 +68,15 @@ public class DiscoveryREST {
     private final int                maxFullTextQueryLength;
     private final int                maxDslQueryLength;
 
+    private final AtlasTypeRegistry     typeRegistry;
     private final AtlasDiscoveryService atlasDiscoveryService;
 
     @Inject
-    public DiscoveryREST(AtlasDiscoveryService atlasDiscoveryService, Configuration configuration) {
-        this.atlasDiscoveryService = atlasDiscoveryService;
-        maxFullTextQueryLength = configuration.getInt(Constants.MAX_FULLTEXT_QUERY_STR_LENGTH, 4096);
-        maxDslQueryLength = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
+    public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService atlasDiscoveryService, Configuration configuration) {
+        this.typeRegistry           = typeRegistry;
+        this.atlasDiscoveryService  = atlasDiscoveryService;
+        this.maxFullTextQueryLength = configuration.getInt(Constants.MAX_FULLTEXT_QUERY_STR_LENGTH, 4096);
+        this.maxDslQueryLength      = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
     }
 
     /**
@@ -251,7 +258,41 @@ public class DiscoveryREST {
                         String.format("attrName : %s, attrValue: %s for attribute search.", attrName, attrValuePrefix));
             }
 
-            return atlasDiscoveryService.searchUsingBasicQuery(null, typeName, null, attrName, attrValuePrefix, true, limit, offset);
+            if (StringUtils.isEmpty(attrName)) {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+                if (entityType != null) {
+                    String[] defaultAttrNames = new String[] { AtlasClient.QUALIFIED_NAME, AtlasClient.NAME };
+
+                    for (String defaultAttrName : defaultAttrNames) {
+                        AtlasStructType.AtlasAttribute attribute = entityType.getAttribute(defaultAttrName);
+
+                        if (attribute != null) {
+                            attrName = defaultAttrName;
+
+                            break;
+                        }
+                    }
+                }
+
+                if (StringUtils.isEmpty(attrName)) {
+                    attrName = AtlasClient.QUALIFIED_NAME;
+                }
+            }
+
+            SearchParameters searchParams = new SearchParameters();
+            FilterCriteria   attrFilter   = new FilterCriteria();
+
+            attrFilter.setAttributeName(StringUtils.isEmpty(attrName) ? AtlasClient.QUALIFIED_NAME : attrName);
+            attrFilter.setOperator(SearchParameters.Operator.STARTS_WITH);
+            attrFilter.setAttributeValue(attrValuePrefix);
+
+            searchParams.setTypeName(typeName);
+            searchParams.setEntityFilters(attrFilter);
+            searchParams.setOffset(offset);
+            searchParams.setLimit(limit);
+
+            return searchWithParameters(searchParams);
         } finally {
             AtlasPerfTracer.log(perf);
         }
