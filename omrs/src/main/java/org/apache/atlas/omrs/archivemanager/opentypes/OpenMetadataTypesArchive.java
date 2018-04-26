@@ -186,7 +186,7 @@ public class OpenMetadataTypesArchive
 
 
     /**
-     * Defines the "map<string, string>" type.
+     * Defines the "map<string,string>" type.
      *
      * @return CollectionDef for this type
      */
@@ -10959,7 +10959,7 @@ public class OpenMetadataTypesArchive
          * Set up end 1.
          */
         final String               end1EntityType               = "GlossaryTerm";
-        final String               end1AttributeName            = "attributes";
+        final String               end1AttributeName            = "attributesTypedBy";
         final String               end1AttributeDescription     = "Attributes of this type.";
         final String               end1AttributeDescriptionGUID = null;
         final AttributeCardinality end1Cardinality              = AttributeCardinality.ANY_NUMBER_UNORDERED;
@@ -12885,9 +12885,9 @@ public class OpenMetadataTypesArchive
         /*
          * Set up end 1.
          */
-        final String               end1EntityType               = "GovernanceRule";
-        final String               end1AttributeName            = "implementsGovernanceRules";
-        final String               end1AttributeDescription     = "The rules that are implemented by this component.";
+        final String               end1EntityType               = "GovernanceProcess";
+        final String               end1AttributeName            = "implementsGovernanceProcesses";
+        final String               end1AttributeDescription     = "The processes that are implemented by this component.";
         final String               end1AttributeDescriptionGUID = null;
         final AttributeCardinality end1Cardinality              = AttributeCardinality.ANY_NUMBER_UNORDERED;
 
@@ -12902,9 +12902,9 @@ public class OpenMetadataTypesArchive
         /*
          * Set up end 2.
          */
-        final String               end2EntityType               = "SoftwareComponent";
+        final String               end2EntityType               = "Process";
         final String               end2AttributeName            = "implementations";
-        final String               end2AttributeDescription     = "The software components that implement this governance rule.";
+        final String               end2AttributeDescription     = "The processes that implement this governance process.";
         final String               end2AttributeDescriptionGUID = null;
         final AttributeCardinality end2Cardinality              = AttributeCardinality.ANY_NUMBER_UNORDERED;
 
@@ -12922,7 +12922,7 @@ public class OpenMetadataTypesArchive
         TypeDefAttribute            property;
 
         final String attribute1Name            = "notes";
-        final String attribute1Description     = "Documents reasons for implementing the rule using this implementation.";
+        final String attribute1Description     = "Documents reasons for implementing the process using this implementation.";
         final String attribute1DescriptionGUID = null;
 
         property = archiveHelper.getStringTypeDefAttribute(attribute1Name, attribute1Description, attribute1DescriptionGUID);
@@ -14438,8 +14438,8 @@ public class OpenMetadataTypesArchive
          * Set up end 1.
          */
         final String               end1EntityType               = "Referenceable";
-        final String               end1AttributeName            = "licensed";
-        final String               end1AttributeDescription     = "Items licensed by this type of license.";
+        final String               end1AttributeName            = "certifies";
+        final String               end1AttributeDescription     = "Items certified by this type of certification.";
         final String               end1AttributeDescriptionGUID = null;
         final AttributeCardinality end1Cardinality              = AttributeCardinality.ANY_NUMBER_UNORDERED;
 
@@ -14454,9 +14454,9 @@ public class OpenMetadataTypesArchive
         /*
          * Set up end 2.
          */
-        final String               end2EntityType               = "LicenseType";
-        final String               end2AttributeName            = "licenses";
-        final String               end2AttributeDescription     = "The types of licenses that apply.";
+        final String               end2EntityType               = "CertificationType";
+        final String               end2AttributeName            = "certifications";
+        final String               end2AttributeDescription     = "The types of certifications that apply.";
         final String               end2AttributeDescriptionGUID = null;
         final AttributeCardinality end2Cardinality              = AttributeCardinality.ANY_NUMBER_UNORDERED;
 
@@ -16430,7 +16430,7 @@ public class OpenMetadataTypesArchive
          * Set up end 2.
          */
         final String               end2EntityType               = "SchemaType";
-        final String               end2AttributeName            = "apiResponse";
+        final String               end2AttributeName            = "apiHeader";
         final String               end2AttributeDescription     = "Header structure for this API operation.";
         final String               end2AttributeDescriptionGUID = null;
         final AttributeCardinality end2Cardinality              = AttributeCardinality.ANY_NUMBER_UNORDERED;

@@ -134,7 +134,7 @@ public class OMRSArchiveHelper
         CollectionDef   collectionDef = new CollectionDef(CollectionDefCategory.OM_COLLECTION_MAP);
 
         collectionDef.setGUID(guid);
-        collectionDef.setName("map<" + propertyKeyType.getName() + ", " + propertyValueType.getName() + ">");
+        collectionDef.setName("map<" + propertyKeyType.getName() + "," + propertyValueType.getName() + ">");
         collectionDef.setDescription(description);
         collectionDef.setDescriptionGUID(descriptionGUID);
         collectionDef.setVersion(versionNumber);
@@ -405,7 +405,7 @@ public class OMRSArchiveHelper
         attribute.setAttributeName(attributeName);
         attribute.setAttributeDescription(attributeDescription);
         attribute.setAttributeDescriptionGUID(attributeDescriptionGUID);
-        attribute.setAttributeType(this.archiveBuilder.getCollectionDef("map<string, string>"));
+        attribute.setAttributeType(this.archiveBuilder.getCollectionDef("map<string,string>"));
         attribute.setAttributeCardinality(AttributeCardinality.AT_MOST_ONE);
         attribute.setValuesMinCount(0);
         attribute.setValuesMaxCount(1);

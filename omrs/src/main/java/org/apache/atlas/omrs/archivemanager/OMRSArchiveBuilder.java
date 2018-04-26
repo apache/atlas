@@ -63,6 +63,10 @@ public class OMRSArchiveBuilder
     private ArrayList<Relationship>        relationshipList      = new ArrayList<>();
     private Map<String, Object>            guidMap               = new HashMap<>();
     private Map<String, Object>            nameMap               = new HashMap<>();
+    /*
+     * map to keep track of all the AttributeDef names including relationship end names per EntityDef name.
+     */
+    private Map<String,Set<String>> entityAttributeMap = new HashMap();
 
 
     private static final Logger log = LoggerFactory.getLogger(OMRSArchiveBuilder.class);
@@ -114,6 +118,7 @@ public class OMRSArchiveBuilder
             {
                 log.debug("Adding PrimitiveDef: " + primitiveDef.toString());
             }
+            this.checkForBlanksInTypeName(primitiveDef.getName());
 
             PrimitiveDef duplicateElement = primitiveDefMap.put(primitiveDef.getName(), primitiveDef);
 
@@ -242,6 +247,7 @@ public class OMRSArchiveBuilder
             {
                 log.debug("Adding CollectionDef: " + collectionDef.toString());
             }
+            this.checkForBlanksInTypeName(collectionDef.getName());
 
             CollectionDef duplicateElement = collectionDefMap.put(collectionDef.getName(), collectionDef);
 
@@ -370,6 +376,7 @@ public class OMRSArchiveBuilder
             {
                 log.debug("Adding EnumDef: " + enumDef.toString());
             }
+            this.checkForBlanksInTypeName(enumDef.getName());
 
             EnumDef duplicateElement = enumDefMap.put(enumDef.getName(), enumDef);
 
@@ -498,6 +505,7 @@ public class OMRSArchiveBuilder
             {
                 log.debug("Adding ClassificationDef: " + classificationDef.toString());
             }
+            this.checkForBlanksInTypeName(classificationDef.getName());
 
             ClassificationDef duplicateElement = classificationDefMap.put(classificationDef.getName(), classificationDef);
 
@@ -553,6 +561,33 @@ public class OMRSArchiveBuilder
                                                   errorCode.getSystemAction(),
                                                   errorCode.getUserAction());
             }
+            if (classificationDef.getPropertiesDefinition()!=null)
+            {
+                Set<String> attrSet = new HashSet();
+
+                for (TypeDefAttribute typeDefAttr :classificationDef.getPropertiesDefinition())
+                {
+                    String duplicateAttributeName = typeDefAttr.getAttributeName();
+                    if (attrSet.contains(duplicateAttributeName))
+                    {
+                        // relationship duplicate attribute name
+                        OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_CLASSIFICATION_ATTR_IN_ARCHIVE;
+                        String errorMessage = errorCode.getErrorMessageId()
+                                + errorCode.getFormattedErrorMessage(
+                                duplicateAttributeName,
+                                classificationDef.getName()
+                        );
+
+                        throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                this.getClass().getName(),
+                                methodName,
+                                errorMessage,
+                                errorCode.getSystemAction(),
+                                errorCode.getUserAction());
+                    }
+                    attrSet.add(duplicateAttributeName);
+                }
+            }
 
             classificationDefList.add(classificationDef);
         }
@@ -574,6 +609,7 @@ public class OMRSArchiveBuilder
             {
                 log.debug("Adding EntityDef: " + entityDef.toString());
             }
+            this.checkForBlanksInTypeName(entityDef.getName());
 
             EntityDef duplicateElement = entityDefMap.put(entityDef.getName(), entityDef);
 
@@ -629,7 +665,33 @@ public class OMRSArchiveBuilder
                                                   errorCode.getSystemAction(),
                                                   errorCode.getUserAction());
             }
+            if (entityDef.getPropertiesDefinition()!=null)
+            {
+                Set<String> attrSet = new HashSet();
 
+                for (TypeDefAttribute typeDefAttr :entityDef.getPropertiesDefinition())
+                {
+                    String duplicateAttributeName = typeDefAttr.getAttributeName();
+                    if (attrSet.contains(duplicateAttributeName))
+                    {
+                        // relationship duplicate attribute name
+                        OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_ENTITY_ATTR_IN_ARCHIVE;
+                        String errorMessage = errorCode.getErrorMessageId()
+                                + errorCode.getFormattedErrorMessage(
+                                duplicateAttributeName,
+                                entityDef.getName()
+                        );
+
+                        throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                this.getClass().getName(),
+                                methodName,
+                                errorMessage,
+                                errorCode.getSystemAction(),
+                                errorCode.getUserAction());
+                    }
+                    attrSet.add(duplicateAttributeName);
+                }
+            }
             entityDefList.add(entityDef);
         }
     }
@@ -702,7 +764,7 @@ public class OMRSArchiveBuilder
             {
                 log.debug("Adding RelationshipDef: " + relationshipDef.toString());
             }
-
+            this.checkForBlanksInTypeName(relationshipDef.getName());
             RelationshipDef duplicateElement = relationshipDefMap.put(relationshipDef.getName(), relationshipDef);
 
             if (duplicateElement != null)
@@ -746,19 +808,221 @@ public class OMRSArchiveBuilder
             {
                 OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_TYPENAME_IN_ARCHIVE;
                 String        errorMessage = errorCode.getErrorMessageId()
-                                           + errorCode.getFormattedErrorMessage(relationshipDef.getName(),
-                                                                                duplicateName.toString(),
-                                                                                relationshipDef.toString());
+                        + errorCode.getFormattedErrorMessage(relationshipDef.getName(),
+                        duplicateName.toString(),
+                        relationshipDef.toString());
 
                 throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
-                                                  this.getClass().getName(),
-                                                  methodName,
-                                                  errorMessage,
-                                                  errorCode.getSystemAction(),
-                                                  errorCode.getUserAction());
+                        this.getClass().getName(),
+                        methodName,
+                        errorMessage,
+                        errorCode.getSystemAction(),
+                        errorCode.getUserAction());
+            }
+            this.checkRelationshipDefDuplicateAttributes(relationshipDef);
+
+            if (relationshipDef.getPropertiesDefinition()!=null)
+            {
+                Set<String> attrSet = new HashSet();
+                for (TypeDefAttribute typeDefAttr :relationshipDef.getPropertiesDefinition())
+                {
+                    String duplicateAttributeName = typeDefAttr.getAttributeName();
+                    if (attrSet.contains(duplicateAttributeName))
+                    {
+                        // relationship duplicate attribute name
+                        OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_RELATIONSHIP_ATTR_IN_ARCHIVE;
+                        String errorMessage = errorCode.getErrorMessageId()
+                                + errorCode.getFormattedErrorMessage(
+                                duplicateAttributeName,
+                                relationshipDef.getName()
+                        );
+
+                        throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                                this.getClass().getName(),
+                                methodName,
+                                errorMessage,
+                                errorCode.getSystemAction(),
+                                errorCode.getUserAction());
+                    }
+                    attrSet.add(duplicateAttributeName);
+                }
+            }
+            relationshipDefList.add(relationshipDef);
+        }
+    }
+
+    /**
+     * Check whether the relationshipDef supplies any attributes that already exist.
+     * @param relationshipDef
+     * @throws OMRSLogicErrorException
+     */
+    protected void checkRelationshipDefDuplicateAttributes(RelationshipDef relationshipDef) throws OMRSLogicErrorException
+    {
+        final String methodName = "checkRelationshipDefDuplicateAttributes()";
+        // check whether the end2 type already has an attribute called end1name already exists locally or in any of its relationships
+        String relationshipName = relationshipDef.getName();
+
+        RelationshipEndDef end1 = relationshipDef.getEndDef1();
+        RelationshipEndDef end2 = relationshipDef.getEndDef2();
+
+        String end1Name = end1.getAttributeName();
+        String end1Type = end1.getEntityType().getName();
+
+        String end2Name = end2.getAttributeName();
+        String end2Type = end2.getEntityType().getName();
+
+        if (end1Name.equals(end2Name) && end1Type.equals(end2Type))
+        {
+
+            if (entityAttributeMap.get(end1Type) == null)
+            {
+                // we have not seen this entity before
+                Set<String> attrSet = new HashSet();
+                attrSet.add(end1Name);
+                entityAttributeMap.put(end1Type, attrSet);
+            } else {
+                Set<String> attrset = entityAttributeMap.get(end1Type);
+                // this attribute name should not already be defined for this entity
+
+                if (attrset.contains(end2Name))
+                {
+                    OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_ENDDEF2_NAME_IN_ARCHIVE;
+                    String errorMessage = errorCode.getErrorMessageId()
+                            + errorCode.getFormattedErrorMessage(
+                            end1Type,
+                            end2Name,
+                            relationshipDef.getName()
+                    );
+
+                    throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                            this.getClass().getName(),
+                            methodName,
+                            errorMessage,
+                            errorCode.getSystemAction(),
+                            errorCode.getUserAction());
+                }
+                attrset.add(end1Name);
+            }
+        } else
+        {
+            if (entityAttributeMap.get(end1Type) == null)
+            {
+                // we have not seen this entity before
+                Set<String> attrSet = new HashSet();
+                attrSet.add(end2Name);
+                entityAttributeMap.put(end1Type, attrSet);
+            } else
+            {
+                Set<String> attrset = entityAttributeMap.get(end1Type);
+                // this attribute name should not already be defined for this entity
+                if (attrset.contains(end2Name)){
+                    OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_ENDDEF2_NAME_IN_ARCHIVE;
+                    String errorMessage = errorCode.getErrorMessageId()
+                            + errorCode.getFormattedErrorMessage(
+                            end1Type,
+                            end2Name,
+                            relationshipDef.getName()
+                    );
+
+                    throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                            this.getClass().getName(),
+                            methodName,
+                            errorMessage,
+                            errorCode.getSystemAction(),
+                            errorCode.getUserAction());
+                }
+                attrset.add(end2Name);
             }
 
-            relationshipDefList.add(relationshipDef);
+            if (entityAttributeMap.get(end2Type) == null)
+            {
+                // we have not seen this entity before
+                Set<String> attrSet = new HashSet();
+                attrSet.add(end1Name);
+                entityAttributeMap.put(end2Type, attrSet);
+            } else
+                {
+                Set<String> attrset = entityAttributeMap.get(end2Type);
+                // this attribute name should not already be defined for this entity
+                if (attrset.contains(end1Name))
+                {
+                    OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_ENDDEF1_NAME_IN_ARCHIVE;
+                    String errorMessage = errorCode.getErrorMessageId()
+                            + errorCode.getFormattedErrorMessage(
+                            end2Type,
+                            end1Name,
+                            relationshipDef.getName()
+                    );
+
+                    throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                            this.getClass().getName(),
+                            methodName,
+                            errorMessage,
+                            errorCode.getSystemAction(),
+                            errorCode.getUserAction());
+                }
+                attrset.add(end1Name);
+            }
+        }
+        // check whether end1 has a local attribute name that clashes with a relationship end
+        EntityDef entityDef1 = entityDefMap.get(end1Type);
+
+        if (entityDef1.getPropertiesDefinition()!=null)
+        {
+            Set<String> attrset = entityAttributeMap.get(end1Type);
+            for (TypeDefAttribute typeDefAttr : entityDef1.getPropertiesDefinition())
+            {
+                String localAttributeName = typeDefAttr.getAttributeName();
+                // this attribute name should not already be defined for this entity
+
+                if (localAttributeName.equals(end2Name))
+                {
+                    OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_ENDDEF2_NAME_IN_ARCHIVE;
+                    String errorMessage = errorCode.getErrorMessageId()
+                            + errorCode.getFormattedErrorMessage(
+                            end1Type,
+                            end2Name,
+                            relationshipDef.getName()
+                    );
+
+                    throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                            this.getClass().getName(),
+                            methodName,
+                            errorMessage,
+                            errorCode.getSystemAction(),
+                            errorCode.getUserAction());
+                }
+                attrset.add(end2Name);
+            }
+        }
+        EntityDef entityDef2 = entityDefMap.get(end2Type);
+        if (entityDef2.getPropertiesDefinition()!=null)
+        {
+            Set<String> attrset = entityAttributeMap.get(end2Type);
+            for (TypeDefAttribute typeDefAttr : entityDef2.getPropertiesDefinition())
+            {
+                String localAttributeName = typeDefAttr.getAttributeName();
+                // this attribute name should not already be defined for this entity
+
+                if (localAttributeName.equals(end1Name))
+                {
+                    OMRSErrorCode errorCode = OMRSErrorCode.DUPLICATE_ENDDEF1_NAME_IN_ARCHIVE;
+                    String errorMessage = errorCode.getErrorMessageId()
+                            + errorCode.getFormattedErrorMessage(
+                            end2Type,
+                            end1Name,
+                            relationshipDef.getName()
+                    );
+
+                    throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                            this.getClass().getName(),
+                            methodName,
+                            errorMessage,
+                            errorCode.getSystemAction(),
+                            errorCode.getUserAction());
+                }
+                attrset.add(end1Name);
+            }
         }
     }
 
@@ -993,5 +1257,23 @@ public class OMRSArchiveBuilder
         }
 
         return archive;
+    }
+    private void checkForBlanksInTypeName(String typeName)
+    {
+        final String methodName = "checkForBlanksInTypeName()";
+        if (typeName.contains(" "))
+        {
+            OMRSErrorCode errorCode = OMRSErrorCode.BLANK_TYPENAME_IN_ARCHIVE;
+            String        errorMessage = errorCode.getErrorMessageId()
+                    + errorCode.getFormattedErrorMessage(typeName);
+
+            throw new OMRSLogicErrorException(errorCode.getHTTPErrorCode(),
+                    this.getClass().getName(),
+                    methodName,
+                    errorMessage,
+                    errorCode.getSystemAction(),
+                    errorCode.getUserAction());
+        }
+
     }
 }
