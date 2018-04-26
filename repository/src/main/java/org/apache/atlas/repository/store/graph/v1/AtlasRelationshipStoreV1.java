@@ -19,7 +19,6 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -27,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
@@ -204,14 +204,28 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
             LOG.debug("==> getById({})", guid);
         }
 
-        AtlasRelationship ret;
-
-        AtlasEdge edge = graphHelper.getEdgeForGUID(guid);
-
-        ret = entityRetriever.mapEdgeToAtlasRelationship(edge);
+        AtlasEdge         edge = graphHelper.getEdgeForGUID(guid);
+        AtlasRelationship ret  = entityRetriever.mapEdgeToAtlasRelationship(edge);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getById({}): {}", guid, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
+    @GraphTransaction
+    public AtlasRelationshipWithExtInfo getExtInfoById(String guid) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getExtInfoById({})", guid);
+        }
+
+        AtlasEdge                    edge = graphHelper.getEdgeForGUID(guid);
+        AtlasRelationshipWithExtInfo ret  = entityRetriever.mapEdgeToAtlasRelationshipWithExtInfo(edge);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getExtInfoById({}): {}", guid, ret);
         }
 
         return ret;

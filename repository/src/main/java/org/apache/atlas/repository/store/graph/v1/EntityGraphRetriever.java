@@ -33,9 +33,9 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
@@ -45,7 +45,6 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasRelationshipType;
@@ -72,36 +71,45 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.glossary.GlossaryUtils.*;
+import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
+import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CREATED_BY;
+import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_DESCRIPTION;
+import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_EXPRESSION;
+import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_SOURCE;
+import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STATUS;
+import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STEWARD;
 import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.DELETED;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
-import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BYTE;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DATE;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_FLOAT;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_INT;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_SHORT;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VALIDITY_PERIODS_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
-import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getAdjacentEdgesByLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getAllTraitNames;
-import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertices;
 import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getOutGoingEdgesByLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagationEnabledClassificationVertices;
 import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isPropagatedClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
-import static org.apache.atlas.repository.graph.GraphHelper.removeFromPropagatedTraitNames;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
@@ -966,18 +974,34 @@ public final class EntityGraphRetriever {
     }
 
     public AtlasRelationship mapEdgeToAtlasRelationship(AtlasEdge edge) throws AtlasBaseException {
-        AtlasRelationship ret = new AtlasRelationship();
+        return mapEdgeToAtlasRelationship(edge, false).getRelationship();
+    }
 
-        mapSystemAttributes(edge, ret);
+    public AtlasRelationshipWithExtInfo mapEdgeToAtlasRelationshipWithExtInfo(AtlasEdge edge) throws AtlasBaseException {
+        return mapEdgeToAtlasRelationship(edge, true);
+    }
+
+    public AtlasRelationshipWithExtInfo mapEdgeToAtlasRelationship(AtlasEdge edge, boolean extendedInfo) throws AtlasBaseException {
+        AtlasRelationshipWithExtInfo ret = new AtlasRelationshipWithExtInfo();
+
+        mapSystemAttributes(edge, ret, extendedInfo);
 
         mapAttributes(edge, ret);
 
         return ret;
     }
 
-    private AtlasRelationship mapSystemAttributes(AtlasEdge edge, AtlasRelationship relationship) throws AtlasBaseException {
+    private AtlasRelationshipWithExtInfo mapSystemAttributes(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo, boolean extendedInfo) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Mapping system attributes for relationship");
+        }
+
+        AtlasRelationship relationship = relationshipWithExtInfo.getRelationship();
+
+        if (relationship == null) {
+            relationship = new AtlasRelationship();
+
+            relationshipWithExtInfo.setRelationship(relationship);
         }
 
         relationship.setGuid(getRelationshipGuid(edge));
@@ -1007,25 +1031,38 @@ public final class EntityGraphRetriever {
         relationship.setLabel(edge.getLabel());
         relationship.setPropagateTags(getPropagateTags(edge));
 
-        // set propagated and blocked propagated classifications
-        readClassificationsFromEdge(edge, relationship);
+        if (extendedInfo) {
+            addToReferredEntities(relationshipWithExtInfo, end1Vertex);
+            addToReferredEntities(relationshipWithExtInfo, end2Vertex);
+        }
 
-        return relationship;
+        // set propagated and blocked propagated classifications
+        readClassificationsFromEdge(edge, relationshipWithExtInfo, extendedInfo);
+
+        return relationshipWithExtInfo;
     }
 
-    private void readClassificationsFromEdge(AtlasEdge edge, AtlasRelationship relationship) throws AtlasBaseException {
+    private void readClassificationsFromEdge(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo, boolean extendedInfo) throws AtlasBaseException {
         List<AtlasVertex>         classificationVertices    = getClassificationVertices(edge);
         List<String>              blockedClassificationIds  = getBlockedClassificationIds(edge);
         List<AtlasClassification> propagatedClassifications = new ArrayList<>();
         List<AtlasClassification> blockedClassifications    = new ArrayList<>();
+        AtlasRelationship         relationship              = relationshipWithExtInfo.getRelationship();
 
         for (AtlasVertex classificationVertex : classificationVertices) {
-            String classificationId = classificationVertex.getIdForDisplay();
+            String              classificationId = classificationVertex.getIdForDisplay();
+            AtlasClassification classification   = toAtlasClassification(classificationVertex);
+            String              entityGuid       = classification.getEntityGuid();
 
             if (blockedClassificationIds.contains(classificationId)) {
-                blockedClassifications.add(toAtlasClassification(classificationVertex));
+                blockedClassifications.add(classification);
             } else {
-                propagatedClassifications.add(toAtlasClassification(classificationVertex));
+                propagatedClassifications.add(classification);
+            }
+
+            // add entity headers to referred entities
+            if (extendedInfo) {
+                addToReferredEntities(relationshipWithExtInfo, entityGuid);
             }
         }
 
@@ -1033,8 +1070,23 @@ public final class EntityGraphRetriever {
         relationship.setBlockedPropagatedClassifications(blockedClassifications);
     }
 
-    private void mapAttributes(AtlasEdge edge, AtlasRelationship relationship) throws AtlasBaseException {
-        AtlasType objType = typeRegistry.getType(relationship.getTypeName());
+    private void addToReferredEntities(AtlasRelationshipWithExtInfo relationshipWithExtInfo, String guid) throws AtlasBaseException {
+        if (!relationshipWithExtInfo.referredEntitiesContains(guid)) {
+            addToReferredEntities(relationshipWithExtInfo, getEntityVertex(guid));
+        }
+    }
+
+    private void addToReferredEntities(AtlasRelationshipWithExtInfo relationshipWithExtInfo, AtlasVertex entityVertex) throws AtlasBaseException {
+        String entityGuid = getGuid(entityVertex);
+
+        if (!relationshipWithExtInfo.referredEntitiesContains(entityGuid)) {
+            relationshipWithExtInfo.addReferredEntity(entityGuid, toAtlasEntityHeader(entityVertex));
+        }
+    }
+
+    private void mapAttributes(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo) throws AtlasBaseException {
+        AtlasRelationship relationship = relationshipWithExtInfo.getRelationship();
+        AtlasType         objType      = typeRegistry.getType(relationship.getTypeName());
 
         if (!(objType instanceof AtlasRelationshipType)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, relationship.getTypeName());

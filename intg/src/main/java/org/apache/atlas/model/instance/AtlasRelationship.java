@@ -32,6 +32,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -406,5 +407,90 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
+    public static class AtlasRelationshipWithExtInfo implements Serializable {
+        private AtlasRelationship              relationship;
+        private Map<String, AtlasEntityHeader> referredEntities;
+
+        public AtlasRelationshipWithExtInfo() {
+        }
+
+        public AtlasRelationshipWithExtInfo(AtlasRelationship relationship) {
+            setRelationship(relationship);
+        }
+
+        public AtlasRelationship getRelationship() {
+            return relationship;
+        }
+
+        public void setRelationship(AtlasRelationship relationship) {
+            this.relationship = relationship;
+        }
+
+        public Map<String, AtlasEntityHeader> getReferredEntities() {
+            return referredEntities;
+        }
+
+        public void setReferredEntities(Map<String, AtlasEntityHeader> referredEntities) {
+            this.referredEntities = referredEntities;
+        }
+
+        public boolean referredEntitiesContains(String guid) {
+            return (referredEntities != null) ? referredEntities.containsKey(guid) : false;
+        }
+
+        @JsonIgnore
+        public final void addReferredEntity(String guid, AtlasEntityHeader entityHeader) {
+            Map<String, AtlasEntityHeader> r = this.referredEntities;
+
+            if (r == null) {
+                r = new HashMap<>();
+
+                this.referredEntities = r;
+            }
+
+            if (guid != null) {
+                r.put(guid, entityHeader);
+            }
+        }
+
+        @JsonIgnore
+        public final AtlasEntityHeader removeReferredEntity(String guid) {
+            Map<String, AtlasEntityHeader> r = this.referredEntities;
+
+            return r != null && guid != null ? r.remove(guid) : null;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) { return true; }
+            if (o == null || getClass() != o.getClass()) { return false; }
+            if (!super.equals(o)) { return false; }
+            AtlasRelationshipWithExtInfo that = (AtlasRelationshipWithExtInfo) o;
+
+            return Objects.equals(relationship, that.relationship) &&
+                   Objects.equals(referredEntities, that.referredEntities);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), relationship, referredEntities);
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("AtlasRelationshipWithExtInfo{");
+            sb.append("relationship=").append(relationship);
+            sb.append(", referredEntities=").append(referredEntities);
+            sb.append('}');
+
+            return sb.toString();
+        }
     }
 }

@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
@@ -47,6 +48,13 @@ public interface AtlasRelationshipStore {
      * @return AtlasRelationship
      */
     AtlasRelationship getById(String guid) throws AtlasBaseException;
+
+    /**
+     * Retrieve a relationship instance and its referred entities using guid.
+     * @param guid relationship instance guid
+     * @return AtlasRelationship
+     */
+    AtlasRelationshipWithExtInfo getExtInfoById(String guid) throws AtlasBaseException;
 
 
     AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;

@@ -20,6 +20,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
@@ -30,12 +31,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 
 /**
  * REST interface for entity relationships.
@@ -102,18 +105,27 @@ public class RelationshipREST {
     @Path("/guid/{guid}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasRelationship getById(@PathParam("guid") String guid) throws AtlasBaseException {
+    public AtlasRelationshipWithExtInfo getById(@PathParam("guid") String guid,
+                                                @QueryParam("extendedInfo") @DefaultValue("false") boolean extendedInfo)
+                                                throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
         AtlasPerfTracer perf = null;
+
+        AtlasRelationshipWithExtInfo ret;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.getById(" + guid + ")");
             }
 
-            return relationshipStore.getById(guid);
+            if (extendedInfo) {
+                ret = relationshipStore.getExtInfoById(guid);
+            } else {
+                ret = new AtlasRelationshipWithExtInfo(relationshipStore.getById(guid));
+            }
 
+            return ret;
         } finally {
             AtlasPerfTracer.log(perf);
         }
