@@ -103,7 +103,7 @@ define(['require',
                     } else {
                         this.triggerUrl({
                             url: '#!/glossary/' + scope.find('i').data('termguid'),
-                            urlParams: { gType: "term" },
+                            urlParams: { gType: "term", viewType: "term", fromView: "entity" },
                             mergeBrowserUrl: false,
                             trigger: true,
                             updateTabState: null
@@ -476,7 +476,7 @@ define(['require',
                     if (value.searchType) {
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                     }
-                    _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset, 'query': _.trim(value.query), 'typeName': value.type || null, 'classification': value.tag || null, 'termName': that.termName || null });
+                    _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset, 'query': _.trim(value.query), 'typeName': value.type || null, 'classification': value.tag || null, 'termName': value.term || null });
                     if (value.profileDBView && value.typeName && value.guid) {
                         var profileParam = {};
                         profileParam['guid'] = value.guid;
@@ -851,12 +851,13 @@ define(['require',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
-                                if (obj.status && Enums.entityStateReadOnly[obj.status]) {
-                                    return '<div class="readOnly">' + CommonViewFunction.termForTable(obj); + '</div>';
-                                } else {
-                                    return CommonViewFunction.termForTable(obj);
+                                if (!(obj.typeName.startsWith("__AtlasGlossary"))) {
+                                    if (obj.status && Enums.entityStateReadOnly[obj.status]) {
+                                        return '<div class="readOnly">' + CommonViewFunction.termForTable(obj); + '</div>';
+                                    } else {
+                                        return CommonViewFunction.termForTable(obj);
+                                    }
                                 }
-
                             }
                         })
                     };
@@ -936,23 +937,20 @@ define(['require',
                 var that = this,
                     tagName = $(e.target).data("name"),
                     guid = $(e.target).data("guid"),
-                    assetName = $(e.target).data("assetname"),
-                    modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
-                        titleMessage: Messages.removeTag,
-                        buttonText: "Remove"
-                    });
-                if (modal) {
-                    modal.on('ok', function() {
-                        that.deleteTagData({
-                            'tagName': tagName,
-                            'guid': guid
-                        });
-                    });
-                    modal.on('closeModal', function() {
-                        modal.trigger('cancel');
-                    });
-                }
+                    assetName = $(e.target).data("assetname");
+                CommonViewFunction.deleteTag({
+                    tagName: tagName,
+                    guid: guid,
+                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                    titleMessage: Messages.removeTag,
+                    okText: "Remove",
+                    showLoader: that.showLoader.bind(that),
+                    hideLoader: that.hideLoader.bind(that),
+                    callback: function() {
+                        that.fetchCollection();
+                    }
+                });
+
             },
             onClickTermCross: function(e) {
                 var $el = $(e.target),
@@ -978,16 +976,6 @@ define(['require',
                         that.fetchCollection();
                     }
                 });
-            },
-            deleteTagData: function(options) {
-                var that = this;
-                CommonViewFunction.deleteTag(_.extend({}, options, {
-                    showLoader: that.showLoader.bind(that),
-                    hideLoader: that.hideLoader.bind(that),
-                    callback: function() {
-                        that.fetchCollection();
-                    }
-                }));
             },
             onClicknextData: function() {
                 this.offset = this.offset + this.limit;

@@ -36,6 +36,7 @@ define(['require',
             /** Layout sub regions */
             regions: {
                 RSearchResultLayoutView: "#r_searchResultLayoutView",
+                RTagTableLayoutView: "#r_tagTableLayoutView"
             },
             templateHelpers: function() {
                 return {
@@ -51,14 +52,21 @@ define(['require',
                 title: "[data-id='title']",
                 shortDescription: "[data-id='shortDescription']",
                 longDescription: "[data-id='longDescription']",
+
                 categoryList: "[data-id='categoryList']",
                 removeCategory: "[data-id='removeCategory']",
                 categoryClick: "[data-id='categoryClick']",
                 addCategory: "[data-id='addCategory']",
+
                 termList: "[data-id='termList']",
                 removeTerm: "[data-id='removeTerm']",
                 termClick: "[data-id='termClick']",
-                addTerm: "[data-id='addTerm']"
+                addTerm: "[data-id='addTerm']",
+
+                tagList: "[data-id='tagList']",
+                removeTag: '[data-id="removeTag"]',
+                tagClick: '[data-id="tagClick"]',
+                addTag: '[data-id="addTag"]',
             },
             /** ui events hash */
             events: function() {
@@ -73,7 +81,7 @@ define(['require',
                         Utils.setUrl({
                             url: '#!/glossary/' + guid,
                             mergeBrowserUrl: false,
-                            urlParams: { gType: "category" },
+                            urlParams: { gType: "category", viewType: "category", fromView: "glossary" },
                             trigger: true,
                             updateTabState: true
                         });
@@ -89,9 +97,20 @@ define(['require',
                         Utils.setUrl({
                             url: '#!/glossary/' + guid,
                             mergeBrowserUrl: false,
-                            urlParams: { gType: "term" },
+                            urlParams: { gType: "term", viewType: "term", fromView: "glossary" },
                             trigger: true,
                             updateTabState: true
+                        });
+                    }
+                };
+                events["click " + this.ui.tagClick] = function(e) {
+                    if (e.target.nodeName.toLocaleLowerCase() == "i") {
+                        this.onClickTagCross(e);
+                    } else {
+                        Utils.setUrl({
+                            url: '#!/tag/tagAttribute/' + e.currentTarget.textContent,
+                            mergeBrowserUrl: false,
+                            trigger: true
                         });
                     }
                 };
@@ -103,11 +122,11 @@ define(['require',
                             "model": model,
                             "isGlossaryView": this.isGlossaryView,
                             "collection": this.glossaryCollection,
-                            "callback": function(newModel) {
-                                that.data = newModel;
-                                model.set(newModel);
+                            "callback": function(data) {
+                                model.set(_.extend({}, model.toJSON(), data), { silent: true });
+                                that.data = data;
                                 that.renderDetails(that.data);
-                                //that.glossaryCollection.trigger("update:details");
+                                that.glossaryCollection.trigger("update:details", { isGlossaryUpdate: true });
                             }
                         });
                     } else {
@@ -116,15 +135,33 @@ define(['require',
                             "isCategoryView": this.isCategoryView,
                             "model": this.data,
                             "collection": this.glossaryCollection,
-                            "callback": function() {
-                                that.getData();
-                                that.glossaryCollection.trigger("update:details");
+                            "callback": function(data) {
+                                if (data.displayName != that.data.displayName) {
+                                    var glossary = that.glossaryCollection.fullCollection.get(data.anchor.glossaryGuid);
+                                    if (that.isTermView) {
+                                        _.find(glossary.get('terms'), function(obj) {
+                                            if (obj.termGuid == data.guid) {
+                                                obj.displayText = data.displayName
+                                            }
+                                        });
+                                    } else if (!data.parentCategory) {
+                                        _.find(glossary.get('categories'), function(obj) {
+                                            if (obj.categoryGuid == data.guid) {
+                                                obj.displayText = data.displayName
+                                            }
+                                        });
+                                    }
+                                    that.glossaryCollection.trigger("update:details", { data: that.data });
+                                }
+                                that.data = data;
+                                that.renderDetails(that.data);
                             }
                         });
                     }
                 };
                 events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
                 events["click " + this.ui.addCategory] = 'onClickAddCategoryBtn';
+                events["click " + this.ui.addTag] = 'onClickAddTagBtn';
                 return events;
             },
             /**
@@ -144,6 +181,7 @@ define(['require',
                 }
             },
             onRender: function() {
+                this.$('.fontLoader-relative').show();
                 this.getData();
                 this.bindEvents();
             },
@@ -165,8 +203,20 @@ define(['require',
                         "guid": this.guid,
                         "ajaxOptions": {
                             success: function(data) {
+                                if (that.isDestroyed) {
+                                    return;
+                                }
                                 if (that.isTermView) {
-                                    that.renderSearchResultLayoutView();
+                                    var obj = {
+                                        "guid": that.guid,
+                                        "entityDefCollection": that.entityDefCollection,
+                                        "typeHeaders": that.typeHeaders,
+                                        "tagCollection": that.collection,
+                                        "enumDefCollection": that.enumDefCollection,
+                                        "classificationDefCollection": that.classificationDefCollection
+                                    }
+                                    that.renderSearchResultLayoutView(obj);
+                                    that.renderTagTableLayoutView(obj);
                                 }
                                 that.data = data;
                                 that.glossary.selectedItem.model = data;
@@ -185,7 +235,7 @@ define(['require',
                 this.ui.longDescription.text(data.longDescription);
                 this.generateCategories(data.categories);
                 this.generateTerm(data.terms);
-
+                this.generateTag(data.classifications);
             },
             generateCategories: function(data) {
                 var that = this,
@@ -207,6 +257,15 @@ define(['require',
                 this.ui.termList.find("span.btn").remove();
                 this.ui.termList.prepend(terms);
 
+            },
+            generateTag: function(tagObject) {
+                var that = this,
+                    tagData = "";
+                _.each(tagObject, function(val) {
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="removeTag" data-type="tag" title="Remove Tag"></i></span>';
+                });
+                this.ui.tagList.find("span.btn").remove();
+                this.ui.tagList.prepend(tagData);
             },
             onClickAddTermBtn: function(e) {
                 var that = this;
@@ -240,6 +299,45 @@ define(['require',
                     });
                 });
             },
+            onClickAddTagBtn: function(e) {
+                var that = this;
+                require(['views/tag/AddTagModalView'], function(AddTagModalView) {
+                    var tagList = [];
+                    _.map(that.data.classifications, function(obj) {
+                        if (obj.entityGuid === that.guid) {
+                            tagList.push(obj.typeName);
+                        }
+                    });
+                    var view = new AddTagModalView({
+                        guid: that.guid,
+                        tagList: tagList,
+                        callback: function() {
+                            that.getData();
+                        },
+                        showLoader: that.showLoader.bind(that),
+                        hideLoader: that.hideLoader.bind(that),
+                        collection: that.classificationDefCollection,
+                        enumDefCollection: that.enumDefCollection
+                    });
+                });
+            },
+            onClickTagCross: function(e) {
+                var that = this,
+                    tagName = $(e.currentTarget).text(),
+                    termName = this.data.displayName;
+                CommonViewFunction.deleteTag(_.extend({}, {
+                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + termName + "?</b></div>",
+                    titleMessage: Messages.removeTag,
+                    okText: "Remove",
+                    showLoader: that.showLoader.bind(that),
+                    hideLoader: that.hideLoader.bind(that),
+                    tagName: tagName,
+                    guid: that.guid,
+                    callback: function() {
+                        that.getData();
+                    }
+                }));
+            },
             onClickRemoveAssociationBtn: function(e) {
                 var $el = $(e.currentTarget),
                     guid = $el.data('guid'),
@@ -267,7 +365,17 @@ define(['require',
             hideLoader: function() {
                 Utils.hideTitleLoader(this.$('.page-title .fontLoader'), this.ui.details);
             },
-            renderSearchResultLayoutView: function() {
+            renderTagTableLayoutView: function(options) {
+                var that = this;
+                require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
+                    that.RTagTableLayoutView.show(new TagDetailTableLayoutView(_.extend({}, options, {
+                        "entityName": that.ui.title.text(),
+                        "fetchCollection": that.getData.bind(that),
+                        "entity": that.data
+                    })));
+                });
+            },
+            renderSearchResultLayoutView: function(options) {
                 var that = this;
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
                     var value = {
@@ -275,17 +383,10 @@ define(['require',
                         'searchType': 'basic'
                     };
                     if (that.RSearchResultLayoutView) {
-                        that.RSearchResultLayoutView.show(new SearchResultLayoutView({
-                            "value": _.extend({}, that.value, { "searchType": "basic" }),
-                            "termName": that.data.qualifiedName,
-                            "guid": that.guid,
-                            "entityDefCollection": that.entityDefCollection,
-                            "typeHeaders": that.typeHeaders,
-                            "tagCollection": that.collection,
-                            "enumDefCollection": that.enumDefCollection,
-                            "classificationDefCollection": that.classificationDefCollection,
+                        that.RSearchResultLayoutView.show(new SearchResultLayoutView(_.extend({}, options, {
+                            "value": { "searchType": "basic", "term": that.data.qualifiedName },
                             "fromView": "glossary"
-                        }));
+                        })));
                     }
                 });
             },

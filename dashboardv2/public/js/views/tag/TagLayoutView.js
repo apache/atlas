@@ -76,7 +76,7 @@ define(['require',
                         tagName: null
                     }
                 };
-                if (this.value && this.value.viewType) {
+                if (Utils.getUrlState.isTagTab() && this.value && this.value.viewType) {
                     this.viewType = this.value.viewType;
                 }
                 this.query[this.viewType].tagName = this.tag;

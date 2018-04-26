@@ -90,7 +90,7 @@ define(['require',
                         Utils.setUrl({
                             url: '#!/glossary/' + $(e.currentTarget).find('i').data('guid'),
                             mergeBrowserUrl: false,
-                            urlParams: { gType: "term" },
+                            urlParams: { gType: "term", viewType: "term", fromView: "entity" },
                             trigger: true
                         });
                     }
@@ -118,7 +118,6 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection'));
-                this.bindEvents();
                 $('body').addClass("detail-page");
             },
             bindEvents: function() {
@@ -126,6 +125,10 @@ define(['require',
                 this.listenTo(this.collection, 'reset', function() {
                     this.entityObject = this.collection.first().toJSON();
                     var collectionJSON = this.entityObject.entity;
+
+                    if (collectionJSON && collectionJSON.typeName.startsWith("__AtlasGlossary")) {
+                        this.$(".termBox").hide();
+                    }
                     // MergerRefEntity.
                     Utils.findAndMergeRefEntity(collectionJSON.attributes, this.entityObject.referredEntities);
 
@@ -200,6 +203,7 @@ define(['require',
                         fetchCollection: this.fetchCollection.bind(that),
                         enumDefCollection: this.enumDefCollection,
                         classificationDefCollection: this.classificationDefCollection,
+                        glossaryCollection: this.glossaryCollection,
                         attributeDefs: (function() {
                             return that.getEntityDef(collectionJSON);
                         })()
@@ -208,6 +212,8 @@ define(['require',
                     this.renderRelationshipLayoutView(obj);
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
+
+                    // To render profile tab check for attribute "profileData" or typeName = "hive_db","hbase_namespace"
                     if (collectionJSON && (!_.isUndefined(collectionJSON.attributes['profileData']) || collectionJSON.typeName === "hive_db" || collectionJSON.typeName === "hbase_namespace")) {
                         if (collectionJSON.typeName === "hive_db" || collectionJSON.typeName === "hbase_namespace") {
                             this.$('.profileTab a').text("Tables")
@@ -221,48 +227,53 @@ define(['require',
                         }));
                     }
 
-                    // To render Schema check attribute "schemaElementsAttribute"
-                    var schemaOptions = this.activeEntityDef.get('options');
-                    if (schemaOptions && schemaOptions.hasOwnProperty('schemaElementsAttribute') && schemaOptions.schemaElementsAttribute !== "") {
-                        this.$('.schemaTable').show();
-                        this.renderSchemaLayoutView(_.extend({}, obj, {
-                            attribute: collectionJSON.attributes[schemaOptions.schemaElementsAttribute]
-                        }));
-                    } else if (this.value && this.value.tabActive == "schema") {
-                        Utils.setUrl({
-                            url: Utils.getUrlState.getQueryUrl().queyParams[0],
-                            urlParams: { tabActive: 'properties' },
-                            mergeBrowserUrl: false,
-                            trigger: true,
-                            updateTabState: true
-                        });
+                    if (this.activeEntityDef) {
+                        // To render Schema check attribute "schemaElementsAttribute"
+                        var schemaOptions = this.activeEntityDef.get('options');
+                        if (schemaOptions && schemaOptions.hasOwnProperty('schemaElementsAttribute') && schemaOptions.schemaElementsAttribute !== "") {
+                            this.$('.schemaTable').show();
+                            this.renderSchemaLayoutView(_.extend({}, obj, {
+                                attribute: collectionJSON.attributes[schemaOptions.schemaElementsAttribute]
+                            }));
+                        } else if (this.value && this.value.tabActive == "schema") {
+                            Utils.setUrl({
+                                url: Utils.getUrlState.getQueryUrl().queyParams[0],
+                                urlParams: { tabActive: 'properties' },
+                                mergeBrowserUrl: false,
+                                trigger: true,
+                                updateTabState: true
+                            });
+                        }
+
+                        if (_.contains(Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }), "DataSet")) {
+                            this.$('.lineageGraph').show();
+                            this.renderLineageLayoutView({
+                                guid: this.id,
+                                entityDefCollection: this.entityDefCollection,
+                                fetchCollection: this.fetchCollection.bind(this),
+                                actionCallBack: function() {
+                                    that.$('#expand_collapse_panel').click();
+                                }
+                            });
+                            this.$(".resizeGraph").resizable({
+                                handles: ' s',
+                                minHeight: 375,
+                                stop: function(event, ui) {
+                                    ui.element.height(($(this).height()));
+                                },
+                            });
+                        } else if (this.value && this.value.tabActive == "lineage") {
+                            Utils.setUrl({
+                                url: Utils.getUrlState.getQueryUrl().queyParams[0],
+                                urlParams: { tabActive: 'properties' },
+                                mergeBrowserUrl: false,
+                                trigger: true,
+                                updateTabState: true
+                            });
+                        }
                     }
-                    if (this.activeEntityDef && _.contains(this.activeEntityDef.get('superTypes'), "DataSet")) {
-                        this.$('.lineageGraph').show();
-                        this.renderLineageLayoutView({
-                            guid: this.id,
-                            entityDefCollection: this.entityDefCollection,
-                            fetchCollection: this.fetchCollection.bind(this),
-                            actionCallBack: function() {
-                                that.$('#expand_collapse_panel').click();
-                            }
-                        });
-                        this.$(".resizeGraph").resizable({
-                            handles: ' s',
-                            minHeight: 375,
-                            stop: function(event, ui) {
-                                ui.element.height(($(this).height()));
-                            },
-                        });
-                    } else if (this.value && this.value.tabActive == "lineage") {
-                        Utils.setUrl({
-                            url: Utils.getUrlState.getQueryUrl().queyParams[0],
-                            urlParams: { tabActive: 'properties' },
-                            mergeBrowserUrl: false,
-                            trigger: true,
-                            updateTabState: true
-                        });
-                    }
+
+
                 }, this);
                 this.listenTo(this.collection, 'error', function(model, response) {
                     this.$('.fontLoader-relative').removeClass('show');
@@ -275,31 +286,9 @@ define(['require',
             },
             onRender: function() {
                 var that = this;
+                this.bindEvents();
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 this.$('.fontLoader-relative').addClass('show'); // to show tab loader
-                // this.ui.fullscreenPanel.on('fullscreen_done', function(e, panel) {
-                //     var svgEl = panel.find('.panel-body svg'),
-                //         scaleEl = svgEl.find('>g'),
-                //         zoom = that.RLineageLayoutView.currentView.zoom,
-                //         svg = that.RLineageLayoutView.currentView.svg,
-                //         viewThis = that.RLineageLayoutView.currentView,
-                //         setGraphZoomPositionCal = that.RLineageLayoutView.currentView.setGraphZoomPositionCal,
-                //         zoomed = that.RLineageLayoutView.currentView.zoomed;;
-
-                //     if (zoom) {
-                //         setGraphZoomPositionCal.call(viewThis);
-                //         zoomed.call(viewThis);
-                //         if ($(e.currentTarget).find('i').hasClass('fa fa-compress')) {
-                //             svg.call(zoom)
-                //                 .on("dblclick.zoom", null);
-
-                //         } else {
-                //             svg.call(zoom)
-                //                 .on("wheel.zoom", null)
-                //                 .on("dblclick.zoom", null);
-                //         }
-                //     }
-                // })
             },
             onShow: function() {
                 if (this.value && this.value.tabActive) {
@@ -330,32 +319,16 @@ define(['require',
                 }
             },
             onClickTagCross: function(e) {
-                var tagName = $(e.currentTarget).parent().text(),
-                    that = this;
-                var modal = CommonViewFunction.deleteTagModel({
+                var that = this,
+                    tagName = $(e.currentTarget).parent().text();
+                CommonViewFunction.deleteTag(_.extend({}, {
                     msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
                     titleMessage: Messages.removeTag,
-                    buttonText: "Remove"
-                });
-                if (modal) {
-                    modal.on('ok', function() {
-                        that.deleteTagData({
-                            'tagName': tagName,
-                            'guid': that.id,
-                            'el': $(e.currentTarget)
-                        });
-                    });
-                    modal.on('closeModal', function() {
-                        modal.trigger('cancel');
-                    });
-                }
-            },
-            deleteTagData: function(options) {
-                var that = this,
-                    tagName = options.el.text();
-                Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
-                CommonViewFunction.deleteTag(_.extend({}, options, {
+                    okText: "Remove",
+                    showLoader: that.showLoader.bind(that),
                     hideLoader: that.hideLoader.bind(that),
+                    tagName: tagName,
+                    guid: that.id,
                     callback: function() {
                         that.fetchCollection();
                     }

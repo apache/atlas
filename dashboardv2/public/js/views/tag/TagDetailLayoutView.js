@@ -44,7 +44,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tag', 'value', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'tag', 'value', 'glossaryCollection', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'enumDefCollection'));
                 this.collection = this.classificationDefCollection;
             },
             bindEvents: function() {},
@@ -67,6 +67,7 @@ define(['require',
                             tagCollection: that.collection,
                             enumDefCollection: that.enumDefCollection,
                             classificationDefCollection: that.classificationDefCollection,
+                            glossaryCollection: that.glossaryCollection,
                             fromView: "classification"
                         }));
                     }

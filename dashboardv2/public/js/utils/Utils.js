@@ -124,7 +124,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         var modal = {};
         if (options && options.modal) {
             var myStack = { "dir1": "down", "dir2": "right", "push": "top", 'modal': true };
-            modal['addclass'] = 'stack-modal';
+            modal['addclass'] = 'stack-modal ' + (options.modalClass ? modalClass : 'width-500');
             modal['stack'] = myStack;
         }
         notify(_.extend({
@@ -133,7 +133,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             confirm: {
                 confirm: true,
                 buttons: [{
-                        text: 'cancel',
+                        text: options.cancelText || 'Cancel',
                         addClass: 'btn-action btn-md',
                         click: function(notice) {
                             options.cancel(notice);
@@ -141,7 +141,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                         }
                     },
                     {
-                        text: 'Ok',
+                        text: options.okText || 'Ok',
                         addClass: 'btn-atlas btn-md',
                         click: function(notice) {
                             options.ok(notice);
@@ -439,19 +439,19 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         return returnObj;
     }
     Utils.showTitleLoader = function(loaderEl, titleBoxEl) {
-        loaderEl.css({
+        loaderEl.css ? loaderEl.css({
             'display': 'block',
             'position': 'relative',
             'height': '85px',
             'marginTop': '85px',
             'marginLeft': '50%',
             'left': '0%'
-        });
-        titleBoxEl.hide();
+        }) : null;
+        titleBoxEl.hide ? titleBoxEl.hide() : null;
     }
     Utils.hideTitleLoader = function(loaderEl, titleBoxEl) {
-        loaderEl.hide();
-        titleBoxEl.fadeIn();
+        loaderEl.hide ? loaderEl.hide() : null;
+        titleBoxEl.fadeIn ? titleBoxEl.fadeIn() : null;
     }
     Utils.findAndMergeRefEntity = function(attributeObject, referredEntities) {
         var mergeObject = function(obj) {
@@ -476,6 +476,28 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 }
             });
         }
+    }
+    Utils.getNestedSuperTypes = function(options) {
+        var data = options.data,
+            collection = options.collection,
+            superTypes = [];
+
+        var getData = function(data, collection) {
+            superTypes = superTypes.concat(data.superTypes);
+
+            if (data.superTypes && data.superTypes.length) {
+                _.each(data.superTypes, function(superTypeName) {
+                    if (collection.fullCollection) {
+                        var collectionData = collection.fullCollection.findWhere({ name: superTypeName }).toJSON();
+                    } else {
+                        var collectionData = collection.findWhere({ name: superTypeName }).toJSON();
+                    }
+                    return getData(collectionData, collection);
+                });
+            }
+        }
+        getData(data, collection);
+        return _.uniq(superTypes);
     }
     Utils.getNestedSuperTypeObj = function(options) {
         var flag = 0,
@@ -513,7 +535,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             }
         }
         getData(data, collection);
-        return attributeDefs
+        return attributeDefs;
     }
 
     Utils.getProfileTabType = function(profileData, skipData) {

@@ -54,7 +54,7 @@ define(['require',
                     this.addModalView(e);
                 };
                 events["click " + this.ui.deleteTag] = function(e) {
-                    this.deleteTagDataModal(e);
+                    this.onClickTagCross(e);
                 };
                 events["click " + this.ui.editTag] = function(e) {
                     this.editTagDataModal(e);
@@ -79,7 +79,7 @@ define(['require',
                 this.tagCollection = new VTagList();
                 var that = this,
                     tags = _.toArray(this.collectionObject.classifications);
-                this.tagCollection.set(tags);
+                this.tagCollection.fullCollection.reset(tags);
                 this.commonTableOptions = {
                     collection: this.tagCollection,
                     includeFilter: false,
@@ -191,28 +191,15 @@ define(['require',
                     });
                 });
             },
-            deleteTagDataModal: function(e) {
+            onClickTagCross: function(e) {
                 var that = this,
-                    tagName = $(e.currentTarget).data("name"),
-                    modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.entityName + "?</b></div>",
-                        titleMessage: Messages.removeTag,
-                        buttonText: "Remove",
-                    });
-
-                modal.on('ok', function() {
-                    that.deleteTagData({
-                        'tagName': tagName,
-                        'guid': that.guid
-                    });
-                });
-                modal.on('closeModal', function() {
-                    modal.trigger('cancel');
-                });
-            },
-            deleteTagData: function(options) {
-                var that = this;
-                CommonViewFunction.deleteTag(_.extend({}, options, {
+                    tagName = $(e.currentTarget).data("name");
+                CommonViewFunction.deleteTag({
+                    tagName: tagName,
+                    guid: that.guid,
+                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.entityName + "?</b></div>",
+                    titleMessage: Messages.removeTag,
+                    okText: "Remove",
                     showLoader: function() {
                         that.$('.fontLoader').show();
                         that.$('.tableOverlay').show();
@@ -226,9 +213,8 @@ define(['require',
                         if (that.fetchCollection) {
                             that.fetchCollection();
                         }
-
                     }
-                }));
+                });
             },
             editTagDataModal: function(e) {
                 var that = this,
@@ -256,12 +242,12 @@ define(['require',
                     unPropagatedTags = [];
                 e.stopPropagation();
                 if (e.target.checked) {
-                    that.tagCollection.reset(tags);
+                    that.tagCollection.fullCollection.reset(tags);
                 } else {
                     unPropagatedTags = _.filter(tags, function(val) {
                         return that.guid === val.entityGuid;
                     });
-                    that.tagCollection.reset(unPropagatedTags);
+                    that.tagCollection.fullCollection.reset(unPropagatedTags);
                 }
             }
         });

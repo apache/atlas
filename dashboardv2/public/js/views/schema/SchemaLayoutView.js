@@ -283,34 +283,19 @@ define(['require',
                 var that = this,
                     tagName = $(e.target).data("name"),
                     guid = $(e.target).data("guid"),
-                    assetName = $(e.target).data("assetname"),
-                    modal = CommonViewFunction.deleteTagModel({
-                        msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
-                        titleMessage: Messages.removeTag,
-                        buttonText: "Remove"
-                    });
-
-                if (modal) {
-                    modal.on('ok', function() {
-                        that.deleteTagData({
-                            'tagName': tagName,
-                            'guid': guid
-                        });
-                    });
-                    modal.on('closeModal', function() {
-                        modal.trigger('cancel');
-                    });
-                }
-            },
-            deleteTagData: function(options) {
-                var that = this;
-                CommonViewFunction.deleteTag(_.extend({}, options, {
+                    assetName = $(e.target).data("assetname");
+                CommonViewFunction.deleteTag({
+                    tagName: tagName,
+                    guid: guid,
+                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                    titleMessage: Messages.removeTag,
+                    okText: "Remove",
                     showLoader: that.showLoader.bind(that),
                     hideLoader: that.hideLoader.bind(that),
                     callback: function() {
                         that.fetchCollection();
                     }
-                }));
+                });
             },
             onCheckDeletedEntity: function(e) {
                 if (e.target.checked) {

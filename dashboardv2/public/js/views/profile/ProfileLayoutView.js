@@ -57,7 +57,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'profileData', 'guid', 'value', 'typeName', 'entityDetail', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection'));
+                _.extend(this, _.pick(options, 'profileData', 'guid', 'value', 'typeName', 'entityDetail', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection'));
                 if (this.typeName === "hive_db" || this.typeName === "hbase_namespace") {
                     this.profileData = { attributes: true };
                 }
@@ -80,7 +80,7 @@ define(['require',
                     var value = _.extend({}, that.value, {
                         'guid': that.guid,
                         'searchType': 'relationship',
-                        'profileDBView' : true,
+                        'profileDBView': true,
                         'typeName': that.typeName
                     });
                     that.RProfileTableOrColumnLayoutView.show(new SearchResultLayoutView({
@@ -89,6 +89,7 @@ define(['require',
                         'entityDefCollection': that.entityDefCollection,
                         'enumDefCollection': that.enumDefCollection,
                         'isDisable': true,
+                        'glossaryCollection': that.glossaryCollection,
                         'classificationDefCollection': that.classificationDefCollection
                     }));
                 });

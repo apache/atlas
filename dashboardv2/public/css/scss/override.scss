@@ -372,6 +372,21 @@ div.columnmanager-dropdown-container {
 }
 
 .stack-modal[aria-role="alertdialog"] {
+    &.width-600 {
+        width: 600px !important;
+        left: calc(50% - 250px) !important;
+        margin-left: 0 !important;
+    }
+    &.width-500 {
+        width: 500px !important;
+        left: calc(50% - 216px) !important;
+        margin-left: 0 !important;
+    }
+    &.width-400 {
+        width: 400px !important;
+        left: calc(50% - 183px);
+        margin-left: 0 !important;
+    }
     .alert.ui-pnotify-container {
         color: $color_ironside_gray_approx;
         background-color: $white;
@@ -430,6 +445,7 @@ div.columnmanager-dropdown-container {
 .fa-color {
     color: $color_keppel_approx
 }
-.w30{
+
+.w30 {
     width: 30% !important;
 }

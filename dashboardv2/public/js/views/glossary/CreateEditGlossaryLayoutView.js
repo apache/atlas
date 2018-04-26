@@ -41,7 +41,6 @@ define(['require',
 
             /** ui selector cache */
             ui: {
-                "qualifiedName": "[data-id='qualifiedName']",
                 "displayName": "[data-id='displayName']",
                 "shortDescription": "[data-id='shortDescription']",
                 "longDescription": "[data-id='longDescription']",

@@ -20,52 +20,54 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
     'use strict';
 
     var CommonViewFunction = {};
-    CommonViewFunction.deleteTagModel = function(options) {
-        var modal = new Modal({
-            title: options.titleMessage,
-            okText: options.buttonText,
-            htmlContent: options.msg,
-            cancelText: "Cancel",
-            allowCancel: true,
-            okCloses: true,
-            showFooter: true,
-        }).open();
-        return modal;
-    };
     CommonViewFunction.deleteTag = function(options) {
         require(['models/VTag'], function(VTag) {
-            var tagModel = new VTag();
             if (options && options.guid && options.tagName) {
-                if (options.showLoader) {
-                    options.showLoader();
-                }
-                tagModel.deleteAssociation(options.guid, options.tagName, {
-                    skipDefaultError: true,
-                    success: function(data) {
-                        Utils.notifySuccess({
-                            content: "Classification " + options.tagName + Messages.removeSuccessMessage
-                        });
-                        if (options.callback) {
-                            options.callback();
-                        }
-                        if (options.collection) {
-                            options.collection.fetch({ reset: true });
-                        }
+                var tagModel = new VTag(),
+                    notifyObj = {
+                        modal: true,
+                        text: options.msg,
+                        title: options.titleMessage,
+                        okText: options.okText,
+                        ok: function(argument) {
+                            if (options.showLoader) {
+                                options.showLoader();
+                            }
+                            tagModel.deleteAssociation(options.guid, options.tagName, {
+                                skipDefaultError: true,
+                                success: function(data) {
+                                    Utils.notifySuccess({
+                                        content: "Classification " + options.tagName + Messages.removeSuccessMessage
+                                    });
+                                    if (options.callback) {
+                                        options.callback();
+                                    }
+                                    if (options.collection) {
+                                        options.collection.fetch({ reset: true });
+                                    }
 
-                    },
-                    cust_error: function(model, response) {
-                        var message = options.tagName + Messages.deleteErrorMessage;
-                        if (response && response.responseJSON) {
-                            message = response.responseJSON.errorMessage;
+                                },
+                                cust_error: function(model, response) {
+                                    var message = options.tagName + Messages.deleteErrorMessage;
+                                    if (response && response.responseJSON) {
+                                        message = response.responseJSON.errorMessage;
+                                    }
+                                    if (options.hideLoader) {
+                                        options.hideLoader();
+                                    }
+                                    Utils.notifyError({
+                                        content: message
+                                    });
+                                }
+                            });
+                        },
+                        cancel: function(argument) {
+                            if (options.hideLoader) {
+                                options.hideLoader();
+                            }
                         }
-                        if (options.hideLoader) {
-                            options.hideLoader();
-                        }
-                        Utils.notifyError({
-                            content: message
-                        });
-                    }
-                });
+                    };
+                Utils.notifyConfirm(notifyObj);
             }
         });
     };
@@ -329,6 +331,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 var conditionFortag = tagFilters.rules.length == 1 ? '' : 'AND';
                 tagKeyValue += '&nbsp<span class="operator">' + conditionFortag + '</span>&nbsp(<span class="operator">' + tagFilters.condition + '</span>&nbsp(' + objToString(tagFilters) + '))';
             }
+            queryArray.push(tagKeyValue);
+        }
+        if (value.term) {
+            var tagKeyValue = '<span class="key">Term:</span>&nbsp<span class="value">' + _.escape(value.term) + '</span>';
             queryArray.push(tagKeyValue);
         }
         if (value.query) {
@@ -600,9 +606,24 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 "okText": model ? "Update" : "Create",
                 "allowCancel": true
             }).open();
+            modal.$el.find('button.ok').attr("disabled", "true");
+            if (model) {
+                view.$('input,textarea').on('keyup', function(e) {
+                    modal.$el.find('button.ok').attr("disabled", false);
+                });
+            } else {
+                view.ui.displayName.on('keyup', function(e) {
+                    modal.$el.find('button.ok').attr("disabled", false);
+                });
+            }
+            view.ui.displayName.on('keyup', function(e) {
+                if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value.trim() == "") {
+                    modal.$el.find('button.ok').attr("disabled", true);
+                }
+            });
             modal.on('ok', function() {
                 if (isGlossaryView) {
-                    modal.$el.find('button.ok').attr("disabled", "true");
+                    modal.$el.find('button.ok').attr("disabled", true);
                 }
                 CommonViewFunction.createEditGlossaryCategoryTermSubmit(_.extend({ "ref": view, "modal": modal }, options));
             });
@@ -637,19 +658,29 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             messageType = "Category ";
         }
         var ajaxOptions = {
+            silent: true,
             success: function(rModel, response) {
                 Utils.notifySuccess({
                     content: messageType + ref.ui.displayName.val() + Messages[model ? "editSuccessMessage" : "addSuccessMessage"]
                 });
                 if (options.callback) {
-                    options.callback(response);
+                    var obj = rModel;
+                    if (isGlossaryView) {
+                        obj = _.omit((rModel && rModel.toJSON ? rModel.toJSON() : rModel), 'terms', 'categories');
+                    }
+                    options.callback(obj);
                 }
                 modal.trigger('closeModal');
+            },
+            cust_error: function() {
+                if (isGlossaryView) {
+                    modal.$el.find('button.ok').attr("disabled", false);
+                }
             }
         }
         if (model) {
             if (isGlossaryView) {
-                model.set(data).save(null, ajaxOptions)
+                model.clone().set(data, { silent: true }).save(null, ajaxOptions)
             } else {
                 newModel[isTermView ? "createEditTerm" : "createEditCategory"](_.extend(ajaxOptions, {
                     guid: model.guid,
@@ -694,12 +725,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 ajaxOptions = {
                     success: function(rModel, response) {
                         Utils.notifySuccess({
-                            content: ((isCategoryView ? "Term" : "Category") + " association is removed successfully")
+                            content: ((isCategoryView || isEntityView ? "Term" : "Category") + " association is removed successfully")
                         });
                         if (options.callback) {
                             options.callback();
                         }
-                        modal.trigger('closeModal');
                     },
                     cust_error: function() {
                         if (options.hideLoader) {
@@ -707,44 +737,37 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         }
                     }
                 },
-                modal = new Modal({
+                notifyObj = {
+                    modal: true,
+                    text: options.msg,
                     title: options.titleMessage,
                     okText: options.buttonText,
-                    htmlContent: options.msg,
-                    cancelText: "Cancel",
-                    allowCancel: true,
-                    okCloses: true,
-                    showFooter: true,
-                }).open();
-            modal.on('ok', function() {
-                if (options.showLoader) {
-                    options.showLoader();
-                }
-                if (isEntityView && model) {
-                    var data = [model];
-                    newModel.removeTermFromEntity(termGuid, _.extend(ajaxOptions, {
-                        data: JSON.stringify(data)
-                    }))
-                } else {
-                    var data = _.extend({}, model);
-                    if (isTermView) {
-                        data.categories = _.reject(data.categories, function(term) { return term.categoryGuid == selectedGuid });
-                    } else {
-                        data.terms = _.reject(data.terms, function(term) { return term.termGuid == selectedGuid });
-                    }
+                    ok: function(argument) {
+                        if (options.showLoader) {
+                            options.showLoader();
+                        }
+                        if (isEntityView && model) {
+                            var data = [model];
+                            newModel.removeTermFromEntity(termGuid, _.extend(ajaxOptions, {
+                                data: JSON.stringify(data)
+                            }))
+                        } else {
+                            var data = _.extend({}, model);
+                            if (isTermView) {
+                                data.categories = _.reject(data.categories, function(term) { return term.categoryGuid == selectedGuid });
+                            } else {
+                                data.terms = _.reject(data.terms, function(term) { return term.termGuid == selectedGuid });
+                            }
 
-                    newModel[isTermView ? "createEditTerm" : "createEditCategory"](_.extend(ajaxOptions, {
-                        guid: model.guid,
-                        data: JSON.stringify(_.extend({}, model, data)),
-                    }));
-                }
-            });
-            modal.on('closeModal', function() {
-                modal.trigger('cancel');
-                if (options.onModalClose) {
-                    options.onModalClose()
-                }
-            });
+                            newModel[isTermView ? "createEditTerm" : "createEditCategory"](_.extend(ajaxOptions, {
+                                guid: model.guid,
+                                data: JSON.stringify(_.extend({}, model, data)),
+                            }));
+                        }
+                    },
+                    cancel: function(argument) {}
+                };
+            Utils.notifyConfirm(notifyObj);
         }
     }
     CommonViewFunction.addRestCsrfCustomHeader = function(xhr, settings) {

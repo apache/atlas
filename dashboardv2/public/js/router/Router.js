@@ -47,7 +47,11 @@ define([
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
             this.searchVent = new Backbone.Wreqr.EventAggregator();
-            this.glossaryCollection = new VGlossaryList([], {});
+            this.glossaryCollection = new VGlossaryList([], {
+                comparator: function(item) {
+                    return item.get("displayName");
+                }
+            });
             this.preFetchedCollectionLists = {
                 'entityDefCollection': this.entityDefCollection,
                 'typeHeaders': this.typeHeaders,
@@ -221,7 +225,7 @@ define([
                     if (Utils.getUrlState.isTagTab()) {
                         App.rSideNav.currentView.RTagLayoutView.currentView.manualRender();
                     } else if (Utils.getUrlState.isGlossaryTab()) {
-                        App.rSideNav.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({}, paramObj));
+                        App.rSideNav.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({ isTrigger: true }, paramObj));
                     }
                 }
 
@@ -263,7 +267,7 @@ define([
                 }
                 App.rSideNav.currentView.selectTab();
                 if (paramObj) {
-                    isinitialView = (paramObj.type || (paramObj.dslChecked == "true" ? "" : paramObj.tag) || (paramObj.query ? paramObj.query.trim() : "")).length === 0;
+                    isinitialView = (paramObj.type || (paramObj.dslChecked == "true" ? "" : (paramObj.tag || paramObj.term)) || (paramObj.query ? paramObj.query.trim() : "")).length === 0;
                 }
                 App.rNContent.show(new SearchDetailLayoutView(
                     _.extend({

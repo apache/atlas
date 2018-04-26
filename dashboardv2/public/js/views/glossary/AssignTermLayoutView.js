@@ -102,7 +102,7 @@ define(['require',
                     ajaxOptions = {
                         success: function(rModel, response) {
                             Utils.notifySuccess({
-                                content: (that.isCategoryView ? "Term" : "Category") + " is associated successfully "
+                                content: (that.isCategoryView || that.isEntityView ? "Term" : "Category") + " is associated successfully "
                             });
                             that.modal.trigger('closeModal');
                             if (that.callback) {

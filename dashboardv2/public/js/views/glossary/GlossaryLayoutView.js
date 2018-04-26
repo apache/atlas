@@ -92,26 +92,42 @@ define(['require',
                 this.isAssignView = this.isAssignTermView || this.isAssignCategoryView || this.isAssignEntityView;
                 this.bindEvents();
                 this.query = {
-                    term: {
-                        url: null
-                    },
-                    category: {
-                        url: null
-                    }
+                    term: {},
+                    category: {}
                 };
+                if (Utils.getUrlState.isGlossaryTab() && this.value && this.value.viewType) {
+                    this.viewType = this.value.viewType;
+                }
+                this.query[this.viewType] = _.extend({}, this.value, { "guid": this.guid });
             },
             bindEvents: function() {
                 var that = this;
-                this.listenTo(this.glossaryCollection.fullCollection, "reset add remove change", function() {
+                this.listenTo(this.glossaryCollection.fullCollection, "reset add change", function(skip) {
                     this.generateTree();
+                    this.setValues();
                 }, this);
-                this.listenTo(this.glossaryCollection, "update:details", function() {
-                    this.getGlossary();
+                this.listenTo(this.glossaryCollection, "update:details", function(options) {
+                    var isGlossaryUpdate = options.isGlossaryUpdate;
+                    if (isGlossaryUpdate) {
+                        if (this.ui.termTree.jstree(true).refresh) {
+                            this.ui.termTree.jstree(true).refresh();
+                        }
+                        if (this.ui.categoryTree.jstree(true).refresh) {
+                            this.ui.categoryTree.jstree(true).refresh();
+                        }
+                    } else {
+                        var $tree = this.ui[this.viewType == "term" ? "termTree" : "categoryTree"];
+                        if ($tree.jstree(true).refresh) {
+                            $tree.jstree(true).refresh();
+                        }
+                    }
                 }, this);
-                $('body').on('click', '.termPopoverOptions li, .categoryPopoverOptions li', function(e) {
-                    that.$('.termPopover,.categoryPopover').popover('hide');
-                    that[$(this).find('a').data('fn')](e)
-                });
+                if (!this.isAssignView) {
+                    $('body').on('click', '.termPopoverOptions li, .categoryPopoverOptions li', function(e) {
+                        that.$('.termPopover,.categoryPopover').popover('hide');
+                        that[$(this).find('a').data('fn')](e)
+                    });
+                }
             },
             onRender: function() {
                 if (this.isAssignCategoryView) {
@@ -124,7 +140,19 @@ define(['require',
                     this.getGlossary();
                 }
             },
+            setValues: function() {
+                if (this.viewType == "category") {
+                    if (!this.ui.glossaryView.prop("checked")) {
+                        this.ui.glossaryView.prop("checked", true).trigger("change");
+                    }
+                } else {
+                    if (this.ui.glossaryView.prop("checked")) {
+                        this.ui.glossaryView.prop("checked", false).trigger("change");
+                    }
+                }
+            },
             glossaryViewToggle: function(e) {
+                var that = this;
                 if (e.currentTarget.checked) {
                     this.$('.category-view').show();
                     this.$('.term-view').hide();
@@ -134,18 +162,45 @@ define(['require',
                     this.$('.category-view').hide();
                     this.viewType = "term";
                 }
+                var setDefaultSelector = function() {
+                    var model = null;
+                    if (that.value.gId) {
+                        model = that.glossaryCollection.fullCollection.get(that.value.gId);
+                    } else {
+                        model = that.glossaryCollection.fullCollection.first();
+                    }
+                    model = model.toJSON ? model.toJSON() : model;
+                    that.glossary.selectedItem = {
+                        type: "Glossary",
+                        guid: model.guid,
+                        id: model.guid,
+                        model: model,
+                        gType: "glossary"
+                    }
+                }
                 if (Utils.getUrlState.isGlossaryTab()) {
-                    // var name = this.query[this.viewType].url;
-                    // var guid = this.glossary.selectedItem.guid;
-                    // Utils.setUrl({
-                    //     url: '#!/glossary/' + guid,
-                    //     urlParams: {
-                    //         viewType: this.viewType,
-                    //     },
-                    //     mergeBrowserUrl: false,
-                    //     trigger: true,
-                    //     updateTabState: true
-                    // });
+                    var obj = this.query[this.viewType],
+                        $tree = this.ui[(this.viewType == "term" ? "termTree" : "categoryTree")]
+                    if (obj.guid) {
+                        var node = $tree.jstree(true).get_node(obj.guid);
+                        if (node) {
+                            $tree.jstree('activate_node', obj.guid);
+                            this.glossary.selectedItem = node.original;
+                        } else {
+                            setDefaultSelector();
+                        }
+                    } else {
+                        setDefaultSelector();
+                        $tree.jstree('activate_node', that.glossary.selectedItem.guid);
+                    }
+                    this.query[this.viewType] = _.extend(obj, _.pick(this.glossary.selectedItem, 'model', 'guid', 'gType'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
+                    Utils.setUrl({
+                        url: '#!/glossary/' + this.glossary.selectedItem.guid,
+                        urlParams: _.extend({}, _.omit(obj, 'guid', 'model', 'type', 'isNodeNotFoundAtLoad')),
+                        mergeBrowserUrl: false,
+                        trigger: false,
+                        updateTabState: true
+                    });
                 }
             },
             getGlossary: function() {
@@ -162,6 +217,7 @@ define(['require',
                         "glossaryName": options.node.glossaryName,
                         "model": obj,
                         "type": "GlossaryCategory",
+                        "gType": "category",
                         "children": true
                     }
                 });
@@ -188,19 +244,26 @@ define(['require',
             generateData: function(opt) {
                 var that = this,
                     type = opt.type;
+                if (opt.type == this.viewType) {
+                    this.query[opt.type].isNodeNotFoundAtLoad = true;
+                }
                 var getSelectedState = function(options) {
                     var objGuid = options.objGuid,
                         node = options.node,
                         index = options.index;
                     if (!that.guid) {
+                        that.query[that.viewType].isNodeNotFoundAtLoad = false;
                         var selectedItem = {
                             "type": "Glossary",
-                            "model": that.glossaryCollection.first().toJSON()
+                            "gType": "glossary",
+                            "model": that.glossaryCollection.fullCollection.first().toJSON()
                         };
                         selectedItem.text = selectedItem.model.displayName;
                         selectedItem.guid = selectedItem.model.guid;
                         if (index == 0 && selectedItem.guid == objGuid) {
                             that.glossary.selectedItem = selectedItem;
+                            that.query[that.viewType].model = selectedItem.model;
+                            that.query[that.viewType].type = selectedItem.gType;
                             return {
                                 'opened': true,
                                 'selected': true
@@ -208,7 +271,10 @@ define(['require',
                         }
                     } else {
                         if (that.guid == objGuid) {
+                            that.query[that.viewType].isNodeNotFoundAtLoad = false;
                             that.glossary.selectedItem = node
+                            that.query[that.viewType].model = node.model;
+                            that.query[that.viewType].type = node.gType;
                             return {
                                 'opened': true,
                                 'selected': true
@@ -225,6 +291,7 @@ define(['require',
                             "id": obj.guid,
                             "model": obj,
                             "type": obj.typeName ? obj.typeName : "Glossary",
+                            "gType": "glossary",
                             "children": []
                         }
                     parent.state = getSelectedState({
@@ -238,11 +305,12 @@ define(['require',
                             if (category.parentCategoryGuid) {
                                 return;
                             }
-                            var type = category.typeName || "GlossaryCategory",
+                            var typeName = category.typeName || "GlossaryCategory",
                                 guid = category.categoryGuid,
                                 categoryObj = {
                                     "text": category.displayText,
-                                    "type": type,
+                                    "type": typeName,
+                                    "gType": "category",
                                     "guid": guid,
                                     "id": guid,
                                     "parent": obj,
@@ -262,11 +330,12 @@ define(['require',
                     }
                     if (type == "term" && obj.terms) {
                         _.each(obj.terms, function(term) {
-                            var type = term.typeName || "GlossaryTerm",
+                            var typeName = term.typeName || "GlossaryTerm",
                                 guid = term.termGuid,
                                 termObj = {
                                     "text": term.displayText,
-                                    "type": type,
+                                    "type": typeName,
+                                    "gType": "term",
                                     "guid": guid,
                                     "id": guid,
                                     "parent": obj,
@@ -287,8 +356,32 @@ define(['require',
                 });
             },
             manualRender: function(options) {
-                _.extend(this, options);
-                this.triggerUrl();
+                _.extend(this, _.omit(options, 'isTrigger'));
+                if (this.value && this.value.viewType) {
+                    this.viewType = this.value.viewType;
+                }
+                this.setValues();
+                if (this.guid && this.value && ((this.value.fromView && this.value.fromView) || (this.value.updateView))) {
+                    var $tree = this.ui[this.viewType == "term" ? "termTree" : "categoryTree"],
+                        node = $tree.jstree(true).get_node(this.guid);
+                    if (node) {
+                        $tree.jstree('activate_node', this.guid);
+                        delete this.value.fromView;
+                        delete this.value.updateView;
+                        this.glossary.selectedItem = node.original;
+                        Utils.setUrl({
+                            url: '#!/glossary/' + this.guid,
+                            urlParams: this.value,
+                            mergeBrowserUrl: false,
+                            trigger: false,
+                            updateTabState: true
+                        });
+                        this.glossaryCollection.trigger("update:details", { isGlossaryUpdate: this.value.gType == "glossary" });
+                    }
+                }
+                if (options.isTrigger) {
+                    this.triggerUrl();
+                }
             },
             generateTree: function() {
                 var $termTree = this.ui.termTree,
@@ -298,10 +391,14 @@ define(['require',
                         return {
                             "plugins": ["search", "themes", "core", "wholerow", "sort", "conditionalselect"],
                             "conditionalselect": function(node) {
+                                var obj = node && node.original && node.original.type;
+                                if (!obj) {
+                                    return;
+                                }
                                 if (that.isAssignView) {
-                                    return node.original.type != "Glossary" ? true : false;
+                                    return obj != "Glossary" ? true : false;
                                 } else {
-                                    return node.original.type != "NoAction" ? true : false;
+                                    return obj != "NoAction" ? true : false;
                                 }
                             },
                             "core": {
@@ -319,12 +416,10 @@ define(['require',
                             }
                         }
                     },
-                    treeLoaded = function() {
-                        if (that.selectFirstNodeManually) {
-                            that.selectFirstNodeManually = false;
+                    treeLoaded = function(options) {
+                        if (that.query[options.type].isNodeNotFoundAtLoad == true) {
                             var id = that.glossary.selectedItem.guid;
-                            $treeEl.jstree('select_node', '#' + id + '_anchor');
-                            $treeEl.jstree('open_node', '#' + id + '_anchor');
+                            options.$el.jstree('activate_node', id);
                         }
                     },
                     createAction = function(options) {
@@ -355,10 +450,25 @@ define(['require',
                             })
                             .on("select_node.jstree", function(e, data) {
                                 that.glossary.selectedItem = data.node.original;
-                                //$("." + popoverClassName).popover('hide');
-                                that.triggerUrl();
+                                var popoverClassName = (type == "term" ? '.termPopover' : '.categoryPopover'),
+                                    currentClickedPopoverEl = "";
+                                if (data.event) {
+                                    if ($(data.event.currentTarget).parent().hasClass('jstree-leaf')) {
+                                        currentClickedPopoverEl = $(data.event.currentTarget).parent().find(popoverClassName);
+                                    } else {
+                                        currentClickedPopoverEl = $(data.event.currentTarget).parent().find(">div " + popoverClassName);
+                                    }
+                                    $(popoverClassName).not(currentClickedPopoverEl).popover('hide');
+                                }
+                                if (that.query[type].isNodeNotFoundAtLoad == true) {
+                                    that.query[type].isNodeNotFoundAtLoad = false;
+                                } else if (type == that.viewType) {
+                                    that.triggerUrl();
+                                }
                             }).bind('loaded.jstree', function(e, data) {
-                                treeLoaded();
+                                if (that.query[type].isNodeNotFoundAtLoad == true) {
+                                    treeLoaded({ "$el": $el, "type": type });
+                                }
                             });
                     },
                     initializeTermTree = function() {
@@ -374,6 +484,7 @@ define(['require',
                     },
                     initializeCategoryTree = function() {
                         if ($categoryTree.data('jstree')) {
+                            $('.categoryPopover').popover('destroy');
                             $categoryTree.jstree(true).refresh();
                         } else {
                             initializeTree({
@@ -409,7 +520,7 @@ define(['require',
                             var node = that.glossary.selectedItem,
                                 liString = "";
                             if (node.type == "Glossary") {
-                                liString = "<li data-type=" + node.type + " class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='createSubNode'>Create Sub-Term</a></li>" +
+                                liString = "<li data-type=" + node.type + " class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='createSubNode'>Create Term</a></li>" +
                                     "<li data-type=" + node.type + " class='listTerm'><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='deleteNode'>Delete Glossary</a></li>"
                             } else {
                                 liString = "<li data-type=" + node.type + " class='listTerm'><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='deleteNode'>Delete Term</a></li>"
@@ -429,7 +540,7 @@ define(['require',
                             var node = that.glossary.selectedItem,
                                 liString = "";
                             if (node.type == "Glossary") {
-                                liString = "<li data-type=" + node.type + " class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='createSubNode'>Create Sub-Category</a></li>" +
+                                liString = "<li data-type=" + node.type + " class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='createSubNode'>Create Category</a></li>" +
                                     "<li data-type=" + node.type + " class='listTerm'><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='deleteNode'>Delete Glossary</a></li>"
                             } else {
                                 liString = "<li data-type=" + node.type + " class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='createSubNode'>Create Sub-Category</a></li>" +
@@ -466,59 +577,101 @@ define(['require',
             deleteNode: function(opt) {
                 var that = this,
                     messageType = "",
+                    type = this.glossary.selectedItem.type,
+                    guid = this.glossary.selectedItem.guid,
+                    gId = this.glossary.selectedItem.glossaryId,
                     options = {
                         success: function(rModel, response) {
+                            if (!gId) {
+                                gId = guid;
+                            }
+                            var glossary = that.glossaryCollection.fullCollection.get(gId);
+                            if (that.value) {
+                                if (that.value.gType == "term") {
+                                    glossary.set('terms', _.reject(glossary.get('terms'), function(obj) {
+                                        return obj.termGuid == guid;
+                                    }), { silent: true });
+                                } else if (that.value.gType == "category") {
+                                    glossary.set('categories', _.reject(glossary.get('categories'), function(obj) {
+                                        return obj.categoryGuid == guid;
+                                    }), { silent: true });
+                                } else {
+                                    glossary = that.glossaryCollection.fullCollection.first();
+                                    if (glossary) {
+                                        gId = glossary.get('guid');
+                                    } else {
+                                        gId = null
+                                    }
+                                }
+                            }
                             Utils.notifySuccess({
                                 content: messageType + Messages.deleteSuccessMessage
                             });
-                            that.getGlossary();
+                            var url = gId ? '#!/glossary/' + gId : '#!/glossary/';
+                            Utils.setUrl({
+                                url: '#!/glossary/' + gId,
+                                mergeBrowserUrl: false,
+                                trigger: true,
+                                urlParams: gId ? _.extend({}, that.value, {
+                                    gType: 'glossary',
+                                    updateView: true,
+                                    gId: null
+                                }) : null,
+                                updateTabState: true
+                            });
                         }
                     },
-                    type = this.glossary.selectedItem.type,
-                    guid = this.glossary.selectedItem.guid
+                    notifyObj = {
+                        modal: true,
+                        ok: function(argument) {
+                            if (type == "Glossary") {
+                                that.glossaryCollection.fullCollection.get(guid).destroy(options, { silent: true, reset: false });
+                            } else if (type == "GlossaryCategory") {
+                                new that.glossaryCollection.model().deleteCategory(guid, options);
+                            } else if (type == "GlossaryTerm") {
+                                new that.glossaryCollection.model().deleteTerm(guid, options);
+                            }
+                        },
+                        cancel: function(argument) {}
+                    };
                 if (type == "Glossary") {
                     messageType = "Glossary";
-                    this.glossaryCollection.fullCollection.get(guid).destroy(options);
                 } else if (type == "GlossaryCategory") {
                     messageType = "Category"
-                    new this.glossaryCollection.model().deleteCategory(guid, options);
                 } else if (type == "GlossaryTerm") {
                     messageType = "Term";
-                    new this.glossaryCollection.model().deleteTerm(guid, options);
                 }
+                notifyObj['text'] = "Are you sure you want to delete the " + messageType;;
+                Utils.notifyConfirm(notifyObj);
             },
-            triggerUrl: function() {
+            triggerUrl: function(options) {
                 if (this.isAssignView) {
                     return;
                 }
                 var selectedItem = this.glossary.selectedItem;
-                if (this.glossaryCollection.length && _.isEmpty(selectedItem)) {
+                if (this.glossaryCollection.length && (_.isEmpty(selectedItem) || this.query[this.viewType].isNodeNotFoundAtLoad)) {
                     selectedItem = { "model": this.glossaryCollection.first().toJSON() };
                     selectedItem.guid = selectedItem.model.guid;
-                    selectedItem.type = "glossary";
+                    selectedItem.type = "Glossary";
                     this.glossary.selectedItem = selectedItem;
-                    this.selectFirstNodeManually = true;
+                    this.query[this.viewType].model = selectedItem.model;
+                    this.query[this.viewType].gType = "glossary"
+                    delete this.query[this.viewType].gId;
                 }
                 if (_.isEmpty(selectedItem)) {
                     return;
                 }
-                var type = selectedItem.type;
                 if (Utils.getUrlState.isGlossaryTab() || Utils.getUrlState.isDetailPage()) {
-                    var urlParams = { gType: "glossary" },
-                        guid = selectedItem.guid;
-                    if (type === "GlossaryTerm") {
-                        urlParams.gType = "term";
-                    } else if (type === "GlossaryCategory") {
-                        urlParams.gType = "category";
-                    }
+                    var obj = {};
                     if (selectedItem.glossaryId) {
-                        urlParams["gId"] = selectedItem.glossaryId;
+                        obj["gId"] = selectedItem.glossaryId;
                     }
+                    this.query[this.viewType] = _.extend(obj, this.value, _.pick(this.glossary.selectedItem, 'model', 'type', 'gType', 'guid'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
                     Utils.setUrl({
-                        url: '#!/glossary/' + guid,
+                        url: '#!/glossary/' + obj.guid,
                         mergeBrowserUrl: false,
                         trigger: true,
-                        urlParams: urlParams,
+                        urlParams: _.omit(obj, 'model', 'guid', 'type', 'isNodeNotFoundAtLoad'),
                         updateTabState: true
                     });
                 }

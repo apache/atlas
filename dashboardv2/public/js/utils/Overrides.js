@@ -66,7 +66,7 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
     var getPopoverEl = function(e) {
         return $(e.target).parent().data("bs.popover") || $(e.target).data("bs.popover") || $(e.target).parents('.popover').length;
     }
-    $('body').on('click DOMMouseScroll mousewheel', function(e) {
+    $(document).on('click DOMMouseScroll mousewheel', function(e) {
         if (e.originalEvent) {
             // Do action if it is triggered by a human.
             //e.isImmediatePropagationStopped();

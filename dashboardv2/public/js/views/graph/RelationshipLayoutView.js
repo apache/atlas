@@ -155,6 +155,8 @@ define(['require',
                     .links(data.links)
                     .size([width, height])
                     .linkDistance(200)
+                    .gravity(0.0)
+                    .friction(0.1)
                     .charge(function(d) {
                         var charge = -500;
                         if (d.index === 0) charge = 100
@@ -390,12 +392,10 @@ define(['require',
                     });
 
                     node.attr("transform", function(d) {
-                        // if (d && d.value && d.value.guid == that.guid) {
-                        //     Center fixed node
-                        //     var damper = 0.1;
-                        //     d.x = (width / 2)
-                        //     d.y = (height / 2)
-                        // }
+                        if (d && d.value && d.value.guid == that.guid) {
+                            d.x = (width / 2)
+                            d.y = (height / 2)
+                        }
                         return "translate(" + d.x + "," + d.y + ")";
                     });
                 }
