@@ -36,7 +36,10 @@ import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -141,7 +144,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
 
             List<AtlasEntity> inputColumns = new ArrayList<>();
 
-            for (BaseColumnInfo baseColumn : entry.getValue().getBaseCols()) {
+            for (BaseColumnInfo baseColumn : getBaseCols(entry.getValue())) {
                 String      inputColName = getQualifiedName(baseColumn);
                 AtlasEntity inputColumn  = context.getEntity(inputColName);
 
@@ -171,6 +174,32 @@ public class CreateHiveProcess extends BaseHiveEvent {
             entities.addEntity(columnLineageProcess);
         }
     }
+
+    private Collection<BaseColumnInfo> getBaseCols(Dependency lInfoDep) {
+        Collection<BaseColumnInfo> ret = Collections.emptyList();
+
+        if (lInfoDep != null) {
+            try {
+                Method getBaseColsMethod = lInfoDep.getClass().getMethod("getBaseCols");
+
+                Object retGetBaseCols = getBaseColsMethod.invoke(lInfoDep);
+
+                if (retGetBaseCols != null) {
+                    if (retGetBaseCols instanceof Collection) {
+                        ret = (Collection) retGetBaseCols;
+                    } else {
+                        LOG.warn("{}: unexpected return type from LineageInfo.Dependency.getBaseCols(), expected type {}",
+                                retGetBaseCols.getClass().getName(), "Collection");
+                    }
+                }
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ex) {
+                LOG.warn("getBaseCols()", ex);
+            }
+        }
+
+        return ret;
+    }
+
 
     private boolean skipProcess() {
         Set<ReadEntity>  inputs  = getHiveContext().getInputs();
