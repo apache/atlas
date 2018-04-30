@@ -24,7 +24,6 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -36,7 +35,6 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,13 +51,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
-import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.*;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ImportServiceTest {
@@ -111,14 +106,7 @@ public class ImportServiceTest {
 
         assertEntityCount("DB_v1", "bfe88eb8-7556-403c-8210-647013f44a44", 1);
 
-
-        List<AtlasEntityHeader> entityHeader = getEntitiesFromDB("Table_v1", "fe91bf93-eb0c-4638-8361-15937390c810");
-        assertEquals(entityHeader.size(), 1);
-
-        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = getEntity(entityHeader.get(0));
-        assertNotNull(entityWithExtInfo);
-
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity entity = assertEntity("Table_v1", "fe91bf93-eb0c-4638-8361-15937390c810");
         assertEquals(entity.getClassifications().size(), 1);
         assertFalse(entity.getClassifications().get(0).isPropagate(), "Default propagate should be false");
     }
@@ -218,7 +206,7 @@ public class ImportServiceTest {
         loadHiveModel();
 
         runImportWithNoParameters(importService, zipSource);
-        List<AtlasEntityHeader> result = getEntitiesFromDB("hive_db", "886c5e9c-3ac6-40be-8201-fb0cebb64783");
+        List<AtlasEntityHeader> result = getImportedEntities("hive_db", "886c5e9c-3ac6-40be-8201-fb0cebb64783");
         assertEquals(result.size(), 1);
 
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = getEntity(result.get(0));
@@ -229,6 +217,22 @@ public class ImportServiceTest {
         List<AtlasRelatedObjectId> relatedList = (List<AtlasRelatedObjectId>) relationshipAttributes.get("tables");
         AtlasRelatedObjectId relatedObjectId = relatedList.get(0);
         assertNotNull(relatedObjectId.getRelationshipGuid());
+    }
+
+    @Test(dataProvider = "tag-prop-2")
+    public void importTagProp2(ZipSource zipSource) throws IOException, AtlasBaseException {
+        loadBaseModel();
+        loadFsModel();
+        loadHiveModel();
+
+        runImportWithNoParameters(importService, zipSource);
+        assertEntityCount("hive_db", "7d7d5a18-d992-457e-83c0-e36f5b95ebdb", 1);
+        assertEntityCount("hive_table", "dbe729bb-c614-4e23-b845-3258efdf7a58", 1);
+        AtlasEntity entity = assertEntity("hive_table", "092e9888-de96-4908-8be3-925ee72e3395");
+        assertEquals(entity.getClassifications().size(), 2);
+        assertTrue(entity.getClassifications().get(0).isPropagate());
+        assertFalse(entity.getClassifications().get(0).getEntityGuid().equalsIgnoreCase(entity.getGuid()));
+        assertFalse(entity.getClassifications().get(1).getEntityGuid().equalsIgnoreCase(entity.getGuid()));
     }
 
     @DataProvider(name = "stocks-glossary")
@@ -248,7 +252,7 @@ public class ImportServiceTest {
         assertEntityCount("__AtlasGlossaryTerm", "105533b6-c125-4a87-bed5-cdf67fb68c39", 1);
     }
 
-    private List<AtlasEntityHeader> getEntitiesFromDB(String query, String guid) throws AtlasBaseException {
+    private List<AtlasEntityHeader> getImportedEntities(String query, String guid) throws AtlasBaseException {
         String q = StringUtils.isEmpty(guid) ? query : String.format("%s where __guid = '%s'", query, guid);
         return discoveryService.searchUsingDslQuery(q, DEFAULT_LIMIT, 0).getEntities();
     }
@@ -278,6 +282,11 @@ public class ImportServiceTest {
     @DataProvider(name = "relationshipLineage")
     public static Object[][] getImportWithRelationships(ITestContext context) throws IOException {
         return getZipSource("rel-lineage.zip");
+    }
+
+    @DataProvider(name = "tag-prop-2")
+    public static Object[][] getImportWithTagProp2(ITestContext context) throws IOException {
+        return getZipSource("tag-prop-2.zip");
     }
 
     @Test(dataProvider = "relationshipLineage")
@@ -311,8 +320,19 @@ public class ImportServiceTest {
         assertEntityCount("hive_column", "6c4f196a-4046-493b-8c3a-2b1a9ef255a2",1);
     }
 
-    private void assertEntityCount(String entityType, String guid, int expectedCount) throws AtlasBaseException {
-        assertEquals(getEntitiesFromDB(entityType, guid).size(), expectedCount);
+    private List<AtlasEntityHeader>  assertEntityCount(String entityType, String guid, int expectedCount) throws AtlasBaseException {
+        List<AtlasEntityHeader> result = getImportedEntities(entityType, guid);
+        assertEquals(result.size(), expectedCount);
+        return result;
+    }
+
+    private AtlasEntity  assertEntity(String entityType, String guid) throws AtlasBaseException {
+        List<AtlasEntityHeader> result = getImportedEntities(entityType, guid);
+        int expectedCount = 1;
+        assertEquals(result.size(), expectedCount);
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = getEntity(result.get(0));
+        assertNotNull(entityWithExtInfo);
+        return entityWithExtInfo.getEntity();
     }
 
     @Test

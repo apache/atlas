@@ -1357,6 +1357,12 @@ public class EntityGraphMapper {
                 String  classificationName = classification.getTypeName();
                 Boolean propagateTags      = classification.isPropagate();
 
+                if (propagateTags != null && propagateTags &&
+                        classification.getEntityGuid() != null &&
+                        !StringUtils.equals(classification.getEntityGuid(), guid)) {
+                    continue;
+                }
+
                 if (propagateTags == null) {
                     if(context.isImport()) {
                         propagateTags = false;
@@ -1367,7 +1373,11 @@ public class EntityGraphMapper {
                 }
 
                 // set associated entity id to classification
-                classification.setEntityGuid(guid);
+                if (classification.getEntityGuid() == null) {
+                    classification.setEntityGuid(guid);
+                }
+
+                // ignore propagated classifications
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Adding classification [{}] to [{}] using edge label: [{}]", classificationName, entityTypeName, getTraitLabel(classificationName));
