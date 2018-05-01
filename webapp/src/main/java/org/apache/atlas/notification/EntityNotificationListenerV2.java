@@ -18,6 +18,7 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -85,7 +86,14 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onClassificationsUpdated(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
-        notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_UPDATE);
+        Map<String, List<AtlasClassification>> addedPropagations   = RequestContextV1.get().getAddedPropagations();
+        Map<String, List<AtlasClassification>> removedPropagations = RequestContextV1.get().getRemovedPropagations();
+
+        if (addedPropagations.containsKey(entity.getGuid())) {
+            notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_ADD);
+        } else if (!removedPropagations.containsKey(entity.getGuid())) {
+            notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_UPDATE);
+        }
     }
 
     @Override
