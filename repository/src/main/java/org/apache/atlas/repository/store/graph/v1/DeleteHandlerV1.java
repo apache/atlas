@@ -59,6 +59,7 @@ import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPE
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
@@ -72,6 +73,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getPropagationEnable
 import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
+import static org.apache.atlas.repository.graph.GraphHelper.isPropagatedClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
@@ -917,10 +919,19 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     private void deleteAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
-        List<AtlasEdge> classificationEdges = getClassificationEdges(instanceVertex);
+        List<AtlasEdge> allClassificationEdges = getAllClassificationEdges(instanceVertex);
 
-        for (AtlasEdge edge : classificationEdges) {
-            deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, false, instanceVertex);
+        for (AtlasEdge edge : allClassificationEdges) {
+            if (isPropagatedClassificationEdge(edge)) {
+                // when entity is deleted force delete its propagated classifications
+                deleteEdge(edge, true);
+            } else {
+                AtlasVertex classificationVertex = edge.getInVertex();
+
+                removeTagPropagation(classificationVertex);
+
+                deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, false, instanceVertex);
+            }
         }
 
         //remove traitNames and propagatedTraitNames property from instanceVertex
