@@ -56,8 +56,7 @@ import org.testng.annotations.Test;
  */
 public class RestUtilsTest {
 
-    @Test(enabled=false)
-    // FIXME: On conversion back to V1, reverse attribute name
+    @Test
     // "containingDatabase"
     // in tables attribute in "database" type is lost.  See ATLAS-1528.
     public void testBidirectonalCompositeMappingConsistent() throws AtlasBaseException {
@@ -73,8 +72,7 @@ public class RestUtilsTest {
         testV1toV2toV1Conversion(Arrays.asList(dbV1Type, tableV1Type), new boolean[] { true, false });
     }
 
-    @Test(enabled=false)
-    // FIXME: On conversion back to V1, reverse attribute name
+    @Test
     // "containingDatabase" is lost
     // in "table" attribute in "database".  See ATLAS-1528.
     public void testBidirectonalNonCompositeMappingConsistent() throws AtlasBaseException {
