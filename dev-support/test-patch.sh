@@ -857,6 +857,12 @@ if [[ $APPLY_PATCH_RET != 0 ]] ; then
 fi
 
 buildAndInstall
+BUILD_INSTALL_RET=$?
+(( RESULT = RESULT + $BUILD_INSTALL_RET ))
+if [[ $BUILD_INSTALL_RET != 0 ]] ; then
+  submitJiraComment 1
+  cleanupAndExit 1
+fi
 
 JIRA_COMMENT_FOOTER="Test results: $BUILD_URL/testReport/
 $JIRA_COMMENT_FOOTER"
