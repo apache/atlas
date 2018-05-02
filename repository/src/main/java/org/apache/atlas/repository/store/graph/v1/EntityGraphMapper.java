@@ -1353,9 +1353,10 @@ public class EntityGraphMapper {
             List<AtlasVertex>                           entitiesToPropagateTo = null;
             Map<AtlasVertex, List<AtlasClassification>> propagations          = null;
 
-            for (AtlasClassification classification : classifications) {
-                String  classificationName = classification.getTypeName();
-                Boolean propagateTags      = classification.isPropagate();
+            for (AtlasClassification c : classifications) {
+                AtlasClassification classification     = new AtlasClassification(c);
+                String              classificationName = classification.getTypeName();
+                Boolean             propagateTags      = classification.isPropagate();
 
                 if (propagateTags != null && propagateTags &&
                         classification.getEntityGuid() != null &&

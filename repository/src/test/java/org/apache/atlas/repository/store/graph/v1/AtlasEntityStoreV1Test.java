@@ -54,6 +54,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections.Transformer;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,12 +66,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.TestUtilsV2.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtilsV2.COLUMN_TYPE;
@@ -110,6 +106,8 @@ public class AtlasEntityStoreV1Test {
 
     @Inject
     private Configuration configuration;
+    private String dbEntityGuid;
+    private String tblEntityGuid;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -220,6 +218,7 @@ public class AtlasEntityStoreV1Test {
         init();
         EntityMutationResponse dbCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
         validateMutationResponse(dbCreationResponse, EntityOperation.CREATE, 1);
+        dbEntityGuid = dbCreationResponse.getCreatedEntities().get(0).getGuid();
 
         AtlasEntityHeader db1 = dbCreationResponse.getFirstCreatedEntityByTypeName(TestUtilsV2.DATABASE_TYPE);
         validateEntity(dbEntity, getEntityFromStore(db1));
@@ -233,6 +232,7 @@ public class AtlasEntityStoreV1Test {
         init();
         EntityMutationResponse tableCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
         validateMutationResponse(tableCreationResponse, EntityOperation.CREATE, 1);
+        tblEntityGuid = tableCreationResponse.getCreatedEntities().get(0).getGuid();
 
         AtlasEntityHeader tableEntity = tableCreationResponse.getFirstCreatedEntityByTypeName(TABLE_TYPE);
         validateEntity(tblEntity, getEntityFromStore(tableEntity));
@@ -909,15 +909,8 @@ public class AtlasEntityStoreV1Test {
 
     @Test
     public void testTagAssociationAfterRedefinition(){
-        AtlasClassificationDef aTag = new AtlasClassificationDef("testTag");
-        AtlasAttributeDef attributeDef = new AtlasAttributeDef("testAttribute", "int", true,
-                AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                false, true,
-                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
-        aTag.addAttribute(attributeDef);
-
         AtlasTypesDef typesDef = new AtlasTypesDef();
-        typesDef.setClassificationDefs(Arrays.asList(aTag));
+        getTagWithName(typesDef,"testTag","int");
 
         try {
             typeDefStore.createTypesDef(typesDef);
@@ -931,13 +924,7 @@ public class AtlasEntityStoreV1Test {
             fail("Tag deletion should've succeeded");
         }
 
-        aTag = new AtlasClassificationDef("testTag");
-        attributeDef = new AtlasAttributeDef("testAttribute", "string", true,
-                AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                false, true,
-                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
-        aTag.addAttribute(attributeDef);
-        typesDef.setClassificationDefs(Arrays.asList(aTag));
+        AtlasClassificationDef aTag = getTagWithName(typesDef, "testTag", "string");
 
         try {
             typeDefStore.createTypesDef(typesDef);
@@ -956,7 +943,86 @@ public class AtlasEntityStoreV1Test {
         } catch (AtlasBaseException e) {
             fail("DB entity creation should've succeeded, e.getMessage() => " + e.getMessage());
         }
+    }
 
+    @Test(dependsOnMethods = "testCreate")
+    public void associateMultipleTagsToOneEntity() throws AtlasBaseException {
+        final String TAG_NAME = "tag_xy";
+        final String TAG_NAME_2 = TAG_NAME + "_2";
+        final String TAG_ATTRIBUTE_NAME = "testAttribute";
+        final String TAG_ATTRIBUTE_VALUE = "test-string";
+        final String TAG_ATTRIBUTE_VALUE_2 = TAG_ATTRIBUTE_VALUE + "-2";
+
+        createTag(TAG_NAME, "string");
+        createTag(TAG_NAME_2, "string");
+
+        List<AtlasClassification> addedClassifications = new ArrayList<>();
+        addedClassifications.add(new AtlasClassification(TAG_NAME, TAG_ATTRIBUTE_NAME, TAG_ATTRIBUTE_VALUE));
+        addedClassifications.add(new AtlasClassification(TAG_NAME_2, TAG_ATTRIBUTE_NAME, TAG_ATTRIBUTE_VALUE_2));
+        entityStore.addClassifications(dbEntityGuid, addedClassifications);
+
+        AtlasEntity dbEntityFromDb = getEntityFromStore(dbEntityGuid);
+
+        List<String> actualClassifications = (List<String>) CollectionUtils.collect(dbEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getTypeName());
+        Set<String> classificationSet = new HashSet<>(actualClassifications);
+        assertTrue(classificationSet.contains(TAG_NAME));
+        assertTrue(classificationSet.contains(TAG_NAME_2));
+
+        entityStore.deleteClassifications(dbEntityGuid, actualClassifications);
+    }
+
+    @Test(dependsOnMethods = "testCreate")
+    public void associateSameTagToMultipleEntities() throws AtlasBaseException {
+        final String TAG_NAME = "tagx";
+        final String TAG_ATTRIBUTE_NAME = "testAttribute";
+        final String TAG_ATTRIBUTE_VALUE = "test-string";
+
+        createTag(TAG_NAME, "string");
+        List<AtlasClassification> addedClassifications = new ArrayList<>();
+        addedClassifications.add(new AtlasClassification(TAG_NAME, TAG_ATTRIBUTE_NAME, TAG_ATTRIBUTE_VALUE));
+
+        entityStore.addClassifications(dbEntityGuid, addedClassifications);
+        entityStore.addClassifications(tblEntityGuid, addedClassifications);
+
+        AtlasEntity dbEntityFromDb = getEntityFromStore(dbEntityGuid);
+        AtlasEntity tblEntityFromDb = getEntityFromStore(tblEntityGuid);
+
+        Set<String> actualDBClassifications = new HashSet<>(CollectionUtils.collect(dbEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getTypeName()));
+        Set<String> actualTblClassifications = new HashSet<>(CollectionUtils.collect(tblEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getTypeName()));
+
+        assertTrue(actualDBClassifications.contains(TAG_NAME));
+        assertTrue(actualTblClassifications.contains(TAG_NAME));
+
+        Set<String> actualDBAssociatedEntityGuid = new HashSet<>(CollectionUtils.collect(dbEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getEntityGuid()));
+        Set<String> actualTblAssociatedEntityGuid = new HashSet<>(CollectionUtils.collect(tblEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getEntityGuid()));
+
+        assertTrue(actualDBAssociatedEntityGuid.contains(dbEntityGuid));
+        assertTrue(actualTblAssociatedEntityGuid.contains(tblEntityGuid));
+
+        entityStore.deleteClassifications(dbEntityGuid, Collections.singletonList(TAG_NAME));
+        entityStore.deleteClassifications(tblEntityGuid, Collections.singletonList(TAG_NAME));
+    }
+
+
+    private AtlasClassificationDef getTagWithName(AtlasTypesDef typesDef, String tagName, String attributeType) {
+        AtlasClassificationDef aTag = new AtlasClassificationDef(tagName);
+        AtlasAttributeDef attributeDef = new AtlasAttributeDef("testAttribute", attributeType, true,
+                AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, true,
+                Collections.emptyList());
+
+        aTag.addAttribute(attributeDef);
+        typesDef.setClassificationDefs(Arrays.asList(aTag));
+        return aTag;
+    }
+
+    private void createTag(String tagName, String attributeType) {
+        try {
+            AtlasTypesDef typesDef = new AtlasTypesDef();
+            getTagWithName(typesDef, tagName, attributeType);
+            typeDefStore.createTypesDef(typesDef);
+        } catch (AtlasBaseException e) {
+            fail("Tag creation should've succeeded");
+        }
     }
 
     private String randomStrWithReservedChars() {
