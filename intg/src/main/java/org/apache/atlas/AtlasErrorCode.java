@@ -125,7 +125,7 @@ public enum AtlasErrorCode {
     CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY(400, "ATLAS-400-00-06B", "Update to classification {0} is not allowed from propagated entity"),
     CLASSIFICATION_DELETE_FROM_PROPAGATED_ENTITY(400, "ATLAS-400-00-06C", "Delete of classification {0} is not allowed from propagated entity"),
     CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY(400, "ATLAS-400-00-06D", "Classification {0} is not associated with entity"),
-    NO_CLASSIFICATIONS_FOUND_FOR_ENTITY(400, "ATLAS-400-00-06E", "No classifications associated with entity: {0}"),
+    UNKNOWN_GLOSSARY_TERM(400, "ATLAS-400-00-06E", "{0}: Unknown/invalid glossary term"),
     INVALID_CLASSIFICATION_PARAMS(400, "ATLAS-400-00-06F", "Invalid classification parameters passed for {0} operation for entity: {1}"),
     PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY(400, "ATLAS-400-00-070", "Propagated classification {0} is not associated with entity"),
     INVALID_BLOCKED_PROPAGATED_CLASSIFICATION(400, "ATLAS-400-00-071", "Invalid propagated classification: {0} with entityGuid: {1} added to blocked propagated classifications."),
@@ -139,7 +139,6 @@ public enum AtlasErrorCode {
     GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED(400, "ATLAS-400-00-079", "Attributes qualifiedName and displayName are missing. Failed to derive a unique name for Glossary"),
     GLOSSARY_TERM_QUALIFIED_NAME_CANT_BE_DERIVED(400, "ATLAS-400-00-07A", "Attributes qualifiedName, displayName & glossary name are missing. Failed to derive a unique name for Glossary term"),
     GLOSSARY_CATEGORY_QUALIFIED_NAME_CANT_BE_DERIVED(400, "ATLAS-400-00-07B", "Attributes qualifiedName, displayName & glossary name are missing. Failed to derive a unique name for Glossary category"),
-    UNKNOWN_GLOSSARY_TERM(400, "ATLAS-400-00-07C", "{0}: Unknown/invalid glossary term"),
     RELATIONSHIP_END_IS_NULL(400, "ATLAS-400-00-07D", "Relationship end is invalid. Expected {0} but is NULL"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
@@ -147,6 +146,7 @@ public enum AtlasErrorCode {
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS-404-00-002", "Given type guid {0} was invalid"),
+    NO_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-003", "No classifications associated with entity: {0}"),
     EMPTY_RESULTS(404, "ATLAS-404-00-004", "No result found for {0}"),
     INSTANCE_GUID_NOT_FOUND(404, "ATLAS-404-00-005", "Given instance guid {0} is invalid/not found"),
     INSTANCE_LINEAGE_QUERY_FAILED(404, "ATLAS-404-00-006", "Instance lineage query failed {0}"),
