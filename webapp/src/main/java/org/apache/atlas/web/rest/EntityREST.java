@@ -23,6 +23,7 @@ import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
@@ -61,6 +62,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -358,7 +360,7 @@ public class EntityREST {
         }
     }
 
-    /**
+     /**
      * Gets the list of classifications for a given entity represented by a guid.
      * @param guid globally unique identifier for the entity
      * @return a list of classifications for the given entity guid
@@ -381,6 +383,38 @@ public class EntityREST {
             }
 
             return new AtlasClassification.AtlasClassifications(entitiesStore.getClassifications(guid));
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Adds classification to the entity identified by its type and unique attributes.
+     * @param typeName
+     */
+    @POST
+    @Path("/uniqueAttribute/type/{typeName}/classifications")
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void addClassificationsByUniqueAttribute(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest, List<AtlasClassification> classifications) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addClassificationsByUniqueAttribute(" + typeName + ")");
+            }
+
+            AtlasEntityType     entityType = ensureEntityType(typeName);
+            Map<String, Object> attributes = getAttributes(servletRequest);
+            String              guid       = entitiesStore.getGuidByUniqueAttributes(entityType, attributes);
+
+            if (guid == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, attributes.toString());
+            }
+
+            entitiesStore.addClassifications(guid, classifications);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -415,6 +449,38 @@ public class EntityREST {
     }
 
     /**
+     * Updates classification on an entity identified by its type and unique attributes.
+     * @param  typeName
+     */
+    @PUT
+    @Path("/uniqueAttribute/type/{typeName}/classifications")
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void updateClassificationsByUniqueAttribute(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest, List<AtlasClassification> classifications) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.updateClassificationsByUniqueAttribute(" + typeName + ")");
+            }
+
+            AtlasEntityType     entityType = ensureEntityType(typeName);
+            Map<String, Object> attributes = getAttributes(servletRequest);
+            String              guid       = entitiesStore.getGuidByUniqueAttributes(entityType, attributes);
+
+            if (guid == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, attributes.toString());
+            }
+
+            entitiesStore.updateClassifications(guid, classifications);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Updates classifications to an existing entity represented by a guid.
      * @param  guid globally unique identifier for the entity
      * @return classification for the given entity guid
@@ -438,6 +504,40 @@ public class EntityREST {
 
             entitiesStore.updateClassifications(guid, classifications);
 
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Deletes a given classification from an entity identified by its type and unique attributes.
+     * @param typeName
+     * @param classificationName name of the classification
+     */
+    @DELETE
+    @Path("/uniqueAttribute/type/{typeName}/classification/{classificationName}")
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void deleteClassificationByUniqueAttribute(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest,@PathParam("classificationName") String classificationName) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+        Servlets.validateQueryParamLength("classificationName", classificationName);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteClassificationByUniqueAttribute(" + typeName + ")");
+            }
+
+            AtlasEntityType     entityType = ensureEntityType(typeName);
+            Map<String, Object> attributes = getAttributes(servletRequest);
+            String              guid       = entitiesStore.getGuidByUniqueAttributes(entityType, attributes);
+
+            if (guid == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, attributes.toString());
+            }
+
+            entitiesStore.deleteClassifications(guid, Collections.singletonList(classificationName));
         } finally {
             AtlasPerfTracer.log(perf);
         }

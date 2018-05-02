@@ -377,6 +377,12 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public String getGuidByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException{
+        return AtlasGraphUtilsV1.getGuidByUniqueAttributes(entityType, uniqAttributes);
+    }
+
+    @Override
+    @GraphTransaction
     public void addClassifications(final String guid, final List<AtlasClassification> classifications) throws AtlasBaseException {
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
