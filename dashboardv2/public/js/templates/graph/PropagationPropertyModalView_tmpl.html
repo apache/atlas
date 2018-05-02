@@ -40,19 +40,31 @@
                 <li>
                     <div class="radio">
                         <input type="radio" name="propagateRelation" value="ONE_TO_TWO" id="ONE_TO_TWO">
-                        <label class="padding-left-0" for="ONE_TO_TWO">ONE TO TWO</label>
+                        <label class="padding-left-0" for="ONE_TO_TWO">
+                            <span class="fromName"></span>
+                            <i class="fa-color fa fa-long-arrow-right"></i>
+                            <span class="toName"></span>
+                        </label>
                     </div>
                 </li>
-                <li>
+                <li class="TWO_TO_ONE" style="display: none">
                     <div class="radio">
                         <input type="radio" name="propagateRelation" value="TWO_TO_ONE" id="TWO_TO_ONE">
-                        <label class="padding-left-0" for="TWO_TO_ONE">TWO TO ONE</label>
+                        <label class="padding-left-0" for="TWO_TO_ONE">
+                            <span class="fromName"></span>
+                            <i class="fa-color fa fa-long-arrow-left"></i>
+                            <span class="toName"></span>
+                        </label>
                     </div>
                 </li>
-                <li>
+                <li class="both" style="display: none">
                     <div class="radio">
                         <input type="radio" name="propagateRelation" value="BOTH" id="BOTH">
-                        <label class="padding-left-0" for="BOTH">BOTH</label>
+                        <label class="padding-left-0" for="BOTH">
+                            <span class="fromName"></span>
+                            <i class="fa-color fa fa-arrows-h"></i>
+                            <span class="toName"></span>
+                        </label>
                     </div>
                 </li>
                 <li>

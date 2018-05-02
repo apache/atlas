@@ -91,7 +91,7 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         relationshipApiUrl: function(guid) {
             var relationshipUrl = this.baseUrlV2 + '/relationship';
             if (guid) {
-                return relationshipUrl + '/guid/' + guid;
+                return relationshipUrl + '/guid/' + guid + '?extendedInfo=true';
             } else {
                 return relationshipUrl
             }

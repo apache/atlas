@@ -35,7 +35,7 @@ define(['require',
             propagationOptions: '[data-id="propagationOptions"]',
             edgeDetailName: '[data-id="edgeDetailName"]',
             propagationState: "[data-id='propagationState']",
-            classificationClick: "[data-id='classificationClick']",
+            entityClick: "[data-id='entityClick']",
             editPropagationType: 'input[name="editPropagationType"]',
             PropagatedClassificationTable: "[data-id='PropagatedClassificationTable']"
 
@@ -62,7 +62,7 @@ define(['require',
                     this.viewType = "flow";
                 }
             };
-            events["click " + this.ui.classificationClick] = function(e) {
+            events["click " + this.ui.entityClick] = function(e) {
                 var that = this,
                     url = "",
                     notifyObj = {
@@ -78,18 +78,20 @@ define(['require',
 
                         },
                         cancel: function(argument) {}
-                    };
-                if (e.currentTarget.dataset.entityguid) {
-                    url = '#!/tag/tagAttribute/' + e.currentTarget.dataset.entityguid;
+                    },
+                    $el = $(e.currentTarget),
+                    guid = $el.parents('tr').data('entityguid');
+                if ($el.hasClass('entityName')) {
+                    url = '#!/detailPage/' + guid + '?tabActive=lineage';
                 } else {
-                    url = '#!/detailPage/' + e.currentTarget.dataset.guid + '?tabActive=lineage';
+                    url = '#!/tag/tagAttribute/' + $el.data('name');
                 }
                 Utils.notifyConfirm(notifyObj);
             };
             events["change " + this.ui.propagationState] = function(e) {
                 this.modalEdited = true;
                 this.modal.$el.find('button.ok').attr("disabled", false);
-                var entityguid = e.currentTarget.dataset.entityguid;
+                var entityguid = $(e.currentTarget).parents('tr').data("entityguid");
                 if (e.target.checked) {
                     this.propagatedClassifications = _.reject(this.propagatedClassifications, function(val, key) {
                         if (val.entityGuid == entityguid) {
@@ -173,44 +175,53 @@ define(['require',
                 id = options.id,
                 from = options.from,
                 to = options.to,
-                icon = {
-                    0: 'fa-long-arrow-right',
-                    1: 'fa-long-arrow-left',
-                    2: 'fa-arrows-h'
-                };
-            _.each(icon, function(value, key) {
-                that.ui.propagationOptions.find('li label')[key].innerHTML = from.typeName + ' <i class="fa-color fa ' + value + '"></i> ' + to.typeName;
-            });
+                enableOtherFlow = function(relationshipObj) {
+                    var isTwoToOne = false;
+                    if (relationshipObj.propagateTags == "BOTH") {
+                        that.ui.propagationOptions.find('.both').show();
+                    } else {
+                        that.ui.propagationOptions.find('.both').hide();
+                        if (that.edgeInfo.obj.fromEntityId != relationshipObj.end1.guid && relationshipObj.propagateTags == "ONE_TO_TWO") {
+                            isTwoToOne = true;
+                        } else if (that.edgeInfo.obj.fromEntityId == relationshipObj.end1.guid && relationshipObj.propagateTags == "TWO_TO_ONE") {
+                            isTwoToOne = true;
+                        }
+                        if (isTwoToOne) {
+                            that.ui.propagationOptions.find('.TWO_TO_ONE').show();
+                        } else {
+                            that.ui.propagationOptions.find('.TWO_TO_ONE').hide();
+                        }
+                    }
+                },
+                updateValue = function(relationshipData) {
+                    var relationshipObj = relationshipData.relationship;
+                    if (relationshipObj) {
+                        that.$("input[name='propagateRelation'][value=" + that.getPropagationFlow({
+                            "relationshipData": relationshipObj,
+                            "graphData": options
+                        }) + "]").prop('checked', true);
+                        enableOtherFlow(relationshipObj);
+                        that.showBlockedClassificationTable(relationshipData);
+                        that.hideLoader({ buttonDisabled: true });
+                    }
+                }
+            this.ui.propagationOptions.find('li label>span.fromName').text(from.typeName);
+            this.ui.propagationOptions.find('li label>span.toName').text(to.typeName);
+
             if (id === this.ui.propagationOptions.attr("entity-id")) {
                 return;
             }
             this.ui.propagationOptions.attr("entity-id", id);
             if (this.apiGuid[id]) {
-                this.hideLoader();
-                this.$("input[name='propagateRelation']").removeAttr('checked');
-                this.$("input[name='propagateRelation'][value=" + that.getPropagationFlow({
-                    "relationshipData": this.apiGuid[id],
-                    "graphData": options
-                }) + "]").prop('checked', true);
-                this.showBlockedClassificationTable(this.apiGuid[id]);
-                this.getEntityNameForClassification(this.apiGuid[id]);
+                updateValue(this.apiGuid[id]);
             } else {
                 if (this.edgeCall && this.edgeCall.readyState != 4) {
                     this.edgeCall.abort();
                 }
                 this.edgeCall = this.entityModel.getRelationship(id, {
                     success: function(relationshipData) {
-                        if (relationshipData) {
-                            that.apiGuid[relationshipData.guid] = relationshipData;
-                            that.$("input[name='propagateRelation']").removeAttr('checked');
-                            that.$("input[name='propagateRelation'][value=" + that.getPropagationFlow({
-                                "relationshipData": relationshipData,
-                                "graphData": options
-                            }) + "]").prop('checked', true);
-                            that.showBlockedClassificationTable(relationshipData);
-                            that.getEntityNameForClassification(relationshipData);
-                            that.hideLoader({ buttonDisabled: true });
-                        }
+                        that.apiGuid[relationshipData.relationship.guid] = relationshipData;
+                        updateValue(relationshipData);
                     },
                     cust_error: function() {
                         that.hideLoader();
@@ -230,23 +241,23 @@ define(['require',
             if (this.viewType == "flow") {
                 relationshipProp = {
                     "propagateTags": that.getPropagationFlow({
-                        "relationshipData": _.extend(that.apiGuid[entityId], { 'propagateTags': PropagationValue }),
+                        "relationshipData": _.extend({}, this.apiGuid[entityId].relationship, { 'propagateTags': PropagationValue }),
                         "graphData": { from: { guid: this.edgeInfo.obj.fromEntityId } }
                     })
                 }
             } else {
                 relationshipProp = {
-                    "blockedPropagatedClassifications": _.uniq(that.blockedPropagatedClassifications, function(val, key) {
+                    "blockedPropagatedClassifications": _.uniq(this.blockedPropagatedClassifications, function(val, key) {
                         return val.entityGuid;
                     }),
-                    "propagatedClassifications": _.uniq(that.propagatedClassifications, function(val, key) {
+                    "propagatedClassifications": _.uniq(this.propagatedClassifications, function(val, key) {
                         return val.entityGuid;
                     })
                 };
             }
             this.showLoader();
             this.entityModel.saveRelationship({
-                data: JSON.stringify(_.extend(that.apiGuid[entityId], relationshipProp)),
+                data: JSON.stringify(_.extend({}, that.apiGuid[entityId].relationship, relationshipProp)),
                 success: function(relationshipData) {
                     if (relationshipData) {
                         that.hideLoader({ buttonDisabled: true });
@@ -266,44 +277,35 @@ define(['require',
         showBlockedClassificationTable: function(options) {
             var that = this,
                 propagationStringValue = "",
-                classificationTableValue = "";
-            this.blockedPropagatedClassifications = _.isUndefined(options.blockedPropagatedClassifications) ? [] : options.blockedPropagatedClassifications;
-            this.propagatedClassifications = _.isUndefined(options.propagatedClassifications) ? [] : options.propagatedClassifications;
+                classificationTableValue = "",
+                relationship = options.relationship,
+                referredEntities = options.referredEntities,
+                getEntityName = function(guid) {
+                    var entityObj = referredEntities[guid],
+                        name = guid;
+                    if (entityObj) {
+                        name = Utils.getName(entityObj) + " (" + entityObj.typeName + ")";
+                    }
+                    return "<a class='entityName' data-id='entityClick'>" + name + "</a>";
+                },
+                getTableRow = function(options) {
+                    var val = options.val,
+                        fromBlockClassification = options.fromBlockClassification;
+                    return "<tr data-entityguid=" + val.entityGuid + "><td class='text-center w30'><a class='classificationName' data-id='entityClick' title='" + val.typeName + "' data-name='" + val.typeName + "''>" + val.typeName + "</a></td><td class='text-center'>" + getEntityName(val.entityGuid) + "</td><td class='text-center w30'><input type='checkbox' " + (fromBlockClassification ? "checked" : "") + " data-id='propagationState' class='input'></td></tr>";
+                };
+
+            this.blockedPropagatedClassifications = _.isUndefined(relationship.blockedPropagatedClassifications) ? [] : _.clone(relationship.blockedPropagatedClassifications);
+            this.propagatedClassifications = _.isUndefined(relationship.propagatedClassifications) ? [] : _.clone(relationship.propagatedClassifications);
             _.each(this.blockedPropagatedClassifications, function(val, key) {
-                propagationStringValue += "<tr><td class='html-cell string-cell renderable text-center w30'><a data-id='classificationClick' title='' data-entityGuid=" + val.entityGuid + ">" + val.typeName + "</a></td><td class='html-cell string-cell renderable text-center' data-tr-entityGuid=" + val.entityGuid + "></td><td class='html-cell string-cell renderable text-center w30'><input type='checkbox' checked data-id='propagationState' data-entityGuid=" + val.entityGuid + " class='input'></td></tr>";
+                propagationStringValue += getTableRow({ "val": val, fromBlockClassification: true });
             });
             _.each(this.propagatedClassifications, function(val, key) {
-                propagationStringValue += "<tr><td class='html-cell string-cell renderable text-center w30'><a data-id='classificationClick' title='' data-entityGuid=" + val.entityGuid + ">" + val.typeName + "</a></td><td class='html-cell string-cell renderable text-center' data-tr-entityGuid=" + val.entityGuid + "></td><td class='html-cell string-cell renderable text-center w30'><input type='checkbox' data-id='propagationState' data-entityGuid=" + val.entityGuid + " class='input'></td></tr>";
+                propagationStringValue += getTableRow({ "val": val, fromBlockClassification: false });
             });
 
-            classificationTableValue = "<table class='attriTable'><caption>Block Propagatation Table</caption><tr><th class='html-cell string-cell renderable w30'>Classification</th><th class='html-cell string-cell renderable'>Entity Name</th><th class='html-cell string-cell renderable w30'>Block Propagatation</th>" + propagationStringValue + "</table>";
+            classificationTableValue = "<table class='attriTable'><caption>Block Propagatation Table</caption><tr><th class='w30'>Classification</th><th>Entity Name</th><th class='w30'>Block Propagatation</th>" + propagationStringValue + "</table>";
 
             this.ui.PropagatedClassificationTable.append(_.isEmpty(propagationStringValue) ? "No Records Found." : classificationTableValue);
-        },
-        getEntityNameForClassification: function(options) {
-            var that = this,
-                allEntityGuid = _.pluck(_.union(options.blockedPropagatedClassifications, options.propagatedClassifications, function(val, key) {
-                    return val.entityGuid;
-                }), 'entityGuid'),
-                apiCall = allEntityGuid.length;
-            _.map(allEntityGuid, function(entityGuid, key) {
-                that.VEntityModel.getEntity(entityGuid, {
-                    success: function(data) {
-                        var entityNameWithType = Utils.getName(data['entity']) + ' ( ' + data['entity'].typeName + ' )',
-                            link = "<a data-id='classificationClick' title='' data-guid=" + data['entity'].guid + ">" + entityNameWithType + "</a>";
-                        that.ui.PropagatedClassificationTable.find('[data-tr-entityGuid=' + entityGuid + ']').html(link);
-                    },
-                    complete: function() {
-                        apiCall -= 1;
-                        if (apiCall == 0) {
-                            that.hideLoader({ buttonDisabled: true });
-                        }
-                    },
-                    cust_error: function() {
-                        that.hideLoader({ buttonDisabled: true });
-                    }
-                });
-            });
         },
         showLoader: function() {
             this.modal.$el.find('button.ok').attr("disabled", true);
