@@ -151,6 +151,11 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+        </dependency>
+
         <!-- to bring up atlas server for integration tests -->
 
         <dependency>
@@ -263,6 +268,11 @@
                                             <groupId>commons-logging</groupId>
                                             <artifactId>commons-logging</artifactId>
                                             <version>${commons-logging.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-collections</groupId>
+                                            <artifactId>commons-collections</artifactId>
+                                            <version>${commons-collections.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>javax.inject</groupId>
