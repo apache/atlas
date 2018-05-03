@@ -91,17 +91,19 @@ define(['require',
             events["change " + this.ui.propagationState] = function(e) {
                 this.modalEdited = true;
                 this.modal.$el.find('button.ok').attr("disabled", false);
-                var entityguid = $(e.currentTarget).parents('tr').data("entityguid");
+                var $el = $(e.currentTarget).parents('tr'),
+                    entityguid = $el.data("entityguid"),
+                    classificationName = $el.find('[data-name]').data('name');
                 if (e.target.checked) {
                     this.propagatedClassifications = _.reject(this.propagatedClassifications, function(val, key) {
-                        if (val.entityGuid == entityguid) {
+                        if (val.entityGuid == entityguid && classificationName == val.typeName) {
                             that.blockedPropagatedClassifications.push(val);
                             return true;
                         }
                     });
                 } else {
                     this.blockedPropagatedClassifications = _.reject(this.blockedPropagatedClassifications, function(val, key) {
-                        if (val.entityGuid == entityguid) {
+                        if (val.entityGuid == entityguid && classificationName == val.typeName) {
                             that.propagatedClassifications.push(val);
                             return true;
                         }
@@ -247,12 +249,8 @@ define(['require',
                 }
             } else {
                 relationshipProp = {
-                    "blockedPropagatedClassifications": _.uniq(this.blockedPropagatedClassifications, function(val, key) {
-                        return val.entityGuid;
-                    }),
-                    "propagatedClassifications": _.uniq(this.propagatedClassifications, function(val, key) {
-                        return val.entityGuid;
-                    })
+                    "blockedPropagatedClassifications": this.blockedPropagatedClassifications,
+                    "propagatedClassifications": this.propagatedClassifications
                 };
             }
             this.showLoader();
