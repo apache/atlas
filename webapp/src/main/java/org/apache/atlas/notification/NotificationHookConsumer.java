@@ -286,10 +286,13 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         private final List<String>                                  failedMessages = new ArrayList<>();
         private final AdaptiveWaiter                                adaptiveWaiter = new AdaptiveWaiter(minWaitDuration, maxWaitDuration, minWaitDuration);
 
+        @VisibleForTesting
+        final FailedCommitOffsetRecorder failedCommitOffsetRecorder;
 
         public HookConsumer(NotificationConsumer<HookNotificationMessage> consumer) {
             super("atlas-hook-consumer-thread", false);
             this.consumer = consumer;
+            failedCommitOffsetRecorder = new FailedCommitOffsetRecorder();
         }
 
         @Override
@@ -342,6 +345,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             }
 
             try {
+                if(failedCommitOffsetRecorder.isMessageReplayed(kafkaMsg.getOffset())) {
+                    commit(kafkaMsg);
+                    return;
+                }
+
                 // Used for intermediate conversions during create and update
                 for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
                     if (LOG.isDebugEnabled()) {
@@ -538,9 +546,17 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         private void commit(AtlasKafkaMessage<HookNotificationMessage> kafkaMessage) {
-            recordFailedMessages();
-            TopicPartition partition = new TopicPartition("ATLAS_HOOK", kafkaMessage.getPartition());
-            consumer.commit(partition, kafkaMessage.getOffset() + 1);
+            boolean commitSucceessStatus = false;
+            try {
+                recordFailedMessages();
+
+                TopicPartition partition = new TopicPartition("ATLAS_HOOK", kafkaMessage.getPartition());
+
+                consumer.commit(partition, kafkaMessage.getOffset() + 1);
+                commitSucceessStatus = true;
+            } finally {
+                failedCommitOffsetRecorder.recordIfFailed(commitSucceessStatus, kafkaMessage.getOffset());
+            }
         }
 
         boolean serverAvailable(Timer timer) {
@@ -594,5 +610,25 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         AuditFilter.audit(messageUser, THREADNAME_PREFIX, method, LOCALHOST, path, LOCALHOST,
                 DateTimeHelper.formatDateUTC(new Date()));
+    }
+
+    static class FailedCommitOffsetRecorder {
+        private Long currentOffset;
+
+        public void recordIfFailed(boolean commitStatus, long offset) {
+            if(commitStatus) {
+                currentOffset = null;
+            } else {
+                currentOffset = offset;
+            }
+        }
+
+        public boolean isMessageReplayed(long offset) {
+            return currentOffset != null && currentOffset == offset;
+        }
+
+        public Long getCurrentOffset() {
+            return currentOffset;
+        }
     }
 }
