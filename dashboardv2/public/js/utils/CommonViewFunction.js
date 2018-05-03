@@ -664,11 +664,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     content: messageType + ref.ui.displayName.val() + Messages[model ? "editSuccessMessage" : "addSuccessMessage"]
                 });
                 if (options.callback) {
-                    var obj = rModel;
-                    if (isGlossaryView) {
-                        obj = _.omit((rModel && rModel.toJSON ? rModel.toJSON() : rModel), 'terms', 'categories');
-                    }
-                    options.callback(obj);
+                    options.callback(rModel);
                 }
                 modal.trigger('closeModal');
             },

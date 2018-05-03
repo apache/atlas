@@ -63,10 +63,10 @@ define(['require',
                 termClick: "[data-id='termClick']",
                 addTerm: "[data-id='addTerm']",
 
-                tagList: "[data-id='tagList']",
-                removeTag: '[data-id="removeTag"]',
-                tagClick: '[data-id="tagClick"]',
-                addTag: '[data-id="addTag"]',
+                tagList: "[data-id='tagListTerm']",
+                removeTag: '[data-id="removeTagTerm"]',
+                tagClick: '[data-id="tagClickTerm"]',
+                addTag: '[data-id="addTagTerm"]',
             },
             /** ui events hash */
             events: function() {
@@ -122,8 +122,9 @@ define(['require',
                             "model": model,
                             "isGlossaryView": this.isGlossaryView,
                             "collection": this.glossaryCollection,
-                            "callback": function(data) {
-                                model.set(_.extend({}, model.toJSON(), data), { silent: true });
+                            "callback": function(sModel) {
+                                var data = sModel.toJSON();
+                                model.set(data, { silent: true }); // update glossaryCollection
                                 that.data = data;
                                 that.renderDetails(that.data);
                                 that.glossaryCollection.trigger("update:details", { isGlossaryUpdate: true });
@@ -189,9 +190,16 @@ define(['require',
                 var that = this;
             },
             getData: function() {
-                if (this.glossaryCollection.fullCollection.length && this.isGlossaryView) {
-                    this.data = this.glossaryCollection.fullCollection.get(this.guid).toJSON();
-                    this.renderDetails(this.data);
+                if (this.isGlossaryView) {
+                    if (this.glossaryCollection.fullCollection.length) {
+                        this.data = this.glossaryCollection.fullCollection.get(this.guid).toJSON();
+                        this.renderDetails(this.data);
+                    } else {
+                        this.listenTo(this.glossaryCollection.fullCollection, "reset ", function(skip) {
+                            this.data = this.glossaryCollection.fullCollection.get(this.guid).toJSON();
+                            this.renderDetails(this.data);
+                        }, this);
+                    }
                 } else {
                     Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.ui.details);
                     var getApiFunctionKey = "getCategory",
@@ -262,7 +270,7 @@ define(['require',
                 var that = this,
                     tagData = "";
                 _.each(tagObject, function(val) {
-                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="removeTag" data-type="tag" title="Remove Tag"></i></span>';
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClickTerm"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="removeTagTerm" data-type="tag" title="Remove Tag"></i></span>';
                 });
                 this.ui.tagList.find("span.btn").remove();
                 this.ui.tagList.prepend(tagData);

@@ -559,7 +559,11 @@ define(['require',
                         "isCategoryView": true,
                         "collection": that.glossaryCollection,
                         "callback": function() {
-                            that.getGlossary();
+                            if (that.value.gType == "glossary") {
+                                that.getGlossary();
+                            } else {
+                                that.ui.categoryTree.jstree(true).refresh();
+                            }
                         },
                         "node": this.glossary.selectedItem
                     })
@@ -665,8 +669,10 @@ define(['require',
                     var obj = {};
                     if (selectedItem.glossaryId) {
                         obj["gId"] = selectedItem.glossaryId;
+                    } else if (selectedItem.type == "Glossary") {
+                        obj["gId"] = selectedItem.guid;
                     }
-                    this.query[this.viewType] = _.extend(obj, this.value, _.pick(this.glossary.selectedItem, 'model', 'type', 'gType', 'guid'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
+                    this.query[this.viewType] = _.extend(obj, _.omit(this.value, 'gId'), _.pick(this.glossary.selectedItem, 'model', 'type', 'gType', 'guid'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
                     Utils.setUrl({
                         url: '#!/glossary/' + obj.guid,
                         mergeBrowserUrl: false,

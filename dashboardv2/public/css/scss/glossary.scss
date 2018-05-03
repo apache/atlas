@@ -22,6 +22,14 @@
 
 .jstree-default-dark {
     background: transparent !important;
+    .jstree-anchor {
+        width: calc(100% - 50px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .jstree-children {
+        max-width: 500px;
+    }
     .jstree-clicked,
     .jstree-wholerow-clicked {
         background: $color_jungle_green_approx !important;
@@ -43,11 +51,12 @@
         }
         .tools {
             display: none;
-            position: relative;
-            width: 9%;
-            float: right;
+            position: absolute;
+            width: 30px;
             text-align: center;
             cursor: pointer;
+            top: 0;
+            right: 0;
         }
     }
 }

@@ -18,7 +18,7 @@
 
 define(['require',
     'backbone',
-    'hbs!tmpl/glossary/AssignTermLayoutViewTmpl',
+    'hbs!tmpl/glossary/AssignTermLayoutView_tmpl',
     'utils/Utils',
     'utils/UrlLinks',
     'modules/Modal'

@@ -895,7 +895,11 @@ define(['require',
                     } else {
                         return [];
                     }
-                    return obj.classificationNames;
+                    return _.compact(_.map(obj.classifications, function(val) {
+                        if (val.entityGuid == guid) {
+                            return val.typeName
+                        }
+                    }));
                 } else {
                     return [];
                 }

@@ -386,6 +386,11 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     returnObj.key = 'name';
                     return returnObj;
                 }
+                if (collectionJSON.attributes.displayName) {
+                    returnObj.name = _.escape(collectionJSON.attributes.displayName);
+                    returnObj.key = 'displayName';
+                    return returnObj;
+                }
                 if (collectionJSON.attributes.qualifiedName) {
                     returnObj.name = _.escape(collectionJSON.attributes.qualifiedName);
                     returnObj.key = 'qualifiedName';
@@ -406,6 +411,11 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             if (collectionJSON.name) {
                 returnObj.name = _.escape(collectionJSON.name);
                 returnObj.key = 'name';
+                return returnObj;
+            }
+            if (collectionJSON.displayName) {
+                returnObj.name = _.escape(collectionJSON.displayName);
+                returnObj.key = 'displayName';
                 return returnObj;
             }
             if (collectionJSON.qualifiedName) {
@@ -526,11 +536,16 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             if (data.superTypes && data.superTypes.length) {
                 _.each(data.superTypes, function(superTypeName) {
                     if (collection.fullCollection) {
-                        var collectionData = collection.fullCollection.findWhere({ name: superTypeName }).toJSON();
+                        var collectionData = collection.fullCollection.findWhere({ name: superTypeName });
                     } else {
-                        var collectionData = collection.findWhere({ name: superTypeName }).toJSON();
+                        var collectionData = collection.findWhere({ name: superTypeName });
                     }
-                    return getData(collectionData, collection);
+                    collectionData = collectionData && collectionData.toJSON ? collectionData.toJSON() : collectionData;
+                    if (collectionData) {
+                        return getData(collectionData, collection);
+                    } else {
+                        return;
+                    }
                 });
             }
         }
