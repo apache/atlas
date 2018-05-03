@@ -72,7 +72,7 @@
         <appender-ref ref="AUDIT"/>
     </logger>
 
-    <logger name="com.thinkaurelius.titan" additivity="false">
+    <logger name="org.janusgraph" additivity="false">
         <level value="warn"/>
         <appender-ref ref="console"/>
     </logger>

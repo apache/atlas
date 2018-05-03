@@ -43,11 +43,6 @@
         <appender-ref ref="FILE"/>
     </logger>
 
-    <logger name="com.thinkaurelius.titan" additivity="false">
-        <level value="warn"/>
-        <appender-ref ref="FILE"/>
-    </logger>
-
     <!-- to avoid logs - The configuration log.flush.interval.messages = 1 was supplied but isn't a known config -->
     <logger name="org.apache.kafka.common.config.AbstractConfig" additivity="false">
         <level value="error"/>

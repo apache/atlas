@@ -50,7 +50,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * Default implementation for Graph Provider that doles out Titan Graph.
+ * Default implementation for Graph Provider that doles out JanusGraph.
  */
 public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG      = LoggerFactory.getLogger(AtlasJanusGraphDatabase.class);

@@ -251,30 +251,6 @@
                 </dependency>
             </dependencies>
         </profile>
-
-        <profile>
-            <id>graph-provider-titan0</id>
-            <activation>
-                <property>
-                    <name>GRAPH-PROVIDER</name>
-                    <value>titan0</value>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.atlas</groupId>
-                    <artifactId>atlas-testtools</artifactId>
-                    <version>${project.version}</version>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.apache.lucene</groupId>
-                            <artifactId>*</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-            </dependencies>
-        </profile>
-
     </profiles>
 
     <build>

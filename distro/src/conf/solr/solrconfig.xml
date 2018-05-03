@@ -606,7 +606,6 @@
   </admin>
 
 
-    <!--Titan specific-->
     <updateRequestProcessorChain default="true">
         <processor class="solr.TimestampUpdateProcessorFactory">
             <str name="fieldName">timestamp</str>

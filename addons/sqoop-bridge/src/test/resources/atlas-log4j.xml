@@ -88,7 +88,7 @@
         <appender-ref ref="FILE"/>
     </logger>
 
-    <logger name="com.thinkaurelius.titan" additivity="false">
+    <logger name="org.janusgraph" additivity="false">
         <level value="warn"/>
         <appender-ref ref="FILE"/>
     </logger>

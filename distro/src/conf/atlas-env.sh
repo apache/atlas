@@ -49,7 +49,7 @@
 # Where pid files are stored. Defatult is logs directory under the base install location
 #export ATLAS_PID_DIR=
 
-# where the atlas titan db data is stored. Defatult is logs/data directory under the base install location
+# where the atlas janusgraph db data is stored. Defatult is logs/data directory under the base install location
 #export ATLAS_DATA_DIR=
 
 # Where do you want to expand the war file. By Default it is in /server/webapp dir under the base install dir.

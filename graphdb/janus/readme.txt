@@ -35,8 +35,7 @@ mvn install [-P dist] -DGRAPH-PROVIDER=janus
 Some tests in the repository and webapp projects are skipped when running with the janus provider, due to hard
 dependencies on Gremlin2. These components need to be updated. Please refer to "known issues" section below.
 
-This will build Atlas and run all of the tests against Janus.  Such a build MUST be used with JanusGraph and
-CANNOT be used with any other graph provider, e.g. Titan 0.5.4 or Titan 1.0.0.
+This will build Atlas and run all of the tests against Janus.
 
 2) Configure the Atlas runtime to use JanusGraph by setting the atlas.graphdb.backend property in
 ATLAS_HOME/conf/atlas-application.properties, as follows:

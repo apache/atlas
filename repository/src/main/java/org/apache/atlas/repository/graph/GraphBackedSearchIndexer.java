@@ -116,7 +116,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     /**
-     * Initialize global indices for Titan graph on server activation.
+     * Initialize global indices for JanusGraph on server activation.
      *
      * Since the indices are shared state, we need to do this only from an active instance.
      */

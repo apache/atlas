@@ -47,7 +47,6 @@ public final class Constants {
     /**
      * Full-text for the entity for enabling full-text search.
      */
-    //weird issue in TitanDB if __ added to this property key. Not adding it for now
     public static final String ENTITY_TEXT_PROPERTY_KEY = "entityText";
 
     /**

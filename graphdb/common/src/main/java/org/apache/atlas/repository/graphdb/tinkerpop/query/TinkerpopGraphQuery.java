@@ -38,8 +38,7 @@ import java.util.Set;
 
 /**
  *
- * Abstract implementation of AtlasGraphQuery that is used by Titan 0.5.4,
- * Titan 1.0.0 and JanusGraph
+ * Abstract implementation of AtlasGraphQuery that is used by JanusGraph
  * <p>
  * Represents a graph query as an OrConditions which consists of
  * 1 or more AndConditions.  The query is executed by converting

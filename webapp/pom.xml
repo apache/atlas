@@ -460,9 +460,9 @@
                         </manifest>
                     </archive>
                     <packagingExcludes>
-                        <!-- Titan and hbase jars should be excluded because an uber jar with shaded dependencies is created.
+                        <!-- HBase jars should be excluded because an uber jar with shaded dependencies is created.
                         But mvn 3.3.x includes them for some reason. So, excluding them explicitly here -->
-                        WEB-INF/lib/titan*.jar,WEB-INF/lib/hbase*.jar,WEB-INF/lib/junit*.jar,${packages.to.exclude}
+                        WEB-INF/lib/hbase*.jar,WEB-INF/lib/junit*.jar,${packages.to.exclude}
                     </packagingExcludes>
                 </configuration>
             </plugin>

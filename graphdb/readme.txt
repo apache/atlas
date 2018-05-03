@@ -9,17 +9,12 @@ If GRAPH-PROVIDER is not set, the default graph backend is adopted. This is curr
 
 In order to build with a specific (non-default) graph backend set the GRAPH-PROVDER system variable.
 
-If GRAPH-PROVIDER is set to titan0, the build will contain Titan 0.5.4
 If GRAPH-PROVIDER is set to janus, the build will contain JanusGraph 0.2.0 (i.e. the default above)
 
 For example, to build Atlas with the janus graph-provider:
 mvn install [-P dist] -DGRAPH-PROVIDER=janus
 
-
-Titan 0.5.4 supports Gremlin2 only, whereas JanusGraph support Gremlin3 only (and NOT Gremlin2).
-Gremlin2 and Gremlin3 are not compatible. The gremlin used by Atlas is translated into either Gremlin2 or
-Gremlin3 depending on which graph backend is used in the build. This is implemented in GremlinExpressionFactory.
-
+JanusGraph support Gremlin3 only (and NOT Gremlin2).
 
 REQUIREMENTS
 ------------

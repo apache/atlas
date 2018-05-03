@@ -52,10 +52,6 @@
                     <artifactId>*</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
                 </exclusion>

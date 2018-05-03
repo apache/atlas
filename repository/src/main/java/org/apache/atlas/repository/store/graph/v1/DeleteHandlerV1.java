@@ -761,7 +761,7 @@ public abstract class DeleteHandlerV1 {
                 List<String> elements = GraphHelper.getListProperty(outVertex, propertyName);
 
                 if (elements != null) {
-                    elements = new ArrayList<>(elements);   //Make a copy, else list.remove reflects on titan.getProperty()
+                    elements = new ArrayList<>(elements);
 
                     for (String elementEdgeId : elements) {
                         AtlasEdge elementEdge = graphHelper.getEdgeByEdgeId(outVertex, edgeLabel, elementEdgeId);
@@ -807,7 +807,7 @@ public abstract class DeleteHandlerV1 {
                 List<String> keys = GraphHelper.getListProperty(outVertex, propertyName);
 
                 if (keys != null) {
-                    keys = new ArrayList<>(keys);   //Make a copy, else list.remove reflects on titan.getProperty()
+                    keys = new ArrayList<>(keys);
 
                     for (String key : keys) {
                         String    keyPropertyName = GraphHelper.getQualifiedNameForMapKey(propertyName, key);
