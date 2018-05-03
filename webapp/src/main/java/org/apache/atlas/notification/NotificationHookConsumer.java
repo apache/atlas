@@ -55,6 +55,7 @@ import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.atlas.web.filters.AuditFilter.AuditLog;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.configuration.Configuration;
+import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -297,10 +298,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         private final List<HookNotification>                 failedMessages = new ArrayList<>();
         private final AdaptiveWaiter                         adaptiveWaiter = new AdaptiveWaiter(minWaitDuration, maxWaitDuration, minWaitDuration);
 
+        @VisibleForTesting
+        final FailedCommitOffsetRecorder failedCommitOffsetRecorder;
+
         public HookConsumer(NotificationConsumer<HookNotification> consumer) {
             super("atlas-hook-consumer-thread", false);
 
             this.consumer = consumer;
+            failedCommitOffsetRecorder = new FailedCommitOffsetRecorder();
         }
 
         @Override
@@ -358,6 +363,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             }
 
             try {
+                if(failedCommitOffsetRecorder.isMessageReplayed(kafkaMsg.getOffset())) {
+                    commit(kafkaMsg);
+                    return;
+                }
+
                 // Used for intermediate conversions during create and update
                 for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
                     if (LOG.isDebugEnabled()) {
@@ -558,11 +568,17 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         private void commit(AtlasKafkaMessage<HookNotification> kafkaMessage) {
-            recordFailedMessages();
+            boolean commitSucceessStatus = false;
+            try {
+                recordFailedMessages();
 
-            TopicPartition partition = new TopicPartition("ATLAS_HOOK", kafkaMessage.getPartition());
+                TopicPartition partition = new TopicPartition("ATLAS_HOOK", kafkaMessage.getPartition());
 
-            consumer.commit(partition, kafkaMessage.getOffset() + 1);
+                consumer.commit(partition, kafkaMessage.getOffset() + 1);
+                commitSucceessStatus = true;
+            } finally {
+                failedCommitOffsetRecorder.recordIfFailed(commitSucceessStatus, kafkaMessage.getOffset());
+            }
         }
 
         boolean serverAvailable(Timer timer) {
@@ -610,6 +626,26 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             super.awaitShutdown();
 
             LOG.info("<== HookConsumer shutdown()");
+        }
+    }
+
+    static class FailedCommitOffsetRecorder {
+        private Long currentOffset;
+
+        public void recordIfFailed(boolean commitStatus, long offset) {
+            if(commitStatus) {
+                currentOffset = null;
+            } else {
+                currentOffset = offset;
+            }
+        }
+
+        public boolean isMessageReplayed(long offset) {
+            return currentOffset != null && currentOffset == offset;
+        }
+
+        public Long getCurrentOffset() {
+            return currentOffset;
         }
     }
 }

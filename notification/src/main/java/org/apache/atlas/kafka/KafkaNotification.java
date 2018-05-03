@@ -241,8 +241,10 @@ public class KafkaNotification extends AbstractNotification implements Service {
     }
 
 
-    // Get properties for consumer request
-    private Properties getConsumerProperties(NotificationType type) {
+    @VisibleForTesting
+    public
+        // Get properties for consumer request
+    Properties getConsumerProperties(NotificationType type) {
         // find the configured group id for the given notification type
         String groupId = properties.getProperty(type.toString().toLowerCase() + "." + CONSUMER_GROUP_ID_PROPERTY);
 

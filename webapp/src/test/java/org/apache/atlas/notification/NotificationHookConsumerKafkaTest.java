@@ -34,6 +34,9 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.TopicPartition;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
@@ -42,6 +45,7 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Properties;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -115,6 +119,38 @@ public class NotificationHookConsumerKafkaTest {
         reset(atlasEntityStore);
     }
 
+    @Test
+    public void consumerConsumesNewMessageButCommitThrowsAnException_MessageOffsetIsRecorded() throws AtlasException, InterruptedException, AtlasBaseException {
+
+        ExceptionThrowingCommitConsumer        consumer                 = createNewConsumerThatThrowsExceptionInCommit(kafkaNotification, true);
+        NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry);
+        NotificationHookConsumer.HookConsumer  hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
+        NotificationHookConsumer.FailedCommitOffsetRecorder failedCommitOffsetRecorder = hookConsumer.failedCommitOffsetRecorder;
+
+        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user2", createEntity()));
+
+        try {
+            produceMessage(new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
+            consumeOneMessage(consumer, hookConsumer);
+            consumeOneMessage(consumer, hookConsumer);
+        }
+        catch(KafkaException ex) {
+            assertTrue(true, "ExceptionThrowing consumer throws an excepion.");
+        }
+
+        assertTrue(failedCommitOffsetRecorder.getCurrentOffset() > -1);
+
+        consumer.disableCommitExpcetion();
+
+        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
+        consumeOneMessage(consumer, hookConsumer);
+        consumeOneMessage(consumer, hookConsumer);
+
+        assertNull(failedCommitOffsetRecorder.getCurrentOffset());
+
+        reset(atlasEntityStore);
+    }
+
     @Test(dependsOnMethods = "testConsumerConsumesNewMessageWithAutoCommitDisabled")
     public void testConsumerRemainsAtSameMessageWithAutoCommitEnabled() throws Exception {
         produceMessage(new HookNotificationV1.EntityCreateRequest("test_user3", createEntity()));
@@ -138,6 +174,12 @@ public class NotificationHookConsumerKafkaTest {
 
     AtlasKafkaConsumer<HookNotification> createNewConsumer(KafkaNotification kafkaNotification, boolean autoCommitEnabled) {
         return (AtlasKafkaConsumer) kafkaNotification.createConsumers(NotificationInterface.NotificationType.HOOK, 1, autoCommitEnabled).get(0);
+    }
+
+    ExceptionThrowingCommitConsumer createNewConsumerThatThrowsExceptionInCommit(KafkaNotification kafkaNotification, boolean autoCommitEnabled) {
+        Properties prop = kafkaNotification.getConsumerProperties(NotificationInterface.NotificationType.HOOK);
+        KafkaConsumer consumer = kafkaNotification.getKafkaConsumer(prop, NotificationInterface.NotificationType.HOOK, true);
+        return new ExceptionThrowingCommitConsumer(NotificationInterface.NotificationType.HOOK, consumer, autoCommitEnabled, 1000);
     }
 
     void consumeOneMessage(NotificationConsumer<HookNotification> consumer,
@@ -205,4 +247,28 @@ public class NotificationHookConsumerKafkaTest {
         }
     }
 
+    private static class ExceptionThrowingCommitConsumer extends AtlasKafkaConsumer {
+
+        private boolean exceptionThrowingEnabled;
+
+        public ExceptionThrowingCommitConsumer(NotificationInterface.NotificationType notificationType,
+                                               KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
+            super(notificationType, kafkaConsumer, autoCommitEnabled, pollTimeoutMilliSeconds);
+            exceptionThrowingEnabled = true;
+        }
+
+        @Override
+        public void commit(TopicPartition partition, long offset) {
+            if(exceptionThrowingEnabled) {
+                throw new KafkaException("test case verifying exception");
+            }
+            else {
+                super.commit(partition, offset);
+            }
+        }
+
+        public void disableCommitExpcetion() {
+            exceptionThrowingEnabled = false;
+        }
+    }
 }
