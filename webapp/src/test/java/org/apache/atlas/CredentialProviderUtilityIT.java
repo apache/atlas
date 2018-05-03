@@ -40,7 +40,7 @@ public class CredentialProviderUtilityIT {
 
     private char[] defaultPass = new char[]{'k', 'e', 'y', 'p', 'a', 's', 's'};
 
-    @Test
+    @Test(enabled=false)
     public void testEnterValidValues() throws Exception {
         Path testPath = null;
         try {
@@ -93,7 +93,7 @@ public class CredentialProviderUtilityIT {
         Assert.assertEquals(entry.getCredential(), password);
     }
 
-    @Test
+    @Test(enabled=false)
     public void testEnterEmptyValues() throws Exception {
         Path testPath = null;
         try {
@@ -146,7 +146,7 @@ public class CredentialProviderUtilityIT {
         assertCredentialEntryCorrect(entry);
     }
 
-    @Test
+    @Test(enabled=false)
     public void testEnterMismatchedValues() throws Exception {
         Path testPath = null;
         try {
@@ -200,7 +200,7 @@ public class CredentialProviderUtilityIT {
         assertCredentialEntryCorrect(entry);
     }
 
-    @Test
+    @Test(enabled=false)
     public void testOverwriteValues() throws Exception {
         Path testPath = null;
         try {
