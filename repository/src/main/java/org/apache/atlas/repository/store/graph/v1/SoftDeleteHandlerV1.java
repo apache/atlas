@@ -68,6 +68,9 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
             LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})",GraphHelper.string(edge), force);
         }
 
+        // re-evaluate tag propagation
+        removeTagPropagation(edge);
+
         if (force) {
             graphHelper.removeEdge(edge);
         } else {

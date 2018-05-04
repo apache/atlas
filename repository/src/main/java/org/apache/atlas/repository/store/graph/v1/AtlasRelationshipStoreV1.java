@@ -252,16 +252,7 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
         }
 
-        // remove tag propagations
-        List<AtlasVertex> propagatedClassificationVertices = getClassificationVertices(edge);
-
         deleteHandler.deleteRelationships(Collections.singleton(edge));
-
-        for (AtlasVertex classificationVertex : propagatedClassificationVertices) {
-            List<AtlasVertex> removePropagationFromVertices = graphHelper.getPropagatedEntityVertices(classificationVertex);
-
-            deleteHandler.removeTagPropagation(classificationVertex, removePropagationFromVertices);
-        }
 
         // notify entities for added/removed classification propagation
         entityChangeNotifier.notifyPropagatedEntities();
@@ -460,14 +451,14 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
 
         if (newTagPropagation != oldTagPropagation) {
             List<AtlasVertex>                   currentClassificationVertices = getClassificationVertices(edge);
-            Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
+            Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
 
             // Update propagation edge
             AtlasGraphUtilsV1.setProperty(edge, Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, newTagPropagation.name());
 
             List<AtlasVertex>                   updatedClassificationVertices = getClassificationVertices(edge);
             List<AtlasVertex>                   classificationVerticesUnion   = (List<AtlasVertex>) CollectionUtils.union(currentClassificationVertices, updatedClassificationVertices);
-            Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = getClassificationPropagatedEntitiesMapping(classificationVerticesUnion);
+            Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(classificationVerticesUnion);
 
             // compute add/remove propagations list
             Map<AtlasVertex, List<AtlasVertex>> addPropagationsMap    = new HashMap<>();
@@ -508,22 +499,6 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
             // update blocked propagated classifications only if there is no change is tag propagation (don't update both)
             handleBlockedClassifications(edge, relationship.getBlockedPropagatedClassifications());
         }
-    }
-
-    private Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices) throws AtlasBaseException {
-        Map<AtlasVertex, List<AtlasVertex>> ret = new HashMap<>();
-
-        if (CollectionUtils.isNotEmpty(classificationVertices)) {
-            for (AtlasVertex classificationVertex : classificationVertices) {
-                String            classificationId      = classificationVertex.getIdForDisplay();
-                String            sourceEntityId        = getClassificationEntityGuid(classificationVertex);
-                List<AtlasVertex> entitiesPropagatingTo = graphHelper.getImpactedVerticesWithRestrictions(sourceEntityId, classificationId);
-
-                ret.put(classificationVertex, entitiesPropagatingTo);
-            }
-        }
-
-        return ret;
     }
 
     private void validateRelationship(AtlasRelationship relationship) throws AtlasBaseException {

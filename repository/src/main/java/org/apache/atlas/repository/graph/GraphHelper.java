@@ -86,6 +86,7 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES_EXCLUDE_RELATIONSHIP;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS;
 
@@ -879,14 +880,23 @@ public final class GraphHelper {
     }
 
     public List<AtlasVertex> getImpactedVerticesWithRestrictions(String guid, String classificationId) throws AtlasBaseException {
+        return getImpactedVerticesWithRestrictions(guid, classificationId, null);
+    }
+
+    public List<AtlasVertex> getImpactedVerticesWithRestrictions(String guid, String classificationId, String guidRelationshipToExclude) throws AtlasBaseException {
         ScriptEngine      scriptEngine = graph.getGremlinScriptEngine();
         Bindings          bindings     = scriptEngine.createBindings();
-        String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS);
         List<AtlasVertex> ret          = new ArrayList<>();
+        String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS);
 
         bindings.put("g", graph);
         bindings.put("guid", guid);
         bindings.put("classificationId", classificationId);
+
+        if (guidRelationshipToExclude != null) {
+            query = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES_EXCLUDE_RELATIONSHIP);
+            bindings.put("guidRelationshipToExclude", guidRelationshipToExclude);
+        }
 
         try {
             Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
@@ -1007,6 +1017,26 @@ public final class GraphHelper {
 
             if (propagateTags == PropagateTags.TWO_TO_ONE || propagateTags == PropagateTags.BOTH) {
                 ret.addAll(getPropagationEnabledClassificationVertices(inVertex));
+            }
+        }
+
+        return ret;
+    }
+
+    public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices) throws AtlasBaseException {
+        return getClassificationPropagatedEntitiesMapping(classificationVertices, null);
+    }
+
+    public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices, String guidRelationshipToExclude) throws AtlasBaseException {
+        Map<AtlasVertex, List<AtlasVertex>> ret = new HashMap<>();
+
+        if (CollectionUtils.isNotEmpty(classificationVertices)) {
+            for (AtlasVertex classificationVertex : classificationVertices) {
+                String            classificationId      = classificationVertex.getIdForDisplay();
+                String            sourceEntityId        = getClassificationEntityGuid(classificationVertex);
+                List<AtlasVertex> entitiesPropagatingTo = getImpactedVerticesWithRestrictions(sourceEntityId, classificationId, guidRelationshipToExclude);
+
+                ret.put(classificationVertex, entitiesPropagatingTo);
             }
         }
 

@@ -44,6 +44,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdg
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,7 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
@@ -63,9 +65,9 @@ import static org.apache.atlas.repository.graph.GraphHelper.getAllClassification
 import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationName;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertices;
 import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
@@ -74,7 +76,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isPropagatedClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromEdge;
@@ -433,6 +434,49 @@ public abstract class DeleteHandlerV1 {
 
                 context.recordAddedPropagation(entityGuid, classification);
             }
+        }
+
+        return ret;
+    }
+
+    public void removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {
+        if (edge == null || !isRelationshipEdge(edge)) {
+            return;
+        }
+
+        List<AtlasVertex>                   currentClassificationVertices = getClassificationVertices(edge);
+        Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
+        Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
+        Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
+
+        if (MapUtils.isNotEmpty(currentClassificationsMap) && MapUtils.isEmpty(updatedClassificationsMap)) {
+            removePropagationsMap.putAll(currentClassificationsMap);
+        } else {
+            for (AtlasVertex classificationVertex : updatedClassificationsMap.keySet()) {
+                List<AtlasVertex> currentPropagatingEntities = currentClassificationsMap.containsKey(classificationVertex) ? currentClassificationsMap.get(classificationVertex) : Collections.emptyList();
+                List<AtlasVertex> updatedPropagatingEntities = updatedClassificationsMap.containsKey(classificationVertex) ? updatedClassificationsMap.get(classificationVertex) : Collections.emptyList();
+                List<AtlasVertex> entitiesRemoved            = (List<AtlasVertex>) CollectionUtils.subtract(currentPropagatingEntities, updatedPropagatingEntities);
+
+                if (CollectionUtils.isNotEmpty(entitiesRemoved)) {
+                    removePropagationsMap.put(classificationVertex, entitiesRemoved);
+                }
+            }
+        }
+
+        for (AtlasVertex classificationVertex : removePropagationsMap.keySet()) {
+            removeTagPropagation(classificationVertex, removePropagationsMap.get(classificationVertex));
+        }
+    }
+
+    public boolean isRelationshipEdge(AtlasEdge edge) {
+        boolean ret = false;
+
+        if (edge != null) {
+            String outVertexType = getTypeName(edge.getOutVertex());
+            String inVertexType  = getTypeName(edge.getInVertex());
+
+            ret = GraphHelper.isRelationshipEdge(edge) || edge.getPropertyKeys().contains(RELATIONSHIP_GUID_PROPERTY_KEY) ||
+                  (typeRegistry.getEntityTypeByName(outVertexType) != null && typeRegistry.getEntityTypeByName(inVertexType) != null);
         }
 
         return ret;

@@ -70,14 +70,22 @@ public class AtlasGremlin3QueryProvider extends AtlasGremlin2QueryProvider {
 
             case TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS:
                 return "g.V().has('__guid', guid).aggregate('src')" +
-                        ".repeat(union(outE().has('__state', 'ACTIVE').has('tagPropagation', within('ONE_TO_TWO', 'BOTH')).not(has('blockedPropagatedClassifications', org.janusgraph.core.attribute.Text.textContains(classificationId))).inV(), " +
+                            ".repeat(union(outE().has('__state', 'ACTIVE').has('tagPropagation', within('ONE_TO_TWO', 'BOTH')).not(has('blockedPropagatedClassifications', org.janusgraph.core.attribute.Text.textContains(classificationId))).inV(), " +
                                        "inE().has('__state', 'ACTIVE').has('tagPropagation', within('TWO_TO_ONE', 'BOTH')).not(has('blockedPropagatedClassifications', org.janusgraph.core.attribute.Text.textContains(classificationId))).outV())" +
-                        ".dedup().where(without('src')).simplePath()).emit().toList();";
+                            ".dedup().where(without('src')).simplePath()).emit().toList();";
 
             case TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL:
                 return "g.V().has('__guid', guid).aggregate('src')" +
                             ".repeat(union(outE().has('__state', 'ACTIVE').has('tagPropagation', within('ONE_TO_TWO', 'BOTH')).has('_r__guid', neq(relationshipGuid)).inV(), " +
                                            "inE().has('__state', 'ACTIVE').has('tagPropagation', within('TWO_TO_ONE', 'BOTH')).has('_r__guid', neq(relationshipGuid)).outV())" +
+                            ".dedup().where(without('src')).simplePath()).emit().toList();";
+
+            case TAG_PROPAGATION_IMPACTED_INSTANCES_EXCLUDE_RELATIONSHIP:
+                return "g.V().has('__guid', guid).aggregate('src')" +
+                            ".repeat(union(outE().has('__state', 'ACTIVE').has('tagPropagation', within('ONE_TO_TWO', 'BOTH')).has('_r__guid', neq(guidRelationshipToExclude))" +
+                                                ".not(has('blockedPropagatedClassifications', org.janusgraph.core.attribute.Text.textContains(classificationId))).inV(), " +
+                                           "inE().has('__state', 'ACTIVE').has('tagPropagation', within('TWO_TO_ONE', 'BOTH')).has('_r__guid', neq(guidRelationshipToExclude))" +
+                                                ".not(has('blockedPropagatedClassifications', org.janusgraph.core.attribute.Text.textContains(classificationId))).outV())" +
                             ".dedup().where(without('src')).simplePath()).emit().toList();";
         }
         return super.getQuery(gremlinQuery);
