@@ -509,7 +509,7 @@ public class GlossaryService {
         glossaryCategoryUtils.processCategoryRelations(glossaryCategory, saved, GlossaryUtils.RelationshipOperation.CREATE);
         saved = dataAccess.load(glossaryCategory);
 
-        setInfoForRelations(glossaryCategory);
+        setInfoForRelations(saved);
 
         if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryService.createCategory() : {}", saved);
@@ -573,7 +573,7 @@ public class GlossaryService {
         }
         ret = dataAccess.load(glossaryCategory);
 
-        setInfoForRelations(glossaryCategory);
+        setInfoForRelations(ret);
 
         return ret;
     }
