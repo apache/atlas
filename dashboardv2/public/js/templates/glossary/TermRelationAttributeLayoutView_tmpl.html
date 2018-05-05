@@ -14,17 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div id="r_glossaryTree"></div>
-<br/>
-{{#if isAttributeRelationView}}
-<form name="termAttributeForm" class="form-horizontal" data-id="termAttributeForm">
-	{{#each selectedTermAttributeList}}
-    <div class="form-group">
-        <label class="control-label col-sm-2" for="name">{{@key}}</label>
-        <div class="col-sm-10">
-            <input class="form-control" name="{{@key}}" value="" data-id="displayName" placeholder="{{@key}}"/>
+<div>
+    <div class="row form-group">
+        <div class="col-md-6">
+            <select data-id="termAttributeSelect">
+                {{#each attributeList}}
+                <option value="{{@key}}">{{@key}}</option>{{/each}}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <button type="button" class="btn btn-action btn-md" data-id="addTermRelation">
+                <i class="fa fa-plus"></i> <span>Assign Term</span>
+            </button>
         </div>
     </div>
-    {{/each}}
-</form>
-{{/if}}
+    <div data-id="termAttributeTable"></div>
+</div>

@@ -67,11 +67,15 @@ define(['require',
             case '==':
                 return (v1 == v2) ? options.fn(this) : options.inverse(this);
                 break;
-            case '!==':
-                return (v1 !== v2) ? options.fn(this) : options.inverse(this);
-                break;
+
             case '===':
                 return (v1 === v2) ? options.fn(this) : options.inverse(this);
+                break;
+            case '!=':
+                return (v1 !== v2) ? options.fn(this) : options.inverse(this);
+                break;
+            case '!==':
+                return (v1 !== v2) ? options.fn(this) : options.inverse(this);
                 break;
             case '<':
                 return (v1 < v2) ? options.fn(this) : options.inverse(this);
@@ -90,6 +94,10 @@ define(['require',
                 break;
         }
         //return options.inverse(this);
+    });
+
+    Handlebars.registerHelper('lookup', function(obj, field, defaulValue) {
+        return (obj[field] ? obj[field] : (defaulValue ? defaulValue : ""));
     });
 
     return HHelpers;

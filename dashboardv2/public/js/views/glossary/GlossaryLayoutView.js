@@ -38,7 +38,8 @@ define(['require',
             regions: {},
             templateHelpers: function() {
                 return {
-                    isAssignView: this.isAssignView
+                    isAssignView: this.isAssignView,
+                    isAssignAttributeRelationView: this.isAssignAttributeRelationView
                 };
             },
 
@@ -87,9 +88,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'value', 'glossaryCollection', 'glossary', 'isAssignTermView', 'isAssignCategoryView', 'isAssignEntityView'));
+                _.extend(this, _.pick(options, 'guid', 'value', 'glossaryCollection', 'glossary', 'isAssignTermView', 'isAssignCategoryView', 'isAssignEntityView', 'isAssignAttributeRelationView'));
                 this.viewType = "term";
-                this.isAssignView = this.isAssignTermView || this.isAssignCategoryView || this.isAssignEntityView;
+                this.isAssignView = this.isAssignTermView || this.isAssignCategoryView || this.isAssignEntityView || this.isAssignAttributeRelationView;
                 this.bindEvents();
                 this.query = {
                     term: {},
@@ -494,7 +495,7 @@ define(['require',
                         }
                     }
                 if (this.isAssignView) {
-                    if (this.isAssignTermView || this.isAssignEntityView) {
+                    if (this.isAssignTermView || this.isAssignEntityView || this.isAssignAttributeRelationView) {
                         initializeTermTree();
                     } else if (this.isAssignCategoryView) {
                         initializeCategoryTree();
@@ -611,9 +612,14 @@ define(['require',
                             Utils.notifySuccess({
                                 content: messageType + Messages.deleteSuccessMessage
                             });
-                            var url = gId ? '#!/glossary/' + gId : '#!/glossary/';
+                            var url = gId ? '#!/glossary/' + gId : '#!/glossary';
+                            if (gId == null) {
+                                that.glossary.selectedItem = {};
+                                that.ui.categoryTree.jstree(true).refresh();
+                                that.ui.termTree.jstree(true).refresh();
+                            }
                             Utils.setUrl({
-                                url: '#!/glossary/' + gId,
+                                url: url,
                                 mergeBrowserUrl: false,
                                 trigger: true,
                                 urlParams: gId ? _.extend({}, that.value, {
@@ -654,13 +660,18 @@ define(['require',
                 }
                 var selectedItem = this.glossary.selectedItem;
                 if (this.glossaryCollection.length && (_.isEmpty(selectedItem) || this.query[this.viewType].isNodeNotFoundAtLoad)) {
-                    selectedItem = { "model": this.glossaryCollection.first().toJSON() };
-                    selectedItem.guid = selectedItem.model.guid;
-                    selectedItem.type = "Glossary";
-                    this.glossary.selectedItem = selectedItem;
-                    this.query[this.viewType].model = selectedItem.model;
-                    this.query[this.viewType].gType = "glossary"
-                    delete this.query[this.viewType].gId;
+                    var model = selectedItem.model
+                    if (model && !(model.parentCategory || model.parentCategoryGuid)) {
+                        selectedItem = { "model": this.glossaryCollection.first().toJSON() };
+                        selectedItem.guid = selectedItem.model.guid;
+                        selectedItem.type = "Glossary";
+                        this.glossary.selectedItem = selectedItem;
+                        this.query[this.viewType].model = selectedItem.model;
+                        this.query[this.viewType].gType = "glossary"
+                        delete this.query[this.viewType].gId;
+                    } else {
+                        this.query[this.viewType].isNodeNotFoundAtLoad = false;
+                    }
                 }
                 if (_.isEmpty(selectedItem)) {
                     return;

@@ -20,9 +20,10 @@ define(['require',
     'backbone',
     'hbs!tmpl/glossary/AssignTermLayoutView_tmpl',
     'utils/Utils',
+    'utils/Enums',
     'utils/UrlLinks',
     'modules/Modal'
-], function(require, Backbone, AssignTermLayoutViewTmpl, Utils, UrlLinks, Modal) {
+], function(require, Backbone, AssignTermLayoutViewTmpl, Utils, Enums, UrlLinks, Modal) {
 
     var AssignTermLayoutView = Backbone.Marionette.LayoutView.extend(
         /** @lends AssignTermLayoutView */
@@ -32,7 +33,10 @@ define(['require',
             template: AssignTermLayoutViewTmpl,
 
             templateHelpers: function() {
-                return {};
+                return {
+                    isAttributeRelationView: this.isAttributeRelationView,
+                    selectedTermAttributeList: Enums.termRelationAttributeList[this.selectedTermAttribute]
+                };
             },
 
             /** Layout sub regions */
@@ -41,7 +45,9 @@ define(['require',
             },
 
             /** ui selector cache */
-            ui: {},
+            ui: {
+                termAttributeForm: '[data-id="termAttributeForm"]'
+            },
             /** ui events hash */
             events: function() {
                 var events = {};
@@ -52,10 +58,10 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'glossaryCollection', 'guid', 'callback', 'hideLoader', 'isCategoryView', 'categoryData', 'isTermView', 'termData'));
+                _.extend(this, _.pick(options, 'glossaryCollection', 'guid', 'callback', 'hideLoader', 'isCategoryView', 'categoryData', 'isTermView', 'termData', 'isAttributeRelationView', 'selectedTermAttribute'));
                 var that = this;
                 this.options = options;
-                if (!this.isCategoryView && !this.isTermView) {
+                if (!this.isCategoryView && !this.isTermView && !this.isAttributeRelationView) {
                     this.isEntityView = true;
                 }
                 this.glossary = {
@@ -64,6 +70,8 @@ define(['require',
                 var title = "";
                 if (this.isCategoryView || this.isEntityView) {
                     title = ("Assign term to " + (this.isCategoryView ? "Category" : "entity"))
+                } else if (this.isAttributeRelationView) {
+                    title = "Assign term to " + this.selectedTermAttribute;
                 } else {
                     title = "Assign Category to term";
                 }
@@ -97,12 +105,13 @@ define(['require',
                 this.assignTermError = false;
                 var that = this,
                     data = [],
+                    termAttributeFormData = [],
                     selectedItem = this.glossary.selectedItem,
                     selectedGuid = selectedItem.guid,
                     ajaxOptions = {
                         success: function(rModel, response) {
                             Utils.notifySuccess({
-                                content: (that.isCategoryView || that.isEntityView ? "Term" : "Category") + " is associated successfully "
+                                content: (that.isCategoryView || that.isEntityView || that.isAttributeRelationView ? "Term" : "Category") + " is associated successfully "
                             });
                             that.modal.trigger('closeModal');
                             if (that.callback) {
@@ -115,7 +124,7 @@ define(['require',
                     },
                     model = new this.glossaryCollection.model();
                 if (this.isCategoryView) {
-                    data = _.extend({}, this.categoryData);
+                    data = $.extend(true, {}, this.categoryData);
                     if (data.terms) {
                         data.terms.push({ "termGuid": selectedGuid });
                     } else {
@@ -123,13 +132,25 @@ define(['require',
                     }
                     model.assignTermToCategory(_.extend(ajaxOptions, { data: JSON.stringify(data), guid: data.guid }));
                 } else if (this.isTermView) {
-                    data = _.extend({}, this.termData);
+                    data = $.extend(true, {}, this.termData);
                     if (data.categories) {
                         data.categories.push({ "categoryGuid": selectedGuid });
                     } else {
                         data.categories = [{ "categoryGuid": selectedGuid }];
                     }
                     model.assignCategoryToTerm(_.extend(ajaxOptions, { data: JSON.stringify(data), guid: data.guid }));
+                } else if (this.isAttributeRelationView) {
+                    termAttributeFormData = this.ui.termAttributeForm.serializeArray().reduce(function(obj, item) {
+                            obj[item.name] = item.value;
+                            return obj;
+                        }, {}),
+                        data = $.extend(true, {}, this.termData);
+                    if (data[this.selectedTermAttribute]) {
+                        data[this.selectedTermAttribute].push(_.extend({ "termGuid": selectedGuid }, termAttributeFormData));
+                    } else {
+                        data[this.selectedTermAttribute] = [_.extend({ "termGuid": selectedGuid }, termAttributeFormData)];
+                    }
+                    model.assignTermToAttributes(_.extend(ajaxOptions, { data: JSON.stringify(data), guid: data.guid }));
                 } else {
                     data.push({ "guid": that.guid });
                     model.assignTermToEntity(selectedGuid, _.extend(ajaxOptions, { data: JSON.stringify(data) }));
@@ -142,6 +163,7 @@ define(['require',
                         "isAssignTermView": that.isCategoryView,
                         "isAssignCategoryView": that.isTermView,
                         "isAssignEntityView": that.isEntityView,
+                        "isAssignAttributeRelationView": that.isAttributeRelationView,
                         "glossary": that.glossary
                     }, that.options)));
                 });

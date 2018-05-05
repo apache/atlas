@@ -36,7 +36,8 @@ define(['require',
             /** Layout sub regions */
             regions: {
                 RSearchResultLayoutView: "#r_searchResultLayoutView",
-                RTagTableLayoutView: "#r_tagTableLayoutView"
+                RTagTableLayoutView: "#r_tagTableLayoutView",
+                RRelationLayoutView: "#r_relationLayoutView"
             },
             templateHelpers: function() {
                 return {
@@ -180,6 +181,7 @@ define(['require',
                         this.isGlossaryView = true;
                     }
                 }
+                this.selectedTermAttribute = null;
             },
             onRender: function() {
                 this.$('.fontLoader-relative').show();
@@ -196,11 +198,22 @@ define(['require',
                         this.renderDetails(this.data);
                     } else {
                         this.listenTo(this.glossaryCollection.fullCollection, "reset ", function(skip) {
-                            this.data = this.glossaryCollection.fullCollection.get(this.guid).toJSON();
+                            var foundGlossary = this.glossaryCollection.fullCollection.get(this.guid);
+                            this.data = foundGlossary ? foundGlossary.toJSON() : null;
+                            if (this.data == null) {
+                                this.glossary.selectedItem = {};
+                                Utils.setUrl({
+                                    url: '#!/glossary',
+                                    mergeBrowserUrl: false,
+                                    urlParams: null,
+                                    trigger: true,
+                                    updateTabState: true
+                                });
+                            }
                             this.renderDetails(this.data);
                         }, this);
                     }
-                } else {
+                } else {;
                     Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.ui.details);
                     var getApiFunctionKey = "getCategory",
                         that = this;
@@ -221,10 +234,18 @@ define(['require',
                                         "typeHeaders": that.typeHeaders,
                                         "tagCollection": that.collection,
                                         "enumDefCollection": that.enumDefCollection,
-                                        "classificationDefCollection": that.classificationDefCollection
+                                        "classificationDefCollection": that.classificationDefCollection,
+                                        "glossaryCollection": that.glossaryCollection,
+                                        "getSelectedTermAttribute": function() {
+                                            return that.selectedTermAttribute;
+                                        },
+                                        "setSelectedTermAttribute": function(val) {
+                                            that.selectedTermAttribute = val;
+                                        }
                                     }
                                     that.renderSearchResultLayoutView(obj);
                                     that.renderTagTableLayoutView(obj);
+                                    that.renderRelationLayoutView(obj);
                                 }
                                 that.data = data;
                                 that.glossary.selectedItem.model = data;
@@ -238,12 +259,16 @@ define(['require',
             },
             renderDetails: function(data) {
                 Utils.hideTitleLoader(this.$('.fontLoader'), this.ui.details);
-                this.ui.title.text(data.displayName || data.displayText || data.qualifiedName);
-                this.ui.shortDescription.text(data.shortDescription);
-                this.ui.longDescription.text(data.longDescription);
-                this.generateCategories(data.categories);
-                this.generateTerm(data.terms);
-                this.generateTag(data.classifications);
+                if (data) {
+                    this.ui.title.text(data.displayName || data.displayText || data.qualifiedName);
+                    this.ui.shortDescription.text(data.shortDescription);
+                    this.ui.longDescription.text(data.longDescription);
+                    this.generateCategories(data.categories);
+                    this.generateTerm(data.terms);
+                    this.generateTag(data.classifications);
+                } else {
+                    this.ui.title.text("No Data found");
+                }
             },
             generateCategories: function(data) {
                 var that = this,
@@ -396,6 +421,16 @@ define(['require',
                             "fromView": "glossary"
                         })));
                     }
+                });
+            },
+            renderRelationLayoutView: function(options) {
+                var that = this;
+                require(['views/glossary/TermRelationAttributeLayoutView'], function(TermRelationAttributeLayoutView) {
+                    that.RRelationLayoutView.show(new TermRelationAttributeLayoutView(_.extend({}, options, {
+                        "entityName": that.ui.title.text(),
+                        "fetchCollection": that.getData.bind(that),
+                        "data": that.data
+                    })));
                 });
             },
         });

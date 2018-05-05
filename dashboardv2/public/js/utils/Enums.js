@@ -108,5 +108,28 @@ define(['require'], function(require) {
         // hive_column: { icon: "fa-columns", textContent: '\uf0db' },
         // hive_table: { icon: "fa-table", textContent: '\uf0ce' }
     }
+    var getTermRelationAttributes = function() {
+        return {
+            description: null,
+            expression: null,
+            steward: null,
+            source: null
+        }
+    }
+    Enums.termRelationAttributeList = {
+        seeAlso: getTermRelationAttributes(),
+        synonyms: getTermRelationAttributes(),
+        antonyms: getTermRelationAttributes(),
+        preferredTerms: getTermRelationAttributes(),
+        preferredToTerms: getTermRelationAttributes(),
+        replacementTerms: getTermRelationAttributes(),
+        replacedBy: getTermRelationAttributes(),
+        translationTerms: getTermRelationAttributes(),
+        translatedTerms: getTermRelationAttributes(),
+        isA: getTermRelationAttributes(),
+        classifies: getTermRelationAttributes(),
+        validValues: getTermRelationAttributes(),
+        validValuesFor: getTermRelationAttributes()
+    }
     return Enums;
 });

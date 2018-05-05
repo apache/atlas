@@ -94,6 +94,12 @@ define(['require',
         assignCategoryToTerm: function(options) {
             return this.createEditTerm(options);
         },
+        assignTermToAttributes: function(options) {
+            return this.createEditTerm(options);
+        },
+        removeTermFromAttributes: function(options) {
+            return this.createEditTerm(options);
+        },
         removeTermFromEntity: function(guid, options) {
             var url = UrlLinks.termToEntityApiUrl(guid);
             options = _.extend({
