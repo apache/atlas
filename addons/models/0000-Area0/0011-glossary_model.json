@@ -1,7 +1,7 @@
 {
   "enumDefs": [
     {
-      "name": "__AtlasGlossaryTermRelationshipStatus",
+      "name": "AtlasGlossaryTermRelationshipStatus",
       "description": "TermRelationshipStatus defines how reliable the relationship is between two glossary terms",
       "typeVersion": "1.0",
       "elementDefs": [
@@ -33,7 +33,7 @@
       ]
     },
     {
-      "name": "__AtlasGlossaryTermAssignmentStatus",
+      "name": "AtlasGlossaryTermAssignmentStatus",
       "description": "TermAssignmentStatus defines how much the semantic assignment should be trusted.",
       "typeVersion": "1.0",
       "elementDefs": [
@@ -79,7 +79,7 @@
   "classificationDefs": [],
   "entityDefs": [
     {
-      "name": "__AtlasGlossary",
+      "name": "AtlasGlossary",
       "superTypes": [
         "__internal"
       ],
@@ -136,7 +136,7 @@
       ]
     },
     {
-      "name": "__AtlasGlossaryTerm",
+      "name": "AtlasGlossaryTerm",
       "superTypes": [
         "__internal"
       ],
@@ -201,7 +201,7 @@
       ]
     },
     {
-      "name": "__AtlasGlossaryCategory",
+      "name": "AtlasGlossaryCategory",
       "superTypes": [
         "__internal"
       ],
@@ -244,7 +244,7 @@
   ],
   "relationshipDefs": [
     {
-      "name": "__AtlasGlossarySemanticAssignment",
+      "name": "AtlasGlossarySemanticAssignment",
       "description": "SemanticAssignment is a relationship used to assign a term to a referenceable object. This means that the term describes the meaning of the referenceable object. The semantic assignment needs to be a controlled relationship when glossary definitions are used to provide classifications for the data assets and hence define how the data is to be governed.",
       "typeVersion": "1.0",
       "attributeDefs": [
@@ -271,7 +271,7 @@
         },
         {
           "name": "status",
-          "typeName": "__AtlasGlossaryTermRelationshipStatus",
+          "typeName": "AtlasGlossaryTermRelationshipStatus",
           "isOptional": true,
           "cardinality": "SINGLE",
           "valuesMinCount": 0,
@@ -326,7 +326,7 @@
       "relationshipCategory": "ASSOCIATION",
       "propagateTags": "ONE_TO_TWO",
       "endDef1": {
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "name": "assignedEntities",
         "isContainer": false,
         "cardinality": "SET"
@@ -339,36 +339,36 @@
       }
     },
     {
-      "name": "__AtlasGlossaryTermAnchor",
+      "name": "AtlasGlossaryTermAnchor",
       "typeVersion": "1.0",
       "description": "TermAnchor links each term to exactly one Glossary object. This means that this is its home glossary. If the Glossary object is deleted, then so are all of the terms linked to it.",
       "endDef1": {
         "name": "terms",
-        "type": "__AtlasGlossary",
+        "type": "AtlasGlossary",
         "cardinality": "SET",
         "isContainer": true
       },
       "endDef2": {
         "name": "anchor",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SINGLE"
       },
       "relationshipCategory": "COMPOSITION",
       "propagateTags": "NONE"
     },
     {
-      "name": "__AtlasGlossaryTermCategorization",
+      "name": "AtlasGlossaryTermCategorization",
       "typeVersion": "1.0",
       "description": "TermCategorization is a relationship used to organize terms into categories. A term may be linked with many categories and a category may have many terms linked to it. This relationship may connect terms and categories both in the same glossary or in different glossaries.",
       "endDef1": {
         "name": "terms",
-        "type": "__AtlasGlossaryCategory",
+        "type": "AtlasGlossaryCategory",
         "cardinality": "SET",
         "isContainer": true
       },
       "endDef2": {
         "name": "categories",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "relationshipCategory": "AGGREGATION",
@@ -384,7 +384,7 @@
         },
         {
           "name": "status",
-          "typeName": "__AtlasGlossaryTermRelationshipStatus",
+          "typeName": "AtlasGlossaryTermRelationshipStatus",
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true,
@@ -393,53 +393,53 @@
       ]
     },
     {
-      "name": "__AtlasGlossaryCategoryAnchor",
+      "name": "AtlasGlossaryCategoryAnchor",
       "typeVersion": "1.0",
       "description": "CategoryAnchor links each category to exactly one Glossary object. This means that this is its home glossary. If the Glossary object is deleted then so are all of the categories linked to it.",
       "endDef1": {
         "name": "categories",
-        "type": "__AtlasGlossary",
+        "type": "AtlasGlossary",
         "cardinality": "SET",
         "isContainer": true
       },
       "endDef2": {
         "name": "anchor",
-        "type": "__AtlasGlossaryCategory",
+        "type": "AtlasGlossaryCategory",
         "cardinality": "SINGLE"
       },
       "relationshipCategory": "COMPOSITION",
       "propagateTags": "NONE"
     },
     {
-      "name": "__AtlasGlossaryCategoryHierarchyLink",
+      "name": "AtlasGlossaryCategoryHierarchyLink",
       "typeVersion": "1.0",
       "description": "CategoryHierarchyLink is a relationship used to organize categories into a hierarchy to, for example, create a structure for a taxonomy. A category may have none or one super-categories. This super-category may be in a different glossary.",
       "endDef1": {
         "name": "childrenCategories",
-        "type": "__AtlasGlossaryCategory",
+        "type": "AtlasGlossaryCategory",
         "cardinality": "SET",
         "isContainer": true
       },
       "endDef2": {
         "name": "parentCategory",
-        "type": "__AtlasGlossaryCategory",
+        "type": "AtlasGlossaryCategory",
         "cardinality": "SINGLE"
       },
       "relationshipCategory": "AGGREGATION",
       "propagateTags": "NONE"
     },
     {
-      "name": "__AtlasGlossaryRelatedTerm",
+      "name": "AtlasGlossaryRelatedTerm",
       "typeVersion": "1.0",
       "description": "RelatedTerm is a relationship used to say that the linked glossary term may also be of interest. It is like a 'see also' link in a dictionary.",
       "endDef1": {
         "name": "seeAlso",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "endDef2": {
         "name": "seeAlso",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "relationshipCategory": "ASSOCIATION",
@@ -462,7 +462,7 @@
         },
         {
           "name": "status",
-          "typeName": "__AtlasGlossaryTermRelationshipStatus",
+          "typeName": "AtlasGlossaryTermRelationshipStatus",
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true
@@ -485,17 +485,17 @@
       ]
     },
     {
-      "name": "__AtlasGlossarySynonym",
+      "name": "AtlasGlossarySynonym",
       "typeVersion": "1.0",
       "description": "Synonym is a relationship between glossary terms that have the same, or a very similar meaning in the same language. Notice that both ends of this relationship have the same name and refer to the same type; this results in one Synonym attribute being added to GlossaryTerm.",
       "endDef1": {
         "name": "synonyms",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "endDef2": {
         "name": "synonyms",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "relationshipCategory": "ASSOCIATION",
@@ -518,7 +518,7 @@
         },
         {
           "name": "status",
-          "typeName": "__AtlasGlossaryTermRelationshipStatus",
+          "typeName": "AtlasGlossaryTermRelationshipStatus",
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true
@@ -541,17 +541,17 @@
       ]
     },
     {
-      "name": "__AtlasGlossaryAntonym",
+      "name": "AtlasGlossaryAntonym",
       "typeVersion": "1.0",
       "description": "Antonym is a relationship between glossary terms that have the opposite (or near opposite) meaning, in the same language. Notice that both ends of this relationship have the same name and refer to the same type; this results in one Antonym attribute being added to GlossaryTerm.",
       "endDef1": {
         "name": "antonyms",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "endDef2": {
         "name": "antonyms",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "relationshipCategory": "ASSOCIATION",
@@ -574,7 +574,7 @@
         },
         {
           "name": "status",
-          "typeName": "__AtlasGlossaryTermRelationshipStatus",
+          "typeName": "AtlasGlossaryTermRelationshipStatus",
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true
@@ -597,17 +597,17 @@
       ]
     },
     {
-      "name": "__AtlasGlossaryPreferredTerm",
+      "name": "AtlasGlossaryPreferredTerm",
       "typeVersion": "1.0",
       "description": "PreferredTerm is a relationship that indicates that the preferredTerm should be used in place of the preferredToTerm. This relationship can be used to encourage adoption of newer vocabularies. This is a weaker version of ReplacementTerm.",
       "endDef1": {
         "name": "preferredTerms",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "endDef2": {
         "name": "preferredToTerms",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "relationshipCategory": "ASSOCIATION",
@@ -630,7 +630,7 @@
         },
         {
           "name": "status",
-          "typeName": "__AtlasGlossaryTermRelationshipStatus",
+          "typeName": "AtlasGlossaryTermRelationshipStatus",
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true
@@ -653,17 +653,17 @@
       ]
     },
     {
-      "name": "__AtlasGlossaryReplacementTerm",
+      "name": "AtlasGlossaryReplacementTerm",
       "typeVersion": "1.0",
       "description": "ReplacementTerm is a relationship that indicates that the replacementTerm must be used instead of the replacedByTerm. This is stronger version of the PreferredTerm.",
       "endDef1": {
         "name": "replacedBy",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "endDef2": {
         "name": "replacementTerms",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "relationshipCategory": "ASSOCIATION",
@@ -686,7 +686,7 @@
         },
         {
           "name": "status",
-          "typeName": "__AtlasGlossaryTermRelationshipStatus",
+          "typeName": "AtlasGlossaryTermRelationshipStatus",
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true
@@ -709,17 +709,17 @@
       ]
     },
     {
-      "name": "__AtlasGlossaryTranslation",
+      "name": "AtlasGlossaryTranslation",
       "typeVersion": "1.0",
       "description": "Translation is a relationship that defines that the related terms represent the same meaning, but each are written in a different language. Hence one is a translation of the other. The language of each term is defined in the Glossary object that anchors the term.",
       "endDef1": {
         "name": "translatedTerms",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "endDef2": {
         "name": "translationTerms",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "relationshipCategory": "ASSOCIATION",
@@ -742,7 +742,7 @@
         },
         {
           "name": "status",
-          "typeName": "__AtlasGlossaryTermRelationshipStatus",
+          "typeName": "AtlasGlossaryTermRelationshipStatus",
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true
@@ -765,17 +765,17 @@
       ]
     },
     {
-      "name": "__AtlasGlossaryIsARelationship",
+      "name": "AtlasGlossaryIsARelationship",
       "typeVersion": "1.0",
       "description": "IsA is a relationship that defines that the 'isA' term is a more generic term than the 'isOf' term. For example, this relationship would be use to say that 'Cat' ISA 'Animal'.",
       "endDef1": {
         "name": "classifies",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "endDef2": {
         "name": "isA",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "relationshipCategory": "ASSOCIATION",
@@ -798,7 +798,7 @@
         },
         {
           "name": "status",
-          "typeName": "__AtlasGlossaryTermRelationshipStatus",
+          "typeName": "AtlasGlossaryTermRelationshipStatus",
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true
@@ -821,17 +821,17 @@
       ]
     },
     {
-      "name": "__AtlasGlossaryValidValue",
+      "name": "AtlasGlossaryValidValue",
       "typeVersion": "1.0",
       "description": "ValidValue is a relationship that shows the validValue term represents one of the valid values that could be assigned to a data item that has the meaning described in the validValueFor term.",
       "endDef1": {
         "name": "validValuesFor",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "endDef2": {
         "name": "validValues",
-        "type": "__AtlasGlossaryTerm",
+        "type": "AtlasGlossaryTerm",
         "cardinality": "SET"
       },
       "relationshipCategory": "ASSOCIATION",
@@ -854,7 +854,7 @@
         },
         {
           "name": "status",
-          "typeName": "__AtlasGlossaryTermRelationshipStatus",
+          "typeName": "AtlasGlossaryTermRelationshipStatus",
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true

@@ -39,7 +39,7 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
 
     @Inject
     protected AtlasGlossaryCategoryDTO(final AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, AtlasGlossaryCategory.class, true);
+        super(typeRegistry, AtlasGlossaryCategory.class);
     }
 
     @Override

@@ -120,8 +120,8 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 public final class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
 
-    private static final String TERM_RELATION_NAME = "__AtlasGlossarySemanticAssignment";
-    private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "__AtlasGlossaryTerm.displayName";
+    private static final String TERM_RELATION_NAME = "AtlasGlossarySemanticAssignment";
+    private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "AtlasGlossaryTerm.displayName";
 
     private final String NAME           = "name";
     private final String DISPLAY_NAME   = "displayName";

@@ -44,7 +44,7 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
 
     @Inject
     public AtlasSavedSearchDTO(AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, AtlasUserSavedSearch.class, true);
+        super(typeRegistry, AtlasUserSavedSearch.class, "__AtlasUserSavedSearch");
     }
 
     @Override

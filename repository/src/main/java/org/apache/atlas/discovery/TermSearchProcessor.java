@@ -33,7 +33,7 @@ public class TermSearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(TermSearchProcessor.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("TermSearchProcessor");
 
-    public static final String ATLAS_GLOSSARY_TERM_ENTITY_TYPE            = "__AtlasGlossaryTerm";
+    public static final String ATLAS_GLOSSARY_TERM_ENTITY_TYPE            = "AtlasGlossaryTerm";
     public static final String ATLAS_GLOSSARY_TERM_ATTR_QNAME             = "qualifiedName";
     public static final String ATLAS_GLOSSARY_TERM_ATTR_ASSIGNED_ENTITIES = "assignedEntities";
 

@@ -40,7 +40,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
 
     @Inject
     protected AtlasGlossaryTermDTO(final AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, AtlasGlossaryTerm.class, true);
+        super(typeRegistry, AtlasGlossaryTerm.class);
     }
 
     @Override

@@ -27,24 +27,18 @@ import org.apache.commons.lang3.StringUtils;
 
 
 public abstract class AbstractDataTransferObject<T extends AtlasBaseModelObject> implements DataTransferObject<T> {
-
-    private static final String DEFAULT_PREFIX = "Atlas";
-
     private final AtlasTypeRegistry typeRegistry;
     private final Class<T>          objectType;
     private final String            entityTypeName;
-    private final String            alternateEntityTypeName;
 
-    protected AbstractDataTransferObject(AtlasTypeRegistry typeRegistry, Class<T> tClass, boolean isInternal) {
+    protected AbstractDataTransferObject(AtlasTypeRegistry typeRegistry, Class<T> tClass) {
+        this(typeRegistry, tClass, tClass.getSimpleName());
+    }
+
+    protected AbstractDataTransferObject(AtlasTypeRegistry typeRegistry, Class<T> tClass, String entityTypeName) {
         this.typeRegistry   = typeRegistry;
         this.objectType     = tClass;
-        if (isInternal) {
-            this.entityTypeName = Constants.INTERNAL_PROPERTY_KEY_PREFIX + objectType.getSimpleName();
-            this.alternateEntityTypeName = null;
-        } else {
-            this.entityTypeName = objectType.getSimpleName();
-            this.alternateEntityTypeName = entityTypeName.startsWith(DEFAULT_PREFIX) ? entityTypeName.substring(DEFAULT_PREFIX.length()) : null;
-        }
+        this.entityTypeName = entityTypeName;
     }
 
     @Override
@@ -55,9 +49,7 @@ public abstract class AbstractDataTransferObject<T extends AtlasBaseModelObject>
     @Override
     public AtlasEntityType getEntityType() {
         AtlasEntityType ret = typeRegistry.getEntityTypeByName(entityTypeName);
-        if (ret == null) {
-            ret = typeRegistry.getEntityTypeByName(alternateEntityTypeName);
-        }
+
         return ret;
     }
 

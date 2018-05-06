@@ -246,10 +246,10 @@ public class ImportServiceTest {
         loadGlossary();
         runImportWithNoParameters(importService, zipSource);
 
-        assertEntityCount("__AtlasGlossary", "40c80052-3129-4f7c-8f2f-391677935416", 1);
-        assertEntityCount("__AtlasGlossaryTerm", "e93ac426-de04-4d54-a7c9-d76c1e96369b", 1);
-        assertEntityCount("__AtlasGlossaryTerm", "93ad3bf6-23dc-4e3f-b70e-f8fad6438203", 1);
-        assertEntityCount("__AtlasGlossaryTerm", "105533b6-c125-4a87-bed5-cdf67fb68c39", 1);
+        assertEntityCount("AtlasGlossary", "40c80052-3129-4f7c-8f2f-391677935416", 1);
+        assertEntityCount("AtlasGlossaryTerm", "e93ac426-de04-4d54-a7c9-d76c1e96369b", 1);
+        assertEntityCount("AtlasGlossaryTerm", "93ad3bf6-23dc-4e3f-b70e-f8fad6438203", 1);
+        assertEntityCount("AtlasGlossaryTerm", "105533b6-c125-4a87-bed5-cdf67fb68c39", 1);
     }
 
     private List<AtlasEntityHeader> getImportedEntities(String query, String guid) throws AtlasBaseException {

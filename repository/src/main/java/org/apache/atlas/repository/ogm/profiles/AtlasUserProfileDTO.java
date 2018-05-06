@@ -40,7 +40,7 @@ public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserPro
 
     @Inject
     public AtlasUserProfileDTO(AtlasTypeRegistry typeRegistry, AtlasSavedSearchDTO savedSearchDTO) {
-        super(typeRegistry, AtlasUserProfile.class, true);
+        super(typeRegistry, AtlasUserProfile.class, "__AtlasUserProfile");
 
         this.savedSearchDTO = savedSearchDTO;
     }

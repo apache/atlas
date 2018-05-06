@@ -437,19 +437,19 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
     }
 
     public enum Relation {
-        SEE_ALSO("__AtlasGlossaryRelatedTerm", "seeAlso"),
-        SYNONYMS("__AtlasGlossarySynonym", "synonyms"),
-        ANTONYMS("__AtlasGlossaryAntonym", "antonyms"),
-        PREFERRED_TERMS("__AtlasGlossaryPreferredTerm", "preferredTerms"),
-        PREFERRED_TO_TERMS("__AtlasGlossaryPreferredTerm", "preferredToTerms"),
-        REPLACEMENT_TERMS("__AtlasGlossaryReplacementTerm", "replacementTerms"),
-        REPLACED_BY("__AtlasGlossaryReplacementTerm", "replacedBy"),
-        TRANSLATION_TERMS("__AtlasGlossaryTranslation", "translationTerms"),
-        TRANSLATED_TERMS("__AtlasGlossaryTranslation", "translatedTerms"),
-        ISA("__AtlasGlossaryIsARelationship", "isA"),
-        CLASSIFIES("__AtlasGlossaryIsARelationship", "classifies"),
-        VALID_VALUES("__AtlasGlossaryValidValue", "validValues"),
-        VALID_VALUES_FOR("__AtlasGlossaryValidValue", "validValuesFor"),
+        SEE_ALSO("AtlasGlossaryRelatedTerm", "seeAlso"),
+        SYNONYMS("AtlasGlossarySynonym", "synonyms"),
+        ANTONYMS("AtlasGlossaryAntonym", "antonyms"),
+        PREFERRED_TERMS("AtlasGlossaryPreferredTerm", "preferredTerms"),
+        PREFERRED_TO_TERMS("AtlasGlossaryPreferredTerm", "preferredToTerms"),
+        REPLACEMENT_TERMS("AtlasGlossaryReplacementTerm", "replacementTerms"),
+        REPLACED_BY("AtlasGlossaryReplacementTerm", "replacedBy"),
+        TRANSLATION_TERMS("AtlasGlossaryTranslation", "translationTerms"),
+        TRANSLATED_TERMS("AtlasGlossaryTranslation", "translatedTerms"),
+        ISA("AtlasGlossaryIsARelationship", "isA"),
+        CLASSIFIES("AtlasGlossaryIsARelationship", "classifies"),
+        VALID_VALUES("AtlasGlossaryValidValue", "validValues"),
+        VALID_VALUES_FOR("AtlasGlossaryValidValue", "validValuesFor"),
         ;
 
         private String relationName;

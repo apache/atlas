@@ -126,7 +126,7 @@ define(['require',
                     this.entityObject = this.collection.first().toJSON();
                     var collectionJSON = this.entityObject.entity;
 
-                    if (collectionJSON && collectionJSON.typeName.startsWith("__AtlasGlossary")) {
+                    if (collectionJSON && collectionJSON.typeName.startsWith("AtlasGlossary")) {
                         this.$(".termBox").hide();
                     }
                     // MergerRefEntity.

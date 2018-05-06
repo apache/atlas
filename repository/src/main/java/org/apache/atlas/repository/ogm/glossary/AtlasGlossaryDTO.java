@@ -38,7 +38,7 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
 
     @Inject
     public AtlasGlossaryDTO(AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, AtlasGlossary.class, true);
+        super(typeRegistry, AtlasGlossary.class);
     }
 
     @Override

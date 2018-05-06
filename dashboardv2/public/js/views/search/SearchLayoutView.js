@@ -485,7 +485,7 @@ define(['require',
                         data: function(params) {
                             return {
                                 attrValuePrefix: params.term, // search term
-                                typeName: "__AtlasGlossaryTerm",
+                                typeName: "AtlasGlossaryTerm",
                                 limit: 10,
                                 offset: 0
                             };

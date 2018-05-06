@@ -36,9 +36,9 @@ public abstract class GlossaryUtils {
     public static final String TERM_ASSIGNMENT_ATTR_STEWARD     = "steward";
     public static final String TERM_ASSIGNMENT_ATTR_SOURCE      = "source";
 
-    static final String ATLAS_GLOSSARY_TYPENAME          = "__AtlasGlossary";
-    static final String ATLAS_GLOSSARY_TERM_TYPENAME     = "__AtlasGlossaryTerm";
-    static final String ATLAS_GLOSSARY_CATEGORY_TYPENAME = "__AtlasGlossaryCategory";
+    static final String ATLAS_GLOSSARY_TYPENAME          = "AtlasGlossary";
+    static final String ATLAS_GLOSSARY_TERM_TYPENAME     = "AtlasGlossaryTerm";
+    static final String ATLAS_GLOSSARY_CATEGORY_TYPENAME = "AtlasGlossaryCategory";
 
     // Relation name constants
     protected static final String ATLAS_GLOSSARY_PREFIX          = ATLAS_GLOSSARY_TYPENAME;

@@ -33,8 +33,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 public abstract class AbstractGlossaryDTO<T extends AtlasBaseModelObject> extends AbstractDataTransferObject<T> {
-    protected AbstractGlossaryDTO(final AtlasTypeRegistry typeRegistry, final Class<T> tClass, final boolean isInternal) {
-        super(typeRegistry, tClass, isInternal);
+    protected AbstractGlossaryDTO(final AtlasTypeRegistry typeRegistry, final Class<T> tClass) {
+        super(typeRegistry, tClass);
+    }
+
+    protected AbstractGlossaryDTO(final AtlasTypeRegistry typeRegistry, final Class<T> tClass, final String entityTypeName) {
+        super(typeRegistry, tClass, entityTypeName);
     }
 
     protected AtlasRelatedTermHeader constructRelatedTermId(AtlasRelatedObjectId relatedObjectId) {

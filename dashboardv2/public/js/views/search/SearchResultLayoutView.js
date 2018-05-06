@@ -851,7 +851,7 @@ define(['require',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
-                                if (!(obj.typeName.startsWith("__AtlasGlossary"))) {
+                                if (!(obj.typeName.startsWith("AtlasGlossary"))) {
                                     if (obj.status && Enums.entityStateReadOnly[obj.status]) {
                                         return '<div class="readOnly">' + CommonViewFunction.termForTable(obj); + '</div>';
                                     } else {
