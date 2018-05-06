@@ -7,113 +7,110 @@ The entire query structure can be represented using the following JSON structure
 
 <verbatim>
 {
-  "typeName": "hive_table",
+  "typeName":               "hive_column",
   "excludeDeletedEntities": true,
-  "classification" : "",
-  "query": "",
-  "limit": 25,
-  "offset": 0,
-  "entityFilters": {
-   "attributeName": "name",
-   "operator": "contains",
-   "attributeValue": "testtable"
-  },
-  "tagFilters": null,
-  "attributes": [""]
+  "classification":         "PII",
+  "query":                  "",
+  "offset":                 0,
+  "limit":                  25,
+  "entityFilters":          {  },
+  "tagFilters":             { },
+  "attributes":             [ "table", "qualifiedName"]
 }
 </verbatim>
 
 __Field description__
 
-   * typeName: The type of entity to look for
-   * excludeDeletedEntities: Should the search include deleted entities too (default: true)
-   * classification: Only include entities with given Classification/tag
-   * query: Any free text occurrence that the entity should have (generic/wildcard queries might be slow)
-   * limit: Max number of results to fetch
-   * offset: Starting offset of the result set (useful for pagination)
-   * entityFilters: Entity Attribute filter(s)
-   * tagFilters: Classification/tag Attribute filter(s)
-   * attributes: Attributes to include in the search result (default: include any attribute present in the filter)
+<verbatim>
+   typeName:               the type of entity to look for
+   excludeDeletedEntities: should the search exclude deleted entities? (default: true)
+   classification:         only include entities with given classification
+   query:                  any free text occurrence that the entity should have (generic/wildcard queries might be slow)
+   offset:                 starting offset of the result set (useful for pagination)
+   limit:                  max number of results to fetch
+   entityFilters:          entity attribute filter(s)
+   tagFilters:             classification attribute filter(s)
+   attributes:             attributes to include in the search result
+</verbatim>
 
-   Attribute based filtering can be done on multiple attributes with AND/OR condition.
+<img src="images/twiki/search-basic-hive_column-PII.png" height="400" width="600"/>
 
-    *NOTE: The tagFilters and entityFilters field have same JSON structure.*
+   Attribute based filtering can be done on multiple attributes with AND/OR conditions.
 
 __Examples of filtering (for hive_table attributes)__
    * Single attribute
    <verbatim>
    {
-     "typeName": "hive_table",
+     "typeName":               "hive_table",
      "excludeDeletedEntities": true,
-     "classification" : "",
-     "query": "",
-     "limit": 50,
-     "offset": 0,
+     "offset":                 0,
+     "limit":                  25,
      "entityFilters": {
-        "attributeName": "name",
-        "operator": "contains",
-        "attributeValue": "testtable"
+        "attributeName":  "name",
+        "operator":       "contains",
+        "attributeValue": "customers"
      },
-     "tagFilters": null,
-     "attributes": [""]
+     "attributes": [ "db", "qualifiedName" ]
    }
    </verbatim>
+
+<img src="images/twiki/search-basic-hive_table-customers.png" height="400" width="600"/>
+
    * Multi-attribute with OR
    <verbatim>
    {
-     "typeName": "hive_table",
+     "typeName":               "hive_table",
      "excludeDeletedEntities": true,
-     "classification" : "",
-     "query": "",
-     "limit": 50,
-     "offset": 0,
+     "offset":                 0,
+     "limit":                  25,
      "entityFilters": {
         "condition": "OR",
         "criterion": [
            {
-              "attributeName": "name",
-              "operator": "contains",
-              "attributeValue": "testtable"
+              "attributeName":  "name",
+              "operator":       "contains",
+              "attributeValue": "customers"
            },
            {
-              "attributeName": "owner",
-              "operator": "eq",
-              "attributeValue": "admin"
+              "attributeName":  "name",
+              "operator":       "contains",
+              "attributeValue": "provider"
            }
         ]
      },
-     "tagFilters": null,
-     "attributes": [""]
+     "attributes": [ "db", "qualifiedName" ]
    }
    </verbatim>
+
+<img src="images/twiki/search-basic-hive_table-customers-or-provider.png" height="400" width="600"/>
+
    * Multi-attribute with AND
    <verbatim>
    {
-     "typeName": "hive_table",
+     "typeName":               "hive_table",
      "excludeDeletedEntities": true,
-     "classification" : "",
-     "query": "",
-     "limit": 50,
-     "offset": 0,
+     "offset":                 0,
+     "limit":                  25,
      "entityFilters": {
         "condition": "AND",
         "criterion": [
            {
-              "attributeName": "name",
-              "operator": "contains",
-              "attributeValue": "testtable"
+              "attributeName":  "name",
+              "operator":       "contains",
+              "attributeValue": "customers"
            },
            {
-              "attributeName": "owner",
-              "operator": "eq",
-              "attributeValue": "admin"
+              "attributeName":  "owner",
+              "operator":       "eq",
+              "attributeValue": "hive"
            }
         ]
      },
-     "tagFilters": null,
-     "attributes": [""]
-   }
+     "attributes": [ "db", "qualifiedName" ]
+  }
    </verbatim>
+
+<img src="images/twiki/search-basic-hive_table-customers-owner_is_hive.png" height="400" width="600"/>
 
 __Supported operators for filtering__
 
@@ -135,29 +132,28 @@ __CURL Samples__
     -u <user>:<password>
     -X POST
     -d '{
-            "typeName": "hive_table",
+            "typeName":               "hive_table",
             "excludeDeletedEntities": true,
-            "classification" : "",
-            "query": "",
-            "limit": 50,
-            "offset": 0,
+            "classification":         "",
+            "query":                  "",
+            "offset":                 0,
+            "limit":                  50,
             "entityFilters": {
                "condition": "AND",
                "criterion": [
                   {
-                     "attributeName": "name",
-                     "operator": "contains",
-                     "attributeValue": "testtable"
+                     "attributeName":  "name",
+                     "operator":       "contains",
+                     "attributeValue": "customers"
                   },
                   {
-                     "attributeName": "owner",
-                     "operator": "eq",
-                     "attributeValue": "admin"
+                     "attributeName":  "owner",
+                     "operator":       "eq",
+                     "attributeValue": "hive"
                   }
                ]
             },
-            "tagFilters": null,
-            "attributes": [""]
+            "attributes": [ "db", "qualifiedName" ]
           }'
     <protocol>://<atlas_host>:<atlas_port>/api/atlas/v2/search/basic
 </verbatim>

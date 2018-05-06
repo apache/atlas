@@ -24,6 +24,7 @@ capabilities around these data assets for data scientists, analysts and the data
    * Ability to dynamically create classifications - like PII, EXPIRES_ON, DATA_QUALITY, SENSITIVE
    * Classifications can include attributes - like expiry_date attribute in EXPIRES_ON classification
    * Entities can be associated with multiple classifications, enabling easier discovery and security enforcement
+   * Propagation of classifications via lineage - automatically ensures that classifications follow the data as it goes through various processing
 
 ---+++ Lineage
    * Intuitive UI to view lineage of data as it moves through various processes
@@ -35,7 +36,8 @@ capabilities around these data assets for data scientists, analysts and the data
    * SQL like query language to search entities - Domain Specific Language (DSL)
 
 ---+++ Security & Data Masking
-   * Integration with Apache Ranger enables authorization/data-masking based on classifications associated with entities in Apache Atlas. For example:
+   * Fine grained security for metadata access, enabling controls on access to entity instances and operations like add/update/remove classifications
+   * Integration with Apache Ranger enables authorization/data-masking on data access based on classifications associated with entities in Apache Atlas. For example:
       * who can access data classified as PII, SENSITIVE
       * customer-service users can only see last 4 digits of columns classified as NATIONAL_ID
 
@@ -50,20 +52,18 @@ capabilities around these data assets for data scientists, analysts and the data
 
    * [[Architecture][High Level Architecture]]
    * [[TypeSystem][Type System]]
-   * [[Search - Basic][Basic Search]]
-   * [[Search - Advanced][Advanced Search]]
+   * [[Search - Basic][Search: Basic]]
+   * [[Search - Advanced][Search: Advanced]]
    * [[security][Security]]
    * [[Authentication-Authorization][Authentication and Authorization]]
    * [[Configuration][Configuration]]
-   * Notification
-      * [[Notification-Entity][Entity Notification]]
+   * [[Notifications][Notifications]]
    * Hooks & Bridges
-      * [[Bridge-HBase][HBase Hook & Bridge]]
-      * [[Bridge-Hive][Hive Hook & Bridge]]
+      * [[Hook-HBase][HBase Hook & Bridge]]
+      * [[Hook-Hive][Hive Hook & Bridge]]
+      * [[Hook-Sqoop][Sqoop Hook]]
+      * [[Hook-Storm][Storm Hook]]
       * [[Bridge-Kafka][Kafka Bridge]]
-      * [[Bridge-Sqoop][Sqoop Hook]]
-      * [[StormAtlasHook][Storm Hook]]
-      * [[Bridge-Falcon][Falcon Hook]]
    * [[HighAvailability][Fault Tolerance And High Availability Options]]
 
 ---++ API Documentation
