@@ -21,6 +21,9 @@ package org.apache.atlas.migration;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
 import org.apache.atlas.type.AtlasType;
@@ -97,6 +100,7 @@ public class Exporter {
 
         displayMessage("initializing");
 
+        resetHAMode();
         ApplicationContext applicationContext = new ClassPathXmlApplicationContext(contextXml);
 
         this.typesDefFileName = typesDefFileName;
@@ -104,6 +108,11 @@ public class Exporter {
         this.typeRegistry     = applicationContext.getBean(ATLAS_TYPE_REGISTRY, AtlasTypeRegistry.class);;
 
         displayMessage("initialized");
+    }
+
+    private void resetHAMode() throws AtlasException {
+        ApplicationProperties applicationProperties = (ApplicationProperties) ApplicationProperties.get();
+        applicationProperties.setProperty(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false);
     }
 
     public void perform() throws Exception {
