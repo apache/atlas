@@ -140,6 +140,8 @@ public enum AtlasErrorCode {
     GLOSSARY_TERM_QUALIFIED_NAME_CANT_BE_DERIVED(400, "ATLAS-400-00-07A", "Attributes qualifiedName, displayName & glossary name are missing. Failed to derive a unique name for Glossary term"),
     GLOSSARY_CATEGORY_QUALIFIED_NAME_CANT_BE_DERIVED(400, "ATLAS-400-00-07B", "Attributes qualifiedName, displayName & glossary name are missing. Failed to derive a unique name for Glossary category"),
     RELATIONSHIP_END_IS_NULL(400, "ATLAS-400-00-07D", "Relationship end is invalid. Expected {0} but is NULL"),
+    INVALID_TERM_RELATION_TO_SELF(400, "ATLAS-400-00-07E", "Invalid Term relationship: Term can't have a relationship with self"),
+    INVALID_CHILD_CATEGORY_DIFFERENT_GLOSSARY(400, "ATLAS-400-00-07F", "Invalid child category relationship: Child category belongs to different glossary"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
@@ -188,7 +190,7 @@ public enum AtlasErrorCode {
     CURATOR_FRAMEWORK_UPDATE(500, "ATLAS-500-00-00B", "ActiveInstanceState.update resulted in exception."),
     QUICK_START(500, "ATLAS-500-00-00C", "Failed to run QuickStart: {0}"),
     EMBEDDED_SERVER_START(500, "ATLAS-500-00-00D", "EmbeddedServer.Start: failed!"),
-    STORM_TOPOLOGY_UTIL(500, "ATLAS-500-00-00E", "StormToplogyUtil: {0}"),
+    STORM_TOPOLOGY_UTIL(500, "ATLAS-500-00-00E", "StormTopologyUtil: {0}"),
     SQOOP_HOOK(500, "ATLAS-500-00-00F", "SqoopHook: {0}"),
     HIVE_HOOK(500, "ATLAS-500-00-010", "HiveHook: {0}"),
     HIVE_HOOK_METASTORE_BRIDGE(500, "ATLAS-500-00-011", "HiveHookMetaStoreBridge: {0}"),

@@ -440,33 +440,43 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
         SEE_ALSO("AtlasGlossaryRelatedTerm", "seeAlso"),
         SYNONYMS("AtlasGlossarySynonym", "synonyms"),
         ANTONYMS("AtlasGlossaryAntonym", "antonyms"),
+        PREFERRED_TO_TERMS("AtlasGlossaryPreferredTerm", "preferredToTerms", true),
         PREFERRED_TERMS("AtlasGlossaryPreferredTerm", "preferredTerms"),
-        PREFERRED_TO_TERMS("AtlasGlossaryPreferredTerm", "preferredToTerms"),
-        REPLACEMENT_TERMS("AtlasGlossaryReplacementTerm", "replacementTerms"),
+        REPLACEMENT_TERMS("AtlasGlossaryReplacementTerm", "replacementTerms", true),
         REPLACED_BY("AtlasGlossaryReplacementTerm", "replacedBy"),
-        TRANSLATION_TERMS("AtlasGlossaryTranslation", "translationTerms"),
+        TRANSLATION_TERMS("AtlasGlossaryTranslation", "translationTerms", true),
         TRANSLATED_TERMS("AtlasGlossaryTranslation", "translatedTerms"),
-        ISA("AtlasGlossaryIsARelationship", "isA"),
+        ISA("AtlasGlossaryIsARelationship", "isA", true),
         CLASSIFIES("AtlasGlossaryIsARelationship", "classifies"),
-        VALID_VALUES("AtlasGlossaryValidValue", "validValues"),
+        VALID_VALUES("AtlasGlossaryValidValue", "validValues", true),
         VALID_VALUES_FOR("AtlasGlossaryValidValue", "validValuesFor"),
         ;
 
-        private String relationName;
-        private String relationAttrName;
+        private String  name;
+        private String  attrName;
+        private boolean isEnd2Attr;
 
-        Relation(final String relationName, final String relationAttrName) {
-            this.relationName = relationName;
-            this.relationAttrName = relationAttrName;
+        Relation(final String name, final String attrName) {
+            this(name, attrName, false);
         }
 
-        public String getRelationName() {
-            return relationName;
+        Relation(final String name, final String attrName, final boolean isEnd2Attr) {
+            this.name = name;
+            this.attrName = attrName;
+            this.isEnd2Attr = isEnd2Attr;
+        }
+
+        public String getName() {
+            return name;
         }
 
         @JsonValue
-        public String getRelationAttrName() {
-            return relationAttrName;
+        public String getAttrName() {
+            return attrName;
+        }
+
+        public boolean isEnd2Attr() {
+            return isEnd2Attr;
         }
     }
 }

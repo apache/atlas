@@ -355,7 +355,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
             if (Objects.nonNull(existing.getRelatedTerms()) && Objects.nonNull(existing.getRelatedTerms().get(relation))) {
                 existingRelations = existing.getRelatedTerms().get(relation).stream().collect(Collectors.toMap(AtlasRelatedTermHeader::getTermGuid, t -> t));
             } else {
-                existingRelations = Collections.EMPTY_MAP;
+                existingRelations = Collections.emptyMap();
             }
             for (AtlasRelatedTermHeader term : terms) {
                 if (Objects.nonNull(existingRelations) && existingRelations.containsKey(term.getTermGuid())) {
@@ -364,10 +364,16 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     }
                     continue;
                 }
+
+                if (existing.getGuid().equals(term.getTermGuid())) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_RELATION_TO_SELF);
+                }
+
                 if (DEBUG_ENABLED) {
                     LOG.debug("Creating new term relation = {}, terms = {}", relation, term.getDisplayText());
                 }
-                createRelationship(defineTermRelation(relation.getRelationName(), existing.getGuid(), term));
+
+                createRelationship(defineTermRelation(relation, existing.getGuid(), term));
             }
         }
     }
@@ -403,11 +409,18 @@ public class GlossaryTermUtils extends GlossaryUtils {
         return new AtlasRelationship(TERM_ANCHOR, new AtlasObjectId(glossaryGuid), new AtlasObjectId(termGuid), defaultAttrs.getAttributes());
     }
 
-    private AtlasRelationship defineTermRelation(String relation, String end1TermGuid, AtlasRelatedTermHeader end2RelatedTerm) {
-        AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relation);
+    private AtlasRelationship defineTermRelation(AtlasGlossaryTerm.Relation relation, String end1TermGuid, AtlasRelatedTermHeader end2RelatedTerm) {
+        AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relation.getName());
         AtlasStruct           defaultAttrs     = relationshipType.createDefaultValue();
 
-        AtlasRelationship relationship = new AtlasRelationship(relation, new AtlasObjectId(end1TermGuid), new AtlasObjectId(end2RelatedTerm.getTermGuid()), defaultAttrs.getAttributes());
+        AtlasRelationship relationship;
+        // End1 and End2 ObjectIds depend on the attribute
+        if (relation.isEnd2Attr()) {
+            relationship = new AtlasRelationship(relation.getName(), new AtlasObjectId(end2RelatedTerm.getTermGuid()), new AtlasObjectId(end1TermGuid), defaultAttrs.getAttributes());
+        } else {
+            relationship = new AtlasRelationship(relation.getName(), new AtlasObjectId(end1TermGuid), new AtlasObjectId(end2RelatedTerm.getTermGuid()), defaultAttrs.getAttributes());
+        }
+
         updateRelationshipAttributes(relationship, end2RelatedTerm);
         return relationship;
     }
