@@ -74,8 +74,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
@@ -1005,7 +1005,7 @@ public final class GraphHelper {
     public static List<AtlasVertex> getClassificationVertices(AtlasEdge edge) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        if (edge != null) {
+        if (edge != null && getStatus(edge) != DELETED) {
             PropagateTags propagateTags = getPropagateTags(edge);
             AtlasVertex   outVertex     = edge.getOutVertex();
             AtlasVertex   inVertex      = edge.getInVertex();
