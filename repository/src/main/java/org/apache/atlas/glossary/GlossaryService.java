@@ -66,8 +66,8 @@ public class GlossaryService {
     public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore, final AtlasTypeRegistry typeRegistry) {
         this.dataAccess = dataAccess;
         this.atlasTypeRegistry = typeRegistry;
-        glossaryTermUtils = new GlossaryTermUtils(relationshipStore, typeRegistry);
-        glossaryCategoryUtils = new GlossaryCategoryUtils(relationshipStore, typeRegistry);
+        glossaryTermUtils = new GlossaryTermUtils(relationshipStore, typeRegistry, dataAccess);
+        glossaryCategoryUtils = new GlossaryCategoryUtils(relationshipStore, typeRegistry, dataAccess);
     }
 
     /**

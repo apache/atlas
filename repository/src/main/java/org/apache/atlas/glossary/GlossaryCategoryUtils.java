@@ -25,6 +25,7 @@ import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -46,8 +47,8 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
     private static final Logger  LOG           = LoggerFactory.getLogger(GlossaryCategoryUtils.class);
     private static final boolean DEBUG_ENABLED = LOG.isDebugEnabled();
 
-    protected GlossaryCategoryUtils(AtlasRelationshipStore relationshipStore, AtlasTypeRegistry typeRegistry) {
-        super(relationshipStore, typeRegistry);
+    protected GlossaryCategoryUtils(AtlasRelationshipStore relationshipStore, AtlasTypeRegistry typeRegistry, DataAccess dataAccess) {
+        super(relationshipStore, typeRegistry, dataAccess);
     }
 
     public void processCategoryRelations(AtlasGlossaryCategory updatedCategory, AtlasGlossaryCategory existing, RelationshipOperation op) throws AtlasBaseException {
@@ -347,9 +348,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
             Map<String, AtlasRelatedCategoryHeader> map = new HashMap<>();
             for (AtlasRelatedCategoryHeader c : category.getChildrenCategories()) {
                 AtlasRelatedCategoryHeader header = map.get(c.getCategoryGuid());
-                if (header == null) {
-                    map.put(c.getCategoryGuid(), c);
-                } else if (StringUtils.isEmpty(header.getRelationGuid()) && StringUtils.isNotEmpty(c.getRelationGuid())) {
+                if (header == null || (StringUtils.isEmpty(header.getRelationGuid()) && StringUtils.isNotEmpty(c.getRelationGuid()))) {
                     map.put(c.getCategoryGuid(), c);
                 }
             }
@@ -368,10 +367,24 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                     }
                     continue;
                 }
+
                 if (DEBUG_ENABLED) {
-                    LOG.debug("Creating new child, category = {}, child = {}", existing.getDisplayName(), child.getDisplayText());
+                    LOG.debug("Loading the child category to perform glossary check");
                 }
-                createRelationship(defineCategoryHierarchyLink(existing.getGuid(), child));
+
+                AtlasGlossaryCategory childCategory = new AtlasGlossaryCategory();
+                childCategory.setGuid(child.getCategoryGuid());
+                childCategory = dataAccess.load(childCategory);
+
+                if (StringUtils.equals(existing.getAnchor().getGlossaryGuid(), childCategory.getAnchor().getGlossaryGuid())) {
+                    if (DEBUG_ENABLED) {
+                        LOG.debug("Creating new child, category = {}, child = {}", existing.getDisplayName(), child.getDisplayText());
+                    }
+                    createRelationship(defineCategoryHierarchyLink(existing.getGuid(), child));
+                } else {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_CHILD_CATEGORY_DIFFERENT_GLOSSARY, child.getCategoryGuid());
+                }
+
             }
         }
     }

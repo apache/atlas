@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
@@ -54,11 +55,13 @@ public abstract class GlossaryUtils {
     protected static final String TERM_RELATION_ATTR_STATUS      = "status";
 
     protected final AtlasRelationshipStore relationshipStore;
-    protected final AtlasTypeRegistry typeRegistry;
+    protected final AtlasTypeRegistry      typeRegistry;
+    protected final DataAccess             dataAccess;
 
-    protected GlossaryUtils(final AtlasRelationshipStore relationshipStore, final AtlasTypeRegistry typeRegistry) {
+    protected GlossaryUtils(final AtlasRelationshipStore relationshipStore, final AtlasTypeRegistry typeRegistry, final DataAccess dataAccess) {
         this.relationshipStore = relationshipStore;
         this.typeRegistry = typeRegistry;
+        this.dataAccess = dataAccess;
     }
 
     protected void createRelationship(AtlasRelationship relationship) throws AtlasBaseException {
