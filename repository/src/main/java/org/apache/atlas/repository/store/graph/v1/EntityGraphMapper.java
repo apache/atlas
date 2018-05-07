@@ -25,7 +25,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasClassification.PropagationState;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -75,22 +74,17 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DE
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PARTIAL_UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeNames;
 import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.removeFromPropagatedTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
@@ -1693,49 +1687,6 @@ public class EntityGraphMapper {
                 AtlasEntity               entity                 = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
 
                 entityChangeNotifier.onClassificationDeletedFromEntity(entity, removedClassifications);
-            }
-        }
-    }
-
-    public void setPropagatedClassificationState(String entityGuid, String classificationName, String sourceEntityGuid, boolean disablePropagation) throws AtlasBaseException {
-        AtlasVertex entityVertex = AtlasGraphUtilsV1.findByGuid(entityGuid);
-
-        if (entityVertex == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
-        }
-
-        AtlasEdge propagatedEdge = getPropagatedClassificationEdge(entityVertex, classificationName, sourceEntityGuid);
-
-        if (propagatedEdge == null) {
-            throw new AtlasBaseException(AtlasErrorCode.PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, classificationName);
-        }
-
-        PropagationState currentState = getClassificationEdgeState(propagatedEdge);
-        PropagationState updatedState = (disablePropagation) ? PropagationState.DELETED : PropagationState.ACTIVE;
-
-        if (currentState != updatedState) {
-            AtlasGraphUtilsV1.setProperty(propagatedEdge, CLASSIFICATION_EDGE_STATE_PROPERTY_KEY, updatedState);
-
-            if (disablePropagation) {
-                removeFromPropagatedTraitNames(entityVertex, classificationName);
-            } else {
-                addToPropagatedTraitNames(entityVertex, classificationName);
-            }
-
-            updateModificationMetadata(entityVertex);
-
-            AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(entityGuid);
-            AtlasEntity            entity            = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
-            AtlasClassification    classification;
-
-            if (updatedState == PropagationState.DELETED) {
-                classification = entityRetriever.toAtlasClassification(getClassificationVertex(entityVertex, classificationName));
-
-                entityChangeNotifier.onClassificationDeletedFromEntity(entity, Collections.singletonList(classification));
-            } else {
-                classification = entityRetriever.toAtlasClassification(propagatedEdge.getInVertex());
-
-                entityChangeNotifier.onClassificationAddedToEntity(entity, Collections.singletonList(classification));
             }
         }
     }

@@ -51,7 +51,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
@@ -64,7 +63,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTrait
 import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationName;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertices;
@@ -584,9 +582,7 @@ public abstract class DeleteHandlerV1 {
 
                         graphHelper.removeEdge(propagatedEdge);
 
-                        if (getClassificationEdgeState(propagatedEdge) == ACTIVE) {
-                            removeFromPropagatedTraitNames(impactedEntityVertex, classificationName);
-                        }
+                        removeFromPropagatedTraitNames(impactedEntityVertex, classificationName);
                     } else {
                         if (LOG.isDebugEnabled()) {
                             LOG.debug(" --> Not removing propagated classification edge from [{}] --> [{}][{}] using edge label: [{}], since edge doesn't exist",
@@ -607,9 +603,7 @@ public abstract class DeleteHandlerV1 {
                        getTypeName(entityVertex), GraphHelper.getGuid(entityVertex), CLASSIFICATION_LABEL);
         }
 
-        if (getClassificationEdgeState(edge) == ACTIVE) {
-            removeFromPropagatedTraitNames(entityVertex, classificationName);
-        }
+        removeFromPropagatedTraitNames(entityVertex, classificationName);
 
         deleteEdge(edge, true);
 

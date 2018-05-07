@@ -195,7 +195,6 @@ public final class GraphHelper {
         if (ret != null) {
             AtlasGraphUtilsV1.setProperty(ret, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex));
             AtlasGraphUtilsV1.setProperty(ret, CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, isPropagated);
-            AtlasGraphUtilsV1.setProperty(ret, CLASSIFICATION_EDGE_STATE_PROPERTY_KEY, AtlasClassification.PropagationState.ACTIVE);
         }
 
         return ret;
@@ -1169,19 +1168,6 @@ public final class GraphHelper {
 
     public static String getClassificationEntityGuid(AtlasVertex classificationVertex) {
         return AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class);
-    }
-
-    public static AtlasClassification.PropagationState getClassificationEdgeState(AtlasEdge edge) {
-        AtlasClassification.PropagationState ret = null;
-
-        if (edge != null) {
-            String state = edge.getProperty(Constants.CLASSIFICATION_EDGE_STATE_PROPERTY_KEY, String.class);
-
-            ret = (StringUtils.isEmpty(state)) ? AtlasClassification.PropagationState.ACTIVE :
-                                                 AtlasClassification.PropagationState.valueOf(state);
-        }
-
-        return ret;
     }
 
     public static boolean isPropagatedClassificationEdge(AtlasEdge edge) {

@@ -24,7 +24,6 @@ import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.glossary.enums.AtlasTermAssignmentStatus;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasClassification.PropagationState;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
@@ -78,8 +77,6 @@ import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_EXPRE
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_SOURCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STATUS;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STEWARD;
-import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.ACTIVE;
-import static org.apache.atlas.model.instance.AtlasClassification.PropagationState.DELETED;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN;
@@ -100,7 +97,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.getAdjacentEdgesByLa
 import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getAllTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdgeState;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertices;
 import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
@@ -108,7 +104,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.getOutGoingEdgesByLa
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
 import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
-import static org.apache.atlas.repository.graph.GraphHelper.isPropagatedClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
@@ -582,21 +577,14 @@ public final class EntityGraphRetriever {
 
         if (CollectionUtils.isNotEmpty(edges)) {
             List<AtlasClassification> allClassifications                 = new ArrayList<>();
-            List<AtlasClassification> propagationDisabledClassifications = new ArrayList<>();
 
             for (AtlasEdge edge : edges) {
-                PropagationState edgeState            = getClassificationEdgeState(edge);
-                AtlasVertex      classificationVertex = edge.getInVertex();
+                AtlasVertex classificationVertex = edge.getInVertex();
 
-                if (edgeState == ACTIVE) {
-                    allClassifications.add(toAtlasClassification(classificationVertex));
-                } else if (edgeState == DELETED && isPropagatedClassificationEdge(edge)) {
-                    propagationDisabledClassifications.add(toAtlasClassification(classificationVertex));
-                }
+                allClassifications.add(toAtlasClassification(classificationVertex));
             }
 
             entity.setClassifications(allClassifications);
-            entity.setPropagationDisabledClassifications(propagationDisabledClassifications);
         }
     }
 

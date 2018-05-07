@@ -476,23 +476,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void setPropagatedClassificationState(String entityGuid, String classificationName, String sourceEntityGuid, boolean disablePropagation) throws AtlasBaseException {
-        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityGuid);
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION, entityHeader, new AtlasClassification(classificationName)),
-                                             "change propagated classification state: guid=", entityGuid, ", classification=", classificationName);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Toggle propagated classification={}, sourceEntityGuid={} for entity={}, disablePropagation={}", classificationName, sourceEntityGuid, entityGuid, disablePropagation);
-        }
-
-        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(entityGuid);
-
-        entityGraphMapper.setPropagatedClassificationState(entityGuid, classificationName, sourceEntityGuid, disablePropagation);
-    }
-
-    @Override
-    @GraphTransaction
     public void deleteClassifications(final String guid, final List<String> classificationNames) throws AtlasBaseException {
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");

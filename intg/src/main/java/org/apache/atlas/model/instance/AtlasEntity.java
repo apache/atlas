@@ -82,7 +82,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     private Map<String, Object>             relationshipAttributes;
     private List<AtlasClassification>       classifications;
-    private List<AtlasClassification>       propagationDisabledClassifications;
     private List<AtlasTermAssignmentHeader> meanings;
 
     @JsonIgnore
@@ -166,7 +165,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setUpdateTime(other.getUpdateTime());
             setVersion(other.getVersion());
             setClassifications(other.getClassifications());
-            setPropagationDisabledClassifications(other.getPropagationDisabledClassifications());
         }
     }
 
@@ -261,14 +259,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     public void setClassifications(List<AtlasClassification> classifications) { this.classifications = classifications; }
 
-    public List<AtlasClassification> getPropagationDisabledClassifications() {
-        return propagationDisabledClassifications;
-    }
-
-    public void setPropagationDisabledClassifications(List<AtlasClassification> propagationDisabledClassifications) {
-        this.propagationDisabledClassifications = propagationDisabledClassifications;
-    }
-
     public void addClassifications(List<AtlasClassification> classifications) {
         List<AtlasClassification> c = this.classifications;
 
@@ -307,7 +297,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setCreateTime(null);
         setUpdateTime(null);
         setClassifications(null);
-        setPropagationDisabledClassifications(null);
         setMeanings(null);
     }
 
@@ -336,9 +325,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append(", classifications=[");
         AtlasBaseTypeDef.dumpObjects(classifications, sb);
         sb.append(']');
-        sb.append(", propagationDisabledClassifications=[");
-        AtlasBaseTypeDef.dumpObjects(propagationDisabledClassifications, sb);
-        sb.append(']');
         sb.append(", meanings=[");
         AtlasBaseTypeDef.dumpObjects(meanings, sb);
         sb.append(']');
@@ -362,14 +348,13 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                 Objects.equals(updateTime, that.updateTime) &&
                 Objects.equals(version, that.version) &&
                 Objects.equals(relationshipAttributes, that.relationshipAttributes) &&
-                Objects.equals(classifications, that.classifications) &&
-                Objects.equals(propagationDisabledClassifications, that.propagationDisabledClassifications);
+                Objects.equals(classifications, that.classifications);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), guid, status, createdBy, updatedBy, createTime, updateTime, version,
-                            relationshipAttributes, classifications, propagationDisabledClassifications);
+                            relationshipAttributes, classifications);
     }
 
     @Override
