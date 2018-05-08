@@ -33,11 +33,13 @@ import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -228,11 +230,18 @@ public class GlossaryTermUtils extends GlossaryUtils {
     }
 
     private Map<String, AtlasRelatedTermHeader> getRelatedTermHeaders(Map<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> relatedTerms, AtlasGlossaryTerm.Relation relation) {
-        return Objects.nonNull(relatedTerms.get(relation)) ?
-                       relatedTerms.get(relation)
-                                   .stream()
-                                   .collect(Collectors.toMap(AtlasRelatedTermHeader::getTermGuid, t -> t)) :
-                       Collections.EMPTY_MAP;
+        if (Objects.nonNull(relatedTerms.get(relation))) {
+            Map<String, AtlasRelatedTermHeader> map = new HashMap<>();
+            for (AtlasRelatedTermHeader t : relatedTerms.get(relation)) {
+                AtlasRelatedTermHeader header = map.get(t.getTermGuid());
+                if (header == null || (StringUtils.isEmpty(header.getRelationGuid()) && StringUtils.isNotEmpty(t.getRelationGuid()))) {
+                    map.put(t.getTermGuid(), t);
+                }
+            }
+            return map;
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     private boolean updatedExistingTermRelation(Map<String, AtlasRelatedTermHeader> existingTermHeaders, AtlasRelatedTermHeader header) {
@@ -301,11 +310,18 @@ public class GlossaryTermUtils extends GlossaryUtils {
     }
 
     private Map<String, AtlasTermCategorizationHeader> getAssociatedCategories(final AtlasGlossaryTerm term) {
-        return Objects.nonNull(term.getCategories()) ?
-                       term.getCategories()
-                           .stream()
-                           .collect(Collectors.toMap(AtlasTermCategorizationHeader::getCategoryGuid, c -> c)) :
-                       Collections.EMPTY_MAP;
+        if (Objects.nonNull(term.getCategories())) {
+            Map<String, AtlasTermCategorizationHeader> map = new HashMap<>();
+            for (AtlasTermCategorizationHeader c : term.getCategories()) {
+                AtlasTermCategorizationHeader header = map.get(c.getCategoryGuid());
+                if (header == null || (StringUtils.isEmpty(header.getRelationGuid()) && StringUtils.isNotEmpty(c.getRelationGuid()))) {
+                    map.put(c.getCategoryGuid(), c);
+                }
+            }
+            return map;
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     private void createTermCategorizationRelationships(AtlasGlossaryTerm existing, Collection<AtlasTermCategorizationHeader> categories) throws AtlasBaseException {
@@ -354,12 +370,19 @@ public class GlossaryTermUtils extends GlossaryUtils {
         if (CollectionUtils.isNotEmpty(terms)) {
             Map<String, AtlasRelatedTermHeader> existingRelations;
             if (Objects.nonNull(existing.getRelatedTerms()) && Objects.nonNull(existing.getRelatedTerms().get(relation))) {
-                existingRelations = existing.getRelatedTerms().get(relation).stream().collect(Collectors.toMap(AtlasRelatedTermHeader::getTermGuid, t -> t));
+                Map<String, AtlasRelatedTermHeader> map = new HashMap<>();
+                for (AtlasRelatedTermHeader t : existing.getRelatedTerms().get(relation)) {
+                    AtlasRelatedTermHeader header = map.get(t.getTermGuid());
+                    if (header == null || (StringUtils.isEmpty(header.getRelationGuid()) && StringUtils.isNotEmpty(t.getRelationGuid()))) {
+                        map.put(t.getTermGuid(), t);
+                    }
+                }
+                existingRelations = map;
             } else {
                 existingRelations = Collections.emptyMap();
             }
             for (AtlasRelatedTermHeader term : terms) {
-                if (Objects.nonNull(existingRelations) && existingRelations.containsKey(term.getTermGuid())) {
+                if (existingRelations.containsKey(term.getTermGuid())) {
                     if (DEBUG_ENABLED) {
                         LOG.debug("Skipping existing term relation termGuid={}", term.getTermGuid());
                     }
