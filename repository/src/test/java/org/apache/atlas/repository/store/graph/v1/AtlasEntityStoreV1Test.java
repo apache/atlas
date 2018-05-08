@@ -1007,7 +1007,7 @@ public class AtlasEntityStoreV1Test {
     private AtlasClassificationDef getTagWithName(AtlasTypesDef typesDef, String tagName, String attributeType) {
         AtlasClassificationDef aTag = new AtlasClassificationDef(tagName);
         AtlasAttributeDef attributeDef = new AtlasAttributeDef("testAttribute", attributeType, true,
-                AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, true,
+                AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, true, false,
                 Collections.emptyList());
 
         aTag.addAttribute(attributeDef);

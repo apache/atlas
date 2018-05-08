@@ -56,13 +56,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_ADD;
-import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_DELETE;
-import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_UPDATE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_DELETE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_UPDATE;
-import static org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType.CLASSIFICATION_ADD;
-
 @Singleton
 @Component
 public class AtlasInstanceConverter {

@@ -20,14 +20,17 @@ package org.apache.atlas.model.notification;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationType.ENTITY_NOTIFICATION_V2;
 
 /**
  * Base type of hook message.
@@ -82,5 +85,87 @@ public class EntityNotification implements Serializable {
         sb.append("}");
 
         return sb;
+    }
+
+    /**
+     * Entity v2 notification
+     */
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
+    public static class EntityNotificationV2 extends EntityNotification implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        public enum OperationType {
+            ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE,
+            CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE
+        }
+
+        private AtlasEntityHeader entity;
+        private OperationType     operationType;
+
+        public EntityNotificationV2() {
+            super(ENTITY_NOTIFICATION_V2);
+        }
+
+        public EntityNotificationV2(AtlasEntityHeader entity, OperationType operationType) {
+            super(ENTITY_NOTIFICATION_V2);
+
+            setEntity(entity);
+            setOperationType(operationType);
+        }
+
+        public AtlasEntityHeader getEntity() {
+            return entity;
+        }
+
+        public void setEntity(AtlasEntityHeader entity) {
+            this.entity = entity;
+        }
+
+        public OperationType getOperationType() {
+            return operationType;
+        }
+
+        public void setOperationType(OperationType operationType) {
+            this.operationType = operationType;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) { return true; }
+            if (o == null || getClass() != o.getClass()) { return false; }
+            EntityNotificationV2 that = (EntityNotificationV2) o;
+            return Objects.equals(type, that.type) &&
+                   Objects.equals(entity, that.entity) &&
+                   operationType == that.operationType;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(type, entity, operationType);
+        }
+
+        @Override
+        public StringBuilder toString(StringBuilder sb) {
+            if (sb == null) {
+                sb = new StringBuilder();
+            }
+
+            sb.append("EntityNotificationV1{");
+            super.toString(sb);
+            sb.append(", entity=");
+            if (entity != null) {
+                entity.toString(sb);
+            } else {
+                sb.append(entity);
+            }
+            sb.append(", operationType=").append(operationType);
+            sb.append("}");
+
+            return sb;
+        }
     }
 }

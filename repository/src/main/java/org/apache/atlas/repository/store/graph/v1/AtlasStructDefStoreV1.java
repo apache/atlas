@@ -480,6 +480,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasStructDe
         attribInfo.put("dataType", attributeDef.getTypeName());
         attribInfo.put("isUnique", attributeDef.getIsUnique());
         attribInfo.put("isIndexable", attributeDef.getIsIndexable());
+        attribInfo.put("includeInNotification", attributeDef.getIncludeInNotification());
         attribInfo.put("isComposite", attribute.isOwnedRef());
         attribInfo.put("reverseAttributeName", attribute.getInverseRefAttributeName());
         attribInfo.put("defaultValue", attributeDef.getDefaultValue());
@@ -522,6 +523,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasStructDe
         ret.setTypeName((String) attribInfo.get("dataType"));
         ret.setIsUnique((Boolean) attribInfo.get("isUnique"));
         ret.setIsIndexable((Boolean) attribInfo.get("isIndexable"));
+        ret.setIncludeInNotification((Boolean) attribInfo.get("includeInNotification"));
         ret.setDefaultValue((String) attribInfo.get("defaultValue"));
         ret.setDescription((String) attribInfo.get("description"));
 

@@ -94,6 +94,7 @@
                     "cardinality": "SINGLE",
                     "isIndexable": true,
                     "isOptional": false,
+                    "includeInNotification": true,
                     "isUnique": false
                 },
                 {
@@ -167,6 +168,7 @@
                     "cardinality": "SINGLE",
                     "isIndexable": true,
                     "isOptional": true,
+                    "includeInNotification": true,
                     "isUnique": false
                 },
                 {
@@ -191,6 +193,7 @@
                     "cardinality": "SINGLE",
                     "isIndexable": false,
                     "isOptional": true,
+                    "includeInNotification": true,
                     "isUnique": false
                 }
             ]

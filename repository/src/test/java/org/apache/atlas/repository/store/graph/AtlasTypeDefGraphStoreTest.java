@@ -570,7 +570,7 @@ public class AtlasTypeDefGraphStoreTest {
         AtlasClassificationDef aTag = new AtlasClassificationDef("testTag");
         AtlasAttributeDef attributeDef = new AtlasAttributeDef("testAttribute", "string", true,
                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                false, true,
+                false, true, false,
                 Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
         aTag.addAttribute(attributeDef);
 
@@ -592,7 +592,7 @@ public class AtlasTypeDefGraphStoreTest {
         aTag = new AtlasClassificationDef("testTag");
         attributeDef = new AtlasAttributeDef("testAttribute", "int", true,
                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                false, true,
+                false, true, false,
                 Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
         aTag.addAttribute(attributeDef);
         typesDef.setClassificationDefs(Arrays.asList(aTag));

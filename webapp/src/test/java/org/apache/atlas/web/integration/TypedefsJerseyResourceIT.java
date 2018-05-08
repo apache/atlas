@@ -314,7 +314,7 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
                         new AtlasAttributeDef("database", "database",
                                 false,
                                 Cardinality.SINGLE, 1, 1,
-                                true, true,
+                                true, true, false,
                                 Collections.<AtlasConstraintDef>emptyList()));
         atlasTypesDef.getEntityDefs().add(tableTypeDefinition);
 

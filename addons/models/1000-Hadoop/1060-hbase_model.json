@@ -16,6 +16,7 @@
                     "cardinality": "SINGLE",
                     "isIndexable": true,
                     "isOptional": false,
+                    "includeInNotification": true,
                     "isUnique": false
                 },
                 {

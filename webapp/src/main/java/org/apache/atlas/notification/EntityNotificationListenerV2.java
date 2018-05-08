@@ -23,10 +23,13 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
+import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
 import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.v1.model.notification.EntityNotificationV2;
-import org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -34,26 +37,25 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.notification.NotificationEntityChangeListener.ATLAS_ENTITY_NOTIFICATION_PROPERTY;
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.ENTITIES;
 import static org.apache.atlas.repository.graph.GraphHelper.isInternalType;
-import static org.apache.atlas.v1.model.notification.EntityNotificationV2.OperationType.*;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.*;
+import static org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever.CREATE_TIME;
+import static org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever.DESCRIPTION;
+import static org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever.NAME;
+import static org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever.OWNER;
+import static org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever.QUALIFIED_NAME;
 
 @Component
 public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
-    private final AtlasTypeRegistry         typeRegistry;
-    private final NotificationInterface     notificationInterface;
-    private final Configuration             configuration;
-    private final Map<String, List<String>> notificationAttributesCache = new HashMap<>();
+    private final AtlasTypeRegistry     typeRegistry;
+    private final NotificationInterface notificationInterface;
 
     @Inject
     public EntityNotificationListenerV2(AtlasTypeRegistry typeRegistry,
@@ -61,7 +63,6 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                                         Configuration configuration) {
         this.typeRegistry          = typeRegistry;
         this.notificationInterface = notificationInterface;
-        this.configuration = configuration;
     }
 
     @Override
@@ -109,9 +110,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                 continue;
             }
 
-            filterNotificationAttributes(entity);
-
-            messages.add(new EntityNotificationV2(entity, operationType, getAllClassifications(entity)));
+            messages.add(new EntityNotificationV2(toNotificationHeader(entity), operationType));
         }
 
         if (!messages.isEmpty()) {
@@ -123,14 +122,60 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         }
     }
 
-    private List<AtlasClassification> getAllClassifications(AtlasEntity entity) {
-        List<AtlasClassification> ret = getAllClassifications(entity.getClassifications(), typeRegistry);
+    private AtlasEntityHeader toNotificationHeader(AtlasEntity entity) {
+        AtlasEntityHeader ret         = new AtlasEntityHeader(entity.getTypeName(), entity.getGuid(), new HashMap<>());
+        Object            name        = entity.getAttribute(NAME);
+        Object            displayText = name != null ? name : entity.getAttribute(QUALIFIED_NAME);
+
+        ret.setGuid(entity.getGuid());
+        ret.setStatus(entity.getStatus());
+        setAttribute(ret, NAME, name);
+        setAttribute(ret, DESCRIPTION, entity.getAttribute(DESCRIPTION));
+        setAttribute(ret, OWNER, entity.getAttribute(OWNER));
+        setAttribute(ret, CREATE_TIME, entity.getAttribute(CREATE_TIME));
+
+        if (displayText != null) {
+            ret.setDisplayText(displayText.toString());
+        }
+
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (entityType != null) {
+            for (AtlasAttribute attribute : entityType.getAllAttributes().values()) {
+                if (attribute.getAttributeDef().getIsUnique() || attribute.getAttributeDef().getIncludeInNotification()) {
+                    Object attrValue = entity.getAttribute(attribute.getName());
+
+                    if (attrValue != null) {
+                        ret.setAttribute(attribute.getName(), attrValue);
+                    }
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
+                List<AtlasClassification> classifications     = new ArrayList<>(entity.getClassifications().size());
+                List<String>              classificationNames = new ArrayList<>(entity.getClassifications().size());
+
+                for (AtlasClassification classification : getAllClassifications(entity.getClassifications())) {
+                    classifications.add(classification);
+                    classificationNames.add(classification.getTypeName());
+                }
+
+                ret.setClassifications(classifications);
+                ret.setClassificationNames(classificationNames);
+            }
+        }
 
         return ret;
     }
 
-    private static List<AtlasClassification> getAllClassifications(List<AtlasClassification> classifications, AtlasTypeRegistry typeRegistry) {
-        List<AtlasClassification> ret = new LinkedList<>();
+    private void setAttribute(AtlasEntityHeader entity, String attrName, Object attrValue) {
+        if (attrValue != null) {
+            entity.setAttribute(attrName, attrValue);
+        }
+    }
+
+    private List<AtlasClassification> getAllClassifications(List<AtlasClassification> classifications) {
+        List<AtlasClassification> ret = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(classifications)) {
             for (AtlasClassification classification : classifications) {
@@ -168,38 +213,6 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                     }
                 }
             }
-        }
-
-        return ret;
-    }
-
-    private void filterNotificationAttributes(AtlasEntity entity) {
-        Map<String, Object> attributesMap     = entity.getAttributes();
-        List<String>        notificationAttrs = getNotificationAttributes(entity.getTypeName());
-
-        if (MapUtils.isNotEmpty(attributesMap) && CollectionUtils.isNotEmpty(notificationAttrs)) {
-            Collection<String> attributesToRemove = CollectionUtils.subtract(attributesMap.keySet(), notificationAttrs);
-
-            for (String attributeToRemove : attributesToRemove) {
-                attributesMap.remove(attributeToRemove);
-            }
-        }
-    }
-
-    private List<String> getNotificationAttributes(String entityType) {
-        List<String> ret = null;
-
-        if (notificationAttributesCache.containsKey(entityType)) {
-            ret = notificationAttributesCache.get(entityType);
-        } else if (configuration != null) {
-            String attributesToIncludeKey = ATLAS_ENTITY_NOTIFICATION_PROPERTY + "." + entityType + "." + "attributes.include";
-            String[] notificationAttributes = configuration.getStringArray(attributesToIncludeKey);
-
-            if (notificationAttributes != null) {
-                ret = Arrays.asList(notificationAttributes);
-            }
-
-            notificationAttributesCache.put(entityType, ret);
         }
 
         return ret;

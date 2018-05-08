@@ -118,12 +118,12 @@ public final class EntityGraphRetriever {
     private static final String TERM_RELATION_NAME = "AtlasGlossarySemanticAssignment";
     private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "AtlasGlossaryTerm.displayName";
 
-    private final String NAME           = "name";
-    private final String DISPLAY_NAME   = "displayName";
-    private final String DESCRIPTION    = "description";
-    private final String OWNER          = "owner";
-    private final String CREATE_TIME    = "createTime";
-    private final String QUALIFIED_NAME = "qualifiedName";
+    public static final String NAME           = "name";
+    public static final String DISPLAY_NAME   = "displayName";
+    public static final String DESCRIPTION    = "description";
+    public static final String OWNER          = "owner";
+    public static final String CREATE_TIME    = "createTime";
+    public static final String QUALIFIED_NAME = "qualifiedName";
 
     private static final TypeReference<List<TimeBoundary>> TIME_BOUNDARIES_LIST_TYPE = new TypeReference<List<TimeBoundary>>() {};
     private static final GraphHelper graphHelper = GraphHelper.getInstance();

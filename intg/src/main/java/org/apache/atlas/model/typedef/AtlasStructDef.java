@@ -272,6 +272,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private int                      valuesMaxCount;
         private boolean                  isUnique;
         private boolean                  isIndexable;
+        private boolean                  includeInNotification;
         private String                   defaultValue;
         private String                   description;
 
@@ -280,17 +281,17 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public AtlasAttributeDef() { this(null, null); }
 
         public AtlasAttributeDef(String name, String typeName) {
-            this(name, typeName, false, Cardinality.SINGLE, COUNT_NOT_SET, COUNT_NOT_SET, false, false, null);
+            this(name, typeName, false, Cardinality.SINGLE, COUNT_NOT_SET, COUNT_NOT_SET, false, false, false, null);
 
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
-                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, List<AtlasConstraintDef> constraints) {
-            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, null, constraints, null);
+                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, List<AtlasConstraintDef> constraints) {
+            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, null, constraints, null);
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
-                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, String defaultValue,
+                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, String defaultValue,
                                  List<AtlasConstraintDef> constraints, String description) {
             setName(name);
             setTypeName(typeName);
@@ -300,6 +301,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             setValuesMaxCount(valuesMaxCount);
             setIsUnique(isUnique);
             setIsIndexable(isIndexable);
+            setIncludeInNotification(includeInNotification);
             setDefaultValue(defaultValue);
             setConstraints(constraints);
             setDescription(description);
@@ -315,6 +317,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setValuesMaxCount(other.getValuesMaxCount());
                 setIsUnique(other.getIsUnique());
                 setIsIndexable(other.getIsIndexable());
+                setIncludeInNotification(other.getIncludeInNotification());
                 setDefaultValue(other.getDefaultValue());
                 setConstraints(other.getConstraints());
                 setDescription((other.getDescription()));
@@ -379,6 +382,10 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             return isIndexable;
         }
 
+        public boolean getIncludeInNotification() { return includeInNotification; }
+
+        public void setIncludeInNotification(Boolean isInNotification) { this.includeInNotification = isInNotification == null ? Boolean.FALSE : isInNotification; }
+
         public String getDefaultValue(){
             return defaultValue;
         }
@@ -440,6 +447,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", valuesMaxCount=").append(valuesMaxCount);
             sb.append(", isUnique=").append(isUnique);
             sb.append(", isIndexable=").append(isIndexable);
+            sb.append(", includeInNotification=").append(includeInNotification);
             sb.append(", defaultValue=").append(defaultValue);
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
@@ -468,6 +476,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     valuesMaxCount == that.valuesMaxCount &&
                     isUnique == that.isUnique &&
                     isIndexable == that.isIndexable &&
+                    includeInNotification == that.includeInNotification &&
                     Objects.equals(name, that.name) &&
                     Objects.equals(typeName, that.typeName) &&
                     cardinality == that.cardinality &&
@@ -478,7 +487,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, defaultValue, constraints, description);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, description);
         }
 
         @Override

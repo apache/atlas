@@ -379,7 +379,7 @@ public abstract class BaseResourceIT {
                         AtlasBaseTypeDef.getArrayTypeName(HIVE_TABLE_TYPE_V2),
                         true,
                         Cardinality.SET,
-                        0, -1, false, true, Collections.singletonList(isCompositeSourceConstraint))
+                        0, -1, false, true, false, Collections.singletonList(isCompositeSourceConstraint))
         );
 
         AtlasEntityDef columnClsDef = AtlasTypeUtil
@@ -409,7 +409,7 @@ public abstract class BaseResourceIT {
                                 DATABASE_TYPE_V2,
                                 true,
                                 Cardinality.SINGLE,
-                                0, 1, false, true, Collections.singletonList(isCompositeTargetConstraint)),
+                                0, 1, false, true, false, Collections.singletonList(isCompositeTargetConstraint)),
 
                         //some tests don't set the columns field or set it to null...
                         AtlasTypeUtil.createOptionalAttrDef("columns", AtlasBaseTypeDef.getArrayTypeName(COLUMN_TYPE_V2)),

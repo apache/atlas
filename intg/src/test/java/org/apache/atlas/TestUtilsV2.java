@@ -92,7 +92,7 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createClassTypeDef(DEPARTMENT_TYPE, "Department"+_description, Collections.<String>emptySet(),
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         new AtlasAttributeDef("employees", String.format("array<%s>", "Employee"), true,
-                                AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false, false,
                             new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
                                 add(new AtlasStructDef.AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
                             }}));
@@ -114,11 +114,11 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createOptionalAttrDef("orgLevel", "OrgLevel"),
                 new AtlasAttributeDef("department", "Department", false,
                         AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                        false, false,
+                        false, false, false,
                         new ArrayList<AtlasConstraintDef>()),
                 new AtlasAttributeDef("manager", "Manager", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                 new ArrayList<AtlasConstraintDef>() {{
                         add(new AtlasConstraintDef(
                             AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
@@ -127,7 +127,7 @@ public final class TestUtilsV2 {
                     }}),
                 new AtlasAttributeDef("mentor", EMPLOYEE_TYPE, true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 AtlasTypeUtil.createOptionalAttrDef("shares", "long"),
                 AtlasTypeUtil.createOptionalAttrDef("salary", "double")
@@ -141,7 +141,7 @@ public final class TestUtilsV2 {
 
         AtlasEntityDef managerTypeDef = AtlasTypeUtil.createClassTypeDef("Manager", "Manager"+_description, Collections.singleton("Employee"),
                 new AtlasAttributeDef("subordinates", String.format("array<%s>", "Employee"), false, AtlasAttributeDef.Cardinality.SET,
-                        1, 10, false, false,
+                        1, 10, false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));
 
         AtlasClassificationDef securityClearanceTypeDef =
@@ -160,25 +160,25 @@ public final class TestUtilsV2 {
     public static AtlasTypesDef defineInverseReferenceTestTypes() {
         AtlasEntityDef aDef = AtlasTypeUtil.createClassTypeDef("A", Collections.<String>emptySet(),
             AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
-            new AtlasAttributeDef("b", "B", true, Cardinality.SINGLE, 0, 1, false, false, Collections.<AtlasConstraintDef>emptyList()), // 1-1
-            new AtlasAttributeDef("oneB", "B", true, Cardinality.SINGLE, 0, 1, false, false, Collections.<AtlasConstraintDef>emptyList()), // 1-*
-            new AtlasAttributeDef("manyB", AtlasBaseTypeDef.getArrayTypeName("B"), true, Cardinality.SINGLE, 0, 1, false, false, Collections.<AtlasConstraintDef>emptyList()),
-            new AtlasAttributeDef("mapToB", AtlasBaseTypeDef.getMapTypeName("string", "B"), true, Cardinality.SINGLE, 0, 1, false, false,
+            new AtlasAttributeDef("b", "B", true, Cardinality.SINGLE, 0, 1, false, false, false, Collections.<AtlasConstraintDef>emptyList()), // 1-1
+            new AtlasAttributeDef("oneB", "B", true, Cardinality.SINGLE, 0, 1, false, false, false, Collections.<AtlasConstraintDef>emptyList()), // 1-*
+            new AtlasAttributeDef("manyB", AtlasBaseTypeDef.getArrayTypeName("B"), true, Cardinality.SINGLE, 0, 1, false, false, false, Collections.<AtlasConstraintDef>emptyList()),
+            new AtlasAttributeDef("mapToB", AtlasBaseTypeDef.getMapTypeName("string", "B"), true, Cardinality.SINGLE, 0, 1, false, false, false,
                 Collections.<AtlasConstraintDef>singletonList(new AtlasConstraintDef(
                 AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, Collections.<String, Object>singletonMap(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "mappedFromA"))))); // *-*
 
         AtlasEntityDef bDef = AtlasTypeUtil.createClassTypeDef("B", Collections.<String>emptySet(),
             AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
-            new AtlasAttributeDef("a", "A", true, Cardinality.SINGLE, 0, 1, false, false,
+            new AtlasAttributeDef("a", "A", true, Cardinality.SINGLE, 0, 1, false, false, false,
                 Collections.<AtlasConstraintDef>singletonList(new AtlasConstraintDef(
                     AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, Collections.<String, Object>singletonMap(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "b")))),
-            new AtlasAttributeDef("manyA", AtlasBaseTypeDef.getArrayTypeName("A"), true, Cardinality.SINGLE, 0, 1, false, false,
+            new AtlasAttributeDef("manyA", AtlasBaseTypeDef.getArrayTypeName("A"), true, Cardinality.SINGLE, 0, 1, false, false, false,
                 Collections.<AtlasConstraintDef>singletonList(new AtlasConstraintDef(
                     AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, Collections.<String, Object>singletonMap(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "oneB")))),
-            new AtlasAttributeDef("manyToManyA", AtlasBaseTypeDef.getArrayTypeName("A"), true, Cardinality.SINGLE, 0, 1, false, false,
+            new AtlasAttributeDef("manyToManyA", AtlasBaseTypeDef.getArrayTypeName("A"), true, Cardinality.SINGLE, 0, 1, false, false, false,
                 Collections.<AtlasConstraintDef>singletonList(new AtlasConstraintDef(
                     AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, Collections.<String, Object>singletonMap(AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE, "manyB")))),
-            new AtlasAttributeDef("mappedFromA", "A", true, Cardinality.SINGLE, 0, 1, false, false, Collections.<AtlasConstraintDef>emptyList()));
+            new AtlasAttributeDef("mappedFromA", "A", true, Cardinality.SINGLE, 0, 1, false, false, false, Collections.<AtlasConstraintDef>emptyList()));
 
         AtlasTypesDef ret = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(), Collections.<AtlasStructDef>emptyList(), Collections.<AtlasClassificationDef>emptyList(), Arrays.asList(aDef, bDef));
 
@@ -208,7 +208,7 @@ public final class TestUtilsV2 {
                         AtlasTypeUtil.createUniqueRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createOptionalAttrDef("dep-code", "string"),
                         new AtlasAttributeDef("employees", String.format("array<%s>", "Employee"), true,
-                                AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false, false,
                             new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
                                 add(new AtlasStructDef.AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
                             }}));
@@ -234,11 +234,11 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createOptionalAttrDef("empCode", "string"),
                 new AtlasAttributeDef("department", "Department", false,
                         AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("manager", "Manager", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                     new ArrayList<AtlasConstraintDef>() {{
                         add(new AtlasConstraintDef(
                             AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
@@ -247,7 +247,7 @@ public final class TestUtilsV2 {
                     }}),
                 new AtlasAttributeDef("mentor", EMPLOYEE_TYPE, true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 AtlasTypeUtil.createOptionalAttrDef("shares", "long"),
                 AtlasTypeUtil.createOptionalAttrDef("salary", "double")
@@ -257,7 +257,7 @@ public final class TestUtilsV2 {
         AtlasEntityDef managerTypeDef = AtlasTypeUtil.createClassTypeDef("Manager", "Manager"+_description,
                 Collections.singleton("Employee"),
                 new AtlasAttributeDef("subordinates", String.format("array<%s>", "Employee"), false, AtlasAttributeDef.Cardinality.SET,
-                        1, 10, false, false,
+                        1, 10, false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));
 
         AtlasClassificationDef securityClearanceTypeDef =
@@ -296,7 +296,7 @@ public final class TestUtilsV2 {
                         AtlasTypeUtil.createRequiredAttrDef("name", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("dep-code", "string"),
                         new AtlasAttributeDef("employees", String.format("array<%s>", "Person"), true,
-                                AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false,
+                                AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, false, false,
                             new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
                                 add(new AtlasStructDef.AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
                             }}));
@@ -308,11 +308,11 @@ public final class TestUtilsV2 {
                 AtlasTypeUtil.createOptionalAttrDef("address", "Address"),
                 new AtlasAttributeDef("department", "Department", false,
                         AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("manager", "Manager", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                     new ArrayList<AtlasConstraintDef>() {{
                         add(new AtlasConstraintDef(
                             AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
@@ -321,7 +321,7 @@ public final class TestUtilsV2 {
                     }}),
                 new AtlasAttributeDef("mentor", "Person", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 AtlasTypeUtil.createOptionalAttrDef("birthday", "date"),
                 AtlasTypeUtil.createOptionalAttrDef("hasPets", "boolean"),
@@ -645,7 +645,7 @@ public final class TestUtilsV2 {
                         new AtlasAttributeDef("table", TABLE_TYPE,
                         true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
                             add(new AtlasStructDef.AtlasConstraintDef(
                                 AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF, new HashMap<String, Object>() {{
@@ -660,23 +660,23 @@ public final class TestUtilsV2 {
         AtlasAttributeDef[] attributeDefinitions = new AtlasAttributeDef[]{
                 new AtlasAttributeDef("location", "string", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("inputFormat", "string", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("outputFormat", "string", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("compressed", "boolean", false,
                         AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("numBuckets", "int", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
         };
 
@@ -688,32 +688,32 @@ public final class TestUtilsV2 {
                 new AtlasAttributeDef("values", "array<string>",
                         true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("table", TABLE_TYPE, true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("createTime", "long", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("lastAccessTime", "long", true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("sd", STORAGE_DESC_TYPE, false,
                         AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("columns", String.format("array<%s>", COLUMN_TYPE),
                         true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()),
                 new AtlasAttributeDef("parameters", String.format("map<%s,%s>", "string", "string"), true,
                         AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                        false, false,
+                        false, false, false,
                         Collections.<AtlasConstraintDef>emptyList())};
 
         AtlasEntityDef partClsDef =
@@ -724,7 +724,7 @@ public final class TestUtilsV2 {
                 new AtlasEntityDef(PROCESS_TYPE, PROCESS_TYPE + _description, "1.0",
                         Arrays.asList(new AtlasAttributeDef("outputs", "array<" + TABLE_TYPE + ">", true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList())),
                         Collections.<String>emptySet());
 
@@ -737,19 +737,19 @@ public final class TestUtilsV2 {
                         // enum
                         new AtlasAttributeDef("tableType", "tableType", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         // array of strings
                         new AtlasAttributeDef("columnNames",
                                 String.format("array<%s>", "string"), true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         // array of classes
                         new AtlasAttributeDef("columns", String.format("array<%s>", COLUMN_TYPE),
                                 true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                                false, false,
+                                false, false, false,
                                 new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
                                     add(new AtlasStructDef.AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
                                 }}),
@@ -757,20 +757,20 @@ public final class TestUtilsV2 {
                         new AtlasAttributeDef("partitions", String.format("array<%s>", "partition_struct_type"),
                                 true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         // map of primitives
                         new AtlasAttributeDef("parametersMap", String.format("map<%s,%s>", "string", "string"),
                                 true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         //map of classes -
                         new AtlasAttributeDef(COLUMNS_MAP,
                                 String.format("map<%s,%s>", "string", COLUMN_TYPE),
                                 true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                                false, false,
+                                false, false, false,
                                  new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
                                      add(new AtlasStructDef.AtlasConstraintDef(
                                              AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
@@ -781,26 +781,26 @@ public final class TestUtilsV2 {
                                 String.format("map<%s,%s>", "string", "partition_struct_type"),
                                 true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         // struct reference
                         new AtlasAttributeDef("serde1", "serdeType", true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("serde2", "serdeType", true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         // class reference
                         new AtlasAttributeDef("database", DATABASE_TYPE, false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         //class reference as composite
                         new AtlasAttributeDef("databaseComposite", DATABASE_TYPE, true,
                                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                                false, false,
+                                false, false, false,
                                 new ArrayList<AtlasStructDef.AtlasConstraintDef>() {{
                                     add(new AtlasStructDef.AtlasConstraintDef(
                                             AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
@@ -840,86 +840,86 @@ public final class TestUtilsV2 {
 
                         new AtlasAttributeDef("mapOfArrayOfStrings", "map<string,array<string>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("mapOfArrayOfBooleans", "map<string,array<boolean>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("mapOfArrayOfInts", "map<string,array<int>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("mapOfArrayOfFloats", "map<string,array<float>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("mapOfArrayOfDates", "map<string,array<date>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
 
                         new AtlasAttributeDef("mapOfMapOfStrings", "map<string,map<string,string>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("mapOfMapOfBooleans", "map<string,map<string,boolean>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("mapOfMapOfInts", "map<string,map<string,int>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("mapOfMapOfFloats", "map<string,map<string,float>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("mapOfMapOfDates", "map<string,map<string,date>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
 
                         new AtlasAttributeDef("arrayOfArrayOfStrings", "array<array<string>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("arrayOfArrayOfBooleans", "array<array<boolean>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("arrayOfArrayOfInts", "array<array<int>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("arrayOfArrayOfFloats", "array<array<float>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("arrayOfArrayOfDates", "array<array<date>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
 
                         new AtlasAttributeDef("arrayOfMapOfStrings", "array<map<string,string>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("arrayOfMapOfBooleans", "array<map<string,boolean>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("arrayOfMapOfInts", "array<map<string,int>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("arrayOfMapOfFloats", "array<map<string,float>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList()),
                         new AtlasAttributeDef("arrayOfMapOfDates", "array<map<string,date>>", false,
                                 AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
-                                false, false,
+                                false, false, false,
                                 Collections.<AtlasConstraintDef>emptyList())
                 );
 
@@ -1179,7 +1179,7 @@ public final class TestUtilsV2 {
     public static List<AtlasEntityDef> getEntityWithValidSuperType() {
         AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef("Developer", "Developer_description", Collections.singleton("Employee"),
                 new AtlasAttributeDef("language", String.format("array<%s>", "string"), false, AtlasAttributeDef.Cardinality.SET,
-                        1, 10, false, false,
+                        1, 10, false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));
 
         List<AtlasEntityDef> ret = Arrays.asList(developerTypeDef);
@@ -1192,7 +1192,7 @@ public final class TestUtilsV2 {
     public static List<AtlasEntityDef> getEntityWithName(String name) {
         AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef(name, "Developer_description", Collections.<String>emptySet(),
                 new AtlasAttributeDef("language", String.format("array<%s>", "string"), false, AtlasAttributeDef.Cardinality.SET,
-                        1, 10, false, false,
+                        1, 10, false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));
 
         List<AtlasEntityDef> ret = Arrays.asList(developerTypeDef);
@@ -1205,7 +1205,7 @@ public final class TestUtilsV2 {
     public static AtlasEntityDef getSingleEntityWithName(String name) {
         AtlasEntityDef developerTypeDef = AtlasTypeUtil.createClassTypeDef(name, "Developer_description", Collections.<String>emptySet(),
                 new AtlasAttributeDef("language", String.format("array<%s>", "string"), false, AtlasAttributeDef.Cardinality.SET,
-                        1, 10, false, false,
+                        1, 10, false, false, false,
                         Collections.<AtlasConstraintDef>emptyList()));
 
         return developerTypeDef;
