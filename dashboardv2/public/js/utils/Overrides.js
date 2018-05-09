@@ -105,6 +105,12 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             return false;
         }
     });
+    $("body").on('click', '.dropdown-menu.dropdown-changetitle li a', function() {
+        $(this).parents('li').find(".btn:first-child").html($(this).text() + ' <span class="caret"></span>');
+    });
+    $("body").on('click', '.btn', function() {
+        $(this).blur();
+    });
 
     // For placeholder support 
     if (!('placeholder' in HTMLInputElement.prototype)) {
@@ -144,8 +150,24 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             var that = this;
             Backgrid.HeaderRow.__super__.render.apply(this, arguments);
             _.each(this.columns.models, function(modelValue) {
-                if (modelValue.get('width')) that.$el.find('.' + modelValue.get('name')).css('min-width', modelValue.get('width') + 'px')
-                if (modelValue.get('toolTip')) that.$el.find('.' + modelValue.get('name')).attr('title', modelValue.get('toolTip'))
+                var elAttr = modelValue.get('elAttr'),
+                    elAttrObj = null;
+                if (elAttr) {
+                    if (_.isFunction(elAttr)) {
+                        elAttrObj = elAttr(modelValue);
+                    } else if (_.isObject(elAttr)) {
+                        if (!_.isArray(elAttr)) {
+                            elAttrObj = [elAttr];
+                        } else {
+                            elAttrObj = elAttr;
+                        }
+                    }
+                    _.each(elAttrObj, function(val) {
+                        that.$el.find('.' + modelValue.get('name')).data(val);
+                    });
+                }
+                if (modelValue.get('width')) that.$el.find('.' + modelValue.get('name')).css('min-width', modelValue.get('width') + 'px');
+                if (modelValue.get('toolTip')) that.$el.find('.' + modelValue.get('name')).attr('title', modelValue.get('toolTip'));
             });
             return this;
         }

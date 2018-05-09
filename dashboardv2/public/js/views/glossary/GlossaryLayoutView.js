@@ -98,8 +98,8 @@ define(['require',
                 };
                 if (Utils.getUrlState.isGlossaryTab() && this.value && this.value.viewType) {
                     this.viewType = this.value.viewType;
+                    this.query[this.viewType] = _.extend({}, this.value, { "guid": this.guid });
                 }
-                this.query[this.viewType] = _.extend({}, this.value, { "guid": this.guid });
             },
             bindEvents: function() {
                 var that = this;
@@ -164,6 +164,9 @@ define(['require',
                     this.viewType = "term";
                 }
                 var setDefaultSelector = function() {
+                    if (!that.value) {
+                        return;
+                    }
                     var model = null;
                     if (that.value.gId) {
                         model = that.glossaryCollection.fullCollection.get(that.value.gId);
@@ -195,12 +198,13 @@ define(['require',
                         $tree.jstree('activate_node', that.glossary.selectedItem.guid);
                     }
                     this.query[this.viewType] = _.extend(obj, _.pick(this.glossary.selectedItem, 'model', 'guid', 'gType'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
+                    var url = _.isEmpty(this.glossary.selectedItem) ? '#!/glossary' : '#!/glossary/' + this.glossary.selectedItem.guid;
                     Utils.setUrl({
-                        url: '#!/glossary/' + this.glossary.selectedItem.guid,
-                        urlParams: _.extend({}, _.omit(obj, 'guid', 'model', 'type', 'isNodeNotFoundAtLoad')),
-                        mergeBrowserUrl: false,
-                        trigger: false,
-                        updateTabState: true
+                        "url": url,
+                        "urlParams": _.extend({}, _.omit(obj, 'guid', 'model', 'type', 'isNodeNotFoundAtLoad')),
+                        "mergeBrowserUrl": false,
+                        "trigger": false,
+                        "updateTabState": true
                     });
                 }
             },
@@ -615,6 +619,11 @@ define(['require',
                             var url = gId ? '#!/glossary/' + gId : '#!/glossary';
                             if (gId == null) {
                                 that.glossary.selectedItem = {};
+                                that.value = null;
+                                that.query = {
+                                    term: {},
+                                    category: {}
+                                };
                                 that.ui.categoryTree.jstree(true).refresh();
                                 that.ui.termTree.jstree(true).refresh();
                             }

@@ -57,7 +57,7 @@ define(['require',
                     this.dynamicTable = false;
                     return resp.entities ? resp.entities : [];
                 } else {
-                    return resp ? resp : [];
+                    return [];
                 }
             },
             getBasicRearchResult: function(options) {

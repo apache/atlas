@@ -52,7 +52,7 @@
         </div>
         {{/if}} {{#if isCategoryView}}
         <div class="form-group clearfix">
-            <span class="control-label-sm-pr pull-left">Term:</span>
+            <span class="control-label-sm-pr pull-left">Terms:</span>
             <div class="pull-left" data-id="termList">
                 <button class="btn btn-action btn-sm" title="Add Term" data-id="addTerm">
                     <i class="fa fa-plus"> </i>
@@ -65,7 +65,7 @@
                 <ul class="nav nav-tabs" data-id="tab-list">
                     <li role="entities" class="tab active"><a href="#tab-entities" aria-controls="tab-entities" role="tab" data-toggle="tab">Entities</a></li>
                     <li role="classification"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Classifications</a></li>
-                    <li role="properties"><a href="#tab-properties" aria-controls="tab-properties" role="tab" data-toggle="tab">Properties</a></li>
+                    <li role="relatedTerm"><a href="#tab-relatedTerm" aria-controls="tab-relatedTerm" role="tab" data-toggle="tab">Related Terms</a></li>
                 </ul>
             </div>
         </div>
@@ -89,7 +89,7 @@
                 </div>
             </div>
         </div>
-        <div id="tab-properties" role="properties" class="tab-pane animated fadeIn">
+        <div id="tab-relatedTerm" role="relatedTerm" class="tab-pane animated fadeIn">
             <div id="r_relationLayoutView">
                 <div class="fontLoader-relative">
                     <i class="fa fa-refresh fa-spin-custom"></i>

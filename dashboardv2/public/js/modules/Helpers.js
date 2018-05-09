@@ -100,5 +100,15 @@ define(['require',
         return (obj[field] ? obj[field] : (defaulValue ? defaulValue : ""));
     });
 
+    Handlebars.registerHelper('eachlookup', function(obj, field, options) {
+        return Handlebars.helpers.each((obj[field] ? obj[field] : null), options);
+    });
+
+    Handlebars.registerHelper('callmyfunction', function(functionObj, param, options) {
+        var argumentObj = _.extend([], arguments);
+        argumentObj.shift();
+        return functionObj.apply(this, argumentObj);
+    });
+
     return HHelpers;
 });

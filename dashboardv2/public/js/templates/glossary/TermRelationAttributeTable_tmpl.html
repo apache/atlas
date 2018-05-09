@@ -17,13 +17,19 @@
 <table class="table table-hover table-quickMenu">
     <thead>
         <tr>
-            <th>Term</th>
-            <th>Attribute</th>
-            <th>Action</th>
+            <th>{{#if relationTypeTable}}Relation Types{{else}}Term{{/if}}</th>
+            <th>{{#if relationTypeTable}}Related Terms{{else}}Attribute{{/if}}</th>
+            {{#if relationTypeTable}}
+            <th>Attributes</th>{{/if}}
         </tr>
     </thead>
     <tbody>
-        {{#if attributeValue}} {{#each attributeValue}}
+        {{#if relationTypeTable}} {{#each attributes}}
+        <tr>
+            <td>{{@key}}</td>
+            {{{callmyfunction ../getTerms @key}}}
+        </tr>
+        {{/each}} {{else}} {{#if attributeValue}} {{#each attributeValue}}
         <tr>
             <td>{{this.displayText}}</td>
             <td>
@@ -39,22 +45,22 @@
                             {{#each ../attributes}}
                             <tr>
                                 <td>{{@key}}</td>
-                                <td>{{lookup ../this @key "-"}}</td>
+                                {{#if ../../editMode}}
+                                <td>
+                                    <input data-id="attributeUpdate" class="form-control" type="text" data-name="{{@key}}" data-termguid="{{../../this.termGuid}}" " value="{{lookup ../../this @key ''}} ">
+                                </td>{{else}}
+                                <td>{{lookup ../../this @key "- "}}</td>
+                                {{/if}}
                             </tr>
                             {{/each}}
                         </tbody>
                     </table>
                 </div>
             </td>
-            <td>
-                <div class="btn-inline">
-                    <button title="Delete" data-termguid="{{this.termGuid}}" class="btn btn-action btn-sm" data-id="deleteAttribute" data-name="Dimension"><i class="fa fa-trash"></i></button>
-                </div>
-            </td>
         </tr>
         {{/each}}{{else}}
-        <tr class="empty text-center">
-            <td colspan="3"><span>No records found!</span></td>
-        </tr>{{/if}}
+        <tr class="empty text-center ">
+            <td colspan="3 "><span>No records found!</span></td>
+        </tr>{{/if}} {{/if}}
     </tbody>
 </table>

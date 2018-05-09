@@ -28,7 +28,8 @@
                 </h4>
         </div>
         {{/if}} {{#if contentWithFooter}} {{else}}
-        <div class="modal-body">{{content}}</div>
+        <div class="modal-body">{{#if contentHtml}} {{{contentHtm}}} {{else}} {{content}} {{/if}}
+        </div>
         {{#if showFooter}}
         <div class="modal-footer">
             {{#if buttons}} {{#each buttons}}

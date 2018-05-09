@@ -195,11 +195,13 @@ define(['require',
                 if (this.isGlossaryView) {
                     if (this.glossaryCollection.fullCollection.length) {
                         this.data = this.glossaryCollection.fullCollection.get(this.guid).toJSON();
+                        this.glossaryCollection.trigger("data:updated", $.extend(true, {}, this.data));
                         this.renderDetails(this.data);
                     } else {
                         this.listenTo(this.glossaryCollection.fullCollection, "reset ", function(skip) {
                             var foundGlossary = this.glossaryCollection.fullCollection.get(this.guid);
                             this.data = foundGlossary ? foundGlossary.toJSON() : null;
+                            this.glossaryCollection.trigger("data:updated", $.extend(true, {}, this.data));
                             if (this.data == null) {
                                 this.glossary.selectedItem = {};
                                 Utils.setUrl({
@@ -248,6 +250,7 @@ define(['require',
                                     that.renderRelationLayoutView(obj);
                                 }
                                 that.data = data;
+                                that.glossaryCollection.trigger("data:updated", $.extend(true, {}, data));
                                 that.glossary.selectedItem.model = data;
                                 that.glossary.selectedItem.guid = data.guid;
                                 that.renderDetails(data)

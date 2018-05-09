@@ -225,7 +225,7 @@ define([
                     if (Utils.getUrlState.isTagTab()) {
                         App.rSideNav.currentView.RTagLayoutView.currentView.manualRender();
                     } else if (Utils.getUrlState.isGlossaryTab()) {
-                        App.rSideNav.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({ isTrigger: true }, paramObj));
+                        App.rSideNav.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({ "isTrigger": true }, { "value": paramObj }));
                     }
                 }
 

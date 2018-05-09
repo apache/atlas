@@ -305,21 +305,38 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 lastValue: hashValue.split('/')[hashValue.split('/').length - 1]
             }
         },
+        checkTabUrl: function(options) {
+            var url = options && options.url,
+                matchString = options && options.matchString,
+                quey = this.getQueryUrl(url);
+            return quey.firstValue == matchString || quey.queyParams[0] == "#!/" + matchString;
+        },
         isInitial: function() {
             return this.getQueryUrl().firstValue == undefined;
         },
         isTagTab: function(url) {
-            var quey = this.getQueryUrl(url);
-            return quey.firstValue == "tag" || quey.queyParams[0] == "#!/tag";
+            return this.checkTabUrl({
+                url: url,
+                matchString: "tag"
+            });
         },
         isSearchTab: function(url) {
-            return this.getQueryUrl(url).firstValue == "search";
+            return this.checkTabUrl({
+                url: url,
+                matchString: "search"
+            });
         },
         isGlossaryTab: function(url) {
-            return this.getQueryUrl(url).firstValue == "glossary";
+            return this.checkTabUrl({
+                url: url,
+                matchString: "glossary"
+            });
         },
         isDetailPage: function(url) {
-            return this.getQueryUrl(url).firstValue == "detailPage";
+            return this.checkTabUrl({
+                url: url,
+                matchString: "detailPage"
+            });
         },
         getLastValue: function() {
             return this.getQueryUrl().lastValue;
@@ -640,6 +657,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             }
         }
     }
+
     Utils.isUrl = function(url) {
         var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
         return regexp.test(url);
