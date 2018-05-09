@@ -126,6 +126,8 @@ public final class Constants {
     public static final String CLASSIFICATION_EDGE_STATE_PROPERTY_KEY         = STATE_PROPERTY_KEY;
     public static final String CLASSIFICATION_LABEL                           = "classifiedAs";
     public static final String TERM_ASSIGNMENT_LABEL                          = "r:AtlasGlossarySemanticAssignment";
+    public static final String ATTRIBUTE_INDEX_PROPERTY_KEY                   = INTERNAL_PROPERTY_KEY_PREFIX + "index";
+    public static final String ATTRIBUTE_KEY_PROPERTY_KEY                     = INTERNAL_PROPERTY_KEY_PREFIX + "key";
 
     public static final String VERTEX_ID_IN_IMPORT_KEY = "__vIdInImport";
     public static final String EDGE_ID_IN_IMPORT_KEY   = "__eIdInImport";

@@ -98,6 +98,17 @@ public class AtlasStructType extends AtlasType {
                 arrayType.setMaxCount(attributeDef.getValuesMaxCount());
             }
 
+            //check if attribute type is not classification
+            if (attrType instanceof AtlasArrayType) {
+                attrType = ((AtlasArrayType) attrType).getElementType();
+            } else if (attrType instanceof AtlasMapType) {
+                attrType = ((AtlasMapType) attrType).getValueType();
+            }
+
+            if (attrType instanceof AtlasClassificationType) {
+                throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_TYPE_INVALID, getTypeName(), attributeDef.getName());
+            }
+
             a.put(attributeDef.getName(), attribute);
         }
 

@@ -26,12 +26,13 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
+import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -54,6 +55,7 @@ import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.util.AttributeValueMap;
 import org.apache.atlas.util.IndexedInstance;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +77,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
+import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.ATTRIBUTE_KEY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
@@ -82,6 +86,7 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PRO
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_NAME_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.isReference;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
@@ -1170,6 +1175,11 @@ public final class GraphHelper {
         return AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class);
     }
 
+    public static Integer getIndexValue(AtlasEdge edge) {
+        Integer index = edge.getProperty(ATTRIBUTE_INDEX_PROPERTY_KEY, Integer.class);
+        return (index == null) ? 0: index;
+    }
+
     public static boolean isPropagatedClassificationEdge(AtlasEdge edge) {
         boolean ret = false;
 
@@ -1557,44 +1567,100 @@ public final class GraphHelper {
         return typeName != null && typeName.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX);
     }
 
-    public static void setArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName, List<Object> values) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
-        if(AtlasGraphUtilsV1.isReference(elementType)) {
-            setListPropertyFromElementIds(instanceVertex, actualPropertyName, (List)values);
-        }
-        else {
-            setProperty(instanceVertex, actualPropertyName, values);
-        }
-    }
-
-    public static void setMapValueProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName, Object value) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
-        if(AtlasGraphUtilsV1.isReference(elementType)) {
-            instanceVertex.setPropertyFromElementId(actualPropertyName, (AtlasEdge)value);
-        }
-        else {
-            instanceVertex.setProperty(actualPropertyName, value);
-        }
-    }
-
     public static Object getMapValueProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName) {
         String vertexPropertyName = GraphHelper.encodePropertyKey(propertyName);
 
-        if (AtlasGraphUtilsV1.isReference(elementType)) {
-            return instanceVertex.getProperty(vertexPropertyName, AtlasEdge.class);
-        } else {
+        if (!AtlasGraphUtilsV1.isReference(elementType)) {
             return instanceVertex.getProperty(vertexPropertyName, Object.class);
+        }
+
+        return null;
+    }
+
+    public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName, AtlasAttribute attribute) {
+        String encodedPropertyName = GraphHelper.encodePropertyKey(propertyName);
+
+        if (isReference(elementType)) {
+            return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
+        } else {
+            return (List) instanceVertex.getListProperty(encodedPropertyName);
         }
     }
 
-    // newly added
-    public static List<Object>  getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName) {
-        String encodedPropertyName = GraphHelper.encodePropertyKey(propertyName);
-        if(AtlasGraphUtilsV1.isReference(elementType)) {
-            return (List)instanceVertex.getListProperty(encodedPropertyName, AtlasEdge.class);
+    public static Map<String, Object> getMapElementsProperty(AtlasMapType mapType, AtlasVertex instanceVertex, String propertyName, AtlasAttribute attribute) {
+        AtlasType mapValueType = mapType.getValueType();
+
+        if (isReference(mapValueType)) {
+            return getReferenceMap(instanceVertex, attribute);
+        } else {
+            return getPrimitiveMap(instanceVertex, propertyName, mapValueType);
         }
-        else {
-            return (List)instanceVertex.getListProperty(encodedPropertyName);
+    }
+
+    // map elements for reference types - AtlasObjectId, AtlasStruct
+    public static Map<String, Object> getReferenceMap(AtlasVertex instanceVertex, AtlasAttribute attribute) {
+        Map<String, Object> ret            = new HashMap<>();
+        List<AtlasEdge>     referenceEdges = getCollectionElementsUsingRelationship(instanceVertex, attribute);
+
+        for (AtlasEdge edge : referenceEdges) {
+            String key = edge.getProperty(ATTRIBUTE_KEY_PROPERTY_KEY, String.class);
+
+            if (StringUtils.isNotEmpty(key)) {
+                ret.put(key, edge);
+            }
+        }
+
+        return ret;
+    }
+
+    public static List<AtlasEdge> getMapValuesUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute) {
+        String                         edgeLabel     = attribute.getRelationshipEdgeLabel();
+        AtlasRelationshipEdgeDirection edgeDirection = attribute.getRelationshipEdgeDirection();
+        Iterator<AtlasEdge>            edgesForLabel = getEdgesForLabel(vertex, edgeLabel, edgeDirection);
+
+        return (List<AtlasEdge>) IteratorUtils.toList(edgesForLabel);
+    }
+
+    // map elements for primitive types
+    public static Map<String,Object> getPrimitiveMap(AtlasVertex instanceVertex, String propertyName, AtlasType mapValueType) {
+        String              encodedPropertyName = encodePropertyKey(propertyName);
+        List<String>        currentKeys         = getListProperty(instanceVertex, encodedPropertyName);
+        Map<String, Object> ret                 = new HashMap<>();
+
+        if (CollectionUtils.isNotEmpty(currentKeys)) {
+            for (String key : currentKeys) {
+                String propertyNameForKey  = getQualifiedNameForMapKey(encodedPropertyName, encodePropertyKey(key));
+                Object propertyValueForKey = getMapValueProperty(mapValueType, instanceVertex, propertyNameForKey);
+
+                ret.put(key, propertyValueForKey);
+            }
+        }
+
+        return ret;
+    }
+
+    public static List<AtlasEdge> getCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute) {
+        List<AtlasEdge>                ret;
+        String                         edgeLabel     = attribute.getRelationshipEdgeLabel();
+        AtlasRelationshipEdgeDirection edgeDirection = attribute.getRelationshipEdgeDirection();
+        Iterator<AtlasEdge>            edgesForLabel = getEdgesForLabel(vertex, edgeLabel, edgeDirection);
+
+        ret = IteratorUtils.toList(edgesForLabel);
+
+        sortCollectionElements(attribute, ret);
+
+        return ret;
+    }
+
+    private static void sortCollectionElements(AtlasAttribute attribute, List<AtlasEdge> edges) {
+        // sort array elements based on edge index
+        if (attribute.getAttributeType() instanceof AtlasArrayType && CollectionUtils.isNotEmpty(edges)) {
+            Collections.sort(edges, (e1, e2) -> {
+                Integer e1Index = getIndexValue(e1);
+                Integer e2Index = getIndexValue(e2);
+
+                return e1Index.compareTo(e2Index);
+            });
         }
     }
 
@@ -1730,7 +1796,7 @@ public final class GraphHelper {
 
     }
 
-    public static void setListProperty(AtlasVertex instanceVertex, String propertyName, ArrayList<String> value) throws AtlasException {
+    public static void setListProperty(AtlasVertex instanceVertex, String propertyName, ArrayList<String> value) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         instanceVertex.setListProperty(actualPropertyName, value);
     }

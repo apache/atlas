@@ -19,15 +19,12 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.TestModules;
-import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -37,63 +34,35 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
-import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.runner.LocalSolrRunner;
-import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasStructType;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.collections.Transformer;
-import org.apache.commons.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.TestUtilsV2.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtilsV2.COLUMN_TYPE;
 import static org.apache.atlas.TestUtilsV2.NAME;
-import static org.apache.atlas.TestUtilsV2.randomString;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
-import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class AtlasEntityStoreV1Test {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1Test.class);
-
-    @Inject
-    AtlasTypeRegistry typeRegistry;
-
-    @Inject
-    AtlasTypeDefStore typeDefStore;
-
-    AtlasEntityStore entityStore;
-
-    @Inject
-    DeleteHandlerV1 deleteHandler;
-
+public class AtlasEntityStoreV1Test extends AtlasEntityTestBase {
     private AtlasEntitiesWithExtInfo deptEntity;
     private AtlasEntityWithExtInfo   dbEntity;
     private AtlasEntityWithExtInfo   tblEntity;
@@ -101,86 +70,55 @@ public class AtlasEntityStoreV1Test {
     private AtlasEntityWithExtInfo   primitiveEntity;
 
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
+
     @Inject
     private EntityGraphMapper graphMapper;
 
     @Inject
-    private Configuration configuration;
     private String dbEntityGuid;
     private String tblEntityGuid;
 
     @BeforeClass
     public void setUp() throws Exception {
-        RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER, null);
-
-        new GraphBackedSearchIndexer(typeRegistry);
+        super.setUp();
 
         AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineDeptEmployeeTypes(),
                                                               TestUtilsV2.defineHiveTypes(),
                                                               TestUtilsV2.defineTypeWithNestedCollectionAttributes(),
                                                             };
+        createTypesDef(testTypesDefs);
 
-        for (AtlasTypesDef typesDef : testTypesDefs) {
-            AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesDef, typeRegistry);
-
-            if (!typesToCreate.isEmpty()) {
-                typeDefStore.createTypesDef(typesToCreate);
-            }
-        }
-
-        deptEntity = TestUtilsV2.createDeptEg2();
-        dbEntity   = TestUtilsV2.createDBEntityV2();
-        tblEntity  = TestUtilsV2.createTableEntityV2(dbEntity.getEntity());
-
+        deptEntity                 = TestUtilsV2.createDeptEg2();
+        dbEntity                   = TestUtilsV2.createDBEntityV2();
+        tblEntity                  = TestUtilsV2.createTableEntityV2(dbEntity.getEntity());
         nestedCollectionAttrEntity = TestUtilsV2.createNestedCollectionAttrEntity();
+        primitiveEntity            = TestUtilsV2.createprimitiveEntityV2();
 
-        AtlasTypesDef typesDef11 = new  AtlasTypesDef();
-        List primitiveEntityDef = new ArrayList<AtlasEntityDef>();
+        AtlasTypesDef typesDef11         = new AtlasTypesDef();
+        List          primitiveEntityDef = new ArrayList<AtlasEntityDef>();
+
         primitiveEntityDef.add(TestUtilsV2.createPrimitiveEntityDef());
         typesDef11.setEntityDefs(primitiveEntityDef);
-        typeDefStore.createTypesDef( typesDef11 );
 
-        primitiveEntity = TestUtilsV2.createprimitiveEntityV2();
-    }
-
-    @AfterClass
-    public void clear() throws Exception {
-        AtlasGraphProvider.cleanup();
-
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
-        }
-    }
-
-    @BeforeTest
-    public void init() throws Exception {
-        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
-        RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER, null);
+        typeDefStore.createTypesDef(typesDef11);
     }
 
     @Test
     public void testDefaultValueForPrimitiveTypes() throws Exception  {
-
         init();
 
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(primitiveEntity), false);
-        List<AtlasEntityHeader> entitiesCreatedResponse = response.getEntitiesByOperation(EntityOperation.CREATE);
-        final Map<EntityOperation, List<AtlasEntityHeader>> entitiesMutated = response.getMutatedEntities();
-        List<AtlasEntityHeader> entitiesCreatedwithdefault = entitiesMutated.get(EntityOperation.CREATE);
+        EntityMutationResponse  response                   = entityStore.createOrUpdate(new AtlasEntityStream(primitiveEntity), false);
+        List<AtlasEntityHeader> entitiesCreatedResponse    = response.getEntitiesByOperation(EntityOperation.CREATE);
+        List<AtlasEntityHeader> entitiesCreatedwithdefault = response.getMutatedEntities().get(EntityOperation.CREATE);
+        AtlasEntity             entityCreated              = getEntityFromStore(entitiesCreatedResponse.get(0));
 
-        AtlasEntity entityCreated   = getEntityFromStore(entitiesCreatedResponse.get(0));
-
-
-        Map attributesMap = entityCreated.getAttributes();
-        String description = (String) attributesMap.get("description");
-        String check = (String) attributesMap.get("check");
-        String   sourceCode =  (String) attributesMap.get("sourcecode");
-        float   diskUsage =  (float) attributesMap.get("diskUsage");
-        boolean   isstoreUse =  (boolean) attributesMap.get("isstoreUse");
-        int cost = (int)attributesMap.get("Cost");
-
+        Map     attributesMap = entityCreated.getAttributes();
+        String  description   = (String) attributesMap.get("description");
+        String  check         = (String) attributesMap.get("check");
+        String  sourceCode    = (String) attributesMap.get("sourcecode");
+        float   diskUsage     = (float) attributesMap.get("diskUsage");
+        boolean isstoreUse    = (boolean) attributesMap.get("isstoreUse");
+        int     cost          = (int) attributesMap.get("Cost");
 
         assertEquals(description,"test");
         assertEquals(check,"check");
@@ -192,20 +130,20 @@ public class AtlasEntityStoreV1Test {
         assertEquals(cost,30);
     }
 
-
     @Test
     public void testCreate() throws Exception {
         init();
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(deptEntity), false);
 
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(deptEntity), false);
         validateMutationResponse(response, EntityOperation.CREATE, 5);
+
         AtlasEntityHeader dept1 = response.getFirstCreatedEntityByTypeName(TestUtilsV2.DEPARTMENT_TYPE);
         validateEntity(deptEntity, getEntityFromStore(dept1), deptEntity.getEntities().get(0));
 
         final Map<EntityOperation, List<AtlasEntityHeader>> entitiesMutated = response.getMutatedEntities();
         List<AtlasEntityHeader> entitiesCreated = entitiesMutated.get(EntityOperation.CREATE);
 
-        Assert.assertTrue(entitiesCreated.size() >= deptEntity.getEntities().size());
+        assertTrue(entitiesCreated.size() >= deptEntity.getEntities().size());
 
         for (int i = 0; i < deptEntity.getEntities().size(); i++) {
             AtlasEntity expected = deptEntity.getEntities().get(i);
@@ -251,7 +189,6 @@ public class AtlasEntityStoreV1Test {
         AtlasEntity              tableEntity  = new AtlasEntity(tblEntity.getEntity());
         List<AtlasObjectId>      columns      = new ArrayList<>();
         AtlasEntitiesWithExtInfo entitiesInfo = new AtlasEntitiesWithExtInfo(tableEntity);
-
 
         AtlasEntity col1 = TestUtilsV2.createColumnEntity(tableEntity);
         col1.setAttribute(TestUtilsV2.NAME, "col1");
@@ -947,10 +884,10 @@ public class AtlasEntityStoreV1Test {
 
     @Test(dependsOnMethods = "testCreate")
     public void associateMultipleTagsToOneEntity() throws AtlasBaseException {
-        final String TAG_NAME = "tag_xy";
-        final String TAG_NAME_2 = TAG_NAME + "_2";
-        final String TAG_ATTRIBUTE_NAME = "testAttribute";
-        final String TAG_ATTRIBUTE_VALUE = "test-string";
+        final String TAG_NAME              = "tag_xy";
+        final String TAG_NAME_2            = TAG_NAME + "_2";
+        final String TAG_ATTRIBUTE_NAME    = "testAttribute";
+        final String TAG_ATTRIBUTE_VALUE   = "test-string";
         final String TAG_ATTRIBUTE_VALUE_2 = TAG_ATTRIBUTE_VALUE + "-2";
 
         createTag(TAG_NAME, "string");
@@ -973,8 +910,8 @@ public class AtlasEntityStoreV1Test {
 
     @Test(dependsOnMethods = "testCreate")
     public void associateSameTagToMultipleEntities() throws AtlasBaseException {
-        final String TAG_NAME = "tagx";
-        final String TAG_ATTRIBUTE_NAME = "testAttribute";
+        final String TAG_NAME            = "tagx";
+        final String TAG_ATTRIBUTE_NAME  = "testAttribute";
         final String TAG_ATTRIBUTE_VALUE = "test-string";
 
         createTag(TAG_NAME, "string");
@@ -984,16 +921,16 @@ public class AtlasEntityStoreV1Test {
         entityStore.addClassifications(dbEntityGuid, addedClassifications);
         entityStore.addClassifications(tblEntityGuid, addedClassifications);
 
-        AtlasEntity dbEntityFromDb = getEntityFromStore(dbEntityGuid);
+        AtlasEntity dbEntityFromDb  = getEntityFromStore(dbEntityGuid);
         AtlasEntity tblEntityFromDb = getEntityFromStore(tblEntityGuid);
 
-        Set<String> actualDBClassifications = new HashSet<>(CollectionUtils.collect(dbEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getTypeName()));
+        Set<String> actualDBClassifications  = new HashSet<>(CollectionUtils.collect(dbEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getTypeName()));
         Set<String> actualTblClassifications = new HashSet<>(CollectionUtils.collect(tblEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getTypeName()));
 
         assertTrue(actualDBClassifications.contains(TAG_NAME));
         assertTrue(actualTblClassifications.contains(TAG_NAME));
 
-        Set<String> actualDBAssociatedEntityGuid = new HashSet<>(CollectionUtils.collect(dbEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getEntityGuid()));
+        Set<String> actualDBAssociatedEntityGuid  = new HashSet<>(CollectionUtils.collect(dbEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getEntityGuid()));
         Set<String> actualTblAssociatedEntityGuid = new HashSet<>(CollectionUtils.collect(tblEntityFromDb.getClassifications(), o -> ((AtlasClassification) o).getEntityGuid()));
 
         assertTrue(actualDBAssociatedEntityGuid.contains(dbEntityGuid));
@@ -1001,129 +938,5 @@ public class AtlasEntityStoreV1Test {
 
         entityStore.deleteClassifications(dbEntityGuid, Collections.singletonList(TAG_NAME));
         entityStore.deleteClassifications(tblEntityGuid, Collections.singletonList(TAG_NAME));
-    }
-
-
-    private AtlasClassificationDef getTagWithName(AtlasTypesDef typesDef, String tagName, String attributeType) {
-        AtlasClassificationDef aTag = new AtlasClassificationDef(tagName);
-        AtlasAttributeDef attributeDef = new AtlasAttributeDef("testAttribute", attributeType, true,
-                AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, true, false,
-                Collections.emptyList());
-
-        aTag.addAttribute(attributeDef);
-        typesDef.setClassificationDefs(Arrays.asList(aTag));
-        return aTag;
-    }
-
-    private void createTag(String tagName, String attributeType) {
-        try {
-            AtlasTypesDef typesDef = new AtlasTypesDef();
-            getTagWithName(typesDef, tagName, attributeType);
-            typeDefStore.createTypesDef(typesDef);
-        } catch (AtlasBaseException e) {
-            fail("Tag creation should've succeeded");
-        }
-    }
-
-    private String randomStrWithReservedChars() {
-        return randomString() + "\"${}%";
-    }
-
-    private void validateMutationResponse(EntityMutationResponse response, EntityMutations.EntityOperation op, int expectedNumCreated) {
-        List<AtlasEntityHeader> entitiesCreated = response.getEntitiesByOperation(op);
-        Assert.assertNotNull(entitiesCreated);
-        Assert.assertEquals(entitiesCreated.size(), expectedNumCreated);
-    }
-
-    private void validateEntity(AtlasEntityExtInfo entityExtInfo, AtlasEntity actual) throws AtlasBaseException, AtlasException {
-        validateEntity(entityExtInfo, actual, entityExtInfo.getEntity(actual.getGuid()));
-    }
-
-    private void validateEntity(AtlasEntityExtInfo entityExtInfo, AtlasStruct actual, AtlasStruct expected) throws AtlasBaseException, AtlasException {
-        if (expected == null) {
-            Assert.assertNull(actual, "expected null instance. Found " + actual);
-
-            return;
-        }
-
-        Assert.assertNotNull(actual, "found null instance");
-
-        AtlasStructType entityType = (AtlasStructType) typeRegistry.getType(actual.getTypeName());
-        for (String attrName : expected.getAttributes().keySet()) {
-            Object expectedVal = expected.getAttribute(attrName);
-            Object actualVal   = actual.getAttribute(attrName);
-
-            AtlasType attrType = entityType.getAttributeType(attrName);
-            validateAttribute(entityExtInfo, actualVal, expectedVal, attrType, attrName);
-        }
-    }
-
-    private void validateAttribute(AtlasEntityExtInfo entityExtInfo, Object actual, Object expected, AtlasType attributeType, String attrName) throws AtlasBaseException, AtlasException {
-        switch(attributeType.getTypeCategory()) {
-            case OBJECT_ID_TYPE:
-                Assert.assertTrue(actual instanceof AtlasObjectId);
-                String guid = ((AtlasObjectId) actual).getGuid();
-                Assert.assertTrue(AtlasTypeUtil.isAssignedGuid(guid), "expected assigned guid. found " + guid);
-                break;
-
-            case PRIMITIVE:
-            case ENUM:
-                Assert.assertEquals(actual, expected);
-                break;
-
-            case MAP:
-                AtlasMapType mapType     = (AtlasMapType) attributeType;
-                AtlasType    valueType   = mapType.getValueType();
-                Map          actualMap   = (Map) actual;
-                Map          expectedMap = (Map) expected;
-
-                if (MapUtils.isNotEmpty(expectedMap)) {
-                    Assert.assertTrue(MapUtils.isNotEmpty(actualMap));
-
-                    // deleted entries are included in the attribute; hence use >=
-                    Assert.assertTrue(actualMap.size() >= expectedMap.size());
-
-                    for (Object key : expectedMap.keySet()) {
-                        validateAttribute(entityExtInfo, actualMap.get(key), expectedMap.get(key), valueType, attrName);
-                    }
-                }
-                break;
-
-            case ARRAY:
-                AtlasArrayType arrType      = (AtlasArrayType) attributeType;
-                AtlasType      elemType     = arrType.getElementType();
-                List           actualList   = (List) actual;
-                List           expectedList = (List) expected;
-
-                if (CollectionUtils.isNotEmpty(expectedList)) {
-                    Assert.assertTrue(CollectionUtils.isNotEmpty(actualList));
-
-                    //actual list could have deleted entities. Hence size may not match.
-                    Assert.assertTrue(actualList.size() >= expectedList.size());
-
-                    for (int i = 0; i < expectedList.size(); i++) {
-                        validateAttribute(entityExtInfo, actualList.get(i), expectedList.get(i), elemType, attrName);
-                    }
-                }
-                break;
-            case STRUCT:
-                AtlasStruct expectedStruct = (AtlasStruct) expected;
-                AtlasStruct actualStruct   = (AtlasStruct) actual;
-
-                validateEntity(entityExtInfo, actualStruct, expectedStruct);
-                break;
-            default:
-                Assert.fail("Unknown type category");
-        }
-    }
-
-    private AtlasEntity getEntityFromStore(AtlasEntityHeader header) throws AtlasBaseException {
-        return header != null ? getEntityFromStore(header.getGuid()) : null;
-    }
-
-    private AtlasEntity getEntityFromStore(String guid) throws AtlasBaseException {
-        AtlasEntityWithExtInfo entity = guid != null ? entityStore.getById(guid) : null;
-
-        return entity != null ? entity.getEntity() : null;
     }
 }
