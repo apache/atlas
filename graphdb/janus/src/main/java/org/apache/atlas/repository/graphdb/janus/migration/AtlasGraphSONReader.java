@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.TypeInfo;
 import org.apache.tinkerpop.shaded.jackson.core.JsonFactory;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
 import org.apache.tinkerpop.shaded.jackson.core.JsonToken;
@@ -257,7 +258,7 @@ public final class AtlasGraphSONReader {
             }
 
             final GraphSONMapper.Builder builder = GraphSONMapper.build();
-            final GraphSONMapper         mapper  = builder.embedTypes(false).create();
+            final GraphSONMapper         mapper  = builder.typeInfo(TypeInfo.NO_TYPES).create();
 
             return new AtlasGraphSONReader(mapper.createMapper(), relationshipCache, graph, bulkLoadGraph,
                                            propertiesToPostProcess, numWorkers, batchSize, suppliedStartIndex);

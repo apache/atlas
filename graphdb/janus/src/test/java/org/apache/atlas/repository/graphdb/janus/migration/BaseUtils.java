@@ -22,6 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.TypeInfo;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
@@ -66,7 +67,7 @@ public class BaseUtils {
 
     private JsonNode getEntityNode(String json) throws IOException {
         GraphSONMapper.Builder builder = GraphSONMapper.build();
-        final ObjectMapper mapper  = builder.embedTypes(false).create().createMapper();
+        final ObjectMapper mapper  = builder.typeInfo(TypeInfo.NO_TYPES).create().createMapper();
         return mapper.readTree(json);
     }
 
