@@ -138,16 +138,10 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
 
     @Override
     protected StringBuilder toString(final StringBuilder sb) {
-        sb.append("{");
-        sb.append("displayName='").append(getDisplayName()).append('\'');
-        sb.append(", shortDescription='").append(getShortDescription()).append('\'');
-        sb.append(", longDescription='").append(getLongDescription()).append('\'');
         sb.append(", anchor=").append(anchor);
         sb.append(", parentCategory=").append(parentCategory);
         sb.append(", childrenCategories=").append(childrenCategories);
         sb.append(", terms=").append(terms);
-        sb.append(", classifications=").append(getClassifications());
-        sb.append('}');
 
         return sb;
     }

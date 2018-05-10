@@ -314,7 +314,12 @@ public class GlossaryServiceTest {
             List<AtlasGlossaryCategory> categories = glossaryService.createCategories(Arrays.asList(accountCategory, mortgageCategory));
 
             accountCategory.setGuid(categories.get(0).getGuid());
+            assertNotNull(accountCategory.getParentCategory());
+            assertEquals(accountCategory.getParentCategory().getCategoryGuid(), customerCategory.getGuid());
+            assertTrue(accountCategory.getQualifiedName().endsWith(customerCategory.getQualifiedName()));
+
             mortgageCategory.setGuid(categories.get(1).getGuid());
+            assertNull(mortgageCategory.getParentCategory());
         } catch (AtlasBaseException e) {
             fail("Category creation should've succeeded", e);
         }
@@ -395,8 +400,48 @@ public class GlossaryServiceTest {
     public void testDeleteGlossary() {
         try {
             glossaryService.deleteGlossary(bankGlossary.getGuid());
+            // Fetch deleted glossary
             try {
                 glossaryService.getGlossary(bankGlossary.getGuid());
+            } catch (AtlasBaseException e) {
+                assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+            }
+
+            // Fetch delete terms
+            try {
+                glossaryService.getTerm(fixedRateMortgage.getGuid());
+            } catch (AtlasBaseException e) {
+                assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+            }
+            try {
+                glossaryService.getTerm(adjustableRateMortgage.getGuid());
+            } catch (AtlasBaseException e) {
+                assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+            }
+            try {
+                glossaryService.getTerm(savingsAccount.getGuid());
+            } catch (AtlasBaseException e) {
+                assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+            }
+            try {
+                glossaryService.getTerm(checkingAccount.getGuid());
+            } catch (AtlasBaseException e) {
+                assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+            }
+
+            // Fetch deleted categories
+            try {
+                glossaryService.getCategory(customerCategory.getGuid());
+            } catch (AtlasBaseException e) {
+                assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+            }
+            try {
+                glossaryService.getCategory(accountCategory.getGuid());
+            } catch (AtlasBaseException e) {
+                assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+            }
+            try {
+                glossaryService.getCategory(mortgageCategory.getGuid());
             } catch (AtlasBaseException e) {
                 assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
             }
@@ -460,11 +505,22 @@ public class GlossaryServiceTest {
 
         // Unlink children
         try {
-            AtlasGlossaryCategory category = glossaryService.getCategory(customerCategory.getGuid());
-            category.setChildrenCategories(null);
-            category = glossaryService.updateCategory(category);
-            assertNotNull(category);
-            assertNull(category.getChildrenCategories());
+            customerCategory = glossaryService.getCategory(customerCategory.getGuid());
+            customerCategory.setChildrenCategories(null);
+            customerCategory = glossaryService.updateCategory(customerCategory);
+            assertNotNull(customerCategory);
+            assertNull(customerCategory.getChildrenCategories());
+
+            accountCategory = glossaryService.getCategory(accountCategory.getGuid());
+            assertNull(accountCategory.getParentCategory());
+            assertTrue(accountCategory.getQualifiedName().endsWith(bankGlossary.getQualifiedName()));
+
+            mortgageCategory = glossaryService.getCategory(mortgageCategory.getGuid());
+            assertNull(mortgageCategory.getParentCategory());
+            assertTrue(mortgageCategory.getQualifiedName().endsWith(bankGlossary.getQualifiedName()));
+
+
+
         } catch (AtlasBaseException e) {
             fail("Customer category fetch should've succeeded");
         }
@@ -519,16 +575,27 @@ public class GlossaryServiceTest {
 
         try {
             customerCategory = glossaryService.getCategory(customerCategory.getGuid());
+            mortgageCategory = glossaryService.getCategory(mortgageCategory.getGuid());
+            accountCategory = glossaryService.getCategory(accountCategory.getGuid());
         } catch (AtlasBaseException e) {
             fail("Category fetch for migration should've succeeded");
         }
 
         customerCategory.setAnchor(newGlossaryHeader);
-        customerCategory.setChildrenCategories(null);
+        mortgageCategory.setAnchor(newGlossaryHeader);
+        accountCategory.setAnchor(newGlossaryHeader);
 
         try {
             customerCategory = glossaryService.updateCategory(customerCategory);
-            assertTrue(CollectionUtils.isEmpty(customerCategory.getChildrenCategories()));
+            mortgageCategory = glossaryService.updateCategory(mortgageCategory);
+            accountCategory = glossaryService.updateCategory(accountCategory);
+
+            assertTrue(customerCategory.getQualifiedName().endsWith(creditUnionGlossary.getQualifiedName()));
+            assertEquals(customerCategory.getAnchor().getGlossaryGuid(), newGlossaryHeader.getGlossaryGuid());
+            assertTrue(accountCategory.getQualifiedName().endsWith(creditUnionGlossary.getQualifiedName()));
+            assertEquals(accountCategory.getAnchor().getGlossaryGuid(), newGlossaryHeader.getGlossaryGuid());
+            assertTrue(mortgageCategory.getQualifiedName().endsWith(creditUnionGlossary.getQualifiedName()));
+            assertEquals(mortgageCategory.getAnchor().getGlossaryGuid(), newGlossaryHeader.getGlossaryGuid());
         } catch (AtlasBaseException e) {
             fail("Category anchor change should've succeeded");
         }
@@ -536,9 +603,49 @@ public class GlossaryServiceTest {
         try {
             List<AtlasRelatedCategoryHeader> categories = glossaryService.getGlossaryCategoriesHeaders(creditUnionGlossary.getGuid(), 0, 5, SortOrder.ASCENDING);
             assertNotNull(categories);
-            assertEquals(categories.size(), 1);
+            assertEquals(categories.size(), 3);
         } catch (AtlasBaseException e) {
             fail("Category migration should've succeeded", e);
+        }
+
+        // Move the entire hierarchy back to the original glossary
+        AtlasRelatedCategoryHeader child1 = new AtlasRelatedCategoryHeader();
+        child1.setCategoryGuid(accountCategory.getGuid());
+
+        AtlasRelatedCategoryHeader child2 = new AtlasRelatedCategoryHeader();
+        child2.setCategoryGuid(mortgageCategory.getGuid());
+
+        customerCategory.addChild(child1);
+        customerCategory.addChild(child2);
+
+        try {
+            customerCategory = glossaryService.updateCategory(customerCategory);
+            assertTrue(CollectionUtils.isNotEmpty(customerCategory.getChildrenCategories()));
+        } catch (AtlasBaseException e) {
+            fail("Children addition to Category should've succeeded");
+        }
+
+        customerCategory.setAnchor(newGlossaryHeader);
+        newGlossaryHeader.setGlossaryGuid(bankGlossary.getGuid());
+        try {
+            customerCategory = glossaryService.getCategory(customerCategory.getGuid());
+            assertTrue(CollectionUtils.isNotEmpty(customerCategory.getChildrenCategories()));
+        } catch (AtlasBaseException e) {
+            fail("Category fetch should've succeeded");
+        }
+
+        try {
+            accountCategory = glossaryService.getCategory(accountCategory.getGuid());
+            assertEquals(accountCategory.getAnchor().getGlossaryGuid(), customerCategory.getAnchor().getGlossaryGuid());
+        } catch (AtlasBaseException e) {
+            fail("Category fetch should've succeeded");
+        }
+
+        try {
+            mortgageCategory = glossaryService.getCategory(mortgageCategory.getGuid());
+            assertEquals(mortgageCategory.getAnchor().getGlossaryGuid(), customerCategory.getAnchor().getGlossaryGuid());
+        } catch (AtlasBaseException e) {
+            fail("Category fetch should've succeeded");
         }
     }
 
@@ -688,6 +795,12 @@ public class GlossaryServiceTest {
             assertNull(term.getAssignedEntities());
         } catch (AtlasBaseException e) {
             fail("Term update should've succeeded", e);
+        }
+
+        try {
+            entityStore.deleteById(relatedObjectId.getGuid());
+        } catch (AtlasBaseException e) {
+            fail("Entity delete should've succeeded");
         }
     }
 

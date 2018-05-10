@@ -19,6 +19,7 @@ package org.apache.atlas.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
@@ -53,14 +54,14 @@ public class GlossaryTermUtils extends GlossaryUtils {
         super(relationshipStore, typeRegistry, dataAccess);
     }
 
-    public void processTermRelations(AtlasGlossaryTerm updatedTerm, AtlasGlossaryTerm existing, RelationshipOperation op) throws AtlasBaseException {
+    public void processTermRelations(AtlasGlossaryTerm storeObject, AtlasGlossaryTerm updatedTerm, RelationshipOperation op) throws AtlasBaseException {
         if (DEBUG_ENABLED) {
-            LOG.debug("==> GlossaryTermUtils.processTermRelations({}, {}, {})", updatedTerm, existing, op);
+            LOG.debug("==> GlossaryTermUtils.processTermRelations({}, {}, {})", storeObject, updatedTerm, op);
         }
 
-        processTermAnchor(updatedTerm, existing, op);
-        processRelatedTerms(updatedTerm, existing, op);
-        processAssociatedCategories(updatedTerm, existing, op);
+        processTermAnchor(storeObject, updatedTerm, op);
+        processRelatedTerms(storeObject, updatedTerm, op);
+        processAssociatedCategories(storeObject, updatedTerm, op);
 
         if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryTermUtils.processTermRelations()");
@@ -130,12 +131,16 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private boolean isRelationshipGuidSame(final AtlasRelatedObjectId existing, final AtlasRelatedObjectId relatedObjectId) {
-        return StringUtils.equals(relatedObjectId.getRelationshipGuid(), existing.getRelationshipGuid());
+    private boolean isRelationshipGuidSame(AtlasRelatedObjectId storeObject, AtlasRelatedObjectId relatedObjectId) {
+        return StringUtils.equals(relatedObjectId.getRelationshipGuid(), storeObject.getRelationshipGuid());
     }
 
-    private void processTermAnchor(AtlasGlossaryTerm updatedTerm, AtlasGlossaryTerm existing, RelationshipOperation op) throws AtlasBaseException {
-        AtlasGlossaryHeader existingAnchor    = existing.getAnchor();
+    private void processTermAnchor(AtlasGlossaryTerm storeObject, AtlasGlossaryTerm updatedTerm, RelationshipOperation op) throws AtlasBaseException {
+        if (Objects.isNull(updatedTerm.getAnchor()) && op != RelationshipOperation.DELETE) {
+            throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ANCHOR);
+        }
+
+        AtlasGlossaryHeader existingAnchor    = storeObject.getAnchor();
         AtlasGlossaryHeader updatedTermAnchor = updatedTerm.getAnchor();
 
         switch (op) {
@@ -144,9 +149,19 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_NEW_ANCHOR_GUID);
                 } else {
                     if (DEBUG_ENABLED) {
-                        LOG.debug("Creating relation between glossary = {} and term = {}", updatedTermAnchor.getGlossaryGuid(), existing.getDisplayName());
+                        LOG.debug("Creating new term anchor, category = {}, glossary = {}", storeObject.getGuid(), updatedTerm.getAnchor().getGlossaryGuid());
                     }
-                    createRelationship(defineTermAnchorRelation(updatedTermAnchor.getGlossaryGuid(), existing.getGuid()));
+
+                    // Derive the qualifiedName
+                    String        anchorGlossaryGuid = updatedTermAnchor.getGlossaryGuid();
+                    AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
+                    storeObject.setQualifiedName(storeObject.getDisplayName() + "@" + glossary.getQualifiedName());
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
+                    }
+
+                    createRelationship(defineTermAnchorRelation(updatedTermAnchor.getGlossaryGuid(), storeObject.getGuid()));
                 }
                 break;
             case UPDATE:
@@ -156,10 +171,23 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     }
 
                     if (DEBUG_ENABLED) {
-                        LOG.debug("Updating relation between glossary = {} and term = {}", updatedTermAnchor.getGlossaryGuid(), existing.getDisplayName());
+                        LOG.debug("Updating term anchor, currAnchor = {}, newAnchor = {} and term = {}",
+                                  existingAnchor.getGlossaryGuid(),
+                                  updatedTermAnchor.getGlossaryGuid(),
+                                  storeObject.getDisplayName());
                     }
                     relationshipStore.deleteById(existingAnchor.getRelationGuid());
-                    createRelationship(defineTermAnchorRelation(updatedTermAnchor.getGlossaryGuid(), existing.getGuid()));
+
+                    // Derive the qualifiedName when anchor changes
+                    String        anchorGlossaryGuid = updatedTermAnchor.getGlossaryGuid();
+                    AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
+                    storeObject.setQualifiedName(storeObject.getDisplayName() + "@" + glossary.getQualifiedName());
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
+                    }
+
+                    createRelationship(defineTermAnchorRelation(updatedTermAnchor.getGlossaryGuid(), storeObject.getGuid()));
                 }
                 break;
             case DELETE:
@@ -173,9 +201,9 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private void processRelatedTerms(AtlasGlossaryTerm updatedTerm, AtlasGlossaryTerm existing, RelationshipOperation op) throws AtlasBaseException {
+    private void processRelatedTerms(AtlasGlossaryTerm storeObject, AtlasGlossaryTerm updatedTerm, RelationshipOperation op) throws AtlasBaseException {
         Map<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> newRelatedTerms      = updatedTerm.getRelatedTerms();
-        Map<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> existingRelatedTerms = existing.getRelatedTerms();
+        Map<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> existingRelatedTerms = storeObject.getRelatedTerms();
         switch (op) {
             case CREATE:
                 for (Map.Entry<AtlasGlossaryTerm.Relation, Set<AtlasRelatedTermHeader>> entry : newRelatedTerms.entrySet()) {
@@ -183,10 +211,10 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     Set<AtlasRelatedTermHeader> terms    = entry.getValue();
                     if (Objects.nonNull(terms)) {
                         if (DEBUG_ENABLED) {
-                            LOG.debug("{} relation {} for term = {}", op, relation, existing.getGuid());
+                            LOG.debug("{} relation {} for term = {}", op, relation, storeObject.getGuid());
                             LOG.debug("Related Term count = {}", terms.size());
                         }
-                        createTermRelationships(existing, relation, terms);
+                        createTermRelationships(storeObject, relation, terms);
                     }
                 }
                 break;
@@ -201,7 +229,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                             LOG.debug("Creating new term relations, relation = {}, terms = {}", relation,
                                       Objects.nonNull(newTermHeaders) ? newTermHeaders.size() : "none");
                         }
-                        createTermRelationships(existing, relation, newTermHeaders.values());
+                        createTermRelationships(storeObject, relation, newTermHeaders.values());
                         continue;
                     }
 
@@ -230,7 +258,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                                                                    .filter(t -> !newTermHeaders.containsKey(t.getTermGuid()))
                                                                    .collect(Collectors.toSet());
 
-                    createTermRelationships(existing, relation, toCreate);
+                    createTermRelationships(storeObject, relation, toCreate);
                     updateTermRelationships(relation, toUpdate);
                     deleteTermRelationships(relation, toDelete);
 
@@ -265,33 +293,33 @@ public class GlossaryTermUtils extends GlossaryUtils {
         return Objects.nonNull(header.getRelationGuid()) && !header.equals(existingTermHeaders.get(header.getTermGuid()));
     }
 
-    private void processAssociatedCategories(AtlasGlossaryTerm updatedTerm, AtlasGlossaryTerm existing, RelationshipOperation op) throws AtlasBaseException {
+    private void processAssociatedCategories(AtlasGlossaryTerm storeObject, AtlasGlossaryTerm updatedTerm, RelationshipOperation op) throws AtlasBaseException {
         Map<String, AtlasTermCategorizationHeader> newCategories      = getAssociatedCategories(updatedTerm);
-        Map<String, AtlasTermCategorizationHeader> existingCategories = getAssociatedCategories(existing);
+        Map<String, AtlasTermCategorizationHeader> existingCategories = getAssociatedCategories(storeObject);
         switch (op) {
             case CREATE:
                 if (Objects.nonNull(newCategories)) {
                     if (DEBUG_ENABLED) {
-                        LOG.debug("Creating new term categorization, term = {}, categories = {}", existing.getGuid(), newCategories.size());
+                        LOG.debug("Creating new term categorization, term = {}, categories = {}", storeObject.getGuid(), newCategories.size());
                     }
-                    createTermCategorizationRelationships(existing, newCategories.values());
+                    createTermCategorizationRelationships(storeObject, newCategories.values());
                 }
                 break;
             case UPDATE:
                 // If no existing categories are present then create all existing ones
                 if (MapUtils.isEmpty(existingCategories)) {
                     if (DEBUG_ENABLED) {
-                        LOG.debug("Creating new term categorization, term = {}, categories = {}", existing.getGuid(),
+                        LOG.debug("Creating new term categorization, term = {}, categories = {}", storeObject.getGuid(),
                                   Objects.nonNull(newCategories) ? newCategories.size() : "none");
                     }
-                    createTermCategorizationRelationships(existing, newCategories.values());
+                    createTermCategorizationRelationships(storeObject, newCategories.values());
                     break;
                 }
 
                 // If no new categories are present then delete all existing ones
                 if (MapUtils.isEmpty(newCategories)) {
                     if (DEBUG_ENABLED) {
-                        LOG.debug("Deleting term categorization, term = {}, categories = {}", existing.getGuid(), existingCategories.size());
+                        LOG.debug("Deleting term categorization, term = {}, categories = {}", storeObject.getGuid(), existingCategories.size());
                     }
                     deleteCategorizationRelationship(existingCategories.values());
                     break;
@@ -302,13 +330,13 @@ public class GlossaryTermUtils extends GlossaryUtils {
                                                                       .stream()
                                                                       .filter(c -> !existingCategories.containsKey(c.getCategoryGuid()))
                                                                       .collect(Collectors.toSet());
-                createTermCategorizationRelationships(existing, toCreate);
+                createTermCategorizationRelationships(storeObject, toCreate);
                 Set<AtlasTermCategorizationHeader> toUpdate = newCategories
                                                                       .values()
                                                                       .stream()
                                                                       .filter(c -> updatedExistingCategorizationRelation(existingCategories, c))
                                                                       .collect(Collectors.toSet());
-                updateTermCategorizationRelationships(existing, toUpdate);
+                updateTermCategorizationRelationships(storeObject, toUpdate);
                 Set<AtlasTermCategorizationHeader> toDelete = existingCategories
                                                                       .values()
                                                                       .stream()
@@ -326,7 +354,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
         return Objects.nonNull(header.getRelationGuid()) && !header.equals(existingCategories.get(header.getCategoryGuid()));
     }
 
-    private Map<String, AtlasTermCategorizationHeader> getAssociatedCategories(final AtlasGlossaryTerm term) {
+    private Map<String, AtlasTermCategorizationHeader> getAssociatedCategories(AtlasGlossaryTerm term) {
         if (Objects.nonNull(term.getCategories())) {
             Map<String, AtlasTermCategorizationHeader> map = new HashMap<>();
             for (AtlasTermCategorizationHeader c : term.getCategories()) {
@@ -341,9 +369,9 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private void createTermCategorizationRelationships(AtlasGlossaryTerm existing, Collection<AtlasTermCategorizationHeader> categories) throws AtlasBaseException {
+    private void createTermCategorizationRelationships(AtlasGlossaryTerm storeObject, Collection<AtlasTermCategorizationHeader> categories) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(categories)) {
-            Set<AtlasTermCategorizationHeader> existingCategories = existing.getCategories();
+            Set<AtlasTermCategorizationHeader> existingCategories = storeObject.getCategories();
             for (AtlasTermCategorizationHeader categorizationHeader : categories) {
                 if (Objects.nonNull(existingCategories) && existingCategories.contains(categorizationHeader)) {
                     if (DEBUG_ENABLED) {
@@ -352,18 +380,18 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     continue;
                 }
                 if (DEBUG_ENABLED) {
-                    LOG.debug("Creating relation between term = {} and category = {}", existing.getGuid(), categorizationHeader.getDisplayText());
+                    LOG.debug("Creating relation between term = {} and category = {}", storeObject.getGuid(), categorizationHeader.getDisplayText());
                 }
-                createRelationship(defineCategorizedTerm(categorizationHeader, existing.getGuid()));
+                createRelationship(defineCategorizedTerm(categorizationHeader, storeObject.getGuid()));
             }
         }
     }
 
-    private void updateTermCategorizationRelationships(AtlasGlossaryTerm existing, Collection<AtlasTermCategorizationHeader> toUpdate) throws AtlasBaseException {
+    private void updateTermCategorizationRelationships(AtlasGlossaryTerm storeObject, Collection<AtlasTermCategorizationHeader> toUpdate) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(toUpdate)) {
             for (AtlasTermCategorizationHeader categorizationHeader : toUpdate) {
                 if (DEBUG_ENABLED) {
-                    LOG.debug("Updating relation between term = {} and category = {}", existing.getGuid(), categorizationHeader.getDisplayText());
+                    LOG.debug("Updating relation between term = {} and category = {}", storeObject.getGuid(), categorizationHeader.getDisplayText());
                 }
                 AtlasRelationship relationship = relationshipStore.getById(categorizationHeader.getRelationGuid());
                 updateRelationshipAttributes(relationship, categorizationHeader);
@@ -383,12 +411,12 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
     }
 
-    private void createTermRelationships(AtlasGlossaryTerm existing, AtlasGlossaryTerm.Relation relation, Collection<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
+    private void createTermRelationships(AtlasGlossaryTerm storeObject, AtlasGlossaryTerm.Relation relation, Collection<AtlasRelatedTermHeader> terms) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(terms)) {
             Map<String, AtlasRelatedTermHeader> existingRelations;
-            if (Objects.nonNull(existing.getRelatedTerms()) && Objects.nonNull(existing.getRelatedTerms().get(relation))) {
+            if (Objects.nonNull(storeObject.getRelatedTerms()) && Objects.nonNull(storeObject.getRelatedTerms().get(relation))) {
                 Map<String, AtlasRelatedTermHeader> map = new HashMap<>();
-                for (AtlasRelatedTermHeader t : existing.getRelatedTerms().get(relation)) {
+                for (AtlasRelatedTermHeader t : storeObject.getRelatedTerms().get(relation)) {
                     AtlasRelatedTermHeader header = map.get(t.getTermGuid());
                     if (header == null || (StringUtils.isEmpty(header.getRelationGuid()) && StringUtils.isNotEmpty(t.getRelationGuid()))) {
                         map.put(t.getTermGuid(), t);
@@ -406,7 +434,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     continue;
                 }
 
-                if (existing.getGuid().equals(term.getTermGuid())) {
+                if (storeObject.getGuid().equals(term.getTermGuid())) {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_RELATION_TO_SELF);
                 }
 
@@ -414,7 +442,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     LOG.debug("Creating new term relation = {}, terms = {}", relation, term.getDisplayText());
                 }
 
-                createRelationship(defineTermRelation(relation, existing.getGuid(), term));
+                createRelationship(defineTermRelation(relation, storeObject.getGuid(), term));
             }
         }
     }

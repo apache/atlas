@@ -146,12 +146,10 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
 
     @Override
     protected StringBuilder toString(final StringBuilder sb) {
-        sb.append("{");
-        sb.append("language='").append(language).append('\'');
+        sb.append(", language='").append(language).append('\'');
         sb.append(", usage='").append(usage).append('\'');
         sb.append(", terms=").append(terms);
         sb.append(", categories=").append(categories);
-        sb.append('}');
 
         return sb;
     }
@@ -234,11 +232,8 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
 
         @Override
         public StringBuilder toString(StringBuilder sb) {
-            sb.append("{");
-            super.toString(sb);
             sb.append(", termInfo=").append(termInfo);
             sb.append(", categoryInfo=").append(categoryInfo);
-            sb.append('}');
 
             return sb;
         }

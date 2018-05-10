@@ -19,6 +19,9 @@ package org.apache.atlas.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.glossary.AtlasGlossary;
+import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.ogm.DataAccess;
@@ -63,6 +66,26 @@ public abstract class GlossaryUtils {
         this.typeRegistry = typeRegistry;
         this.dataAccess = dataAccess;
     }
+
+    public static AtlasGlossary getGlossarySkeleton(String glossaryGuid) {
+        AtlasGlossary glossary = new AtlasGlossary();
+        glossary.setGuid(glossaryGuid);
+        return glossary;
+    }
+
+    public static AtlasGlossaryTerm getAtlasGlossaryTermSkeleton(final String termGuid) {
+        AtlasGlossaryTerm glossaryTerm = new AtlasGlossaryTerm();
+        glossaryTerm.setGuid(termGuid);
+        return glossaryTerm;
+    }
+
+    public static AtlasGlossaryCategory getAtlasGlossaryCategorySkeleton(final String categoryGuid) {
+        AtlasGlossaryCategory glossaryCategory = new AtlasGlossaryCategory();
+        glossaryCategory.setGuid(categoryGuid);
+        return glossaryCategory;
+    }
+
+
 
     protected void createRelationship(AtlasRelationship relationship) throws AtlasBaseException {
         try {

@@ -29,13 +29,13 @@ import java.util.Objects;
 public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
 
     // Core attributes
-    protected      String     displayName;
-    protected      String     shortDescription;
-    protected      String     longDescription;
+    private   String qualifiedName;
+    protected String displayName;
+    protected String shortDescription;
+    protected String longDescription;
 
     // Classifications
     protected List<AtlasClassification> classifications;
-    private   String                    qualifiedName;
 
     public AtlasGlossaryBaseObject() {
     }
@@ -129,13 +129,11 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
 
     @Override
     protected StringBuilder toString(final StringBuilder sb) {
-        sb.append("{");
-        sb.append("displayName='").append(displayName).append('\'');
+        sb.append(", qualifiedName='").append(qualifiedName).append('\'');
+        sb.append(", displayName='").append(displayName).append('\'');
         sb.append(", shortDescription='").append(shortDescription).append('\'');
         sb.append(", longDescription='").append(longDescription).append('\'');
         sb.append(", classifications=").append(classifications);
-        sb.append(", qualifiedName='").append(qualifiedName).append('\'');
-        sb.append('}');
 
         return sb;
     }
