@@ -365,7 +365,6 @@ define(['require',
                 if (this.value && this.value.viewType) {
                     this.viewType = this.value.viewType;
                 }
-                this.setValues();
                 if (this.guid && this.value && ((this.value.fromView && this.value.fromView) || (this.value.updateView))) {
                     var $tree = this.ui[this.viewType == "term" ? "termTree" : "categoryTree"],
                         node = $tree.jstree(true).get_node(this.guid);
@@ -383,6 +382,8 @@ define(['require',
                         });
                         this.glossaryCollection.trigger("update:details", { isGlossaryUpdate: this.value.gType == "glossary" });
                     }
+                } else {
+                    this.setValues();
                 }
                 if (options.isTrigger) {
                     this.triggerUrl();
@@ -405,6 +406,9 @@ define(['require',
                                 } else {
                                     return obj != "NoAction" ? true : false;
                                 }
+                            },
+                            "search": {
+                                "show_only_matches": true
                             },
                             "core": {
                                 "data": function(node, cb) {
@@ -470,6 +474,10 @@ define(['require',
                                 } else if (type == that.viewType) {
                                     that.triggerUrl();
                                 }
+                            }).on("search.jstree", function(e, data) {
+                                createAction(_.extend({}, options, data));
+                            }).on("clear_search.jstree", function(e, data) {
+                                createAction(_.extend({}, options, data));
                             }).bind('loaded.jstree', function(e, data) {
                                 if (that.query[type].isNodeNotFoundAtLoad == true) {
                                     treeLoaded({ "$el": $el, "type": type });

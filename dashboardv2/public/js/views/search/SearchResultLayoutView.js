@@ -372,6 +372,9 @@ define(['require',
                     skipDefaultError: true,
                     sort: false,
                     success: function(dataOrCollection, response) {
+                        if (that.isDestroyed) {
+                            return;
+                        }
                         Globals.searchApiCallRef = undefined;
                         var isFirstPage = that.offset === 0,
                             dataLength = 0,

@@ -14,17 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div id="r_glossaryTree"></div>
-<br/>
 {{#if isAttributeRelationView}}
-<form name="termAttributeForm" class="form-horizontal" data-id="termAttributeForm">
-	{{#each selectedTermAttributeList}}
-    <div class="form-group">
-        <label class="control-label col-sm-2" for="name">{{@key}}</label>
-        <div class="col-sm-10">
-            <input class="form-control" name="{{@key}}" value="" data-id="displayName" placeholder="{{@key}}"/>
-        </div>
-    </div>
-    {{/each}}
-</form>
+<div data-id="wizard">
+    <h3>Select Term</h3>
+    <section>
+        <div id="r_glossaryTree"></div>
+    </section>
+    <h3>Attributes</h3>
+    <section>
+        <form name="termAttributeForm" class="form-horizontal" data-id="termAttributeForm">
+            {{#each selectedTermAttributeList}}
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="name">{{@key}}</label>
+                <div class="col-sm-10">
+                    <input class="form-control" name="{{@key}}" value="" data-id="displayName" placeholder="{{@key}}" />
+                </div>
+            </div>
+            {{/each}}
+        </form>
+    </section>
+</div>
+{{else}}
+<div id="r_glossaryTree"></div>
 {{/if}}

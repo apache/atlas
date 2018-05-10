@@ -22,8 +22,9 @@ define(['require',
     'utils/Utils',
     'utils/Messages',
     'utils/Globals',
-    'utils/CommonViewFunction'
-], function(require, Backbone, GlossaryDetailLayoutViewTmpl, Utils, Messages, Globals, CommonViewFunction) {
+    'utils/CommonViewFunction',
+    'collection/VGlossaryList'
+], function(require, Backbone, GlossaryDetailLayoutViewTmpl, Utils, Messages, Globals, CommonViewFunction, VGlossaryList) {
     'use strict';
 
     var GlossaryDetailLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -306,13 +307,24 @@ define(['require',
             onClickAddTermBtn: function(e) {
                 var that = this;
                 require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
+                    var glossary = that.glossaryCollection;
+                    if (that.value && that.value.gId) {
+                        var foundModel = that.glossaryCollection.find({ guid: that.value.gId });
+                        if (foundModel) {
+                            glossary = new VGlossaryList([foundModel.toJSON()], {
+                                comparator: function(item) {
+                                    return item.get("displayName");
+                                }
+                            });
+                        }
+                    }
                     var view = new AssignTermLayoutView({
                         categoryData: that.data,
                         isCategoryView: that.isCategoryView,
                         callback: function() {
                             that.getData();
                         },
-                        glossaryCollection: that.glossaryCollection
+                        glossaryCollection: glossary
                     });
                     view.modal.on('ok', function() {
                         that.hideLoader();
@@ -322,13 +334,24 @@ define(['require',
             onClickAddCategoryBtn: function(e) {
                 var that = this;
                 require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
+                    var glossary = that.glossaryCollection;
+                    if (that.value && that.value.gId) {
+                        var foundModel = that.glossaryCollection.find({ guid: that.value.gId });
+                        if (foundModel) {
+                            glossary = new VGlossaryList([foundModel.toJSON()], {
+                                comparator: function(item) {
+                                    return item.get("displayName");
+                                }
+                            });
+                        }
+                    }
                     var view = new AssignTermLayoutView({
                         termData: that.data,
                         isTermView: that.isTermView,
                         callback: function() {
                             that.getData();
                         },
-                        glossaryCollection: that.glossaryCollection
+                        glossaryCollection: glossary
                     });
                     view.modal.on('ok', function() {
                         that.hideLoader();

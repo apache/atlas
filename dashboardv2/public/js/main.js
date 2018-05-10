@@ -129,6 +129,9 @@ require.config({
         },
         'jstree': {
             'deps': ['jquery']
+        },
+        'jquery-steps': {
+            'deps': ['jquery']
         }
     },
 
@@ -171,7 +174,8 @@ require.config({
         'nvd3': 'libs/nvd3/nv.d3.min',
         'sparkline': 'libs/sparkline/jquery.sparkline.min',
         'table-dragger': 'libs/table-dragger/table-dragger',
-        'jstree': 'libs/jstree/jstree.min'
+        'jstree': 'libs/jstree/jstree.min',
+        'jquery-steps': 'libs/jquery-steps/jquery.steps.min',
     },
 
     /**

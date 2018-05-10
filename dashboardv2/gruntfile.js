@@ -106,7 +106,8 @@ module.exports = function(grunt) {
                     'nv.d3.min.js': { 'nvd3/build': 'nvd3' },
                     'jquery.sparkline.min.js': { 'jquery-sparkline': 'sparkline' },
                     'table-dragger.js': { 'table-dragger/dist': 'table-dragger' },
-                    'jstree.min.js': { 'jstree/dist': 'jstree' }
+                    'jstree.min.js': { 'jstree/dist': 'jstree' },
+                    'jquery.steps.min.js': { 'jquery-steps/build': 'jquery-steps' }
                 }
 
             },
@@ -143,7 +144,7 @@ module.exports = function(grunt) {
                     }],
                     'query-builder.default.min.css': { 'jQuery-QueryBuilder/dist/css': 'jQueryQueryBuilder/css' },
                     'daterangepicker.css': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/css' },
-                    'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' },
+                    'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' }
                 }
 
             },

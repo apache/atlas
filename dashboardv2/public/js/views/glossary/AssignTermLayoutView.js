@@ -22,7 +22,8 @@ define(['require',
     'utils/Utils',
     'utils/Enums',
     'utils/UrlLinks',
-    'modules/Modal'
+    'modules/Modal',
+    'jquery-steps'
 ], function(require, Backbone, AssignTermLayoutViewTmpl, Utils, Enums, UrlLinks, Modal) {
 
     var AssignTermLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -46,7 +47,8 @@ define(['require',
 
             /** ui selector cache */
             ui: {
-                termAttributeForm: '[data-id="termAttributeForm"]'
+                termAttributeForm: '[data-id="termAttributeForm"]',
+                wizard: '[data-id="wizard"]'
             },
             /** ui events hash */
             events: function() {
@@ -81,7 +83,9 @@ define(['require',
                     "cancelText": "Cancel",
                     "okCloses": false,
                     "okText": "Assign",
-                    "allowCancel": true
+                    "allowCancel": true,
+                    "showFooter": this.isAttributeRelationView ? false : true,
+                    "mainClass": "wizard-modal"
                 });
                 this.modal.open();
                 this.modal.on('closeModal', function() {
@@ -100,6 +104,40 @@ define(['require',
             bindEvents: function() {},
             onRender: function() {
                 this.renderGlossaryTree();
+                var that = this;
+                if (this.isAttributeRelationView) {
+                    this.ui.wizard.steps({
+                        headerTag: "h3",
+                        bodyTag: "section",
+                        transitionEffect: "slideLeft",
+                        autoFocus: true,
+                        enableCancelButton: true,
+                        transitionEffect: $.fn.steps.transitionEffect.none,
+                        transitionEffectSpeed: 200,
+                        labels: {
+                            cancel: "Cancel",
+                            finish: "Assign",
+                            next: "Next",
+                            previous: "Previous",
+                            loading: "Loading ..."
+                        },
+                        onStepChanging: function(event, currentIndex, newIndex) {
+                            var isMatch = that.glossary.selectedItem.type == "GlossaryTerm";
+                            if (!isMatch) {
+                                Utils.notifyWarn({
+                                    content: "Please select Term for association"
+                                });
+                            }
+                            return isMatch
+                        },
+                        onFinished: function(event, currentIndex) {
+                            that.assignTerm();
+                        },
+                        onCanceled: function(event) {
+                            that.modal.trigger('cancel');
+                        },
+                    });
+                }
             },
             assignTerm: function() {
                 this.assignTermError = false;
