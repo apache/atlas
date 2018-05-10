@@ -295,6 +295,11 @@
                                             <version>${hbase.version}</version>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>org.apache.hbase</groupId>
+                                            <artifactId>hbase-server</artifactId>
+                                            <version>${hbase.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>com.sun.jersey</groupId>
                                             <artifactId>jersey-json</artifactId>
                                             <version>${jersey.version}</version>
