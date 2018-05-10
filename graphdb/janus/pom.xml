@@ -34,9 +34,10 @@
          Some dependencies, like slf4j are excluded from the jar because they are included in Atlas -->
 
     <properties>
-        <tinkerpop.version>3.2.6</tinkerpop.version>
+        <tinkerpop.version>3.3.3</tinkerpop.version>
         <janus.version>0.2.0</janus.version>
         <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
+        <lucene-solr.version>7.3.0</lucene-solr.version>
     </properties>
 
     <dependencies>
@@ -172,6 +173,32 @@
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
             <version>7.0.0</version>
+        </dependency>
+        <!-- CVE Overrides for Lucene -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>${lucene-solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analyzers-common</artifactId>
+            <version>${lucene-solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-queryparser</artifactId>
+            <version>${lucene-solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-spatial</artifactId>
+            <version>${lucene-solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-spatial-extras</artifactId>
+            <version>${lucene-solr.version}</version>
         </dependency>
 
         <dependency>
