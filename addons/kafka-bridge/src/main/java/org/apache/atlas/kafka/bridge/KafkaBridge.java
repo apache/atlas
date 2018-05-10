@@ -22,6 +22,7 @@ import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.kafka.common.security.JaasUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
@@ -183,7 +184,8 @@ public class KafkaBridge {
         }
     }
 
-    protected AtlasEntityWithExtInfo createOrUpdateTopic(String topic) throws Exception {
+    @VisibleForTesting
+    AtlasEntityWithExtInfo createOrUpdateTopic(String topic) throws Exception {
         String                 topicQualifiedName = getTopicQualifiedName(clusterName, topic);
         AtlasEntityWithExtInfo topicEntity        = findTopicEntityInAtlas(topicQualifiedName);
 
@@ -208,7 +210,8 @@ public class KafkaBridge {
         return topicEntity;
     }
 
-    protected AtlasEntity getTopicEntity(String topic, AtlasEntity topicEntity) {
+    @VisibleForTesting
+    AtlasEntity getTopicEntity(String topic, AtlasEntity topicEntity) {
         final AtlasEntity ret;
 
         if (topicEntity == null) {
@@ -230,7 +233,8 @@ public class KafkaBridge {
         return ret;
     }
 
-    protected static String getTopicQualifiedName(String clusterName, String topic) {
+    @VisibleForTesting
+    static String getTopicQualifiedName(String clusterName, String topic) {
         return String.format(FORMAT_KAKFA_TOPIC_QUALIFIED_NAME, topic.toLowerCase(), clusterName);
     }
 
@@ -247,13 +251,15 @@ public class KafkaBridge {
         return ret;
     }
 
-    private AtlasEntityWithExtInfo findEntityInAtlas(String typeName, String qualifiedName) throws Exception {
+    @VisibleForTesting
+     AtlasEntityWithExtInfo findEntityInAtlas(String typeName, String qualifiedName) throws Exception {
         Map<String, String> attributes = Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName);
 
         return atlasClientV2.getEntityByAttribute(typeName, attributes);
     }
 
-    private AtlasEntityWithExtInfo createEntityInAtlas(AtlasEntityWithExtInfo entity) throws Exception {
+    @VisibleForTesting
+    AtlasEntityWithExtInfo createEntityInAtlas(AtlasEntityWithExtInfo entity) throws Exception {
         AtlasEntityWithExtInfo  ret      = null;
         EntityMutationResponse  response = atlasClientV2.createEntity(entity);
         List<AtlasEntityHeader> entities = response.getCreatedEntities();
@@ -269,7 +275,8 @@ public class KafkaBridge {
         return ret;
     }
 
-    private AtlasEntityWithExtInfo updateEntityInAtlas(AtlasEntityWithExtInfo entity) throws Exception {
+    @VisibleForTesting
+    AtlasEntityWithExtInfo updateEntityInAtlas(AtlasEntityWithExtInfo entity) throws Exception {
         AtlasEntityWithExtInfo ret      = null;
         EntityMutationResponse response = atlasClientV2.updateEntity(entity);
 
