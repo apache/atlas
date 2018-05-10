@@ -376,7 +376,6 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     @Override
     protected StringBuilder toString(final StringBuilder sb) {
-        sb.append("{");
         sb.append("examples=").append(examples);
         sb.append(", abbreviation='").append(abbreviation).append('\'');
         sb.append(", usage='").append(usage).append('\'');
@@ -396,7 +395,6 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
         sb.append(", classifies=").append(classifies);
         sb.append(", validValues=").append(validValues);
         sb.append(", validValuesFor=").append(validValuesFor);
-        sb.append('}');
 
         return sb;
     }

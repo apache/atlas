@@ -394,7 +394,7 @@ public class GlossaryREST {
                 try {
                     glossary.setAttribute(entry.getKey(), entry.getValue());
                 } catch (IllegalArgumentException e) {
-                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARTIAL_UPDATE_ATTR, "Glossary", entry.getKey());
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARTIAL_UPDATE_ATTR, entry.getKey(), "Glossary");
                 }
             }
             return glossaryService.updateGlossary(glossary);
