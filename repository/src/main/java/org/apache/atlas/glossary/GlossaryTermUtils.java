@@ -100,6 +100,14 @@ public class GlossaryTermUtils extends GlossaryUtils {
         }
 
         Objects.requireNonNull(glossaryTerm);
+        Set<AtlasRelatedObjectId> assignedEntities = glossaryTerm.getAssignedEntities();
+        Map<String, AtlasRelatedObjectId> assignedEntityMap = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(assignedEntities)) {
+            for (AtlasRelatedObjectId relatedObjectId : assignedEntities) {
+                assignedEntityMap.put(relatedObjectId.getGuid(), relatedObjectId);
+            }
+        }
+
         if (CollectionUtils.isNotEmpty(relatedObjectIds)) {
             for (AtlasRelatedObjectId relatedObjectId : relatedObjectIds) {
                 if (DEBUG_ENABLED) {
@@ -108,13 +116,22 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 if (Objects.isNull(relatedObjectId.getRelationshipGuid())) {
                     throw new AtlasBaseException(AtlasErrorCode.TERM_DISSOCIATION_MISSING_RELATION_GUID);
                 }
-                relationshipStore.deleteById(relatedObjectId.getRelationshipGuid());
+                AtlasRelatedObjectId existingTermRelation = assignedEntityMap.get(relatedObjectId.getGuid());
+                if (CollectionUtils.isNotEmpty(assignedEntities) && isRelationshipGuidSame(existingTermRelation, relatedObjectId)) {
+                    relationshipStore.deleteById(relatedObjectId.getRelationshipGuid());
+                } else {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_DISSOCIATION, glossaryTerm.getGuid(), relatedObjectId.getGuid());
+                }
             }
         }
 
         if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryTermUtils.processTermDissociation()");
         }
+    }
+
+    private boolean isRelationshipGuidSame(final AtlasRelatedObjectId existing, final AtlasRelatedObjectId relatedObjectId) {
+        return StringUtils.equals(relatedObjectId.getRelationshipGuid(), existing.getRelationshipGuid());
     }
 
     private void processTermAnchor(AtlasGlossaryTerm updatedTerm, AtlasGlossaryTerm existing, RelationshipOperation op) throws AtlasBaseException {

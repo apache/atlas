@@ -142,7 +142,8 @@ public enum AtlasErrorCode {
     RELATIONSHIP_END_IS_NULL(400, "ATLAS-400-00-07D", "Relationship end is invalid. Expected {0} but is NULL"),
     INVALID_TERM_RELATION_TO_SELF(400, "ATLAS-400-00-07E", "Invalid Term relationship: Term can't have a relationship with self"),
     INVALID_CHILD_CATEGORY_DIFFERENT_GLOSSARY(400, "ATLAS-400-00-07F", "Invalid child category relationship: Child category (guid = {0}) belongs to different glossary"),
-    ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-080", "{0}.{1}: invalid attribute type. Attribute cannot be of type classification"),
+    INVALID_TERM_DISSOCIATION(400, "ATLAS-400-00-080", "Given term (guid={0}) is not associated to entity(guid={1})"),
+    ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-081", "{0}.{1}: invalid attribute type. Attribute cannot be of type classification"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
