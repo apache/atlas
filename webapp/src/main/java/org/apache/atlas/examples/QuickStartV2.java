@@ -463,6 +463,9 @@ public class QuickStartV2 {
         return new String[]{
                 "from DB",
                 "DB",
+                "DB where name=%22Reporting%22",
+                "DB where name=%22encode_db_name%22",
+                "Table where name=%2522sales_fact%2522",
                 "DB where name=\"Reporting\"",
                 "DB where DB.name=\"Reporting\"",
                 "DB name = \"Reporting\"",
@@ -519,6 +522,8 @@ public class QuickStartV2 {
                         System.out.println("query [" + dslQuery + "] returned [" + fullTextResults.size() + "] rows.");
                     } else if (attribResult != null) {
                         System.out.println("query [" + dslQuery + "] returned [" + attribResult.getValues().size() + "] rows.");
+                    } else {
+                        System.out.println("query [" + dslQuery + "] returned [ 0 ] rows.");
                     }
                 } else {
                     System.out.println("query [" + dslQuery + "] failed, results:" + results);

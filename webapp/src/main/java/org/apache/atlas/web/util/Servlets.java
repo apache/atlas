@@ -40,10 +40,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.util.UriUtils;
 
 /**
  * Utility functions for dealing with servlets.
@@ -209,6 +211,15 @@ public final class Servlets {
     public static void validateQueryParamLength(String paramName, String paramValue) throws AtlasBaseException {
         if (StringUtils.isNotEmpty(paramValue) && paramValue.length() > QUERY_PARAM_MAX_LENGTH) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_PARAM_LENGTH, paramName);
+        }
+    }
+
+    public static String decodeQueryString(String query){
+        try {
+            return UriUtils.decode(query,"UTF-8");
+
+        } catch (UnsupportedEncodingException e){
+            return query;
         }
     }
 }
