@@ -112,6 +112,9 @@ public class DiscoveryREST {
         AtlasPerfTracer perf = null;
 
         try {
+
+            query = Servlets.decodeQueryString(query);
+
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingDSL(" + query + "," + typeName
                         + "," + classification + "," + limit + "," + offset + ")");
