@@ -27,7 +27,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.SearchPredicateUtil;
@@ -268,11 +268,11 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                         for (AtlasEdge edge : edges) {
                             AtlasVertex entityVertex = edge.getOutVertex();
 
-                            if (activeOnly && AtlasGraphUtilsV1.getState(entityVertex) != AtlasEntity.Status.ACTIVE) {
+                            if (activeOnly && AtlasGraphUtilsV2.getState(entityVertex) != AtlasEntity.Status.ACTIVE) {
                                 continue;
                             }
 
-                            String guid = AtlasGraphUtilsV1.getIdFromVertex(entityVertex);
+                            String guid = AtlasGraphUtilsV2.getIdFromVertex(entityVertex);
 
                             if (processedGuids.contains(guid)) {
                                 continue;

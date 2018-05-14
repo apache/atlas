@@ -42,7 +42,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -75,7 +74,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.LIST;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SET;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SINGLE;
-import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.isReference;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.type.AtlasTypeUtil.isArrayType;
 import static org.apache.atlas.type.AtlasTypeUtil.isMapType;
 

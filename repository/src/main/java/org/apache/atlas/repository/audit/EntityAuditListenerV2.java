@@ -18,7 +18,7 @@
 package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -211,8 +211,8 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     private EntityAuditEventV2 createEvent(AtlasEntity entity, EntityAuditActionV2 action, String details) {
-        return new EntityAuditEventV2(entity.getGuid(), RequestContextV1.get().getRequestTime(),
-                                      RequestContextV1.get().getUser(), action, details, entity);
+        return new EntityAuditEventV2(entity.getGuid(), RequestContext.get().getRequestTime(),
+                                      RequestContext.get().getUser(), action, details, entity);
     }
 
     private EntityAuditEventV2 createEvent(AtlasEntity entity, EntityAuditActionV2 action) {
@@ -249,13 +249,13 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     private boolean isPropagatedClassificationAdded(String guid, AtlasClassification classification) {
-        Map<String, List<AtlasClassification>> addedPropagations = RequestContextV1.get().getAddedPropagations();
+        Map<String, List<AtlasClassification>> addedPropagations = RequestContext.get().getAddedPropagations();
 
         return hasPropagatedEntry(addedPropagations, guid, classification);
     }
 
     private boolean isPropagatedClassificationDeleted(String guid, AtlasClassification classification) {
-        Map<String, List<AtlasClassification>> removedPropagations = RequestContextV1.get().getRemovedPropagations();
+        Map<String, List<AtlasClassification>> removedPropagations = RequestContext.get().getRemovedPropagations();
 
         return hasPropagatedEntry(removedPropagations, guid, classification);
     }

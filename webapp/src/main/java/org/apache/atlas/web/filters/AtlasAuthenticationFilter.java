@@ -19,7 +19,6 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.web.security.AtlasAuthenticationProvider;

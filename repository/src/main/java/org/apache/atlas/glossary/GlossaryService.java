@@ -31,8 +31,8 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -94,7 +94,7 @@ public class GlossaryService {
             LOG.debug("==> GlossaryService.getGlossaries({}, {}, {})", limit, offset, sortOrder);
         }
 
-        List<String>     glossaryGuids    = AtlasGraphUtilsV1.findEntityGUIDsByType(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, sortOrder);
+        List<String>     glossaryGuids    = AtlasGraphUtilsV2.findEntityGUIDsByType(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, sortOrder);
         PaginationHelper paginationHelper = new PaginationHelper<>(glossaryGuids, offset, limit);
 
         List<AtlasGlossary> ret;
@@ -916,21 +916,21 @@ public class GlossaryService {
     }
 
     private boolean glossaryExists(AtlasGlossary atlasGlossary) {
-        AtlasVertex vertex = AtlasGraphUtilsV1.findByUniqueAttributes(atlasTypeRegistry.getEntityTypeByName(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME), new HashMap<String, Object>() {{
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(atlasTypeRegistry.getEntityTypeByName(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME), new HashMap<String, Object>() {{
             put(QUALIFIED_NAME_ATTR, atlasGlossary.getQualifiedName());
         }});
         return Objects.nonNull(vertex);
     }
 
     private boolean termExists(AtlasGlossaryTerm term) {
-        AtlasVertex vertex = AtlasGraphUtilsV1.findByUniqueAttributes(atlasTypeRegistry.getEntityTypeByName(GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME), new HashMap<String, Object>() {{
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(atlasTypeRegistry.getEntityTypeByName(GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME), new HashMap<String, Object>() {{
             put(QUALIFIED_NAME_ATTR, term.getQualifiedName());
         }});
         return Objects.nonNull(vertex);
     }
 
     private boolean categoryExists(AtlasGlossaryCategory category) {
-        AtlasVertex vertex = AtlasGraphUtilsV1.findByUniqueAttributes(atlasTypeRegistry.getEntityTypeByName(GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME), new HashMap<String, Object>() {{
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(atlasTypeRegistry.getEntityTypeByName(GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME), new HashMap<String, Object>() {{
             put(QUALIFIED_NAME_ATTR, category.getQualifiedName());
         }});
         return Objects.nonNull(vertex);

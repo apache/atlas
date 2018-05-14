@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.repository.tagpropagation;
 
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.discovery.AtlasLineageService;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -104,7 +104,7 @@ public class ClassificationPropagationTest {
 
     @BeforeClass
     public void setup() {
-        RequestContextV1.clear();
+        RequestContext.clear();
 
         loadModelFilesAndImportTestData();
     }

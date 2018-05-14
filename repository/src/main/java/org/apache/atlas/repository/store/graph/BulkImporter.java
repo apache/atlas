@@ -20,7 +20,7 @@ package org.apache.atlas.repository.store.graph;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.repository.store.graph.v1.EntityImportStream;
+import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
 
 public interface BulkImporter {
 

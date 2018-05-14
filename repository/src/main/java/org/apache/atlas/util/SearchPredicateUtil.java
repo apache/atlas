@@ -18,7 +18,7 @@
 package org.apache.atlas.util;
 
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.lang.StringUtils;
@@ -680,7 +680,7 @@ public class SearchPredicateUtil {
                 if (Collection.class.isAssignableFrom(attrClass)) {
                     attrValue = vertex.getPropertyValues(attrName, attrClass);
                 } else {
-                    attrValue = AtlasGraphUtilsV1.getProperty(vertex, attrName, attrClass);
+                    attrValue = AtlasGraphUtilsV2.getProperty(vertex, attrName, attrClass);
                 }
 
                 ret = (isNullValid || attrValue != null) && compareValue(attrValue);

@@ -16,7 +16,7 @@
  */
 package org.apache.atlas.web.filters;
 
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.atlas.web.service.EmbeddedServer;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -111,7 +111,7 @@ public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
                     connection.connect();
 
                     assertEquals(connection.getResponseCode(), 200);
-                    assertEquals(RequestContextV1.get().getUser(), TESTUSER);
+                    assertEquals(RequestContext.get().getUser(), TESTUSER);
                     return null;
                 }
             });

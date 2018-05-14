@@ -37,8 +37,8 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
-import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
@@ -126,7 +126,7 @@ public class EntityLineageService implements AtlasLineageService {
 
         Map<String, Object> lookupAttributes = new HashMap<>();
         lookupAttributes.put("qualifiedName", datasetName);
-        String guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(hive_table, lookupAttributes);
+        String guid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(hive_table, lookupAttributes);
 
         return getSchemaForHiveTableByGuid(guid);
     }
@@ -220,9 +220,9 @@ public class EntityLineageService implements AtlasLineageService {
     private void processEdge(final AtlasEdge edge, final Map<String, AtlasEntityHeader> entities, final Set<LineageRelation> relations) throws AtlasBaseException {
         AtlasVertex inVertex     = edge.getInVertex();
         AtlasVertex outVertex    = edge.getOutVertex();
-        String      inGuid       = AtlasGraphUtilsV1.getIdFromVertex(inVertex);
-        String      outGuid      = AtlasGraphUtilsV1.getIdFromVertex(outVertex);
-        String      relationGuid = AtlasGraphUtilsV1.getProperty(edge, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
+        String      inGuid       = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
+        String      outGuid      = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
+        String      relationGuid = AtlasGraphUtilsV2.getProperty(edge, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
         boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
         if (!entities.containsKey(inGuid)) {

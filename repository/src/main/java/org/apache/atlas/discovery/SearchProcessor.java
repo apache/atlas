@@ -28,7 +28,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
@@ -68,7 +68,7 @@ public abstract class SearchProcessor {
     public static final int     MAX_RESULT_SIZE            = getApplicationProperty(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
     public static final int     MAX_QUERY_STR_LENGTH_TYPES = getApplicationProperty(Constants.INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH, 512);
     public static final int     MAX_QUERY_STR_LENGTH_TAGS  = getApplicationProperty(Constants.INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH, 512);
-    public static final String  INDEX_SEARCH_PREFIX        = AtlasGraphUtilsV1.getIndexSearchPrefix();
+    public static final String  INDEX_SEARCH_PREFIX        = AtlasGraphUtilsV2.getIndexSearchPrefix();
     public static final String  AND_STR                    = " AND ";
     public static final String  EMPTY_STRING               = "";
     public static final String  SPACE_STRING               = " ";
@@ -784,7 +784,7 @@ public abstract class SearchProcessor {
 
         if (vertices != null) {
             for(AtlasVertex vertex : vertices) {
-                String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
+                String guid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
 
                 if (StringUtils.isNotEmpty(guid)) {
                     ret.add(guid);

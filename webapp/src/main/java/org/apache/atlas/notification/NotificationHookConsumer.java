@@ -25,7 +25,7 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -45,8 +45,8 @@ import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUp
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -55,7 +55,6 @@ import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.atlas.web.filters.AuditFilter.AuditLog;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.configuration.Configuration;
-import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +74,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Component
 @Order(4)
-@DependsOn(value = {"atlasTypeDefStoreInitializer", "atlasTypeDefGraphStoreV1"})
+@DependsOn(value = {"atlasTypeDefStoreInitializer", "atlasTypeDefGraphStoreV2"})
 public class NotificationHookConsumer implements Service, ActiveStateChangeHandler {
     private static final Logger LOG        = LoggerFactory.getLogger(NotificationHookConsumer.class);
     private static final Logger PERF_LOG   = AtlasPerfTracer.getPerfLogger(NotificationHookConsumer.class);
@@ -375,7 +374,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     }
 
                     try {
-                        RequestContextV1 requestContext = RequestContextV1.get();
+                        RequestContext requestContext = RequestContext.get();
 
                         requestContext.setUser(messageUser, null);
 
@@ -406,7 +405,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 }
 
                                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(partialUpdateRequest.getTypeName());
-                                String          guid       = AtlasGraphUtilsV1.getGuidByUniqueAttributes(entityType, Collections.singletonMap(partialUpdateRequest.getAttribute(), (Object)partialUpdateRequest.getAttributeValue()));
+                                String          guid       = AtlasGraphUtilsV2.getGuidByUniqueAttributes(entityType, Collections.singletonMap(partialUpdateRequest.getAttribute(), (Object)partialUpdateRequest.getAttributeValue()));
 
                                 // There should only be one root entity
                                 entities.getEntities().get(0).setGuid(guid);
@@ -541,7 +540,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             return;
                         }
                     } finally {
-                        RequestContextV1.clear();
+                        RequestContext.clear();
                     }
                 }
 

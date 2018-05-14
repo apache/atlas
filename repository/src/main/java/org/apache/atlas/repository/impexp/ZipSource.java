@@ -22,7 +22,7 @@ import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.store.graph.v1.EntityImportStream;
+import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
