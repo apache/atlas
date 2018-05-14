@@ -18,6 +18,7 @@
 
 package org.apache.atlas;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -67,9 +68,10 @@ public final class TestUtilsV2 {
 
     public static final long TEST_DATE_IN_LONG = 1418265358440L;
 
-    public static final String TEST_USER = "testUser";
+    public static final String TEST_USER   = "testUser";
     public static final String STRUCT_TYPE = "struct_type";
     public static final String ENTITY_TYPE = "entity_type";
+    public static final String ENTITY_TYPE_MAP = "map_entity_type";
 
     private static AtomicInteger seq = new AtomicInteger();
 
@@ -977,6 +979,21 @@ public final class TestUtilsV2 {
         return ret;
     }
 
+    public static AtlasTypesDef defineTypeWithMapAttributes() {
+        AtlasEntityDef entityType = createClassTypeDef(ENTITY_TYPE_MAP, "entity_type_map_description", Collections.emptySet(),
+                                        createUniqueRequiredAttrDef("mapAttr1", "map<string,string>"),
+                                        createUniqueRequiredAttrDef("mapAttr2", "map<string,int>"),
+                                        createUniqueRequiredAttrDef("mapAttr3", "map<string,boolean>"),
+                                              createOptionalAttrDef("mapAttr4", "map<string,float>"),
+                                              createOptionalAttrDef("mapAttr5", "map<string,date>"));
+
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Arrays.asList(entityType));
+
+        populateSystemAttributes(ret);
+
+        return ret;
+    }
+
     public static AtlasEntityWithExtInfo createNestedCollectionAttrEntity() {
         AtlasEntity entity = new AtlasEntity(ENTITY_TYPE_WITH_NESTED_COLLECTION_ATTR);
 
@@ -1055,6 +1072,45 @@ public final class TestUtilsV2 {
         ret.addReferredEntity(e1MapValue);
         ret.addReferredEntity(e2MapValue);
         ret.addReferredEntity(e3MapValue);
+
+        return ret;
+    }
+
+    public static AtlasEntityWithExtInfo createMapAttrEntity() {
+        AtlasEntity entity = new AtlasEntity(ENTITY_TYPE_MAP);
+
+        Map<String, String> map1 = new HashMap<>();
+        map1.put("map1Key1", "value1");
+        map1.put("map1Key2", "value2");
+        map1.put("map1Key3", "value3");
+
+        Map<String, Integer> map2 = new HashMap<>();
+        map2.put("map2Key1", 100);
+        map2.put("map2Key2", 200);
+        map2.put("map2Key3", 300);
+
+        Map<String, Boolean> map3 = new HashMap<>();
+        map3.put("map3Key1", false);
+        map3.put("map3Key2", true);
+        map3.put("map3Key3", false);
+
+        Map<String, Float> map4 = new HashMap<>();
+        map4.put("map4Key1", 1.0f);
+        map4.put("map4Key2", 2.0f);
+        map4.put("map4Key3", 3.0f);
+
+        Map<String, Date> map5 = new HashMap<>();
+        map5.put("map5Key1", new Date());
+        map5.put("map5Key2", new Date());
+        map5.put("map5Key3", new Date());
+
+        entity.setAttribute("mapAttr1", map1);
+        entity.setAttribute("mapAttr2", map2);
+        entity.setAttribute("mapAttr3", map3);
+        entity.setAttribute("mapAttr4", map4);
+        entity.setAttribute("mapAttr5", map5);
+
+        AtlasEntityWithExtInfo ret = new AtlasEntityWithExtInfo(entity);
 
         return ret;
     }

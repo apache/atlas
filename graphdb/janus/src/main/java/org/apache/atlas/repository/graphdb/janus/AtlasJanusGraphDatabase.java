@@ -70,7 +70,6 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     private static volatile JanusGraph graphInstance;
 
     public AtlasJanusGraphDatabase() {
-
         //update registry
         GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.getInstance()).create();
     }
@@ -79,14 +78,11 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         startLocalSolr();
 
         Configuration configProperties = ApplicationProperties.get();
-
-        Configuration janusConfig = ApplicationProperties.getSubsetConfiguration(configProperties, GRAPH_PREFIX);
+        Configuration janusConfig      = ApplicationProperties.getSubsetConfiguration(configProperties, GRAPH_PREFIX);
 
         //add serializers for non-standard property value types that Atlas uses
-
         janusConfig.addProperty("attributes.custom.attribute1.attribute-class", TypeCategory.class.getName());
-        janusConfig.addProperty("attributes.custom.attribute1.serializer-class",
-                TypeCategorySerializer.class.getName());
+        janusConfig.addProperty("attributes.custom.attribute1.serializer-class", TypeCategorySerializer.class.getName());
 
         //not ideal, but avoids making large changes to Atlas
         janusConfig.addProperty("attributes.custom.attribute2.attribute-class", ArrayList.class.getName());

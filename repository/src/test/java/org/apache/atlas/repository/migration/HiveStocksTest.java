@@ -37,9 +37,9 @@ public class HiveStocksTest extends MigrationBaseAsserts {
 
     @Test
     public void migrateStocks() throws AtlasBaseException, IOException {
-        final int EXPECTED_TOTAL_COUNT = 188;
-        final int EXPECTED_DB_COUNT = 1;
-        final int EXPECTED_TABLE_COUNT = 1;
+        final int EXPECTED_TOTAL_COUNT  = 188;
+        final int EXPECTED_DB_COUNT     = 1;
+        final int EXPECTED_TABLE_COUNT  = 1;
         final int EXPECTED_COLUMN_COUNT = 7;
 
         runFileImporter("stocks_db");

@@ -30,18 +30,21 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.commons.lang.time.DateUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE;
+import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_MAP;
 import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR;
 import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR_DELETE;
 import static org.apache.atlas.TestUtilsV2.NAME;
@@ -54,18 +57,21 @@ import static org.testng.AssertJUnit.assertEquals;
 public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
     private AtlasEntityWithExtInfo complexCollectionAttrEntity;
     private AtlasEntityWithExtInfo complexCollectionAttrEntityForDelete;
+    private AtlasEntityWithExtInfo mapAttributesEntity;
 
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
 
         // create typeDefs
-        AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineTypeWithComplexCollectionAttributes() };
+        AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineTypeWithComplexCollectionAttributes(),
+                                                              TestUtilsV2.defineTypeWithMapAttributes() };
         createTypesDef(testTypesDefs);
 
         // create entity
         complexCollectionAttrEntity          = TestUtilsV2.createComplexCollectionAttrEntity();
         complexCollectionAttrEntityForDelete = TestUtilsV2.createComplexCollectionAttrEntity();
+        mapAttributesEntity                  = TestUtilsV2.createMapAttrEntity();
     }
 
     @Test
@@ -76,6 +82,116 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         AtlasEntityHeader      entityCreated = response.getFirstCreatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
 
         validateEntity(complexCollectionAttrEntity, getEntityFromStore(entityCreated));
+    }
+
+    @Test
+    public void testPrimitiveMapAttributes() throws Exception {
+        init();
+
+        EntityMutationResponse response        = entityStore.createOrUpdate(new AtlasEntityStream(mapAttributesEntity), false);
+        AtlasEntityHeader      entityCreated   = response.getFirstCreatedEntityByTypeName(ENTITY_TYPE_MAP);
+        AtlasEntity            entityFromStore = getEntityFromStore(entityCreated);
+        validateEntity(mapAttributesEntity, entityFromStore);
+
+        // Modify map of primitives
+        AtlasEntity attrEntity = getEntityFromStore(mapAttributesEntity.getEntity().getGuid());
+
+        Map<String, String> map1 = new HashMap<String, String>() {{ put("map1Key11", "value11");
+                                                                    put("map1Key22", "value22");
+                                                                    put("map1Key33", "value33"); }};
+
+        Map<String, Integer> map2 = new HashMap<String, Integer>() {{ put("map2Key11", 1100);
+                                                                      put("map2Key22", 2200);
+                                                                      put("map2Key33", 3300); }};
+
+        Map<String, Boolean> map3 = new HashMap<String, Boolean>() {{ put("map3Key11", true);
+                                                                      put("map3Key22", false);
+                                                                      put("map3Key33", true); }};
+
+        Map<String, Float> map4 = new HashMap<String, Float>() {{ put("map4Key11", 11.0f);
+                                                                  put("map4Key22", 22.0f);
+                                                                  put("map4Key33", 33.0f); }};
+
+        Map<String, Date> map5 = new HashMap<String, Date>() {{ put("map5Key11", DateUtils.addHours(new Date(), 1));
+                                                                put("map5Key22", DateUtils.addHours(new Date(), 2));
+                                                                put("map5Key33", DateUtils.addHours(new Date(), 3)); }};
+
+        updateEntityMapAttributes(attrEntity, map1, map2, map3, map4, map5);
+
+        AtlasEntitiesWithExtInfo attrEntitiesInfo = new AtlasEntitiesWithExtInfo(attrEntity);
+        response = entityStore.createOrUpdate(new AtlasEntityStream(attrEntitiesInfo), false);
+        AtlasEntityHeader updatedAttrEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_MAP);
+        AtlasEntity       updatedFromStore  = getEntityFromStore(updatedAttrEntity);
+        validateEntity(attrEntitiesInfo, updatedFromStore);
+
+        // Add new entry to map of primitives
+        map1.put("map1Key44", "value44");
+        map2.put("map2Key44", 4400);
+        map3.put("map3Key44", false);
+        map4.put("map4Key44", 44.0f);
+        map5.put("map5Key44", DateUtils.addHours(new Date(), 4));
+
+        updateEntityMapAttributes(attrEntity, map1, map2, map3, map4, map5);
+
+        attrEntitiesInfo  = new AtlasEntitiesWithExtInfo(attrEntity);
+        response          = entityStore.createOrUpdate(new AtlasEntityStream(attrEntitiesInfo), false);
+        updatedAttrEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_MAP);
+        updatedFromStore  = getEntityFromStore(updatedAttrEntity);
+        validateEntity(attrEntitiesInfo, updatedFromStore);
+
+        // Remove an entry from map of primitives
+        map1.remove("map1Key11");
+        map2.remove("map2Key11");
+        map3.remove("map3Key11");
+        map4.remove("map4Key11");
+        map5.remove("map5Key11");
+
+        updateEntityMapAttributes(attrEntity, map1, map2, map3, map4, map5);
+
+        attrEntitiesInfo  = new AtlasEntitiesWithExtInfo(attrEntity);
+        response          = entityStore.createOrUpdate(new AtlasEntityStream(attrEntitiesInfo), false);
+        updatedAttrEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_MAP);
+        updatedFromStore  = getEntityFromStore(updatedAttrEntity);
+        validateEntity(attrEntitiesInfo, updatedFromStore);
+
+        // Edit existing entry to map of primitives
+        map1.put("map1Key44", "value44-edit");
+        map2.put("map2Key44", 5555);
+        map3.put("map3Key44", true);
+        map4.put("map4Key44", 55.5f);
+        map5.put("map5Key44", DateUtils.addHours(new Date(), 5));
+
+        updateEntityMapAttributes(attrEntity, map1, map2, map3, map4, map5);
+
+        attrEntitiesInfo  = new AtlasEntitiesWithExtInfo(attrEntity);
+        response          = entityStore.createOrUpdate(new AtlasEntityStream(attrEntitiesInfo), false);
+        updatedAttrEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_MAP);
+        updatedFromStore  = getEntityFromStore(updatedAttrEntity);
+        validateEntity(attrEntitiesInfo, updatedFromStore);
+
+        // clear primitive map entries
+        map1.clear();
+        map2.clear();
+        map3.clear();
+        map4.clear();
+        map5.clear();
+
+        updateEntityMapAttributes(attrEntity, map1, map2, map3, map4, map5);
+
+        attrEntitiesInfo  = new AtlasEntitiesWithExtInfo(attrEntity);
+        response          = entityStore.createOrUpdate(new AtlasEntityStream(attrEntitiesInfo), false);
+        updatedAttrEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_MAP);
+        updatedFromStore  = getEntityFromStore(updatedAttrEntity);
+        validateEntity(attrEntitiesInfo, updatedFromStore);
+    }
+
+    private void updateEntityMapAttributes(AtlasEntity attrEntity, Map<String, String> map1, Map<String, Integer> map2,
+                                           Map<String, Boolean> map3, Map<String, Float> map4, Map<String, Date> map5) {
+        attrEntity.setAttribute("mapAttr1", map1);
+        attrEntity.setAttribute("mapAttr2", map2);
+        attrEntity.setAttribute("mapAttr3", map3);
+        attrEntity.setAttribute("mapAttr4", map4);
+        attrEntity.setAttribute("mapAttr5", map5);
     }
 
     @Test(dependsOnMethods = "testCreateComplexAttributeEntity")

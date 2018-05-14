@@ -19,7 +19,6 @@ package org.apache.atlas.repository.store.graph.v1;
 
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
@@ -82,9 +81,7 @@ import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY
 import static org.apache.atlas.repository.graph.GraphHelper.getCollectionElementsUsingRelationship;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
-import static org.apache.atlas.repository.graph.GraphHelper.getListProperty;
 import static org.apache.atlas.repository.graph.GraphHelper.getMapElementsProperty;
-import static org.apache.atlas.repository.graph.GraphHelper.getQualifiedNameForMapKey;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
@@ -92,7 +89,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeNames;
 import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.setListProperty;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromVertex;
@@ -811,51 +807,45 @@ public class EntityGraphMapper {
         boolean             isReference = isReference(mapType.getValueType());
 
         if (MapUtils.isNotEmpty(newVal)) {
-            AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
+            String propertyName = ctx.getVertexProperty();
 
-            for (Map.Entry<Object, Object> entry : newVal.entrySet()) {
-                String    key          = entry.getKey().toString();
-                String    propertyName = (isReference) ? ctx.getVertexProperty() : getQualifiedNameForMapKey(ctx.getVertexProperty(), GraphHelper.encodePropertyKey(key));
-                AtlasEdge existingEdge = getEdgeIfExists(mapType, currentMap, key);
+            if (isReference) {
+                for (Map.Entry<Object, Object> entry : newVal.entrySet()) {
+                    String    key          = entry.getKey().toString();
+                    AtlasEdge existingEdge = getEdgeIfExists(mapType, currentMap, key);
 
-                AttributeMutationContext mapCtx =  new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), attribute, entry.getValue(),
-                                                                                 propertyName, mapType.getValueType(), existingEdge);
+                    AttributeMutationContext mapCtx =  new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), attribute, entry.getValue(),
+                                                                                     propertyName, mapType.getValueType(), existingEdge);
+                    // Add/Update/Remove property value
+                    Object newEntry = mapCollectionElementsToVertex(mapCtx, context);
 
-                //Add/Update/Remove property value
-                Object newEntry = mapCollectionElementsToVertex(mapCtx, context);
+                    if (newEntry instanceof AtlasEdge) {
+                        AtlasEdge edge = (AtlasEdge) newEntry;
 
-                if (isReference) {
-                    AtlasEdge edge = (AtlasEdge) newEntry;
-                    edge.setProperty(ATTRIBUTE_KEY_PROPERTY_KEY, key);
-                } else {
-                    ctx.getReferringVertex().setProperty(propertyName, newEntry);
+                        edge.setProperty(ATTRIBUTE_KEY_PROPERTY_KEY, key);
+
+                        // If value type indicates this attribute is a reference, and the attribute has an inverse reference attribute,
+                        // update the inverse reference value.
+                        AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
+
+                        if (inverseRefAttribute != null) {
+                            addInverseReference(context, inverseRefAttribute, edge, getRelationshipAttributes(ctx.getValue()));
+                        }
+
+                        updateInConsistentOwnedMapVertices(ctx, mapType, newEntry);
+
+                        newMap.put(key, newEntry);
+                    }
                 }
 
-                newMap.put(key, newEntry);
+                Map<String, Object> finalMap = removeUnusedMapEntries(attribute, ctx.getReferringVertex(), currentMap, newMap);
+                newMap.putAll(finalMap);
+            } else {
+                // primitive type map
+                ctx.getReferringVertex().setProperty(propertyName, new HashMap<>(newVal));
 
-                // If value type indicates this attribute is a reference, and the attribute has an inverse reference attribute,
-                // update the inverse reference value.
-                if (isReference && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
-                    AtlasEdge newEdge = (AtlasEdge) newEntry;
-
-                    addInverseReference(context, inverseRefAttribute, newEdge, getRelationshipAttributes(ctx.getValue()));
-                }
+                newVal.forEach((key, value) -> newMap.put(key.toString(), value));
             }
-        }
-
-        Map<String, Object> finalMap = removeUnusedMapEntries(attribute, ctx.getReferringVertex(), ctx.getVertexProperty(), currentMap, newMap);
-
-        for (Object newEntry : newMap.values()) {
-            updateInConsistentOwnedMapVertices(ctx, mapType, newEntry);
-        }
-
-        // for dereference on way out for primitive map types
-        if (!isReference) {
-            Set<String> newKeys = new LinkedHashSet<>(newMap.keySet());
-
-            newKeys.addAll(finalMap.keySet());
-
-            setListProperty(ctx.getReferringVertex(), ctx.getVertexProperty(), new ArrayList<>(newKeys));
         }
 
         if (LOG.isDebugEnabled()) {
@@ -1084,59 +1074,22 @@ public class EntityGraphMapper {
         return ret;
     }
 
-
-    public static Object getMapValueProperty(AtlasType elementType, AtlasVertex vertex, String vertexPropertyName) {
-        if (isReference(elementType)) {
-            return vertex.getProperty(vertexPropertyName, AtlasEdge.class);
-        } else if (elementType instanceof AtlasArrayType) {
-            return vertex.getProperty(vertexPropertyName, List.class);
-        } else if (elementType instanceof AtlasMapType) {
-            return vertex.getProperty(vertexPropertyName, Map.class);
-        }
-        else {
-            return vertex.getProperty(vertexPropertyName, String.class).toString();
-        }
-    }
-
-    private static void setMapValueProperty(AtlasType elementType, AtlasVertex vertex, String vertexPropertyName, Object value) {
-        if (isReference(elementType)) {
-            vertex.setPropertyFromElementId(vertexPropertyName, (AtlasEdge)value);
-        }
-        else {
-            vertex.setProperty(vertexPropertyName, value);
-        }
-    }
-
-    //Remove unused entries from map
-    private Map<String, Object> removeUnusedMapEntries(AtlasAttribute attribute, AtlasVertex vertex, String propertyName,
-                                                       Map<String, Object> currentMap, Map<String, Object> newMap)
-                                                       throws AtlasBaseException {
-
-        AtlasMapType        mapType       = (AtlasMapType) attribute.getAttributeType();
-        boolean             isReference   = isReference(mapType.getValueType());
+    //Remove unused entries for reference map
+    private Map<String, Object> removeUnusedMapEntries(AtlasAttribute attribute, AtlasVertex vertex, Map<String, Object> currentMap,
+                                                       Map<String, Object> newMap) throws AtlasBaseException {
         Map<String, Object> additionalMap = new HashMap<>();
+        AtlasMapType        mapType       = (AtlasMapType) attribute.getAttributeType();
 
         for (String currentKey : currentMap.keySet()) {
-            boolean shouldDeleteKey = !newMap.containsKey(currentKey);
+            //Delete the edge reference if its not part of new edges created/updated
+            AtlasEdge currentEdge = (AtlasEdge) currentMap.get(currentKey);
 
-            if (isReference) {
-                //Delete the edge reference if its not part of new edges created/updated
-                AtlasEdge currentEdge = (AtlasEdge) currentMap.get(currentKey);
+            if (!newMap.values().contains(currentEdge)) {
+                boolean deleted = deleteHandler.deleteEdgeReference(currentEdge, mapType.getValueType().getTypeCategory(), attribute.isOwnedRef(), true, vertex);
 
-                if (!newMap.values().contains(currentEdge)) {
-                    boolean deleted = deleteHandler.deleteEdgeReference(currentEdge, mapType.getValueType().getTypeCategory(), attribute.isOwnedRef(), true, vertex);
-
-                    if (!deleted) {
-                        additionalMap.put(currentKey, currentEdge);
-                        shouldDeleteKey = false;
-                    }
+                if (!deleted) {
+                    additionalMap.put(currentKey, currentEdge);
                 }
-            }
-
-            if (!isReference && shouldDeleteKey) {
-                String propertyNameForKey = getQualifiedNameForMapKey(propertyName, GraphHelper.encodePropertyKey(currentKey));
-
-                GraphHelper.setProperty(vertex, propertyNameForKey, null);
             }
         }
 

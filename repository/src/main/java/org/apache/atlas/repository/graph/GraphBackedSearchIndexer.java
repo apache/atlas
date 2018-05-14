@@ -42,9 +42,12 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
+import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
@@ -62,6 +65,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -71,6 +75,9 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.LIST;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SET;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SINGLE;
+import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.isReference;
+import static org.apache.atlas.type.AtlasTypeUtil.isArrayType;
+import static org.apache.atlas.type.AtlasTypeUtil.isMapType;
 
 
 /**
@@ -267,7 +274,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createVertexIndex(management, TYPENAME_PROPERTY_KEY, String.class, true, SINGLE, true, true);
             createVertexIndex(management, VERTEX_TYPE_PROPERTY_KEY, String.class, false, SINGLE, true, true);
             createVertexIndex(management, CLASSIFICATION_ENTITY_GUID, String.class, false, SINGLE, true, true);
-
             createVertexIndex(management, VERTEX_ID_IN_IMPORT_KEY, Long.class, false, SINGLE, true, false);
 
             // create vertex-centric index
@@ -316,19 +322,42 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         boolean          isIndexable    = attributeDef.getIsIndexable();
         String           attribTypeName = attributeDef.getTypeName();
         boolean          isBuiltInType  = AtlasTypeUtil.isBuiltInType(attribTypeName);
-        boolean          isArrayType    = AtlasTypeUtil.isArrayType(attribTypeName);
-        boolean          isMapType      = AtlasTypeUtil.isMapType(attribTypeName);
+        boolean          isArrayType    = isArrayType(attribTypeName);
+        boolean          isMapType      = isMapType(attribTypeName);
 
         try {
             AtlasType atlasType     = typeRegistry.getType(typeName);
             AtlasType attributeType = typeRegistry.getType(attribTypeName);
 
-            if (isMapType || isClassificationType(attributeType)) {
+            if (isClassificationType(attributeType)) {
                 LOG.warn("Ignoring non-indexable attribute {}", attribTypeName);
-            } if (isArrayType) {
+            }
+
+            if (isArrayType) {
                 createLabelIfNeeded(management, propertyName, attribTypeName);
-            } if (isEntityType(attributeType)) {
+
+                AtlasArrayType arrayType   = (AtlasArrayType) attributeType;
+                boolean        isReference = isReference(arrayType.getElementType());
+
+                if (!isReference) {
+                    createPropertyKey(management, propertyName, ArrayList.class, SINGLE);
+                }
+            }
+
+            if (isMapType) {
+                createLabelIfNeeded(management, propertyName, attribTypeName);
+
+                AtlasMapType mapType     = (AtlasMapType) attributeType;
+                boolean      isReference = isReference(mapType.getValueType());
+
+                if (!isReference) {
+                    createPropertyKey(management, propertyName, HashMap.class, SINGLE);
+                }
+            }
+
+            if (isEntityType(attributeType)) {
                 createEdgeLabel(management, propertyName);
+
             } else if (isBuiltInType) {
                 if (isRelationshipType(atlasType)) {
                     createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, false);
@@ -381,7 +410,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     private Class getPrimitiveClass(String attribTypeName) {
-        switch (attribTypeName.toLowerCase()) {
+        String attributeTypeName = attribTypeName.toLowerCase();
+
+        switch (attributeTypeName) {
             case ATLAS_TYPE_BOOLEAN:
                 return Boolean.class;
             case ATLAS_TYPE_BYTE:
@@ -435,6 +466,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             LOG.info("Created edge label {} ", label);
         }
+    }
+
+    private AtlasPropertyKey createPropertyKey(AtlasGraphManagement management, String propertyName, Class propertyClass, AtlasCardinality cardinality) {
+        AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
+
+        if (propertyKey == null) {
+            propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
+        }
+
+        return propertyKey;
     }
 
     private AtlasPropertyKey createVertexIndex(AtlasGraphManagement management, String propertyName, Class propertyClass,
@@ -689,17 +730,17 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     private void cleanupIndexForAttribute(AtlasGraphManagement management, String typeName, AtlasAttributeDef attributeDef) {
         final String propertyName = GraphHelper.encodePropertyKey(typeName + "." + attributeDef.getName());
-        String attribTypeName = attributeDef.getTypeName();
-        boolean isBuiltInType = AtlasTypeUtil.isBuiltInType(attribTypeName);
-        boolean isArrayType = AtlasTypeUtil.isArrayType(attribTypeName);
-        boolean isMapType = AtlasTypeUtil.isMapType(attribTypeName);
+        String  attribTypeName    = attributeDef.getTypeName();
+        boolean isBuiltInType     = AtlasTypeUtil.isBuiltInType(attribTypeName);
+        boolean isArrayType       = isArrayType(attribTypeName);
+        boolean isMapType         = isMapType(attribTypeName);
 
         try {
             AtlasType atlasType = typeRegistry.getType(attribTypeName);
 
-            if (isMapType || isArrayType || isClassificationType(atlasType) || isEntityType(atlasType)) {
+            if (isClassificationType(atlasType) || isEntityType(atlasType)) {
                 LOG.warn("Ignoring non-indexable attribute {}", attribTypeName);
-            } else if (isBuiltInType || isEnumType(atlasType)) {
+            } else if (isBuiltInType || isEnumType(atlasType) || isArrayType || isMapType) {
                 cleanupIndex(management, propertyName);
             } else if (isStructType(atlasType)) {
                 AtlasStructDef structDef = typeRegistry.getStructDefByName(attribTypeName);
@@ -714,6 +755,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         if (LOG.isDebugEnabled()) {
             LOG.debug("Invalidating property key = {}", propertyKey);
         }
+
         management.deletePropertyKey(propertyKey);
     }
 

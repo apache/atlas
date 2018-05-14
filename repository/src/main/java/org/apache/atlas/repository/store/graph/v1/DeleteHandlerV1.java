@@ -202,7 +202,7 @@ public abstract class DeleteHandlerV1 {
             vertexInfoMap.put(guid, new GraphHelper.VertexInfo(entity, vertex));
 
             for (AtlasStructType.AtlasAttribute attributeInfo : entityType.getAllAttributes().values()) {
-                if (! attributeInfo.isOwnedRef()) {
+                if (!attributeInfo.isOwnedRef()) {
                     continue;
                 }
 

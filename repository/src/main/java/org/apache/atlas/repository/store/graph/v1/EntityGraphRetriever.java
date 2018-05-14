@@ -619,7 +619,7 @@ public final class EntityGraphRetriever {
                 ret = mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute, edgeDirection);
                 break;
             case ARRAY:
-                ret = mapVertexToArray(entityVertex, vertexPropertyName, entityExtInfo, isOwnedAttribute, attribute);
+                ret = mapVertexToArray(entityVertex, entityExtInfo, isOwnedAttribute, attribute);
                 break;
             case MAP:
                 ret = mapVertexToMap(entityVertex, vertexPropertyName, entityExtInfo, isOwnedAttribute, attribute);
@@ -660,7 +660,7 @@ public final class EntityGraphRetriever {
                 }
             }
         } else {
-            ret = getPrimitiveMap(entityVertex, propertyName, mapValueType);
+            ret = getPrimitiveMap(entityVertex, propertyName);
         }
 
         if (MapUtils.isEmpty(ret)) {
@@ -670,12 +670,12 @@ public final class EntityGraphRetriever {
         return ret;
     }
 
-    private List<Object> mapVertexToArray(AtlasVertex entityVertex, String propertyName, AtlasEntityExtInfo entityExtInfo,
+    private List<Object> mapVertexToArray(AtlasVertex entityVertex, AtlasEntityExtInfo entityExtInfo,
                                           boolean isOwnedAttribute, AtlasAttribute attribute)  throws AtlasBaseException {
 
         AtlasArrayType arrayType        = (AtlasArrayType) attribute.getAttributeType();
         AtlasType      arrayElementType = arrayType.getElementType();
-        List<Object>   arrayElements    = getArrayElementsProperty(arrayElementType, entityVertex, propertyName, attribute);
+        List<Object>   arrayElements    = getArrayElementsProperty(arrayElementType, entityVertex, attribute);
 
         if (CollectionUtils.isEmpty(arrayElements)) {
             return null;

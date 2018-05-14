@@ -1567,23 +1567,13 @@ public final class GraphHelper {
         return typeName != null && typeName.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX);
     }
 
-    public static Object getMapValueProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName) {
-        String vertexPropertyName = GraphHelper.encodePropertyKey(propertyName);
-
-        if (!AtlasGraphUtilsV1.isReference(elementType)) {
-            return instanceVertex.getProperty(vertexPropertyName, Object.class);
-        }
-
-        return null;
-    }
-
-    public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, String propertyName, AtlasAttribute attribute) {
-        String encodedPropertyName = GraphHelper.encodePropertyKey(propertyName);
+    public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, AtlasAttribute attribute) {
+        String propertyName = attribute.getVertexPropertyName();
 
         if (isReference(elementType)) {
             return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
         } else {
-            return (List) instanceVertex.getListProperty(encodedPropertyName);
+            return (List) instanceVertex.getListProperty(propertyName);
         }
     }
 
@@ -1593,7 +1583,7 @@ public final class GraphHelper {
         if (isReference(mapValueType)) {
             return getReferenceMap(instanceVertex, attribute);
         } else {
-            return getPrimitiveMap(instanceVertex, propertyName, mapValueType);
+            return (Map) instanceVertex.getProperty(propertyName, Map.class);
         }
     }
 
@@ -1622,18 +1612,11 @@ public final class GraphHelper {
     }
 
     // map elements for primitive types
-    public static Map<String,Object> getPrimitiveMap(AtlasVertex instanceVertex, String propertyName, AtlasType mapValueType) {
-        String              encodedPropertyName = encodePropertyKey(propertyName);
-        List<String>        currentKeys         = getListProperty(instanceVertex, encodedPropertyName);
-        Map<String, Object> ret                 = new HashMap<>();
+    public static Map<String, Object> getPrimitiveMap(AtlasVertex instanceVertex, String propertyName) {
+        Map<String, Object> ret = instanceVertex.getProperty(encodePropertyKey(propertyName), Map.class);
 
-        if (CollectionUtils.isNotEmpty(currentKeys)) {
-            for (String key : currentKeys) {
-                String propertyNameForKey  = getQualifiedNameForMapKey(encodedPropertyName, encodePropertyKey(key));
-                Object propertyValueForKey = getMapValueProperty(mapValueType, instanceVertex, propertyNameForKey);
-
-                ret.put(key, propertyValueForKey);
-            }
+        if (ret == null) {
+            ret = new HashMap<>();
         }
 
         return ret;
