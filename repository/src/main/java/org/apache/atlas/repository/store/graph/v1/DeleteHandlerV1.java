@@ -20,7 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -35,6 +35,8 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -61,10 +63,10 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
-import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromEdge;
-import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getQualifiedAttributePropertyKey;
-import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getState;
-import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.isReference;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromEdge;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getQualifiedAttributePropertyKey;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 public abstract class DeleteHandlerV1 {
@@ -91,11 +93,11 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
-        RequestContextV1 requestContext            = RequestContextV1.get();
+        RequestContext   requestContext            = RequestContext.get();
         Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
 
         for (AtlasVertex instanceVertex : instanceVertices) {
-            String              guid = AtlasGraphUtilsV1.getIdFromVertex(instanceVertex);
+            String              guid = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
             AtlasEntity.Status state = getState(instanceVertex);
 
             if (state == DELETED || requestContext.isDeletedEntity(guid)) {
@@ -295,7 +297,7 @@ public abstract class DeleteHandlerV1 {
                 AtlasVertex referencedVertex = entityRetriever.getReferencedEntityVertex(edge, relationshipDirection, entityVertex);
 
                 if (referencedVertex != null) {
-                    RequestContextV1 requestContext = RequestContextV1.get();
+                    RequestContext requestContext = RequestContext.get();
 
                     if (!requestContext.isUpdatedEntity(GraphHelper.getGuid(referencedVertex))) {
                         GraphHelper.setProperty(referencedVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
@@ -407,7 +409,7 @@ public abstract class DeleteHandlerV1 {
                 addToPropagatedTraitNames(propagatedEntityVertex, classificationName);
 
                 // record add propagation details to send notifications at the end
-                RequestContextV1    context        = RequestContextV1.get();
+                RequestContext      context        = RequestContext.get();
                 AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
 
                 context.recordAddedPropagation(entityGuid, classification);
@@ -475,7 +477,7 @@ public abstract class DeleteHandlerV1 {
                     ret.add(entityVertex);
 
                     // record remove propagation details to send notifications at the end
-                    RequestContextV1.get().recordRemovedPropagation(getGuid(entityVertex), classification);
+                    RequestContext.get().recordRemovedPropagation(getGuid(entityVertex), classification);
 
                     deletePropagatedEdge(propagatedEdge);
                 }
@@ -490,7 +492,7 @@ public abstract class DeleteHandlerV1 {
             String              classificationName = getClassificationName(classificationVertex);
             AtlasClassification classification     = entityRetriever.toAtlasClassification(classificationVertex);
             String              entityGuid         = getClassificationEntityGuid(classificationVertex);
-            RequestContextV1    context            = RequestContextV1.get();
+            RequestContext      context            = RequestContext.get();
 
             for (AtlasVertex entityVertex : entityVertices) {
                 AtlasEdge propagatedEdge = getPropagatedClassificationEdge(entityVertex, classificationName, entityGuid);
@@ -575,7 +577,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void deletePropagatedEdge(AtlasEdge edge) throws AtlasBaseException {
-        String      classificationName = AtlasGraphUtilsV1.getProperty(edge, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class);
+        String      classificationName = AtlasGraphUtilsV2.getProperty(edge, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class);
         AtlasVertex entityVertex       = edge.getOutVertex();
 
         if (LOG.isDebugEnabled()) {
@@ -738,7 +740,7 @@ public abstract class DeleteHandlerV1 {
         final String outId    = GraphHelper.getGuid(outVertex);
         final Status state    = getState(outVertex);
 
-        if (state == DELETED || (outId != null && RequestContextV1.get().isDeletedEntity(outId))) {
+        if (state == DELETED || (outId != null && RequestContext.get().isDeletedEntity(outId))) {
             //If the reference vertex is marked for deletion, skip updating the reference
             return;
         }
@@ -832,7 +834,7 @@ public abstract class DeleteHandlerV1 {
         if (edge != null) {
             deleteEdge(edge, isInternalType(inVertex) && isInternalType(outVertex));
 
-            RequestContextV1 requestContext = RequestContextV1.get();
+            RequestContext requestContext = RequestContext.get();
 
             if (! requestContext.isUpdatedEntity(outId)) {
                 GraphHelper.setProperty(outVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());

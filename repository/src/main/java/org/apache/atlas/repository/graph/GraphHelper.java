@@ -24,13 +24,14 @@ import com.google.common.collect.HashBiMap;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
@@ -47,7 +48,6 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasType;
@@ -86,7 +86,7 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PRO
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_NAME_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.isReference;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
@@ -185,12 +185,12 @@ public final class GraphHelper {
         setProperty(vertexWithoutIdentity, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
 
         // add timestamp information
-        setProperty(vertexWithoutIdentity, Constants.TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
+        setProperty(vertexWithoutIdentity, Constants.TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
         setProperty(vertexWithoutIdentity, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
-                RequestContextV1.get().getRequestTime());
+                    RequestContext.get().getRequestTime());
 
-        setProperty(vertexWithoutIdentity, Constants.CREATED_BY_KEY, RequestContextV1.get().getUser());
-        setProperty(vertexWithoutIdentity, Constants.MODIFIED_BY_KEY, RequestContextV1.get().getUser());
+        setProperty(vertexWithoutIdentity, Constants.CREATED_BY_KEY, RequestContext.get().getUser());
+        setProperty(vertexWithoutIdentity, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
         return vertexWithoutIdentity;
     }
 
@@ -198,8 +198,8 @@ public final class GraphHelper {
         AtlasEdge ret = addEdge(entityVertex, classificationVertex, CLASSIFICATION_LABEL);
 
         if (ret != null) {
-            AtlasGraphUtilsV1.setProperty(ret, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex));
-            AtlasGraphUtilsV1.setProperty(ret, CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, isPropagated);
+            AtlasGraphUtilsV2.setProperty(ret, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex));
+            AtlasGraphUtilsV2.setProperty(ret, CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, isPropagated);
         }
 
         return ret;
@@ -216,10 +216,10 @@ public final class GraphHelper {
 
         if (ret != null) {
             setProperty(ret, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
-            setProperty(ret, Constants.TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
-            setProperty(ret, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
-            setProperty(ret, Constants.CREATED_BY_KEY, RequestContextV1.get().getUser());
-            setProperty(ret, Constants.MODIFIED_BY_KEY, RequestContextV1.get().getUser());
+            setProperty(ret, Constants.TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+            setProperty(ret, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+            setProperty(ret, Constants.CREATED_BY_KEY, RequestContext.get().getUser());
+            setProperty(ret, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Added {}", string(ret));
@@ -376,7 +376,7 @@ public final class GraphHelper {
         boolean ret = false;
 
         if (classificationVertex != null) {
-            Boolean enabled = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VERTEX_PROPAGATE_KEY, Boolean.class);
+            Boolean enabled = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_PROPAGATE_KEY, Boolean.class);
 
             ret = (enabled == null) ? true : enabled;
         }
@@ -433,7 +433,7 @@ public final class GraphHelper {
                 AtlasVertex classificationVertex = (edge != null) ? edge.getInVertex() : null;
 
                 if (classificationVertex != null) {
-                    String guid = AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class);
+                    String guid = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class);
 
                     if (StringUtils.equals(guid, associatedEntityGuid)) {
                         ret = edge;
@@ -960,8 +960,8 @@ public final class GraphHelper {
     }
 
     public static void updateModificationMetadata(AtlasVertex vertex) {
-        AtlasGraphUtilsV1.setProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
-        AtlasGraphUtilsV1.setProperty(vertex, Constants.MODIFIED_BY_KEY, RequestContextV1.get().getUser());
+        AtlasGraphUtilsV2.setProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+        AtlasGraphUtilsV2.setProperty(vertex, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
     }
 
     public static String getQualifiedNameForMapKey(String prefix, String key) {
@@ -1000,7 +1000,7 @@ public final class GraphHelper {
             while (iterator.hasNext()) {
                 AtlasEdge edge = iterator.next();
 
-                ret.add(AtlasGraphUtilsV1.getProperty(edge, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class));
+                ret.add(AtlasGraphUtilsV2.getProperty(edge, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class));
             }
         }
 
@@ -1168,11 +1168,11 @@ public final class GraphHelper {
     }
 
     public static String getClassificationName(AtlasVertex classificationVertex) {
-        return AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_VERTEX_NAME_KEY, String.class);
+        return AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_NAME_KEY, String.class);
     }
 
     public static String getClassificationEntityGuid(AtlasVertex classificationVertex) {
-        return AtlasGraphUtilsV1.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class);
+        return AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class);
     }
 
     public static Integer getIndexValue(AtlasEdge edge) {
@@ -1198,7 +1198,7 @@ public final class GraphHelper {
         List<String> ret = null;
 
         if (edge != null) {
-            List<String> classificationIds = AtlasGraphUtilsV1.getProperty(edge, Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY, List.class);
+            List<String> classificationIds = AtlasGraphUtilsV2.getProperty(edge, Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY, List.class);
 
             ret = CollectionUtils.isNotEmpty(classificationIds) ? classificationIds : Collections.emptyList();
         }
@@ -1825,7 +1825,7 @@ public final class GraphHelper {
             Iterator<AtlasEdge> iter = entityVertex.getEdges(AtlasEdgeDirection.IN).iterator();
 
             while (iter.hasNext() && ret == null) {
-                String edgeTypeName = AtlasGraphUtilsV1.getTypeName(iter.next());
+                String edgeTypeName = AtlasGraphUtilsV2.getTypeName(iter.next());
 
                 for (AtlasRelationshipType relationType : relationshipTypes) {
                     AtlasRelationshipDef relationshipDef = relationType.getRelationshipDef();

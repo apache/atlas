@@ -96,7 +96,7 @@ public class AtlasRepositoryConfiguration {
         try {
             Configuration config = ApplicationProperties.get();
             return ApplicationProperties.getClass(config,
-                    DELETE_HANDLER_V1_IMPLEMENTATION_PROPERTY, SoftDeleteHandlerV1.class.getName(), DeleteHandlerV1.class);
+                                                  DELETE_HANDLER_V1_IMPLEMENTATION_PROPERTY, SoftDeleteHandlerV1.class.getName(), DeleteHandlerV1.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }

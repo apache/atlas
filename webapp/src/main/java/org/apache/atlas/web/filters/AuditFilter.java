@@ -20,7 +20,7 @@ package org.apache.atlas.web.filters;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.web.util.DateTimeHelper;
@@ -73,8 +73,8 @@ public class AuditFilter implements Filter {
         try {
             currentThread.setName(formatName(oldName, requestId));
 
-            RequestContextV1.clear();
-            RequestContextV1 requestContext = RequestContextV1.get();
+            RequestContext.clear();
+            RequestContext requestContext = RequestContext.get();
             requestContext.setUser(user, userGroups);
             requestContext.setClientIPAddress(AtlasAuthorizationUtils.getRequestIpAddress(httpRequest));
             filterChain.doFilter(request, response);
@@ -86,7 +86,7 @@ public class AuditFilter implements Filter {
             // put the request id into the response so users can trace logs for this request
             httpResponse.setHeader(AtlasClient.REQUEST_ID, requestId);
             currentThread.setName(oldName);
-            RequestContextV1.clear();
+            RequestContext.clear();
         }
     }
 

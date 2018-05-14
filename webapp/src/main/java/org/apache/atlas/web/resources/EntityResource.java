@@ -38,8 +38,8 @@ import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -382,7 +382,7 @@ public class EntityResource {
             Id updateId = updatedEntity.getId();
 
             if (updateId != null && !AtlasTypeUtil.isAssignedGuid(updateId.getId())) {
-                String guid = AtlasGraphUtilsV1.getGuidByUniqueAttributes(getEntityType(entityType), attributes);
+                String guid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(getEntityType(entityType), attributes);
 
                 updatedEntity.setId(new Id(guid, 0, updatedEntity.getTypeName()));
             }

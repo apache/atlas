@@ -33,9 +33,9 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.converters.TypeConverterUtil;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasStructDefStoreV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasStructDefStoreV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -87,8 +87,8 @@ public class RestUtilsTest {
         testV1toV2toV1Conversion(Arrays.asList(dbV1Type, tableV1Type), new boolean[] { false, false });
     }
 
-    private AtlasTypeDefGraphStoreV1 makeTypeStore(AtlasTypeRegistry reg) {
-        AtlasTypeDefGraphStoreV1 result = mock(AtlasTypeDefGraphStoreV1.class);
+    private AtlasTypeDefGraphStoreV2 makeTypeStore(AtlasTypeRegistry reg) {
+        AtlasTypeDefGraphStoreV2 result = mock(AtlasTypeDefGraphStoreV2.class);
 
         for (AtlasEntityType type : reg.getAllEntityTypes()) {
             String      typeName = type.getTypeName();
@@ -97,13 +97,13 @@ public class RestUtilsTest {
             when(result.isTypeVertex(eq(typeVertex), any(TypeCategory.class))).thenReturn(true);
             when(typeVertex.getProperty(eq(Constants.TYPE_CATEGORY_PROPERTY_KEY), eq(TypeCategory.class))).thenReturn(TypeCategory.CLASS);
 
-            String attributeListPropertyKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(typeName);
+            String attributeListPropertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(typeName);
 
             when(typeVertex.getProperty(eq(attributeListPropertyKey), eq(List.class))).thenReturn(new ArrayList<>(type.getAllAttributes().keySet()));
 
             for (AtlasAttribute attribute : type.getAllAttributes().values()) {
-                String attributeDefPropertyKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(typeName, attribute.getName());
-                String attributeJson           = AtlasStructDefStoreV1.toJsonFromAttribute(attribute);
+                String attributeDefPropertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(typeName, attribute.getName());
+                String attributeJson           = AtlasStructDefStoreV2.toJsonFromAttribute(attribute);
 
                 when(typeVertex.getProperty(eq(attributeDefPropertyKey), eq(String.class))).thenReturn(attributeJson);
             }
@@ -115,15 +115,15 @@ public class RestUtilsTest {
     }
 
     private AtlasAttributeDef convertToJsonAndBack(AtlasTypeRegistry registry, AtlasStructDef structDef, AtlasAttributeDef attributeDef, boolean compositeExpected) throws AtlasBaseException {
-        AtlasTypeDefGraphStoreV1 typeDefStore = makeTypeStore(registry);
+        AtlasTypeDefGraphStoreV2 typeDefStore = makeTypeStore(registry);
         AtlasStructType          structType   = (AtlasStructType) registry.getType(structDef.getName());
         AtlasAttribute           attribute    = structType.getAttribute(attributeDef.getName());
-        String                   attribJson   = AtlasStructDefStoreV1.toJsonFromAttribute(attribute);
+        String                   attribJson   = AtlasStructDefStoreV2.toJsonFromAttribute(attribute);
         Map                      attrInfo     = AtlasType.fromJson(attribJson, Map.class);
 
         Assert.assertEquals(attrInfo.get("isComposite"), compositeExpected);
 
-        return AtlasStructDefStoreV1.toAttributeDefFromJson(structDef, attrInfo, typeDefStore);
+        return AtlasStructDefStoreV2.toAttributeDefFromJson(structDef, attrInfo, typeDefStore);
     }
 
     private void testV1toV2toV1Conversion(List<ClassTypeDefinition> typesToTest, boolean[] compositeExpected) throws AtlasBaseException {

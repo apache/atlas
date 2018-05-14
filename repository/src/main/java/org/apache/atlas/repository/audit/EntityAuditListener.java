@@ -21,7 +21,7 @@ package org.apache.atlas.repository.audit;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -166,7 +166,7 @@ public class EntityAuditListener implements EntityChangeListener {
 
     private EntityAuditEvent createEvent(Referenceable entity, EntityAuditAction action, String details)
             throws AtlasException {
-        return new EntityAuditEvent(entity.getId()._getId(), RequestContextV1.get().getRequestTime(), RequestContextV1.get().getUser(), action, details, entity);
+        return new EntityAuditEvent(entity.getId()._getId(), RequestContext.get().getRequestTime(), RequestContext.get().getUser(), action, details, entity);
     }
 
     private String getAuditEventDetail(Referenceable entity, EntityAuditAction action) throws AtlasException {

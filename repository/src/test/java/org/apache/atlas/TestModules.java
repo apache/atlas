@@ -50,13 +50,13 @@ import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryTermDTO;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.BulkImporter;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasRelationshipStoreV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
-import org.apache.atlas.repository.store.graph.v1.BulkImporterImpl;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2;
+import org.apache.atlas.repository.store.graph.v2.BulkImporterImpl;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
-import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.runner.LocalSolrRunner;
@@ -129,7 +129,7 @@ public class TestModules {
             bind(Configuration.class).toProvider(AtlasConfigurationProvider.class).in(Singleton.class);
 
             // bind the AtlasTypeDefStore interface to an implementation
-            bind(AtlasTypeDefStore.class).to(AtlasTypeDefGraphStoreV1.class).asEagerSingleton();
+            bind(AtlasTypeDefStore.class).to(AtlasTypeDefGraphStoreV2.class).asEagerSingleton();
 
             bind(AtlasTypeRegistry.class).asEagerSingleton();
             bind(EntityGraphMapper.class).asEagerSingleton();
@@ -142,8 +142,8 @@ public class TestModules {
 
             bind(SearchTracker.class).asEagerSingleton();
 
-            bind(AtlasEntityStore.class).to(AtlasEntityStoreV1.class);
-            bind(AtlasRelationshipStore.class).to(AtlasRelationshipStoreV1.class);
+            bind(AtlasEntityStore.class).to(AtlasEntityStoreV2.class);
+            bind(AtlasRelationshipStore.class).to(AtlasRelationshipStoreV2.class);
 
             // bind the DiscoveryService interface to an implementation
             bind(AtlasDiscoveryService.class).to(EntityDiscoveryService.class).asEagerSingleton();

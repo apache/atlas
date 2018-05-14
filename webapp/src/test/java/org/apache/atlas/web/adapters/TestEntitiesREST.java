@@ -18,7 +18,7 @@
 package org.apache.atlas.web.adapters;
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -98,7 +98,7 @@ public class TestEntitiesREST {
 
     @AfterMethod
     public void cleanup() throws Exception {
-        RequestContextV1.clear();
+        RequestContext.clear();
     }
 
     @Test

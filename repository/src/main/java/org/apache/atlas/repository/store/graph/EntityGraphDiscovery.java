@@ -20,10 +20,6 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
-
-import java.util.List;
-import java.util.Map;
 
 public interface EntityGraphDiscovery {
 

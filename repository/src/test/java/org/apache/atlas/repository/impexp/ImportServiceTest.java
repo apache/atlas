@@ -19,7 +19,7 @@ package org.apache.atlas.repository.impexp;
 
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.discovery.EntityDiscoveryService;
@@ -81,8 +81,8 @@ public class ImportServiceTest {
 
     @BeforeTest
     public void setupTest() {
-        RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER, null);
+        RequestContext.clear();
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
     }
 
     @AfterClass

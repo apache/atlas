@@ -44,7 +44,7 @@ import org.apache.atlas.v1.model.typedef.Multiplicity;
 import org.apache.atlas.v1.model.typedef.StructTypeDefinition;
 import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
 import org.apache.atlas.v1.model.typedef.TypesDef;
-import org.apache.atlas.repository.store.graph.v1.AtlasStructDefStoreV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasStructDefStoreV2;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
@@ -360,7 +360,7 @@ public final class TypeConverterUtil {
             for (AtlasAttributeDef attrDef : attrDefs) {
                 AtlasAttribute attribute = structType.getAttribute(attrDef.getName());
 
-                AttributeDefinition oldAttrDef = AtlasStructDefStoreV1.toAttributeDefinition(attribute);
+                AttributeDefinition oldAttrDef = AtlasStructDefStoreV2.toAttributeDefinition(attribute);
 
                 ret.add(new AttributeDefinition(oldAttrDef.getName(), oldAttrDef.getDataTypeName(), new Multiplicity(oldAttrDef.getMultiplicity()), oldAttrDef.getIsComposite(), oldAttrDef.getIsUnique(), oldAttrDef.getIsIndexable(), oldAttrDef.getReverseAttributeName()));
             }
