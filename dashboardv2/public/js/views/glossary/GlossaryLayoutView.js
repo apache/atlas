@@ -120,6 +120,7 @@ define(['require',
                         var $tree = this.ui[this.viewType == "term" ? "termTree" : "categoryTree"];
                         if ($tree.jstree(true).refresh) {
                             $tree.jstree(true).refresh();
+                            this.setValues({ trigger: false });
                         }
                     }
                 }, this);
@@ -141,18 +142,18 @@ define(['require',
                     this.getGlossary();
                 }
             },
-            setValues: function() {
+            setValues: function(options) {
                 if (this.viewType == "category") {
                     if (!this.ui.glossaryView.prop("checked")) {
-                        this.ui.glossaryView.prop("checked", true).trigger("change");
+                        this.ui.glossaryView.prop("checked", true).trigger("change", options);
                     }
                 } else {
                     if (this.ui.glossaryView.prop("checked")) {
-                        this.ui.glossaryView.prop("checked", false).trigger("change");
+                        this.ui.glossaryView.prop("checked", false).trigger("change", options);
                     }
                 }
             },
-            glossaryViewToggle: function(e) {
+            glossaryViewToggle: function(e, options) {
                 var that = this;
                 if (e.currentTarget.checked) {
                     this.$('.category-view').show();
@@ -179,6 +180,7 @@ define(['require',
                         guid: model.guid,
                         id: model.guid,
                         model: model,
+                        text: model.displayName,
                         gType: "glossary"
                     }
                 }
@@ -188,22 +190,20 @@ define(['require',
                     if (obj.guid) {
                         var node = $tree.jstree(true).get_node(obj.guid);
                         if (node) {
-                            $tree.jstree('activate_node', obj.guid);
                             this.glossary.selectedItem = node.original;
-                        } else {
-                            setDefaultSelector();
+                            $tree.jstree('activate_node', obj.guid);
                         }
                     } else {
                         setDefaultSelector();
                         $tree.jstree('activate_node', that.glossary.selectedItem.guid);
                     }
-                    this.query[this.viewType] = _.extend(obj, _.pick(this.glossary.selectedItem, 'model', 'guid', 'gType'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
+                    this.query[this.viewType] = _.extend(obj, _.pick(this.glossary.selectedItem, 'model', 'guid', 'gType', 'type'), { "viewType": this.viewType, "isNodeNotFoundAtLoad": this.query[this.viewType].isNodeNotFoundAtLoad });
                     var url = _.isEmpty(this.glossary.selectedItem) ? '#!/glossary' : '#!/glossary/' + this.glossary.selectedItem.guid;
                     Utils.setUrl({
                         "url": url,
                         "urlParams": _.extend({}, _.omit(obj, 'guid', 'model', 'type', 'isNodeNotFoundAtLoad')),
                         "mergeBrowserUrl": false,
-                        "trigger": false,
+                        "trigger": (options && !_.isUndefined(options.trigger) ? options.trigger : true),
                         "updateTabState": true
                     });
                 }
@@ -369,10 +369,11 @@ define(['require',
                     var $tree = this.ui[this.viewType == "term" ? "termTree" : "categoryTree"],
                         node = $tree.jstree(true).get_node(this.guid);
                     if (node) {
-                        $tree.jstree('activate_node', this.guid);
+                        $tree.jstree('activate_node', this.guid, { skipTrigger: true });
                         delete this.value.fromView;
                         delete this.value.updateView;
                         this.glossary.selectedItem = node.original;
+                        this.query[this.viewType] = _.extend({}, _.pick(this.glossary.selectedItem, 'model', 'guid', 'gType', 'type'), { "viewType": this.viewType });
                         Utils.setUrl({
                             url: '#!/glossary/' + this.guid,
                             urlParams: this.value,
@@ -458,21 +459,29 @@ define(['require',
                                 createAction(_.extend({}, options, data));
                             })
                             .on("select_node.jstree", function(e, data) {
-                                that.glossary.selectedItem = data.node.original;
-                                var popoverClassName = (type == "term" ? '.termPopover' : '.categoryPopover'),
-                                    currentClickedPopoverEl = "";
-                                if (data.event) {
-                                    if ($(data.event.currentTarget).parent().hasClass('jstree-leaf')) {
-                                        currentClickedPopoverEl = $(data.event.currentTarget).parent().find(popoverClassName);
-                                    } else {
-                                        currentClickedPopoverEl = $(data.event.currentTarget).parent().find(">div " + popoverClassName);
+                                if (that.isAssignView) {
+                                    that.glossary.selectedItem = data.node.original;
+                                } else {
+                                    var popoverClassName = (type == "term" ? '.termPopover' : '.categoryPopover'),
+                                        currentClickedPopoverEl = "";
+                                    if (data.event) {
+                                        if ($(data.event.currentTarget).parent().hasClass('jstree-leaf')) {
+                                            currentClickedPopoverEl = $(data.event.currentTarget).parent().find(popoverClassName);
+                                        } else {
+                                            currentClickedPopoverEl = $(data.event.currentTarget).parent().find(">div " + popoverClassName);
+                                        }
+                                        $(popoverClassName).not(currentClickedPopoverEl).popover('hide');
                                     }
-                                    $(popoverClassName).not(currentClickedPopoverEl).popover('hide');
-                                }
-                                if (that.query[type].isNodeNotFoundAtLoad == true) {
-                                    that.query[type].isNodeNotFoundAtLoad = false;
-                                } else if (type == that.viewType) {
-                                    that.triggerUrl();
+                                    if (that.query[type].isNodeNotFoundAtLoad == true) {
+                                        that.query[type].isNodeNotFoundAtLoad = false;
+                                    } else if (type == that.viewType) {
+                                        if (data && data.event && data.event.skipTrigger) {
+                                            return;
+                                        } else if (that.glossary.selectedItem.guid !== data.node.original.guid) {
+                                            that.glossary.selectedItem = data.node.original;
+                                            that.triggerUrl();
+                                        }
+                                    }
                                 }
                             }).on("search.jstree", function(e, data) {
                                 createAction(_.extend({}, options, data));
@@ -530,7 +539,7 @@ define(['require',
                     contentClass: 'termPopoverOptions',
                     popoverOptions: {
                         content: function() {
-                            var node = that.glossary.selectedItem,
+                            var node = that.query[that.viewType],
                                 liString = "";
                             if (node.type == "Glossary") {
                                 liString = "<li data-type=" + node.type + " class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='createSubNode'>Create Term</a></li>" +
@@ -550,7 +559,7 @@ define(['require',
                     contentClass: 'categoryPopoverOptions',
                     popoverOptions: {
                         content: function() {
-                            var node = that.glossary.selectedItem,
+                            var node = that.query[that.viewType],
                                 liString = "";
                             if (node.type == "Glossary") {
                                 liString = "<li data-type=" + node.type + " class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='createSubNode'>Create Category</a></li>" +
@@ -678,16 +687,17 @@ define(['require',
                 var selectedItem = this.glossary.selectedItem;
                 if (this.glossaryCollection.length && (_.isEmpty(selectedItem) || this.query[this.viewType].isNodeNotFoundAtLoad)) {
                     var model = selectedItem.model
-                    if (model && !(model.parentCategory || model.parentCategoryGuid)) {
+                    if (model && !_.isUndefined(model.parentCategory || model.parentCategoryGuid)) {
                         selectedItem = { "model": this.glossaryCollection.first().toJSON() };
                         selectedItem.guid = selectedItem.model.guid;
                         selectedItem.type = "Glossary";
+                        selectedItem.gType = "glossary";
+                        selectedItem.text = model.displayName;
                         this.glossary.selectedItem = selectedItem;
                         this.query[this.viewType].model = selectedItem.model;
-                        this.query[this.viewType].gType = "glossary"
+                        this.query[this.viewType].gType = "glossary";
+                        this.query[this.viewType].type = "Glossary";
                         delete this.query[this.viewType].gId;
-                    } else {
-                        this.query[this.viewType].isNodeNotFoundAtLoad = false;
                     }
                 }
                 if (_.isEmpty(selectedItem)) {

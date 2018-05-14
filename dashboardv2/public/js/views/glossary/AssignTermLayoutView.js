@@ -47,7 +47,6 @@ define(['require',
 
             /** ui selector cache */
             ui: {
-                termAttributeForm: '[data-id="termAttributeForm"]',
                 wizard: '[data-id="wizard"]'
             },
             /** ui events hash */
@@ -178,7 +177,7 @@ define(['require',
                     }
                     model.assignCategoryToTerm(_.extend(ajaxOptions, { data: JSON.stringify(data), guid: data.guid }));
                 } else if (this.isAttributeRelationView) {
-                    termAttributeFormData = this.ui.termAttributeForm.serializeArray().reduce(function(obj, item) {
+                    termAttributeFormData = this.$('[data-id="termAttributeForm"]').serializeArray().reduce(function(obj, item) {
                             obj[item.name] = item.value;
                             return obj;
                         }, {}),

@@ -231,7 +231,7 @@ define(['require',
                     getTerms: function(key) {
                         var terms = _.map(that.data[key], function(obj) {
                                 var name = _.escape(obj.displayText);
-                                return '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + _.escape(name) + ' data-id="termClick"><span>' + name + '</span><i class="fa fa-close" data-id="deleteAttribute" data-attributename="' + key + '" data-termguid="' + obj.termGuid + '" data-type="term" title="Remove Term"></i></span>';
+                                return '<span data-guid="' + obj.termGuid + '" class="btn btn-action btn-sm btn-icon btn-blue" title=' + _.escape(name) + ' data-id="termClick"><span>' + name + '</span><i class="fa fa-close" data-id="deleteAttribute" data-attributename="' + key + '" data-termguid="' + obj.termGuid + '" data-type="term" title="Remove Term"></i></span>';
                             }).join(""),
                             attributeButtons = "";
                         if (terms.length) {

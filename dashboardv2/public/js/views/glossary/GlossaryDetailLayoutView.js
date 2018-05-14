@@ -78,12 +78,13 @@ define(['require',
                         this.onClickRemoveAssociationBtn(e);
                     } else {
                         var guid = $(e.currentTarget).data('guid'),
+                            gId = this.data.anchor && this.data.anchor.glossaryGuid,
                             categoryObj = _.find(this.data.categories, { "categoryGuid": guid });
                         this.glossary.selectedItem = { "type": "GlossaryCategory", "guid": guid, "model": categoryObj };
                         Utils.setUrl({
                             url: '#!/glossary/' + guid,
                             mergeBrowserUrl: false,
-                            urlParams: { gType: "category", viewType: "category", fromView: "glossary" },
+                            urlParams: { gType: "category", viewType: "category", fromView: "glossary", gId: gId },
                             trigger: true,
                             updateTabState: true
                         });
@@ -94,12 +95,13 @@ define(['require',
                         this.onClickRemoveAssociationBtn(e);
                     } else {
                         var guid = $(e.currentTarget).data('guid'),
+                            gId = this.data.anchor && this.data.anchor.glossaryGuid,
                             termObj = _.find(this.data.terms, { "termGuid": guid });
                         this.glossary.selectedItem = { "type": "GlossaryTerm", "guid": guid, "model": termObj };
                         Utils.setUrl({
                             url: '#!/glossary/' + guid,
                             mergeBrowserUrl: false,
-                            urlParams: { gType: "term", viewType: "term", fromView: "glossary" },
+                            urlParams: { gType: "term", viewType: "term", fromView: "glossary", gId: gId },
                             trigger: true,
                             updateTabState: true
                         });
@@ -427,15 +429,18 @@ define(['require',
             renderTagTableLayoutView: function(options) {
                 var that = this;
                 require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
-                    that.RTagTableLayoutView.show(new TagDetailTableLayoutView(_.extend({}, options, {
-                        "entityName": that.ui.title.text(),
-                        "fetchCollection": that.getData.bind(that),
-                        "entity": that.data
-                    })));
+                    if (that.RTagTableLayoutView) {
+                        that.RTagTableLayoutView.show(new TagDetailTableLayoutView(_.extend({}, options, {
+                            "entityName": that.ui.title.text(),
+                            "fetchCollection": that.getData.bind(that),
+                            "entity": that.data
+                        })));
+                    }
                 });
             },
             renderSearchResultLayoutView: function(options) {
                 var that = this;
+
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
                     var value = {
                         'tag': "PII",
@@ -452,11 +457,13 @@ define(['require',
             renderRelationLayoutView: function(options) {
                 var that = this;
                 require(['views/glossary/TermRelationAttributeLayoutView'], function(TermRelationAttributeLayoutView) {
-                    that.RRelationLayoutView.show(new TermRelationAttributeLayoutView(_.extend({}, options, {
-                        "entityName": that.ui.title.text(),
-                        "fetchCollection": that.getData.bind(that),
-                        "data": that.data
-                    })));
+                    if (that.RRelationLayoutView) {
+                        that.RRelationLayoutView.show(new TermRelationAttributeLayoutView(_.extend({}, options, {
+                            "entityName": that.ui.title.text(),
+                            "fetchCollection": that.getData.bind(that),
+                            "data": that.data
+                        })));
+                    }
                 });
             },
         });

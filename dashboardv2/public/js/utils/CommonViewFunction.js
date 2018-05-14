@@ -622,9 +622,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
             });
             modal.on('ok', function() {
-                if (isGlossaryView) {
-                    modal.$el.find('button.ok').attr("disabled", true);
-                }
+                modal.$el.find('button.ok').attr("disabled", true);
                 CommonViewFunction.createEditGlossaryCategoryTermSubmit(_.extend({ "ref": view, "modal": modal }, options));
             });
             modal.on('closeModal', function() {
@@ -669,9 +667,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 modal.trigger('closeModal');
             },
             cust_error: function() {
-                if (isGlossaryView) {
-                    modal.$el.find('button.ok').attr("disabled", false);
-                }
+                modal.$el.find('button.ok').attr("disabled", false);
             }
         }
         if (model) {

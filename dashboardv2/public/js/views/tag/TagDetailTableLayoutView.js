@@ -102,9 +102,11 @@ define(['require',
                 var that = this;
                 require(['utils/TableLayout'], function(TableLayout) {
                     var cols = new Backgrid.Columns(that.getSchemaTableColumns());
-                    that.RTagTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
-                        columns: cols
-                    })));
+                    if (that.RTagTableLayoutView) {
+                        that.RTagTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
+                            columns: cols
+                        })));
+                    }
                 });
             },
             getSchemaTableColumns: function(options) {
