@@ -1,4 +1,4 @@
----++ Authentication & Authorization in Apache Atlas.
+---++ Authentication in Apache Atlas.
 
 ---+++ Authentication
 
@@ -111,56 +111,3 @@ atlas.authentication.method.ldap.user.searchfilter=(uid={0})
 atlas.authentication.method.ldap.default.role=ROLE_USER
 </verbatim>
 
----+++ Authorization
-
-
----++++ Atlas Authorization Methods [Simple/Ranger]
-To set authorization in atlas, update the =atlas.authorizer.impl= properties in =atlas-application.properties=
-   * *Simple*
-   * *Ranger*
-
-
-
-<verbatim>
-atlas.authorizer.impl=simple | ranger | <Qualified Authorizer Class Name>
-</verbatim>
-
----++++ Simple Authorizer.
-
-In Simple Authorizer the policy store file is configured locally. The path of policy store file is set in
-=atlas.auth.policy.file= property of =atlas-application.properties=
-
-<verbatim>
-atlas.auth.policy.file={{conf_dir}}/policy-store.txt
-</verbatim>
-
-The policy store file format is as follows:
-
-<verbatim>
-Policy_Name;;User_Name:Operations_Allowed;;Group_Name:Operations_Allowed;;Resource_Type:Resource_Name
-</verbatim>
-
-eg. of admin policy:
-<verbatim>
-adminPolicy;;admin:rwud;;ROLE_ADMIN:rwud;;type:*,entity:*,operation:*,taxonomy:*,term:*
-</verbatim>
-
-Note : The User_Name, Group_Name and Operations_Allowed are comma(,) separated lists.
-
-Authorizer Resource Types:
-   * Operation
-   * Type
-   * Entity
-   * Taxonomy
-   * Term
-   * Unknown
-
-
-Operations_Allowed are  r = read, w = write, u = update, d = delete
-
-
----++++ Ranger Authorizer.
-
-Ranger Authorizer is enabled by activating Atlas-Ranger plugin from Ambari.
-
-For more details visit the [[http://ranger.apache.org/][Apache-Ranger documentation]].

@@ -55,7 +55,9 @@ capabilities around these data assets for data scientists, analysts and the data
    * [[Search - Basic][Search: Basic]]
    * [[Search - Advanced][Search: Advanced]]
    * [[security][Security]]
-   * [[Authentication-Authorization][Authentication and Authorization]]
+   * [[Atlas-Authentication][Authentication]]
+   * [[Atlas-Authorization-Model][Atlas Authorization Model]]
+      * [[Configure-simple-authorizer][Steps to configure Atlas Simple Authorizer]]
    * [[Configuration][Configuration]]
    * [[Notifications][Notifications]]
    * Hooks & Bridges
