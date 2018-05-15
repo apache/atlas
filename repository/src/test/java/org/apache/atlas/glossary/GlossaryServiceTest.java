@@ -164,7 +164,7 @@ public class GlossaryServiceTest {
 
         fixedRateMortgage = new AtlasGlossaryTerm();
         fixedRateMortgage.setQualifiedName("fixed_mtg@testBankingGlossary");
-        fixedRateMortgage.setDisplayName("15/30 yr mortgage");
+        fixedRateMortgage.setDisplayName("Conventional mortgage");
         fixedRateMortgage.setShortDescription("Short description");
         fixedRateMortgage.setLongDescription("Long description");
         fixedRateMortgage.setAbbreviation("FMTG");
