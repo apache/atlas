@@ -763,7 +763,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         }
     }
     CommonViewFunction.addRestCsrfCustomHeader = function(xhr, settings) {
-        //    if (settings.url == null || !settings.url.startsWith('/webhdfs/')) {
         if (settings.url == null) {
             return;
         }

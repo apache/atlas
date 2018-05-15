@@ -48,6 +48,13 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
                 return false;
             }
         },
+        startsWith: function(str, matchStr) {
+            if (str && matchStr && _.isString(str) && _.isString(matchStr)) {
+                return str.lastIndexOf(matchStr, 0) === 0
+            } else {
+                return;
+            }
+        },
         isUndefinedNull: function(val) {
             if (_.isUndefined(val) || _.isNull(val)) {
                 return true

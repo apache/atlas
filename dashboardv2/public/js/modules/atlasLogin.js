@@ -18,7 +18,7 @@
 
 
 //Define indexOf for IE
-if (!Array.indexOf) {
+if (!Array.prototype.indexOf) {
     Array.prototype.indexOf = function(obj, start) {
         for (var i = (start || 0); i < this.length; i++) {
             if (this[i] == obj) {
@@ -29,6 +29,11 @@ if (!Array.indexOf) {
     };
 }
 
+if (!String.prototype.startsWith) {
+    String.prototype.startsWith = function(str, matchStr) {
+        return str.lastIndexOf(matchStr, 0) === 0
+    }
+}
 
 function doLogin() {
 

@@ -268,7 +268,7 @@ define(['require',
                         if (index == 0 && selectedItem.guid == objGuid) {
                             that.glossary.selectedItem = selectedItem;
                             that.query[that.viewType].model = selectedItem.model;
-                            that.query[that.viewType].type = selectedItem.gType;
+                            that.query[that.viewType].type = selectedItem.type;
                             return {
                                 'opened': true,
                                 'selected': true
@@ -279,7 +279,7 @@ define(['require',
                             that.query[that.viewType].isNodeNotFoundAtLoad = false;
                             that.glossary.selectedItem = node
                             that.query[that.viewType].model = node.model;
-                            that.query[that.viewType].type = node.gType;
+                            that.query[that.viewType].type = node.type;
                             return {
                                 'opened': true,
                                 'selected': true

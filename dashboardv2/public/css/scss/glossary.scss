@@ -27,7 +27,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    .jstree-children {
+    .jstree-children.jstree-children>li>a {
         max-width: 500px;
     }
     .jstree-clicked,

@@ -549,8 +549,9 @@ define(['require',
                                 this.ui.tagLov.trigger("change", { 'manual': true });
                             }
                         }
-
-                        this.ui.termLov.append('<option value="' + this.value.term + '" selected="selected">' + this.value.term + '</option>');
+                        if (this.value.term) {
+                            this.ui.termLov.append('<option value="' + this.value.term + '" selected="selected">' + this.value.term + '</option>');
+                        }
                         if (this.ui.termLov.data('select2')) {
                             if (this.ui.termLov.val() !== this.value.term) {
                                 this.value.term = null;
