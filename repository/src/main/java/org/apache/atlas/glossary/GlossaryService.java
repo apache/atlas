@@ -66,6 +66,8 @@ public class GlossaryService {
     private final GlossaryCategoryUtils glossaryCategoryUtils;
     private final AtlasTypeRegistry     atlasTypeRegistry;
 
+    private final char[] invalidNameChars = {'@', '.'};
+
     @Inject
     public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore, final AtlasTypeRegistry typeRegistry) {
         this.dataAccess = dataAccess;
@@ -134,6 +136,8 @@ public class GlossaryService {
         if (StringUtils.isEmpty(atlasGlossary.getQualifiedName())) {
             if (StringUtils.isEmpty(atlasGlossary.getDisplayName())) {
                 throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED);
+            } else if (isNameInvalid(atlasGlossary.getDisplayName())){
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
             } else {
                 atlasGlossary.setQualifiedName(atlasGlossary.getDisplayName());
             }
@@ -242,6 +246,10 @@ public class GlossaryService {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DisplayName can't be null/empty");
         }
 
+        if (isNameInvalid(atlasGlossary.getDisplayName())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+        }
+
         AtlasGlossary storeObject = dataAccess.load(atlasGlossary);
 
         if (!storeObject.equals(atlasGlossary)) {
@@ -321,6 +329,9 @@ public class GlossaryService {
         if (StringUtils.isEmpty(glossaryTerm.getDisplayName())) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_QUALIFIED_NAME_CANT_BE_DERIVED);
         }
+        if (isNameInvalid(glossaryTerm.getDisplayName())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+        }
 
         // This might fail for the case when the term's qualifiedName has been updated and the duplicate request comes in with old name
         if (termExists(glossaryTerm)) {
@@ -375,6 +386,10 @@ public class GlossaryService {
 
         if (StringUtils.isEmpty(atlasGlossaryTerm.getDisplayName())) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DisplayName can't be null/empty");
+        }
+
+        if (isNameInvalid(atlasGlossaryTerm.getDisplayName())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
         AtlasGlossaryTerm storeObject = dataAccess.load(atlasGlossaryTerm);
@@ -495,6 +510,10 @@ public class GlossaryService {
         if (Objects.isNull(glossaryCategory.getDisplayName())) {
             throw new AtlasBaseException(AtlasErrorCode.MISSING_CATEGORY_DISPLAY_NAME);
         }
+        if (isNameInvalid(glossaryCategory.getDisplayName())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+        }
+
 
         // This might fail for the case when the category's qualifiedName has been updated during a hierarchy change
         // and the duplicate request comes in with old name
@@ -559,6 +578,10 @@ public class GlossaryService {
 
         if (StringUtils.isEmpty(glossaryCategory.getDisplayName())) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DisplayName can't be null/empty");
+        }
+
+        if (isNameInvalid(glossaryCategory.getDisplayName())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
         AtlasGlossaryCategory storeObject = dataAccess.load(glossaryCategory);
@@ -950,6 +973,10 @@ public class GlossaryService {
         dataAccess.load(terms).iterator().forEachRemaining(t -> termMap.put(t.getGuid(), t));
 
         termHeaders.forEach(t -> t.setDisplayText(termMap.get(t.getTermGuid()).getDisplayName()));
+    }
+
+    private boolean isNameInvalid(String name) {
+        return StringUtils.containsAny(name, invalidNameChars);
     }
 
     static class PaginationHelper<T> {
