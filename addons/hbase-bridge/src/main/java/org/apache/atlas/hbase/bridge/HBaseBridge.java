@@ -55,6 +55,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HBaseBridge {
@@ -323,11 +324,13 @@ public class HBaseBridge {
     private List<NamespaceDescriptor> getMatchingNameSpaces(String nameSpace) throws Exception {
         List<NamespaceDescriptor> ret                  = new ArrayList<>();
         NamespaceDescriptor[]     namespaceDescriptors = hbaseAdmin.listNamespaceDescriptors();
+        Pattern                                pattern = Pattern.compile(nameSpace);
 
         for (NamespaceDescriptor namespaceDescriptor:namespaceDescriptors){
-            String nmSpace = namespaceDescriptor.getName();
+            String  nmSpace = namespaceDescriptor.getName();
+            Matcher matcher = pattern.matcher(nmSpace);
 
-            if (nmSpace.matches(nameSpace)){
+            if (matcher.find()){
                 ret.add(namespaceDescriptor);
             }
         }
