@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -350,8 +351,8 @@ public class ClassificationPropagationTest {
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, PII_tag3.getTypeName(), employees2.getGuid());
 
         AtlasRelationship process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
-        List<AtlasClassification> propagatedClassifications    = process3_employee_union_relationship.getPropagatedClassifications();
-        List<AtlasClassification> blockedClassifications       = process3_employee_union_relationship.getBlockedPropagatedClassifications();
+        Set<AtlasClassification> propagatedClassifications     = process3_employee_union_relationship.getPropagatedClassifications();
+        Set<AtlasClassification> blockedClassifications        = process3_employee_union_relationship.getBlockedPropagatedClassifications();
 
         assertNotNull(propagatedClassifications);
         assertClassificationEquals(propagatedClassifications, PII_tag1);
@@ -363,7 +364,7 @@ public class ClassificationPropagationTest {
         PII_tag2.setEntityGuid(employees1.getGuid());
         PII_tag3.setEntityGuid(employees2.getGuid());
 
-        process3_employee_union_relationship.setBlockedPropagatedClassifications(Arrays.asList(PII_tag2, PII_tag3));
+        process3_employee_union_relationship.setBlockedPropagatedClassifications(new HashSet<>(Arrays.asList(PII_tag2, PII_tag3)));
         relationshipStore.update(process3_employee_union_relationship);
 
         process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
@@ -383,7 +384,7 @@ public class ClassificationPropagationTest {
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, PII_tag1.getTypeName(), hdfs_path.getGuid());
     }
 
-    private void assertClassificationEquals(List<AtlasClassification> propagatedClassifications, AtlasClassification expected) {
+    private void assertClassificationEquals(Set<AtlasClassification> propagatedClassifications, AtlasClassification expected) {
         String expectedTypeName = expected.getTypeName();
         for (AtlasClassification c : propagatedClassifications) {
             if(c.getTypeName().equals(expectedTypeName)) {
@@ -417,19 +418,19 @@ public class ClassificationPropagationTest {
         AtlasRelationship process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
 
         // remove blocked propagated classification entry for PII (from employees2) - allow PII from employees2 to propagate to employee_union
-        process3_employee_union_relationship.setBlockedPropagatedClassifications(Arrays.asList(PII_tag3));
+        process3_employee_union_relationship.setBlockedPropagatedClassifications(new HashSet<>(Arrays.asList(PII_tag3)));
         relationshipStore.update(process3_employee_union_relationship);
 
-        process3_employee_union_relationship                = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
-        List<AtlasClassification> propagatedClassifications = process3_employee_union_relationship.getPropagatedClassifications();
-        List<AtlasClassification> blockedClassifications    = process3_employee_union_relationship.getBlockedPropagatedClassifications();
+        process3_employee_union_relationship               = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        Set<AtlasClassification> propagatedClassifications = process3_employee_union_relationship.getPropagatedClassifications();
+        Set<AtlasClassification> blockedClassifications    = process3_employee_union_relationship.getBlockedPropagatedClassifications();
 
         assertClassificationExistInList(propagatedClassifications, PII_tag1);
         assertClassificationExistInList(propagatedClassifications, PII_tag2);
         assertClassificationExistInList(blockedClassifications, PII_tag3);
 
         // remove all blocked propagated classification entry
-        process3_employee_union_relationship.setBlockedPropagatedClassifications(Collections.emptyList());
+        process3_employee_union_relationship.setBlockedPropagatedClassifications(Collections.emptySet());
         relationshipStore.update(process3_employee_union_relationship);
 
         process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
@@ -442,7 +443,7 @@ public class ClassificationPropagationTest {
         assertTrue(blockedClassifications.isEmpty());
     }
 
-    private void assertClassificationExistInList(List<AtlasClassification> classifications, AtlasClassification classification) {
+    private void assertClassificationExistInList(Set<AtlasClassification> classifications, AtlasClassification classification) {
         String  classificationName  = classification.getTypeName();
         String  entityGuid          = classification.getEntityGuid();
         boolean foundClassification = false;

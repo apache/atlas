@@ -65,6 +65,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -1042,11 +1043,11 @@ public final class EntityGraphRetriever {
     }
 
     private void readClassificationsFromEdge(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo, boolean extendedInfo) throws AtlasBaseException {
-        List<AtlasVertex>         classificationVertices    = getClassificationVertices(edge);
-        List<String>              blockedClassificationIds  = getBlockedClassificationIds(edge);
-        List<AtlasClassification> propagatedClassifications = new ArrayList<>();
-        List<AtlasClassification> blockedClassifications    = new ArrayList<>();
-        AtlasRelationship         relationship              = relationshipWithExtInfo.getRelationship();
+        List<AtlasVertex>        classificationVertices    = getClassificationVertices(edge);
+        List<String>             blockedClassificationIds  = getBlockedClassificationIds(edge);
+        AtlasRelationship        relationship              = relationshipWithExtInfo.getRelationship();
+        Set<AtlasClassification> propagatedClassifications = new HashSet<>();
+        Set<AtlasClassification> blockedClassifications    = new HashSet<>();
 
         for (AtlasVertex classificationVertex : classificationVertices) {
             String              classificationId = classificationVertex.getIdForDisplay();

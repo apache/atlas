@@ -30,12 +30,13 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -82,8 +83,8 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
     public enum Status { ACTIVE, DELETED }
 
-    private List<AtlasClassification> propagatedClassifications;
-    private List<AtlasClassification> blockedPropagatedClassifications;
+    private Set<AtlasClassification> propagatedClassifications;
+    private Set<AtlasClassification> blockedPropagatedClassifications;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -198,7 +199,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
             }
 
             if (CollectionUtils.isNotEmpty((List) propagatedClassifications)) {
-                this.propagatedClassifications = new ArrayList<>();
+                this.propagatedClassifications = new HashSet<>();
 
                 for (Object elem : (List) propagatedClassifications) {
                     if (elem instanceof AtlasClassification) {
@@ -210,7 +211,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
             }
 
             if (CollectionUtils.isNotEmpty((List) blockedPropagatedClassifications)) {
-                this.blockedPropagatedClassifications = new ArrayList<>();
+                this.blockedPropagatedClassifications = new HashSet<>();
 
                 for (Object elem : (List) blockedPropagatedClassifications) {
                     if (elem instanceof AtlasClassification) {
@@ -308,19 +309,19 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         return "-" + Long.toString(s_nextId.getAndIncrement());
     }
 
-    public List<AtlasClassification> getPropagatedClassifications() {
+    public Set<AtlasClassification> getPropagatedClassifications() {
         return propagatedClassifications;
     }
 
-    public void setPropagatedClassifications(List<AtlasClassification> propagatedClassifications) {
+    public void setPropagatedClassifications(Set<AtlasClassification> propagatedClassifications) {
         this.propagatedClassifications = propagatedClassifications;
     }
 
-    public List<AtlasClassification> getBlockedPropagatedClassifications() {
+    public Set<AtlasClassification> getBlockedPropagatedClassifications() {
         return blockedPropagatedClassifications;
     }
 
-    public void setBlockedPropagatedClassifications(List<AtlasClassification> blockedPropagatedClassifications) {
+    public void setBlockedPropagatedClassifications(Set<AtlasClassification> blockedPropagatedClassifications) {
         this.blockedPropagatedClassifications = blockedPropagatedClassifications;
     }
 
@@ -330,7 +331,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
     private void init(String guid, AtlasObjectId end1, AtlasObjectId end2, String label, PropagateTags propagateTags,
                       Status status, String createdBy, String updatedBy, Date createTime, Date updateTime, Long version,
-                      List<AtlasClassification> propagatedClassifications, List<AtlasClassification> blockedPropagatedClassifications) {
+                      Set<AtlasClassification> propagatedClassifications, Set<AtlasClassification> blockedPropagatedClassifications) {
         setGuid(guid);
         setEnd1(end1);
         setEnd2(end2);

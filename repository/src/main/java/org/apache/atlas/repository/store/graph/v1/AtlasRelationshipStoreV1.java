@@ -357,7 +357,7 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
         return entityRetriever.mapEdgeToAtlasRelationship(relationshipEdge);
     }
 
-    private void handleBlockedClassifications(AtlasEdge edge, List<AtlasClassification> blockedPropagatedClassifications) throws AtlasBaseException {
+    private void handleBlockedClassifications(AtlasEdge edge, Set<AtlasClassification> blockedPropagatedClassifications) throws AtlasBaseException {
         if (blockedPropagatedClassifications != null) {
             List<AtlasVertex> propagatedClassificationVertices               = getClassificationVertices(edge);
             List<String>      currentClassificationIds                       = getBlockedClassificationIds(edge);
