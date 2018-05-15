@@ -413,11 +413,14 @@ public class GlossaryService {
 
         AtlasGlossaryTerm storeObject = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
 
+        // Term can't be deleted if it is assigned to any entity
+        if (CollectionUtils.isNotEmpty(storeObject.getAssignedEntities())) {
+            throw new AtlasBaseException(AtlasErrorCode.TERM_HAS_ENTITY_ASSOCIATION, storeObject.getGuid(), String.valueOf(storeObject.getAssignedEntities().size()));
+        }
+
         // Remove term from Glossary
         glossaryTermUtils.processTermRelations(storeObject, storeObject, GlossaryUtils.RelationshipOperation.DELETE);
 
-        // Remove term associations with Entities
-        glossaryTermUtils.processTermDissociation(storeObject, storeObject.getAssignedEntities());
 
         // Now delete the term
         dataAccess.delete(termGuid);

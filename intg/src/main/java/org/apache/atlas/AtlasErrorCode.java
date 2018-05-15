@@ -146,6 +146,7 @@ public enum AtlasErrorCode {
     INVALID_TERM_DISSOCIATION(400, "ATLAS-400-00-080", "Given term (guid={0}) is not associated to entity(guid={1})"),
     ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-081", "{0}.{1}: invalid attribute type. Attribute cannot be of type classification"),
     MISSING_CATEGORY_DISPLAY_NAME(400, "ATLAS-400-00-082", "Category displayName is empty/null"),
+    TERM_HAS_ENTITY_ASSOCIATION(400, "ATLAS-400-00-086", "Term (guid={}) can't be deleted as it has been assigned to {} entities."),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
