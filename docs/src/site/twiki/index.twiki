@@ -58,6 +58,7 @@ capabilities around these data assets for data scientists, analysts and the data
    * [[Atlas-Authentication][Authentication]]
    * [[Atlas-Authorization-Model][Atlas Authorization Model]]
       * [[Configure-simple-authorizer][Steps to configure Atlas Simple Authorizer]]
+   * [[ClassificationPropagation][Classification Propagation]]
    * [[Configuration][Configuration]]
    * [[Notifications][Notifications]]
    * Hooks & Bridges
