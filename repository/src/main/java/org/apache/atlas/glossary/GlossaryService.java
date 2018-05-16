@@ -136,7 +136,8 @@ public class GlossaryService {
         if (StringUtils.isEmpty(atlasGlossary.getQualifiedName())) {
             if (StringUtils.isEmpty(atlasGlossary.getDisplayName())) {
                 throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED);
-            } else if (isNameInvalid(atlasGlossary.getDisplayName())){
+            }
+            if (isNameInvalid(atlasGlossary.getDisplayName())){
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
             } else {
                 atlasGlossary.setQualifiedName(atlasGlossary.getDisplayName());
@@ -326,11 +327,16 @@ public class GlossaryService {
         if (Objects.isNull(glossaryTerm.getAnchor())) {
             throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ANCHOR);
         }
-        if (StringUtils.isEmpty(glossaryTerm.getDisplayName())) {
-            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_QUALIFIED_NAME_CANT_BE_DERIVED);
-        }
-        if (isNameInvalid(glossaryTerm.getDisplayName())) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+        if (StringUtils.isEmpty(glossaryTerm.getQualifiedName())) {
+            if (StringUtils.isEmpty(glossaryTerm.getDisplayName())) {
+                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_QUALIFIED_NAME_CANT_BE_DERIVED);
+            }
+
+            if (isNameInvalid(glossaryTerm.getDisplayName())){
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+            } else {
+                glossaryTerm.setQualifiedName(glossaryTerm.getDisplayName());
+            }
         }
 
         // This might fail for the case when the term's qualifiedName has been updated and the duplicate request comes in with old name
@@ -507,13 +513,16 @@ public class GlossaryService {
         if (Objects.isNull(glossaryCategory.getAnchor())) {
             throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ANCHOR);
         }
-        if (Objects.isNull(glossaryCategory.getDisplayName())) {
-            throw new AtlasBaseException(AtlasErrorCode.MISSING_CATEGORY_DISPLAY_NAME);
+        if (StringUtils.isEmpty(glossaryCategory.getQualifiedName())) {
+            if (StringUtils.isEmpty(glossaryCategory.getDisplayName())) {
+                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_CATEGORY_QUALIFIED_NAME_CANT_BE_DERIVED);
+            }
+            if (isNameInvalid(glossaryCategory.getDisplayName())){
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+            } else {
+                glossaryCategory.setQualifiedName(glossaryCategory.getDisplayName());
+            }
         }
-        if (isNameInvalid(glossaryCategory.getDisplayName())) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
-        }
-
 
         // This might fail for the case when the category's qualifiedName has been updated during a hierarchy change
         // and the duplicate request comes in with old name

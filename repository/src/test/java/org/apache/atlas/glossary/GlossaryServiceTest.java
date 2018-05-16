@@ -126,7 +126,6 @@ public class GlossaryServiceTest {
 
         // Category
         accountCategory = new AtlasGlossaryCategory();
-        accountCategory.setQualifiedName("acc@testBankingGlossary");
         accountCategory.setDisplayName("Account categorization");
         accountCategory.setShortDescription("Short description");
         accountCategory.setLongDescription("Long description");
@@ -138,14 +137,12 @@ public class GlossaryServiceTest {
         customerCategory.setLongDescription("Long description");
 
         mortgageCategory = new AtlasGlossaryCategory();
-        mortgageCategory.setQualifiedName("mtg@testBankingGlossary");
         mortgageCategory.setDisplayName("Mortgage categorization");
         mortgageCategory.setShortDescription("Short description");
         mortgageCategory.setLongDescription("Long description");
 
         // Terms
         checkingAccount = new AtlasGlossaryTerm();
-        checkingAccount.setQualifiedName("chk_acc@testBankingGlossary");
         checkingAccount.setDisplayName("A checking account");
         checkingAccount.setShortDescription("Short description");
         checkingAccount.setLongDescription("Long description");
@@ -163,7 +160,6 @@ public class GlossaryServiceTest {
         savingsAccount.setUsage("N/A");
 
         fixedRateMortgage = new AtlasGlossaryTerm();
-        fixedRateMortgage.setQualifiedName("fixed_mtg@testBankingGlossary");
         fixedRateMortgage.setDisplayName("Conventional mortgage");
         fixedRateMortgage.setShortDescription("Short description");
         fixedRateMortgage.setLongDescription("Long description");
