@@ -118,7 +118,9 @@ define(['require',
                 this.$("[data-id='typeName']").text(typeName);
                 var getElement = function(options) {
                     var name = options.entityName ? options.entityName : Utils.getName(options, "displayText");
-                    return "<li><a href=#!/detailPage/" + options.guid + "?tabActive=relationship>" + _.escape(name) + " (" + options.typeName + ")</a></li>";
+                    return "<li class=" + (Enums.entityStateReadOnly[options.relationshipStatus] ? "deleted-relation" : '') + "><a href=#!/detailPage/" + options.guid + "?tabActive=relationship>" + _.escape(name) + " (" + options.typeName + ")</a>" +
+                        '<button type="button" title="Deleted" class="btn btn-sm deleteBtn deletedTableBtn ' + (Enums.entityStateReadOnly[options.relationshipStatus] ? "" : 'hide') + '"><i class="fa fa-trash"></i></button>' +
+                        "</li>";
                 }
                 if (_.isArray(data)) {
                     if (data.length > 1) {
@@ -304,6 +306,20 @@ define(['require',
                         });
                     }
                 })
+
+                function isSingleRelationDeleted(data) {
+                    var d = $.extend(true, {}, data);
+                    if (!_.isArray(d.value)) {
+                        d.value = [d.value];
+                    }
+                    if (d && _.isArray(d.value)) {
+                        if (d.value.length == 1 && Enums.entityStateReadOnly[_.first(d.value).relationshipStatus]) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                }
                 circleContainer.append("circle")
                     .attr("cx", 0)
                     .attr("cy", 0)
@@ -314,6 +330,8 @@ define(['require',
                     .attr("fill", function(d) {
                         if (d && d.value && d.value.guid == that.guid) {
                             return activeEntityColor;
+                        } else if (isSingleRelationDeleted(d)) {
+                            return "#BB5838";
                         } else {
                             return "#e0e0e0";
                         }
@@ -342,6 +360,8 @@ define(['require',
                     })
                     .attr("fill", function(d) {
                         if (d && d.value && d.value.guid == that.guid) {
+                            return "#fff";
+                        } else if (isSingleRelationDeleted(d)) {
                             return "#fff";
                         } else {
                             return "#000";
