@@ -120,7 +120,6 @@ atlas.graph.index.search.solr.wait-searcher=true
                                         <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/src-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/migration-exporter.xml</descriptor>
-                                        <descriptor>src/main/assemblies/omag-server.xml</descriptor>
                                     </descriptors>
                                     <finalName>apache-atlas-${project.version}</finalName>
                                     <tarLongFileMode>gnu</tarLongFileMode>
