@@ -34,6 +34,12 @@
         &.btn[data-id="addTag"] {
             display: none;
         }
+        &.btn[data-id="addTerm"] {
+            display: none;
+        }
+        &.btn[data-id="editButton"] {
+            display: none;
+        }
         &.editbutton[data-id="editButton"] {
             display: none !important;
         }

@@ -30,7 +30,7 @@
         box-shadow: 4px 13px 14px -12px;
         background: #e7e7e7;
         transform: scaleX(0);
-        width: 200px;
+        width: 240px;
         transition: transform 0.3s ease-in;
         &.open {
             transform: scaleX(1);
@@ -55,12 +55,22 @@
             overflow: auto;
             list-style-type: decimal;
             list-style-position: outside;
-            padding-left: 30px;
+            padding-left: 15px;
         }
         ul>li {
             word-wrap: break-word;
             margin-bottom: 5px;
             text-align: left;
+
+            &.deleted-relation {
+                a {
+                    color: #BB5838 !important;
+                }
+                .deleteBtn {
+                    padding: 2px 8px !important;
+                    margin: 5px 5px !important;
+                }
+            }
         }
     }
 }
