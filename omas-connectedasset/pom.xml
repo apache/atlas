@@ -26,7 +26,7 @@
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
 
     <artifactId>omas-connectedasset</artifactId>
@@ -41,19 +41,19 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>om-fwk-ocf</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.0.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>omrs</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.0.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>omag-api</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.0.0</version>
         </dependency>
 
         <dependency>

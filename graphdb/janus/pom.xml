@@ -23,7 +23,7 @@
     <parent>
         <artifactId>atlas-graphdb</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
     <artifactId>atlas-graphdb-janus</artifactId>
     <description>Apache Atlas JanusGraph DB Impl</description>
