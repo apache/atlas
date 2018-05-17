@@ -348,7 +348,12 @@ public class GlossaryService {
         glossaryTermUtils.processTermRelations(storeObject, glossaryTerm, GlossaryUtils.RelationshipOperation.CREATE);
 
         // Re-load term after handling relations
-        storeObject = dataAccess.load(glossaryTerm);
+        if (StringUtils.equals(storeObject.getQualifiedName(), glossaryTerm.getQualifiedName())) {
+            storeObject = dataAccess.load(glossaryTerm);
+        } else {
+            glossaryTerm.setQualifiedName(storeObject.getQualifiedName());
+            storeObject = dataAccess.save(glossaryTerm);
+        }
         setInfoForRelations(storeObject);
 
         if (DEBUG_ENABLED) {
@@ -409,11 +414,17 @@ public class GlossaryService {
                 LOG.debug("Glossary term had no immediate attr updates. Exception: {}", e.getMessage());
             } finally {
                 glossaryTermUtils.processTermRelations(storeObject, atlasGlossaryTerm, GlossaryUtils.RelationshipOperation.UPDATE);
-            }
 
+                // If qualifiedName changes due to anchor change, we need to persist the term again with updated qualifiedName
+                if (StringUtils.equals(storeObject.getQualifiedName(), atlasGlossaryTerm.getQualifiedName())) {
+                    storeObject = dataAccess.load(atlasGlossaryTerm);
+                } else {
+                    atlasGlossaryTerm.setQualifiedName(storeObject.getQualifiedName());
+                    storeObject = dataAccess.save(atlasGlossaryTerm);
+                }
+            }
         }
 
-        storeObject = dataAccess.load(atlasGlossaryTerm);
         setInfoForRelations(storeObject);
 
         if (DEBUG_ENABLED) {
@@ -539,11 +550,11 @@ public class GlossaryService {
         dataAccess.save(impactedCategories.values());
 
         // Since the current category is also affected, we need to update qualifiedName and save again
-        if (!StringUtils.equals(glossaryCategory.getQualifiedName(), storeObject.getQualifiedName())) {
+        if (StringUtils.equals(glossaryCategory.getQualifiedName(), storeObject.getQualifiedName())) {
+            storeObject = dataAccess.load(glossaryCategory);
+        } else {
             glossaryCategory.setQualifiedName(storeObject.getQualifiedName());
             storeObject = dataAccess.save(glossaryCategory);
-        } else {
-            storeObject = dataAccess.load(glossaryCategory);
         }
 
         setInfoForRelations(storeObject);

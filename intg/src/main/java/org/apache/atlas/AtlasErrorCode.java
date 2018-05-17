@@ -143,11 +143,11 @@ public enum AtlasErrorCode {
     RELATIONSHIP_END_IS_NULL(400, "ATLAS-400-00-07D", "Relationship end is invalid. Expected {0} but is NULL"),
     INVALID_TERM_RELATION_TO_SELF(400, "ATLAS-400-00-07E", "Invalid Term relationship: Term can't have a relationship with self"),
     INVALID_CHILD_CATEGORY_DIFFERENT_GLOSSARY(400, "ATLAS-400-00-07F", "Invalid child category relationship: Child category (guid = {0}) belongs to different glossary"),
-    INVALID_TERM_DISSOCIATION(400, "ATLAS-400-00-080", "Given term (guid={0}) is not associated to entity(guid={1})"),
+    INVALID_TERM_DISSOCIATION(400, "ATLAS-400-00-080", "Given relationshipGuid({0}) is invalid for term (guid={1}) and entity(guid={2})"),
     ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-081", "{0}.{1}: invalid attribute type. Attribute cannot be of type classification"),
     MISSING_CATEGORY_DISPLAY_NAME(400, "ATLAS-400-00-082", "Category displayName is empty/null"),
     INVALID_DISPLAY_NAME(400, "ATLAS-400-00-083", "displayName cannot contain following special chars ('@', '.')"),
-    TERM_HAS_ENTITY_ASSOCIATION(400, "ATLAS-400-00-086", "Term (guid={}) can't be deleted as it has been assigned to {} entities."),
+    TERM_HAS_ENTITY_ASSOCIATION(400, "ATLAS-400-00-086", "Term (guid={0}) can't be deleted as it has been assigned to {1} entities."),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
