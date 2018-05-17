@@ -121,7 +121,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 if (CollectionUtils.isNotEmpty(assignedEntities) && isRelationshipGuidSame(existingTermRelation, relatedObjectId)) {
                     relationshipStore.deleteById(relatedObjectId.getRelationshipGuid());
                 } else {
-                    throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_DISSOCIATION, glossaryTerm.getGuid(), relatedObjectId.getGuid());
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_DISSOCIATION, relatedObjectId.getRelationshipGuid(), glossaryTerm.getGuid(), relatedObjectId.getGuid());
                 }
             }
         }

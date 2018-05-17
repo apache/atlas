@@ -60,6 +60,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         ret.setLongDescription((String) entity.getAttribute("longDescription"));
         ret.setExamples((List<String>) entity.getAttribute("examples"));
         ret.setAbbreviation((String) entity.getAttribute("abbreviation"));
+        ret.setUsage((String) entity.getAttribute("usage"));
 
         Object anchor = entity.getRelationshipAttribute("anchor");
         if (anchor instanceof AtlasRelatedObjectId) {
@@ -212,6 +213,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         ret.setAttribute("longDescription", obj.getLongDescription());
         ret.setAttribute("examples", obj.getExamples());
         ret.setAttribute("abbreviation", obj.getAbbreviation());
+        ret.setAttribute("usage", obj.getUsage());
 
         if (CollectionUtils.isNotEmpty(obj.getClassifications())) {
             if (LOG.isDebugEnabled()) {
