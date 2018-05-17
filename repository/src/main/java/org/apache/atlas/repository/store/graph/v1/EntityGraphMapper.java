@@ -1280,6 +1280,7 @@ public class EntityGraphMapper {
             final AtlasEntityType                       entityType            = typeRegistry.getEntityTypeByName(entityTypeName);
             List<AtlasVertex>                           entitiesToPropagateTo = null;
             Map<AtlasVertex, List<AtlasClassification>> propagations          = null;
+            List<AtlasClassification>                   addClassifications    = new ArrayList<>(classifications.size());
 
             for (AtlasClassification c : classifications) {
                 AtlasClassification classification     = new AtlasClassification(c);
@@ -1360,6 +1361,8 @@ public class EntityGraphMapper {
                         LOG.debug(" --> Not propagating classification: [{}][{}] - propagation is disabled.", getTypeName(classificationVertex), entityTypeName);
                     }
                 }
+
+                addClassifications.add(classification);
             }
 
             // notify listeners on classification addition
@@ -1373,7 +1376,7 @@ public class EntityGraphMapper {
                 String                    entityGuid           = GraphHelper.getGuid(vertex);
                 AtlasEntityWithExtInfo    entityWithExtInfo    = instanceConverter.getAndCacheEntity(entityGuid);
                 AtlasEntity               entity               = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
-                List<AtlasClassification> addedClassifications = StringUtils.equals(entityGuid, guid) ? classifications : propagations.get(vertex);
+                List<AtlasClassification> addedClassifications = StringUtils.equals(entityGuid, guid) ? addClassifications : propagations.get(vertex);
 
                 if (CollectionUtils.isNotEmpty(addedClassifications)) {
                     entityChangeNotifier.onClassificationAddedToEntity(entity, addedClassifications);
