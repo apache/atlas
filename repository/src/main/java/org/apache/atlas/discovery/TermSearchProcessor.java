@@ -20,7 +20,6 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,21 +88,18 @@ public class TermSearchProcessor extends SearchProcessor {
             if (CollectionUtils.isEmpty(assignedEntities)) {
                 entityVertices.clear();
             } else {
-                CollectionUtils.filter(entityVertices, new Predicate() {
-                    @Override
-                    public boolean evaluate(Object o) {
-                        if (o instanceof AtlasVertex) {
-                            AtlasVertex entityVertex = (AtlasVertex) o;
+                CollectionUtils.filter(entityVertices, o -> {
+                    if (o instanceof AtlasVertex) {
+                        AtlasVertex entityVertex = (AtlasVertex) o;
 
-                            for (AtlasVertex assignedEntity : assignedEntities) {
-                                if (assignedEntity.getId().equals(entityVertex.getId())) {
-                                    return true;
-                                }
+                        for (AtlasVertex assignedEntity : assignedEntities) {
+                            if (assignedEntity.getId().equals(entityVertex.getId())) {
+                                return true;
                             }
                         }
-
-                        return false;
                     }
+
+                    return false;
                 });
             }
         }
