@@ -67,7 +67,7 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             }
         },
         entityCollectionaudit: function(guid) {
-            return this.baseUrl + '/entities/' + guid + '/audit';
+            return this.baseUrlV2 + '/entity/' + guid + '/audit';
         },
         classicationApiUrl: function(name, guid) {
             var typeUrl = this.typedefsUrl();

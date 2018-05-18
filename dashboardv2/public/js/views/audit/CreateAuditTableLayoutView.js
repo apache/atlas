@@ -79,12 +79,11 @@ define(['require',
                             var name = _.escape(parseDetailsObject[0]);
                         }
                     }
-                    var values = parseDetailsObject.values;
                     var name = ((name ? name : this.entityName));
                     this.ui.name.text(name);
-                    if (parseDetailsObject && parseDetailsObject.values) {
+                    if (parseDetailsObject) {
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
-                        table = CommonViewFunction.propertyTable({ scope: this, valueObject: values, attributeDefs: this.attributeDefs, extractJSON: { extractKey: 'value' } });
+                        table = CommonViewFunction.propertyTable({ scope: this, valueObject: parseDetailsObject, attributeDefs: this.attributeDefs, extractJSON: { extractKey: 'value' } });
                         if (table.length) {
                             this.ui.noData.hide();
                             this.ui.tableAudit.show();
