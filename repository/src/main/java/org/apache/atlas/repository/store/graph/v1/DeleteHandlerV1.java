@@ -161,7 +161,7 @@ public abstract class DeleteHandlerV1 {
      */
     public void deleteRelationships(Collection<AtlasEdge> edges) throws AtlasBaseException {
         for (AtlasEdge edge : edges) {
-            boolean isInternal = isInternalType(edge.getInVertex()) || isInternalType(edge.getOutVertex());
+            boolean isInternal = isInternalType(edge.getInVertex()) && isInternalType(edge.getOutVertex());
 
             if (!isInternal && getState(edge) == DELETED) {
                 if (LOG.isDebugEnabled()) {
@@ -851,7 +851,7 @@ public abstract class DeleteHandlerV1 {
         }
 
         if (edge != null) {
-            deleteEdge(edge, isInternalType(inVertex) || isInternalType(outVertex));
+            deleteEdge(edge, isInternalType(inVertex) && isInternalType(outVertex));
 
             RequestContextV1 requestContext = RequestContextV1.get();
 
