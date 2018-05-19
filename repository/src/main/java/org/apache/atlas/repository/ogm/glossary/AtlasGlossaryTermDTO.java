@@ -21,6 +21,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
@@ -86,7 +87,10 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
             for (Object assignedEntity : (Collection) assignedEntities) {
                 if (assignedEntity instanceof AtlasRelatedObjectId) {
                     AtlasRelatedObjectId id = (AtlasRelatedObjectId) assignedEntity;
-                    ret.addAssignedEntity(id);
+                    // Since the edges are not a hard delete we need to filter the DELETED ones
+                    if (id.getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
+                        ret.addAssignedEntity(id);
+                    }
                 }
             }
         }
