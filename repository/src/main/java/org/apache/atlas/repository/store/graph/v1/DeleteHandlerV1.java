@@ -933,9 +933,5 @@ public abstract class DeleteHandlerV1 {
 
             deleteEdgeReference(edge, CLASSIFICATION, false, false, instanceVertex);
         }
-
-        //remove traitNames and propagatedTraitNames property from instanceVertex
-        instanceVertex.removeProperty(TRAIT_NAMES_PROPERTY_KEY);
-        instanceVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
     }
 }
