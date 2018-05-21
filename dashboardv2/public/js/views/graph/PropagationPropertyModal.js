@@ -124,7 +124,7 @@ define(['require',
             this.viewType = 'flow';
             var that = this,
                 modalObj = {
-                    title: 'Edit Propagation Flow',
+                    title: 'Enable/Disable Propagation',
                     content: this,
                     okText: 'Update',
                     okCloses: false,
@@ -301,7 +301,7 @@ define(['require',
                 propagationStringValue += getTableRow({ "val": val, fromBlockClassification: false });
             });
 
-            classificationTableValue = "<table class='attriTable'><caption>Block Propagatation Table</caption><tr><th class='w30'>Classification</th><th>Entity Name</th><th class='w30'>Block Propagatation</th>" + propagationStringValue + "</table>";
+            classificationTableValue = "<table class='attriTable'><tr><th class='w30'>Classification</th><th>Entity Name</th><th class='w30'>Block Propagatation</th>" + propagationStringValue + "</table>";
 
             this.ui.PropagatedClassificationTable.append(_.isEmpty(propagationStringValue) ? "No Records Found." : classificationTableValue);
         },
@@ -333,12 +333,12 @@ define(['require',
         showEditPropagation: function() {
             this.$('.editPropagation').show();
             this.$('.propagatedClassificationTable').hide();
-            this.modal.$el.find('.modal-title').text("Edit Propagation Flow");
+            this.modal.$el.find('.modal-title').text("Enable/Disable Propagation");
         },
         showPropagatedClassificationTable: function() {
             this.$('.editPropagation').hide();
             this.$('.propagatedClassificationTable').show();
-            this.modal.$el.find('.modal-title').text("Block Propagation Table");
+            this.modal.$el.find('.modal-title').text("Select Classifications to Block Propagation");
         }
 
     });
