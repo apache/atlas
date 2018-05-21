@@ -221,6 +221,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 val = '<a title="' + key + '" href="#!/detailPage/' + keyValue + '">' + keyValue + '</a>';
             } else if (key.toLocaleLowerCase().indexOf("time") !== -1 || key.toLocaleLowerCase().indexOf("date") !== -1) {
                 val = new Date(keyValue);
+
+                if (isNaN(val.getTime())) {
+                    val = _.escape(keyValue);
+                }
             } else {
                 val = _.escape(keyValue);
             }
