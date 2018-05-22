@@ -71,4 +71,11 @@ public interface AtlasRelationshipStore {
      * @param guid relationship instance guid
      */
     void deleteById(String guid) throws AtlasBaseException;
+
+    /**
+     * Delete a relationship instance using guid.
+     * @param guid relationship instance guid
+     * @param forceDelete force delete the relationship edge
+     */
+    void deleteById(String guid, boolean forceDelete) throws AtlasBaseException;
 }

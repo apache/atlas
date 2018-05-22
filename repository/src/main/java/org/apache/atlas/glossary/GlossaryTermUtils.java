@@ -119,7 +119,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 }
                 AtlasRelatedObjectId existingTermRelation = assignedEntityMap.get(relatedObjectId.getGuid());
                 if (CollectionUtils.isNotEmpty(assignedEntities) && isRelationshipGuidSame(existingTermRelation, relatedObjectId)) {
-                    relationshipStore.deleteById(relatedObjectId.getRelationshipGuid());
+                    relationshipStore.deleteById(relatedObjectId.getRelationshipGuid(), true);
                 } else {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_DISSOCIATION, relatedObjectId.getRelationshipGuid(), glossaryTerm.getGuid(), relatedObjectId.getGuid());
                 }
@@ -176,7 +176,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                                   updatedTermAnchor.getGlossaryGuid(),
                                   storeObject.getDisplayName());
                     }
-                    relationshipStore.deleteById(existingAnchor.getRelationGuid());
+                    relationshipStore.deleteById(existingAnchor.getRelationGuid(), true);
 
                     // Derive the qualifiedName when anchor changes
                     String        anchorGlossaryGuid = updatedTermAnchor.getGlossaryGuid();
@@ -195,7 +195,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     if (DEBUG_ENABLED) {
                         LOG.debug("Deleting term anchor");
                     }
-                    relationshipStore.deleteById(existingAnchor.getRelationGuid());
+                    relationshipStore.deleteById(existingAnchor.getRelationGuid(), true);
                 }
                 break;
         }
@@ -406,7 +406,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 if (DEBUG_ENABLED) {
                     LOG.debug("Deleting relation guid = {}, text = {}", categorizationHeader.getRelationGuid(), categorizationHeader.getDisplayText());
                 }
-                relationshipStore.deleteById(categorizationHeader.getRelationGuid());
+                relationshipStore.deleteById(categorizationHeader.getRelationGuid(), true);
             }
         }
     }
@@ -466,7 +466,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 if (DEBUG_ENABLED) {
                     LOG.debug("Deleting term relation = {}, terms = {}", relation, termHeader.getDisplayText());
                 }
-                relationshipStore.deleteById(termHeader.getRelationGuid());
+                relationshipStore.deleteById(termHeader.getRelationGuid(), true);
             }
         }
     }

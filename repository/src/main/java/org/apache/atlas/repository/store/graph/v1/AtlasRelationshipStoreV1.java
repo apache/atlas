@@ -234,8 +234,14 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
     @Override
     @GraphTransaction
     public void deleteById(String guid) throws AtlasBaseException {
+        deleteById(guid, false);
+    }
+
+    @Override
+    @GraphTransaction
+    public void deleteById(String guid, boolean forceDelete) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> deleteById({})", guid);
+            LOG.debug("==> deleteById({}, {})", guid, forceDelete);
         }
 
         if (StringUtils.isEmpty(guid)) {
@@ -252,7 +258,7 @@ public class AtlasRelationshipStoreV1 implements AtlasRelationshipStore {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
         }
 
-        deleteHandler.deleteRelationships(Collections.singleton(edge));
+        deleteHandler.deleteRelationships(Collections.singleton(edge), forceDelete);
 
         // notify entities for added/removed classification propagation
         entityChangeNotifier.notifyPropagatedEntities();
