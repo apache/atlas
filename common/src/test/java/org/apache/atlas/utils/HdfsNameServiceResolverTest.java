@@ -22,36 +22,34 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertEquals;
 
 public class HdfsNameServiceResolverTest {
-    private HdfsNameServiceResolver hdfsNameServiceResolver = HdfsNameServiceResolver.getInstance();
-
 
     @Test
     public void testResolution() {
-        assertEquals(hdfsNameServiceResolver.getNameServiceID("test"), "");
-        assertEquals(hdfsNameServiceResolver.getNameServiceID("test1"), "");
-        assertEquals(hdfsNameServiceResolver.getNameServiceID("test", 8020), "");
-        assertEquals(hdfsNameServiceResolver.getNameServiceID("test1", 8020), "");
+//        assertEquals(HdfsNameServiceResolver.getNameServiceID("test"), "");
+//        assertEquals(HdfsNameServiceResolver.getNameServiceID("test1"), "");
+//        assertEquals(HdfsNameServiceResolver.getNameServiceID("test", 8020), "");
+//        assertEquals(HdfsNameServiceResolver.getNameServiceID("test1", 8020), "");
+//
+//        assertEquals(HdfsNameServiceResolver.getNameServiceID("ctr-e137-1514896590304-41888-01-000003"), "mycluster");
+//        assertEquals(HdfsNameServiceResolver.getNameServiceID("ctr-e137-1514896590304-41888-01-000003", 8020), "mycluster");
+//        assertEquals(HdfsNameServiceResolver.getNameServiceID("ctr-e137-1514896590304-41888-01-000004"), "mycluster");
+//        assertEquals(HdfsNameServiceResolver.getNameServiceID("ctr-e137-1514896590304-41888-01-000004", 8020), "mycluster");
 
-        assertEquals(hdfsNameServiceResolver.getNameServiceID("ctr-e137-1514896590304-41888-01-000003"), "mycluster");
-        assertEquals(hdfsNameServiceResolver.getNameServiceID("ctr-e137-1514896590304-41888-01-000003", 8020), "mycluster");
-        assertEquals(hdfsNameServiceResolver.getNameServiceID("ctr-e137-1514896590304-41888-01-000004"), "mycluster");
-        assertEquals(hdfsNameServiceResolver.getNameServiceID("ctr-e137-1514896590304-41888-01-000004", 8020), "mycluster");
+        assertEquals(HdfsNameServiceResolver.getPathWithNameServiceID("hdfs://ctr-e137-1514896590304-41888-01-000004:8020/tmp/xyz"), "hdfs://mycluster/tmp/xyz");
+        assertEquals(HdfsNameServiceResolver.getPathWithNameServiceID("hdfs://ctr-e137-1514896590304-41888-01-000004:8020/tmp/xyz/ctr-e137-1514896590304-41888-01-000004:8020"), "hdfs://mycluster/tmp/xyz/ctr-e137-1514896590304-41888-01-000004:8020");
+        assertEquals(HdfsNameServiceResolver.getNameServiceIDForPath("hdfs://ctr-e137-1514896590304-41888-01-000004:8020/tmp/xyz"), "mycluster");
 
-        assertEquals(hdfsNameServiceResolver.getPathWithNameServiceID("hdfs://ctr-e137-1514896590304-41888-01-000004:8020/tmp/xyz"), "hdfs://mycluster/tmp/xyz");
-        assertEquals(hdfsNameServiceResolver.getPathWithNameServiceID("hdfs://ctr-e137-1514896590304-41888-01-000004:8020/tmp/xyz/ctr-e137-1514896590304-41888-01-000004:8020"), "hdfs://mycluster/tmp/xyz/ctr-e137-1514896590304-41888-01-000004:8020");
-        assertEquals(hdfsNameServiceResolver.getNameServiceIDForPath("hdfs://ctr-e137-1514896590304-41888-01-000004:8020/tmp/xyz"), "mycluster");
+        assertEquals(HdfsNameServiceResolver.getPathWithNameServiceID("hdfs://ctr-e137-1514896590304-41888-01-000003:8020/tmp/xyz"), "hdfs://mycluster/tmp/xyz");
+        assertEquals(HdfsNameServiceResolver.getNameServiceIDForPath("hdfs://ctr-e137-1514896590304-41888-01-000003:8020/tmp/xyz"), "mycluster");
 
-        assertEquals(hdfsNameServiceResolver.getPathWithNameServiceID("hdfs://ctr-e137-1514896590304-41888-01-000003:8020/tmp/xyz"), "hdfs://mycluster/tmp/xyz");
-        assertEquals(hdfsNameServiceResolver.getNameServiceIDForPath("hdfs://ctr-e137-1514896590304-41888-01-000003:8020/tmp/xyz"), "mycluster");
+        assertEquals(HdfsNameServiceResolver.getPathWithNameServiceID("hdfs://ctr-e137-1514896590304-41888-01-000003/tmp/xyz"), "hdfs://mycluster/tmp/xyz");
+        assertEquals(HdfsNameServiceResolver.getNameServiceIDForPath("hdfs://ctr-e137-1514896590304-41888-01-000003/tmp/xyz"), "mycluster");
 
-        assertEquals(hdfsNameServiceResolver.getPathWithNameServiceID("hdfs://ctr-e137-1514896590304-41888-01-000003/tmp/xyz"), "hdfs://mycluster/tmp/xyz");
-        assertEquals(hdfsNameServiceResolver.getNameServiceIDForPath("hdfs://ctr-e137-1514896590304-41888-01-000003/tmp/xyz"), "mycluster");
+        assertEquals(HdfsNameServiceResolver.getPathWithNameServiceID("hdfs://ctr-e137-1514896590304-41888-01-000003/tmp/xyz/ctr-e137-1514896590304-41888-01-000003"), "hdfs://mycluster/tmp/xyz/ctr-e137-1514896590304-41888-01-000003");
+        assertEquals(HdfsNameServiceResolver.getNameServiceIDForPath("hdfs://ctr-e137-1514896590304-41888-01-000003/tmp/xyz/ctr-e137-1514896590304-41888-01-000003"), "mycluster");
 
-        assertEquals(hdfsNameServiceResolver.getPathWithNameServiceID("hdfs://ctr-e137-1514896590304-41888-01-000003/tmp/xyz/ctr-e137-1514896590304-41888-01-000003"), "hdfs://mycluster/tmp/xyz/ctr-e137-1514896590304-41888-01-000003");
-        assertEquals(hdfsNameServiceResolver.getNameServiceIDForPath("hdfs://ctr-e137-1514896590304-41888-01-000003/tmp/xyz/ctr-e137-1514896590304-41888-01-000003"), "mycluster");
-
-        assertEquals(hdfsNameServiceResolver.getPathWithNameServiceID("hdfs://mycluster/tmp/xyz"), "hdfs://mycluster/tmp/xyz");
-        assertEquals(hdfsNameServiceResolver.getNameServiceIDForPath("hdfs://mycluster/tmp/xyz"), "mycluster");
+        assertEquals(HdfsNameServiceResolver.getPathWithNameServiceID("hdfs://mycluster/tmp/xyz"), "hdfs://mycluster/tmp/xyz");
+        assertEquals(HdfsNameServiceResolver.getNameServiceIDForPath("hdfs://mycluster/tmp/xyz"), "mycluster");
 
     }
 }

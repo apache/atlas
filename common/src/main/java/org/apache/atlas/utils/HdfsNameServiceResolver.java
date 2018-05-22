@@ -38,45 +38,16 @@ public class HdfsNameServiceResolver {
     private static final String HDFS_NAMESERVICE_PROPERTY_KEY          = "dfs.nameservices";
     private static final String HDFS_INTERNAL_NAMESERVICE_PROPERTY_KEY = "dfs.internal.nameservices";
     private static final String HDFS_NAMENODES_HA_NODES_PREFIX         = "dfs.ha.namenodes.";
-    private static final String HDFS_NAMENODE_ADDRESS_TEMPLATE         = "dfs.namenode.rpc-address.%s.%s";
+    private static final String HDFS_NAMENODE_HA_ADDRESS_TEMPLATE      = "dfs.namenode.rpc-address.%s.%s";
+    private static final String HDFS_NAMENODE_ADDRESS_TEMPLATE         = "dfs.namenode.rpc-address.%s";
 
-    // Need non-final instance in order initialize the logger first
-    private static HdfsNameServiceResolver INSTANCE;
+    private static final Map<String, String> hostToNameServiceMap = new HashMap<>();
 
-    private final Map<String, String> hostToNameServiceMap = new HashMap<>();
-
-
-    private HdfsNameServiceResolver() {
-        init(new HdfsConfiguration(true));
+    static {
+        init();
     }
 
-    public static HdfsNameServiceResolver getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new HdfsNameServiceResolver();
-        }
-
-        return INSTANCE;
-    }
-
-    public String getNameServiceID(String host, int port) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HdfsNameServiceResolver.getNameServiceID({}, {})", host, port);
-        }
-
-        String ret = hostToNameServiceMap.getOrDefault(host + ":" + port, "");
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HdfsNameServiceResolver.getNameServiceID({}, {}) = {}", host, port, ret);
-        }
-
-        return ret;
-    }
-
-    public String getNameServiceID(String host) {
-        return getNameServiceID(host, DEFAULT_PORT);
-    }
-
-    public String getPathWithNameServiceID(String path) {
+    public static String getPathWithNameServiceID(String path) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> HdfsNameServiceResolver.getPathWithNameServiceID({})", path);
         }
@@ -85,7 +56,7 @@ public class HdfsNameServiceResolver {
 
         // Only handle URLs that begin with hdfs://
         if (path != null && path.indexOf(HDFS_SCHEME) == 0) {
-            URI    uri = new Path(path).toUri();
+            URI uri = new Path(path).toUri();
             String nsId;
 
             if (uri.getPort() != -1) {
@@ -107,7 +78,7 @@ public class HdfsNameServiceResolver {
         return ret;
     }
 
-    public String getNameServiceIDForPath(String path) {
+    public static String getNameServiceIDForPath(String path) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> HdfsNameServiceResolver.getNameServiceIDForPath({})", path);
         }
@@ -147,19 +118,34 @@ public class HdfsNameServiceResolver {
         return ret;
     }
 
-    private void init(final HdfsConfiguration hdfsConfiguration) {
+    private static String getNameServiceID(String host, int port) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> HdfsNameServiceResolver.getNameServiceID({}, {})", host, port);
+        }
+
+        String ret = hostToNameServiceMap.getOrDefault(host + ":" + port, "");
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== HdfsNameServiceResolver.getNameServiceID({}, {}) = {}", host, port, ret);
+        }
+
+        return ret;
+    }
+
+    private static void init() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> HdfsNameServiceResolver.init()");
         }
+        HdfsConfiguration hdfsConfiguration = new HdfsConfiguration(true);
 
         // Determine all available nameServiceIDs
-        String[] nameServiceIDs = hdfsConfiguration.getTrimmedStrings(HDFS_NAMESERVICE_PROPERTY_KEY);
+        String[] nameServiceIDs = hdfsConfiguration.getTrimmedStrings(HDFS_INTERNAL_NAMESERVICE_PROPERTY_KEY);
         if (Objects.isNull(nameServiceIDs) || nameServiceIDs.length == 0) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("NSID not found for {}, looking under {}", HDFS_NAMESERVICE_PROPERTY_KEY, HDFS_INTERNAL_NAMESERVICE_PROPERTY_KEY);
+                LOG.debug("NSID not found for {}, looking under {}", HDFS_INTERNAL_NAMESERVICE_PROPERTY_KEY, HDFS_NAMESERVICE_PROPERTY_KEY);
             }
             // Attempt another lookup using internal name service IDs key
-            nameServiceIDs = hdfsConfiguration.getTrimmedStrings(HDFS_INTERNAL_NAMESERVICE_PROPERTY_KEY);
+            nameServiceIDs = hdfsConfiguration.getTrimmedStrings(HDFS_NAMESERVICE_PROPERTY_KEY);
         }
 
         if (Objects.nonNull(nameServiceIDs) && nameServiceIDs.length > 0) {
@@ -167,13 +153,30 @@ public class HdfsNameServiceResolver {
                 LOG.debug("NSIDs = {}", nameServiceIDs);
             }
 
+            boolean isHA;
             for (String nameServiceID : nameServiceIDs) {
                 // Find NameNode addresses and map to the NameServiceID
                 String[] nameNodes = hdfsConfiguration.getTrimmedStrings(HDFS_NAMENODES_HA_NODES_PREFIX + nameServiceID);
+                isHA = nameNodes != null && nameNodes.length > 0;
 
-                for (String nameNode : nameNodes) {
-                    String nameNodeMappingKey = String.format(HDFS_NAMENODE_ADDRESS_TEMPLATE, nameServiceID, nameNode);
-                    String nameNodeAddress    = hdfsConfiguration.get(nameNodeMappingKey, "");
+                String nameNodeMappingKey, nameNodeAddress;
+                if (isHA) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Processing HA node info");
+                    }
+
+                    for (String nameNode : nameNodes) {
+                        nameNodeMappingKey = String.format(HDFS_NAMENODE_HA_ADDRESS_TEMPLATE, nameServiceID, nameNode);
+                        nameNodeAddress = hdfsConfiguration.get(nameNodeMappingKey, "");
+
+                        // Add a mapping only if found
+                        if (StringUtils.isNotEmpty(nameNodeAddress)) {
+                            hostToNameServiceMap.put(nameNodeAddress, nameServiceID);
+                        }
+                    }
+                } else {
+                    nameNodeMappingKey = String.format(HDFS_NAMENODE_ADDRESS_TEMPLATE, nameServiceID);
+                    nameNodeAddress = hdfsConfiguration.get(nameNodeMappingKey, "");
 
                     // Add a mapping only if found
                     if (StringUtils.isNotEmpty(nameNodeAddress)) {
