@@ -352,6 +352,11 @@ public class GlossaryService {
             storeObject = dataAccess.load(glossaryTerm);
         } else {
             glossaryTerm.setQualifiedName(storeObject.getQualifiedName());
+
+            if (termExists(glossaryTerm)) {
+                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, glossaryTerm.getQualifiedName());
+            }
+
             storeObject = dataAccess.save(glossaryTerm);
         }
         setInfoForRelations(storeObject);
@@ -412,16 +417,21 @@ public class GlossaryService {
                 storeObject = dataAccess.save(atlasGlossaryTerm);
             } catch (AtlasBaseException e) {
                 LOG.debug("Glossary term had no immediate attr updates. Exception: {}", e.getMessage());
-            } finally {
-                glossaryTermUtils.processTermRelations(storeObject, atlasGlossaryTerm, GlossaryUtils.RelationshipOperation.UPDATE);
+            }
 
-                // If qualifiedName changes due to anchor change, we need to persist the term again with updated qualifiedName
-                if (StringUtils.equals(storeObject.getQualifiedName(), atlasGlossaryTerm.getQualifiedName())) {
-                    storeObject = dataAccess.load(atlasGlossaryTerm);
-                } else {
-                    atlasGlossaryTerm.setQualifiedName(storeObject.getQualifiedName());
-                    storeObject = dataAccess.save(atlasGlossaryTerm);
+            glossaryTermUtils.processTermRelations(storeObject, atlasGlossaryTerm, GlossaryUtils.RelationshipOperation.UPDATE);
+
+            // If qualifiedName changes due to anchor change, we need to persist the term again with updated qualifiedName
+            if (StringUtils.equals(storeObject.getQualifiedName(), atlasGlossaryTerm.getQualifiedName())) {
+                storeObject = dataAccess.load(atlasGlossaryTerm);
+            } else {
+                atlasGlossaryTerm.setQualifiedName(storeObject.getQualifiedName());
+
+                if (termExists(atlasGlossaryTerm)) {
+                    throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, atlasGlossaryTerm.getQualifiedName());
                 }
+
+                storeObject = dataAccess.save(atlasGlossaryTerm);
             }
         }
 
@@ -546,16 +556,21 @@ public class GlossaryService {
         // Attempt relation creation and gather all impacted categories
         Map<String, AtlasGlossaryCategory> impactedCategories = glossaryCategoryUtils.processCategoryRelations(storeObject, glossaryCategory, GlossaryUtils.RelationshipOperation.CREATE);
 
-        // Re save the categories in case any qualifiedName change has occurred
-        dataAccess.save(impactedCategories.values());
-
         // Since the current category is also affected, we need to update qualifiedName and save again
         if (StringUtils.equals(glossaryCategory.getQualifiedName(), storeObject.getQualifiedName())) {
             storeObject = dataAccess.load(glossaryCategory);
         } else {
             glossaryCategory.setQualifiedName(storeObject.getQualifiedName());
+
+            if (categoryExists(glossaryCategory)) {
+                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_CATEGORY_ALREADY_EXISTS, glossaryCategory.getQualifiedName());
+            }
+
             storeObject = dataAccess.save(glossaryCategory);
         }
+
+        // Re save the categories in case any qualifiedName change has occurred
+        dataAccess.save(impactedCategories.values());
 
         setInfoForRelations(storeObject);
 
@@ -574,7 +589,6 @@ public class GlossaryService {
         if (Objects.isNull(glossaryCategory)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "glossaryCategory is null/empty");
         }
-
 
         List<AtlasGlossaryCategory> ret = new ArrayList<>();
         for (AtlasGlossaryCategory category : glossaryCategory) {
@@ -614,17 +628,24 @@ public class GlossaryService {
                 storeObject = dataAccess.save(glossaryCategory);
             } catch (AtlasBaseException e) {
                 LOG.debug("No immediate attribute update. Exception: {}", e.getMessage());
-            } finally {
-                Map<String, AtlasGlossaryCategory> impactedCategories = glossaryCategoryUtils.processCategoryRelations(storeObject, glossaryCategory, GlossaryUtils.RelationshipOperation.UPDATE);
-                dataAccess.save(impactedCategories.values());
-                // Since the current category is also affected, we need to update qualifiedName and save again
-                if (!StringUtils.equals(glossaryCategory.getQualifiedName(), storeObject.getQualifiedName())){
-                    glossaryCategory.setQualifiedName(storeObject.getQualifiedName());
-                    storeObject = dataAccess.save(glossaryCategory);
-                } else {
-                    storeObject = dataAccess.load(glossaryCategory);
-                }
             }
+
+            Map<String, AtlasGlossaryCategory> impactedCategories = glossaryCategoryUtils.processCategoryRelations(storeObject, glossaryCategory, GlossaryUtils.RelationshipOperation.UPDATE);
+
+            // Since the current category is also affected, we need to update qualifiedName and save again
+            if (StringUtils.equals(glossaryCategory.getQualifiedName(), storeObject.getQualifiedName())) {
+                storeObject = dataAccess.load(glossaryCategory);
+            } else {
+                glossaryCategory.setQualifiedName(storeObject.getQualifiedName());
+
+                if (categoryExists(glossaryCategory)) {
+                    throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_CATEGORY_ALREADY_EXISTS, glossaryCategory.getQualifiedName());
+                }
+
+                storeObject = dataAccess.save(glossaryCategory);
+            }
+
+            dataAccess.save(impactedCategories.values());
         }
 
         if (DEBUG_ENABLED) {
