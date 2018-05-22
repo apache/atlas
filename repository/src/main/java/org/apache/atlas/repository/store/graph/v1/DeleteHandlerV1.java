@@ -52,11 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.apache.atlas.model.TypeCategory.ARRAY;
-import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
-import static org.apache.atlas.model.TypeCategory.MAP;
-import static org.apache.atlas.model.TypeCategory.OBJECT_ID_TYPE;
-import static org.apache.atlas.model.TypeCategory.STRUCT;
+import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
@@ -64,25 +60,7 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PRO
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
-import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdges;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationName;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertices;
-import static org.apache.atlas.repository.graph.GraphHelper.getCollectionElementsUsingRelationship;
-import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
-import static org.apache.atlas.repository.graph.GraphHelper.getMapValuesUsingRelationship;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagationEnabledClassificationVertices;
-import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
-import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
-import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
-import static org.apache.atlas.repository.graph.GraphHelper.string;
-import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
+import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getIdFromEdge;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getQualifiedAttributePropertyKey;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.getState;
@@ -150,16 +128,17 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasBaseException
      */
     public void deleteRelationship(AtlasEdge edge) throws AtlasBaseException {
-        deleteRelationships(Collections.singleton(edge));
+        deleteRelationships(Collections.singleton(edge), false);
     }
 
     /**
      * Deletes the specified relationship edges.
      *
      * @param edges
+     * @param forceDelete
      * @throws AtlasBaseException
      */
-    public void deleteRelationships(Collection<AtlasEdge> edges) throws AtlasBaseException {
+    public void deleteRelationships(Collection<AtlasEdge> edges, final boolean forceDelete) throws AtlasBaseException {
         for (AtlasEdge edge : edges) {
             boolean isInternal = isInternalType(edge.getInVertex()) && isInternalType(edge.getOutVertex());
 
@@ -171,7 +150,7 @@ public abstract class DeleteHandlerV1 {
                 continue;
             }
 
-            deleteEdge(edge, isInternal);
+            deleteEdge(edge, isInternal || forceDelete);
         }
     }
 
