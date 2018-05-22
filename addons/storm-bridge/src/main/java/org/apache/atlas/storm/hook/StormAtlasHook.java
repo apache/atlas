@@ -69,8 +69,6 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     public  static final String HBASE_NAMESPACE_DEFAULT = "default";
     public  static final String ATTRIBUTE_DB            = "db";
 
-    private final HdfsNameServiceResolver hdfsNameServiceResolver = HdfsNameServiceResolver.getInstance();
-
     @Override
     protected String getNumberOfRetriesPropertyKey() {
         return HOOK_NUM_RETRIES;
@@ -241,7 +239,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 final String hdfsUri       = config.get("HdfsBolt.rotationActions") == null ? config.get("HdfsBolt.fileNameFormat.path") : config.get("HdfsBolt.rotationActions");
                 final String hdfsPathStr   = config.get("HdfsBolt.fsUrl") + hdfsUri;
                 final Path   hdfsPath      = new Path(hdfsPathStr);
-                final String nameServiceID = hdfsNameServiceResolver.getNameServiceIDForPath(hdfsPathStr);
+                final String nameServiceID = HdfsNameServiceResolver.getNameServiceIDForPath(hdfsPathStr);
 
                 clusterName = getClusterName(stormConf);
 
@@ -252,7 +250,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 ret.setAttribute(AtlasClient.NAME, Path.getPathWithoutSchemeAndAuthority(hdfsPath).toString().toLowerCase());
 
                 if (StringUtils.isNotEmpty(nameServiceID)) {
-                    String updatedPath = hdfsNameServiceResolver.getPathWithNameServiceID(hdfsPathStr);
+                    String updatedPath = HdfsNameServiceResolver.getPathWithNameServiceID(hdfsPathStr);
 
                     ret.setAttribute("path", updatedPath);
                     ret.setAttribute("nameServiceId", nameServiceID);

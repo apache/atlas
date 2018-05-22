@@ -95,7 +95,6 @@ public class HiveMetaStoreBridge {
     private static final int    EXIT_CODE_FAILED  = 1;
     private static final String DEFAULT_ATLAS_URL = "http://localhost:21000/";
 
-    private final HdfsNameServiceResolver hdfsNameServiceResolver = HdfsNameServiceResolver.getInstance();
     private final String                  clusterName;
     private final Hive                    hiveClient;
     private final AtlasClientV2           atlasClientV2;
@@ -531,7 +530,7 @@ public class HiveMetaStoreBridge {
         dbEntity.setAttribute(ATTRIBUTE_OWNER, hiveDB.getOwnerName());
 
         dbEntity.setAttribute(ATTRIBUTE_CLUSTER_NAME, clusterName);
-        dbEntity.setAttribute(ATTRIBUTE_LOCATION, hdfsNameServiceResolver.getPathWithNameServiceID(hiveDB.getLocationUri()));
+        dbEntity.setAttribute(ATTRIBUTE_LOCATION, HdfsNameServiceResolver.getPathWithNameServiceID(hiveDB.getLocationUri()));
         dbEntity.setAttribute(ATTRIBUTE_PARAMETERS, hiveDB.getParameters());
 
         if (hiveDB.getOwnerType() != null) {
@@ -616,7 +615,7 @@ public class HiveMetaStoreBridge {
         ret.setAttribute(ATTRIBUTE_TABLE, tableId);
         ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, sdQualifiedName);
         ret.setAttribute(ATTRIBUTE_PARAMETERS, storageDesc.getParameters());
-        ret.setAttribute(ATTRIBUTE_LOCATION, hdfsNameServiceResolver.getPathWithNameServiceID(storageDesc.getLocation()));
+        ret.setAttribute(ATTRIBUTE_LOCATION, HdfsNameServiceResolver.getPathWithNameServiceID(storageDesc.getLocation()));
         ret.setAttribute(ATTRIBUTE_INPUT_FORMAT, storageDesc.getInputFormat());
         ret.setAttribute(ATTRIBUTE_OUTPUT_FORMAT, storageDesc.getOutputFormat());
         ret.setAttribute(ATTRIBUTE_COMPRESSED, storageDesc.isCompressed());
@@ -684,7 +683,7 @@ public class HiveMetaStoreBridge {
 
     private AtlasEntity toHdfsPathEntity(String pathUri) {
         AtlasEntity ret           = new AtlasEntity(HDFS_PATH);
-        String      nameServiceID = hdfsNameServiceResolver.getNameServiceIDForPath(pathUri);
+        String      nameServiceID = HdfsNameServiceResolver.getNameServiceIDForPath(pathUri);
         Path        path          = new Path(pathUri);
 
         ret.setAttribute(ATTRIBUTE_NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
@@ -692,7 +691,7 @@ public class HiveMetaStoreBridge {
 
         if (StringUtils.isNotEmpty(nameServiceID)) {
             // Name service resolution is successful, now get updated HDFS path where the host port info is replaced by resolved name service
-            String updatedHdfsPath = hdfsNameServiceResolver.getPathWithNameServiceID(pathUri);
+            String updatedHdfsPath = HdfsNameServiceResolver.getPathWithNameServiceID(pathUri);
 
             ret.setAttribute(ATTRIBUTE_PATH, updatedHdfsPath);
             ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getHdfsPathQualifiedName(updatedHdfsPath));

@@ -279,7 +279,7 @@ public abstract class BaseHiveEvent {
             ret.setAttribute(ATTRIBUTE_OWNER, db.getOwnerName());
 
             ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, getClusterName());
-            ret.setAttribute(ATTRIBUTE_LOCATION, HdfsNameServiceResolver.getInstance().getPathWithNameServiceID(db.getLocationUri()));
+            ret.setAttribute(ATTRIBUTE_LOCATION, HdfsNameServiceResolver.getPathWithNameServiceID(db.getLocationUri()));
             ret.setAttribute(ATTRIBUTE_PARAMETERS, db.getParameters());
 
             if (db.getOwnerType() != null) {
@@ -415,7 +415,7 @@ public abstract class BaseHiveEvent {
             ret.setAttribute(ATTRIBUTE_TABLE, tableId);
             ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, sdQualifiedName);
             ret.setAttribute(ATTRIBUTE_PARAMETERS, sd.getParameters());
-            ret.setAttribute(ATTRIBUTE_LOCATION, HdfsNameServiceResolver.getInstance().getPathWithNameServiceID(sd.getLocation()));
+            ret.setAttribute(ATTRIBUTE_LOCATION, HdfsNameServiceResolver.getPathWithNameServiceID(sd.getLocation()));
             ret.setAttribute(ATTRIBUTE_INPUT_FORMAT, sd.getInputFormat());
             ret.setAttribute(ATTRIBUTE_OUTPUT_FORMAT, sd.getOutputFormat());
             ret.setAttribute(ATTRIBUTE_COMPRESSED, sd.isCompressed());
@@ -496,8 +496,8 @@ public abstract class BaseHiveEvent {
 
     protected AtlasEntity getHDFSPathEntity(Path path) {
         String      strPath           = path.toString().toLowerCase();
-        String      nameServiceID     = HdfsNameServiceResolver.getInstance().getNameServiceIDForPath(strPath);
-        String      attrPath          = StringUtils.isEmpty(nameServiceID) ? strPath : HdfsNameServiceResolver.getInstance().getPathWithNameServiceID(strPath);
+        String      nameServiceID     = HdfsNameServiceResolver.getNameServiceIDForPath(strPath);
+        String      attrPath          = StringUtils.isEmpty(nameServiceID) ? strPath : HdfsNameServiceResolver.getPathWithNameServiceID(strPath);
         String      pathQualifiedName = getQualifiedName(attrPath);
         AtlasEntity ret               = context.getEntity(pathQualifiedName);
 
@@ -646,8 +646,8 @@ public abstract class BaseHiveEvent {
 
     protected String getQualifiedName(URI location) {
         String strPath       = new Path(location).toString().toLowerCase();
-        String nameServiceID = HdfsNameServiceResolver.getInstance().getNameServiceIDForPath(strPath);
-        String attrPath      = StringUtils.isEmpty(nameServiceID) ? strPath : HdfsNameServiceResolver.getInstance().getPathWithNameServiceID(strPath);
+        String nameServiceID = HdfsNameServiceResolver.getNameServiceIDForPath(strPath);
+        String attrPath      = StringUtils.isEmpty(nameServiceID) ? strPath : HdfsNameServiceResolver.getPathWithNameServiceID(strPath);
 
         return getQualifiedName(attrPath);
     }
