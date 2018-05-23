@@ -21,9 +21,11 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -100,6 +102,16 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_DELETE);
+    }
+
+    @Override
+    public void onTermAdded(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) {
+        // do nothing -> notification not sent out for term assignment to entities
+    }
+
+    @Override
+    public void onTermDeleted(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) {
+        // do nothing -> notification not sent out for term removal from entities
     }
 
     private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType) throws AtlasBaseException {

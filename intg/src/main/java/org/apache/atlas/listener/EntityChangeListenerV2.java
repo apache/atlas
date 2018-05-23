@@ -19,8 +19,10 @@
 package org.apache.atlas.listener;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 
 import java.util.List;
 
@@ -78,4 +80,20 @@ public interface EntityChangeListenerV2 {
      * @throws AtlasBaseException if the listener notification fails
      */
     void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException;
+
+    /**
+     * This is upon adding a new term to an entity.
+     *
+     * @param term     the term
+     * @param entities list of entities to which the term is assigned
+     */
+    void onTermAdded(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException;
+
+    /**
+     * This is upon removing a term from an entity.
+     *
+     * @param term     the term
+     * @param entities list of entities to which the term is assigned
+     */
+    void onTermDeleted(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException;
 }

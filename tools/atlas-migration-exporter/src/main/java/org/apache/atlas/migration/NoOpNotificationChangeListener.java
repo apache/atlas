@@ -20,6 +20,7 @@ package org.apache.atlas.migration;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.springframework.stereotype.Component;
@@ -55,6 +56,16 @@ public class NoOpNotificationChangeListener implements EntityChangeListener {
 
     @Override
     public void onEntitiesDeleted(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
+
+    }
+
+    @Override
+    public void onTermAdded(Collection<Referenceable> entities, AtlasGlossaryTerm term) throws AtlasException {
+
+    }
+
+    @Override
+    public void onTermDeleted(Collection<Referenceable> entities, AtlasGlossaryTerm term) throws AtlasException {
 
     }
 }

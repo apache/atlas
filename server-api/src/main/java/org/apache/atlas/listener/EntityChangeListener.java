@@ -19,6 +19,7 @@
 package org.apache.atlas.listener;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 
@@ -86,4 +87,22 @@ public interface EntityChangeListener {
      * @throws AtlasException
      */
     void onEntitiesDeleted(Collection<Referenceable> entities, boolean isImport) throws AtlasException;
+
+    /**
+     * This is upon adding a new term to a list of typed instance.
+     *
+     * @param entities entity list
+     * @param term  term that needs to be added to entity
+     * @throws AtlasException if the listener notification fails
+     */
+    void onTermAdded(Collection<Referenceable> entities, AtlasGlossaryTerm term) throws AtlasException;
+
+    /**
+     * This is upon adding a new trait to a typed instance.
+     *
+     * @param entities entity list
+     * @param term  term that needs to be added to entity
+     * @throws AtlasException if the listener notification fails
+     */
+    void onTermDeleted(Collection<Referenceable> entities, AtlasGlossaryTerm term) throws AtlasException;
 }

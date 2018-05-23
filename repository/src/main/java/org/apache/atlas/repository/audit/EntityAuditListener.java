@@ -23,6 +23,7 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.AtlasEntityType;
@@ -42,6 +43,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_ADD;
+import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_DELETE;
 
 /**
  * Listener on entity create/update/delete, tag add/delete. Adds the corresponding audit event to the audit repository.
@@ -122,6 +126,28 @@ public class EntityAuditListener implements EntityChangeListener {
         for (Referenceable entity : entities) {
             EntityAuditEvent event = createEvent(entity, isImport ? EntityAuditAction.ENTITY_IMPORT_DELETE : EntityAuditAction.ENTITY_DELETE, "Deleted entity");
             events.add(event);
+        }
+
+        auditRepository.putEventsV1(events);
+    }
+
+    @Override
+    public void onTermAdded(Collection<Referenceable> entities, AtlasGlossaryTerm term) throws AtlasException {
+        List<EntityAuditEvent> events = new ArrayList<>();
+
+        for (Referenceable entity : entities) {
+            events.add(createEvent(entity, TERM_ADD, "Added term: " + term.toAuditString()));
+        }
+
+        auditRepository.putEventsV1(events);
+    }
+
+    @Override
+    public void onTermDeleted(Collection<Referenceable> entities, AtlasGlossaryTerm term) throws AtlasException {
+        List<EntityAuditEvent> events = new ArrayList<>();
+
+        for (Referenceable entity : entities) {
+            events.add(createEvent(entity, TERM_DELETE, "Deleted term: " + term.toAuditString()));
         }
 
         auditRepository.putEventsV1(events);
@@ -290,6 +316,12 @@ public class EntityAuditListener implements EntityChangeListener {
             case ENTITY_IMPORT_DELETE:
                 ret = "Deleted by import: ";
                 break;
+            case TERM_ADD:
+                ret = "Added term: ";
+                break;
+            case TERM_DELETE:
+                ret = "Deleted term: ";
+                break;
             default:
                 ret = "Unknown: ";
         }
@@ -327,6 +359,12 @@ public class EntityAuditListener implements EntityChangeListener {
                 break;
             case ENTITY_IMPORT_DELETE:
                 ret = "Deleted by import: ";
+                break;
+            case TERM_ADD:
+                ret = "Added term: ";
+                break;
+            case TERM_DELETE:
+                ret = "Deleted term: ";
                 break;
             default:
                 ret = "Unknown: ";

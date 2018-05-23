@@ -17,15 +17,18 @@
  */
 package org.apache.atlas.repository.audit;
 
-import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -56,18 +59,22 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.TERM_ADD;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.TERM_DELETE;
 
 @Component
 public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     private static final Logger LOG = LoggerFactory.getLogger(EntityAuditListenerV2.class);
 
-    private final EntityAuditRepository auditRepository;
-    private final AtlasTypeRegistry     typeRegistry;
+    private final EntityAuditRepository  auditRepository;
+    private final AtlasTypeRegistry      typeRegistry;
+    private final AtlasInstanceConverter instanceConverter;
 
     @Inject
-    public EntityAuditListenerV2(EntityAuditRepository auditRepository, AtlasTypeRegistry typeRegistry) {
-        this.auditRepository = auditRepository;
-        this.typeRegistry    = typeRegistry;
+    public EntityAuditListenerV2(EntityAuditRepository auditRepository, AtlasTypeRegistry typeRegistry, AtlasInstanceConverter instanceConverter) {
+        this.auditRepository   = auditRepository;
+        this.typeRegistry      = typeRegistry;
+        this.instanceConverter = instanceConverter;
     }
 
     @Override
@@ -160,6 +167,42 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                     events.add(createEvent(entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName()));
                 } else {
                     events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName()));
+                }
+            }
+
+            auditRepository.putEventsV2(events);
+        }
+    }
+
+    @Override
+    public void onTermAdded(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException {
+        if (term != null && CollectionUtils.isNotEmpty(entities)) {
+            List<EntityAuditEventV2> events = new ArrayList<>();
+
+            for (AtlasRelatedObjectId relatedObjectId : entities) {
+                AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(relatedObjectId.getGuid());
+                AtlasEntity            entity            = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+
+                if (entity != null) {
+                    events.add(createEvent(entity, TERM_ADD, "Added term: " + term.toAuditString()));
+                }
+            }
+
+            auditRepository.putEventsV2(events);
+        }
+    }
+
+    @Override
+    public void onTermDeleted(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException {
+        if (term != null && CollectionUtils.isNotEmpty(entities)) {
+            List<EntityAuditEventV2> events = new ArrayList<>();
+
+            for (AtlasRelatedObjectId relatedObjectId : entities) {
+                AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(relatedObjectId.getGuid());
+                AtlasEntity            entity            = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+
+                if (entity != null) {
+                    events.add(createEvent(entity, TERM_DELETE, "Deleted term: " + term.toAuditString()));
                 }
             }
 
@@ -310,6 +353,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             case ENTITY_IMPORT_DELETE:
                 ret = "Deleted by import: ";
                 break;
+            case TERM_ADD:
+                ret = "Added term: ";
+                break;
+            case TERM_DELETE:
+                ret = "Deleted term: ";
+                break;
             default:
                 ret = "Unknown: ";
         }
@@ -347,6 +396,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 break;
             case ENTITY_IMPORT_DELETE:
                 ret = "Deleted by import: ";
+                break;
+            case TERM_ADD:
+                ret = "Added term: ";
+                break;
+            case TERM_DELETE:
+                ret = "Deleted term: ";
                 break;
             default:
                 ret = "Unknown: ";

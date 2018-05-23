@@ -31,6 +31,7 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
@@ -56,24 +57,26 @@ import static org.apache.atlas.glossary.GlossaryUtils.getGlossarySkeleton;
 
 @Service
 public class GlossaryService {
-    private static final Logger  LOG           = LoggerFactory.getLogger(GlossaryService.class);
-    private static final boolean DEBUG_ENABLED = LOG.isDebugEnabled();
+    private static final Logger  LOG                 = LoggerFactory.getLogger(GlossaryService.class);
+    private static final boolean DEBUG_ENABLED       = LOG.isDebugEnabled();
+    private static final String  QUALIFIED_NAME_ATTR = "qualifiedName";
 
-    private static final String QUALIFIED_NAME_ATTR = "qualifiedName";
-
-    private final DataAccess            dataAccess;
-    private final GlossaryTermUtils     glossaryTermUtils;
-    private final GlossaryCategoryUtils glossaryCategoryUtils;
-    private final AtlasTypeRegistry     atlasTypeRegistry;
+    private final DataAccess                dataAccess;
+    private final GlossaryTermUtils         glossaryTermUtils;
+    private final GlossaryCategoryUtils     glossaryCategoryUtils;
+    private final AtlasTypeRegistry         atlasTypeRegistry;
+    private final AtlasEntityChangeNotifier entityChangeNotifier;
 
     private final char[] invalidNameChars = {'@', '.'};
 
     @Inject
-    public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore, final AtlasTypeRegistry typeRegistry) {
-        this.dataAccess = dataAccess;
-        this.atlasTypeRegistry = typeRegistry;
-        glossaryTermUtils = new GlossaryTermUtils(relationshipStore, typeRegistry, dataAccess);
-        glossaryCategoryUtils = new GlossaryCategoryUtils(relationshipStore, typeRegistry, dataAccess);
+    public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore,
+                           final AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier) {
+        this.dataAccess           = dataAccess;
+        atlasTypeRegistry         = typeRegistry;
+        glossaryTermUtils         = new GlossaryTermUtils(relationshipStore, typeRegistry, dataAccess);
+        glossaryCategoryUtils     = new GlossaryCategoryUtils(relationshipStore, typeRegistry, dataAccess);
+        this.entityChangeNotifier = entityChangeNotifier;
     }
 
     /**
@@ -477,24 +480,32 @@ public class GlossaryService {
         if (DEBUG_ENABLED) {
             LOG.debug("==> GlossaryService.assignTermToEntities({}, {})", termGuid, relatedObjectIds);
         }
+
         AtlasGlossaryTerm glossaryTerm = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
+
         glossaryTermUtils.processTermAssignments(glossaryTerm, relatedObjectIds);
+
+        entityChangeNotifier.onTermAddedToEntities(glossaryTerm, relatedObjectIds);
 
         if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryService.assignTermToEntities()");
         }
+
     }
 
     @GraphTransaction
     public void removeTermFromEntities(String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
+        if (DEBUG_ENABLED) {
             LOG.debug("==> GlossaryService.removeTermFromEntities({}, {})", termGuid, relatedObjectIds);
         }
 
         AtlasGlossaryTerm glossaryTerm = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
+
         glossaryTermUtils.processTermDissociation(glossaryTerm, relatedObjectIds);
 
-        if (LOG.isDebugEnabled()) {
+        entityChangeNotifier.onTermDeletedFromEntities(glossaryTerm, relatedObjectIds);
+
+        if (DEBUG_ENABLED) {
             LOG.debug("<== GlossaryService.removeTermFromEntities()");
         }
     }
