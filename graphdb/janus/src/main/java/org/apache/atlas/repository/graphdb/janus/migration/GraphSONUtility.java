@@ -18,10 +18,9 @@
 
 package org.apache.atlas.repository.graphdb.janus.migration;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.type.AtlasBuiltInTypes;
-import org.apache.commons.lang.StringUtils;
+import org.apache.atlas.type.AtlasBuiltInTypes.AtlasBigDecimalType;
+import org.apache.atlas.type.AtlasBuiltInTypes.AtlasBigIntegerType;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Graph.Features.EdgeFeatures;
@@ -34,21 +33,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
-import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
-
 class GraphSONUtility {
     private static final Logger LOG = LoggerFactory.getLogger(GraphSONUtility.class);
 
-    private static final String EMPTY_STRING = "";
+    private static final String              EMPTY_STRING   = "";
+    private static final AtlasBigIntegerType bigIntegerType = new AtlasBigIntegerType();
+    private static final AtlasBigDecimalType bigDecimalType = new AtlasBigDecimalType();
 
-    private final RelationshipTypeCache relationshipTypeCache;
-    private static AtlasBuiltInTypes.AtlasBigIntegerType bigIntegerType = new AtlasBuiltInTypes.AtlasBigIntegerType();
-    private static AtlasBuiltInTypes.AtlasBigDecimalType bigDecimalType = new AtlasBuiltInTypes.AtlasBigDecimalType();
+    private final ElementProcessors elementProcessors;
 
-    public GraphSONUtility(final RelationshipTypeCache relationshipTypeCache) {
-        this.relationshipTypeCache = relationshipTypeCache;
+    public GraphSONUtility(final ElementProcessors elementProcessors) {
+        this.elementProcessors = elementProcessors;
     }
 
     public Map<String, Object> vertexFromJson(Graph g, final JsonNode json) {
@@ -64,6 +59,7 @@ class GraphSONUtility {
         Vertex              vertex         = vertexFeatures.willAllowId(vertexId) ? g.addVertex(T.id, vertexId) : g.addVertex();
 
         props.put(Constants.VERTEX_ID_IN_IMPORT_KEY, vertexId);
+        elementProcessors.processCollections(Constants.ENTITY_TYPE_PROPERTY_KEY, props);
 
         for (Map.Entry<String, Object> entry : props.entrySet()) {
             try {
@@ -107,16 +103,10 @@ class GraphSONUtility {
 
             props.put(Constants.EDGE_ID_IN_IMPORT_KEY, edgeId.toString());
 
-            if(addRelationshipTypeForClassification(in, out, label, props)) {
-                label = Constants.CLASSIFICATION_LABEL;
-            } else {
-                addRelationshipTypeName(label, props);
-            }
+            label = elementProcessors.updateEdge(in, out, edgeId, label, props);
 
             EdgeFeatures  edgeFeatures = g.features().edge();
             final Edge    edge         = edgeFeatures.willAllowId(edgeId) ? out.addEdge(label, in, T.id, edgeId) : out.addEdge(label, in);
-
-            addMandatoryRelationshipProperties(props);
 
             for (Map.Entry<String, Object> entry : props.entrySet()) {
                 try {
@@ -153,82 +143,6 @@ class GraphSONUtility {
         return cache.getMappedVertex(gr, inVId);
     }
 
-    private boolean addRelationshipTypeForClassification(Vertex in, Vertex out, String label, Map<String, Object> props) {
-        if (in.property(Constants.ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
-            String inTypeName  = (String) in.property(Constants.ENTITY_TYPE_PROPERTY_KEY).value();
-
-            if (inTypeName.equals(label)) {
-                if (StringUtils.isNotEmpty(inTypeName)) {
-                    props.put(Constants.ENTITY_TYPE_PROPERTY_KEY, inTypeName);
-
-                    addEntityGuidToTrait(in, out);
-
-                    return true;
-                } else {
-                    LOG.info("Could not find typeName for trait: {}", label);
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private void addEntityGuidToTrait(Vertex in, Vertex out) {
-        String entityGuid = "";
-        if (out.property(Constants.GUID_PROPERTY_KEY).isPresent()) {
-            entityGuid = (String) out.property(Constants.GUID_PROPERTY_KEY).value();
-        }
-
-        if(StringUtils.isNotEmpty(entityGuid)) {
-            in.property(CLASSIFICATION_ENTITY_GUID, entityGuid);
-        }
-    }
-
-    private void addRelationshipTypeName(String edgeLabel, Map<String, Object> props) {
-        String typeName = relationshipTypeCache.get(edgeLabel);
-
-        if (StringUtils.isNotEmpty(typeName)) {
-            props.put(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
-        } else {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Could not find relationship type for: {}", edgeLabel);
-            }
-        }
-    }
-
-    private void addMandatoryRelationshipProperties(Map<String, Object> props) {
-        props.put(Constants.RELATIONSHIP_GUID_PROPERTY_KEY, UUID.randomUUID().toString());
-        props.put(RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, "NONE");
-        props.put(CLASSIFICATION_EDGE_STATE_PROPERTY_KEY, "ACTIVE");
-    }
-
-    public void replaceReferencedEdgeIdForList(Graph g, MappedElementCache cache, Vertex v, String propertyName) {
-        try {
-            if (v.property(Constants.TYPENAME_PROPERTY_KEY).isPresent() || !v.property(propertyName).isPresent()) {
-                return;
-            }
-
-            List list = (List) v.property(propertyName).value();
-            for (int i = 0; i < list.size(); i++) {
-                String id    = list.get(i).toString();
-                Object newId = cache.getMappedEdge(g, id);
-
-                if (newId == null) {
-                    continue;
-                }
-
-                list.set(i, newId.toString());
-            }
-
-            v.property(propertyName, list);
-        } catch (IllegalArgumentException ex) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("processItem: IllegalArgumentException: v[{}] error!", v.id(), ex);
-            }
-        }
-    }
-
-    @VisibleForTesting
     static Map<String, Object> readProperties(final JsonNode node) {
         final Map<String, Object>                   map      = new HashMap<>();
         final Iterator<Map.Entry<String, JsonNode>> iterator = node.fields();
@@ -303,7 +217,6 @@ class GraphSONUtility {
         return array;
     }
 
-    @VisibleForTesting
     static Object getTypedValueFromJsonNode(final JsonNode node) {
         Object theValue = null;
 

@@ -36,8 +36,9 @@ import static org.testng.AssertJUnit.assertNotNull;
 
 public class JsonNodeParsersTest extends BaseUtils {
 
-    @Test(dataProvider = "col1")
-    public void parseVertex(JsonNode nd) {
+    @Test
+    public void parseVertex() {
+        JsonNode nd = getCol1();
         final int COL1_ORIGINAL_ID = 98336;
 
         Object nodeId = getId(nd);
@@ -68,8 +69,9 @@ public class JsonNodeParsersTest extends BaseUtils {
         assertProperties(vUsingPe);
     }
 
-    @Test(dataProvider = "edge")
-    public void parseEdge(JsonNode nd) throws IOException {
+    @Test
+    public void parseEdge() {
+        JsonNode nd = getEdge();
         final String EDGE_ORIGINAL_ID = "8k5i-35tc-acyd-1eko";
         Object nodeId = getId(nd);
 
@@ -78,12 +80,12 @@ public class JsonNodeParsersTest extends BaseUtils {
         JsonNodeParsers.ParseElement peVertex = new JsonNodeParsers.ParseVertex();
         peVertex.setContext(graphSONUtility);
 
-        peVertex.parse(tg, cache, (JsonNode) (getDBV(null)[0][0]));
-        peVertex.parse(tg, cache, (JsonNode) (getTableV(null)[0][0]));
+        peVertex.parse(tg, cache, getDBV());
+        peVertex.parse(tg, cache, getTableV());
 
         JsonNodeParsers.ParseElement pe = new JsonNodeParsers.ParseEdge();
         pe.setContext(graphSONUtility);
-        pe.parse(tg, cache, (JsonNode) getEdge(null)[0][0]);
+        pe.parse(tg, cache, getEdge());
 
         updateParseElement(tg, pe, nodeId);
 

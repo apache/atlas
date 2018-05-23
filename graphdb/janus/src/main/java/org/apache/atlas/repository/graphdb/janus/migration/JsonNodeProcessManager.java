@@ -101,6 +101,7 @@ public class JsonNodeProcessManager {
 
         private void commitRegular() {
             commit(graph, nodes.size());
+            cache.clearAll();
         }
 
         private void commit(Graph g, int size) {

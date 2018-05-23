@@ -34,7 +34,6 @@ import org.testng.annotations.AfterClass;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
@@ -48,10 +47,10 @@ public class MigrationBaseAsserts {
     private final String R_GUID_PROPERTY_NAME = "_r__guid";
 
     @Inject
-    private AtlasTypeDefStore typeDefStore;
+    protected AtlasTypeDefStore typeDefStore;
 
     @Inject
-    private AtlasTypeRegistry typeRegistry;
+    protected AtlasTypeRegistry typeRegistry;
 
     @Inject
     private AtlasTypeDefStoreInitializer storeInitializer;
@@ -74,7 +73,7 @@ public class MigrationBaseAsserts {
         }
     }
 
-    private void loadTypesFromJson() throws IOException, AtlasBaseException {
+    protected void loadTypesFromJson() throws IOException, AtlasBaseException {
         loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
         loadModelFromJson("1000-Hadoop/1020-fs_model.json", typeDefStore, typeRegistry);
         loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
@@ -83,7 +82,7 @@ public class MigrationBaseAsserts {
     protected void runFileImporter(String directoryToImport) throws IOException, AtlasBaseException {
         loadTypesFromJson();
         String directoryName = TestResourceFileUtils.getDirectory(directoryToImport);
-        DataMigrationService.FileImporter fi = new DataMigrationService.FileImporter(typeDefStore, typeRegistry,
+        DataMigrationService.FileImporter fi = new DataMigrationService.FileImporter(graph, typeDefStore, typeRegistry,
                 storeInitializer, directoryName, indexer);
 
         fi.run();
@@ -152,14 +151,19 @@ public class MigrationBaseAsserts {
         assertEquals(count, expectedItems, String.format("%s", edgeTypeName));
     }
 
-    protected void assertTypeAttribute(String typeName, int expectedSize, String name, String guid, String propertyName) {
-        AtlasVertex v         = getVertex(typeName, name);
-        String     guidActual = GraphHelper.getGuid(v);
-        List list       = (List) GraphHelper.getProperty(v, propertyName);
+    protected void assertEdgesWithLabel(Iterator<AtlasEdge> results, int startIdx, String edgeTypeName) {
+        int count = 0;
+        AtlasEdge e = null;
+        for (Iterator<AtlasEdge> it = results; it.hasNext() && count < startIdx; count++) {
+            e = it.next();
+        }
 
-        assertEquals(guidActual, guid);
-        assertNotNull(list);
-        assertEquals(list.size(), expectedSize);
+        assertNotNull(GraphHelper.getProperty(e, R_GUID_PROPERTY_NAME));
+        assertNotNull(GraphHelper.getProperty(e, "tagPropagation"));
+
+        if(StringUtils.isNotEmpty(edgeTypeName)) {
+            assertEquals(e.getLabel(), edgeTypeName, edgeTypeName);
+        }
     }
 
     protected void assertTypeCountNameGuid(String typeName, int expectedItems, String name, String guid) {

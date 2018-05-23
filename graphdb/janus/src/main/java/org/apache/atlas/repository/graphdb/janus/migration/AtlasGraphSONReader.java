@@ -37,44 +37,46 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class AtlasGraphSONReader {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasGraphSONReader.class);
 
-    private final ObjectMapper          mapper;
-    private final RelationshipTypeCache relationshipCache;
-    private final Graph                 graph;
-    private final Graph                 bulkLoadGraph;
-    private final int                   numWorkers;
-    private final int                   batchSize;
-    private final long                  suppliedStartIndex;
-    private final String[]              propertiesToPostProcess;
-    private       GraphSONUtility       graphSONUtility;
-    private       ReaderStatusManager   readerStatusManager;
-    private       AtomicLong            counter;
+    private static String APPLICATION_PROPERTY_MIGRATION_START_INDEX      = "atlas.migration.mode.start.index";
+    private static String APPLICATION_PROPERTY_MIGRATION_NUMER_OF_WORKERS = "atlas.migration.mode.workers";
+    private static String APPLICATION_PROPERTY_MIGRATION_BATCH_SIZE       = "atlas.migration.mode.batch.size";
 
-    private AtlasGraphSONReader(ObjectMapper mapper, Map<String, String> relationshipLookup, Graph graph,
-                                Graph bulkLoadGraph, String[] propertiesToPostProcess, int numWorkers, int batchSize, long suppliedStartIndex) {
+    private final ObjectMapper        mapper;
+    private final ElementProcessors   relationshipCache;
+    private final Graph               graph;
+    private final Graph               bulkLoadGraph;
+    private final int                 numWorkers;
+    private final int                 batchSize;
+    private final long                suppliedStartIndex;
+    private final GraphSONUtility     graphSONUtility;
+    private       ReaderStatusManager readerStatusManager;
+    private       AtomicLong          counter;
+
+    private AtlasGraphSONReader(ObjectMapper mapper, ElementProcessors relationshipLookup, Graph graph,
+                                Graph bulkLoadGraph, int numWorkers, int batchSize, long suppliedStartIndex) {
         this.mapper                 = mapper;
-        this.relationshipCache      = new RelationshipTypeCache(relationshipLookup);
+        this.relationshipCache      = relationshipLookup;
         this.graph                  = graph;
         this.bulkLoadGraph          = bulkLoadGraph;
         this.numWorkers             = numWorkers;
         this.batchSize              = batchSize;
         this.suppliedStartIndex     = suppliedStartIndex;
-        this.propertiesToPostProcess = propertiesToPostProcess;
+        this.graphSONUtility        = new GraphSONUtility(relationshipCache);
     }
 
     public void readGraph(final InputStream inputStream) throws IOException {
-        counter         = new AtomicLong(0);
-        graphSONUtility = new GraphSONUtility(relationshipCache);
+        counter = new AtomicLong(0);
 
         final long        startIndex = initStatusManager();
         final JsonFactory factory    = mapper.getFactory();
 
         LOG.info("AtlasGraphSONReader.readGraph: numWorkers: {}: batchSize: {}: startIndex: {}", numWorkers, batchSize, startIndex);
+
         try (JsonParser parser = factory.createParser(inputStream)) {
             if (parser.nextToken() != JsonToken.START_OBJECT) {
                 throw new IOException("Expected data to start with an Object");
@@ -88,6 +90,7 @@ public final class AtlasGraphSONReader {
                 switch (fieldName) {
                     case GraphSONTokensTP2.MODE:
                         parser.nextToken();
+
                         final String mode = parser.getText();
 
                         if (!mode.equals("EXTENDED")) {
@@ -180,8 +183,7 @@ public final class AtlasGraphSONReader {
         LOG.info("postProcess: Starting... : counter at: {}", counter.get());
 
         try {
-            PostProcessManager.WorkItemsManager wim   = PostProcessManager.create(bulkLoadGraph, graphSONUtility,
-                                                                    propertiesToPostProcess, batchSize, numWorkers);
+            PostProcessManager.WorkItemsManager wim   = PostProcessManager.create(bulkLoadGraph, relationshipCache.getPropertiesToPostProcess(), batchSize, numWorkers);
             GraphTraversal                      query = bulkLoadGraph.traversal().V();
 
             while (query.hasNext()) {
@@ -228,30 +230,32 @@ public final class AtlasGraphSONReader {
         }
     }
 
-    public static Builder build() throws AtlasException {
+    public static Builder build() {
         return new Builder();
     }
 
     public final static class Builder {
-        private int                 batchSize = 500;
-        private Map<String, String> relationshipCache;
-        private Graph               graph;
-        private Graph               bulkLoadGraph;
-        private int                 numWorkers;
-        private long                suppliedStartIndex;
-        private String[]            propertiesToPostProcess;
+        private int               batchSize = 500;
+        private ElementProcessors relationshipCache;
+        private Graph             graph;
+        private Graph             bulkLoadGraph;
+        private int               numWorkers;
+        private long              suppliedStartIndex;
 
         private Builder() {
         }
 
-        private void setDefaults() throws AtlasException {
-            this.startIndex(ApplicationProperties.get().getLong("atlas.migration.mode.start.index", 0L))
-                .numWorkers(ApplicationProperties.get().getInt("atlas.migration.mode.workers", 4))
-                .batchSize(ApplicationProperties.get().getInt("atlas.migration.mode.batch.size", 3000))
-                .propertiesToPostProcess(getPropertiesToPostProcess("atlas.migration.mode.postprocess.properties"));
+        private void setDefaults() {
+            try {
+                this.startIndex(ApplicationProperties.get().getLong(APPLICATION_PROPERTY_MIGRATION_START_INDEX, 0L))
+                        .numWorkers(ApplicationProperties.get().getInt(APPLICATION_PROPERTY_MIGRATION_NUMER_OF_WORKERS, 4))
+                        .batchSize(ApplicationProperties.get().getInt(APPLICATION_PROPERTY_MIGRATION_BATCH_SIZE, 3000));
+            } catch (AtlasException ex) {
+                LOG.error("setDefaults: failed!", ex);
+            }
         }
 
-        public AtlasGraphSONReader create() throws AtlasException {
+        public AtlasGraphSONReader create() {
             setDefaults();
             if(bulkLoadGraph == null) {
                 bulkLoadGraph = graph;
@@ -261,10 +265,10 @@ public final class AtlasGraphSONReader {
             final GraphSONMapper         mapper  = builder.typeInfo(TypeInfo.NO_TYPES).create();
 
             return new AtlasGraphSONReader(mapper.createMapper(), relationshipCache, graph, bulkLoadGraph,
-                                           propertiesToPostProcess, numWorkers, batchSize, suppliedStartIndex);
+                                                                    numWorkers, batchSize, suppliedStartIndex);
         }
 
-        public Builder relationshipCache(Map<String, String> relationshipCache) {
+        public Builder relationshipCache(ElementProcessors relationshipCache) {
             this.relationshipCache = relationshipCache;
 
             return this;
@@ -304,28 +308,6 @@ public final class AtlasGraphSONReader {
             this.suppliedStartIndex = suppliedStartIndex;
 
             return this;
-        }
-
-        public Builder propertiesToPostProcess(String[] list) {
-            this.propertiesToPostProcess = list;
-            return this;
-        }
-
-        private static String[] getPropertiesToPostProcess(String applicationPropertyKey) throws AtlasException {
-            final String HIVE_COLUMNS_PROPERTY        = "hive_table.columns";
-            final String HIVE_PARTITION_KEYS_PROPERTY = "hive_table.partitionKeys";
-            final String PROCESS_INPUT_PROPERTY       = "Process.inputs";
-            final String PROCESS_OUTPUT_PROPERTY      = "Process.outputs";
-            final String USER_PROFILE_OUTPUT_PROPERTY = "__AtlasUserProfile.savedSearches";
-
-            String[] defaultProperties = new String[] { HIVE_COLUMNS_PROPERTY, HIVE_PARTITION_KEYS_PROPERTY,
-                                                        PROCESS_INPUT_PROPERTY, PROCESS_OUTPUT_PROPERTY,
-                                                        USER_PROFILE_OUTPUT_PROPERTY
-                                                      };
-
-            String[] userDefinedList = ApplicationProperties.get().getStringArray(applicationPropertyKey);
-
-            return (userDefinedList == null || userDefinedList.length == 0) ? defaultProperties : userDefinedList;
         }
     }
 }

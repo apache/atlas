@@ -24,7 +24,6 @@ import static org.apache.atlas.repository.Constants.TYPE_CATEGORY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1.VERTEX_TYPE;
 
-import java.io.InputStream;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -49,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -108,11 +106,6 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         super.init();
 
         LOG.info("<== AtlasTypeDefGraphStoreV1.init()");
-    }
-
-    @Override
-    public void loadLegacyData(Map<String, String> relationshipCache, InputStream fs) throws AtlasBaseException {
-        getAtlasGraph().loadLegacyGraphSON(relationshipCache, fs);
     }
 
     AtlasGraph getAtlasGraph() { return atlasGraph; }

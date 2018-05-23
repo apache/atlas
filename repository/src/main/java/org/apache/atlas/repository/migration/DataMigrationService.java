@@ -18,11 +18,11 @@
 
 package org.apache.atlas.repository.migration;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.impexp.ImportTypeDefProcessor;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -56,11 +56,11 @@ public class DataMigrationService implements Service {
     private final Thread        thread;
 
     @Inject
-    public DataMigrationService(AtlasTypeDefStore typeDefStore, Configuration configuration,
+    public DataMigrationService(AtlasGraph graph, AtlasTypeDefStore typeDefStore, Configuration configuration,
                                 GraphBackedSearchIndexer indexer, AtlasTypeDefStoreInitializer storeInitializer,
                                 AtlasTypeRegistry typeRegistry) {
         this.configuration = configuration;
-        this.thread        = new Thread(new FileImporter(typeDefStore, typeRegistry, storeInitializer, getFileName(), indexer));
+        this.thread        = new Thread(new FileImporter(graph, typeDefStore, typeRegistry, storeInitializer, getFileName(), indexer));
     }
 
     @Override
@@ -83,15 +83,17 @@ public class DataMigrationService implements Service {
     }
 
     public static class FileImporter implements Runnable {
+        private final AtlasGraph                   graph;
         private final AtlasTypeDefStore            typeDefStore;
         private final String                       importDirectory;
         private final GraphBackedSearchIndexer     indexer;
         private final AtlasTypeRegistry            typeRegistry;
         private final AtlasTypeDefStoreInitializer storeInitializer;
 
-        public FileImporter(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
+        public FileImporter(AtlasGraph graph, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
                             AtlasTypeDefStoreInitializer storeInitializer,
                             String directoryName, GraphBackedSearchIndexer indexer) {
+            this.graph            = graph;
             this.typeDefStore     = typeDefStore;
             this.typeRegistry     = typeRegistry;
             this.storeInitializer = storeInitializer;
@@ -99,7 +101,16 @@ public class DataMigrationService implements Service {
             this.indexer          = indexer;
         }
 
-        public void performImport() throws AtlasBaseException {
+        @Override
+        public void run() {
+            try {
+                performImport();
+            } catch (AtlasBaseException e) {
+                LOG.error("Data Migration:", e);
+            }
+        }
+
+        private void performImport() throws AtlasBaseException {
             try {
                 if(!performAccessChecks(importDirectory)) {
                     return;
@@ -109,7 +120,7 @@ public class DataMigrationService implements Service {
 
                 FileInputStream fs = new FileInputStream(getFileFromImportDirectory(importDirectory, ATLAS_MIGRATION_DATA_NAME));
 
-                typeDefStore.loadLegacyData(RelationshipCacheGenerator.get(typeRegistry), fs);
+                graph.importLegacyGraphSON(typeRegistry, fs);
             } catch (Exception ex) {
                 LOG.error("Import failed!", ex);
                 throw new AtlasBaseException(ex);
@@ -117,11 +128,13 @@ public class DataMigrationService implements Service {
         }
 
         private boolean performAccessChecks(String path) {
-            boolean ret = false;
+            final boolean ret;
+
             if(StringUtils.isEmpty(path)) {
                 ret = false;
             } else {
                 File f = new File(path);
+
                 ret = f.exists() && f.isDirectory() && f.canRead();
             }
 
@@ -137,17 +150,19 @@ public class DataMigrationService implements Service {
         private void performInit() throws AtlasBaseException, AtlasException {
             indexer.instanceIsActive();
             storeInitializer.instanceIsActive();
+
             processIncomingTypesDef(getFileFromImportDirectory(importDirectory, ATLAS_MIGRATION_TYPESDEF_NAME));
         }
 
-        @VisibleForTesting
-        void processIncomingTypesDef(File typesDefFile) throws AtlasBaseException {
+        private void processIncomingTypesDef(File typesDefFile) throws AtlasBaseException {
             try {
-                AtlasImportResult result = new AtlasImportResult();
-                String jsonStr = FileUtils.readFileToString(typesDefFile);
-                AtlasTypesDef typesDef = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
+                AtlasImportResult      result    = new AtlasImportResult();
+                String                 jsonStr   = FileUtils.readFileToString(typesDefFile);
+                AtlasTypesDef          typesDef  = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
                 ImportTypeDefProcessor processor = new ImportTypeDefProcessor(typeDefStore, typeRegistry);
+
                 processor.processTypes(typesDef, result);
+
                 LOG.info("  types migrated: {}", result.getMetrics());
             } catch (IOException e) {
                 LOG.error("processIncomingTypesDef: Could not process file: {}! Imported data may not be usable.", typesDefFile.getName());
@@ -156,15 +171,6 @@ public class DataMigrationService implements Service {
 
         private File getFileFromImportDirectory(String importDirectory, String fileName) {
             return Paths.get(importDirectory, fileName).toFile();
-        }
-
-        @Override
-        public void run() {
-            try {
-                performImport();
-            } catch (AtlasBaseException e) {
-                LOG.error("Data Migration:", e);
-            }
         }
     }
 }
