@@ -87,6 +87,7 @@ define(['require',
                     "mainClass": "wizard-modal"
                 });
                 this.modal.open();
+                this.modal.$el.find('button.ok').attr("disabled", true);
                 this.modal.on('closeModal', function() {
                     that.modal.trigger('cancel');
                     if (that.assignTermError && that.hideLoader) {
@@ -99,8 +100,13 @@ define(['require',
                 this.modal.on('ok', function() {
                     that.assignTerm();
                 });
+                this.bindEvents();
             },
-            bindEvents: function() {},
+            bindEvents: function() {
+                this.listenTo(this.glossaryCollection, "node_selected", function(skip) {
+                    this.modal.$el.find('button.ok').attr("disabled", false);
+                }, this);
+            },
             onRender: function() {
                 this.renderGlossaryTree();
                 var that = this;
