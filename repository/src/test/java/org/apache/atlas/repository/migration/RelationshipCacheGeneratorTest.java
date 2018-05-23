@@ -61,8 +61,6 @@ public class RelationshipCacheGeneratorTest {
     public void createLookup() {
         final String PROCESS_INPUT_KEY = "__Process.inputs";
         final String PROCESS_OUTPUT_KEY = "__Process.outputs";
-        String ONE_TO_TWO_STR = ONE_TO_TWO.toString();
-        String TWO_TO_ONE_STR = TWO_TO_ONE.toString();
 
         Map<String, RelationshipCacheGenerator.TypeInfo> cache = RelationshipCacheGenerator.get(typeRegistry);
         assertEquals(cache.size(), getLegacyAttributeCount() - 1);
@@ -72,10 +70,10 @@ public class RelationshipCacheGeneratorTest {
         }
 
         assertEquals(cache.get(PROCESS_INPUT_KEY).getTypeName(), "dataset_process_inputs");
-        assertEquals(cache.get(PROCESS_INPUT_KEY).getPropagateTags(), ONE_TO_TWO_STR);
+        assertEquals(cache.get(PROCESS_INPUT_KEY).getPropagateTags(), TWO_TO_ONE);
 
         assertEquals(cache.get(PROCESS_OUTPUT_KEY).getTypeName(), "process_dataset_outputs");
-        assertEquals(cache.get(PROCESS_OUTPUT_KEY).getPropagateTags(), TWO_TO_ONE_STR);
+        assertEquals(cache.get(PROCESS_OUTPUT_KEY).getPropagateTags(), ONE_TO_TWO);
     }
 
     private int getLegacyAttributeCount() {
