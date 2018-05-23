@@ -35,7 +35,7 @@ public class HiveStocksTest extends MigrationBaseAsserts {
         super(graph);
     }
 
-    @Test(enabled = false)
+    @Test
     public void migrateStocks() throws AtlasBaseException, IOException {
         final int EXPECTED_TOTAL_COUNT  = 188;
         final int EXPECTED_DB_COUNT     = 1;
@@ -47,7 +47,6 @@ public class HiveStocksTest extends MigrationBaseAsserts {
         assertHiveVertices(EXPECTED_DB_COUNT, EXPECTED_TABLE_COUNT, EXPECTED_COLUMN_COUNT);
         assertTypeCountNameGuid("hive_db", 1, "stocks", "4e13b36b-9c54-4616-9001-1058221165d0");
         assertTypeCountNameGuid("hive_table", 1, "stocks_daily", "5cfc2540-9947-40e0-8905-367e07481774");
-        assertTypeAttribute("hive_table", 7, "stocks_daily", "5cfc2540-9947-40e0-8905-367e07481774", "hive_table.columns");
         assertTypeCountNameGuid("hive_column", 1, "high", "d72ce4fb-6f17-4e68-aa85-967366c9e891");
         assertTypeCountNameGuid("hive_column", 1, "open", "788ba8fe-b7d8-41ba-84ef-c929732924ec");
         assertTypeCountNameGuid("hive_column", 1, "dt", "643a0a71-0d97-477d-a43b-7ca433f85160");

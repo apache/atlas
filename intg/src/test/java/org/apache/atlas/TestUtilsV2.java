@@ -18,7 +18,6 @@
 
 package org.apache.atlas;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;

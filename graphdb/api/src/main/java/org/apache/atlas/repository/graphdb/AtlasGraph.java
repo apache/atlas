@@ -30,6 +30,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 
 /**
  * Represents a graph.
@@ -320,7 +321,7 @@ public interface AtlasGraph<V, E> {
      */
     boolean isMultiProperty(String name);
 
-    void loadLegacyGraphSON(Map<String, String> relationshipCache, InputStream fs) throws AtlasBaseException;
+    void importLegacyGraphSON(AtlasTypeRegistry typeRegistry, InputStream fs) throws AtlasBaseException;
 
     MigrationStatus getMigrationStatus();
 }

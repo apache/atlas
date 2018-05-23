@@ -21,36 +21,42 @@ package org.apache.atlas.repository.graphdb.janus.migration;
 import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemBuilder;
 import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemConsumer;
 import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemManager;
+import org.apache.atlas.repository.graphdb.janus.migration.postProcess.PostProcessListProperty;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 
 public class PostProcessManager {
     static class Consumer extends WorkItemConsumer<Object> {
         private static final Logger LOG = LoggerFactory.getLogger(Consumer.class);
 
-        private final Graph              bulkLoadGraph;
-        private final GraphSONUtility    utility;
-        private final String[]           properties;
-        private final MappedElementCache cache;
-        private final int                batchSize;
-        private       long               counter;
-        private       long               batchCounter;
+        private final Graph                                  bulkLoadGraph;
+        private final Map<String, Map<String, List<String>>> typePropertiesMap;
+        private final int                                    batchSize;
+        private       long                                   counter;
+        private       long                                   batchCounter;
+        private final PostProcessListProperty                processor;
+        private final String[]                               nonPrimitiveCategoryKeys;
 
-        public Consumer(BlockingQueue<Object> queue, Graph bulkLoadGraph, GraphSONUtility utility,
-                        String[] properties, MappedElementCache cache, int batchSize) {
+        public Consumer(BlockingQueue<Object> queue, Graph bulkLoadGraph, Map<String, Map<String, List<String>>> typePropertiesMap, int batchSize) {
             super(queue);
 
-            this.bulkLoadGraph = bulkLoadGraph;
-            this.utility         = utility;
-            this.properties      = properties;
-            this.cache           = cache;
-            this.batchSize       = batchSize;
-            this.counter         = 0;
-            this.batchCounter    = 0;
+            this.bulkLoadGraph            = bulkLoadGraph;
+            this.typePropertiesMap        = typePropertiesMap;
+            this.batchSize                = batchSize;
+            this.counter                  = 0;
+            this.batchCounter             = 0;
+            this.processor                = new PostProcessListProperty();
+            this.nonPrimitiveCategoryKeys = ElementProcessors.getNonPrimitiveCategoryKeys();
         }
 
         @Override
@@ -59,20 +65,41 @@ public class PostProcessManager {
             counter++;
 
             try {
-                Vertex v = bulkLoadGraph.traversal().V(vertexId).next();
+                Vertex         vertex           = bulkLoadGraph.traversal().V(vertexId).next();
+                boolean        isTypeVertex     = vertex.property(TYPENAME_PROPERTY_KEY).isPresent();
+                VertexProperty typeNameProperty = vertex.property(ENTITY_TYPE_PROPERTY_KEY);
 
-                for (String p : properties) {
-                    utility.replaceReferencedEdgeIdForList(bulkLoadGraph, cache, v, p);
+                if (!isTypeVertex && typeNameProperty.isPresent()) {
+                    String typeName = (String) typeNameProperty.value();
+                    if (!typePropertiesMap.containsKey(typeName)) {
+                        return;
+                    }
+
+                    Map<String, List<String>> collectionTypeProperties = typePropertiesMap.get(typeName);
+                    for (String key : nonPrimitiveCategoryKeys) {
+                        if (!collectionTypeProperties.containsKey(key)) {
+                            continue;
+                        }
+
+                        for(String propertyName : collectionTypeProperties.get(key)) {
+                            processor.process(vertex, typeName, propertyName);
+                        }
+                    }
                 }
 
-                if (batchCounter >= batchSize) {
-                    LOG.info("[{}]: batch: {}: commit", counter, batchCounter);
-                    commit();
-                    batchCounter = 0;
-                }
-            }
-            catch (Exception ex) {
+                commitBatch();
+            } catch (Exception ex) {
                 LOG.error("processItem: v[{}] error!", vertexId, ex);
+            }
+        }
+
+        private void commitBatch() {
+            if (batchCounter >= batchSize) {
+                LOG.info("[{}]: batch: {}: commit", counter, batchCounter);
+
+                commit();
+
+                batchCounter = 0;
             }
         }
 
@@ -83,23 +110,19 @@ public class PostProcessManager {
     }
 
     private static class ConsumerBuilder implements WorkItemBuilder<Consumer, Object> {
-        private final Graph              bulkLoadGraph;
-        private final GraphSONUtility    utility;
-        private final int                batchSize;
-        private final MappedElementCache cache;
-        private final String[]           vertexPropertiesToPostProcess;
+        private final Graph                                  bulkLoadGraph;
+        private final int                                    batchSize;
+        private final Map<String, Map<String, List<String>>> vertexPropertiesToPostProcess;
 
-        public ConsumerBuilder(Graph bulkLoadGraph, GraphSONUtility utility, String[] propertiesToPostProcess, int batchSize) {
+        public ConsumerBuilder(Graph bulkLoadGraph, Map<String, Map<String, List<String>>> propertiesToPostProcess, int batchSize) {
             this.bulkLoadGraph                 = bulkLoadGraph;
-            this.utility                       = utility;
             this.batchSize                     = batchSize;
-            this.cache                         = new MappedElementCache();
             this.vertexPropertiesToPostProcess = propertiesToPostProcess;
         }
 
         @Override
         public Consumer build(BlockingQueue<Object> queue) {
-            return new Consumer(queue, bulkLoadGraph, utility, vertexPropertiesToPostProcess, cache, batchSize);
+            return new Consumer(queue, bulkLoadGraph, vertexPropertiesToPostProcess, batchSize);
         }
     }
 
@@ -109,8 +132,9 @@ public class PostProcessManager {
         }
     }
 
-    public static WorkItemsManager create(Graph bGraph, GraphSONUtility utility, String[] propertiesToPostProcess, int batchSize, int numWorkers) {
-        ConsumerBuilder cb = new ConsumerBuilder(bGraph, utility, propertiesToPostProcess, batchSize);
+    public static WorkItemsManager create(Graph bGraph, Map<String, Map<String, List<String>>> propertiesToPostProcess,
+                                          int batchSize, int numWorkers) {
+        ConsumerBuilder cb = new ConsumerBuilder(bGraph, propertiesToPostProcess, batchSize);
 
         return new WorkItemsManager(cb, batchSize, numWorkers);
     }

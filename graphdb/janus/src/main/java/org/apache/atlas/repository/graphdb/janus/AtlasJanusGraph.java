@@ -34,10 +34,10 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
-import org.apache.atlas.repository.graphdb.janus.migration.ReaderStatusManager;
 import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.groovy.CompilerCustomizerProvider;
 import org.apache.tinkerpop.gremlin.groovy.DefaultImportCustomizerProvider;
@@ -84,26 +84,20 @@ import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_P
  */
 public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> {
 
-    private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
-
     private static Configuration APPLICATION_PROPERTIES = null;
 
-    private final class ConvertGremlinValueFunction implements Function<Object, Object> {
-        @Override
-        public Object apply(Object input) {
-            return convertGremlinValue(input);
-        }
-    }
-
-    private final Set<String> multiProperties;
+    private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
+    private final Set<String>                 multiProperties                   = new HashSet<>();
 
     public AtlasJanusGraph() {
         //determine multi-properties once at startup
         JanusGraphManagement mgmt = null;
+
         try {
             mgmt = AtlasJanusGraphDatabase.getGraphInstance().openManagement();
+
             Iterable<PropertyKey> keys = mgmt.getRelationTypes(PropertyKey.class);
-            multiProperties = new HashSet<>();
+
             for (PropertyKey key : keys) {
                 if (key.cardinality() != Cardinality.SINGLE) {
                     multiProperties.add(key.name());
@@ -118,13 +112,13 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public AtlasEdge<AtlasJanusVertex, AtlasJanusEdge> addEdge(AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> outVertex,
-                                                       AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> inVertex,
-                                                       String edgeLabel) {
-
+                                                               AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> inVertex,
+                                                               String edgeLabel) {
         try {
-            Vertex oV = outVertex.getV().getWrappedElement();
-            Vertex iV = inVertex.getV().getWrappedElement();
-            Edge edge = oV.addEdge(edgeLabel, iV);
+            Vertex oV   = outVertex.getV().getWrappedElement();
+            Vertex iV   = inVertex.getV().getWrappedElement();
+            Edge   edge = oV.addEdge(edgeLabel, iV);
+
             return GraphDbObjectFactory.createEdge(this, edge);
         } catch (SchemaViolationException e) {
             throw new AtlasSchemaViolationException(e);
@@ -139,42 +133,43 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public AtlasEdge<AtlasJanusVertex, AtlasJanusEdge> getEdge(String edgeId) {
         Iterator<Edge> it = getGraph().edges(edgeId);
-        Edge e = getSingleElement(it, edgeId);
+        Edge           e  = getSingleElement(it, edgeId);
+
         return GraphDbObjectFactory.createEdge(this, e);
     }
 
     @Override
     public void removeEdge(AtlasEdge<AtlasJanusVertex, AtlasJanusEdge> edge) {
-
         Edge wrapped = edge.getE().getWrappedElement();
-        wrapped.remove();
 
+        wrapped.remove();
     }
 
     @Override
     public void removeVertex(AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> vertex) {
         Vertex wrapped = vertex.getV().getWrappedElement();
+
         wrapped.remove();
     }
 
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> getEdges() {
-
         Iterator<Edge> edges = getGraph().edges();
-        return wrapEdges(edges);
 
+        return wrapEdges(edges);
     }
 
     @Override
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> getVertices() {
-
         Iterator<Vertex> vertices = getGraph().vertices();
+
         return wrapVertices(vertices);
     }
 
     @Override
     public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> addVertex() {
         Vertex result = getGraph().addVertex();
+
         return GraphDbObjectFactory.createVertex(this, result);
     }
 
@@ -221,73 +216,32 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         return getIndexKeys(Vertex.class);
     }
 
-    private Set<String> getIndexKeys(Class<? extends Element> janusGraphElementClass) {
-
-        JanusGraphManagement mgmt = getGraph().openManagement();
-        Iterable<JanusGraphIndex> indices = mgmt.getGraphIndexes(janusGraphElementClass);
-        Set<String> result = new HashSet<String>();
-        for (JanusGraphIndex index : indices) {
-            result.add(index.name());
-        }
-        mgmt.commit();
-        return result;
-
-    }
-
     @Override
     public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex(String vertexId) {
-        Iterator<Vertex> it = getGraph().vertices(vertexId);
-        Vertex vertex = getSingleElement(it, vertexId);
-        return GraphDbObjectFactory.createVertex(this, vertex);
-    }
+        Iterator<Vertex> it     = getGraph().vertices(vertexId);
+        Vertex           vertex = getSingleElement(it, vertexId);
 
-    public static <T> T getSingleElement(Iterator<T> it, String id) {
-        if (!it.hasNext()) {
-            return null;
-        }
-        T element = it.next();
-        if (it.hasNext()) {
-            throw new RuntimeException("Multiple items were found with the id " + id);
-        }
-        return element;
+        return GraphDbObjectFactory.createVertex(this, vertex);
     }
 
     @Override
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> getVertices(String key, Object value) {
         AtlasGraphQuery<AtlasJanusVertex, AtlasJanusEdge> query = query();
+
         query.has(key, value);
+
         return query.vertices();
-    }
-
-    private Object convertGremlinValue(Object rawValue) {
-
-        if (rawValue instanceof Vertex) {
-            return GraphDbObjectFactory.createVertex(this, (Vertex) rawValue);
-        } else if (rawValue instanceof Edge) {
-            return GraphDbObjectFactory.createEdge(this, (Edge) rawValue);
-        } else if (rawValue instanceof Map) {
-            Map<String,Object> rowValue = (Map<String,Object>)rawValue;
-            return Maps.transformValues(rowValue, GREMLIN_VALUE_CONVERSION_FUNCTION);
-        } else if (rawValue instanceof ImmutablePath) {
-            ImmutablePath path = (ImmutablePath) rawValue;
-            return convertGremlinValue(path.objects());
-        }
-        else if (rawValue instanceof List) {
-            return Lists.transform((List)rawValue, GREMLIN_VALUE_CONVERSION_FUNCTION);
-        } else if (rawValue instanceof Collection) {
-            throw new UnsupportedOperationException("Unhandled collection type: " + rawValue.getClass());
-        }
-        return rawValue;
     }
 
     @Override
     public GremlinVersion getSupportedGremlinVersion() {
-
         return GremlinVersion.THREE;
     }
+
     @Override
     public void clear() {
         JanusGraph graph = getGraph();
+
         if (graph.isOpen()) {
             // only a shut down graph can be cleared
             graph.close();
@@ -295,7 +249,8 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
         try {
             JanusGraphFactory.drop(graph);
-        } catch (BackendException ignoreEx) {}
+        } catch (BackendException ignoreEx) {
+        }
     }
 
     private JanusGraph getGraph() {
@@ -304,25 +259,27 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public void exportToGson(OutputStream os) throws IOException {
-
-        GraphSONMapper mapper = getGraph().io(IoCore.graphson()).mapper().create();
+        GraphSONMapper         mapper  = getGraph().io(IoCore.graphson()).mapper().create();
         GraphSONWriter.Builder builder = GraphSONWriter.build();
+
         builder.mapper(mapper);
+
         GraphSONWriter writer = builder.create();
+
         writer.writeGraph(os, getGraph());
     }
 
     @Override
     public GremlinGroovyScriptEngine getGremlinScriptEngine() {
-        Set<String> extraImports = new HashSet<String>();
-        extraImports.add(java.util.function.Function.class.getName());
-
+        Set<String> extraImports       = new HashSet<String>();
         Set<String> extraStaticImports = new HashSet<String>();
+
+        extraImports.add(java.util.function.Function.class.getName());
         extraStaticImports.add(P.class.getName() + ".*");
         extraStaticImports.add(__.class.getName() + ".*");
-        CompilerCustomizerProvider provider = new DefaultImportCustomizerProvider(extraImports, extraStaticImports);
 
-        GremlinGroovyScriptEngine scriptEngine = new GremlinGroovyScriptEngine(provider);
+        CompilerCustomizerProvider provider     = new DefaultImportCustomizerProvider(extraImports, extraStaticImports);
+        GremlinGroovyScriptEngine  scriptEngine = new GremlinGroovyScriptEngine(provider);
 
         return scriptEngine;
     }
@@ -341,38 +298,20 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public Object executeGremlinScript(String query, boolean isPath) throws AtlasBaseException {
         Object result = executeGremlinScript(query);
+
         return convertGremlinValue(result);
     }
 
-    private Object executeGremlinScript(String gremlinQuery) throws AtlasBaseException {
-        GremlinGroovyScriptEngine scriptEngine = getGremlinScriptEngine();
-
-        try {
-            Bindings bindings = scriptEngine.createBindings();
-
-            bindings.put("graph", getGraph());
-            bindings.put("g", getGraph().traversal());
-
-            Object result = scriptEngine.eval(gremlinQuery, bindings);
-
-            return result;
-        } catch (ScriptException e) {
-            throw new AtlasBaseException(AtlasErrorCode.GREMLIN_SCRIPT_EXECUTION_FAILED, e, gremlinQuery);
-        } finally {
-            releaseGremlinScriptEngine(scriptEngine);
-        }
-    }
-
     @Override
-    public Object executeGremlinScript(ScriptEngine scriptEngine,
-            Map<? extends  String, ? extends  Object> userBindings, String query, boolean isPath)
-            throws ScriptException {
+    public Object executeGremlinScript(ScriptEngine scriptEngine, Map<? extends String, ? extends Object> userBindings,
+                                       String query, boolean isPath) throws ScriptException {
         Bindings bindings = scriptEngine.createBindings();
 
         bindings.putAll(userBindings);
         bindings.put("g", getGraph().traversal());
 
         Object result = scriptEngine.eval(query, bindings);
+
         return convertGremlinValue(result);
     }
 
@@ -402,39 +341,42 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         return expr;
     }
 
-    public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> wrapVertices(Iterator<? extends Vertex> it) {
-        Iterable<? extends Vertex> iterable = new IteratorToIterableAdapter<>(it);
-        return wrapVertices(iterable);
+    @Override
+    public boolean isMultiProperty(String propertyName) {
+        return multiProperties.contains(propertyName);
+    }
+
+    @Override
+    public void importLegacyGraphSON(AtlasTypeRegistry typeRegistry, InputStream fs) throws AtlasBaseException {
+        AtlasJanusGraphDatabase.loadLegacyGraphSON(typeRegistry, fs);
+    }
+
+    @Override
+    public MigrationStatus getMigrationStatus() {
+        return AtlasJanusGraphDatabase.getMigrationStatus();
     }
 
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> wrapVertices(Iterable<? extends Vertex> it) {
-
         return StreamSupport.stream(it.spliterator(), false).map(input -> GraphDbObjectFactory.createVertex(AtlasJanusGraph.this, input)).collect(Collectors.toList());
-
     }
 
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> wrapEdges(Iterator<? extends Edge> it) {
         Iterable<? extends Edge> iterable = new IteratorToIterableAdapter<>(it);
+
         return wrapEdges(iterable);
     }
 
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> wrapEdges(Iterable<? extends Edge> it) {
-
         return StreamSupport.stream(it.spliterator(), false).map(input -> GraphDbObjectFactory.createEdge(AtlasJanusGraph.this, input)).collect(Collectors.toList());
-
-    }
-
-    @Override
-    public boolean isMultiProperty(String propertyName) {
-        return multiProperties.contains(propertyName);
     }
 
     public void addMultiProperties(Set<String> names) {
         multiProperties.addAll(names);
     }
 
-    public String getIndexQueryPrefix() {
-        String ret;
+
+    private String getIndexQueryPrefix() {
+        final String ret;
 
         initApplicationProperties();
 
@@ -447,6 +389,82 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         return ret;
     }
 
+    private Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> wrapVertices(Iterator<? extends Vertex> it) {
+        Iterable<? extends Vertex> iterable = new IteratorToIterableAdapter<>(it);
+
+        return wrapVertices(iterable);
+    }
+
+    private static <T> T getSingleElement(Iterator<T> it, String id) {
+        if (!it.hasNext()) {
+            return null;
+        }
+
+        T element = it.next();
+
+        if (it.hasNext()) {
+            throw new RuntimeException("Multiple items were found with the id " + id);
+        }
+
+        return element;
+    }
+
+    private Object convertGremlinValue(Object rawValue) {
+        if (rawValue instanceof Vertex) {
+            return GraphDbObjectFactory.createVertex(this, (Vertex) rawValue);
+        } else if (rawValue instanceof Edge) {
+            return GraphDbObjectFactory.createEdge(this, (Edge) rawValue);
+        } else if (rawValue instanceof Map) {
+            Map<String,Object> rowValue = (Map<String,Object>)rawValue;
+
+            return Maps.transformValues(rowValue, GREMLIN_VALUE_CONVERSION_FUNCTION);
+        } else if (rawValue instanceof ImmutablePath) {
+            ImmutablePath path = (ImmutablePath) rawValue;
+
+            return convertGremlinValue(path.objects());
+        } else if (rawValue instanceof List) {
+            return Lists.transform((List)rawValue, GREMLIN_VALUE_CONVERSION_FUNCTION);
+        } else if (rawValue instanceof Collection) {
+            throw new UnsupportedOperationException("Unhandled collection type: " + rawValue.getClass());
+        }
+
+        return rawValue;
+    }
+
+    private Set<String> getIndexKeys(Class<? extends Element> janusGraphElementClass) {
+        JanusGraphManagement      mgmt    = getGraph().openManagement();
+        Iterable<JanusGraphIndex> indices = mgmt.getGraphIndexes(janusGraphElementClass);
+        Set<String>               result  = new HashSet<String>();
+
+        for (JanusGraphIndex index : indices) {
+            result.add(index.name());
+        }
+
+        mgmt.commit();
+
+        return result;
+
+    }
+
+    private Object executeGremlinScript(String gremlinQuery) throws AtlasBaseException {
+        GremlinGroovyScriptEngine scriptEngine = getGremlinScriptEngine();
+
+        try {
+            Bindings bindings = scriptEngine.createBindings();
+
+            bindings.put("graph", getGraph());
+            bindings.put("g", getGraph().traversal());
+
+            Object result = scriptEngine.eval(gremlinQuery, bindings);
+
+            return result;
+        } catch (ScriptException e) {
+            throw new AtlasBaseException(AtlasErrorCode.GREMLIN_SCRIPT_EXECUTION_FAILED, e, gremlinQuery);
+        } finally {
+            releaseGremlinScriptEngine(scriptEngine);
+        }
+    }
+
     private void initApplicationProperties() {
         if (APPLICATION_PROPERTIES == null) {
             try {
@@ -457,13 +475,11 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
     }
 
-    @Override
-    public void loadLegacyGraphSON(Map<String, String> relationshipCache, InputStream fs) throws AtlasBaseException {
-        AtlasJanusGraphDatabase.loadLegacyGraphSON(relationshipCache, fs);
-    }
 
-    @Override
-    public MigrationStatus getMigrationStatus() {
-        return AtlasJanusGraphDatabase.getMigrationStatus();
+    private final class ConvertGremlinValueFunction implements Function<Object, Object> {
+        @Override
+        public Object apply(Object input) {
+            return convertGremlinValue(input);
+        }
     }
 }

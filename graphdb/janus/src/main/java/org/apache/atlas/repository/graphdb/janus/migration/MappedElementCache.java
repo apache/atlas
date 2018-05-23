@@ -18,9 +18,7 @@
 
 package org.apache.atlas.repository.graphdb.janus.migration;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.utils.LruCache;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -28,17 +26,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-import static org.apache.atlas.repository.Constants.EDGE_ID_IN_IMPORT_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_ID_IN_IMPORT_KEY;
 
 public class MappedElementCache {
     private static final Logger LOG = LoggerFactory.getLogger(MappedElementCache.class);
 
-    @VisibleForTesting
     final Map<Object, Vertex> lruVertexCache = new LruCache<>(500, 100000);
-
-    @VisibleForTesting
-    final Map<String, String> lruEdgeCache   = new LruCache<>(500, 100000);
 
     public Vertex getMappedVertex(Graph gr, Object key) {
         try {
@@ -62,32 +55,6 @@ public class MappedElementCache {
         }
     }
 
-    public String getMappedEdge(Graph gr, String key) {
-        try {
-            String ret = lruEdgeCache.get(key);
-
-            if (ret == null) {
-                synchronized (lruEdgeCache) {
-                    ret = lruEdgeCache.get(key);
-
-                    if (ret == null) {
-                        Edge e = fetchEdge(gr, key);
-
-                        ret = e.id().toString();
-
-                        lruEdgeCache.put(key, ret);
-                    }
-                }
-            }
-
-            return ret;
-        } catch (Exception ex) {
-            LOG.error("getMappedEdge: {}", key, ex);
-            return null;
-        }
-    }
-
-    @VisibleForTesting
     Vertex fetchVertex(Graph gr, Object key) {
         try {
             return gr.traversal().V().has(VERTEX_ID_IN_IMPORT_KEY, key).next();
@@ -97,18 +64,7 @@ public class MappedElementCache {
         }
     }
 
-    @VisibleForTesting
-    Edge fetchEdge(Graph gr, String key) {
-        try {
-            return gr.traversal().E().has(EDGE_ID_IN_IMPORT_KEY, key).next();
-        } catch (Exception ex) {
-            LOG.error("fetchEdge: fetchFromDB failed: {}", key);
-            return null;
-        }
-    }
-
     public void clearAll() {
         lruVertexCache.clear();
-        lruEdgeCache.clear();
     }
 }

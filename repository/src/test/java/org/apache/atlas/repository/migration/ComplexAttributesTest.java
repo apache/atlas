@@ -28,31 +28,33 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class HiveParititionTest extends  MigrationBaseAsserts {
+public class ComplexAttributesTest extends MigrationBaseAsserts {
 
     @Inject
-    public HiveParititionTest(AtlasGraph graph) {
+    public ComplexAttributesTest(AtlasGraph graph) {
         super(graph);
     }
 
     @Test
-    public void fileImporterTest() throws IOException, AtlasBaseException {
-        final int EXPECTED_TOTAL_COUNT = 141;
-        final int EXPECTED_DB_COUNT = 1;
-        final int EXPECTED_TABLE_COUNT = 2;
-        final int EXPECTED_COLUMN_COUNT = 7;
+    public void verify() throws IOException, AtlasBaseException {
+        String STRUCT_TYPE = "struct_type";
+        String ENTITY_TYPE = "entity_type";
+        String ENTITY_WITH_COMPLEX_COLL_TYPE = "entity_with_complex_collection_attr";
 
-        runFileImporter("parts_db");
+        final int EXPECTED_TOTAL_COUNT  = 214;
+        final int EXPECTED_ENTITY_TYPE_COUNT = 16;
+        final int EXPECTED_STRUCT_TYPE_COUNT = 3;
+        final int EXPECTED_ENTITY_WITH_COMPLEX_COLL_TYPE_COUNT = 1;
 
-        assertHiveVertices(EXPECTED_DB_COUNT, EXPECTED_TABLE_COUNT, EXPECTED_COLUMN_COUNT);
+        runFileImporter("complex-attr_db");
 
-        assertTypeCountNameGuid("hive_db", 1, "parts_db", "ae30d78b-51b4-42ab-9436-8d60c8f68b95");
-        assertTypeCountNameGuid("hive_process", 1, "", "");
-        assertEdges("hive_db", "parts_db", AtlasEdgeDirection.IN,1, 1, "");
-        assertEdges("hive_table", "t1", AtlasEdgeDirection.OUT, 1, 1, "hive_db_tables");
-        assertEdges("hive_table", "tv1", AtlasEdgeDirection.OUT, 1, 1, "hive_db_tables");
+        assertTypeCountNameGuid(STRUCT_TYPE, EXPECTED_STRUCT_TYPE_COUNT,"", "");
+        assertTypeCountNameGuid(ENTITY_TYPE, EXPECTED_ENTITY_TYPE_COUNT, "", "");
+        assertTypeCountNameGuid(ENTITY_WITH_COMPLEX_COLL_TYPE, EXPECTED_ENTITY_WITH_COMPLEX_COLL_TYPE_COUNT, "", "");
+
+        assertEdgesWithLabel(getVertex(ENTITY_WITH_COMPLEX_COLL_TYPE, "").getEdges(AtlasEdgeDirection.OUT).iterator(),1, "__entity_with_complex_collection_attr.listOfEntities");
+        assertEdgesWithLabel(getVertex(ENTITY_WITH_COMPLEX_COLL_TYPE, "").getEdges(AtlasEdgeDirection.OUT).iterator(),9, "__entity_with_complex_collection_attr.mapOfStructs");
 
         assertMigrationStatus(EXPECTED_TOTAL_COUNT);
     }

@@ -23,29 +23,27 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.impexp.ZipFileResourceTestUtils;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.graphdb.janus.migration.RelationshipCacheGenerator;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-import org.jcodings.util.Hash;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
 
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class RelationshipMappingTest {
+public class RelationshipCacheGeneratorTest {
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
@@ -61,12 +59,23 @@ public class RelationshipMappingTest {
 
     @Test
     public void createLookup() {
-        Map<String, String> cache = RelationshipCacheGenerator.get(typeRegistry);
+        final String PROCESS_INPUT_KEY = "__Process.inputs";
+        final String PROCESS_OUTPUT_KEY = "__Process.outputs";
+        String ONE_TO_TWO_STR = ONE_TO_TWO.toString();
+        String TWO_TO_ONE_STR = TWO_TO_ONE.toString();
+
+        Map<String, RelationshipCacheGenerator.TypeInfo> cache = RelationshipCacheGenerator.get(typeRegistry);
         assertEquals(cache.size(), getLegacyAttributeCount() - 1);
-        for (Map.Entry<String, String> entry : cache.entrySet()) {
+        for (Map.Entry<String, RelationshipCacheGenerator.TypeInfo> entry : cache.entrySet()) {
             assertTrue(StringUtils.isNotEmpty(entry.getKey()));
             assertTrue(entry.getKey().startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX), entry.getKey());
         }
+
+        assertEquals(cache.get(PROCESS_INPUT_KEY).getTypeName(), "dataset_process_inputs");
+        assertEquals(cache.get(PROCESS_INPUT_KEY).getPropagateTags(), ONE_TO_TWO_STR);
+
+        assertEquals(cache.get(PROCESS_OUTPUT_KEY).getTypeName(), "process_dataset_outputs");
+        assertEquals(cache.get(PROCESS_OUTPUT_KEY).getPropagateTags(), TWO_TO_ONE_STR);
     }
 
     private int getLegacyAttributeCount() {

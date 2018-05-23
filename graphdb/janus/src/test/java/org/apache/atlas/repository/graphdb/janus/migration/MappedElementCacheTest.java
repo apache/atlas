@@ -31,8 +31,9 @@ import static org.testng.Assert.*;
 
 public class MappedElementCacheTest extends BaseUtils {
 
-    @Test(dataProvider = "col1")
-    public void vertexFetch(JsonNode node) {
+    @Test
+    public void vertexFetch()  {
+        JsonNode node = getCol1();
         MappedElementCache cache = new MappedElementCache();
         TinkerGraph tg = TinkerGraph.open();
 
@@ -41,32 +42,15 @@ public class MappedElementCacheTest extends BaseUtils {
         Vertex vx = cache.getMappedVertex(tg, 98336);
         assertNotNull(vx);
         assertEquals(cache.lruVertexCache.size(), 1);
-        assertEquals(cache.lruEdgeCache.size(), 0);
     }
 
     @Test
-    public void edgeFetch() throws IOException {
+    public void edgeFetch() {
         MappedElementCache cache = new MappedElementCache();
         TinkerGraph tg = TinkerGraph.open();
 
         addEdge(tg, cache);
 
-        assertEquals(cache.lruVertexCache.size(), 2);
-        assertEquals(cache.lruEdgeCache.size(), 0);
-    }
-
-
-    @Test
-    public void nonExistentVertexReturnsNull() {
-        TinkerGraph tg = TinkerGraph.open();
-        MappedElementCache cache = new MappedElementCache();
-
-        assertNull(cache.fetchVertex(tg, 1111));
-        assertNull(cache.fetchEdge(tg, "abcd"));
-    }
-
-    @DataProvider(name = "col1")
-    public Object[][] getCol1(ITestContext context) throws IOException {
-        return getJsonNodeFromFile("col-legacy.json");
+        assertEquals(cache.lruVertexCache.size(), 4);
     }
 }

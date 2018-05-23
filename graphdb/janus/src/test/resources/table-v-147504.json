@@ -33,10 +33,12 @@
   },
   "hive_table.parameters": {
     "type": "list",
-    "value": [{
-      "type": "string",
-      "value": "transient_lastDdlTime"
-    }]
+    "value": [
+      {
+        "type": "string",
+        "value": "transient_lastDdlTime"
+      }
+    ]
   },
   "hive_table.retention": {
     "type": "integer",
@@ -44,10 +46,12 @@
   },
   "hive_table.partitionKeys": {
     "type": "list",
-    "value": [{
-      "type": "string",
-      "value": "8dty-35tc-amfp-23xs"
-    }]
+    "value": [
+      {
+        "type": "string",
+        "value": "8dty-35tc-amfp-23xs"
+      }
+    ]
   },
   "__guid": {
     "type": "string",
@@ -63,16 +67,20 @@
   },
   "__superTypeNames": {
     "type": "list",
-    "value": [{
-      "type": "string",
-      "value": "Asset"
-    }, {
-      "type": "string",
-      "value": "DataSet"
-    }, {
-      "type": "string",
-      "value": "Referenceable"
-    }]
+    "value": [
+      {
+        "type": "string",
+        "value": "Asset"
+      },
+      {
+        "type": "string",
+        "value": "DataSet"
+      },
+      {
+        "type": "string",
+        "value": "Referenceable"
+      }
+    ]
   },
   "hive_table.viewExpandedText": {
     "type": "string",
@@ -104,13 +112,37 @@
   },
   "hive_table.columns": {
     "type": "list",
-    "value": [{
-      "type": "string",
-      "value": "816u-35tc-ao0l-47so"
-    }, {
-      "type": "string",
-      "value": "82rq-35tc-ao0l-2glc"
-    }]
+    "value": [
+      {
+        "type": "string",
+        "value": "816u-35tc-ao0l-47so"
+      },
+      {
+        "type": "string",
+        "value": "82rq-35tc-ao0l-2glc"
+      }
+    ]
+  },
+  "hive_table.columnsMap.col3": {
+    "type": "string",
+    "value": "816u-35tc-ao0l-47aa"
+  },
+  "hive_table.columnsMap.col4": {
+    "type": "string",
+    "value": "82rq-35tc-ao0l-2gaa"
+  },
+  "hive_table.columnsMap": {
+    "type": "list",
+    "value": [
+      {
+        "type": "string",
+        "value": "col3"
+      },
+      {
+        "type": "string",
+        "value": "col4"
+      }
+    ]
   },
   "__timestamp": {
     "type": "long",
@@ -119,3 +151,4 @@
   "_id": 147504,
   "_type": "vertex"
 }
+
