@@ -256,7 +256,11 @@ define(['require',
                     var objGuid = options.objGuid,
                         node = options.node,
                         index = options.index;
-                    if (!that.guid) {
+                    if (that.isAssignView) {
+                        return {
+                            'opened': true
+                        }
+                    } else if (!that.guid) {
                         that.query[that.viewType].isNodeNotFoundAtLoad = false;
                         var selectedItem = {
                             "type": "Glossary",
@@ -461,6 +465,7 @@ define(['require',
                             .on("select_node.jstree", function(e, data) {
                                 if (that.isAssignView) {
                                     that.glossary.selectedItem = data.node.original;
+                                    that.glossaryCollection.trigger("node_selected");
                                 } else {
                                     var popoverClassName = (type == "term" ? '.termPopover' : '.categoryPopover'),
                                         currentClickedPopoverEl = "";
