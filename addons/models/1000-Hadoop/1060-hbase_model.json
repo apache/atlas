@@ -71,7 +71,7 @@
                 {
                     "name": "column_families",
                     "typeName": "array<hbase_column_family>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "constraints": [
                         {
                             "type": "ownedRef"
@@ -108,7 +108,7 @@
                 {
                     "name": "columns",
                     "typeName": "array<hbase_column>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "constraints": [
                         {
                             "type": "ownedRef"
@@ -149,21 +149,21 @@
     ],
     "relationshipDefs": [
         {
-            "name": "hbase_namespace_tables",
+            "name": "hbase_table_namespace",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
-                "type": "hbase_namespace",
-                "name": "tables",
-                "isContainer": true,
-                "cardinality": "SET"
-            },
-            "endDef2": {
                 "type": "hbase_table",
                 "name": "namespace",
                 "isContainer": false,
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "hbase_namespace",
+                "name": "tables",
+                "isContainer": true,
+                "cardinality": "SET"
             },
             "propagateTags": "NONE"
         },
