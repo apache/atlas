@@ -37,7 +37,7 @@ public class HiveStocksTest extends MigrationBaseAsserts {
 
     @Test
     public void migrateStocks() throws AtlasBaseException, IOException {
-        final int EXPECTED_TOTAL_COUNT  = 188;
+        final int EXPECTED_TOTAL_COUNT  = 189;
         final int EXPECTED_DB_COUNT     = 1;
         final int EXPECTED_TABLE_COUNT  = 1;
         final int EXPECTED_COLUMN_COUNT = 7;
@@ -59,7 +59,7 @@ public class HiveStocksTest extends MigrationBaseAsserts {
         assertTypeCountNameGuid("Tag1", 1, "", "");
 
         assertEdges(getVertex("hive_db", "stocks").getEdges(AtlasEdgeDirection.IN).iterator(),1, 1, "");
-        assertEdges(getVertex("hive_table", "stocks_daily").getEdges(AtlasEdgeDirection.OUT).iterator(), 1, 1, "hive_db_tables");
+        assertEdges(getVertex("hive_table", "stocks_daily").getEdges(AtlasEdgeDirection.OUT).iterator(), 1, 1, "hive_table_db");
         assertEdges(getVertex("hive_column", "high").getEdges(AtlasEdgeDirection.OUT).iterator(), 1,1, "hive_table_columns");
 
         assertMigrationStatus(EXPECTED_TOTAL_COUNT);

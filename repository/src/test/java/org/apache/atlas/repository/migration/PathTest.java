@@ -44,7 +44,7 @@ public class PathTest extends MigrationBaseAsserts {
 
     @Test
     public void migrationImport() throws IOException, AtlasBaseException {
-        final int EXPECTED_TOTAL_COUNT = 89;
+        final int EXPECTED_TOTAL_COUNT = 90;
 
         runFileImporter("path_db");
 

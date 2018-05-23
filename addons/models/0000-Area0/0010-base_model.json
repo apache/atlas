@@ -84,7 +84,7 @@
                 {
                     "name": "inputs",
                     "typeName": "array<DataSet>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -92,7 +92,7 @@
                 {
                     "name": "outputs",
                     "typeName": "array<DataSet>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -125,7 +125,7 @@
                 {
                     "name": "savedSearches",
                     "typeName": "array<__AtlasUserSavedSearch>",
-                    "cardinality": "LIST",
+                    "cardinality": "SET",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false,
@@ -201,19 +201,19 @@
             "typeVersion": "1.0",
             "relationshipCategory": "AGGREGATION",
             "endDef1": {
-                "type": "DataSet",
-                "name": "inputToProcesses",
-                "isContainer": false,
-                "cardinality": "SET"
-            },
-            "endDef2": {
                 "type": "Process",
                 "name": "inputs",
                 "isContainer": true,
                 "cardinality": "SET",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "endDef2": {
+                "type": "DataSet",
+                "name": "inputToProcesses",
+                "isContainer": false,
+                "cardinality": "SET"
+            },
+            "propagateTags": "TWO_TO_ONE"
         },
         {
           "name": "process_dataset_outputs",
@@ -233,6 +233,25 @@
                 "cardinality": "SET"
           },
           "propagateTags": "ONE_TO_TWO"
+        },
+        {
+          "name": "__AtlasUserProfile_savedsearches",
+          "typeVersion": "1.0",
+          "relationshipCategory": "COMPOSITION",
+          "endDef1": {
+                "type": "__AtlasUserProfile",
+                "name": "savedSearches",
+                "isContainer": true,
+                "cardinality": "SET",
+				"isLegacyAttribute": true
+          },
+          "endDef2": {
+                "type": "__AtlasUserSavedSearch",
+                "name": "userProfile",
+                "isContainer": false,
+                "cardinality": "SINGLE"
+          },
+          "propagateTags": "NONE"
         }
     ]
 }

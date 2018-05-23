@@ -141,7 +141,7 @@
                 {
                     "name": "recentQueries",
                     "typeName": "array<string>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "LIST",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -228,7 +228,7 @@
                 {
                     "name": "partitionKeys",
                     "typeName": "array<hive_column>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "constraints": [
                         {
                             "type": "ownedRef"
@@ -241,7 +241,7 @@
                 {
                     "name": "aliases",
                     "typeName": "array<string>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -249,7 +249,7 @@
                 {
                     "name": "columns",
                     "typeName": "array<hive_column>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "constraints": [
                         {
                             "type": "ownedRef"
@@ -375,7 +375,7 @@
                 {
                     "name": "bucketCols",
                     "typeName": "array<string>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -383,7 +383,7 @@
                 {
                     "name": "sortCols",
                     "typeName": "array<hive_order>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -525,21 +525,21 @@
     ],
     "relationshipDefs": [
         {
-            "name": "hive_db_tables",
+            "name": "hive_table_db",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
-                "type": "hive_db",
-                "name": "tables",
-                "isContainer": true,
-                "cardinality": "SET"
-            },
-            "endDef2": {
                 "type": "hive_table",
                 "name": "db",
                 "isContainer": false,
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "hive_db",
+                "name": "tables",
+                "isContainer": true,
+                "cardinality": "SET"
             },
             "propagateTags": "NONE"
         },
