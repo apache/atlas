@@ -17,9 +17,11 @@
  */
 package org.apache.atlas.repository.audit;
 
+import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
-import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -42,18 +44,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_ADD;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_DELETE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_UPDATE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.ENTITY_CREATE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.ENTITY_DELETE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.ENTITY_IMPORT_CREATE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.ENTITY_IMPORT_DELETE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.ENTITY_IMPORT_UPDATE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.ENTITY_UPDATE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_ADD;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_DELETE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_DELETE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_CREATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_DELETE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_UPDATE;
 
 @Component
 public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
@@ -165,21 +167,21 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
     }
 
-    private EntityAuditEventV2 createEvent(AtlasEntity entity, EntityAuditAction action, String details) {
+    private EntityAuditEventV2 createEvent(AtlasEntity entity, EntityAuditActionV2 action, String details) {
         return new EntityAuditEventV2(entity.getGuid(), RequestContextV1.get().getRequestTime(),
                                       RequestContextV1.get().getUser(), action, details, entity);
     }
 
-    private EntityAuditEventV2 createEvent(AtlasEntity entity, EntityAuditAction action) {
+    private EntityAuditEventV2 createEvent(AtlasEntity entity, EntityAuditActionV2 action) {
         String detail = getAuditEventDetail(entity, action);
 
         return createEvent(entity, action, detail);
     }
 
-    private String getAuditEventDetail(AtlasEntity entity, EntityAuditAction action) {
+    private String getAuditEventDetail(AtlasEntity entity, EntityAuditActionV2 action) {
         Map<String, Object> prunedAttributes = pruneEntityAttributesForAudit(entity);
 
-        String auditPrefix  = getAuditPrefix(action);
+        String auditPrefix  = getV2AuditPrefix(action);
         String auditString  = auditPrefix + AtlasType.toJson(entity);
         byte[] auditBytes   = auditString.getBytes(StandardCharsets.UTF_8);
         long   auditSize    = auditBytes != null ? auditBytes.length : 0;
@@ -277,7 +279,45 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
     }
 
-    private String getAuditPrefix(EntityAuditAction action) {
+    private String getV1AuditPrefix(EntityAuditAction action) {
+        final String ret;
+
+        switch (action) {
+            case ENTITY_CREATE:
+                ret = "Created: ";
+                break;
+            case ENTITY_UPDATE:
+                ret = "Updated: ";
+                break;
+            case ENTITY_DELETE:
+                ret = "Deleted: ";
+                break;
+            case TAG_ADD:
+                ret = "Added classification: ";
+                break;
+            case TAG_DELETE:
+                ret = "Deleted classification: ";
+                break;
+            case TAG_UPDATE:
+                ret = "Updated classification: ";
+                break;
+            case ENTITY_IMPORT_CREATE:
+                ret = "Created by import: ";
+                break;
+            case ENTITY_IMPORT_UPDATE:
+                ret = "Updated by import: ";
+                break;
+            case ENTITY_IMPORT_DELETE:
+                ret = "Deleted by import: ";
+                break;
+            default:
+                ret = "Unknown: ";
+        }
+
+        return ret;
+    }
+
+    private String getV2AuditPrefix(EntityAuditActionV2 action) {
         final String ret;
 
         switch (action) {

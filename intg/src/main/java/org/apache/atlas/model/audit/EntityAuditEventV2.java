@@ -32,6 +32,7 @@ import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.ENTITY_AUDIT_V2;
 
 /**
  * Structure of v2 entity audit event
@@ -42,13 +43,15 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class EntityAuditEventV2 implements Serializable {
-    public enum EntityAuditAction {
+    public enum EntityAuditType { ENTITY_AUDIT_V1, ENTITY_AUDIT_V2 }
+
+    public enum EntityAuditActionV2 {
         ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE,
         ENTITY_IMPORT_CREATE, ENTITY_IMPORT_UPDATE, ENTITY_IMPORT_DELETE,
         CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE,
         PROPAGATED_CLASSIFICATION_ADD, PROPAGATED_CLASSIFICATION_DELETE, PROPAGATED_CLASSIFICATION_UPDATE;
 
-        public static EntityAuditAction fromString(String strValue) {
+        public static EntityAuditActionV2 fromString(String strValue) {
             switch (strValue) {
                 case "ENTITY_CREATE":
                     return ENTITY_CREATE;
@@ -79,28 +82,35 @@ public class EntityAuditEventV2 implements Serializable {
                     return PROPAGATED_CLASSIFICATION_UPDATE;
             }
 
-            throw new IllegalArgumentException("No enum constant " + EntityAuditAction.class.getCanonicalName() + "." + strValue);
+            throw new IllegalArgumentException("No enum constant " + EntityAuditActionV2.class.getCanonicalName() + "." + strValue);
         }
     }
 
-    private String            entityId;
-    private long              timestamp;
-    private String            user;
-    private EntityAuditAction action;
-    private String            details;
-    private String            eventKey;
-    private AtlasEntity       entity;
+    private String              entityId;
+    private long                timestamp;
+    private String              user;
+    private EntityAuditActionV2 action;
+    private String              details;
+    private String              eventKey;
+    private AtlasEntity         entity;
+    private EntityAuditType     type;
 
     public EntityAuditEventV2() { }
 
-    public EntityAuditEventV2(String entityId, long timestamp, String user, EntityAuditAction action, String details,
+    public EntityAuditEventV2(String entityId, long timestamp, String user, EntityAuditActionV2 action, String details,
                               AtlasEntity entity) {
+        this(entityId, timestamp, user, action, details, entity, ENTITY_AUDIT_V2);
+    }
+
+    public EntityAuditEventV2(String entityId, long timestamp, String user, EntityAuditActionV2 action, String details,
+                              AtlasEntity entity, EntityAuditType auditType) {
         setEntityId(entityId);
         setTimestamp(timestamp);
         setUser(user);
         setAction(action);
         setDetails(details);
         setEntity(entity);
+        setType(auditType);
     }
 
     public String getEntityId() {
@@ -127,11 +137,11 @@ public class EntityAuditEventV2 implements Serializable {
         this.user = user;
     }
 
-    public EntityAuditAction getAction() {
+    public EntityAuditActionV2 getAction() {
         return action;
     }
 
-    public void setAction(EntityAuditAction action) {
+    public void setAction(EntityAuditActionV2 action) {
         this.action = action;
     }
 
@@ -157,6 +167,14 @@ public class EntityAuditEventV2 implements Serializable {
 
     public void setEntity(AtlasEntity entity) {
         this.entity = entity;
+    }
+
+    public EntityAuditType getType() {
+        return type;
+    }
+
+    public void setType(EntityAuditType type) {
+        this.type = type;
     }
 
     @JsonIgnore
@@ -185,17 +203,19 @@ public class EntityAuditEventV2 implements Serializable {
                action == that.action &&
                Objects.equals(details, that.details) &&
                Objects.equals(eventKey, that.eventKey) &&
-               Objects.equals(entity, that.entity);
+               Objects.equals(entity, that.entity) &&
+               Objects.equals(type, that.type);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity);
+        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type);
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("EntityAuditEventV2{");
+
         sb.append("entityId='").append(entityId).append('\'');
         sb.append(", timestamp=").append(timestamp);
         sb.append(", user='").append(user).append('\'');
@@ -203,6 +223,7 @@ public class EntityAuditEventV2 implements Serializable {
         sb.append(", details='").append(details).append('\'');
         sb.append(", eventKey='").append(eventKey).append('\'');
         sb.append(", entity=").append(entity);
+        sb.append(", type=").append(type);
         sb.append('}');
 
         return sb.toString();
