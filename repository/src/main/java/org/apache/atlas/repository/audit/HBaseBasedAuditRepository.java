@@ -22,12 +22,21 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
-import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -50,12 +59,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_ADD;
+import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_DELETE;
+import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.ENTITY_AUDIT_V1;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.ENTITY_AUDIT_V2;
+import static org.apache.atlas.repository.audit.EntityAuditListener.getV2AuditPrefix;
 
 /**
  * HBase based repository for entity audit events
@@ -77,17 +95,23 @@ import java.util.List;
 public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseBasedAuditRepository.class);
 
-    public static final String CONFIG_TABLE_NAME = CONFIG_PREFIX + ".hbase.tablename";
+    public static final String CONFIG_TABLE_NAME  = CONFIG_PREFIX + ".hbase.tablename";
     public static final String DEFAULT_TABLE_NAME = "ATLAS_ENTITY_AUDIT_EVENTS";
-
-    public static final byte[] COLUMN_FAMILY = Bytes.toBytes("dt");
-    public static final byte[] COLUMN_ACTION = Bytes.toBytes("a");
-    public static final byte[] COLUMN_DETAIL = Bytes.toBytes("d");
-    public static final byte[] COLUMN_USER = Bytes.toBytes("u");
-    public static final byte[] COLUMN_DEFINITION = Bytes.toBytes("f");
+    public static final byte[] COLUMN_FAMILY      = Bytes.toBytes("dt");
+    public static final byte[] COLUMN_ACTION      = Bytes.toBytes("a");
+    public static final byte[] COLUMN_DETAIL      = Bytes.toBytes("d");
+    public static final byte[] COLUMN_USER        = Bytes.toBytes("u");
+    public static final byte[] COLUMN_DEFINITION  = Bytes.toBytes("f");
+    public static final byte[] COLUMN_TYPE        = Bytes.toBytes("t");
 
     private TableName tableName;
     private Connection connection;
+    private final AtlasInstanceConverter instanceConverter;
+
+    @Inject
+    public HBaseBasedAuditRepository(AtlasInstanceConverter instanceConverter) {
+        this.instanceConverter = instanceConverter;
+    }
 
     /**
      * Add events to the event repository
@@ -101,23 +125,32 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         }
 
         Table table = null;
+
         try {
-            table = connection.getTable(tableName);
+            table          = connection.getTable(tableName);
             List<Put> puts = new ArrayList<>(events.size());
 
             for (int index = 0; index < events.size(); index++) {
                 EntityAuditEvent event = events.get(index);
 
-                LOG.debug("Adding entity audit event {}", event);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Adding entity audit event {}", event);
+                }
+
                 Put put = new Put(getKey(event.getEntityId(), event.getTimestamp(), index));
+
                 addColumn(put, COLUMN_ACTION, event.getAction());
                 addColumn(put, COLUMN_USER, event.getUser());
                 addColumn(put, COLUMN_DETAIL, event.getDetails());
+                addColumn(put, COLUMN_TYPE, ENTITY_AUDIT_V1);
+
                 if (persistEntityDefinition) {
                     addColumn(put, COLUMN_DEFINITION, event.getEntityDefinitionString());
                 }
+
                 puts.add(put);
             }
+
             table.put(puts);
         } catch (IOException e) {
             throw new AtlasException(e);
@@ -150,6 +183,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
                 addColumn(put, COLUMN_ACTION, event.getAction());
                 addColumn(put, COLUMN_USER, event.getUser());
                 addColumn(put, COLUMN_DETAIL, event.getDetails());
+                addColumn(put, COLUMN_TYPE, ENTITY_AUDIT_V2);
 
                 if (persistEntityDefinition) {
                     addColumn(put, COLUMN_DEFINITION, event.getEntity());
@@ -216,16 +250,14 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
                 if (!event.getEntityId().equals(entityId)) {
                     continue;
                 }
+
                 event.setUser(getResultString(result, COLUMN_USER));
-                event.setAction(EntityAuditAction.fromString(getResultString(result, COLUMN_ACTION)));
-                event.setDetails(getResultString(result, COLUMN_DETAIL));
+                event.setAction(EntityAuditActionV2.fromString(getResultString(result, COLUMN_ACTION)));
+                event.setDetails(getEntityDetails(result));
+                event.setType(getAuditType(result));
 
                 if (persistEntityDefinition) {
-                    String colDef = getResultString(result, COLUMN_DEFINITION);
-
-                    if (colDef != null) {
-                        event.setEntityDefinition(colDef);
-                    }
+                    event.setEntityDefinition(getEntityDefinition(result));
                 }
 
                 events.add(event);
@@ -246,6 +278,91 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
                 throw new AtlasBaseException(e);
             }
         }
+    }
+
+    private String getEntityDefinition(Result result) throws AtlasBaseException {
+        String ret = getResultString(result, COLUMN_DEFINITION);
+
+        if (getAuditType(result) != ENTITY_AUDIT_V2) {
+            Referenceable referenceable = AtlasType.fromV1Json(ret, Referenceable.class);
+            AtlasEntity   entity        = toAtlasEntity(referenceable);
+
+            ret = AtlasType.toJson(entity);
+        }
+
+        return ret;
+    }
+
+    private String getEntityDetails(Result result) throws AtlasBaseException {
+        String ret;
+
+        if (getAuditType(result) == ENTITY_AUDIT_V2) {
+            ret = getResultString(result, COLUMN_DETAIL);
+        } else {
+            // convert v1 audit detail to v2
+            ret = getV2Details(result);
+        }
+
+        return ret;
+    }
+
+    private EntityAuditType getAuditType(Result result) {
+        String          typeString = getResultString(result, COLUMN_TYPE);
+        EntityAuditType ret        = (typeString != null) ? EntityAuditType.valueOf(typeString) : ENTITY_AUDIT_V1;
+
+        return ret;
+    }
+
+    private String  getV2Details(Result result) throws AtlasBaseException {
+        String ret                 = null;
+        String v1DetailsWithPrefix = getResultString(result, COLUMN_DETAIL);
+
+        if (StringUtils.isNotEmpty(v1DetailsWithPrefix)) {
+            EntityAuditAction v1AuditAction = EntityAuditAction.fromString(getResultString(result, COLUMN_ACTION));
+            String            v1AuditPrefix = EntityAuditListener.getV1AuditPrefix(v1AuditAction);
+            String[]          split         = v1DetailsWithPrefix.split(v1AuditPrefix);
+
+            if (ArrayUtils.isNotEmpty(split) && split.length == 2) {
+                String        v1AuditDetails = split[1];
+                Referenceable referenceable  = AtlasType.fromV1Json(v1AuditDetails, Referenceable.class);
+                String        v2Json         = (referenceable != null) ? toV2Json(referenceable, v1AuditAction) : v1AuditDetails;
+
+                if (v2Json != null) {
+                    ret = getV2AuditPrefix(v1AuditAction) + v2Json;
+                }
+            } else {
+                ret = v1DetailsWithPrefix;
+            }
+        }
+
+        return ret;
+    }
+
+    private String toV2Json(Referenceable referenceable, EntityAuditAction action) throws AtlasBaseException {
+        String ret;
+
+        if (action == TAG_ADD || action == TAG_UPDATE || action == TAG_DELETE) {
+            AtlasClassification classification = instanceConverter.toAtlasClassification(referenceable);
+
+            ret = AtlasType.toJson(classification);
+        } else {
+            AtlasEntity entity = toAtlasEntity(referenceable);
+
+            ret = AtlasType.toJson(entity);
+        }
+
+        return ret;
+    }
+
+    private AtlasEntity toAtlasEntity(Referenceable referenceable) throws AtlasBaseException {
+        AtlasEntity              ret                 = null;
+        AtlasEntitiesWithExtInfo entitiesWithExtInfo = instanceConverter.toAtlasEntity(referenceable);
+
+        if (entitiesWithExtInfo != null && CollectionUtils.isNotEmpty(entitiesWithExtInfo.getEntities())) {
+            ret = entitiesWithExtInfo.getEntities().get(0);
+        }
+
+        return ret;
     }
 
     private <T> void addColumn(Put put, byte[] columnName, T columnValue) {

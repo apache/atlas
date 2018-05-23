@@ -24,7 +24,7 @@ import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.EntityChangeListenerV2;
-import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 
@@ -57,8 +57,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_ADD;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_DELETE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
 import static org.apache.atlas.util.AtlasRepositoryConfiguration.isV2EntityNotificationEnabled;
 
 
@@ -201,7 +201,7 @@ public class AtlasEntityChangeNotifier {
         notifyPropagatedEntities(removedPropagations, PROPAGATED_CLASSIFICATION_DELETE);
     }
 
-    private void notifyPropagatedEntities(Map<String, List<AtlasClassification>> entityPropagationMap, EntityAuditAction action) throws AtlasBaseException {
+    private void notifyPropagatedEntities(Map<String, List<AtlasClassification>> entityPropagationMap, EntityAuditActionV2 action) throws AtlasBaseException {
         if (MapUtils.isEmpty(entityPropagationMap) || action == null) {
             return;
         }

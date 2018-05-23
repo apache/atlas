@@ -42,17 +42,16 @@ import java.util.Map;
 public abstract class AbstractStorageBasedAuditRepository implements Service, EntityAuditRepository, ActiveStateChangeHandler {
   private static final Logger LOG = LoggerFactory.getLogger(HBaseBasedAuditRepository.class);
 
-  private static final String  AUDIT_REPOSITORY_MAX_SIZE_PROPERTY = "atlas.hbase.client.keyvalue.maxsize";
-  private static final String  AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY   = "atlas.audit.hbase.entity";
-  protected static final String  FIELD_SEPARATOR = ":";
-  private static final long    ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE = 1024 * 1024;
-  protected static Configuration APPLICATION_PROPERTIES = null;
-  public static final String CONFIG_PREFIX = "atlas.audit";
-  public static final String CONFIG_PERSIST_ENTITY_DEFINITION = CONFIG_PREFIX + ".persistEntityDefinition";
+  private   static final String AUDIT_REPOSITORY_MAX_SIZE_PROPERTY = "atlas.hbase.client.keyvalue.maxsize";
+  private   static final String AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY   = "atlas.audit.hbase.entity";
+  private   static final long   ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE  = 1024 * 1024;
+  public    static final String CONFIG_PREFIX                      = "atlas.audit";
+  public    static final String CONFIG_PERSIST_ENTITY_DEFINITION   = CONFIG_PREFIX + ".persistEntityDefinition";
+  protected static final String FIELD_SEPARATOR                    = ":";
 
+  protected static Configuration      APPLICATION_PROPERTIES       = null;
   protected Map<String, List<String>> auditExcludedAttributesCache = new HashMap<>();
-
-  protected static boolean       persistEntityDefinition;
+  protected static boolean            persistEntityDefinition;
 
   static {
     try {

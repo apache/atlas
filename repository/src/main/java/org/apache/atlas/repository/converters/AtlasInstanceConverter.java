@@ -348,7 +348,7 @@ public class AtlasInstanceConverter {
         return ret;
     }
 
-    private EntityAuditEvent.EntityAuditAction getV1AuditAction(EntityAuditEventV2.EntityAuditAction v2AuditAction) {
+    private EntityAuditEvent.EntityAuditAction getV1AuditAction(EntityAuditEventV2.EntityAuditActionV2 v2AuditAction) {
         switch (v2AuditAction) {
             case ENTITY_CREATE:
                 return EntityAuditEvent.EntityAuditAction.ENTITY_CREATE;
@@ -379,32 +379,32 @@ public class AtlasInstanceConverter {
         return null;
     }
 
-    private EntityAuditEventV2.EntityAuditAction getV2AuditAction(EntityAuditEvent.EntityAuditAction v1AuditAction) {
+    private EntityAuditEventV2.EntityAuditActionV2 getV2AuditAction(EntityAuditEvent.EntityAuditAction v1AuditAction) {
         switch (v1AuditAction) {
             case ENTITY_CREATE:
-                return EntityAuditEventV2.EntityAuditAction.ENTITY_CREATE;
+                return EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE;
             case ENTITY_UPDATE:
-                return EntityAuditEventV2.EntityAuditAction.ENTITY_UPDATE;
+                return EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE;
             case ENTITY_DELETE:
-                return EntityAuditEventV2.EntityAuditAction.ENTITY_DELETE;
+                return EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE;
             case ENTITY_IMPORT_CREATE:
-                return EntityAuditEventV2.EntityAuditAction.ENTITY_IMPORT_CREATE;
+                return EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_CREATE;
             case ENTITY_IMPORT_UPDATE:
-                return EntityAuditEventV2.EntityAuditAction.ENTITY_IMPORT_UPDATE;
+                return EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_UPDATE;
             case ENTITY_IMPORT_DELETE:
-                return EntityAuditEventV2.EntityAuditAction.ENTITY_IMPORT_DELETE;
+                return EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_DELETE;
             case TAG_ADD:
-                return EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_ADD;
+                return EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD;
             case TAG_DELETE:
-                return EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_DELETE;
+                return EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_DELETE;
             case TAG_UPDATE:
-                return EntityAuditEventV2.EntityAuditAction.CLASSIFICATION_UPDATE;
+                return EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_UPDATE;
             case PROPAGATED_TAG_ADD:
-                return EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_ADD;
+                return EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
             case PROPAGATED_TAG_DELETE:
-                return EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_DELETE;
+                return EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
             case PROPAGATED_TAG_UPDATE:
-                return EntityAuditEventV2.EntityAuditAction.PROPAGATED_CLASSIFICATION_UPDATE;
+                return EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_UPDATE;
         }
 
         return null;

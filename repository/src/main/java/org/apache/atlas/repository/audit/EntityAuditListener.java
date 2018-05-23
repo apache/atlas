@@ -146,7 +146,7 @@ public class EntityAuditListener implements EntityChangeListener {
     private String getAuditEventDetail(Referenceable entity, EntityAuditAction action) throws AtlasException {
         Map<String, Object> prunedAttributes = pruneEntityAttributesForAudit(entity);
 
-        String auditPrefix  = getAuditPrefix(action);
+        String auditPrefix  = getV1AuditPrefix(action);
         String auditString  = auditPrefix + AtlasType.toV1Json(entity);
         byte[] auditBytes   = auditString.getBytes(StandardCharsets.UTF_8);
         long   auditSize    = auditBytes != null ? auditBytes.length : 0;
@@ -259,7 +259,7 @@ public class EntityAuditListener implements EntityChangeListener {
         }
     }
 
-    private String getAuditPrefix(EntityAuditAction action) {
+    public static String getV1AuditPrefix(EntityAuditAction action) {
         final String ret;
 
         switch (action) {
@@ -280,6 +280,44 @@ public class EntityAuditListener implements EntityChangeListener {
                 break;
             case TAG_UPDATE:
                 ret = "Updated trait: ";
+                break;
+            case ENTITY_IMPORT_CREATE:
+                ret = "Created by import: ";
+                break;
+            case ENTITY_IMPORT_UPDATE:
+                ret = "Updated by import: ";
+                break;
+            case ENTITY_IMPORT_DELETE:
+                ret = "Deleted by import: ";
+                break;
+            default:
+                ret = "Unknown: ";
+        }
+
+        return ret;
+    }
+
+    public static String getV2AuditPrefix(EntityAuditAction action) {
+        final String ret;
+
+        switch (action) {
+            case ENTITY_CREATE:
+                ret = "Created: ";
+                break;
+            case ENTITY_UPDATE:
+                ret = "Updated: ";
+                break;
+            case ENTITY_DELETE:
+                ret = "Deleted: ";
+                break;
+            case TAG_ADD:
+                ret = "Added classification: ";
+                break;
+            case TAG_DELETE:
+                ret = "Deleted classification: ";
+                break;
+            case TAG_UPDATE:
+                ret = "Updated classification: ";
                 break;
             case ENTITY_IMPORT_CREATE:
                 ret = "Created by import: ";

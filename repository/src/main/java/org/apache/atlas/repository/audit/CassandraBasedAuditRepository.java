@@ -25,13 +25,11 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,7 +174,7 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
       }
       EntityAuditEventV2 event = new EntityAuditEventV2();
       event.setEntityId(rowEntityId);
-      event.setAction(EntityAuditEventV2.EntityAuditAction.fromString(row.getString(ACTION)));
+      event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString(row.getString(ACTION)));
       event.setDetails(row.getString(DETAIL));
       event.setUser(row.getString(USER));
       event.setTimestamp(row.getLong(CREATED));

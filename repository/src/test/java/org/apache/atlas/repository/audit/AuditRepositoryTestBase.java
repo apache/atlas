@@ -110,7 +110,7 @@ public class AuditRepositoryTestBase {
     @Test
     public void testAddEventsV2() throws Exception {
         EntityAuditEventV2 event = new EntityAuditEventV2(rand(), System.currentTimeMillis(), "u1",
-            EntityAuditEventV2.EntityAuditAction.ENTITY_CREATE, "d1", new AtlasEntity(rand()));
+            EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE, "d1", new AtlasEntity(rand()));
 
         eventRepository.putEventsV2(event);
 
@@ -131,12 +131,12 @@ public class AuditRepositoryTestBase {
 
         for (int i = 0; i < 3; i++) {
             //Add events for both ids
-            EntityAuditEventV2 event = new EntityAuditEventV2(id2, ts - i, "user" + i, EntityAuditEventV2.EntityAuditAction.ENTITY_UPDATE, "details" + i, entity);
+            EntityAuditEventV2 event = new EntityAuditEventV2(id2, ts - i, "user" + i, EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE, "details" + i, entity);
 
             eventRepository.putEventsV2(event);
             expectedEvents.add(event);
-            eventRepository.putEventsV2(new EntityAuditEventV2(id1, ts - i, "user" + i, EntityAuditEventV2.EntityAuditAction.ENTITY_DELETE, "details" + i, entity));
-            eventRepository.putEventsV2(new EntityAuditEventV2(id3, ts - i, "user" + i, EntityAuditEventV2.EntityAuditAction.ENTITY_CREATE, "details" + i, entity));
+            eventRepository.putEventsV2(new EntityAuditEventV2(id1, ts - i, "user" + i, EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE, "details" + i, entity));
+            eventRepository.putEventsV2(new EntityAuditEventV2(id3, ts - i, "user" + i, EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE, "details" + i, entity));
         }
 
         //Use ts for which there is no event - ts + 2
