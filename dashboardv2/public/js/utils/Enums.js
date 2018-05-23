@@ -33,7 +33,9 @@ define(['require'], function(require) {
         PROPAGATED_CLASSIFICATION_UPDATE: "Propagated Classification Updated",
         ENTITY_IMPORT_CREATE: "Entity Created by import",
         ENTITY_IMPORT_UPDATE: "Entity Updated by import",
-        ENTITY_IMPORT_DELETE: "Entity Deleted by import"
+        ENTITY_IMPORT_DELETE: "Entity Deleted by import",
+        TERM_ADD: "Term Added",
+        TERM_DELETE: "Term Deleted"
     }
 
     Enums.entityStateReadOnly = {

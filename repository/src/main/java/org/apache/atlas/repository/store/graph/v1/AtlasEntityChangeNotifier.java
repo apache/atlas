@@ -25,11 +25,13 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.type.AtlasEntityType;
@@ -192,6 +194,44 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    public void onTermAddedToEntities(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException {
+        // listeners notified on term-entity association only if v2 notifications are enabled
+        if (isV2EntityNotificationEnabled()) {
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                listener.onTermAdded(term, entityIds);
+            }
+        } else {
+            List<Referenceable> entityRefs = toReferenceables(entityIds);
+
+            for (EntityChangeListener listener : entityChangeListeners) {
+                try {
+                    listener.onTermAdded(entityRefs, term);
+                } catch (AtlasException e) {
+                    throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TermAdd");
+                }
+            }
+        }
+    }
+
+    public void onTermDeletedFromEntities(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException {
+        // listeners notified on term-entity disassociation only if v2 notifications are enabled
+        if (isV2EntityNotificationEnabled()) {
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                listener.onTermDeleted(term, entityIds);
+            }
+        } else {
+            List<Referenceable> entityRefs = toReferenceables(entityIds);
+
+            for (EntityChangeListener listener : entityChangeListeners) {
+                try {
+                    listener.onTermDeleted(entityRefs, term);
+                } catch (AtlasException e) {
+                    throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TermDelete");
+                }
+            }
+        }
+    }
+
     public void notifyPropagatedEntities() throws AtlasBaseException {
         RequestContextV1                       context             = RequestContextV1.get();
         Map<String, List<AtlasClassification>> addedPropagations   = context.getAddedPropagations();
@@ -291,6 +331,20 @@ public class AtlasEntityChangeNotifier {
         } else {
             for (AtlasEntityHeader entityHeader : entityHeaders) {
                 ret.add(toReferenceable(entityHeader.getGuid()));
+            }
+        }
+
+        return ret;
+    }
+
+    private List<Referenceable> toReferenceables(List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException {
+        List<Referenceable> ret = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(entityIds)) {
+            for (AtlasRelatedObjectId relatedObjectId : entityIds) {
+                String entityGuid = relatedObjectId.getGuid();
+
+                ret.add(toReferenceable(entityGuid));
             }
         }
 

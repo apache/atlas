@@ -70,6 +70,8 @@ import java.util.List;
 import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_ADD;
 import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_DELETE;
 import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_UPDATE;
+import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_ADD;
+import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.ENTITY_AUDIT_V1;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.ENTITY_AUDIT_V2;
@@ -319,19 +321,25 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
         if (StringUtils.isNotEmpty(v1DetailsWithPrefix)) {
             EntityAuditAction v1AuditAction = EntityAuditAction.fromString(getResultString(result, COLUMN_ACTION));
-            String            v1AuditPrefix = EntityAuditListener.getV1AuditPrefix(v1AuditAction);
-            String[]          split         = v1DetailsWithPrefix.split(v1AuditPrefix);
 
-            if (ArrayUtils.isNotEmpty(split) && split.length == 2) {
-                String        v1AuditDetails = split[1];
-                Referenceable referenceable  = AtlasType.fromV1Json(v1AuditDetails, Referenceable.class);
-                String        v2Json         = (referenceable != null) ? toV2Json(referenceable, v1AuditAction) : v1AuditDetails;
-
-                if (v2Json != null) {
-                    ret = getV2AuditPrefix(v1AuditAction) + v2Json;
-                }
-            } else {
+            if (v1AuditAction == TERM_ADD || v1AuditAction == TERM_DELETE) {
+                // for terms audit v1 and v2 structure is same
                 ret = v1DetailsWithPrefix;
+            } else {
+                String            v1AuditPrefix = EntityAuditListener.getV1AuditPrefix(v1AuditAction);
+                String[]          split         = v1DetailsWithPrefix.split(v1AuditPrefix);
+
+                if (ArrayUtils.isNotEmpty(split) && split.length == 2) {
+                    String        v1AuditDetails = split[1];
+                    Referenceable referenceable  = AtlasType.fromV1Json(v1AuditDetails, Referenceable.class);
+                    String        v2Json         = (referenceable != null) ? toV2Json(referenceable, v1AuditAction) : v1AuditDetails;
+
+                    if (v2Json != null) {
+                        ret = getV2AuditPrefix(v1AuditAction) + v2Json;
+                    }
+                } else {
+                    ret = v1DetailsWithPrefix;
+                }
             }
         }
 
