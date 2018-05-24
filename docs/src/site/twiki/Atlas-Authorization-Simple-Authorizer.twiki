@@ -93,7 +93,7 @@ Simple authorizer supports Java reg-ex to specify values for privilege/entity-ty
 
 </verbatim>
 
----+++++  Assign Roles to Users and User Grips
+---+++++  Assign Roles to Users and User Groups
 
 Roles defined above can be assigned (granted) to users as shown below:
 

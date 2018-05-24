@@ -100,7 +100,7 @@ atlas.authorizer.impl=ranger
 </verbatim>
 
 Apache Ranger Authorizer requires configuration files to be setup, for example to specify Apache Ranger admin server URL,
-name of the service containing authorization policies, etc. For more details on this, please refer to Apache Ranger documentation.
+name of the service containing authorization policies, etc. For more details please see, [[Atlas-Authorization-Ranger-Authorizer][Setting up Atlas to use Ranger Authorizer]].
 
 
 ---+++  None authorizer
