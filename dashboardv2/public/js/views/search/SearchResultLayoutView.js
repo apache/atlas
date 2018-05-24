@@ -716,7 +716,7 @@ define(['require',
                         })
                     };
                     this.getTagCol({ 'col': col, 'columnToShow': columnToShow });
-                    if ((!_.contains(["classification", "glossary"], this.fromView))) {
+                    if ((!_.contains(["glossary"], this.fromView))) {
                         this.getTermCol({ 'col': col, 'columnToShow': columnToShow });
                     }
 

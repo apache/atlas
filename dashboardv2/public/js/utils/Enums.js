@@ -73,7 +73,8 @@ define(['require'], function(require) {
             "excludeSC": "includeSubClassifications",
             "tagFilters": "tagFilters",
             "entityFilters": "entityFilters",
-            "attributes": "attributes"
+            "attributes": "attributes",
+            "term": "termName"
         },
         "uiParameters": "uiParameters"
     }
