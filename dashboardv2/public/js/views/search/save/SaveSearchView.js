@@ -96,7 +96,7 @@ define(['require',
         },
         saveAs: function(e) {
             var value = this.getValue();
-            if (value && (value.type || value.tag || value.query)) {
+            if (value && (value.type || value.tag || value.query || value.term)) {
                 this.callSaveModalLayoutView({
                     'collection': this.collection,
                     'getValue': this.getValue,
