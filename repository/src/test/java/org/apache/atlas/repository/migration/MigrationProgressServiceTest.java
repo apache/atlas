@@ -39,17 +39,10 @@ public class MigrationProgressServiceTest {
     private final long  increment       = 1001l;
     private final String statusSuccess  = ReaderStatusManager.STATUS_SUCCESS;
 
-    private static class AtlasTinkerGraph {
-
-        public static AtlasGraph create(TinkerGraph tg) {
-            AtlasGraph g = mock(AtlasGraph.class);
-            when(g.getMigrationStatus()).thenAnswer(invocation -> ReaderStatusManager.get(tg));
-            return g;
-        }
-
-        public static AtlasGraph create() {
-            return create(TinkerGraph.open());
-        }
+    private GraphDBMigrator createMigrator(TinkerGraph tg) {
+        GraphDBMigrator gdm = mock(GraphDBMigrator.class);
+        when(gdm.getMigrationStatus()).thenAnswer(invocation -> ReaderStatusManager.get(tg));
+        return gdm;
     }
 
     @Test
@@ -91,7 +84,7 @@ public class MigrationProgressServiceTest {
     }
 
     private MigrationProgressService getMigrationStatusForTest(Configuration cfg, TinkerGraph tg) {
-        return new MigrationProgressService(cfg, AtlasTinkerGraph.create(tg));
+        return new MigrationProgressService(cfg, createMigrator(tg));
     }
 
     @Test

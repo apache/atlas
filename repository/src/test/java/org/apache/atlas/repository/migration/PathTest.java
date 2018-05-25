@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -38,8 +39,8 @@ import static org.testng.Assert.assertNotNull;
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class PathTest extends MigrationBaseAsserts {
     @Inject
-    public PathTest(AtlasGraph graph) {
-        super(graph);
+    public PathTest(AtlasGraph graph, GraphDBMigrator migrator) {
+        super(graph, migrator);
     }
 
     @Test

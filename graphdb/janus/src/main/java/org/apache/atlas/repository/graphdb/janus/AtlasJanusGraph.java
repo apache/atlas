@@ -25,7 +25,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
-import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -37,7 +36,6 @@ import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.groovy.CompilerCustomizerProvider;
 import org.apache.tinkerpop.gremlin.groovy.DefaultImportCustomizerProvider;
@@ -65,7 +63,6 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.HashSet;
@@ -344,16 +341,6 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public boolean isMultiProperty(String propertyName) {
         return multiProperties.contains(propertyName);
-    }
-
-    @Override
-    public void importLegacyGraphSON(AtlasTypeRegistry typeRegistry, InputStream fs) throws AtlasBaseException {
-        AtlasJanusGraphDatabase.loadLegacyGraphSON(typeRegistry, fs);
-    }
-
-    @Override
-    public MigrationStatus getMigrationStatus() {
-        return AtlasJanusGraphDatabase.getMigrationStatus();
     }
 
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> wrapVertices(Iterable<? extends Vertex> it) {

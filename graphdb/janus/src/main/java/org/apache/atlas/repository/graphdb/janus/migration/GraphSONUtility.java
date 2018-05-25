@@ -21,12 +21,15 @@ package org.apache.atlas.repository.graphdb.janus.migration;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasBigDecimalType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasBigIntegerType;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Graph.Features.EdgeFeatures;
 import org.apache.tinkerpop.gremlin.structure.Graph.Features.VertexFeatures;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +66,17 @@ class GraphSONUtility {
 
         for (Map.Entry<String, Object> entry : props.entrySet()) {
             try {
-                vertex.property(vertexFeatures.getCardinality(entry.getKey()), entry.getKey(), entry.getValue());
+                final Cardinality cardinality = vertexFeatures.getCardinality(entry.getKey());
+                final String      key         = entry.getKey();
+                final Object      val         = entry.getValue();
+
+                if ((cardinality == Cardinality.list || cardinality == Cardinality.set) && (val instanceof Collection)) {
+                    for (Object elem : (Collection) val) {
+                        vertex.property(key, elem);
+                    }
+                } else {
+                    vertex.property(key, val);
+                }
             } catch (IllegalArgumentException ex) {
                 schemaUpdate = getSchemaUpdateMap(schemaUpdate);
 

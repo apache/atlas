@@ -30,32 +30,31 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ComplexAttributesTest extends MigrationBaseAsserts {
+public class TypesWithClassificationTest extends MigrationBaseAsserts {
 
     @Inject
-    public ComplexAttributesTest(AtlasGraph graph, GraphDBMigrator migrator) {
+    public TypesWithClassificationTest(AtlasGraph graph, GraphDBMigrator migrator) {
         super(graph, migrator);
     }
 
     @Test
     public void verify() throws IOException, AtlasBaseException {
-        String STRUCT_TYPE = "struct_type";
-        String ENTITY_TYPE = "entity_type";
-        String ENTITY_WITH_COMPLEX_COLL_TYPE = "entity_with_complex_collection_attr";
+        int EXPECTED_TOTAL_COUNT = 60;
+        String ENTITY_TYPE = "ComplexTraitType";
+        String LEGACY_TYPE_TRAIT = "legacy_traitprayivofx4";
+        String LEGACY_TYPE_VENDOR_PII = "legacy_VENDOR_PII";
+        String LEGACY_TYPE_FINANCE = "legacy_FINANCE";
 
-        final int EXPECTED_TOTAL_COUNT  = 215;
-        final int EXPECTED_ENTITY_TYPE_COUNT = 16;
-        final int EXPECTED_STRUCT_TYPE_COUNT = 3;
-        final int EXPECTED_ENTITY_WITH_COMPLEX_COLL_TYPE_COUNT = 1;
+        runFileImporter("classification_defs");
 
-        runFileImporter("complex-attr_db");
+        assertTypeCountNameGuid(ENTITY_TYPE, 1,"", "");
+        assertTypeCountNameGuid(LEGACY_TYPE_TRAIT, 1, "", "");
+        assertTypeCountNameGuid(LEGACY_TYPE_VENDOR_PII, 3, "", "");
+        assertTypeCountNameGuid(LEGACY_TYPE_FINANCE, 2, "", "");
 
-        assertTypeCountNameGuid(STRUCT_TYPE, EXPECTED_STRUCT_TYPE_COUNT,"", "");
-        assertTypeCountNameGuid(ENTITY_TYPE, EXPECTED_ENTITY_TYPE_COUNT, "", "");
-        assertTypeCountNameGuid(ENTITY_WITH_COMPLEX_COLL_TYPE, EXPECTED_ENTITY_WITH_COMPLEX_COLL_TYPE_COUNT, "", "");
-
-        assertEdgesWithLabel(getVertex(ENTITY_WITH_COMPLEX_COLL_TYPE, "").getEdges(AtlasEdgeDirection.OUT).iterator(),1, "__entity_with_complex_collection_attr.listOfEntities");
-        assertEdgesWithLabel(getVertex(ENTITY_WITH_COMPLEX_COLL_TYPE, "").getEdges(AtlasEdgeDirection.OUT).iterator(),9, "__entity_with_complex_collection_attr.mapOfStructs");
+        assertEdgesWithLabel(getVertex(ENTITY_TYPE, "").getEdges(AtlasEdgeDirection.OUT).iterator(),1, "__ComplexTraitType.vendors");
+        assertEdgesWithLabel(getVertex(ENTITY_TYPE, "").getEdges(AtlasEdgeDirection.OUT).iterator(),4, "__ComplexTraitType.finance");
+        assertEdgesWithLabel(getVertex(ENTITY_TYPE, "").getEdges(AtlasEdgeDirection.OUT).iterator(),6, "__ComplexTraitType.complexTrait");
 
         assertMigrationStatus(EXPECTED_TOTAL_COUNT);
     }

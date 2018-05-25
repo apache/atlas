@@ -18,7 +18,6 @@
 package org.apache.atlas.repository.graphdb;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
@@ -28,9 +27,7 @@ import javax.script.ScriptException;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
-import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
 
 /**
  * Represents a graph.
@@ -320,8 +317,4 @@ public interface AtlasGraph<V, E> {
      * @return
      */
     boolean isMultiProperty(String name);
-
-    void importLegacyGraphSON(AtlasTypeRegistry typeRegistry, InputStream fs) throws AtlasBaseException;
-
-    MigrationStatus getMigrationStatus();
 }

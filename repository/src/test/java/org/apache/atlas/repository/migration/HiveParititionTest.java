@@ -23,6 +23,7 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -33,8 +34,8 @@ import java.io.IOException;
 public class HiveParititionTest extends  MigrationBaseAsserts {
 
     @Inject
-    public HiveParititionTest(AtlasGraph graph) {
-        super(graph);
+    public HiveParititionTest(AtlasGraph graph, GraphDBMigrator migrator) {
+        super(graph, migrator);
     }
 
     @Test

@@ -36,8 +36,10 @@ import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_KEY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.graphdb.janus.migration.TypesDefScrubber.*;
 
 public class ElementProcessors {
     private static final Logger LOG = LoggerFactory.getLogger(ElementProcessors.class);
@@ -47,22 +49,29 @@ public class ElementProcessors {
     public  static final String   NON_PRIMITIVE_ARRAY_CATEGORY = "ARRAY";
     private static final String[] NON_PRIMITIVE_KEYS           = { ElementProcessors.NON_PRIMITIVE_ARRAY_CATEGORY };
 
-    private final Map<String, RelationshipCacheGenerator.TypeInfo> relationshipLookup;
-    private final Map<String, Map<String, List<String>>>        postProcessMap;
+    private final Map<String, RelationshipCacheGenerator.TypeInfo>  relationshipLookup;
+    private final Map<String, Map<String, List<String>>>            postProcessMap;
+    private final Map<String, ClassificationToStructDefName>        traitToTypeMap;
 
     private final NonPrimitiveListPropertyProcessor nonPrimitiveListPropertyProcessor = new NonPrimitiveListPropertyProcessor();
     private final NonPrimitiveMapPropertyProcessor  nonPrimitiveMapPropertyProcessor  = new NonPrimitiveMapPropertyProcessor();
     private final PrimitiveMapPropertyProcessor     primitiveMapPropertyProcessor     = new PrimitiveMapPropertyProcessor();
     private final EdgeCollectionPropertyProcessor   edgeCollectionPropertyProcessor   = new EdgeCollectionPropertyProcessor();
     private final EdgeRelationshipPropertyProcessor edgeRelationshipPropertyProcessor = new EdgeRelationshipPropertyProcessor();
+    private final EdgeTraitTypesPropertyProcessor   edgeTraitTypesPropertyProcessor   = new EdgeTraitTypesPropertyProcessor();
 
-    public ElementProcessors(AtlasTypeRegistry typeRegistry) {
-        this(RelationshipCacheGenerator.get(typeRegistry), TypesWithCollectionsFinder.getVertexPropertiesForCollectionAttributes(typeRegistry));
+    public ElementProcessors(AtlasTypeRegistry typeRegistry, TypesDefScrubber scrubber) {
+        this(RelationshipCacheGenerator.get(typeRegistry),
+             TypesWithCollectionsFinder.getVertexPropertiesForCollectionAttributes(typeRegistry),
+             scrubber.getTraitToTypeMap());
     }
 
-    ElementProcessors(Map<String, RelationshipCacheGenerator.TypeInfo> lookup, Map<String, Map<String, List<String>>> postProcessMap) {
+    ElementProcessors(Map<String, RelationshipCacheGenerator.TypeInfo> lookup,
+                      Map<String, Map<String, List<String>>> postProcessMap,
+                      Map<String, ClassificationToStructDefName> traitToTypeMap) {
         this.relationshipLookup = lookup;
         this.postProcessMap     = postProcessMap;
+        this.traitToTypeMap     = traitToTypeMap;
     }
 
     public static String[] getNonPrimitiveCategoryKeys() {
@@ -240,8 +249,39 @@ public class ElementProcessors {
         }
     }
 
+    private class EdgeTraitTypesPropertyProcessor {
+        private void update(String label, Vertex in) {
+            if (traitToTypeMap.size() == 0) {
+                return;
+            }
+
+            if (!in.property(ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
+                return;
+            }
+
+            String typeName = (String) in.property(ENTITY_TYPE_PROPERTY_KEY).value();
+            String key      = label;
+
+            if (!traitToTypeMap.containsKey(key)) {
+                key = StringUtils.substringBeforeLast(key, ".");
+
+                if(!traitToTypeMap.containsKey(key)) {
+                    return;
+                }
+            }
+
+            if (!traitToTypeMap.get(key).getTypeName().equals(typeName)) {
+                return;
+            }
+
+            in.property(ENTITY_TYPE_PROPERTY_KEY, traitToTypeMap.get(key).getLegacyTypeName());
+        }
+    }
+
     private class EdgeRelationshipPropertyProcessor {
         public String update(Vertex in, Vertex out, Object edgeId, String label, Map<String, Object> props) {
+            edgeTraitTypesPropertyProcessor.update(label, in);
+
             if(addRelationshipTypeForClassification(in, out, label, props)) {
                 label = Constants.CLASSIFICATION_LABEL;
             } else {
@@ -266,12 +306,12 @@ public class ElementProcessors {
         }
 
         private boolean addRelationshipTypeForClassification(Vertex in, Vertex out, String label, Map<String, Object> props) {
-            if (in.property(Constants.ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
-                String inTypeName  = (String) in.property(Constants.ENTITY_TYPE_PROPERTY_KEY).value();
+            if (in.property(ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
+                String inTypeName  = (String) in.property(ENTITY_TYPE_PROPERTY_KEY).value();
 
                 if (StringUtils.isNotEmpty(inTypeName)) {
                     if (inTypeName.equals(label)) {
-                        props.put(Constants.ENTITY_TYPE_PROPERTY_KEY, inTypeName);
+                        props.put(ENTITY_TYPE_PROPERTY_KEY, inTypeName);
 
                         addEntityGuidToTrait(in, out);
 
@@ -302,7 +342,7 @@ public class ElementProcessors {
             String typeName = getRelationshipTypeName(edgeLabel);
 
             if (StringUtils.isNotEmpty(typeName)) {
-                props.put(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
+                props.put(ENTITY_TYPE_PROPERTY_KEY, typeName);
             } else {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Could not find relationship type for: {}", edgeLabel);
@@ -343,11 +383,11 @@ public class ElementProcessors {
         }
 
         private String[] getNonPrimitiveArrayFromLabel(Vertex v, String edgeId, String label) {
-            if (!v.property(Constants.ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
+            if (!v.property(ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
                 return null;
             }
 
-            String typeName     = (String) v.property(Constants.ENTITY_TYPE_PROPERTY_KEY).value();
+            String typeName     = (String) v.property(ENTITY_TYPE_PROPERTY_KEY).value();
             String propertyName = StringUtils.remove(label, Constants.INTERNAL_PROPERTY_KEY_PREFIX);
 
             if(!containsNonPrimitiveCollectionProperty(typeName, propertyName, NON_PRIMITIVE_ARRAY_CATEGORY)) {
@@ -368,11 +408,11 @@ public class ElementProcessors {
         // this method extracts:
         //      key: what remains of the legacy label string when '__' and type name are removed
         private String[] getNonPrimitiveMapKeyFromLabel(Vertex v, String label) {
-            if (!v.property(Constants.ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
+            if (!v.property(ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
                 return null;
             }
 
-            String typeName = (String) v.property(Constants.ENTITY_TYPE_PROPERTY_KEY).value();
+            String typeName = (String) v.property(ENTITY_TYPE_PROPERTY_KEY).value();
 
             if(!postProcessMap.containsKey(typeName)) {
                 return null;

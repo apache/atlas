@@ -43,7 +43,7 @@ public class BaseUtils {
     private static final String resourcesDirRelativePath = "/src/test/resources/";
     private String resourceDir;
 
-    protected final ElementProcessors emptyRelationshipCache = new ElementProcessors(new HashMap<>(), new HashMap<>());
+    protected final ElementProcessors emptyRelationshipCache = new ElementProcessors(new HashMap<>(), new HashMap<>(), new HashMap<>());
     protected GraphSONUtility graphSONUtility;
 
     protected JsonNode getJsonNodeFromFile(String s) {

@@ -21,7 +21,7 @@ package org.apache.atlas.repository.impexp;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.model.impexp.MigrationStatus;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,22 +33,21 @@ import javax.inject.Singleton;
 @Singleton
 public class MigrationProgressService {
     private static final Logger LOG = LoggerFactory.getLogger(MigrationProgressService.class);
-    public static final String MIGRATION_QUERY_CACHE_TTL    = "atlas.migration.query.cache.ttlInSecs";
+
+    public static final String MIGRATION_QUERY_CACHE_TTL = "atlas.migration.query.cache.ttlInSecs";
 
     @VisibleForTesting
-    static long DEFAULT_CACHE_TTL_IN_SECS            = 30 * 1000; // 30 secs
+    static long DEFAULT_CACHE_TTL_IN_SECS = 30 * 1000; // 30 secs
 
     private final long            cacheValidity;
-    private final AtlasGraph      graph;
+    private final GraphDBMigrator migrator;
     private       MigrationStatus cachedStatus;
     private       long            cacheExpirationTime = 0;
 
     @Inject
-    public MigrationProgressService(Configuration configuration, AtlasGraph graph) {
-        this.graph = graph;
-        this.cacheValidity = (configuration != null) ?
-                configuration.getLong(MIGRATION_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS) :
-                DEFAULT_CACHE_TTL_IN_SECS;
+    public MigrationProgressService(Configuration configuration, GraphDBMigrator migrator) {
+        this.migrator      = migrator;
+        this.cacheValidity = (configuration != null) ? configuration.getLong(MIGRATION_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS) : DEFAULT_CACHE_TTL_IN_SECS;
     }
 
     public MigrationStatus getStatus() {
@@ -57,8 +56,9 @@ public class MigrationProgressService {
 
     private MigrationStatus fetchStatus() {
         long currentTime = System.currentTimeMillis();
+
         if(resetCache(currentTime)) {
-            cachedStatus = graph.getMigrationStatus();
+            cachedStatus = migrator.getMigrationStatus();
         }
 
         return cachedStatus;
@@ -66,6 +66,7 @@ public class MigrationProgressService {
 
     private boolean resetCache(long currentTime) {
         boolean ret = cachedStatus == null || currentTime > cacheExpirationTime;
+
         if(ret) {
             cacheExpirationTime = currentTime + cacheValidity;
         }
