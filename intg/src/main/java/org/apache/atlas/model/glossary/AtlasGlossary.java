@@ -44,7 +44,7 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
         super(other);
         super.setQualifiedName(other.getQualifiedName());
         super.setGuid(other.getGuid());
-        super.setDisplayName(other.displayName);
+        super.setName(other.name);
         super.setShortDescription(other.shortDescription);
         super.setLongDescription(other.longDescription);
         this.language = other.language;
@@ -90,8 +90,8 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
     public void setAttribute(String attrName, String attrVal) {
         Objects.requireNonNull(attrName, "AtlasGlossary attribute name");
         switch (attrName) {
-            case "displayName":
-                setDisplayName(attrVal);
+            case "name":
+                setName(attrVal);
                 break;
             case "shortDescription":
                 setShortDescription(attrVal);

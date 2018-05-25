@@ -41,7 +41,7 @@ define(['require',
 
             /** ui selector cache */
             ui: {
-                "displayName": "[data-id='displayName']",
+                "name": "[data-id='name']",
                 "shortDescription": "[data-id='shortDescription']",
                 "longDescription": "[data-id='longDescription']",
                 "glossaryForm": "[data-id='glossaryForm']"

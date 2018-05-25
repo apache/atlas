@@ -73,7 +73,11 @@ define(['require',
                     }
                     try {
                         parseDetailsObject = JSON.parse(auditData);
-                        var name = _.escape(parseDetailsObject.typeName);
+                        var skipAttribute = parseDetailsObject.typeName ? "guid" : null,
+                            name = Utils.getName(parseDetailsObject, null, skipAttribute);
+                        if (name == "-") {
+                            name = _.escape(parseDetailsObject.typeName);
+                        }
                     } catch (err) {
                         if (_.isArray(parseDetailsObject)) {
                             var name = _.escape(parseDetailsObject[0]);

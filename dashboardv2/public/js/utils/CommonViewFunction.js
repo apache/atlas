@@ -616,11 +616,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     modal.$el.find('button.ok').attr("disabled", false);
                 });
             } else {
-                view.ui.displayName.on('keyup', function(e) {
+                view.ui.name.on('keyup', function(e) {
                     modal.$el.find('button.ok').attr("disabled", false);
                 });
             }
-            view.ui.displayName.on('keyup', function(e) {
+            view.ui.name.on('keyup', function(e) {
                 if ((e.keyCode == 8 || e.keyCode == 32 || e.keyCode == 46) && e.currentTarget.value.trim() == "") {
                     modal.$el.find('button.ok').attr("disabled", true);
                 }
@@ -663,7 +663,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             silent: true,
             success: function(rModel, response) {
                 Utils.notifySuccess({
-                    content: messageType + ref.ui.displayName.val() + Messages[model ? "editSuccessMessage" : "addSuccessMessage"]
+                    content: messageType + ref.ui.name.val() + Messages[model ? "editSuccessMessage" : "addSuccessMessage"]
                 });
                 if (options.callback) {
                     options.callback(rModel);

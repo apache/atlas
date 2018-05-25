@@ -180,7 +180,7 @@ define(['require',
                         guid: model.guid,
                         id: model.guid,
                         model: model,
-                        text: model.displayName,
+                        text: model.name,
                         gType: "glossary"
                     }
                 }
@@ -267,7 +267,7 @@ define(['require',
                             "gType": "glossary",
                             "model": that.glossaryCollection.fullCollection.first().toJSON()
                         };
-                        selectedItem.text = selectedItem.model.displayName;
+                        selectedItem.text = selectedItem.model.name;
                         selectedItem.guid = selectedItem.model.guid;
                         if (index == 0 && selectedItem.guid == objGuid) {
                             that.glossary.selectedItem = selectedItem;
@@ -294,7 +294,7 @@ define(['require',
                 return this.glossaryCollection.fullCollection.map(function(model, i) {
                     var obj = model.toJSON(),
                         parent = {
-                            "text": obj.displayName,
+                            "text": obj.name,
                             "icon": "fa fa-folder-o",
                             "guid": obj.guid,
                             "id": obj.guid,
@@ -324,7 +324,7 @@ define(['require',
                                     "id": guid,
                                     "parent": obj,
                                     "glossaryId": obj.guid,
-                                    "glossaryName": obj.displayName,
+                                    "glossaryName": obj.name,
                                     "model": category,
                                     "children": true,
                                     "icon": "fa fa-files-o",
@@ -348,7 +348,7 @@ define(['require',
                                     "guid": guid,
                                     "id": guid,
                                     "parent": obj,
-                                    "glossaryName": obj.displayName,
+                                    "glossaryName": obj.name,
                                     "glossaryId": obj.guid,
                                     "model": term,
                                     "icon": "fa fa-file-o"
@@ -697,7 +697,7 @@ define(['require',
                         selectedItem.guid = selectedItem.model.guid;
                         selectedItem.type = "Glossary";
                         selectedItem.gType = "glossary";
-                        selectedItem.text = model.displayName;
+                        selectedItem.text = model.name;
                         this.glossary.selectedItem = selectedItem;
                         this.query[this.viewType].model = selectedItem.model;
                         this.query[this.viewType].gType = "glossary";

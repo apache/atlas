@@ -380,12 +380,13 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     }
     Utils.extractKeyValueFromEntity = function() {
         var collectionJSON = arguments[0],
-            priorityAttribute = arguments[1];
-        var returnObj = {
-            name: '-',
-            found: true,
-            key: null
-        }
+            priorityAttribute = arguments[1],
+            skipAttribute = arguments[2],
+            returnObj = {
+                name: '-',
+                found: true,
+                key: null
+            }
         if (collectionJSON) {
             if (collectionJSON.attributes && collectionJSON.attributes[priorityAttribute]) {
                 returnObj.name = _.escape(collectionJSON.attributes[priorityAttribute]);
@@ -411,6 +412,16 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 if (collectionJSON.attributes.qualifiedName) {
                     returnObj.name = _.escape(collectionJSON.attributes.qualifiedName);
                     returnObj.key = 'qualifiedName';
+                    return returnObj;
+                }
+                if (collectionJSON.attributes.displayText) {
+                    returnObj.name = _.escape(collectionJSON.attributes.displayText);
+                    returnObj.key = 'displayText';
+                    return returnObj;
+                }
+                if (collectionJSON.attributes.guid) {
+                    returnObj.name = _.escape(collectionJSON.attributes.guid);
+                    returnObj.key = 'guid';
                     return returnObj;
                 }
                 if (collectionJSON.attributes.id) {
@@ -463,7 +474,16 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             }
         }
         returnObj.found = false;
-        return returnObj;
+        if (skipAttribute && returnObj.key == skipAttribute) {
+            return {
+                name: '-',
+                found: true,
+                key: null
+            }
+        } else {
+            return returnObj;
+        }
+
     }
     Utils.showTitleLoader = function(loaderEl, titleBoxEl) {
         loaderEl.css ? loaderEl.css({

@@ -110,7 +110,7 @@ public class GlossaryServiceTest {
         // Glossary
         bankGlossary = new AtlasGlossary();
         bankGlossary.setQualifiedName("testBankingGlossary");
-        bankGlossary.setDisplayName("Banking glossary");
+        bankGlossary.setName("Banking glossary");
         bankGlossary.setShortDescription("Short description");
         bankGlossary.setLongDescription("Long description");
         bankGlossary.setUsage("N/A");
@@ -118,7 +118,7 @@ public class GlossaryServiceTest {
 
         creditUnionGlossary = new AtlasGlossary();
         creditUnionGlossary.setQualifiedName("testCreditUnionGlossary");
-        creditUnionGlossary.setDisplayName("Credit union glossary");
+        creditUnionGlossary.setName("Credit union glossary");
         creditUnionGlossary.setShortDescription("Short description");
         creditUnionGlossary.setLongDescription("Long description");
         creditUnionGlossary.setUsage("N/A");
@@ -126,24 +126,24 @@ public class GlossaryServiceTest {
 
         // Category
         accountCategory = new AtlasGlossaryCategory();
-        accountCategory.setDisplayName("Account categorization");
+        accountCategory.setName("Account categorization");
         accountCategory.setShortDescription("Short description");
         accountCategory.setLongDescription("Long description");
 
         customerCategory = new AtlasGlossaryCategory();
         customerCategory.setQualifiedName("customer@testBankingGlossary");
-        customerCategory.setDisplayName("Customer category");
+        customerCategory.setName("Customer category");
         customerCategory.setShortDescription("Short description");
         customerCategory.setLongDescription("Long description");
 
         mortgageCategory = new AtlasGlossaryCategory();
-        mortgageCategory.setDisplayName("Mortgage categorization");
+        mortgageCategory.setName("Mortgage categorization");
         mortgageCategory.setShortDescription("Short description");
         mortgageCategory.setLongDescription("Long description");
 
         // Terms
         checkingAccount = new AtlasGlossaryTerm();
-        checkingAccount.setDisplayName("A checking account");
+        checkingAccount.setName("A checking account");
         checkingAccount.setShortDescription("Short description");
         checkingAccount.setLongDescription("Long description");
         checkingAccount.setAbbreviation("CHK");
@@ -152,7 +152,7 @@ public class GlossaryServiceTest {
 
         savingsAccount = new AtlasGlossaryTerm();
         savingsAccount.setQualifiedName("sav_acc@testBankingGlossary");
-        savingsAccount.setDisplayName("A savings account");
+        savingsAccount.setName("A savings account");
         savingsAccount.setShortDescription("Short description");
         savingsAccount.setLongDescription("Long description");
         savingsAccount.setAbbreviation("SAV");
@@ -160,7 +160,7 @@ public class GlossaryServiceTest {
         savingsAccount.setUsage("N/A");
 
         fixedRateMortgage = new AtlasGlossaryTerm();
-        fixedRateMortgage.setDisplayName("Conventional mortgage");
+        fixedRateMortgage.setName("Conventional mortgage");
         fixedRateMortgage.setShortDescription("Short description");
         fixedRateMortgage.setLongDescription("Long description");
         fixedRateMortgage.setAbbreviation("FMTG");
@@ -169,7 +169,7 @@ public class GlossaryServiceTest {
 
         adjustableRateMortgage = new AtlasGlossaryTerm();
         adjustableRateMortgage.setQualifiedName("arm_mtg@testBankingGlossary");
-        adjustableRateMortgage.setDisplayName("ARM loans");
+        adjustableRateMortgage.setName("ARM loans");
         adjustableRateMortgage.setShortDescription("Short description");
         adjustableRateMortgage.setLongDescription("Long description");
         adjustableRateMortgage.setAbbreviation("ARMTG");

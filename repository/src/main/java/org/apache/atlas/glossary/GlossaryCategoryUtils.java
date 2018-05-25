@@ -92,7 +92,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                     // Derive the qualifiedName
                     String anchorGlossaryGuid = updatedCategory.getAnchor().getGlossaryGuid();
                     AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
-                    storeObject.setQualifiedName(storeObject.getDisplayName()+ "@" + glossary.getQualifiedName());
+                    storeObject.setQualifiedName(storeObject.getName()+ "@" + glossary.getQualifiedName());
 
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
@@ -118,7 +118,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                     // Derive the qualifiedName when anchor changes
                     String        anchorGlossaryGuid = updatedCategory.getAnchor().getGlossaryGuid();
                     AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
-                    storeObject.setQualifiedName(storeObject.getDisplayName()+ "@" + glossary.getQualifiedName());
+                    storeObject.setQualifiedName(storeObject.getName()+ "@" + glossary.getQualifiedName());
 
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
@@ -196,7 +196,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         // New parent added, qualifiedName needs recomputation
         // Derive the qualifiedName of the Glossary
         AtlasGlossaryCategory parentCategory = dataAccess.load(getAtlasGlossaryCategorySkeleton(newParent.getCategoryGuid()));
-        storeObject.setQualifiedName(storeObject.getDisplayName() + "." + parentCategory.getQualifiedName());
+        storeObject.setQualifiedName(storeObject.getName() + "." + parentCategory.getQualifiedName());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
@@ -216,7 +216,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         // Derive the qualifiedName of the Glossary
         String        anchorGlossaryGuid = updatedCategory.getAnchor().getGlossaryGuid();
         AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
-        storeObject.setQualifiedName(storeObject.getDisplayName() + "@" + glossary.getQualifiedName());
+        storeObject.setQualifiedName(storeObject.getName() + "@" + glossary.getQualifiedName());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
@@ -232,7 +232,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         switch (op) {
             case CREATE:
                 if (DEBUG_ENABLED) {
-                    LOG.debug("Creating term relation with category = {}, terms = {}", storeObject.getDisplayName(),
+                    LOG.debug("Creating term relation with category = {}, terms = {}", storeObject.getName(),
                               Objects.nonNull(newTerms) ? newTerms.size() : "none");
                 }
                 createTermCategorizationRelationships(storeObject, newTerms.values());
@@ -240,7 +240,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
             case UPDATE:
                 if (MapUtils.isEmpty(existingTerms)) {
                     if (DEBUG_ENABLED) {
-                        LOG.debug("Creating term relation with category = {}, terms = {}", storeObject.getDisplayName(),
+                        LOG.debug("Creating term relation with category = {}, terms = {}", storeObject.getName(),
                                   Objects.nonNull(newTerms) ? newTerms.size() : "none");
                     }
                     createTermCategorizationRelationships(storeObject, newTerms.values());
@@ -249,7 +249,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
 
                 if (MapUtils.isEmpty(newTerms)) {
                     if (DEBUG_ENABLED) {
-                        LOG.debug("Deleting term relation with category = {}, terms = {}", storeObject.getDisplayName(), existingTerms.size());
+                        LOG.debug("Deleting term relation with category = {}, terms = {}", storeObject.getName(), existingTerms.size());
                     }
                     deleteTermCategorizationRelationships(storeObject, existingTerms.values());
                     break;
@@ -328,7 +328,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         if (CollectionUtils.isNotEmpty(terms)) {
             for (AtlasRelatedTermHeader term : terms) {
                 if (DEBUG_ENABLED) {
-                    LOG.debug("Updating term relation with category = {}, term = {}", storeObject.getDisplayName(), term.getDisplayText());
+                    LOG.debug("Updating term relation with category = {}, term = {}", storeObject.getName(), term.getDisplayText());
                 }
                 AtlasRelationship relationship = relationshipStore.getById(term.getRelationGuid());
                 updateRelationshipAttributes(relationship, term);
@@ -341,7 +341,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         if (CollectionUtils.isNotEmpty(terms)) {
             for (AtlasRelatedTermHeader term : terms) {
                 if (DEBUG_ENABLED) {
-                    LOG.debug("Creating term relation with category = {}, terms = {}", storeObject.getDisplayName(), term.getDisplayText());
+                    LOG.debug("Creating term relation with category = {}, terms = {}", storeObject.getName(), term.getDisplayText());
                 }
                 relationshipStore.deleteById(term.getRelationGuid(), true);
             }
@@ -354,7 +354,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         switch (op) {
             case CREATE:
                 if (DEBUG_ENABLED) {
-                    LOG.debug("Creating new children, category = {}, children = {}", storeObject.getDisplayName(),
+                    LOG.debug("Creating new children, category = {}, children = {}", storeObject.getName(),
                               Objects.nonNull(newChildren) ? newChildren.size() : "none");
                 }
                 createCategoryRelationships(storeObject, newChildren.values());
@@ -366,7 +366,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                 // Create new children
                 if (MapUtils.isEmpty(existingChildren)) {
                     if (DEBUG_ENABLED) {
-                        LOG.debug("Creating new children, category = {}, children = {}", storeObject.getDisplayName(),
+                        LOG.debug("Creating new children, category = {}, children = {}", storeObject.getName(),
                                   Objects.nonNull(newChildren) ? newChildren.size() : "none");
                     }
                     createCategoryRelationships(storeObject, newChildren.values());
@@ -378,7 +378,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                 // Delete current children
                 if (MapUtils.isEmpty(newChildren)) {
                     if (DEBUG_ENABLED) {
-                        LOG.debug("Deleting children, category = {}, children = {}", storeObject.getDisplayName(), existingChildren.size());
+                        LOG.debug("Deleting children, category = {}, children = {}", storeObject.getName(), existingChildren.size());
                     }
                     deleteCategoryRelationships(storeObject, existingChildren.values());
 
@@ -455,7 +455,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
 
                 if (StringUtils.equals(storeObject.getAnchor().getGlossaryGuid(), childCategory.getAnchor().getGlossaryGuid())) {
                     if (DEBUG_ENABLED) {
-                        LOG.debug("Creating new child, category = {}, child = {}", storeObject.getDisplayName(), child.getDisplayText());
+                        LOG.debug("Creating new child, category = {}, child = {}", storeObject.getName(), child.getDisplayText());
                     }
                     createRelationship(defineCategoryHierarchyLink(storeObject.getGuid(), child));
                 } else {
@@ -470,7 +470,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         if (CollectionUtils.isNotEmpty(toUpdate)) {
             for (AtlasRelatedCategoryHeader categoryHeader : toUpdate) {
                 if (DEBUG_ENABLED) {
-                    LOG.debug("Updating child, category = {}, child = {}", storeObject.getDisplayName(), categoryHeader.getDisplayText());
+                    LOG.debug("Updating child, category = {}, child = {}", storeObject.getName(), categoryHeader.getDisplayText());
                 }
                 AtlasRelationship childRelationship = relationshipStore.getById(categoryHeader.getRelationGuid());
                 updateRelationshipAttributes(childRelationship, categoryHeader);
@@ -483,7 +483,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         if (CollectionUtils.isNotEmpty(existingChildren)) {
             for (AtlasRelatedCategoryHeader child : existingChildren) {
                 if (DEBUG_ENABLED) {
-                    LOG.debug("Deleting child, category = {}, child = {}", storeObject.getDisplayName(), child.getDisplayText());
+                    LOG.debug("Deleting child, category = {}, child = {}", storeObject.getName(), child.getDisplayText());
                 }
                 relationshipStore.deleteById(child.getRelationGuid(), true);
             }
@@ -543,7 +543,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
 
         for (AtlasRelatedCategoryHeader childCategoryHeader : childCategories) {
             AtlasGlossaryCategory child           = dataAccess.load(getAtlasGlossaryCategorySkeleton(childCategoryHeader.getCategoryGuid()));
-            String                qualifiedName   = child.getDisplayName() + ".";
+            String                qualifiedName   = child.getName() + ".";
             String                childAnchorGuid = child.getAnchor().getGlossaryGuid();
             if (isParentRemoved) {
                 if (LOG.isDebugEnabled()) {

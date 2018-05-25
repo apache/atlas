@@ -155,7 +155,7 @@ public class GlossaryTermUtils extends GlossaryUtils {
                     // Derive the qualifiedName
                     String        anchorGlossaryGuid = updatedTermAnchor.getGlossaryGuid();
                     AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
-                    storeObject.setQualifiedName(storeObject.getDisplayName() + "@" + glossary.getQualifiedName());
+                    storeObject.setQualifiedName(storeObject.getName() + "@" + glossary.getQualifiedName());
 
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
@@ -174,14 +174,14 @@ public class GlossaryTermUtils extends GlossaryUtils {
                         LOG.debug("Updating term anchor, currAnchor = {}, newAnchor = {} and term = {}",
                                   existingAnchor.getGlossaryGuid(),
                                   updatedTermAnchor.getGlossaryGuid(),
-                                  storeObject.getDisplayName());
+                                  storeObject.getName());
                     }
                     relationshipStore.deleteById(existingAnchor.getRelationGuid(), true);
 
                     // Derive the qualifiedName when anchor changes
                     String        anchorGlossaryGuid = updatedTermAnchor.getGlossaryGuid();
                     AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
-                    storeObject.setQualifiedName(storeObject.getDisplayName() + "@" + glossary.getQualifiedName());
+                    storeObject.setQualifiedName(storeObject.getName() + "@" + glossary.getQualifiedName());
 
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
