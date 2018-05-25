@@ -56,7 +56,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
 
         ret.setGuid(entity.getGuid());
         ret.setQualifiedName((String) entity.getAttribute("qualifiedName"));
-        ret.setDisplayName((String) entity.getAttribute("displayName"));
+        ret.setName((String) entity.getAttribute("name"));
         ret.setShortDescription((String) entity.getAttribute("shortDescription"));
         ret.setLongDescription((String) entity.getAttribute("longDescription"));
         ret.setExamples((List<String>) entity.getAttribute("examples"));
@@ -212,7 +212,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         AtlasEntity ret = getDefaultAtlasEntity(obj);
 
         ret.setAttribute("qualifiedName", obj.getQualifiedName());
-        ret.setAttribute("displayName", obj.getDisplayName());
+        ret.setAttribute("name", obj.getName());
         ret.setAttribute("shortDescription", obj.getShortDescription());
         ret.setAttribute("longDescription", obj.getLongDescription());
         ret.setAttribute("examples", obj.getExamples());

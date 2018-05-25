@@ -30,7 +30,7 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
 
     // Core attributes
     private   String qualifiedName;
-    protected String displayName;
+    protected String name;
     protected String shortDescription;
     protected String longDescription;
 
@@ -42,7 +42,7 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
 
     public AtlasGlossaryBaseObject(final AtlasGlossaryBaseObject other) {
         super(other);
-        this.displayName = other.displayName;
+        this.name = other.name;
         this.shortDescription = other.shortDescription;
         this.longDescription = other.longDescription;
         this.classifications = other.classifications;
@@ -57,12 +57,12 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
         this.qualifiedName = qualifiedName;
     }
 
-    public String getDisplayName() {
-        return displayName;
+    public String getName() {
+        return name;
     }
 
-    public void setDisplayName(final String displayName) {
-        this.displayName = displayName;
+    public void setName(final String name) {
+        this.name = name;
     }
 
     public String getShortDescription() {
@@ -114,7 +114,7 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
         if (!(o instanceof AtlasGlossaryBaseObject)) return false;
         if (!super.equals(o)) return false;
         final AtlasGlossaryBaseObject that = (AtlasGlossaryBaseObject) o;
-        return Objects.equals(displayName, that.displayName) &&
+        return Objects.equals(name, that.name) &&
                        Objects.equals(shortDescription, that.shortDescription) &&
                        Objects.equals(longDescription, that.longDescription) &&
                        Objects.equals(classifications, that.classifications) &&
@@ -124,13 +124,13 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
     @Override
     public int hashCode() {
 
-        return Objects.hash(super.hashCode(), displayName, shortDescription, longDescription, classifications, qualifiedName);
+        return Objects.hash(super.hashCode(), name, shortDescription, longDescription, classifications, qualifiedName);
     }
 
     @Override
     protected StringBuilder toString(final StringBuilder sb) {
         sb.append(", qualifiedName='").append(qualifiedName).append('\'');
-        sb.append(", displayName='").append(displayName).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", shortDescription='").append(shortDescription).append('\'');
         sb.append(", longDescription='").append(longDescription).append('\'');
         sb.append(", classifications=").append(classifications);

@@ -122,7 +122,7 @@ public final class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
 
     private static final String TERM_RELATION_NAME = "AtlasGlossarySemanticAssignment";
-    private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "AtlasGlossaryTerm.displayName";
+    private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "AtlasGlossaryTerm.name";
 
     public static final String NAME           = "name";
     public static final String DISPLAY_NAME   = "displayName";

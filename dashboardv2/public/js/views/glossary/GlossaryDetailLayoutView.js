@@ -141,18 +141,18 @@ define(['require',
                             "model": this.data,
                             "collection": this.glossaryCollection,
                             "callback": function(data) {
-                                if (data.displayName != that.data.displayName) {
+                                if (data.name != that.data.name) {
                                     var glossary = that.glossaryCollection.fullCollection.get(data.anchor.glossaryGuid);
                                     if (that.isTermView) {
                                         _.find(glossary.get('terms'), function(obj) {
                                             if (obj.termGuid == data.guid) {
-                                                obj.displayText = data.displayName
+                                                obj.displayText = data.name
                                             }
                                         });
                                     } else if (!data.parentCategory) {
                                         _.find(glossary.get('categories'), function(obj) {
                                             if (obj.categoryGuid == data.guid) {
-                                                obj.displayText = data.displayName
+                                                obj.displayText = data.name
                                             }
                                         });
                                     }
@@ -266,7 +266,7 @@ define(['require',
             renderDetails: function(data) {
                 Utils.hideTitleLoader(this.$('.fontLoader'), this.ui.details);
                 if (data) {
-                    this.ui.title.text(data.displayName || data.displayText || data.qualifiedName);
+                    this.ui.title.text(data.name || data.displayText || data.qualifiedName);
                     this.ui.shortDescription.text(data.shortDescription);
                     this.ui.longDescription.text(data.longDescription);
                     this.generateCategories(data.categories);
@@ -315,7 +315,7 @@ define(['require',
                         if (foundModel) {
                             glossary = new VGlossaryList([foundModel.toJSON()], {
                                 comparator: function(item) {
-                                    return item.get("displayName");
+                                    return item.get("name");
                                 }
                             });
                         }
@@ -342,7 +342,7 @@ define(['require',
                         if (foundModel) {
                             glossary = new VGlossaryList([foundModel.toJSON()], {
                                 comparator: function(item) {
-                                    return item.get("displayName");
+                                    return item.get("name");
                                 }
                             });
                         }
@@ -385,7 +385,7 @@ define(['require',
             onClickTagCross: function(e) {
                 var that = this,
                     tagName = $(e.currentTarget).text(),
-                    termName = this.data.displayName;
+                    termName = this.data.name;
                 CommonViewFunction.deleteTag(_.extend({}, {
                     msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + termName + "?</b></div>",
                     titleMessage: Messages.removeTag,
@@ -408,7 +408,7 @@ define(['require',
                     selectedGuid: guid,
                     model: that.data,
                     collection: that.glossaryCollection,
-                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(name) + "</b> assignment from" + " " + "<b>" + that.data.displayName + "?</b></div>",
+                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(name) + "</b> assignment from" + " " + "<b>" + that.data.name + "?</b></div>",
                     titleMessage: Messages.glossary[that.isTermView ? "removeCategoryfromTerm" : "removeTermfromCategory"],
                     isCategoryView: that.isCategoryView,
                     isTermView: that.isTermView,

@@ -49,7 +49,7 @@ define([
             this.searchVent = new Backbone.Wreqr.EventAggregator();
             this.glossaryCollection = new VGlossaryList([], {
                 comparator: function(item) {
-                    return item.get("displayName");
+                    return item.get("name");
                 }
             });
             this.preFetchedCollectionLists = {

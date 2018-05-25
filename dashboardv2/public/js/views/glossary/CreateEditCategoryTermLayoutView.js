@@ -43,7 +43,7 @@ define(['require',
             /** ui selector cache */
             ui: {
                 "qualifiedName": "[data-id='qualifiedName']",
-                "displayName": "[data-id='displayName']",
+                "name": "[data-id='name']",
                 "shortDescription": "[data-id='shortDescription']",
                 "longDescription": "[data-id='longDescription']",
                 "categoryTermForm": "[data-id='categoryTermForm']"

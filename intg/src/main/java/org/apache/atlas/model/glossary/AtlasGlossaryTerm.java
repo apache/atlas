@@ -290,7 +290,7 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
     public String toAuditString() {
         AtlasGlossaryTerm t = new AtlasGlossaryTerm();
         t.setGuid(this.getGuid());
-        t.setDisplayName(this.getDisplayName());
+        t.setName(this.getName());
         t.setQualifiedName(this.getQualifiedName());
 
         return AtlasType.toJson(t);
@@ -306,8 +306,8 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
     public void setAttribute(String attrName, String attrVal) {
         Objects.requireNonNull(attrName, "AtlasGlossaryTerm attribute name");
         switch (attrName) {
-            case "displayName":
-                setDisplayName(attrVal);
+            case "name":
+                setName(attrVal);
                 break;
             case "shortDescription":
                 setShortDescription(attrVal);

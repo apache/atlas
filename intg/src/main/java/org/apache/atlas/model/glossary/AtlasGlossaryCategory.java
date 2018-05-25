@@ -122,8 +122,8 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
     public void setAttribute(String attrName, String attrVal) {
         Objects.requireNonNull(attrName, "AtlasGlossary attribute name");
         switch(attrName) {
-            case "displayName":
-                setDisplayName(attrVal);
+            case "name":
+                setName(attrVal);
                 break;
             case "shortDescription":
                 setShortDescription(attrVal);

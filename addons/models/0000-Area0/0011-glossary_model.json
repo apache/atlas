@@ -94,7 +94,7 @@
           "isUnique": true
         },
         {
-          "name": "displayName",
+          "name": "name",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": true,
@@ -151,7 +151,7 @@
           "isUnique": true
         },
         {
-          "name": "displayName",
+          "name": "name",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": true,
@@ -216,7 +216,7 @@
           "isUnique": true
         },
         {
-          "name": "displayName",
+          "name": "name",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": true,
