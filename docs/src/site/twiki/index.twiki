@@ -71,6 +71,7 @@ capabilities around these data assets for data scientists, analysts and the data
       * [[Hook-Storm][Storm Hook]]
       * [[Bridge-Kafka][Kafka Bridge]]
    * [[HighAvailability][Fault Tolerance And High Availability Options]]
+   * [[Migration-0.8-to-1.0][Migration from Apache Atlas 0.8]]
 
 ---++ API Documentation
 
