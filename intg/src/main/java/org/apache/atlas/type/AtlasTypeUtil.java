@@ -55,6 +55,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
  * Utility methods for AtlasType/AtlasTypeDef.
  */
 public class AtlasTypeUtil {
+
     private static final Set<String> ATLAS_BUILTIN_TYPENAMES = new HashSet<>();
     private static final String  NAME_REGEX         = "[a-zA-Z][a-zA-Z0-9_ ]*";
     private static final String  TRAIT_NAME_REGEX   = "[a-zA-Z][a-zA-Z0-9_ .]*";
@@ -380,13 +381,21 @@ public class AtlasTypeUtil {
     }
 
     public static boolean isAssignedGuid(String guid) {
+        /**
+         * The rule for whether a GUID is 'assigned' is that it must always be non-null, non-empty
+         * and must not start with a '-' character, because in Atlas the '-' prefix character
+         * signifies an Atlas 'unassigned' GUID. There are no other GUID formatting constraints.
+         *
+         * An object from a remote repository can be saved into Atlas with its existing (external) GUID
+         * if that GUID conforms to the same 3 conditions. If, in future, it is required to save objects from
+         * a remote repository that assigns GUIDs that can start with the '-' character, then it will be
+         * necessary to enhance this isAssignedGUID() method to accepts and check the object's homeId, such
+         * that if homeId is not null (the object is from a remote repository), then the '-' prefix constraint
+         * is relaxed. Such a change would require a pervasive change to Atlas classes and therefore should
+         * only be implemented if it is found to be necessary.
+         */
         if (guid != null) {
-            try {
-                UUID.fromString(guid);
-                return true;
-            } catch (IllegalArgumentException e) {
-                // ignore
-            }
+            return guid != null && guid.length() > 0 && guid.charAt(0) != '-';
         }
         return false;
     }

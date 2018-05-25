@@ -737,7 +737,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         // map additional properties to relationship edge
         if (ret != null) {
-            final String guid = UUID.randomUUID().toString();
+            // Accept a valid (assigned) guid from the supplied relationship, or generate one.
+            String relationshipGuid = relationship.getGuid();
+            final String guid = AtlasTypeUtil.isAssignedGuid(relationshipGuid) ? relationshipGuid : UUID.randomUUID().toString();
 
             AtlasGraphUtilsV2.setProperty(ret, Constants.ENTITY_TYPE_PROPERTY_KEY, relationship.getTypeName());
             AtlasGraphUtilsV2.setProperty(ret, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, guid);

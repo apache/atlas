@@ -511,6 +511,8 @@ public final class EntityGraphRetriever {
         entity.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
         entity.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
 
+        entity.setHomeId(GraphHelper.getHomeId(entityVertex));
+
         return entity;
     }
 

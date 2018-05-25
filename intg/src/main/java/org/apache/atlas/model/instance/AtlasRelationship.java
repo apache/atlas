@@ -55,6 +55,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final String KEY_GUID           = "guid";
+    public static final String KEY_HOME_ID        = "homeId";
     public static final String KEY_STATUS         = "status";
     public static final String KEY_CREATED_BY     = "createdBy";
     public static final String KEY_UPDATED_BY     = "updatedBy";
@@ -70,6 +71,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     public static final String KEY_PROPAGATED_CLASSIFICATIONS         = "propagatedClassifications";
 
     private String        guid          = null;
+    private String        homeId        = null;
     private AtlasObjectId end1          = null;
     private AtlasObjectId end2          = null;
     private String        label         = null;
@@ -108,13 +110,13 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     public AtlasRelationship(String typeName, AtlasObjectId end1, AtlasObjectId end2) {
         super(typeName);
 
-        init(nextInternalId(), end1, end2, null, null, null, null, null, null, null, 0L, null, null);
+        init(nextInternalId(), null, end1, end2, null, null, null, null, null, null, null, 0L, null, null);
     }
 
     public AtlasRelationship(String typeName, AtlasObjectId end1, AtlasObjectId end2, Map<String, Object> attributes) {
         super(typeName, attributes);
 
-        init(nextInternalId(), end1, end2, null, null, null, null, null, null, null, 0L, null, null);
+        init(nextInternalId(), null, end1, end2, null, null, null, null, null, null, null, 0L, null, null);
     }
 
     public AtlasRelationship(String typeName, String attrName, Object attrValue) {
@@ -132,6 +134,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
         if (map != null) {
             Object oGuid         = map.get(KEY_GUID);
+            Object homeId        = map.get(KEY_HOME_ID);
             Object oEnd1         = map.get(KEY_END1);
             Object oEnd2         = map.get(KEY_END2);
             Object label         = map.get(KEY_LABEL);
@@ -148,6 +151,10 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
             if (oGuid != null) {
                 setGuid(oGuid.toString());
+            }
+
+            if (homeId != null) {
+                setHomeId(homeId.toString());
             }
 
             if (oEnd1 != null) {
@@ -228,7 +235,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         super(other);
 
         if (other != null) {
-            init(other.guid, other.end1, other.end2, other.label, other.propagateTags, other.status, other.createdBy, other.updatedBy,
+            init(other.guid, other.homeId, other.end1, other.end2, other.label, other.propagateTags, other.status, other.createdBy, other.updatedBy,
                  other.createTime, other.updateTime, other.version, other.propagatedClassifications, other.blockedPropagatedClassifications);
         }
     }
@@ -239,6 +246,14 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
     public void setGuid(String guid) {
         this.guid = guid;
+    }
+
+    public String getHomeId() {
+        return homeId;
+    }
+
+    public void setHomeId(String homeId) {
+        this.homeId = homeId;
     }
 
     public Status getStatus() {
@@ -326,13 +341,14 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     }
 
     private void init() {
-        init(nextInternalId(), null, null, null, null, null,  null, null, null, null, 0L, null, null);
+        init(nextInternalId(), null, null, null, null, null, null,  null, null, null, null, 0L, null, null);
     }
 
-    private void init(String guid, AtlasObjectId end1, AtlasObjectId end2, String label, PropagateTags propagateTags,
+    private void init(String guid, String homeId, AtlasObjectId end1, AtlasObjectId end2, String label, PropagateTags propagateTags,
                       Status status, String createdBy, String updatedBy, Date createTime, Date updateTime, Long version,
                       Set<AtlasClassification> propagatedClassifications, Set<AtlasClassification> blockedPropagatedClassifications) {
         setGuid(guid);
+        setHomeId(homeId);
         setEnd1(end1);
         setEnd2(end2);
         setLabel(label);
@@ -356,6 +372,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         sb.append("AtlasRelationship{");
         super.toString(sb);
         sb.append("guid='").append(guid).append('\'');
+        sb.append(", homeId='").append(homeId).append('\'');
         sb.append(", end1=").append(end1);
         sb.append(", end2=").append(end2);
         sb.append(", label='").append(label).append('\'');
@@ -385,6 +402,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
         AtlasRelationship that = (AtlasRelationship) o;
         return Objects.equals(guid, that.guid) &&
+                Objects.equals(homeId, that.homeId) &&
                 Objects.equals(end1, that.end1) &&
                 Objects.equals(end2, that.end2) &&
                 Objects.equals(label, that.label) &&
@@ -401,7 +419,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, end1, end2, label, propagateTags, status, createdBy, updatedBy,
+        return Objects.hash(super.hashCode(), guid, homeId, end1, end2, label, propagateTags, status, createdBy, updatedBy,
                             createTime, updateTime, version, propagatedClassifications, blockedPropagatedClassifications);
     }
 

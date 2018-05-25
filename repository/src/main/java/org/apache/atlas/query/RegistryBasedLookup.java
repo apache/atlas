@@ -39,7 +39,9 @@ class RegistryBasedLookup implements Lookup {
                     Constants.CREATED_BY_KEY,
                     Constants.STATE_PROPERTY_KEY,
                     Constants.TIMESTAMP_PROPERTY_KEY,
-                    Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY));
+                    Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
+                    Constants.HOME_ID_KEY
+            ));
 
     private static final Map<String, String> NUMERIC_ATTRIBUTES = new HashMap<String, String>() {{
             put(AtlasBaseTypeDef.ATLAS_TYPE_SHORT, "");

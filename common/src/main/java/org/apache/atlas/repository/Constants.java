@@ -81,6 +81,18 @@ public final class Constants {
     public static final String CREATED_BY_KEY       = INTERNAL_PROPERTY_KEY_PREFIX + "createdBy";
     public static final String MODIFIED_BY_KEY      = INTERNAL_PROPERTY_KEY_PREFIX + "modifiedBy";
 
+    /**
+     * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
+     * repository. The homeId will be set to a String that identifies the other repository. The specific format
+     * of repository identifiers is domain dependent. Where it is set by Open Metadata Repository Services it will
+     * be a MetadataCollectionId.
+     * An object that is mastered by the Atlas repository, will have a null homeId field. This represents a locally
+     * mastered object that can be manipulated by Atlas and its applications as normal.
+     * An object with a non-null homeId is a copy of an object mastered by a different repository and the object
+     * should only be updated via the notifications and calls from Open Metadata Repository Services.
+     */
+    public static final String HOME_ID_KEY          = INTERNAL_PROPERTY_KEY_PREFIX + "homeId";
+
     public static final String TIMESTAMP_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "timestamp";
 
     public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY =
