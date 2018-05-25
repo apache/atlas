@@ -28,7 +28,6 @@ import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,7 +43,12 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAG
 import static org.apache.atlas.repository.Constants.EDGE_ID_IN_IMPORT_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_ID_IN_IMPORT_KEY;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class GraphSONUtilityTest extends BaseUtils {
 
@@ -81,7 +85,7 @@ public class GraphSONUtilityTest extends BaseUtils {
     }
 
     @Test
-    public void dataNodeReadAndVertexAddedToGraph() throws IOException {
+    public void dataNodeReadAndVertexAddedToGraph() {
         JsonNode entityNode = getCol1();
         TinkerGraph tg = TinkerGraph.open();
         GraphSONUtility gu = new GraphSONUtility(emptyRelationshipCache);
@@ -95,7 +99,7 @@ public class GraphSONUtilityTest extends BaseUtils {
     }
 
     @Test
-    public void typeNodeReadAndVertexNotAddedToGraph() throws IOException {
+    public void typeNodeReadAndVertexNotAddedToGraph() {
         JsonNode entityNode = getDbType();
         TinkerGraph tg = TinkerGraph.open();
         GraphSONUtility gu = new GraphSONUtility(emptyRelationshipCache);
@@ -105,8 +109,8 @@ public class GraphSONUtilityTest extends BaseUtils {
     }
 
     @Test
-    public void updateNonPrimitiveArrayProperty() throws IOException {
-        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getNonPrimitiveArray());
+    public void updateNonPrimitiveArrayProperty() {
+        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getNonPrimitiveArray(), new HashMap<>());
 
         TinkerGraph tg = TinkerGraph.open();
         GraphSONUtility gu = new GraphSONUtility(elementProcessors);
@@ -118,12 +122,19 @@ public class GraphSONUtilityTest extends BaseUtils {
 
         Map<String, String> list = (Map<String, String>) v.property(HIVE_TABLE_COLUMNS_RELATIONSHIP).value();
         assertEquals(list.size(), 2);
+
+        List superTypeNames = (List) v.property("__superTypeNames").value();
+        assertNotNull(superTypeNames);
+        assertEquals(superTypeNames.size(), 3);
+        assertEquals(superTypeNames.get(0), "Asset");
+        assertEquals(superTypeNames.get(1), "DataSet");
+        assertEquals(superTypeNames.get(2), "Referenceable");
     }
 
 
     @Test
     public void updatePrimitiveMapProperty() {
-        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMapPrimitive());
+        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMapPrimitive(), new HashMap<>());
 
         TinkerGraph tg = TinkerGraph.open();
         GraphSONUtility gu = new GraphSONUtility(elementProcessors);
@@ -154,11 +165,10 @@ public class GraphSONUtilityTest extends BaseUtils {
     }
 
     @Test
-    public void edgeReadAndArrayIndexAdded() throws IOException {
-        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMap());
+    public void edgeReadAndArrayIndexAdded() {
+        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMap(), new HashMap<>());
         TinkerGraph tg = TinkerGraph.open();
         GraphSONUtility gu = new GraphSONUtility(elementProcessors);
-        Map<String, Object> m = null;
 
         addVertexToGraph(tg, gu, getDBV(), getTableV(), getCol1(), getCol2());
         addEdgeToGraph(tg, gu, new MappedElementCache(), getEdgeCol(), getEdgeCol2());
@@ -185,13 +195,13 @@ public class GraphSONUtilityTest extends BaseUtils {
     }
 
     @Test
-    public void nonPrimitiveMap_Removed() throws IOException {
+    public void nonPrimitiveMap_Removed() {
         Set<String> actualKeys = new HashSet<String>() {{
             add("col3");
             add("col4");
         }};
 
-        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMap());
+        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMap(), new HashMap<>());
         TinkerGraph tg = TinkerGraph.open();
         GraphSONUtility gu = new GraphSONUtility(elementProcessors);
 
@@ -218,9 +228,9 @@ public class GraphSONUtilityTest extends BaseUtils {
     }
 
     @Test
-    public void tagAssociated_NewAttributesAdded() throws IOException {
+    public void tagAssociated_NewAttributesAdded() {
 
-        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMap());
+        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMap(), new HashMap<>());
         TinkerGraph tg = TinkerGraph.open();
         GraphSONUtility gu = new GraphSONUtility(elementProcessors);
 
@@ -247,8 +257,8 @@ public class GraphSONUtilityTest extends BaseUtils {
     }
 
     @Test
-    public void processEdge_PropagateSetTo_NONE() throws IOException {
-        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMap());
+    public void processEdge_PropagateSetTo_NONE() {
+        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMap(), new HashMap<>());
         TinkerGraph tg = TinkerGraph.open();
         GraphSONUtility gu = new GraphSONUtility(elementProcessors);
 
@@ -275,12 +285,12 @@ public class GraphSONUtilityTest extends BaseUtils {
     }
 
     @Test
-    public void processEdge_PropagateSetTo_ONE_TO_TWO() throws IOException {
+    public void processEdge_PropagateSetTo_ONE_TO_TWO() {
         Map<String, RelationshipCacheGenerator.TypeInfo> typeCache = new HashMap<String, RelationshipCacheGenerator.TypeInfo>() {{
             put("__Process.inputs", new RelationshipCacheGenerator.TypeInfo("dataset_process_inputs", AtlasRelationshipDef.PropagateTags.TWO_TO_ONE));
         }};
 
-        ElementProcessors elementProcessors = new ElementProcessors(typeCache, getPostProcessMap());
+        ElementProcessors elementProcessors = new ElementProcessors(typeCache, getPostProcessMap(), new HashMap<>());
         TinkerGraph tg = TinkerGraph.open();
         GraphSONUtility gu = new GraphSONUtility(elementProcessors);
 
@@ -296,6 +306,41 @@ public class GraphSONUtilityTest extends BaseUtils {
             assertTrue(e.property(Constants.RELATIONSHIP_GUID_PROPERTY_KEY).isPresent());
         }
     }
+
+    @Test
+    public void entitiesWithTypesAsTraits() {
+        final String expectedLegacyTypeName = "traitprayivofx4";
+        final String expectedModifiedLegacyTypeName = "legacy_" + expectedLegacyTypeName;
+
+        Map<String, TypesDefScrubber.ClassificationToStructDefName> typesAsTraits = new HashMap<String, TypesDefScrubber.ClassificationToStructDefName>() {{
+            put("__createComplexTraitTypeTestprayivofx4.complexTrait",
+                    new TypesDefScrubber.ClassificationToStructDefName("traitprayivofx4",
+                    "legacy_traitprayivofx4"));
+        }};
+
+        ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMap(), typesAsTraits);
+        TinkerGraph tg = TinkerGraph.open();
+        GraphSONUtility gu = new GraphSONUtility(elementProcessors);
+
+        JsonNode nd = getJsonNodeFromFile("entity-with-trait-type.json");
+        addVertexToGraph(tg, gu, nd.get("vertices").get(0), nd.get("vertices").get(1));
+        addEdgeToGraph(tg, gu, new MappedElementCache(), nd.get("edges").get(0));
+
+        boolean asserted = false;
+        Iterator<Vertex> vertices = tg.vertices();
+        while(vertices.hasNext()) {
+            Vertex v = vertices.next();
+
+            String typeName = v.property(Constants.ENTITY_TYPE_PROPERTY_KEY).value().toString();
+            if(typeName.contains("traitprayivofx4")) {
+                assertEquals(typeName, expectedModifiedLegacyTypeName);
+                asserted = true;
+            }
+        }
+
+        assertTrue(asserted, "Condition was not met");
+    }
+
 
     private Map<String, Map<String, List<String>>> getPostProcessMap() {
         Map<String, Map<String, List<String>>> map = new HashMap<>();

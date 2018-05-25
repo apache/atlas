@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.graphdb.janus.migration.TypesWithCollectionsFinder;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
@@ -37,8 +38,8 @@ import static org.testng.Assert.assertTrue;
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class TypesWithCollectionsFinderTest extends MigrationBaseAsserts {
     @Inject
-    protected TypesWithCollectionsFinderTest(AtlasGraph graph) {
-        super(graph);
+    protected TypesWithCollectionsFinderTest(AtlasGraph graph, GraphDBMigrator migrator) {
+        super(graph, migrator);
     }
 
     @BeforeClass

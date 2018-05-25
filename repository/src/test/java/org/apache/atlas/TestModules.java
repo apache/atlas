@@ -38,6 +38,8 @@ import org.apache.atlas.repository.audit.EntityAuditListenerV2;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.GraphDBMigrator;
+import org.apache.atlas.repository.graphdb.janus.migration.GraphDBGraphSONMigrator;
 import org.apache.atlas.repository.impexp.ExportService;
 import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
 import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
@@ -150,6 +152,7 @@ public class TestModules {
 
             bind(AtlasLineageService.class).to(EntityLineageService.class).asEagerSingleton();
             bind(BulkImporter.class).to(BulkImporterImpl.class).asEagerSingleton();
+            bind(GraphDBMigrator.class).to(GraphDBGraphSONMigrator.class).asEagerSingleton();
 
             //Add EntityAuditListener as EntityChangeListener
             Multibinder<EntityChangeListener> entityChangeListenerBinder =

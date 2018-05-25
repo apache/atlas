@@ -42,9 +42,12 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class MigrationBaseAsserts {
+    private   static final String TYPE_NAME_PROPERTY   = "__typeName";
+    private   static final String R_GUID_PROPERTY_NAME = "_r__guid";
     protected static final String ASSERT_NAME_PROPERTY = "Asset.name";
-    private final String TYPE_NAME_PROPERTY = "__typeName";
-    private final String R_GUID_PROPERTY_NAME = "_r__guid";
+
+    private final GraphDBMigrator migrator;
+    private final AtlasGraph      graph;
 
     @Inject
     protected AtlasTypeDefStore typeDefStore;
@@ -58,10 +61,9 @@ public class MigrationBaseAsserts {
     @Inject
     private GraphBackedSearchIndexer indexer;
 
-    protected AtlasGraph graph;
-
-    protected MigrationBaseAsserts(AtlasGraph graph) {
-        this.graph = graph;
+    protected MigrationBaseAsserts(AtlasGraph graph, GraphDBMigrator migrator) {
+        this.graph    = graph;
+        this.migrator = migrator;
     }
 
     @AfterClass
@@ -82,7 +84,7 @@ public class MigrationBaseAsserts {
     protected void runFileImporter(String directoryToImport) throws IOException, AtlasBaseException {
         loadTypesFromJson();
         String directoryName = TestResourceFileUtils.getDirectory(directoryToImport);
-        DataMigrationService.FileImporter fi = new DataMigrationService.FileImporter(graph, typeDefStore, typeRegistry,
+        DataMigrationService.FileImporter fi = new DataMigrationService.FileImporter(migrator, typeDefStore, typeRegistry,
                 storeInitializer, directoryName, indexer);
 
         fi.run();

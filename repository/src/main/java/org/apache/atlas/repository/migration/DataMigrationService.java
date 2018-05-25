@@ -22,11 +22,10 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.impexp.ImportTypeDefProcessor;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
 import org.apache.atlas.AtlasException;
@@ -56,11 +55,11 @@ public class DataMigrationService implements Service {
     private final Thread        thread;
 
     @Inject
-    public DataMigrationService(AtlasGraph graph, AtlasTypeDefStore typeDefStore, Configuration configuration,
+    public DataMigrationService(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, Configuration configuration,
                                 GraphBackedSearchIndexer indexer, AtlasTypeDefStoreInitializer storeInitializer,
                                 AtlasTypeRegistry typeRegistry) {
         this.configuration = configuration;
-        this.thread        = new Thread(new FileImporter(graph, typeDefStore, typeRegistry, storeInitializer, getFileName(), indexer));
+        this.thread        = new Thread(new FileImporter(migrator, typeDefStore, typeRegistry, storeInitializer, getFileName(), indexer));
     }
 
     @Override
@@ -83,17 +82,17 @@ public class DataMigrationService implements Service {
     }
 
     public static class FileImporter implements Runnable {
-        private final AtlasGraph                   graph;
+        private final GraphDBMigrator              migrator;
         private final AtlasTypeDefStore            typeDefStore;
         private final String                       importDirectory;
         private final GraphBackedSearchIndexer     indexer;
         private final AtlasTypeRegistry            typeRegistry;
         private final AtlasTypeDefStoreInitializer storeInitializer;
 
-        public FileImporter(AtlasGraph graph, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
+        public FileImporter(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
                             AtlasTypeDefStoreInitializer storeInitializer,
                             String directoryName, GraphBackedSearchIndexer indexer) {
-            this.graph            = graph;
+            this.migrator         = migrator;
             this.typeDefStore     = typeDefStore;
             this.typeRegistry     = typeRegistry;
             this.storeInitializer = storeInitializer;
@@ -120,7 +119,7 @@ public class DataMigrationService implements Service {
 
                 FileInputStream fs = new FileInputStream(getFileFromImportDirectory(importDirectory, ATLAS_MIGRATION_DATA_NAME));
 
-                graph.importLegacyGraphSON(typeRegistry, fs);
+                migrator.importData(typeRegistry, fs);
             } catch (Exception ex) {
                 LOG.error("Import failed!", ex);
                 throw new AtlasBaseException(ex);
@@ -158,7 +157,7 @@ public class DataMigrationService implements Service {
             try {
                 AtlasImportResult      result    = new AtlasImportResult();
                 String                 jsonStr   = FileUtils.readFileToString(typesDefFile);
-                AtlasTypesDef          typesDef  = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
+                AtlasTypesDef          typesDef  = migrator.getScrubbedTypesDef(jsonStr);
                 ImportTypeDefProcessor processor = new ImportTypeDefProcessor(typeDefStore, typeRegistry);
 
                 processor.processTypes(typesDef, result);
