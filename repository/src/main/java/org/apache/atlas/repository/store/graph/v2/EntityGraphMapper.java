@@ -167,6 +167,10 @@ public class EntityGraphMapper {
         if (StringUtils.isNotEmpty(entity.getUpdatedBy())) {
             AtlasGraphUtilsV2.setProperty(vertex, Constants.MODIFIED_BY_KEY, entity.getUpdatedBy());
         }
+
+        if (StringUtils.isNotEmpty(entity.getHomeId())) {
+            AtlasGraphUtilsV2.setProperty(vertex, Constants.HOME_ID_KEY, entity.getHomeId());
+        }
     }
 
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications) throws AtlasBaseException {

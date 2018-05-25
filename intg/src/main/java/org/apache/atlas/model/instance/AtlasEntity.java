@@ -60,6 +60,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final String KEY_GUID        = "guid";
+    public static final String KEY_HOME_ID     = "homeId";
     public static final String KEY_STATUS      = "status";
     public static final String KEY_CREATED_BY  = "createdBy";
     public static final String KEY_UPDATED_BY  = "updatedBy";
@@ -73,6 +74,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     public enum Status { ACTIVE, DELETED }
 
     private String guid       = null;
+    private String homeId     = null;
     private Status status     = Status.ACTIVE;
     private String createdBy  = null;
     private String updatedBy  = null;
@@ -116,6 +118,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
         if (map != null) {
             Object oGuid      = map.get(KEY_GUID);
+            Object homeId     = map.get(KEY_HOME_ID);
             Object status     = map.get(KEY_STATUS);
             Object createdBy  = map.get(KEY_CREATED_BY);
             Object updatedBy  = map.get(KEY_UPDATED_BY);
@@ -125,6 +128,10 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
             if (oGuid != null) {
                 setGuid(oGuid.toString());
+            }
+
+            if (homeId != null) {
+                setHomeId(homeId.toString());
             }
 
             if (status != null) {
@@ -158,6 +165,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
         if (other != null) {
             setGuid(other.getGuid());
+            setHomeId(other.getHomeId());
             setStatus(other.getStatus());
             setCreatedBy(other.getCreatedBy());
             setUpdatedBy(other.getUpdatedBy());
@@ -174,6 +182,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     public void setGuid(String guid) {
         this.guid = guid;
+    }
+
+    public String getHomeId() {
+        return homeId;
+    }
+
+    public void setHomeId(String homeId) {
+        this.homeId = homeId;
     }
 
     public Status getStatus() {
@@ -291,6 +307,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     private void init() {
         setGuid(nextInternalId());
+        setHomeId(null);
         setStatus(null);
         setCreatedBy(null);
         setUpdatedBy(null);
@@ -313,6 +330,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append("AtlasEntity{");
         super.toString(sb);
         sb.append("guid='").append(guid).append('\'');
+        sb.append(", homeId='").append(homeId).append('\'');
         sb.append(", status=").append(status);
         sb.append(", createdBy='").append(createdBy).append('\'');
         sb.append(", updatedBy='").append(updatedBy).append('\'');
@@ -341,6 +359,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
         AtlasEntity that = (AtlasEntity) o;
         return Objects.equals(guid, that.guid) &&
+                Objects.equals(homeId, that.homeId) &&
                 status == that.status &&
                 Objects.equals(createdBy, that.createdBy) &&
                 Objects.equals(updatedBy, that.updatedBy) &&
@@ -353,7 +372,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, status, createdBy, updatedBy, createTime, updateTime, version,
+        return Objects.hash(super.hashCode(), guid, homeId, status, createdBy, updatedBy, createTime, updateTime, version,
                             relationshipAttributes, classifications);
     }
 
