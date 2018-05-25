@@ -1,0 +1,220 @@
+{
+    "enumDefs": [],
+    "structDefs": [],
+    "classificationDefs": [],
+    "entityDefs": [
+        {
+            "name": "avro_type",
+            "description": "Atlas Type representing Abstract Avro Type",
+            "superTypes": [
+                "DataSet", "Asset"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+            ]
+        },
+        {
+            "name": "avro_field",
+            "description": "Atlas Type representing an Avro Field",
+            "superTypes": [
+                "avro_type"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "type",
+                    "typeName": "array<avro_type>",
+                    "cardinality": "LIST",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "doc",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "default",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "avro_record",
+            "description": "Atlas Type representing Abstract Avro Schema",
+            "superTypes": [
+                "avro_type"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "type",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "doc",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "fields",
+                    "typeName": "array<avro_field>",
+                    "cardinality": "LIST",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "constraints": [
+                        {
+                            "type": "ownedRef"
+                        }
+                    ]
+                },
+                {
+                    "name": "avro_notation",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "versionId",
+                    "typeName": "int",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "isLatest",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "avroClass",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "avro_schema",
+            "description": "Atlas Type representing Abstract Top-level Avro Schema",
+            "superTypes": [
+                "avro_record"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "namespace",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "associatedEntities",
+                    "typeName": "array<DataSet>",
+                    "cardinality": "LIST",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }            
+            ]
+        },
+        {
+            "name": "avro_primitive",
+            "description": "Atlas Type representing an Avro primitive datatype",
+            "superTypes": [
+                "avro_type"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+            ]
+        },
+        {
+            "name": "avro_fixed",
+            "description": "Atlas Type representing an Avro fixed datatype",
+            "superTypes": [
+                "avro_type"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+            ]
+        },
+        {
+            "name": "avro_enum",
+            "description": "Atlas Type representing an Avro ENUM datatype",
+            "superTypes": [
+                "avro_type"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "type",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "symbols",
+                    "typeName": "array<string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "avro_collection",
+            "description": "Atlas Type representing an Avro Array datatype",
+            "superTypes": [
+                "avro_type"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "type",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "items",
+                    "typeName": "array<string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                }
+            ]
+        }
+    ]
+}
