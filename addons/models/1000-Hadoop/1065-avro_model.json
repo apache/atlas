@@ -216,5 +216,64 @@
                 }
             ]
         }
+    ],
+    "relationshipDefs": [
+        {
+            "name": "avro_schema_associatedEntities",
+            "typeVersion": "1.0",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {
+                "type": "avro_schema",
+                "name": "associatedEntities",
+                "isContainer": false,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "DataSet",
+                "name": "schema",
+                "isContainer": false,
+                "cardinality": "SET"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "avro_record_fields",
+            "typeVersion": "1.0",
+            "relationshipCategory": "AGGREGATION",
+            "endDef1": {
+                "type": "avro_record",
+                "name": "fields",
+                "isContainer": true,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "avro_field",
+                "name": "record",
+                "isContainer": false,
+                "cardinality": "SINGLE"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "avro_field_types",
+            "typeVersion": "1.0",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {
+                "type": "avro_field",
+                "name": "type",
+                "isContainer": false,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "avro_type",
+                "name": "field",
+                "isContainer": false,
+                "cardinality": "SINGLE"
+            },
+            "propagateTags": "NONE"
+        }
     ]
 }
