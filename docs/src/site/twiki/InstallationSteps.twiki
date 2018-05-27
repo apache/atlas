@@ -1,46 +1,49 @@
 ---++ Building & Installing Apache Atlas
 
----+++ Building Atlas
+---+++ Building Apache Atlas
 <verbatim>
-git clone https://git-wip-us.apache.org/repos/asf/atlas.git atlas
+git clone https://github.com/apache/atlas.git atlas
 cd atlas
+git checkout branch-1.0
 export MAVEN_OPTS="-Xms2g -Xmx2g"
 mvn clean -DskipTests install</verbatim>
 
 
----+++ Packaging Atlas
-To create Apache Atlas package for deployment in an environment having functional HBase and Solr instances, build with the following command:
+---+++ Packaging Apache Atlas
+To create Apache Atlas package for deployment in an environment having functional Apache HBase and Apache Solr instances, build with the following command:
 
 <verbatim>
 mvn clean -DskipTests package -Pdist</verbatim>
 
    * NOTES:
       * Remove option '-DskipTests' to run unit and integration tests
-      * To build a distribution without minified js,css file, build with skipMinify profile. By default js and css files are minified.
+      * To build a distribution without minified js,css file, build with _skipMinify_ profile. By default js and css files are minified.
 
 
-Above will build Atlas for an environment having functional HBase and Solr instances. Atlas needs to be setup with the following to run in this environment:
+Above will build Apache Atlas for an environment having functional HBase and Solr instances. Apache Atlas needs to be setup with the following to run in this environment:
    * Configure atlas.graph.storage.hostname (see "Graph persistence engine - HBase" in the [[Configuration][Configuration]] section).
    * Configure atlas.graph.index.search.solr.zookeeper-url (see "Graph Search Index - Solr" in the [[Configuration][Configuration]] section).
-   * Set HBASE_CONF_DIR to point to a valid HBase config directory (see "Graph persistence engine - HBase" in the [[Configuration][Configuration]] section).
-   * Create the SOLR indices (see "Graph Search Index - Solr" in the [[Configuration][Configuration]] section).
+   * Set HBASE_CONF_DIR to point to a valid Apache HBase config directory (see "Graph persistence engine - HBase" in the [[Configuration][Configuration]] section).
+   * Create indices in Apache Solr (see "Graph Search Index - Solr" in the [[Configuration][Configuration]] section).
 
 
----+++ Packaging Atlas with Embedded HBase & Solr
-To create Apache Atlas package that includes HBase and Solr, build with the embedded-hbase-solr profile as shown below:
+---+++ Packaging Apache Atlas with embedded Apache HBase & Apache Solr
+To create Apache Atlas package that includes Apache HBase and Apache Solr, build with the embedded-hbase-solr profile as shown below:
 
 <verbatim>
 mvn clean -DskipTests package -Pdist,embedded-hbase-solr</verbatim>
 
-Using the embedded-hbase-solr profile will configure Atlas so that an HBase instance and a Solr instance will be started and stopped along with the Atlas server by default.
+Using the embedded-hbase-solr profile will configure Apache Atlas so that an Apache HBase instance and an Apache Solr instance will be started and stopped along with the Apache Atlas server.
 
----+++ Packaging Atlas with Embedded Cassandra & Solr
-To create Apache Atlas package that includes Cassandra and Solr, build with the embedded-cassandra-solr profile as shown below:
+NOTE: This distribution profile is only intended to be used for single node development not in production.
+
+---+++ Packaging Apache Atlas with embedded Apache Cassandra & Apache Solr
+To create Apache Atlas package that includes Apache Cassandra and Apache Solr, build with the embedded-cassandra-solr profile as shown below:
 
 <verbatim>
 mvn clean package -Pdist,embedded-cassandra-solr</verbatim>
 
-Using the embedded-cassandra-solr profile will configure Atlas so that an embedded Cassandra instance and a Solr instance will be started and stopped along with the Atlas server by default.
+Using the embedded-cassandra-solr profile will configure Apache Atlas so that an Apache Cassandra instance and an Apache Solr instance will be started and stopped along with the Atlas server.
 
 NOTE: This distribution profile is only intended to be used for single node development not in production.
 
@@ -49,25 +52,55 @@ Build will create following files, which are used to install Apache Atlas.
 
 <verbatim>
 distro/target/apache-atlas-${project.version}-bin.tar.gz
-distro/target/apache-atlas-${project.version}-hive-hook.gz
 distro/target/apache-atlas-${project.version}-hbase-hook.tar.gz
+distro/target/apache-atlas-${project.version}-hive-hook.gz
+distro/target/apache-atlas-${project.version}-kafka-hook.gz
+distro/target/apache-atlas-${project.version}-sources.tar.gz
 distro/target/apache-atlas-${project.version}-sqoop-hook.tar.gz
-distro/target/apache-atlas-${project.version}-storm-hook.tar.gz
-distro/target/apache-atlas-${project.version}-falcon-hook.tar.gz
-distro/target/apache-atlas-${project.version}-sources.tar.gz</verbatim>
+distro/target/apache-atlas-${project.version}-storm-hook.tar.gz</verbatim>
 
----+++ Installing & Running Atlas
+---+++ Installing & Running Apache Atlas
 
----++++ Installing Atlas
+---++++ Installing Apache Atlas
+From the directory you would like Apache Atlas to be installed, run the following commands:
 <verbatim>
 tar -xzvf apache-atlas-${project.version}-bin.tar.gz
-
 cd atlas-${project.version}</verbatim>
 
----++++ Configuring Atlas
-By default config directory used by Atlas is {package dir}/conf. To override this set environment variable ATLAS_CONF to the path of the conf dir.
+---++++ Running Apache Atlas with Local Apache HBase & Apache Solr
+To run Apache Atlas with local Apache HBase & Apache Solr instances that are started/stopped along with Atlas start/stop, run following commands:
+<verbatim>
+export MANAGE_LOCAL_HBASE=true
+export MANAGE_LOCAL_SOLR=true
 
-Environment variables needed to run Atlas can be set in  atlas-env.sh file in the conf directory. This file will be sourced by Atlas scripts before any commands are executed. The following environment variables are available to set.
+bin/atlas_start.py</verbatim>
+
+---++++ Using Apache Atlas
+   * To verify if Apache Atlas server is up and running, run curl command as shown below:
+<verbatim>
+  curl -u username:password http://localhost:21000/api/atlas/admin/version
+
+  {"Description":"Metadata Management and Data Governance Platform over Hadoop","Version":"1.0.0","Name":"apache-atlas"}</verbatim>
+
+   * Run quick start to load sample model and data
+<verbatim>
+  bin/quick_start.py
+  Enter username for atlas :-
+  Enter password for atlas :-
+</verbatim>
+
+   * Access Apache Atlas UI using a browser: http://localhost:21000
+
+---++++ Stopping Apache Atlas Server
+To stop Apache Atlas, run following command:
+<verbatim>
+bin/atlas_stop.py</verbatim>
+
+
+---+++ Configuring Apache Atlas
+By default config directory used by Apache Atlas is _{package dir}/conf_. To override this set environment variable ATLAS_CONF to the path of the conf dir.
+
+Environment variables needed to run Apache Atlas can be set in _atlas-env.sh_ file in the conf directory. This file will be sourced by Apache Atlas scripts before any commands are executed. The following environment variables are available to set.
 
 <verbatim>
 # The java implementation to use. If JAVA_HOME is not found we expect java and jar to be in path
@@ -117,7 +150,7 @@ export ATLAS_SERVER_HEAP="-Xms15360m -Xmx15360m -XX:MaxNewSize=5120m -XX:Metaspa
 *NOTE for Mac OS users*
 If you are using a Mac OS, you will need to configure the ATLAS_SERVER_OPTS (explained above).
 
-In  {package dir}/conf/atlas-env.sh uncomment the following line
+In _{package dir}/conf/atlas-env.sh_ uncomment the following line
 <verbatim>
 #export ATLAS_SERVER_OPTS=</verbatim>
 
@@ -125,32 +158,31 @@ and change it to look as below
 <verbatim>
 export ATLAS_SERVER_OPTS="-Djava.awt.headless=true -Djava.security.krb5.realm= -Djava.security.krb5.kdc="</verbatim>
 
-*HBase as the Storage Backend for the Graph Repository*
+*Configuring Apache HBase as the storage backend for the Graph Repository*
 
-By default, Atlas uses JanusGraph as the graph repository and is the only graph repository implementation available currently. The HBase versions currently supported are 1.1.x. For configuring ATLAS graph persistence on HBase, please see "Graph persistence engine - HBase" in the [[Configuration][Configuration]] section for more details.
+By default, Apache Atlas uses JanusGraph as the graph repository and is the only graph repository implementation available currently. Apache HBase versions currently supported are 1.1.x. For configuring Apache Atlas graph persistence on Apache HBase, please see "Graph persistence engine - HBase" in the [[Configuration][Configuration]] section for more details.
 
-HBase tables used by Atlas can be set using the following configurations:
+Apache HBase tables used by Apache Atlas can be set using the following configurations:
 <verbatim>
 atlas.graph.storage.hbase.table=atlas
 atlas.audit.hbase.tablename=apache_atlas_entity_audit</verbatim>
 
-*Configuring SOLR as the Indexing Backend for the Graph Repository*
+*Configuring Apache Solr as the indexing backend for the Graph Repository*
 
-By default, Atlas uses JanusGraph as the graph repository and is the only graph repository implementation available currently. For configuring JanusGraph to work with Solr, please follow the instructions below
+By default, Apache Atlas uses JanusGraph as the graph repository and is the only graph repository implementation available currently. For configuring JanusGraph to work with Apache Solr, please follow the instructions below
 
-   * Install solr if not already running. The version of SOLR supported is 5.5.1. Could be installed from http://archive.apache.org/dist/lucene/solr/5.5.1/solr-5.5.1.tgz
+   * Install Apache Solr if not already running. The version of Apache Solr supported is 5.5.1. Could be installed from http://archive.apache.org/dist/lucene/solr/5.5.1/solr-5.5.1.tgz
 
-   * Start solr in cloud mode.
+   * Start Apache Solr in cloud mode.
   !SolrCloud mode uses a !ZooKeeper Service as a highly available, central location for cluster management.
-  For a small cluster, running with an existing !ZooKeeper quorum should be fine. For larger clusters, you would want to run separate multiple !ZooKeeper quorum with atleast 3 servers.
-  Note: Atlas currently supports solr in "cloud" mode only. "http" mode is not supported. For more information, refer solr documentation - https://cwiki.apache.org/confluence/display/solr/SolrCloud
+  For a small cluster, running with an existing !ZooKeeper quorum should be fine. For larger clusters, you would want to run separate multiple !ZooKeeper quorum with at least 3 servers.
+  Note: Apache Atlas currently supports Apache Solr in "cloud" mode only. "http" mode is not supported. For more information, refer Apache Solr documentation - https://cwiki.apache.org/confluence/display/solr/SolrCloud
 
-   * For e.g., to bring up a Solr node listening on port 8983 on a machine, you can use the command:
+   * For e.g., to bring up an Apache Solr node listening on port 8983 on a machine, you can use the command:
       <verbatim>
-      $SOLR_HOME/bin/solr start -c -z <zookeeper_host:port> -p 8983
-      </verbatim>
+      $SOLR_HOME/bin/solr start -c -z <zookeeper_host:port> -p 8983</verbatim>
 
-   * Run the following commands from SOLR_BIN (e.g. $SOLR_HOME/bin) directory to create collections in Solr corresponding to the indexes that Atlas uses. In the case that the ATLAS and SOLR instance are on 2 different hosts, first copy the required configuration files from ATLAS_HOME/conf/solr on the ATLAS instance host to the Solr instance host. SOLR_CONF in the below mentioned commands refer to the directory where the solr configuration files have been copied to on Solr host:
+   * Run the following commands from SOLR_BIN (e.g. $SOLR_HOME/bin) directory to create collections in Apache Solr corresponding to the indexes that Apache Atlas uses. In the case that the Apache Atlas and Apache Solr instances are on 2 different hosts, first copy the required configuration files from ATLAS_HOME/conf/solr on the Apache Atlas instance host to Apache Solr instance host. SOLR_CONF in the below mentioned commands refer to the directory where Apache Solr configuration files have been copied to on Apache Solr host:
 
 <verbatim>
   $SOLR_BIN/solr create -c vertex_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
@@ -163,84 +195,66 @@ By default, Atlas uses JanusGraph as the graph repository and is the only graph 
 
   The number of replicas (replicationFactor) can be set according to the redundancy required.
 
-  Also note that solr will automatically be called to create the indexes when the Atlas server is started if the
+  Also note that Apache Solr will automatically be called to create the indexes when Apache Atlas server is started if the
   SOLR_BIN and SOLR_CONF environment variables are set and the search indexing backend is set to 'solr5'.
 
-   * Change ATLAS configuration to point to the Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME/conf/atlas-application.properties
+   * Change ATLAS configuration to point to Apache Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME/conf/atlas-application.properties
 <verbatim>
- atlas.graph.index.search.backend=solr5
+ atlas.graph.index.search.backend=solr
  atlas.graph.index.search.solr.mode=cloud
  atlas.graph.index.search.solr.zookeeper-url=<the ZK quorum setup for solr as comma separated value> eg: 10.1.6.4:2181,10.1.6.5:2181
  atlas.graph.index.search.solr.zookeeper-connect-timeout=<SolrCloud Zookeeper Connection Timeout>. Default value is 60000 ms
  atlas.graph.index.search.solr.zookeeper-session-timeout=<SolrCloud Zookeeper Session Timeout>. Default value is 60000 ms</verbatim>
 
-   * Restart Atlas
-
 For more information on JanusGraph solr configuration , please refer http://docs.janusgraph.org/0.2.0/solr.html
 
-Pre-requisites for running Solr in cloud mode
-  * Memory - Solr is both memory and CPU intensive. Make sure the server running Solr has adequate memory, CPU and disk.
-    Solr works well with 32GB RAM. Plan to provide as much memory as possible to Solr process
-  * Disk - If the number of entities that need to be stored are large, plan to have at least 500 GB free space in the volume where Solr is going to store the index data
-  * !SolrCloud has support for replication and sharding. It is highly recommended to use !SolrCloud with at least two Solr nodes running on different servers with replication enabled.
+Pre-requisites for running Apache Solr in cloud mode
+  * Memory - Apache Solr is both memory and CPU intensive. Make sure the server running Apache Solr has adequate memory, CPU and disk.
+    Apache Solr works well with 32GB RAM. Plan to provide as much memory as possible to Apache Solr process
+  * Disk - If the number of entities that need to be stored are large, plan to have at least 500 GB free space in the volume where Apache Solr is going to store the index data
+  * !SolrCloud has support for replication and sharding. It is highly recommended to use !SolrCloud with at least two Apache Solr nodes running on different servers with replication enabled.
     If using !SolrCloud, then you also need !ZooKeeper installed and configured with 3 or 5 !ZooKeeper nodes
 
-*Configuring Elasticsearch as the Indexing Backend for the Graph Repository (Tech Preview)*
+*Configuring Elasticsearch as the indexing backend for the Graph Repository (Tech Preview)*
 
-By default, Atlas uses JanusGraph as the graph repository and is the only graph repository implementation available currently. For configuring JanusGraph to work with Elasticsearch, please follow the instructions below
+By default, Apache Atlas uses JanusGraph as the graph repository and is the only graph repository implementation available currently. For configuring JanusGraph to work with Elasticsearch, please follow the instructions below
 
    * Install an Elasticsearch cluster. The version currently supported is 5.6.4, and can be acquired from: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.6.4.tar.gz
 
    * For simple testing a single Elasticsearch node can be started by using the 'elasticsearch' command in the bin directory of the Elasticsearch distribution.
 
-   * Change ATLAS configuration to point to the Elasticsearch instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME/conf/atlas-application.properties
+   * Change Apache Atlas configuration to point to the Elasticsearch instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME/conf/atlas-application.properties
 <verbatim>
  atlas.graph.index.search.backend=elasticsearch
  atlas.graph.index.search.hostname=<the hostname(s) of the Elasticsearch master nodes comma separated>
- atlas.graph.index.search.elasticsearch.client-only=true
+ atlas.graph.index.search.elasticsearch.client-only=true</verbatim>
 
-   * Restart Atlas
-
-For more information on JanusGraph solr configuration , please refer http://docs.janusgraph.org/0.2.0/elasticsearch.html
+For more information on JanusGraph configuration for elasticsearch, please refer http://docs.janusgraph.org/0.2.0/elasticsearch.html
 
 *Configuring Kafka Topics*
 
-Atlas uses Kafka to ingest metadata from other components at runtime. This is described in the [[Architecture][Architecture page]]
-in more detail. Depending on the configuration of Kafka, sometimes you might need to setup the topics explicitly before
-using Atlas. To do so, Atlas provides a script =bin/atlas_kafka_setup.py= which can be run from the Atlas server. In some
-environments, the hooks might start getting used first before Atlas server itself is setup. In such cases, the topics
+Apache Atlas uses Apache Kafka to ingest metadata from other components at runtime. This is described in the [[Architecture][Architecture page]]
+in more detail. Depending on the configuration of Apache Kafka, sometimes you might need to setup the topics explicitly before
+using Apache Atlas. To do so, Apache Atlas provides a script =bin/atlas_kafka_setup.py= which can be run from Apache Atlas server. In some
+environments, the hooks might start getting used first before Apache Atlas server itself is setup. In such cases, the topics
 can be run on the hosts where hooks are installed using a similar script =hook-bin/atlas_kafka_setup_hook.py=. Both these
 use configuration in =atlas-application.properties= for setting up the topics. Please refer to the [[Configuration][Configuration page]]
 for these details.
 
----++++ Setting up Atlas
-There are a few steps that setup dependencies of Atlas. One such example is setting up the JanusGraph schema in the storage backend of choice. In a simple single server setup, these are automatically setup with default configuration when the server first accesses these dependencies.
+---++++ Setting up Apache Atlas
+There are a few steps that setup dependencies of Apache Atlas. One such example is setting up the JanusGraph schema in the storage backend of choice. In a simple single server setup, these are automatically setup with default configuration when the server first accesses these dependencies.
 
 However, there are scenarios when we may want to run setup steps explicitly as one time operations. For example, in a multiple server scenario using [[HighAvailability][High Availability]], it is preferable to run setup steps from one of the server instances the first time, and then start the services.
 
-To run these steps one time, execute the command =bin/atlas_start.py -setup= from a single Atlas server instance.
+To run these steps one time, execute the command =bin/atlas_start.py -setup= from a single Apache Atlas server instance.
 
-However, the Atlas server does take care of parallel executions of the setup steps. Also, running the setup steps multiple times is idempotent. Therefore, if one chooses to run the setup steps as part of server startup, for convenience, then they should enable the configuration option =atlas.server.run.setup.on.start= by defining it with the value =true= in the =atlas-application.properties= file.
+However, Apache Atlas server does take care of parallel executions of the setup steps. Also, running the setup steps multiple times is idempotent. Therefore, if one chooses to run the setup steps as part of server startup, for convenience, then they should enable the configuration option =atlas.server.run.setup.on.start= by defining it with the value =true= in the =atlas-application.properties= file.
 
----++++ Starting Atlas Server
-<verbatim>
-bin/atlas_start.py [-port <port>]</verbatim>
-
----+++ Using Atlas
-   * Verify if the server is up and running
-<verbatim>
-  curl -v -u username:password http://localhost:21000/api/atlas/admin/version
-  {"Version":"v0.1"}</verbatim>
-
-   * Access Atlas UI using a browser: http://localhost:21000
-
-   * Run quick start to load sample model and data
-<verbatim>
-  bin/quick_start.py [<atlas endpoint>]</verbatim>
-
+---+++ Examples: calling Apache Atlas REST APIs
+Here are few examples of calling Apache Atlas REST APIs via curl command.
    * List the types in the repository
 <verbatim>
-  curl -v -u username:password http://localhost:21000/api/atlas/v2/types/typedefs/headers
+  curl -u username:password http://localhost:21000/api/atlas/v2/types/typedefs/headers
   [ {"guid":"fa421be8-c21b-4cf8-a226-fdde559ad598","name":"Referenceable","category":"ENTITY"},
     {"guid":"7f3f5712-521d-450d-9bb2-ba996b6f2a4e","name":"Asset","category":"ENTITY"},
     {"guid":"84b02fa0-e2f4-4cc4-8b24-d2371cd00375","name":"DataSet","category":"ENTITY"},
@@ -250,7 +264,7 @@ bin/atlas_start.py [-port <port>]</verbatim>
 
    * List the instances for a given type
 <verbatim>
-  curl -v -u username:password http://localhost:21000/api/atlas/v2/search/basic?typeName=hive_db
+  curl -u username:password http://localhost:21000/api/atlas/v2/search/basic?typeName=hive_db
   {
     "queryType":"BASIC",
     "searchParameters":{
@@ -296,7 +310,7 @@ bin/atlas_start.py [-port <port>]</verbatim>
 
    * Search for entities
 <verbatim>
-  curl -v -u username:password http://localhost:21000/api/atlas/v2/search/dsl?query=hive_db%20where%20name='default'
+  curl -u username:password http://localhost:21000/api/atlas/v2/search/dsl?query=hive_db%20where%20name='default'
     {
       "queryType":"DSL",
       "queryText":"hive_db where name='default'",
@@ -320,18 +334,14 @@ bin/atlas_start.py [-port <port>]</verbatim>
     }</verbatim>
 
 
----+++ Stopping Atlas Server
-<verbatim>
-bin/atlas_stop.py</verbatim>
-
 ---+++ Troubleshooting
 
 ---++++ Setup issues
-If the setup of Atlas service fails due to any reason, the next run of setup (either by an explicit invocation of
+If the setup of Apache Atlas service fails due to any reason, the next run of setup (either by an explicit invocation of
 =atlas_start.py -setup= or by enabling the configuration option =atlas.server.run.setup.on.start=) will fail with
 a message such as =A previous setup run may not have completed cleanly.=. In such cases, you would need to manually
 ensure the setup can run and delete the Zookeeper node at =/apache_atlas/setup_in_progress= before attempting to
 run setup again.
 
-If the setup failed due to HBase JanusGraph schema setup errors, it may be necessary to repair the HBase schema. If no
-data has been stored, one can also disable and drop the HBase tables used by Atlas and run setup again.
+If the setup failed due to Apache HBase schema setup errors, it may be necessary to repair Apache HBase schema. If no
+data has been stored, one can also disable and drop the Apache HBase tables used by Apache Atlas and run setup again.
