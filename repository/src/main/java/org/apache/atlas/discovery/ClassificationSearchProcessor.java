@@ -224,14 +224,14 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                     break;
                 }
 
+                final boolean isLastResultPage;
+
                 if (indexQuery != null) {
                     Iterator<AtlasIndexQuery.Result> queryResult = indexQuery.vertices(qryOffset, limit);
 
-                    if (!queryResult.hasNext()) { // no more results from index query - end of search
-                        break;
-                    }
-
                     getVerticesFromIndexQueryResult(queryResult, classificationVertices);
+
+                    isLastResultPage = classificationVertices.size() < limit;
 
                     // Do in-memory filtering before the graph query
                     CollectionUtils.filter(classificationVertices, inMemoryPredicate);
@@ -240,19 +240,15 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                         // We can use single graph query to determine in this case
                         Iterator<AtlasVertex> queryResult = entityGraphQueryTraitNames.vertices(qryOffset, limit).iterator();
 
-                        if (!queryResult.hasNext()) { // no more results - end of search
-                            break;
-                        }
-
                         getVertices(queryResult, entityVertices);
+
+                        isLastResultPage = entityVertices.size() < limit;
                     } else {
                         Iterator<AtlasVertex> queryResult = tagGraphQueryWithAttributes.vertices(qryOffset, limit).iterator();
 
-                        if (!queryResult.hasNext()) { // no more results - end of search
-                            break;
-                        }
-
                         getVertices(queryResult, classificationVertices);
+
+                        isLastResultPage = classificationVertices.size() < limit;
 
                         // Do in-memory filtering before the graph query
                         CollectionUtils.filter(classificationVertices, inMemoryPredicate);
@@ -288,6 +284,10 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 super.filter(entityVertices);
 
                 resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
+
+                if (isLastResultPage) {
+                    break;
+                }
             }
         } finally {
             AtlasPerfTracer.log(perf);

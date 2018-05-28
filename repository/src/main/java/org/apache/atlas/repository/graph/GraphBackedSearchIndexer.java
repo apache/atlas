@@ -260,19 +260,19 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             }
 
             // create vertex indexes
-            createVertexIndex(management, GUID_PROPERTY_KEY, String.class, true, SINGLE, true, true);
+            createVertexIndex(management, GUID_PROPERTY_KEY, String.class, true, SINGLE, true, false);
+            createVertexIndex(management, ENTITY_TYPE_PROPERTY_KEY, String.class, false, SINGLE, true, false);
+            createVertexIndex(management, SUPER_TYPES_PROPERTY_KEY, String.class, false, SET, true, false);
             createVertexIndex(management, TIMESTAMP_PROPERTY_KEY, Long.class, false, SINGLE, false, false);
             createVertexIndex(management, MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class, false, SINGLE, false, false);
             createVertexIndex(management, STATE_PROPERTY_KEY, String.class, false, SINGLE, false, false);
             createVertexIndex(management, CREATED_BY_KEY, String.class, false, SINGLE, true, true);
             createVertexIndex(management, MODIFIED_BY_KEY, String.class, false, SINGLE, true, true);
-            createVertexIndex(management, ENTITY_TYPE_PROPERTY_KEY, String.class, false, SINGLE, true, true);
-            createVertexIndex(management, SUPER_TYPES_PROPERTY_KEY, String.class, false, SET, true, true);
             createVertexIndex(management, TRAIT_NAMES_PROPERTY_KEY, String.class, false, SET, true, true);
             createVertexIndex(management, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class, false, LIST, true, true);
-            createVertexIndex(management, TYPENAME_PROPERTY_KEY, String.class, true, SINGLE, true, true);
+            createVertexIndex(management, TYPENAME_PROPERTY_KEY, String.class, true, SINGLE, true, false);
             createVertexIndex(management, VERTEX_TYPE_PROPERTY_KEY, String.class, false, SINGLE, true, true);
-            createVertexIndex(management, CLASSIFICATION_ENTITY_GUID, String.class, false, SINGLE, true, true);
+            createVertexIndex(management, CLASSIFICATION_ENTITY_GUID, String.class, false, SINGLE, true, false);
             createVertexIndex(management, VERTEX_ID_IN_IMPORT_KEY, Long.class, false, SINGLE, true, false);
 
             // create vertex-centric index
@@ -499,8 +499,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         if (propertyKey != null) {
             if (createCompositeIndex) {
                 createVertexCompositeIndex(management, propertyClass, propertyKey, isUnique);
+            }
 
-            } else if (createCompositeIndexWithTypeAndSuperTypes) {
+            if (createCompositeIndexWithTypeAndSuperTypes) {
                 createVertexCompositeIndexWithTypeName(management, propertyClass, propertyKey);
                 createVertexCompositeIndexWithSuperTypeName(management, propertyClass, propertyKey);
             }

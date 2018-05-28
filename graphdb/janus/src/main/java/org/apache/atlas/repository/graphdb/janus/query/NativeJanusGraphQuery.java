@@ -25,6 +25,7 @@ import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.attribute.Text;
+import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
@@ -38,6 +39,9 @@ import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -45,6 +49,7 @@ import java.util.*;
  * Janus implementation of NativeTinkerpopGraphQuery.
  */
 public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJanusVertex, AtlasJanusEdge> {
+    private static final Logger LOG = LoggerFactory.getLogger(NativeJanusGraphQuery.class);
 
     private AtlasJanusGraph graph;
     private JanusGraphQuery<?> query;
@@ -69,20 +74,41 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> edges(int limit) {
         Iterable<JanusGraphEdge> it = query.limit(limit).edges();
+
+        if (LOG.isDebugEnabled()) {
+            if (query instanceof GraphCentricQueryBuilder) {
+                LOG.debug("NativeJanusGraphQuery.vertices({}): resultSize={}, {}", limit, getCountForDebugLog(it), ((GraphCentricQueryBuilder) query).constructQuery(ElementCategory.EDGE));
+            } else {
+                LOG.debug("NativeJanusGraphQuery.vertices({}): resultSize={}, {}", limit, getCountForDebugLog(it), query);
+            }
+        }
+
         return graph.wrapEdges(it);
     }
 
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> edges(int offset, int limit) {
         List<Edge>               result = new ArrayList<>(limit);
-        Iterator<? extends Edge> iter   = query.limit(offset + limit).edges().iterator();
+        Iterable<? extends Edge> it     = query.limit(offset + limit).edges();
+
+        if (LOG.isDebugEnabled()) {
+            if (query instanceof GraphCentricQueryBuilder) {
+                LOG.debug("NativeJanusGraphQuery.vertices({}, {}): resultSize={}, {}", offset, limit, getCountForDebugLog(it), ((GraphCentricQueryBuilder) query).constructQuery(ElementCategory.EDGE));
+            } else {
+                LOG.debug("NativeJanusGraphQuery.vertices({}, {}): resultSize={}, {}", offset, limit, getCountForDebugLog(it), query);
+            }
+        }
+
+        Iterator<? extends Edge> iter = it.iterator();
 
         for (long resultIdx = 0; iter.hasNext() && result.size() < limit; resultIdx++) {
+            Edge e = iter.next();
+
             if (resultIdx < offset) {
                 continue;
             }
 
-            result.add(iter.next());
+            result.add(e);
         }
 
         return graph.wrapEdges(result);
@@ -91,20 +117,41 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
     @Override
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> vertices(int limit) {
         Iterable<JanusGraphVertex> it = query.limit(limit).vertices();
+
+        if (LOG.isDebugEnabled()) {
+            if (query instanceof GraphCentricQueryBuilder) {
+                LOG.debug("NativeJanusGraphQuery.vertices({}): resultSize={}, {}", limit, getCountForDebugLog(it), ((GraphCentricQueryBuilder) query).constructQuery(ElementCategory.VERTEX));
+            } else {
+                LOG.debug("NativeJanusGraphQuery.vertices({}): resultSize={}, {}", limit, getCountForDebugLog(it), query);
+            }
+        }
+
         return graph.wrapVertices(it);
     }
 
     @Override
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> vertices(int offset, int limit) {
         List<Vertex>               result = new ArrayList<>(limit);
-        Iterator<? extends Vertex> iter   = query.limit(offset + limit).vertices().iterator();
+        Iterable<JanusGraphVertex> it     = query.limit(offset + limit).vertices();
+
+        if (LOG.isDebugEnabled()) {
+            if (query instanceof GraphCentricQueryBuilder) {
+                LOG.debug("NativeJanusGraphQuery.vertices({}, {}): resultSize={}, {}", offset, limit, getCountForDebugLog(it), ((GraphCentricQueryBuilder) query).constructQuery(ElementCategory.VERTEX));
+            } else {
+                LOG.debug("NativeJanusGraphQuery.vertices({}, {}): resultSize={}, {}", offset, limit, getCountForDebugLog(it), query);
+            }
+        }
+
+        Iterator<? extends Vertex> iter = it.iterator();
 
         for (long resultIdx = 0; iter.hasNext() && result.size() < limit; resultIdx++) {
+            Vertex v = iter.next();
+
             if (resultIdx < offset) {
                 continue;
             }
 
-            result.add(iter.next());
+            result.add(v);
         }
 
         return graph.wrapVertices(result);
@@ -169,4 +216,17 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
         }
     }
 
+    private int getCountForDebugLog(Iterable it) {
+        int ret = 0;
+
+        if (LOG.isDebugEnabled()) {
+            if (it != null) {
+                for (Iterator iter = it.iterator(); iter.hasNext(); iter.next()) {
+                    ret++;
+                }
+            }
+        }
+
+        return ret;
+    }
 }
