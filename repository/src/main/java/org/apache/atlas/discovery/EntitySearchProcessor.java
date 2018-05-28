@@ -254,14 +254,14 @@ public class EntitySearchProcessor extends SearchProcessor {
                     break;
                 }
 
+                final boolean isLastResultPage;
+
                 if (indexQuery != null) {
                     Iterator<AtlasIndexQuery.Result> idxQueryResult = indexQuery.vertices(qryOffset, limit);
 
-                    if (!idxQueryResult.hasNext()) { // no more results from index query - end of search
-                        break;
-                    }
-
                     getVerticesFromIndexQueryResult(idxQueryResult, entityVertices);
+
+                    isLastResultPage = entityVertices.size() < limit;
 
                     // Do in-memory filtering before the graph query
                     CollectionUtils.filter(entityVertices, inMemoryPredicate);
@@ -272,16 +272,18 @@ public class EntitySearchProcessor extends SearchProcessor {
                 } else {
                     Iterator<AtlasVertex> queryResult = graphQuery.vertices(qryOffset, limit).iterator();
 
-                    if (!queryResult.hasNext()) { // no more results from query - end of search
-                        break;
-                    }
-
                     getVertices(queryResult, entityVertices);
+
+                    isLastResultPage = entityVertices.size() < limit;
                 }
 
                 super.filter(entityVertices);
 
                 resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
+
+                if (isLastResultPage) {
+                    break;
+                }
             }
         } finally {
             AtlasPerfTracer.log(perf);

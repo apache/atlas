@@ -316,8 +316,8 @@ public class AtlasGraphUtilsV2 {
     public static AtlasVertex findByTypeAndPropertyName(String typeName, String propertyName, Object attrVal) {
         AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
                                                     .has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName)
-                                                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name())
-                                                    .has(propertyName, attrVal);
+                                                    .has(propertyName, attrVal)
+                                                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -329,8 +329,8 @@ public class AtlasGraphUtilsV2 {
     public static AtlasVertex findBySuperTypeAndPropertyName(String typeName, String propertyName, Object attrVal) {
         AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
                                                     .has(Constants.SUPER_TYPES_PROPERTY_KEY, typeName)
-                                                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name())
-                                                    .has(propertyName, attrVal);
+                                                    .has(propertyName, attrVal)
+                                                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 

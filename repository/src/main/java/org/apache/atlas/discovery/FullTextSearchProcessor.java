@@ -116,12 +116,13 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
                 Iterator<AtlasIndexQuery.Result> idxQueryResult = indexQuery.vertices(qryOffset, limit);
 
-                if (!idxQueryResult.hasNext()) { // no more results from solr - end of search
-                    break;
-                }
+                final boolean isLastResultPage;
+                int           resultCount = 0;
 
                 while (idxQueryResult.hasNext()) {
                     AtlasVertex vertex = idxQueryResult.next().getVertex();
+
+                    resultCount++;
 
                     // skip non-entity vertices
                     if (!AtlasGraphUtilsV2.isEntityVertex(vertex)) {
@@ -139,9 +140,15 @@ public class FullTextSearchProcessor extends SearchProcessor {
                     entityVertices.add(vertex);
                 }
 
+                isLastResultPage = resultCount < limit;
+
                 super.filter(entityVertices);
 
                 resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
+
+                if (isLastResultPage) {
+                    break;
+                }
             }
         } finally {
             AtlasPerfTracer.log(perf);
