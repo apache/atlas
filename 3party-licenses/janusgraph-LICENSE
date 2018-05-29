@@ -1,3 +1,4 @@
+
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -186,7 +187,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright [yyyy] [name of copyright owner]
+   Copyright 2017 JanusGraph Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -199,67 +200,3 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-
-
-=======================================================================
-Apache Atlas Subcomponents:
-
-The Apache Atlas project contains subcomponents with separate copyright
-notices and license terms. Your use of the source code for the these
-subcomponents is subject to the terms and conditions of the following
-licenses.
-
-This product bundles titan 0.5.4, which is available under
-Apache License.  For details, see 3party-licenses/titan-LICENSE
-
-This product bundles JanusGraph 0.2.0, which is available under
-Apache License.  For details, see 3party-licenses/janusgraph-LICENSE
-
-This product bundles pnotify, which is available under
-Apache License.  For details, see 3party-licenses/pnotify-LICENSE
-
-This product bundles mock(for python tests) 1.0.1, which is available under
-BSD License.  For details, see 3party-licenses/mock-LICENSE
-
-This product bundles animate, which is available under
-MIT License.  For details, see 3party-licenses/animate-LICENSE
-
-This product bundles Handlebars.js, which is available under
-MIT License.  For details, see 3party-licenses/handlebars-LICENSE
-
-This product bundles bootstrap-sidebar 0.4.0, which is available under
-MIT License.  For details, see 3party-licenses/bootstrap-sidebar-LICENSE
-
-This product bundles hbs 0.4.0, which is available under
-MIT License.  For details, see 3party-licenses/hbs-LICENSE
-
-This product bundles require-handlebars-plugin 0.4.0, which is available under
-WTFPL License.  For details, see 3party-licenses/require-handlebars-plugin-LICENSE
-
-This product bundles jQuery-ui.js, which is available under
-MIT License. For details, see 3party-licenses/jQuery-ui-LICENSE
-
-This product bundles platform.js, which is available under
-MIT License. For details, see 3party-licenses/platform-LICENSE
-
-This product bundles jquery-placeholder, which is available under
-MIT License. For details, see 3party-licenses/jquery-placeholder-LICENSE
-
-This product bundles es5-shim, which is available under
-MIT License. For details, see 3party-licenses/es5-shim-LICENSE
-
-This product bundles Respond, which is available under
-MIT License. For details, see 3party-licenses/Respond-LICENSE
-
-This product bundles Google Fonts, which are available under
-Open Font License.  For details, see 3party-licenses/google-fonts-LICENSE
-
-This product bundles bootstrap-daterangepicker 2.1.25, which is available under
-MIT License.  For details, see 3party-licenses/bootstrap-daterangepicker-LICENSE
-
-This product bundles jQuery QueryBuilder 2.4.3, which is available under
-MIT License.  For details, see 3party-licenses/jQuery-QueryBuilder-LICENSE
-
-This product bundles backgrid-columnmanager 0.2.4, which is available under
-MIT License.  For details, see 3party-licenses/backgrid-columnmanager-LICENSE
-=======================================================================
