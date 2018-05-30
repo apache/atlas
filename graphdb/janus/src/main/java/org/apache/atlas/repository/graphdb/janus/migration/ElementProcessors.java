@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_KEY_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
@@ -312,6 +313,7 @@ public class ElementProcessors {
                 if (StringUtils.isNotEmpty(inTypeName)) {
                     if (inTypeName.equals(label)) {
                         props.put(ENTITY_TYPE_PROPERTY_KEY, inTypeName);
+                        props.put(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, inTypeName);
 
                         addEntityGuidToTrait(in, out);
 
