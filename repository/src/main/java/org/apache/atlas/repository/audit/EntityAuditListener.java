@@ -187,6 +187,17 @@ public class EntityAuditListener implements EntityChangeListener {
             entity.setValues(null);
 
             auditString = auditPrefix + AtlasType.toV1Json(entity);
+            auditBytes  = auditString.getBytes(StandardCharsets.UTF_8); // recheck auditString size
+            auditSize   = auditBytes != null ? auditBytes.length : 0;
+
+            if (auditMaxSize >= 0 && auditSize > auditMaxSize) { // don't store classifications as well
+                LOG.warn("audit record still too long: entityType={}, guid={}, size={}; maxSize={}. audit will have only summary details",
+                        entity.getTypeName(), entity.getId()._getId(), auditSize, auditMaxSize);
+
+                Referenceable shallowEntity = new Referenceable(entity.getId(), entity.getTypeName(), null, entity.getSystemAttributes(), null, null);
+
+                auditString = auditPrefix + AtlasType.toJson(shallowEntity);
+            }
 
             entity.setValues(attrValues);
         }
