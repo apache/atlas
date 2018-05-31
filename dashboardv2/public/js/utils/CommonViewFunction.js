@@ -202,7 +202,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             var defEntity = _.find(attributeDefs, { name: key });
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();
-                if (defEntityType === 'date' || defEntityType === 'time') {
+                if (defEntityType === 'date') {
                     keyValue = new Date(keyValue);
                 } else if (_.isObject(keyValue)) {
                     keyValue = extractObject(keyValue);
@@ -219,12 +219,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 val = '<a target="_blank" class="blue-link" href="' + keyValue + '">' + keyValue + '</a>';
             } else if (key === 'guid' || key === "__guid") {
                 val = '<a title="' + key + '" href="#!/detailPage/' + keyValue + '">' + keyValue + '</a>';
-            } else if (key.toLocaleLowerCase().indexOf("time") !== -1 || key.toLocaleLowerCase().indexOf("date") !== -1) {
-                val = new Date(keyValue);
-
-                if (isNaN(val.getTime())) {
-                    val = _.escape(keyValue);
-                }
             } else {
                 val = _.escape(keyValue);
             }
