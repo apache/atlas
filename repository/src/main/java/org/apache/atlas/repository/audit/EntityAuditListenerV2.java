@@ -234,13 +234,36 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             LOG.warn("audit record too long: entityType={}, guid={}, size={}; maxSize={}. entity attribute values not stored in audit",
                     entity.getTypeName(), entity.getGuid(), auditSize, auditMaxSize);
 
-            Map<String, Object> attrValues = entity.getAttributes();
+            Map<String, Object> attrValues    = entity.getAttributes();
+            Map<String, Object> relAttrValues = entity.getRelationshipAttributes();
 
             entity.setAttributes(null);
+            entity.setRelationshipAttributes(null);
 
             auditString = auditPrefix + AtlasType.toJson(entity);
+            auditBytes  = auditString.getBytes(StandardCharsets.UTF_8); // recheck auditString size
+            auditSize   = auditBytes != null ? auditBytes.length : 0;
+
+            if (auditMaxSize >= 0 && auditSize > auditMaxSize) { // don't store classifications and meanings as well
+                LOG.warn("audit record still too long: entityType={}, guid={}, size={}; maxSize={}. audit will have only summary details",
+                        entity.getTypeName(), entity.getGuid(), auditSize, auditMaxSize);
+
+                AtlasEntity shallowEntity = new AtlasEntity();
+
+                shallowEntity.setGuid(entity.getGuid());
+                shallowEntity.setTypeName(entity.getTypeName());
+                shallowEntity.setCreateTime(entity.getCreateTime());
+                shallowEntity.setUpdateTime(entity.getUpdateTime());
+                shallowEntity.setCreatedBy(entity.getCreatedBy());
+                shallowEntity.setUpdatedBy(entity.getUpdatedBy());
+                shallowEntity.setStatus(entity.getStatus());
+                shallowEntity.setVersion(entity.getVersion());
+
+                auditString = auditPrefix + AtlasType.toJson(shallowEntity);
+            }
 
             entity.setAttributes(attrValues);
+            entity.setRelationshipAttributes(relAttrValues);
         }
 
         restoreEntityAttributes(entity, prunedAttributes);
