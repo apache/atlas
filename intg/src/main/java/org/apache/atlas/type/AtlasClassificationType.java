@@ -20,11 +20,13 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.validator.routines.DateValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -302,6 +304,10 @@ public class AtlasClassificationType extends AtlasStructType {
                 }
             }
 
+            if (!validateTimeBoundaries(obj, null)) {
+                return false;
+            }
+
             return super.isValidValue(obj);
         }
 
@@ -326,6 +332,10 @@ public class AtlasClassificationType extends AtlasStructType {
                 if (!superType.isValidValueForUpdate(obj)) {
                     return false;
                 }
+            }
+
+            if (!validateTimeBoundaries(obj, null)) {
+                return false;
             }
 
             return super.isValidValueForUpdate(obj);
@@ -381,6 +391,8 @@ public class AtlasClassificationType extends AtlasStructType {
                 ret = superType.validateValue(obj, objName, messages) && ret;
             }
 
+            ret = validateTimeBoundaries(obj, messages) && ret;
+
             ret = super.validateValue(obj, objName, messages) && ret;
         }
 
@@ -395,6 +407,8 @@ public class AtlasClassificationType extends AtlasStructType {
             for (AtlasClassificationType superType : superTypes) {
                 ret = superType.validateValueForUpdate(obj, objName, messages) && ret;
             }
+
+            ret = validateTimeBoundaries(obj, messages) && ret;
 
             ret = super.validateValueForUpdate(obj, objName, messages) && ret;
         }
@@ -514,6 +528,79 @@ public class AtlasClassificationType extends AtlasStructType {
                 AtlasType type = typeRegistry.getType(attributeDef.getTypeName());
                 allAttributes.put(attributeDef.getName(), new AtlasAttribute(this, attributeDef, type));
             }
+        }
+    }
+
+    private boolean validateTimeBoundaries(Object classificationObj, List<String> messages) {
+        boolean             ret            = true;
+        AtlasClassification classification = null;
+
+        if (classificationObj instanceof AtlasClassification) {
+            classification = (AtlasClassification) classificationObj;
+        } else if (classificationObj instanceof Map) {
+            classification = new AtlasClassification((Map) classificationObj);
+        }
+
+        if (classification != null && classification.getValidityPeriods() != null) {
+            for (TimeBoundary timeBoundary : classification.getValidityPeriods()) {
+                if (timeBoundary != null) {
+                    ret = validateTimeBoundry(timeBoundary, messages) && ret;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private boolean validateTimeBoundry(TimeBoundary timeBoundary, List<String> messages) {
+        boolean        ret           = true;
+        DateValidator  dateValidator = DateValidator.getInstance();
+        Date           startDate     = null;
+        Date           endDate       = null;
+        final TimeZone timezone;
+
+        if (StringUtils.isNotEmpty(timeBoundary.getTimeZone())) {
+            timezone = TimeZone.getTimeZone(timeBoundary.getTimeZone());
+        } else {
+            timezone = java.util.TimeZone.getDefault();
+        }
+
+        if (StringUtils.isNotEmpty(timeBoundary.getStartTime())) {
+            startDate = dateValidator.validate(timeBoundary.getStartTime(), TimeBoundary.TIME_FORMAT, timezone);
+
+            if (startDate == null) {
+                addValidationMessageIfNotPresent(new AtlasBaseException(AtlasErrorCode.INVALID_TIMEBOUNDRY_START_TIME, timeBoundary.getStartTime()), messages);
+
+                ret = false;
+            }
+        }
+
+        if (StringUtils.isNotEmpty(timeBoundary.getEndTime())) {
+            endDate = dateValidator.validate(timeBoundary.getEndTime(), TimeBoundary.TIME_FORMAT, timezone);
+
+            if (endDate == null) {
+                addValidationMessageIfNotPresent(new AtlasBaseException(AtlasErrorCode.INVALID_TIMEBOUNDRY_END_TIME, timeBoundary.getEndTime()), messages);
+
+                ret = false;
+            }
+        }
+
+        if (startDate != null && endDate != null) {
+            if (endDate.before(startDate)) {
+                addValidationMessageIfNotPresent(new AtlasBaseException(AtlasErrorCode.INVALID_TIMEBOUNDRY_DATERANGE, timeBoundary.getStartTime(), timeBoundary.getEndTime()), messages);
+
+                ret = false;
+            }
+        }
+
+        return ret;
+    }
+
+    private void addValidationMessageIfNotPresent(AtlasBaseException excp, List<String> messages) {
+        String msg = excp.getMessage();
+
+        if (messages != null && !messages.contains(msg)) {
+            messages.add(msg);
         }
     }
 }
