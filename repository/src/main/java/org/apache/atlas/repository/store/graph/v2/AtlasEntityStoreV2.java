@@ -403,6 +403,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
+
         for (AtlasClassification classification : classifications) {
             validateAndNormalize(classification);
         }
@@ -435,6 +436,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
+
+        for (AtlasClassification classification : classifications) {
+            validateAndNormalize(classification);
+        }
 
         entityGraphMapper.updateClassifications(new EntityMutationContext(), guid, classifications);
     }
