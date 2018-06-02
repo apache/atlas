@@ -35,8 +35,6 @@ BASEDIR=`cd ${BASEDIR}/..;pwd`
 
 echo ">>>>> $BASEDIR"
 
-allargs=$@
-
 if test -z "${JAVA_HOME}"
 then
     JAVA_BIN=`which java`
@@ -125,16 +123,32 @@ fi
 
 JAVA_PROPERTIES="$ATLAS_OPTS -Datlas.log.dir=$ATLAS_LOG_DIR -Datlas.log.file=import-hbase.log
 -Dlog4j.configuration=atlas-hbase-import-log4j.xml"
-shift
 
-while [[ ${1} =~ ^\-D ]]; do
-  JAVA_PROPERTIES="${JAVA_PROPERTIES} ${1}"
+IMPORT_ARGS=
+JVM_ARGS=
+
+while true
+do
+  option=$1
   shift
+
+  case "$option" in
+    -n) IMPORT_ARGS="$IMPORT_ARGS -n $1"; shift;;
+    -t) IMPORT_ARGS="$IMPORT_ARGS -t $1"; shift;;
+    -f) IMPORT_ARGS="$IMPORT_ARGS -f $1"; shift;;
+    --namespace) IMPORT_ARGS="$IMPORT_ARGS --namespace $1"; shift;;
+    --table) IMPORT_ARGS="$IMPORT_ARGS --table $1"; shift;;
+    --filename) IMPORT_ARGS="$IMPORT_ARGS --filename $1"; shift;;
+    "") break;;
+    *) JVM_ARGS="$JVM_ARGS $option"
+  esac
 done
+
+JAVA_PROPERTIES="${JAVA_PROPERTIES} ${JVM_ARGS}"
 
 echo "Log file for import is $LOGFILE"
 
-"${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hbase.bridge.HBaseBridge $allargs
+"${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hbase.bridge.HBaseBridge $IMPORT_ARGS
 
 RETVAL=$?
 [ $RETVAL -eq 0 ] && echo HBase Data Model imported successfully!!!
