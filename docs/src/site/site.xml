@@ -60,24 +60,22 @@
             <item name="Atlas" title="Apache Atlas" href="index.html"/>
         </breadcrumbs>
 
-        <menu name="Atlas">
-            <item name="About" href="index.html"/>
+        <menu name="Apache Atlas">
+            <item name="Overview" href="index.html"/>
+            <item name="License" href="license.html" />
+            <item name="Downloads" href="Downloads.html" />
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
-            <item name="News" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
             <item name="Git" href="https://git-wip-us.apache.org/repos/asf/atlas.git" />
             <item name="Jira" href="https://issues.apache.org/jira/browse/ATLAS" />
-            <item name="Powered by" href="https://cwiki.apache.org/confluence/display/ATLAS/PoweredBy" />
-            <item name="Blog" href="http://blogs.apache.org/atlas/" />
+            <item name="Review Board" href="https://reviews.apache.org/groups/atlas/?sort=-time_added" />
         </menu>
 
         <menu name="Project Information">
             <item name="Summary" href="project-info.html" />
             <item name="Mailing Lists" href="mail-lists.html" />
-            <item name="IRC" href="http://webchat.freenode.net?channels=apacheatlas&amp;uio=d4" />
             <item name="Team" href="team-list.html" />
             <item name="Issue Tracking" href="issue-tracking.html" />
             <item name="Source Repository" href="source-repository.html" />
-            <item name="License" href="license.html" />
         </menu>
 
         <menu name="Releases">
