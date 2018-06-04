@@ -4,12 +4,12 @@
 Apache Atlas release artifacts are distributed via mirror sites and should be checked for tampering using GPG or SHA-256.
 
 The table below lists release artifacts and their associated signatures and hashes. The keys used to sign the release
-artifacts can be found in our published [[https://dist.apache.org/repos/dist/release/atlas/KEYS][KEYS file]].
+artifacts can be found in our published [[https://www.apache.org/dist/atlas/KEYS][KEYS file]].
 
 | *Version* | *Release Date* | *Tarball* | *GPG* | *Hash* |
-| 1.0.0 | 2018-06-02 | [[http://www.apache.org/dyn/closer.cgi/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz][source]] | [[https://dist.apache.org/repos/dist/release/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.asc][signature]] | [[https://dist.apache.org/repos/dist/release/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.sha512][SHA512]] |
-| 0.8.2 | 2018-02-05 | [[http://www.apache.org/dyn/closer.cgi/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz][source]] | [[https://dist.apache.org/repos/dist/release/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.asc][signature]] | [[https://dist.apache.org/repos/dist/release/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.sha512][SHA512]] |
-| 0.8.1 | 2017-08-29 | [[http://www.apache.org/dyn/closer.cgi/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz][source]] | [[https://dist.apache.org/repos/dist/release/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.asc][signature]] | [[https://dist.apache.org/repos/dist/release/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.sha512][SHA512]] |
+| 1.0.0 | 2018-06-02 | [[https://www.apache.org/dyn/closer.cgi/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.sha512][SHA512]] |
+| 0.8.2 | 2018-02-05 | [[https://www.apache.org/dyn/closer.cgi/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.sha512][SHA512]] |
+| 0.8.1 | 2017-08-29 | [[https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz][source]] | [[https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.sha512][SHA512]] |
 | 0.8.0-incubating | 2017-03-16 | [[http://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz][source]] | [[https://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz.sha512][SHA512]] |
 | 0.7.1-incubating | 2017-01-29 | [[http://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz][source]] | [[https://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz.mds][checksum]] |
 | 0.7.0-incubating | 2016-07-09 | [[http://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz][source]] | [[https://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz.sha512][SHA512]] |
@@ -26,7 +26,7 @@ for more information on why you should verify our releases.
 The PGP signature can be verified using PGP or GPG, with the following steps:
    * Download the release artifact from the link in the table above
    * Download the signature file for the release from the link in the table above
-   * Download [[https://dist.apache.org/repos/dist/release/atlas/KEYS][Apache Atlas KEYS file]]
+   * Download [[hhttps://www.apache.org/dist/atlas/KEYS][Apache Atlas KEYS file]]
    * Verify the signatures using one of the following:
 
 <verbatim>
