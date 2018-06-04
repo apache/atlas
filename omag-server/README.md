@@ -21,4 +21,4 @@ See https://cwiki.apache.org/confluence/display/ATLAS/OMAG+Server+Package for mo
 
 **Launching the standalone server**
 
-    java -jar ./omag-server-1.0.0-SNAPSHOT.jar
+    java -jar ./omag-server-2.0.0-SNAPSHOT.jar
