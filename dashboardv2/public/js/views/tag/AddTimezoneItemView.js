@@ -89,7 +89,6 @@ define(['require',
 
                 this.ui.timeZone.html(tzstr);
                 this.ui.timeZone.select2({
-                    allowClear: true,
                     data: moment.tz.names()
                 });
 
@@ -108,7 +107,9 @@ define(['require',
                         endDateObj["minDate"] = this.model.get('startTime');
                         endDateObj["startDate"] = this.model.get('endTime');
                     }
-                    this.ui.timeZone.val(this.model.get('timeZone')).trigger("change", { 'manual': true });
+                    if (!_.isEmpty(this.model.get('timeZone'))) {
+                        this.ui.timeZone.val(this.model.get('timeZone')).trigger("change", { 'manual': true });
+                    }
                 } else {
                     this.model.set('startTime', that.ui.startTime.val());
                     this.model.set('endTime', that.ui.endTime.val());
@@ -126,7 +127,7 @@ define(['require',
                     that.model.set('startTime', that.ui.startTime.val());
                 });
                 this.endDateInitialize(endDateObj);
-                 this.buttonActive({ isButtonActive: true });
+                this.buttonActive({ isButtonActive: true });
             },
             buttonActive: function(option) {
                 var that = this;
