@@ -89,15 +89,7 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
                         LOG.debug("Creating new category anchor, category = {}, glossary = {}", storeObject.getGuid(), updatedCategory.getAnchor().getGlossaryGuid());
                     }
 
-                    // Derive the qualifiedName
                     String anchorGlossaryGuid = updatedCategory.getAnchor().getGlossaryGuid();
-                    AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
-                    storeObject.setQualifiedName(storeObject.getName()+ "@" + glossary.getQualifiedName());
-
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Derived qualifiedName = {}", storeObject.getQualifiedName());
-                    }
-
                     createRelationship(defineCategoryAnchorRelation(anchorGlossaryGuid, storeObject.getGuid()));
                 }
                 break;
