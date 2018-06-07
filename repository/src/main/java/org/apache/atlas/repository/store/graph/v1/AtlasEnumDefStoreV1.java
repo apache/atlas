@@ -270,6 +270,9 @@ class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEnumDef> {
             values.add(element.getValue());
         }
         AtlasGraphUtilsV1.setProperty(vertex, AtlasGraphUtilsV1.getTypeDefPropertyKey(enumDef), values);
+
+        String defaultValueKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(enumDef, "defaultValue");
+        AtlasGraphUtilsV1.setProperty(vertex, defaultValueKey, enumDef.getDefaultValue());
     }
 
     private AtlasEnumDef toEnumDef(AtlasVertex vertex) {
@@ -299,6 +302,10 @@ class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasEnumDef> {
             elements.add(new AtlasEnumElementDef(elemValue, desc, ordinal));
         }
         ret.setElementDefs(elements);
+
+        String defaultValueKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(ret, "defaultValue");
+        String defaultValue = AtlasGraphUtilsV1.getProperty(vertex, defaultValueKey, String.class);
+        ret.setDefaultValue(defaultValue);
 
         return ret;
     }
