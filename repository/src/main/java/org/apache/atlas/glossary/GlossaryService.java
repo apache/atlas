@@ -330,15 +330,20 @@ public class GlossaryService {
         if (Objects.isNull(glossaryTerm.getAnchor())) {
             throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ANCHOR);
         }
-        if (StringUtils.isEmpty(glossaryTerm.getQualifiedName())) {
-            if (StringUtils.isEmpty(glossaryTerm.getName())) {
-                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_QUALIFIED_NAME_CANT_BE_DERIVED);
-            }
+        if (StringUtils.isEmpty(glossaryTerm.getName())) {
+            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_QUALIFIED_NAME_CANT_BE_DERIVED);
+        }
 
-            if (isNameInvalid(glossaryTerm.getName())){
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
-            } else {
-                glossaryTerm.setQualifiedName(glossaryTerm.getName());
+        if (isNameInvalid(glossaryTerm.getName())){
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+        } else {
+            // Derive the qualifiedName
+            String        anchorGlossaryGuid = glossaryTerm.getAnchor().getGlossaryGuid();
+            AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
+            glossaryTerm.setQualifiedName(glossaryTerm.getName() + "@" + glossary.getQualifiedName());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Derived qualifiedName = {}", glossaryTerm.getQualifiedName());
             }
         }
 
@@ -351,17 +356,7 @@ public class GlossaryService {
         glossaryTermUtils.processTermRelations(storeObject, glossaryTerm, GlossaryUtils.RelationshipOperation.CREATE);
 
         // Re-load term after handling relations
-        if (StringUtils.equals(storeObject.getQualifiedName(), glossaryTerm.getQualifiedName())) {
-            storeObject = dataAccess.load(glossaryTerm);
-        } else {
-            glossaryTerm.setQualifiedName(storeObject.getQualifiedName());
-
-            if (termExists(glossaryTerm)) {
-                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, glossaryTerm.getQualifiedName());
-            }
-
-            storeObject = dataAccess.save(glossaryTerm);
-        }
+        storeObject = dataAccess.load(glossaryTerm);
         setInfoForRelations(storeObject);
 
         if (DEBUG_ENABLED) {
@@ -545,15 +540,22 @@ public class GlossaryService {
         if (Objects.isNull(glossaryCategory.getAnchor())) {
             throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ANCHOR);
         }
-        if (StringUtils.isEmpty(glossaryCategory.getQualifiedName())) {
-            if (StringUtils.isEmpty(glossaryCategory.getName())) {
-                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_CATEGORY_QUALIFIED_NAME_CANT_BE_DERIVED);
+        if (StringUtils.isEmpty(glossaryCategory.getName())) {
+            throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_CATEGORY_QUALIFIED_NAME_CANT_BE_DERIVED);
+        }
+        if (isNameInvalid(glossaryCategory.getName())){
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+        } else {
+            // Derive the qualifiedName
+            String anchorGlossaryGuid = glossaryCategory.getAnchor().getGlossaryGuid();
+            AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
+            glossaryCategory.setQualifiedName(glossaryCategory.getName()+ "@" + glossary.getQualifiedName());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Derived qualifiedName = {}", glossaryCategory.getQualifiedName());
             }
-            if (isNameInvalid(glossaryCategory.getName())){
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
-            } else {
-                glossaryCategory.setQualifiedName(glossaryCategory.getName());
-            }
+
+
         }
 
         // This might fail for the case when the category's qualifiedName has been updated during a hierarchy change
