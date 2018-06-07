@@ -7,7 +7,7 @@
             "name": "avro_type",
             "description": "Atlas Type representing Abstract Avro Type",
             "superTypes": [
-                "DataSet", "Asset"
+                "DataSet"
             ],
             "typeVersion": "1.0",
             "attributeDefs": [
