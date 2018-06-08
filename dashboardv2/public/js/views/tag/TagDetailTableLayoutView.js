@@ -150,10 +150,13 @@ define(['require',
                                         }), 'sortKey'), function(sortedObj) {
                                             var val = _.isNull(values[sortedObj.name]) ? "-" : values[sortedObj.name],
                                                 key = sortedObj.name;
+                                            if (_.isObject(val)) {
+                                                val = JSON.stringify(val); 
+                                            }
                                             if (sortedObj.typeName === "date") {
                                                 val = new Date(val)
                                             }
-                                            stringValue += "<tr><td class='html-cell string-cell renderable'>" + _.escape(key) + "</td><td class='html-cell string-cell renderable' data-type=" + sortedObj.typeName + ">" + _.escape(val) + "</td>";
+                                            stringValue += "<tr><td class='html-cell string-cell renderable'>" + _.escape(key) + "</td><td class='html-cell string-cell renderable' data-type='"+sortedObj.typeName+"'>" + _.escape(val) + "</td>";
                                         });
                                         tagValue = "<div class='mainAttrTable'><table class='attriTable'><tr><th class='html-cell string-cell renderable'>Name</th><th class='html-cell string-cell renderable'>Value</th>" + stringValue + "</table></div>";
                                     }

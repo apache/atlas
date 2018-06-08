@@ -341,7 +341,9 @@ define(['require',
                             '<select class="form-control attributeInputVal attrName" data-key="' + name + '">' + str + '</select></div>');
                     } else {
                         var textElement = that.getElement(name, typeName);
-                        that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' + ' (' + typeName + ')' + textElement + '</div>');
+                        if (_.isTypePrimitive(typeName)) {
+                            that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' + ' (' + typeName + ')' + textElement + '</div>');      
+                        }
                     }
                 });
                 that.$('input[data-type="date"]').each(function() {

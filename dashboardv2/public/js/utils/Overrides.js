@@ -68,6 +68,12 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             } else {
                 return val;
             }
+        },
+        isTypePrimitive: function(type) {
+            if (type === "int" || type === "byte" || type === "short" || type === "long" || type === "float" || type === "double" || type === "string" || type === "boolean" || type === "date") {
+                return true;
+            }
+            return false;
         }
     });
     var getPopoverEl = function(e) {
