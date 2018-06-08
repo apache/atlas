@@ -148,6 +148,7 @@ public enum AtlasErrorCode {
     MISSING_CATEGORY_DISPLAY_NAME(400, "ATLAS-400-00-082", "Category name is empty/null"),
     INVALID_DISPLAY_NAME(400, "ATLAS-400-00-083", "name cannot contain following special chars ('@', '.')"),
     TERM_HAS_ENTITY_ASSOCIATION(400, "ATLAS-400-00-086", "Term (guid={0}) can't be deleted as it has been assigned to {1} entities."),
+    INVALID_TIMEBOUNDRY_TIMEZONE(400, "ATLAS-400-00-87A", "Invalid timezone {0}"),
     INVALID_TIMEBOUNDRY_START_TIME(400, "ATLAS-400-00-87B", "Invalid startTime {0}"),
     INVALID_TIMEBOUNDRY_END_TIME(400, "ATLAS-400-00-87C", "Invalid endTime {0}"),
     INVALID_TIMEBOUNDRY_DATERANGE(400, "ATLAS-400-00-87D", "Invalid dateRange: startTime {0} must be before endTime {1}"),
