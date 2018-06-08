@@ -30,7 +30,7 @@ import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.*;
-
+import static org.apache.atlas.type.AtlasClassificationType.isValidTimeZone;
 
 public class TestAtlasClassificationType {
     private final AtlasClassificationType classificationType;
@@ -46,22 +46,47 @@ public class TestAtlasClassificationType {
         AtlasClassification validValueTB1   = classificationType.createDefaultValue();
         AtlasClassification validValueTB2   = classificationType.createDefaultValue();
         AtlasClassification validValueTB3   = classificationType.createDefaultValue();
+        AtlasClassification validValueTB4   = classificationType.createDefaultValue();
+        AtlasClassification validValueTB5   = classificationType.createDefaultValue();
+        AtlasClassification validValueTB6   = classificationType.createDefaultValue();
         AtlasClassification invalidValueTB1 = classificationType.createDefaultValue();
         AtlasClassification invalidValueTB2 = classificationType.createDefaultValue();
         AtlasClassification invalidValueTB3 = classificationType.createDefaultValue();
+        AtlasClassification invalidValueTB4 = classificationType.createDefaultValue();
+        AtlasClassification invalidValueTB5 = classificationType.createDefaultValue();
+        AtlasClassification invalidValueTB6 = classificationType.createDefaultValue();
+
         TimeBoundary        validTB1        = new TimeBoundary("2018/07/07 04:38:55");                        // valid start-time
         TimeBoundary        validTB2        = new TimeBoundary(null, "2018/07/08 04:38:55");                  // valid end-time
         TimeBoundary        validTB3        = new TimeBoundary("2018/07/07 04:38:55", "2018/07/08 04:38:55"); // valid start and end times
+        TimeBoundary        validTB4        = new TimeBoundary("2018/07/07 04:38:55", "2018/07/08 04:38:55","America/Los_Angeles"); // valid start and end times and timezone in  country/city
+        TimeBoundary        validTB5        = new TimeBoundary(null, "2018/07/08 04:38:55", "GMT+10:30"); // valid start and end times and timezone
+        TimeBoundary        validTB6        = new TimeBoundary("2018/07/07 04:38:55", "2018/07/08 04:38:55","GMT"); // valid start and end times and timezone in GMT
+        TimeBoundary        validTB7        = new TimeBoundary("2018/07/07 04:38:55", "2019/07/08 04:38:55",null); // valid start and end times and timezone null
         TimeBoundary        invalidTB1      = new TimeBoundary("2018-07-07 04:38:55");                        // invalid start-time
         TimeBoundary        invalidTB2      = new TimeBoundary(null, "2018-07-08 04:38:55");                  // invalid end-time
         TimeBoundary        invalidTB3      = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55"); // invalid time-ranger
+        TimeBoundary        invalidTB4      = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55", ""); // invalid time-zone
+        TimeBoundary        invalidTB5      = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55","GMT+10:-30"); // invalid time-zone
+        TimeBoundary        invalidTB6      = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55","abcd"); // invalid time-zone
+
+
 
         validValueTB1.addValityPeriod(validTB1);
         validValueTB2.addValityPeriod(validTB2);
         validValueTB3.addValityPeriod(validTB3);
+        validValueTB4.addValityPeriod(validTB4);
+        validValueTB5.addValityPeriod(validTB5);
+        validValueTB6.addValityPeriod(validTB6);
+        validValueTB6.addValityPeriod(validTB7);
+
         invalidValueTB1.addValityPeriod(invalidTB1);
         invalidValueTB2.addValityPeriod(invalidTB2);
         invalidValueTB3.addValityPeriod(invalidTB3);
+        invalidValueTB4.addValityPeriod(invalidTB4);
+        invalidValueTB5.addValityPeriod(invalidTB5);
+        invalidValueTB6.addValityPeriod(invalidTB6);
+
 
         // invalid value for int
         invalidValue1.setAttribute(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_INT), "xyz");
@@ -76,6 +101,10 @@ public class TestAtlasClassificationType {
         validValues.add(validValueTB1);
         validValues.add(validValueTB2);
         validValues.add(validValueTB3);
+        validValues.add(validValueTB4);
+        validValues.add(validValueTB5);
+        validValues.add(validValueTB6);
+
         invalidValues.add(invalidValue1);
         invalidValues.add(invalidValue2);
         invalidValues.add(invalidValue3);
@@ -88,6 +117,9 @@ public class TestAtlasClassificationType {
         invalidValues.add(invalidValueTB1);
         invalidValues.add(invalidValueTB2);
         invalidValues.add(invalidValueTB3);
+        invalidValues.add(invalidValueTB4);  //incorrect timezone
+        invalidValues.add(invalidValueTB5);  //incorrect timezone
+        invalidValues.add(invalidValueTB6);  //incorrect timezone
     }
 
     @Test
@@ -274,5 +306,41 @@ public class TestAtlasClassificationType {
         } catch (AtlasBaseException excp) {
             return null;
         }
+    }
+
+    @Test
+    public void testClassificationTimebounderTimeZone() {
+
+        assertTrue(isValidTimeZone("IST"));
+        assertTrue(isValidTimeZone("JST"));
+        assertTrue(isValidTimeZone("UTC"));
+        assertTrue(isValidTimeZone("GMT"));
+
+        assertTrue(isValidTimeZone("GMT+0"));// GMT+00:00
+        assertTrue(isValidTimeZone("GMT-0"));// GMT-00:00
+        assertTrue(isValidTimeZone("GMT+9:00"));// GMT+09:00
+        assertTrue(isValidTimeZone("GMT+10:30"));// GMT+10:30
+        assertTrue(isValidTimeZone("GMT-0400"));// GMT-04:00
+        assertTrue(isValidTimeZone("GMT+8")); // GMT+08:00
+        assertTrue(isValidTimeZone("GMT-13")); // GMT-13:00
+        assertTrue(isValidTimeZone("GMT+13:59"));// GMT-13:59
+
+        assertTrue(isValidTimeZone("America/Los_Angeles")); // GMT-08:00
+        assertTrue(isValidTimeZone("Japan"));// GMT+09:00
+        assertTrue(isValidTimeZone("Europe/Berlin")); // GMT+01:00
+        assertTrue(isValidTimeZone("Europe/Moscow")); // GMT+04:00
+        assertTrue(isValidTimeZone("Asia/Singapore")); // GMT+08:00
+
+        assertFalse(isValidTimeZone("IND"));
+        assertFalse(isValidTimeZone("USD"));
+        assertFalse(isValidTimeZone("UTC+8"));
+        assertFalse(isValidTimeZone("UTC+09:00"));
+        assertFalse(isValidTimeZone("+09:00"));
+        assertFalse(isValidTimeZone("-08:00"));
+        assertFalse(isValidTimeZone("-1"));
+        assertFalse(isValidTimeZone("GMT+10:-30"));
+        assertFalse(isValidTimeZone("GMT+24:00")); // hours is 0-23 only
+        assertFalse(isValidTimeZone("GMT+13:60")); // minutes 00-59 only
+
     }
 }

@@ -560,9 +560,15 @@ public class AtlasClassificationType extends AtlasStructType {
         final TimeZone timezone;
 
         if (StringUtils.isNotEmpty(timeBoundary.getTimeZone())) {
+            if (!isValidTimeZone(timeBoundary.getTimeZone())) {
+                addValidationMessageIfNotPresent(new AtlasBaseException(AtlasErrorCode.INVALID_TIMEBOUNDRY_TIMEZONE, timeBoundary.getTimeZone()), messages);
+
+                ret = false;
+            }
+
             timezone = TimeZone.getTimeZone(timeBoundary.getTimeZone());
         } else {
-            timezone = java.util.TimeZone.getDefault();
+            timezone = TimeZone.getDefault();
         }
 
         if (StringUtils.isNotEmpty(timeBoundary.getStartTime())) {
@@ -594,6 +600,22 @@ public class AtlasClassificationType extends AtlasStructType {
         }
 
         return ret;
+    }
+
+    public static boolean isValidTimeZone(final String timeZone) {
+        final String DEFAULT_GMT_TIMEZONE = "GMT";
+        if (timeZone.equals(DEFAULT_GMT_TIMEZONE)) {
+            return true;
+        } else {
+            // if custom time zone is invalid,
+            // time zone id returned is always "GMT" by default
+            String id = TimeZone.getTimeZone(timeZone).getID();
+            if (!id.equals(DEFAULT_GMT_TIMEZONE)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void addValidationMessageIfNotPresent(AtlasBaseException excp, List<String> messages) {
