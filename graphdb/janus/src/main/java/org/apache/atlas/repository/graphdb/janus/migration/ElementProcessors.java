@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_KEY_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
@@ -354,9 +355,8 @@ public class ElementProcessors {
 
         private void addMandatoryRelationshipProperties(String label, Map<String, Object> props) {
             props.put(Constants.RELATIONSHIP_GUID_PROPERTY_KEY, UUID.randomUUID().toString());
-
             props.put(RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.valueOf(getDefaultPropagateValue(label)));
-            props.put(STATE_PROPERTY_KEY, "ACTIVE");
+            props.put(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false);
         }
     }
 

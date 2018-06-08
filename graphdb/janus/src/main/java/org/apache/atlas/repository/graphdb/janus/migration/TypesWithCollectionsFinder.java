@@ -47,6 +47,7 @@ public class TypesWithCollectionsFinder {
 
         addVertexPropertiesForCollectionAttributes(typeRegistry.getAllEntityTypes(), ret);
         addVertexPropertiesForCollectionAttributes(typeRegistry.getAllStructTypes(), ret);
+        addVertexPropertiesForCollectionAttributes(typeRegistry.getAllClassificationTypes(), ret);
 
         displayInfo("types with properties: ", ret);
 
