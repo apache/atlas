@@ -38,6 +38,7 @@ import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_KEY_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
 import static org.apache.atlas.repository.Constants.EDGE_ID_IN_IMPORT_KEY;
@@ -229,7 +230,6 @@ public class GraphSONUtilityTest extends BaseUtils {
 
     @Test
     public void tagAssociated_NewAttributesAdded() {
-
         ElementProcessors elementProcessors = new ElementProcessors(new HashMap<>(), getPostProcessMap(), new HashMap<>());
         TinkerGraph tg = TinkerGraph.open();
         GraphSONUtility gu = new GraphSONUtility(elementProcessors);
@@ -238,22 +238,8 @@ public class GraphSONUtilityTest extends BaseUtils {
         addEdgeToGraph(tg, gu, new MappedElementCache(), getEdgeTag());
 
         Iterator<Vertex> vertices = tg.vertices();
-        while(vertices.hasNext()) {
-            Vertex v = vertices.next();
-            if(v.id().toString() != "16752") continue;
-
-            assertTrue(v.property(CLASSIFICATION_ENTITY_GUID).isPresent());
-            assertTrue(v.property(CLASSIFICATION_VERTEX_PROPAGATE_KEY).isPresent());
-            assertEquals(v.property(CLASSIFICATION_VERTEX_PROPAGATE_KEY).values(), "NONE");
-        }
-
-        Iterator<Edge> edges = tg.edges();
-        while(edges.hasNext()) {
-            Edge e = edges.next();
-            assertTrue(e.property(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY).isPresent());
-            assertEquals(e.property(STATE_PROPERTY_KEY).value(), "ACTIVE");
-            assertTrue(e.property(Constants.RELATIONSHIP_GUID_PROPERTY_KEY).isPresent());
-        }
+        assertVertex(vertices, "16752");
+        assertEdge(tg);
     }
 
     @Test
@@ -266,21 +252,31 @@ public class GraphSONUtilityTest extends BaseUtils {
         addEdgeToGraph(tg, gu, new MappedElementCache(), getEdgeTag());
 
         Iterator<Vertex> vertices = tg.vertices();
-        while(vertices.hasNext()) {
-            Vertex v = vertices.next();
-            if(v.id().toString() != "16752") continue;
+        assertVertex(vertices, "16752");
+        assertEdge(tg);
+    }
 
-            assertTrue(v.property(CLASSIFICATION_ENTITY_GUID).isPresent());
-            assertTrue(v.property(CLASSIFICATION_VERTEX_PROPAGATE_KEY).isPresent());
-            assertEquals(v.property(CLASSIFICATION_VERTEX_PROPAGATE_KEY).values(), "NONE");
-        }
-
+    private void assertEdge(TinkerGraph tg) {
         Iterator<Edge> edges = tg.edges();
         while(edges.hasNext()) {
             Edge e = edges.next();
             assertTrue(e.property(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY).isPresent());
+            assertTrue(e.property(Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY).isPresent());
             assertEquals(e.property(STATE_PROPERTY_KEY).value(), "ACTIVE");
             assertTrue(e.property(Constants.RELATIONSHIP_GUID_PROPERTY_KEY).isPresent());
+            assertTrue(e.property(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY).isPresent());
+            assertFalse((boolean) e.property(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY).value());
+        }
+    }
+
+    private void assertVertex(Iterator<Vertex> vertices, String vertexId) {
+        while(vertices.hasNext()) {
+            Vertex v = vertices.next();
+            if(v.id().toString() != vertexId) continue;
+
+            assertTrue(v.property(CLASSIFICATION_ENTITY_GUID).isPresent());
+            assertTrue(v.property(CLASSIFICATION_VERTEX_PROPAGATE_KEY).isPresent());
+            assertEquals(v.property(CLASSIFICATION_VERTEX_PROPAGATE_KEY).values(), "NONE");
         }
     }
 

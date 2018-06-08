@@ -20,10 +20,13 @@ package org.apache.atlas.repository.migration;
 
 import com.google.inject.Inject;
 import org.apache.atlas.TestModules;
+import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.graphdb.janus.migration.TypesWithCollectionsFinder;
+import org.apache.atlas.utils.TestResourceFileUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -45,13 +48,15 @@ public class TypesWithCollectionsFinderTest extends MigrationBaseAsserts {
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
         loadTypesFromJson();
+
+        typeDefStore.createTypesDef(TestResourceFileUtils.readObjectFromJson(".", "typesDef-classification-with-map", AtlasTypesDef.class));
     }
 
     @Test
     public void fetchAll() {
         Map<String, Map<String, List<String>>> typeAttrMap = TypesWithCollectionsFinder.getVertexPropertiesForCollectionAttributes(typeRegistry);
 
-        assertEquals(typeAttrMap.size(), 9);
+        assertEquals(typeAttrMap.size(), 10);
 
         assertProperties(typeAttrMap, "__AtlasUserProfile", "ARRAY", "__AtlasUserProfile.savedSearches");
 
@@ -75,6 +80,8 @@ public class TypesWithCollectionsFinderTest extends MigrationBaseAsserts {
         assertProperties(typeAttrMap, "hive_table", "ARRAY", "hive_table.partitionKeys");
         assertProperties(typeAttrMap, "hive_table", "ARRAY", "hive_table.columns");
         assertProperties(typeAttrMap, "hive_table", "MAP_PRIMITIVE", "hive_table.parameters");
+
+        assertProperties(typeAttrMap, "tag_with_map_of_map", "MAP_PRIMITIVE", "tag_with_map_of_map.tag_with_map_of_map");
     }
 
     private void assertProperties(Map<String, Map<String, List<String>>> typeAttrMap, String typeName, String typeCategory, String propertyName) {
