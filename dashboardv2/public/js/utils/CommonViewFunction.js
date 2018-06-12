@@ -176,7 +176,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 fetchInputOutputValue(fetchId);
                                 tempLink += '<div data-id="' + fetchId + '"><div class="value-loader"></div></div>';
                             } else {
-                                tempLink += '<div data-id="' + rAttrValue.guid + '"><a href="#!/detailPage/' + rAttrValue.guid + '">' + Utils.getName(rAttrValue) + '</a></div>';
+                                if (_.isArray(rAttrValue) && rAttrValue.length) {
+                                    var attrVal = _.find(rAttrValue, inputOutputField);
+                                    if (attrVal) {
+                                        tempLink += '<div data-id="' + attrVal.guid + '"><a href="#!/detailPage/' + attrVal.guid + '">' + Utils.getName(attrVal) + '</a></div>';
+                                    }
+                                } else {
+                                    tempLink += '<div data-id="' + rAttrValue.guid + '"><a href="#!/detailPage/' + rAttrValue.guid + '">' + Utils.getName(rAttrValue) + '</a></div>';
+                                }
                             }
                         } else {
                             tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
