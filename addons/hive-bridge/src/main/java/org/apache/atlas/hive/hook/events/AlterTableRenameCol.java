@@ -55,10 +55,17 @@ public class AlterTableRenameCol extends AlterTable {
             return null;
         }
 
-        List<HookNotificationMessage> ret = new ArrayList<>(super.getNotificationMessages());
+        List<HookNotificationMessage> baseMsgs = super.getNotificationMessages();
 
-        Table oldTable = getHiveContext().getInputs().iterator().next().getTable();
-        Table newTable = getHiveContext().getOutputs().iterator().next().getTable();
+        if (CollectionUtils.isEmpty(baseMsgs)) {
+            LOG.debug("Skipped processing of column-rename (on a temporary table?)");
+
+            return null;
+        }
+
+        List<HookNotificationMessage> ret      = new ArrayList<>(baseMsgs);
+        Table                         oldTable = getHiveContext().getInputs().iterator().next().getTable();
+        Table                         newTable = getHiveContext().getOutputs().iterator().next().getTable();
 
         newTable = getHive().getTable(newTable.getDbName(), newTable.getTableName());
 
