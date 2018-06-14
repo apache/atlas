@@ -78,23 +78,23 @@
             <item name="Source Repository" href="source-repository.html" />
         </menu>
 
-        <menu name="Releases">
+        <menu name="Downloads">
             <item name="1.0.0"
-                  href="http://www.apache.org/dyn/closer.cgi/atlas/1.0.0/"/>
+                  href="Downloads.html"/>
             <item name="0.8.2"
-                  href="http://www.apache.org/dyn/closer.cgi/atlas/0.8.2/"/>
+                  href="Downloads.html"/>
             <item name="0.8.1"
-                  href="http://www.apache.org/dyn/closer.cgi/atlas/0.8.1/"/>
+                  href="Downloads.html"/>
             <item name="0.8-incubating"
-                  href="http://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/"/>
+                  href="Downloads.html"/>
             <item name="0.7.1-incubating"
-                  href="http://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/"/>
+                  href="Downloads.html"/>
             <item name="0.7-incubating"
-                  href="http://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/"/>
+                  href="Downloads.html"/>
             <item name="0.6-incubating"
-                  href="http://archive.apache.org/dist/incubator/atlas/0.6.0-incubating/"/>
+                  href="Downloads.html"/>
             <item name="0.5-incubating"
-                  href="http://archive.apache.org/dist/incubator/atlas/0.5.0-incubating/"/>
+                  href="Downloads.html"/>
         </menu>
 
         <menu name="Documentation">
