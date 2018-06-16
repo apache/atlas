@@ -87,6 +87,10 @@ public class CreateHiveProcess extends BaseHiveEvent {
 
                     AtlasEntity entity = getInputOutputEntity(input, ret);
 
+                    if (!input.isDirect()) {
+                        continue;
+                    }
+
                     if (entity != null) {
                         inputs.add(entity);
                     }
