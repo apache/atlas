@@ -98,7 +98,7 @@ public class CreateTable extends BaseHiveEvent {
                 }
             } else {
                 if (TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
-                    AtlasEntity hdfsPathEntity = getHDFSPathEntity(table.getDataLocation());
+                    AtlasEntity hdfsPathEntity = getPathEntity(table.getDataLocation(), ret);
                     AtlasEntity processEntity  = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity), Collections.singletonList(tblEntity));
 
                     ret.addEntity(processEntity);
