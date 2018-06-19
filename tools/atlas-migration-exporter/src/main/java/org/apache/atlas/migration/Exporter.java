@@ -25,7 +25,9 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
+import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.cli.BasicParser;
@@ -35,19 +37,18 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 
 public class Exporter {
     private static final Logger LOG = LoggerFactory.getLogger(Exporter.class);
 
-    private static final String ATLAS_TYPE_REGISTRY         = "atlasTypeRegistry";
-    private static final String APPLICATION_CONTEXT         = "migrationContext.xml";
     private static final String MIGRATION_TYPESDEF_FILENAME = "atlas-migration-typesdef.json";
     private static final String MIGRATION_DATA_FILENAME     = "atlas-migration-data.json";
     private static final String LOG_MSG_PREFIX              = "atlas-migration-export: ";
@@ -79,7 +80,7 @@ public class Exporter {
             String typesDefFileName = outputDir + File.separatorChar + MIGRATION_TYPESDEF_FILENAME;
             String dataFileName     = outputDir + File.separatorChar + MIGRATION_DATA_FILENAME;
 
-            Exporter exporter = new Exporter(typesDefFileName, dataFileName, APPLICATION_CONTEXT);
+            Exporter exporter = new Exporter(typesDefFileName, dataFileName);
 
             exporter.perform();
 
@@ -95,19 +96,51 @@ public class Exporter {
         System.exit(result);
     }
 
-    public Exporter(String typesDefFileName, String dataFileName, String contextXml) throws Exception {
+    public Exporter(String typesDefFileName, String dataFileName) throws Exception {
         validate(typesDefFileName, dataFileName);
 
         displayMessage("initializing");
 
         resetHAMode();
-        ApplicationContext applicationContext = new ClassPathXmlApplicationContext(contextXml);
 
         this.typesDefFileName = typesDefFileName;
         this.dataFileName     = dataFileName;
-        this.typeRegistry     = applicationContext.getBean(ATLAS_TYPE_REGISTRY, AtlasTypeRegistry.class);;
 
+        typeRegistry                                 = new AtlasTypeRegistry();
+        AtlasTypeDefGraphStoreV1 typeDefGraphStoreV1 = createAtlasTypeDefGraphStoreV1(typeRegistry);
+        if(typeDefGraphStoreV1 == null) {
+            displayMessage("createAtlasTypeDefGraphStoreV1 returned null. Initialization failed!");
+            return;
+        }
+
+        typeDefGraphStoreV1.init();
         displayMessage("initialized");
+    }
+
+    private AtlasTypeDefGraphStoreV1 createAtlasTypeDefGraphStoreV1(AtlasTypeRegistry typeRegistry) {
+        Constructor[] ctors = AtlasTypeDefGraphStoreV1.class.getDeclaredConstructors();
+        if (ctors.length == 0 || (ctors[0].getParameterTypes().length == 0)) {
+            LOG.error("Appropriate ctors not found!");
+            return null;
+        }
+
+        Constructor ctor = ctors[0];
+        Class<?>[] parameterTypes = ctor.getParameterTypes();
+        try {
+            ctor.setAccessible(true);
+            displayMessage(String.format("ctor: parameters: %s", parameterTypes.length));
+            return (AtlasTypeDefGraphStoreV1) ((parameterTypes.length == 2) ?
+                    ctor.newInstance(typeRegistry, new HashSet<>()) :
+                    ctor.newInstance(typeRegistry, new HashSet<>(), AtlasGraphProvider.getGraphInstance()));
+        } catch (InstantiationException e) {
+            displayError("ctor", e);
+        } catch (IllegalAccessException e) {
+            displayError("ctor", e);
+        } catch (InvocationTargetException e) {
+            displayError("ctor", e);
+        }
+
+        return null;
     }
 
     private void resetHAMode() throws AtlasException {
