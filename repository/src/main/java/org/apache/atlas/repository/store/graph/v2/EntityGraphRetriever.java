@@ -937,11 +937,12 @@ public final class EntityGraphRetriever {
             }
 
             if (referenceVertex != null) {
-                String            entityTypeName = getTypeName(referenceVertex);
-                String            entityGuid     = getGuid(referenceVertex);
-                AtlasRelationship relationship   = mapEdgeToAtlasRelationship(edge);
+                String             entityTypeName = getTypeName(referenceVertex);
+                String             entityGuid     = getGuid(referenceVertex);
+                AtlasEntity.Status entityStatus   = GraphHelper.getStatus(referenceVertex);
+                AtlasRelationship  relationship   = mapEdgeToAtlasRelationship(edge);
 
-                ret = new AtlasRelatedObjectId(entityGuid, entityTypeName,
+                ret = new AtlasRelatedObjectId(entityGuid, entityTypeName, entityStatus,
                                                relationship.getGuid(), relationship.getStatus(),
                                                new AtlasStruct(relationship.getTypeName(), relationship.getAttributes()));
 
