@@ -118,8 +118,8 @@ define(['require',
                 this.$("[data-id='typeName']").text(typeName);
                 var getElement = function(options) {
                     var name = options.entityName ? options.entityName : Utils.getName(options, "displayText");
-                    return "<li class=" + (Enums.entityStateReadOnly[options.relationshipStatus] ? "deleted-relation" : '') + "><a href=#!/detailPage/" + options.guid + "?tabActive=relationship>" + _.escape(name) + " (" + options.typeName + ")</a>" +
-                        '<button type="button" title="Deleted" class="btn btn-sm deleteBtn deletedTableBtn ' + (Enums.entityStateReadOnly[options.relationshipStatus] ? "" : 'hide') + '"><i class="fa fa-trash"></i></button>' +
+                    return "<li class=" + (Enums.entityStateReadOnly[options.entityStatus || options.status] ? "deleted-relation" : '') + "><a href=#!/detailPage/" + options.guid + "?tabActive=relationship>" + _.escape(name) + " (" + options.typeName + ")</a>" +
+                        '<button type="button" title="Deleted" class="btn btn-sm deleteBtn deletedTableBtn ' + (Enums.entityStateReadOnly[options.entityStatus || options.status] ? "" : 'hide') + '"><i class="fa fa-trash"></i></button>' +
                         "</li>";
                 }
                 if (_.isArray(data)) {
@@ -150,7 +150,9 @@ define(['require',
                     height = this.$('svg').height();
 
                 var scale = 1.0,
-                    activeEntityColor = "#00b98b";
+                    activeEntityColor = "#00b98b",
+                    deletedEntityColor = "#BB5838",
+                    defaultEntityColor = "#e0e0e0";
 
                 var force = d3.layout.force()
                     .nodes(d3.values(data.nodes))
@@ -240,7 +242,7 @@ define(['require',
 
                 // build the arrow.
                 container.append("svg:defs").selectAll("marker")
-                    .data(["output"]) // Different link/path types can be defined here
+                    .data(["deletedLink", "activeLink"]) // Different link/path types can be defined here
                     .enter().append("svg:marker") // This section adds in the arrows
                     .attr("id", String)
                     .attr("viewBox", "0 -5 10 10")
@@ -251,7 +253,30 @@ define(['require',
                     .attr("orient", "auto")
                     .append("svg:path")
                     .attr("d", "M0,-5L10,0L0,5")
-                    .attr("fill", activeEntityColor);
+                    .attr("fill", function(d) {
+                        return d == "deletedLink" ? deletedEntityColor : activeEntityColor;
+                    });
+
+                function getPathColor(options) {
+                    return isAllEntityRelationDeleted(options) ? deletedEntityColor : activeEntityColor
+                }
+
+                function isAllEntityRelationDeleted(options) {
+                    var data = options.data,
+                        type = options.type;
+                    var d = $.extend(true, {}, data);
+                    if (d && !_.isArray(d.value)) {
+                        d.value = [d.value];
+                    }
+
+                    return (_.findIndex(d.value, function(val) {
+                        if (type == "node") {
+                            return (val.entityStatus || val.status) == "ACTIVE"
+                        } else {
+                            return val.relationshipStatus == "ACTIVE"
+                        }
+                    }) == -1);
+                }
 
                 // add the links and the arrows
                 var path = container.append("svg:g").selectAll("path")
@@ -259,8 +284,10 @@ define(['require',
                     .enter().append("svg:path")
                     //    .attr("class", function(d) { return "link " + d.type; })
                     .attr("class", "relatioship-link")
-                    .attr("stroke", activeEntityColor)
-                    .attr("marker-end", "url(#output)");
+                    .attr("stroke", function(d) { return getPathColor({ data: d, type: 'path' }) })
+                    .attr("marker-end", function(d) {
+                        return "url(#" + (isAllEntityRelationDeleted({ data: d }) ? "deletedLink" : "activeLink") + ")";
+                    });
 
                 // define the nodes
                 var node = container.selectAll(".node")
@@ -307,19 +334,7 @@ define(['require',
                     }
                 })
 
-                function isSingleRelationDeleted(data) {
-                    var d = $.extend(true, {}, data);
-                    if (!_.isArray(d.value)) {
-                        d.value = [d.value];
-                    }
-                    if (d && _.isArray(d.value)) {
-                        if (d.value.length == 1 && Enums.entityStateReadOnly[_.first(d.value).relationshipStatus]) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                }
+
                 circleContainer.append("circle")
                     .attr("cx", 0)
                     .attr("cy", 0)
@@ -329,11 +344,15 @@ define(['require',
                     })
                     .attr("fill", function(d) {
                         if (d && d.value && d.value.guid == that.guid) {
-                            return activeEntityColor;
-                        } else if (isSingleRelationDeleted(d)) {
-                            return "#BB5838";
+                            if (isAllEntityRelationDeleted({ data: d, type: 'node' })) {
+                                return deletedEntityColor;
+                            } else {
+                                return activeEntityColor;
+                            }
+                        } else if (isAllEntityRelationDeleted({ data: d, type: 'node' })) {
+                            return deletedEntityColor;
                         } else {
-                            return "#e0e0e0";
+                            return defaultEntityColor;
                         }
                     })
                     .attr("typename", function(d) {
@@ -361,7 +380,7 @@ define(['require',
                     .attr("fill", function(d) {
                         if (d && d.value && d.value.guid == that.guid) {
                             return "#fff";
-                        } else if (isSingleRelationDeleted(d)) {
+                        } else if (isAllEntityRelationDeleted({ data: d, type: 'node' })) {
                             return "#fff";
                         } else {
                             return "#000";
@@ -381,7 +400,7 @@ define(['require',
                     .attr('dx', 18)
                     .attr('dy', -16)
                     .attr("text-anchor", "middle")
-                    .attr("fill", "#e0e0e0")
+                    .attr("fill", defaultEntityColor)
                     .text(function(d) {
                         if (_.isArray(d.value) && d.value.length > 1) {
                             return d.value.length;

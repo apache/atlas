@@ -56,7 +56,7 @@ define(['require',
                 this.entityTableGenerate();
             },
             entityTableGenerate: function() {
-                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.attributes, relationshipAttributes: this.entity.relationshipAttributes, attributeDefs: this.attributeDefs });
+                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.attributes, attributeDefs: this.attributeDefs });
                 this.ui.detailValue.append(table);
             }
         });

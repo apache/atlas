@@ -75,7 +75,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         var scope = options.scope,
             valueObject = options.valueObject,
             extractJSON = options.extractJSON,
-            relationshipAttributes = options.relationshipAttributes,
             isTable = _.isUndefined(options.isTable) ? true : options.isTable,
             attributeDefs = options.attributeDefs;
 
@@ -105,8 +104,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             scope.$('td div[data-id="' + id + '"]').append(deleteButton);
                         }
                     },
-                    cust_error: function() {
-                        scope.$('td div[data-id="' + id + '"]').html('<div><span class="text-danger"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Not Authorized</span></div>');
+                    cust_error: function(error, xhr) {
+                        if (xhr.status == 403) {
+                            scope.$('td div[data-id="' + id + '"]').html('<div><span class="text-danger"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Not Authorized</span></div>');
+                        } else {
+                            scope.$('td div[data-id="' + id + '"]').html('<div><span class="text-danger"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> ' + Messages.defaultErrorMessage + '</span></div>');
+                        }
                     },
                     complete: function() {}
                 });
@@ -169,22 +172,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if (id && inputOutputField) {
                         var name = Utils.getName(inputOutputField);
                         if ((name === "-" || name === id) && !inputOutputField.attributes) {
-                            var rAttrValue = relationshipAttributes && relationshipAttributes[key];
-                            if (!rAttrValue) {
-                                var fetch = true;
-                                var fetchId = (_.isObject(id) ? id.id : id);
-                                fetchInputOutputValue(fetchId);
-                                tempLink += '<div data-id="' + fetchId + '"><div class="value-loader"></div></div>';
-                            } else {
-                                if (_.isArray(rAttrValue) && rAttrValue.length) {
-                                    var attrVal = _.find(rAttrValue, inputOutputField);
-                                    if (attrVal) {
-                                        tempLink += '<div data-id="' + attrVal.guid + '"><a href="#!/detailPage/' + attrVal.guid + '">' + Utils.getName(attrVal) + '</a></div>';
-                                    }
-                                } else {
-                                    tempLink += '<div data-id="' + rAttrValue.guid + '"><a href="#!/detailPage/' + rAttrValue.guid + '">' + Utils.getName(rAttrValue) + '</a></div>';
-                                }
-                            }
+                            var fetch = true;
+                            var fetchId = (_.isObject(id) ? id.id : id);
+                            fetchInputOutputValue(fetchId);
+                            tempLink += '<div data-id="' + fetchId + '"><div class="value-loader"></div></div>';
                         } else {
                             tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
                         }
@@ -227,7 +218,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
             } else {
                 if (_.isObject(keyValue)) {
-                    keyValue = extractObject({ "keyValue": keyValue, "key": key })
+                    keyValue = extractObject({ "keyValue": keyValue, "key": key });
                 }
             }
             var val = "";
