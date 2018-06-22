@@ -90,6 +90,7 @@ public class AdminResource {
     private static final String isEntityCreateAllowed          = "atlas.entity.create.allowed";
     private static final String editableEntityTypes            = "atlas.ui.editable.entity.types";
     private static final String DEFAULT_EDITABLE_ENTITY_TYPES  = "hdfs_path,hbase_table,hbase_column,hbase_column_family,kafka_topic,hbase_namespace";
+    private static final List TIMEZONE_LIST  = Arrays.asList(TimeZone.getAvailableIDs());
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -270,6 +271,7 @@ public class AdminResource {
         responseData.put(editableEntityTypes, getEditableEntityTypes(atlasProperties));
         responseData.put("userName", userName);
         responseData.put("groups", groups);
+        responseData.put("timezones", TIMEZONE_LIST);
 
         response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
