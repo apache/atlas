@@ -19,9 +19,11 @@ define(['require',
     'backbone',
     'hbs!tmpl/tag/AddTimezoneView_tmpl',
     'moment',
+    'utils/Enums',
+    'utils/Globals',
     'moment-timezone',
     'daterangepicker'
-], function(require, Backbone, AddTimezoneViewTmpl, moment) {
+], function(require, Backbone, AddTimezoneViewTmpl, moment, Enums, Globals) {
     'use strict';
 
     return Backbone.Marionette.ItemView.extend(
@@ -89,7 +91,7 @@ define(['require',
 
                 this.ui.timeZone.html(tzstr);
                 this.ui.timeZone.select2({
-                    data: moment.tz.names()
+                    data: Globals.userLogedIn.response.timezones
                 });
 
                 if (!_.isEmpty(this.model.get('startTime')) || !_.isEmpty(this.model.get('endTime')) || !_.isEmpty(this.model.get('timeZone'))) {
