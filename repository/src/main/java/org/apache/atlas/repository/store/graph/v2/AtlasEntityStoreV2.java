@@ -525,7 +525,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ_CLASSIFICATION, entityHeader), "get classifications: guid=", guid);
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader), "get classifications: guid=", guid);
 
         return entityHeader.getClassifications();
     }
@@ -541,7 +541,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasEntityHeader   entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
         if (CollectionUtils.isNotEmpty(entityHeader.getClassifications())) {
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ_CLASSIFICATION, entityHeader), "get classification: guid=", guid, ", classification=", classificationName);
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader), "get classification: guid=", guid, ", classification=", classificationName);
 
             for (AtlasClassification classification : entityHeader.getClassifications()) {
                 if (!StringUtils.equalsIgnoreCase(classification.getTypeName(), classificationName)) {

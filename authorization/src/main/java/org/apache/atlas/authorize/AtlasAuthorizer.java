@@ -19,6 +19,8 @@
 package org.apache.atlas.authorize;
 
 
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+
 public interface AtlasAuthorizer {
     /**
      * initialization of authorizer implementation
@@ -55,4 +57,40 @@ public interface AtlasAuthorizer {
      * @throws AtlasAuthorizationException
      */
     boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException;
+
+
+    /**
+     * scrub search-results to handle entities for which the user doesn't have access
+     * @param request
+     * @return
+     * @throws AtlasAuthorizationException
+     */
+    default
+    void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
+    }
+
+    default
+    void scrubEntityHeader(AtlasEntityHeader entity) {
+        entity.setGuid("-1");
+
+        if(entity.getAttributes() != null) {
+            entity.getAttributes().clear();
+        }
+
+        if(entity.getClassifications() != null) {
+            entity.getClassifications().clear();
+        }
+
+        if(entity.getClassificationNames() != null) {
+            entity.getClassificationNames().clear();
+        }
+
+        if(entity.getMeanings() != null) {
+            entity.getMeanings().clear();
+        }
+
+        if(entity.getMeaningNames() != null) {
+            entity.getMeaningNames().clear();
+        }
+    }
 }

@@ -1026,11 +1026,15 @@ public class GlossaryService {
         Map<String, AtlasGlossaryTerm> termMap = new HashMap<>();
         dataAccess.load(terms).iterator().forEachRemaining(t -> termMap.put(t.getGuid(), t));
 
-        termHeaders.forEach(t -> t.setDisplayText(termMap.get(t.getTermGuid()).getName()));
+        termHeaders.forEach(t -> t.setDisplayText(getDisplayText(termMap.get(t.getTermGuid()))));
     }
 
     private boolean isNameInvalid(String name) {
         return StringUtils.containsAny(name, invalidNameChars);
+    }
+
+    private String getDisplayText(AtlasGlossaryTerm term) {
+        return term != null ? term.getName() : null;
     }
 
     static class PaginationHelper<T> {
