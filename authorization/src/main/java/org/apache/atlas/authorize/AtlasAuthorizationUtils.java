@@ -62,6 +62,23 @@ public class AtlasAuthorizationUtils {
         }
     }
 
+    public static void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasBaseException {
+        String userName = getCurrentUserName();
+
+        if (StringUtils.isNotEmpty(userName)) {
+            try {
+                AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+
+                request.setUser(userName, getCurrentUserGroups());
+                request.setClientIPAddress(RequestContext.get().getClientIPAddress());
+
+                authorizer.scrubSearchResults(request);
+            } catch (AtlasAuthorizationException e) {
+                LOG.error("Unable to obtain AtlasAuthorizer", e);
+            }
+        }
+    }
+
     public static boolean isAccessAllowed(AtlasAdminAccessRequest request) {
         boolean ret      = false;
         String  userName = getCurrentUserName();
