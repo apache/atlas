@@ -627,7 +627,11 @@ define(['require',
                                 nameHtml = "",
                                 name = Utils.getName(obj);
                             if (obj.guid) {
-                                nameHtml = '<a title="' + name + '" href="#!/detailPage/' + obj.guid + (that.fromView ? "?from=" + that.fromView : "") + '">' + name + '</a>';
+                                if (obj.guid == "-1") {
+                                    nameHtml = '<span title="' + name + '">' + name + '</span>';
+                                } else {
+                                    nameHtml = '<a title="' + name + '" href="#!/detailPage/' + obj.guid + (that.fromView ? "?from=" + that.fromView : "") + '">' + name + '</a>';
+                                }
                             } else {
                                 nameHtml = '<span title="' + name + '">' + name + '</span>';
                             }
@@ -826,6 +830,9 @@ define(['require',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
+                                if (obj.guid == "-1") {
+                                    return
+                                }
                                 if (obj.status && Enums.entityStateReadOnly[obj.status]) {
                                     return '<div class="readOnly">' + CommonViewFunction.tagForTable(obj); + '</div>';
                                 } else {
@@ -854,6 +861,9 @@ define(['require',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
+                                if (obj.guid == "-1") {
+                                    return
+                                }
                                 if (obj.typeName && !(_.startsWith(obj.typeName, "AtlasGlossary"))) {
                                     if (obj.status && Enums.entityStateReadOnly[obj.status]) {
                                         return '<div class="readOnly">' + CommonViewFunction.termForTable(obj); + '</div>';
