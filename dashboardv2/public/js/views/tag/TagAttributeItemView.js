@@ -65,8 +65,12 @@ define(['require',
                 });
             },
             onCloseButton: function() {
+                var tagName = this.parentView.$el.find('[data-id="tagName"]').val();
                 if (this.parentView.collection.models.length > 0) {
                     this.model.destroy();
+                }
+                if (this.parentView.collection.models.length == 0 && tagName != "") {
+                    this.parentView.$el.parent().next().find('button.ok').removeAttr("disabled");
                 }
             }
         });
