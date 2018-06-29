@@ -209,7 +209,7 @@ define(['require',
                 var tagParents = '',
                     tagLists = '';
 
-                if (this.collection && this.collection.fullCollection.length) {
+                if (this.collection && this.collection.fullCollection.length >= 0) {
                     var sortedCollection = this.collection.fullCollection;
                     this.tagTreeList = this.getTagTreeList({ collection: sortedCollection });
                     if (searchString) {
