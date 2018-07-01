@@ -302,7 +302,7 @@ public class AtlasEntityChangeNotifier {
     }
 
     private void notifyV2Listeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation, boolean isImport) throws AtlasBaseException {
-        List<AtlasEntity> entities = toAtlasEntities(entityHeaders);
+        List<AtlasEntity> entities = toAtlasEntities(entityHeaders, operation);
 
         for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
             switch (operation) {
@@ -377,27 +377,42 @@ public class AtlasEntityChangeNotifier {
         return ret;
     }
 
-    private List<AtlasEntity> toAtlasEntities(List<AtlasEntityHeader> entityHeaders) throws AtlasBaseException {
+    private List<AtlasEntity> toAtlasEntities(List<AtlasEntityHeader> entityHeaders, EntityOperation operation) throws AtlasBaseException {
         List<AtlasEntity> ret = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(entityHeaders)) {
             for (AtlasEntityHeader entityHeader : entityHeaders) {
-                String                 entityGuid        = entityHeader.getGuid();
-                String                 typeName          = entityHeader.getTypeName();
+                String          entityGuid = entityHeader.getGuid();
+                String          typeName   = entityHeader.getTypeName();
+                AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(typeName);
+
+                if (entityType == null) {
+                    continue;
+                }
 
                 // Skip all internal types as the HARD DELETE will cause lookup errors
-                AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(typeName);
-                if (Objects.nonNull(entityType) && entityType.isInternalType()) {
+                if (entityType.isInternalType()) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Skipping internal type = {}", typeName);
                     }
                     continue;
                 }
 
-                AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(entityGuid);
+                final AtlasEntity entity;
 
-                if (entityWithExtInfo != null) {
-                    ret.add(entityWithExtInfo.getEntity());
+                // delete notifications don't need all attributes. Hence the special handling for delete operation
+                if (operation == EntityOperation.DELETE) {
+                    entity = new AtlasEntity(typeName, entityHeader.getAttributes());
+
+                    entity.setGuid(entityGuid);
+                } else {
+                    AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(entityGuid);
+
+                    entity = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+                }
+
+                if (entity != null) {
+                    ret.add(entity);
                 }
             }
         }
