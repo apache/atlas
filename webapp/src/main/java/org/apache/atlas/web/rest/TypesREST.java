@@ -414,13 +414,20 @@ public class TypesREST {
      * @return
      */
     private SearchFilter getSearchFilter(HttpServletRequest httpServletRequest) {
-        SearchFilter ret = new SearchFilter();
-        Set<String> keySet = httpServletRequest.getParameterMap().keySet();
-        for (String key : keySet) {
-            ret.setParam(String.valueOf(key), String.valueOf(httpServletRequest.getParameter(key)));
+        SearchFilter ret    = new SearchFilter();
+        Set<String>  keySet = httpServletRequest.getParameterMap().keySet();
+
+        for (String k : keySet) {
+            String key   = String.valueOf(k);
+            String value = String.valueOf(httpServletRequest.getParameter(k));
+
+            if (key.equalsIgnoreCase("excludeInternalTypesAndReferences") && value.equalsIgnoreCase("true")) {
+                FilterUtil.addParamsToHideInternalType(ret);
+            } else {
+                ret.setParam(key, value);
+            }
         }
 
-        FilterUtil.addParamsToHideInternalType(ret);
         return ret;
     }
 }
