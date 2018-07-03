@@ -40,6 +40,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
+import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.EQUAL;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
 
 public class EntitySearchProcessor extends SearchProcessor {
@@ -93,12 +99,15 @@ public class EntitySearchProcessor extends SearchProcessor {
                                                                .generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
         final Predicate traitPredicate;
 
-        if (classificationType == SearchContext.MATCH_ALL_CLASSIFICATION) {
-            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, null, List.class),
-                                                        SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
+        if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED) {
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
+                                                        SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
+        } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
+            traitPredicate = PredicateUtils.andPredicate(SearchPredicateUtil.getIsNullPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
+                                                         SearchPredicateUtil.getIsNullPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
         } else {
-            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class),
-                                                        SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class));
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class),
+                                                        SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class));
         }
 
         processSearchAttributes(entityType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
@@ -154,12 +163,15 @@ public class EntitySearchProcessor extends SearchProcessor {
             if (filterClassification) {
                 List<AtlasGraphQuery> orConditions = new LinkedList<>();
 
-                if (classificationType == SearchContext.MATCH_ALL_CLASSIFICATION) {
-                    orConditions.add(query.createChildQuery().has(Constants.TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
-                    orConditions.add(query.createChildQuery().has(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
+                if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED) {
+                    orConditions.add(query.createChildQuery().has(TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
+                    orConditions.add(query.createChildQuery().has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
+                } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
+                    orConditions.add(query.createChildQuery().has(TRAIT_NAMES_PROPERTY_KEY, EQUAL, null)
+                                                             .has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, EQUAL, null));
                 } else {
-                    orConditions.add(query.createChildQuery().in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes));
-                    orConditions.add(query.createChildQuery().in(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes));
+                    orConditions.add(query.createChildQuery().in(TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes));
+                    orConditions.add(query.createChildQuery().in(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes));
                 }
 
                 query.or(orConditions);
