@@ -31,6 +31,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
+
 
 public class FullTextSearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(FullTextSearchProcessor.class);
@@ -61,7 +65,9 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
         // if search includes classification criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent ClassificationSearchProcessor or EntitySearchProcessor
-        if (context.getClassificationType() != null && context.getClassificationType() != SearchContext.MATCH_ALL_CLASSIFICATION) {
+        if (context.getClassificationType() != null && context.getClassificationType() != MATCH_ALL_WILDCARD_CLASSIFICATION &&
+                                                       context.getClassificationType() != MATCH_ALL_CLASSIFIED &&
+                                                       context.getClassificationType() != MATCH_ALL_NOT_CLASSIFIED) {
             String typeAndSubTypeNamesStr = context.getClassificationType().getTypeAndAllSubTypesQryStr();
 
             if (typeAndSubTypeNamesStr.length() <= MAX_QUERY_STR_LENGTH_TAGS) {

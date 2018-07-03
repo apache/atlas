@@ -55,6 +55,10 @@ public class SearchParameters implements Serializable {
     private FilterCriteria tagFilters;
     private Set<String>    attributes;
 
+    public static final String WILDCARD_CLASSIFICATIONS = "*";
+    public static final String ALL_CLASSIFICATIONS      = "_CLASSIFIED";
+    public static final String NO_CLASSIFICATIONS       = "_NOT_CLASSIFIED";
+
     /**
      * @return The type of query
      */

@@ -45,6 +45,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATIONS;
+import static org.apache.atlas.model.discovery.SearchParameters.NO_CLASSIFICATIONS;
+import static org.apache.atlas.model.discovery.SearchParameters.WILDCARD_CLASSIFICATIONS;
+
 /*
  * Search context captures elements required for performing a basic search
  * For every search request the search context will determine the execution sequence of the search processor(s) and the
@@ -61,7 +65,9 @@ public class SearchContext {
     private       SearchProcessor         searchProcessor;
     private       boolean                 terminateSearch = false;
 
-    public final static AtlasClassificationType MATCH_ALL_CLASSIFICATION = new AtlasClassificationType(new AtlasClassificationDef("*"));
+    public final static AtlasClassificationType MATCH_ALL_WILDCARD_CLASSIFICATION = new AtlasClassificationType(new AtlasClassificationDef(WILDCARD_CLASSIFICATIONS));
+    public final static AtlasClassificationType MATCH_ALL_CLASSIFIED              = new AtlasClassificationType(new AtlasClassificationDef(ALL_CLASSIFICATIONS));
+    public final static AtlasClassificationType MATCH_ALL_NOT_CLASSIFIED          = new AtlasClassificationType(new AtlasClassificationDef(NO_CLASSIFICATIONS));
 
     public SearchContext(SearchParameters searchParameters, AtlasTypeRegistry typeRegistry, AtlasGraph graph, Set<String> indexedKeys) throws AtlasBaseException {
         String classificationName = searchParameters.getClassification();
@@ -199,8 +205,12 @@ public class SearchContext {
     private AtlasClassificationType getClassificationType(String classificationName) {
         AtlasClassificationType ret;
 
-        if (StringUtils.equals(classificationName, MATCH_ALL_CLASSIFICATION.getTypeName())) {
-            ret = MATCH_ALL_CLASSIFICATION;
+        if (StringUtils.equals(classificationName, MATCH_ALL_WILDCARD_CLASSIFICATION.getTypeName())) {
+            ret = MATCH_ALL_WILDCARD_CLASSIFICATION;
+        } else if (StringUtils.equals(classificationName, MATCH_ALL_CLASSIFIED.getTypeName())) {
+            ret = MATCH_ALL_CLASSIFIED;
+        } else if (StringUtils.equals(classificationName, MATCH_ALL_NOT_CLASSIFIED.getTypeName())) {
+            ret = MATCH_ALL_NOT_CLASSIFIED;
         } else {
             ret = typeRegistry.getClassificationTypeByName(classificationName);
         }
