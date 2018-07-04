@@ -45,7 +45,7 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             if (name) {
                 return defApiUrl.def + '/name/' + name + '?type=' + type;
             } else {
-                return defApiUrl.defs + '?type=' + type;
+                return defApiUrl.defs + '?excludeInternalTypesAndReferences=true&type=' + type;
             }
         },
         entitiesApiUrl: function(guid, name) {
@@ -78,7 +78,7 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             }
         },
         typesApiUrl: function() {
-            return this.typedefsUrl().defs + '/headers'
+            return this.typedefsUrl().defs + '/headers?excludeInternalTypesAndReferences=true'
         },
         lineageApiUrl: function(guid) {
             var lineageUrl = this.baseUrlV2 + '/lineage';
