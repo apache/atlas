@@ -46,6 +46,9 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATIONS;
+import static org.apache.atlas.model.discovery.SearchParameters.NO_CLASSIFICATIONS;
+
 public class GremlinQueryComposer {
     private static final Logger LOG                 = LoggerFactory.getLogger(GremlinQueryComposer.class);
     private static final String ISO8601_FORMAT      = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
@@ -112,7 +115,15 @@ public class GremlinQueryComposer {
             IdentifierHelper.Info ia = createInfo(typeInfo.get());
 
             if (ia.isTrait()) {
-                addTrait(GremlinClause.TRAIT, ia);
+                String traitName = ia.get();
+
+                if (traitName.equalsIgnoreCase(ALL_CLASSIFICATIONS)) {
+                    addTrait(GremlinClause.ANY_TRAIT, ia);
+                } else if (traitName.equalsIgnoreCase(NO_CLASSIFICATIONS)) {
+                    addTrait(GremlinClause.NO_TRAIT, ia);
+                } else {
+                    addTrait(GremlinClause.TRAIT, ia);
+                }
             } else {
                 if (ia.hasSubtypes()) {
                     add(GremlinClause.HAS_TYPE_WITHIN, ia.getSubTypes());
@@ -144,7 +155,14 @@ public class GremlinQueryComposer {
         }
 
         IdentifierHelper.Info traitInfo = createInfo(traitName);
-        addTrait(GremlinClause.TRAIT, traitInfo);
+
+        if (StringUtils.equals(traitName, ALL_CLASSIFICATIONS)) {
+            addTrait(GremlinClause.ANY_TRAIT, traitInfo);
+        } else if (StringUtils.equals(traitName, NO_CLASSIFICATIONS)) {
+            addTrait(GremlinClause.NO_TRAIT, traitInfo);
+        } else {
+            addTrait(GremlinClause.TRAIT, traitInfo);
+        }
     }
 
     public void addWhere(String lhs, String operator, String rhs) {
@@ -739,6 +757,8 @@ public class GremlinQueryComposer {
         public boolean isValid(Context ctx, GremlinClause clause, IdentifierHelper.Info ia) {
             switch (clause) {
                 case TRAIT:
+                case ANY_TRAIT:
+                case NO_TRAIT:
                     return check(ia.isTrait(), AtlasErrorCode.INVALID_DSL_UNKNOWN_CLASSIFICATION, ia.getRaw());
 
                 case HAS_TYPE:

@@ -47,6 +47,8 @@ enum GremlinClause {
     TEXT_PREFIX("has('%s', org.janusgraph.core.attribute.Text.textPrefix(%s))"),
     TEXT_SUFFIX("has('%s', org.janusgraph.core.attribute.Text.textRegex(\".*\" + %s))"),
     TRAIT("outE('classifiedAs').has('__name', within('%s')).outV()"),
+    ANY_TRAIT("or(has('__traitNames'), has('__propagatedTraitNames'))"),
+    NO_TRAIT("and(hasNot('__traitNames'), hasNot('__propagatedTraitNames'))"),
     SELECT_NOOP_FN("def f(r){ r }; "),
     SELECT_FN("def f(r){ t=[[%s]]; %s r.each({t.add([%s])}); t.unique(); }; "),
     SELECT_ONLY_AGG_FN("def f(r){ t=[[%s]]; %s t.add([%s]); t;}; "),
