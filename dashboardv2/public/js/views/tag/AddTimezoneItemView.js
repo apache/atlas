@@ -19,11 +19,10 @@ define(['require',
     'backbone',
     'hbs!tmpl/tag/AddTimezoneView_tmpl',
     'moment',
-    'utils/Enums',
     'utils/Globals',
     'moment-timezone',
     'daterangepicker'
-], function(require, Backbone, AddTimezoneViewTmpl, moment, Enums, Globals) {
+], function(require, Backbone, AddTimezoneViewTmpl, moment, Globals) {
     'use strict';
 
     return Backbone.Marionette.ItemView.extend(
