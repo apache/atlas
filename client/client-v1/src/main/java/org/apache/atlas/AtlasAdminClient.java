@@ -45,8 +45,10 @@ import java.util.Arrays;
  */
 public class AtlasAdminClient {
 
-    private static final Option STATUS = new Option("status", false, "Get the status of an atlas instance");
-    private static final Option STATS = new Option("stats", false, "Get the metrics of an atlas instance");
+    private static final Option STATUS      = new Option("status", false, "Get the status of an atlas instance");
+    private static final Option STATS       = new Option("stats", false, "Get the metrics of an atlas instance");
+    private static final Option CREDENTIALS = new Option("u", true, "Authorized atlas user credentials (<user>:<password>)");
+
     private static final Options OPTIONS = new Options();
 
     private static final int INVALID_OPTIONS_STATUS = 1;
@@ -55,6 +57,7 @@ public class AtlasAdminClient {
     static {
         OPTIONS.addOption(STATUS);
         OPTIONS.addOption(STATS);
+        OPTIONS.addOption(CREDENTIALS);
     }
 
     public static void main(String[] args) throws AtlasException, ParseException {
@@ -72,19 +75,17 @@ public class AtlasAdminClient {
             atlasServerUri = new String[] { AtlasConstants.DEFAULT_ATLAS_REST_ADDRESS };
         }
 
-        AtlasClient atlasClient = null;
-        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
-            atlasClient = new AtlasClient(atlasServerUri, basicAuthUsernamePassword);
-        } else {
-            atlasClient = new AtlasClient(atlasServerUri);
-        }
-        return handleCommand(commandLine, atlasServerUri, atlasClient);
+        return handleCommand(commandLine, atlasServerUri);
     }
 
-    private int handleCommand(CommandLine commandLine, String[] atlasServerUri, AtlasClient atlasClient) {
+    private int handleCommand(CommandLine commandLine, String[] atlasServerUri) throws AtlasException {
+        AtlasClient atlasClient;
+
+        String[] providedUserPassword = getUserPassword(commandLine);
+
         int cmdStatus = PROGRAM_ERROR_STATUS;
         if (commandLine.hasOption(STATUS.getOpt())) {
+            atlasClient = initAtlasClient(atlasServerUri, providedUserPassword); // Status is open API, no auth needed
             try {
                 System.out.println(atlasClient.getAdminStatus());
                 cmdStatus = 0;
@@ -93,6 +94,7 @@ public class AtlasAdminClient {
                 printStandardHttpErrorDetails(e);
             }
         } else if (commandLine.hasOption(STATS.getOpt())) {
+            atlasClient = initAtlasClient(atlasServerUri, providedUserPassword); // Stats/metrics is open API, no auth needed
             try {
                 AtlasMetrics atlasMetrics = atlasClient.getAtlasMetrics();
                 String json = AtlasType.toJson(atlasMetrics);
@@ -104,9 +106,41 @@ public class AtlasAdminClient {
             }
         } else {
             System.err.println("Unsupported option. Refer to usage for valid options.");
-            printUsage(INVALID_OPTIONS_STATUS);
+            printUsage();
         }
+
         return cmdStatus;
+    }
+
+    private String[] getUserPassword(CommandLine commandLine) {
+        String[] basicAuthUsernamePassword = null;
+
+        // Parse the provided username password
+        if (commandLine.hasOption(CREDENTIALS.getOpt())) {
+            String value = commandLine.getOptionValue(CREDENTIALS.getOpt());
+            if (value != null) {
+                basicAuthUsernamePassword = value.split(":");
+            }
+        }
+        if (basicAuthUsernamePassword == null || basicAuthUsernamePassword.length != 2) {
+            System.err.println("Invalid credentials. Format: <user>:<password>");
+        }
+        return basicAuthUsernamePassword;
+    }
+
+    private AtlasClient initAtlasClient(final String[] atlasServerUri, final String[] providedUserNamePassword) throws AtlasException {
+        AtlasClient atlasClient;
+
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+            if (providedUserNamePassword == null || providedUserNamePassword.length < 2) {
+                atlasClient = new AtlasClient(atlasServerUri, AuthenticationUtil.getBasicAuthenticationInput());
+            } else {
+                atlasClient = new AtlasClient(atlasServerUri, providedUserNamePassword);
+            }
+        } else {
+            atlasClient = new AtlasClient(atlasServerUri);
+        }
+        return atlasClient;
     }
 
     private void printStandardHttpErrorDetails(AtlasServiceException e) {
@@ -118,23 +152,23 @@ public class AtlasAdminClient {
 
     private CommandLine parseCommandLineOptions(String[] args) {
         if (args.length == 0) {
-            printUsage(INVALID_OPTIONS_STATUS);
+            printUsage();
         }
         CommandLineParser parser = new GnuParser();
         CommandLine commandLine = null;
         try {
             commandLine = parser.parse(OPTIONS, args);
         } catch (ParseException e) {
-            System.err.println("Could not parse command line options.");
-            printUsage(INVALID_OPTIONS_STATUS);
+            System.err.println("Could not parse command line options. " + e.getMessage());
+            printUsage();
         }
         return commandLine;
     }
 
-    private void printUsage(int statusCode) {
+    private void printUsage() {
         HelpFormatter helpFormatter = new HelpFormatter();
         helpFormatter.printHelp("atlas_admin.py", OPTIONS);
-        System.exit(statusCode);
+        System.exit(AtlasAdminClient.INVALID_OPTIONS_STATUS);
     }
 
 }
