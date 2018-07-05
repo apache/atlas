@@ -22,9 +22,10 @@ define(['require',
     'utils/Utils',
     'utils/UrlLinks',
     'utils/Globals',
+    'utils/Enums',
     'collection/VSearchList',
     'utils/CommonViewFunction'
-], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals, VSearchList, CommonViewFunction) {
+], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals, Enums, VSearchList, CommonViewFunction) {
     'use strict';
 
     var SearchLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -228,7 +229,7 @@ define(['require',
                     }
                 }
                 var tagCheck = function(filterObj, type) {
-                    if (that.value.tag) {
+                    if (that.value.tag && !_.contains(Enums.addOnClassification, that.value.tag)) {
                         that.ui.tagAttrFilter.prop('disabled', false);
                         if (filterObj && filterObj.length) {
                             that.ui.tagAttrFilter.addClass('active');
@@ -449,6 +450,10 @@ define(['require',
                     if (model.get('category') == 'CLASSIFICATION') {
                         tagStr += '<option>' + (name) + '</option>';
                     }
+                });
+                //to insert extra classification list
+                _.each(Enums.addOnClassification, function(classificationName) {
+                    tagStr += '<option>' + classificationName + '</option>';
                 });
                 that.ui.typeLov.html(typeStr);
                 that.ui.tagLov.html(tagStr);

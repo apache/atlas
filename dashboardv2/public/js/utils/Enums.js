@@ -134,5 +134,6 @@ define(['require'], function(require) {
         validValues: getTermRelationAttributes(),
         validValuesFor: getTermRelationAttributes()
     }
+    Enums.addOnClassification = ["_CLASSIFIED", "_NOT_CLASSIFIED"]
     return Enums;
 });
