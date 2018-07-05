@@ -27,6 +27,11 @@ import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
+import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATIONS;
+import static org.apache.atlas.model.discovery.SearchParameters.NO_CLASSIFICATIONS;
+
 class RegistryBasedLookup implements Lookup {
     private static final Set<String> SYSTEM_ATTRIBUTES = new HashSet<>(
             Arrays.asList(Constants.GUID_PROPERTY_KEY,
@@ -54,7 +59,17 @@ class RegistryBasedLookup implements Lookup {
 
     @Override
     public AtlasType getType(String typeName) throws AtlasBaseException {
-        return typeRegistry.getType(typeName);
+        AtlasType ret;
+
+        if (typeName.equalsIgnoreCase(ALL_CLASSIFICATIONS)) {
+            ret = MATCH_ALL_CLASSIFIED;
+        } else if (typeName.equalsIgnoreCase(NO_CLASSIFICATIONS)) {
+            ret = MATCH_ALL_NOT_CLASSIFIED;
+        } else {
+            ret = typeRegistry.getType(typeName);
+        }
+
+        return ret;
     }
 
     @Override
@@ -154,7 +169,14 @@ class RegistryBasedLookup implements Lookup {
     public boolean isTraitType(String typeName) {
         AtlasType t = null;
         try {
-            t = typeRegistry.getType(typeName);
+            if (typeName.equalsIgnoreCase(ALL_CLASSIFICATIONS)) {
+                t = MATCH_ALL_CLASSIFIED;
+            } else if (typeName.equalsIgnoreCase(NO_CLASSIFICATIONS)) {
+                t = MATCH_ALL_NOT_CLASSIFIED;
+            } else {
+                t = typeRegistry.getType(typeName);
+            }
+
         } catch (AtlasBaseException e) {
             return false;
         }
