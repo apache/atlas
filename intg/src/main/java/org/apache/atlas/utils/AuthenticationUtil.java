@@ -67,6 +67,11 @@ public final class AuthenticationUtil {
 
         try {
             Console console = System.console();
+            if (console == null) {
+                System.err.println("Couldn't get a console object for user input");
+                System.exit(1);
+            }
+
             username = console.readLine("Enter username for atlas :- ");
 
             char[] pwdChar = console.readPassword("Enter password for atlas :- ");
@@ -75,7 +80,7 @@ public final class AuthenticationUtil {
             }
 
         } catch (Exception e) {
-            System.out.print("Error while reading ");
+            System.out.print("Error while reading user input");
             System.exit(1);
         }
         return new String[]{username, password};
