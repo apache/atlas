@@ -246,7 +246,14 @@ public class AtlasEntityChangeNotifier {
             return;
         }
 
+        RequestContext context = RequestContext.get();
+
         for (String guid : entityPropagationMap.keySet()) {
+            // if entity is deleted, don't send propagated classifications add/remove notifications.
+            if (context.isDeletedEntity(guid)) {
+                continue;
+            }
+
             AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(guid);
             AtlasEntity            entity            = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
 
