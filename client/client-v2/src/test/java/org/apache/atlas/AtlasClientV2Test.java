@@ -12,7 +12,7 @@ public class AtlasClientV2Test {
     AtlasClientV2 atlasClientV2;
 
     @BeforeClass
-    public void testName() throws AtlasException {
+    public void before() throws AtlasException {
         Configuration configuration = ApplicationProperties.get();
         String[] atlasEndPoint = configuration.getStringArray(ATLAS_ENDPOINT);
         atlasClientV2 = new AtlasClientV2(atlasEndPoint, new String[]{"admin", "admin"});
