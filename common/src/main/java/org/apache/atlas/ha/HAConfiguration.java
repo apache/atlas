@@ -20,6 +20,7 @@ package org.apache.atlas.ha;
 
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -179,9 +180,11 @@ public final class HAConfiguration {
     }
 
     public static ZookeeperProperties getZookeeperProperties(Configuration configuration) {
-        String zookeeperConnectString = configuration.getString("atlas.kafka." + ZOOKEEPER_PREFIX + "connect");
+        String[] zkServers;
         if (configuration.containsKey(HA_ZOOKEEPER_CONNECT)) {
-            zookeeperConnectString = configuration.getString(HA_ZOOKEEPER_CONNECT);
+            zkServers = configuration.getStringArray(HA_ZOOKEEPER_CONNECT);
+        } else {
+            zkServers = configuration.getStringArray("atlas.kafka." + ZOOKEEPER_PREFIX + "connect");
         }
 
         String zkRoot = configuration.getString(ATLAS_SERVER_HA_ZK_ROOT_KEY, ATLAS_SERVER_ZK_ROOT_DEFAULT);
@@ -195,7 +198,10 @@ public final class HAConfiguration {
 
         String acl = configuration.getString(HA_ZOOKEEPER_ACL);
         String auth = configuration.getString(HA_ZOOKEEPER_AUTH);
-        return new ZookeeperProperties(zookeeperConnectString, zkRoot, retriesSleepTimeMillis, numRetries,
-                sessionTimeout, acl, auth);
+
+        return new ZookeeperProperties(StringUtils.join(zkServers, ','),
+                                       zkRoot,
+                                       retriesSleepTimeMillis, numRetries,
+                                       sessionTimeout, acl, auth);
     }
 }
