@@ -46,6 +46,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ImportServiceTest {
@@ -220,5 +221,34 @@ public class ImportServiceTest {
 
     private void loadHiveModel() throws IOException, AtlasBaseException {
         loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
+    }
+
+    @Test(dataProvider = "salesNewTypeAttrs-next")
+    public void transformUpdatesForSubTypes(ZipSource zipSource) throws IOException, AtlasBaseException {
+        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
+
+        String transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
+        importService.setImportTransform(zipSource, transformJSON);
+        ImportTransforms importTransforms = zipSource.getImportTransform();
+
+        assertTrue(importTransforms.getTransforms().containsKey("Asset"));
+        assertTrue(importTransforms.getTransforms().containsKey("hive_table"));
+        assertTrue(importTransforms.getTransforms().containsKey("hive_column"));
+    }
+
+    @Test(dataProvider = "salesNewTypeAttrs-next")
+    public void transformUpdatesForSubTypesAddsToExistingTransforms(ZipSource zipSource) throws IOException, AtlasBaseException {
+        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
+
+        String transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"replace:@cl1:@cl2\" ] }, \"hive_table\": { \"qualifiedName\":[ \"lowercase\" ] } }";
+        importService.setImportTransform(zipSource, transformJSON);
+        ImportTransforms importTransforms = zipSource.getImportTransform();
+
+        assertTrue(importTransforms.getTransforms().containsKey("Asset"));
+        assertTrue(importTransforms.getTransforms().containsKey("hive_table"));
+        assertTrue(importTransforms.getTransforms().containsKey("hive_column"));
+        assertEquals(importTransforms.getTransforms().get("hive_table").get("qualifiedName").size(), 2);
     }
 }
