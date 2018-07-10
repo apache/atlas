@@ -248,11 +248,25 @@ public class HiveMetaStoreBridge {
     }
 
     private void importDatabases(boolean failOnError, String databaseToImport, String tableToImport) throws Exception {
-        final List<String> databaseNames;
+        List<String> databaseNames = null;
 
-        if (StringUtils.isEmpty(databaseToImport)) {
+        if (StringUtils.isEmpty(databaseToImport) && StringUtils.isEmpty(tableToImport)) {
+            //when both database and table to import are empty, import all
             databaseNames = hiveClient.getAllDatabases();
+        } else if (StringUtils.isEmpty(databaseToImport) && StringUtils.isNotEmpty(tableToImport)) {
+            //when database is empty and table is not, then check table has database name in it and import that db and table
+            if (isTableWithDatabaseName(tableToImport)) {
+                String val[] = tableToImport.split("\\.");
+                if (val.length > 1) {
+                    databaseToImport = val[0];
+                    tableToImport = val[1];
+                }
+                databaseNames = hiveClient.getDatabasesByPattern(databaseToImport);
+            } else {
+                databaseNames = hiveClient.getAllDatabases();
+            }
         } else {
+            //when database to import has some value then, import that db and all table under it.
             databaseNames = hiveClient.getDatabasesByPattern(databaseToImport);
         }
 
@@ -918,5 +932,13 @@ public class HiveMetaStoreBridge {
         if (entity != null && entity.getRelationshipAttributes() != null) {
             entity.getRelationshipAttributes().clear();
         }
+    }
+
+    private boolean isTableWithDatabaseName(String tableName) {
+        boolean ret = false;
+        if (tableName.contains(".")) {
+            ret = true;
+        }
+        return ret;
     }
 }
