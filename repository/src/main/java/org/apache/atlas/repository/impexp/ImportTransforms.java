@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ImportTransforms {
     private static final Logger LOG = LoggerFactory.getLogger(ImportTransforms.class);
@@ -52,6 +53,23 @@ public class ImportTransforms {
     }
 
     public Map<String, List<ImportTransformer>> getTransforms(String typeName) { return transforms.get(typeName); }
+
+    public Set<String> getTypes() {
+        return getTransforms().keySet();
+    }
+
+    public void addParentTransformsToSubTypes(String parentType, Set<String> subTypes) {
+        Map<String, List<ImportTransformer>> attribtueTransformMap = getTransforms().get(parentType);
+        for (String subType : subTypes) {
+            if(!getTransforms().containsKey(subType)) {
+                getTransforms().put(subType, attribtueTransformMap);
+            } else {
+                for (Map.Entry<String, List<ImportTransformer>> entry : attribtueTransformMap.entrySet()) {
+                    getTransforms().get(subType).get(entry.getKey()).addAll(entry.getValue());
+                }
+            }
+        }
+    }
 
     public AtlasEntity.AtlasEntityWithExtInfo apply(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
         if (entityWithExtInfo != null) {
