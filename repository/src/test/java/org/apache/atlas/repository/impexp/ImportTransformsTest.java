@@ -23,19 +23,23 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 public class ImportTransformsTest {
     private final String qualifiedName  = "qualifiedName";
     private final String lowerCaseCL1   = "@cl1";
     private final String lowerCaseCL2   = "@cl2";
     private final String jsonTransforms = "{ \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
+    private final String jsonTransforms2 = "{ \"Asset\": { \"qualifiedName\":[ \"replace:@cl1:@cl2\" ] }, \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
 
     private ImportTransforms transform;
 
@@ -84,6 +88,14 @@ public class ImportTransformsTest {
 
         assertNotNull(transformedEntityWithExtInfo);
         assertEquals(entityWithExtInfo.getEntity().getGuid(), transformedEntityWithExtInfo.getEntity().getGuid());
+    }
+
+    @Test
+    public void transformFromJsonWithMultipleEntries() {
+        ImportTransforms t = ImportTransforms.fromJson(jsonTransforms2);
+
+        assertNotNull(t);
+        assertEquals(t.getTransforms().size(), 2);
     }
 
     private String[] getExtEntityExpectedValues(AtlasEntityWithExtInfo entityWithExtInfo) {
