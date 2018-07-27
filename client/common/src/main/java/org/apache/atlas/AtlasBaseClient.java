@@ -17,6 +17,7 @@
  */
 package org.apache.atlas;
 
+import org.codehaus.jackson.jaxrs.JacksonJaxbJsonProvider;
 import com.google.common.annotations.VisibleForTesting;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -262,6 +263,7 @@ public abstract class AtlasBaseClient {
         // Enable POJO mapping feature
         config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
         config.getClasses().add(MultiPartWriter.class);
+        config.getClasses().add(JacksonJaxbJsonProvider.class);
 
         int readTimeout = configuration.getInt("atlas.client.readTimeoutMSecs", 60000);
         int connectTimeout = configuration.getInt("atlas.client.connectTimeoutMSecs", 60000);
