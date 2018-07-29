@@ -20,6 +20,7 @@ package org.apache.atlas.utils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Console;
@@ -34,17 +35,27 @@ public final class AuthenticationUtil {
     }
 
     public static boolean isKerberosAuthenticationEnabled() {
-        boolean isKerberosAuthenticationEnabled = false;
+        return isKerberosAuthenticationEnabled((UserGroupInformation) null);
+    }
+
+    public static boolean isKerberosAuthenticationEnabled(UserGroupInformation ugi) {
+        boolean defaultValue = ugi != null && ugi.hasKerberosCredentials();
+
         try {
-            isKerberosAuthenticationEnabled = isKerberosAuthenticationEnabled(ApplicationProperties.get());
+            return isKerberosAuthenticationEnabled(ApplicationProperties.get(), defaultValue);
         } catch (AtlasException e) {
             LOG.error("Error while isKerberosAuthenticationEnabled ", e);
         }
-        return isKerberosAuthenticationEnabled;
+
+        return defaultValue;
     }
 
     public static boolean isKerberosAuthenticationEnabled(Configuration atlasConf) {
-        return atlasConf.getBoolean("atlas.authentication.method.kerberos", false);
+        return isKerberosAuthenticationEnabled(atlasConf, false);
+    }
+
+    public static boolean isKerberosAuthenticationEnabled(Configuration atlasConf, boolean defaultValue) {
+        return atlasConf.getBoolean("atlas.authentication.method.kerberos", defaultValue);
     }
 
     public static boolean includeHadoopGroups(){

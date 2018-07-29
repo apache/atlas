@@ -261,7 +261,9 @@ public abstract class AtlasBaseClient {
 
         final URLConnectionClientHandler handler;
 
-        if ((AuthenticationUtil.isKerberosAuthenticationEnabled())) {
+        boolean isKerberosEnabled = AuthenticationUtil.isKerberosAuthenticationEnabled(ugi);
+
+        if (isKerberosEnabled) {
             handler = SecureClientUtils.getClientConnectionHandler(config, configuration, doAsUser, ugi);
         } else {
             if (configuration.getBoolean(TLS_ENABLED, false)) {
