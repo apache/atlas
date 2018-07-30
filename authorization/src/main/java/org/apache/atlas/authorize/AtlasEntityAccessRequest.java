@@ -19,13 +19,9 @@ package org.apache.atlas.authorize;
 
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.type.AtlasClassificationType;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 public class AtlasEntityAccessRequest extends AtlasAccessRequest {
@@ -68,21 +64,12 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
     public AtlasEntityAccessRequest(AtlasTypeRegistry typeRegistry, AtlasPrivilege action, AtlasEntityHeader entity, AtlasClassification classification, String attributeName, String userName, Set<String> userGroups) {
         super(action, userName, userGroups);
 
-        this.entity         = entity;
-        this.entityId       = entity != null ? (String) entity.getAttribute("qualifiedName") : null;
-        this.classification = classification;
-        this.attributeName  = attributeName;
-        this.typeRegistry   = typeRegistry;
-
-        if (entity == null || entity.getClassifications() == null) {
-            this.entityClassifications = Collections.emptySet();
-        } else {
-            this.entityClassifications = new HashSet<>();
-
-            for (AtlasClassification classify : entity.getClassifications()) {
-                this.entityClassifications.add(classify.getTypeName());
-            }
-        }
+        this.entity                = entity;
+        this.entityId              = super.getEntityId(entity);
+        this.classification        = classification;
+        this.attributeName         = attributeName;
+        this.typeRegistry          = typeRegistry;
+        this.entityClassifications = super.getClassificationNames(entity);
     }
 
     public AtlasEntityHeader getEntity() {
@@ -110,29 +97,11 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
     }
 
     public Set<String> getEntityTypeAndAllSuperTypes() {
-        final Set<String> ret;
-
-        if (entity == null) {
-            ret = Collections.emptySet();
-        } else if (typeRegistry == null) {
-            ret = Collections.singleton(entity.getTypeName());
-        } else {
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-
-            ret = entityType != null ? entityType.getTypeAndAllSuperTypes() : Collections.singleton(entity.getTypeName());
-        }
-
-        return ret;
+        return super.getEntityTypeAndAllSuperTypes(entity == null ? null : entity.getTypeName(), typeRegistry);
     }
 
     public Set<String> getClassificationTypeAndAllSuperTypes(String classificationName) {
-        if (typeRegistry != null && classificationName != null) {
-            AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classificationName);
-
-            return classificationType == null ? Collections.emptySet() : classificationType.getTypeAndAllSuperTypes();
-        }
-
-        return Collections.emptySet();
+        return super.getClassificationTypeAndAllSuperTypes(classificationName, typeRegistry);
     }
 
     @Override

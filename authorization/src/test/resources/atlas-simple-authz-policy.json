@@ -22,6 +22,18 @@
           "typeCategories": [ ".*" ],
           "typeNames":      [ ".*" ]
         }
+      ],
+      "relationshipPermissions": [
+        {
+          "privileges":     [ ".*" ],
+          "relationshipTypes": [ ".*" ],
+          "endOneEntityType":      [ ".*" ],
+          "endOneEntityId":      [ ".*" ],
+          "endOneEntityClassification":      [ ".*" ],
+          "endTwoEntityType":      [ ".*" ],
+          "endTwoEntityId":      [ ".*" ],
+          "endTwoEntityClassification":      [ ".*" ]
+        }
       ]
     },
 

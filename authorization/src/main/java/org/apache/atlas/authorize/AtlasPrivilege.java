@@ -32,7 +32,11 @@ public enum AtlasPrivilege {
      ENTITY_REMOVE_CLASSIFICATION("entity-remove-classification"),
 
      ADMIN_EXPORT("admin-export"),
-     ADMIN_IMPORT("admin-import");
+     ADMIN_IMPORT("admin-import"),
+
+     RELATIONSHIP_ADD("add-relationship"),
+     RELATIONSHIP_UPDATE("update-relationship"),
+     RELATIONSHIP_REMOVE("remove-relationship");
 
      private final String type;
 

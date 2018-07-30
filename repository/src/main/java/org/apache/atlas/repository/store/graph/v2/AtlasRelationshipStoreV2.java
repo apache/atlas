@@ -20,10 +20,14 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
@@ -183,7 +187,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             }
         }
 
-
         validateRelationship(end1Vertex, end2Vertex, edgeType, relationship.getAttributes());
 
         AtlasRelationship ret = updateRelationship(edge, relationship);
@@ -251,6 +254,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         AtlasEdge edge = graphHelper.getEdgeForGUID(guid);
 
+
         if (edge == null) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_GUID_NOT_FOUND, guid);
         }
@@ -258,6 +262,13 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (getState(edge) == DELETED) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
         }
+
+        String            relationShipType = GraphHelper.getTypeName(edge);
+        AtlasEntityHeader end1Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
+        AtlasEntityHeader end2Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
+
 
         deleteHandler.deleteRelationships(Collections.singleton(edge), forceDelete);
 
@@ -320,7 +331,13 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         try {
             ret = getRelationshipEdge(end1Vertex, end2Vertex, relationship.getTypeName());
 
+
             if (ret == null) {
+                AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
+                AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD, relationship.getTypeName(), end1Entity , end2Entity ));
+
                 ret = createRelationshipEdge(end1Vertex, end2Vertex, relationship);
 
                 AtlasRelationshipType relationType = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
@@ -347,6 +364,12 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     private AtlasRelationship updateRelationship(AtlasEdge relationshipEdge, AtlasRelationship relationship) throws AtlasBaseException {
         AtlasRelationshipType relationType = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
+        AtlasVertex           end1Vertex   = relationshipEdge.getOutVertex();
+        AtlasVertex           end2Vertex   = relationshipEdge.getInVertex();
+        AtlasEntityHeader     end1Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
+        AtlasEntityHeader     end2Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_UPDATE, relationship.getTypeName(), end1Entity, end2Entity));
 
         updateTagPropagations(relationshipEdge, relationship);
 

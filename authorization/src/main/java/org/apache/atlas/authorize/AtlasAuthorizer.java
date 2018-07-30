@@ -48,8 +48,6 @@ public interface AtlasAuthorizer {
      */
     boolean isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException;
 
-
-
     /**
      * authorize operations on a type
      * @param request
@@ -58,6 +56,16 @@ public interface AtlasAuthorizer {
      */
     boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException;
 
+    /**
+     * authorize relationship type
+     * @param request
+     * @return
+     * @throws AtlasAuthorizationException
+     */
+    default
+    boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
+        return true;
+    }
 
     /**
      * scrub search-results to handle entities for which the user doesn't have access

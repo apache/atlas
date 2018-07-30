@@ -17,10 +17,17 @@
  */
 package org.apache.atlas.authorize;
 
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 public class AtlasAccessRequest {
@@ -76,6 +83,68 @@ public class AtlasAccessRequest {
 
     public void setClientIPAddress(String clientIPAddress) {
         this.clientIPAddress = clientIPAddress;
+    }
+
+    public Set<String> getEntityTypeAndAllSuperTypes(String entityType, AtlasTypeRegistry typeRegistry) {
+        final Set<String> ret;
+
+        if (entityType == null) {
+            ret = Collections.emptySet();
+        } else if (typeRegistry == null) {
+            ret = Collections.singleton(entityType);
+        } else {
+            AtlasEntityType entType = typeRegistry.getEntityTypeByName(entityType);
+
+            ret = entType != null ? entType.getTypeAndAllSuperTypes() : Collections.singleton(entityType);
+        }
+
+        return ret;
+    }
+
+    public Set<String> getClassificationTypeAndAllSuperTypes(String classificationName, AtlasTypeRegistry typeRegistry) {
+        final Set<String> ret;
+
+        if (classificationName == null) {
+            ret = Collections.emptySet();
+        } else if (typeRegistry == null) {
+            ret = Collections.singleton(classificationName);
+        } else {
+            AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classificationName);
+
+            return classificationType != null ? classificationType.getTypeAndAllSuperTypes() : Collections.singleton(classificationName);
+        }
+
+        return ret;
+    }
+
+    public String getEntityId(AtlasEntityHeader entity) {
+        final String ret;
+
+        if (entity == null) {
+            ret = null;
+        } else {
+            String qualifiedName = (String) entity.getAttribute("qualifiedName");
+
+            ret = qualifiedName;
+        }
+
+        return ret;
+    }
+
+    public Set<String> getClassificationNames(AtlasEntityHeader entity) {
+        final Set<String> ret;
+
+        if (entity == null || entity.getClassifications() == null) {
+            ret = Collections.emptySet();
+        } else {
+            ret = new HashSet<>();
+
+            for (AtlasClassification classify : entity.getClassifications()) {
+                ret.add(classify.getTypeName());
+            }
+        }
+
+        return ret;
     }
 
     @Override
