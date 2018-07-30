@@ -27,13 +27,7 @@ import java.util.Set;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.authorize.AtlasAdminAccessRequest;
-import org.apache.atlas.authorize.AtlasAuthorizer;
-import org.apache.atlas.authorize.AtlasAuthorizationException;
-import org.apache.atlas.authorize.AtlasEntityAccessRequest;
-import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
-import org.apache.atlas.authorize.AtlasTypeAccessRequest;
+import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
@@ -161,6 +155,66 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
         }
 
         return ret;
+    }
+
+    @Override
+    public boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
+        final Set<String> roles                       = getRoles(request.getUser(), request.getUserGroups());
+        final String      relationShipType            = request.getRelationshipType();
+        final Set<String> end1EntityTypeAndSuperTypes = request.getEnd1EntityTypeAndAllSuperTypes();
+        final Set<String> end1Classifications         = new HashSet<>(request.getEnd1EntityClassifications());
+        final String      end1EntityId                = request.getEnd1EntityId();
+        final Set<String> end2EntityTypeAndSuperTypes = request.getEnd2EntityTypeAndAllSuperTypes();
+        final Set<String> end2Classifications         = new HashSet<>(request.getEnd2EntityClassifications());
+        final String      end2EntityId                = request.getEnd2EntityId();
+        final String      action                      = request.getAction() != null ? request.getAction().getType() : null;
+
+        boolean hasEnd1EntityAccess = false;
+        boolean hasEnd2EntityAccess = false;
+
+        for (String role : roles) {
+            final List<AtlasRelationshipPermission> permissions = getRelationshipPermissionsForRole(role);
+
+            if (permissions == null) {
+                continue;
+            }
+
+            for (AtlasRelationshipPermission permission : permissions) {
+                if (isMatch(relationShipType, permission.getRelationshipTypes()) && isMatch(action, permission.getPrivileges())) {
+                    //End1 permission check
+                    if (!hasEnd1EntityAccess) {
+                         if (isMatchAny(end1EntityTypeAndSuperTypes, permission.getEnd1EntityType()) && isMatch(end1EntityId, permission.getEnd1EntityId())) {
+                             for (Iterator<String> iter = end1Classifications.iterator(); iter.hasNext();) {
+                                 String entityClassification = iter.next();
+
+                                 if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEnd1EntityClassification())) {
+                                     iter.remove();
+                                 }
+                             }
+
+                             hasEnd1EntityAccess = CollectionUtils.isEmpty(end1Classifications);
+                        }
+                    }
+
+                    //End2 permission chech
+                    if (!hasEnd2EntityAccess) {
+                        if (isMatchAny(end2EntityTypeAndSuperTypes, permission.getEnd2EntityType()) && isMatch(end2EntityId, permission.getEnd2EntityId())) {
+                            for (Iterator<String> iter = end2Classifications.iterator(); iter.hasNext();) {
+                                String entityClassification = iter.next();
+
+                                if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEnd2EntityClassification())) {
+                                    iter.remove();
+                                }
+                            }
+
+                            hasEnd2EntityAccess = CollectionUtils.isEmpty(end2Classifications);
+                        }
+                    }
+                }
+            }
+        }
+
+        return hasEnd1EntityAccess && hasEnd2EntityAccess;
     }
 
     @Override
@@ -319,6 +373,19 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             AtlasAuthzRole role = authzPolicy.getRoles().get(roleName);
 
             ret = role != null ? role.getEntityPermissions() : null;
+        }
+
+        return ret;
+    }
+
+
+    private List<AtlasRelationshipPermission> getRelationshipPermissionsForRole(String roleName) {
+        List<AtlasRelationshipPermission> ret = null;
+
+        if (authzPolicy != null && roleName != null) {
+            AtlasAuthzRole role = authzPolicy.getRoles().get(roleName);
+
+            ret = role != null ? role.getRelationshipPermissions() : null;
         }
 
         return ret;

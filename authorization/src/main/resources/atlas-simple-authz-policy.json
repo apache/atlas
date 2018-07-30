@@ -6,7 +6,13 @@
           "privileges": [ ".*" ]
         }
       ],
-
+      "typePermissions": [
+        {
+          "privileges":     [ ".*" ],
+          "typeCategories": [ ".*" ],
+          "typeNames":      [ ".*" ]
+        }
+      ],
       "entityPermissions": [
         {
           "privileges":      [ ".*" ],
@@ -15,12 +21,16 @@
           "classifications": [ ".*" ]
         }
       ],
-
-      "typePermissions": [
+      "relationshipPermissions": [
         {
-          "privileges":     [ ".*" ],
-          "typeCategories": [ ".*" ],
-          "typeNames":      [ ".*" ]
+          "privileges":               [ ".*" ],
+          "relationshipTypes":        [ ".*" ],
+          "end1EntityType":           [ ".*" ],
+          "end1EntityId":             [ ".*" ],
+          "end1EntityClassification": [ ".*" ],
+          "end2EntityType":           [ ".*" ],
+          "end2EntityId":             [ ".*" ],
+          "end2EntityClassification": [ ".*" ]
         }
       ]
     },
@@ -43,6 +53,18 @@
           "entityTypes":     [ ".*" ],
           "entityIds":       [ ".*" ],
           "classifications": [ ".*" ]
+        }
+      ],
+      "relationshipPermissions": [
+        {
+          "privileges":               [ "add-relationship", "update-relationship", "remove-relationship" ],
+          "relationshipTypes":        [ ".*" ],
+          "end1EntityType":           [ ".*" ],
+          "end1EntityId":             [ ".*" ],
+          "end1EntityClassification": [ ".*" ],
+          "end2EntityType":           [ ".*" ],
+          "end2EntityId":             [ ".*" ],
+          "end2EntityClassification": [ ".*" ]
         }
       ]
     }

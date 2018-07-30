@@ -45,6 +45,11 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
         return true;
     }
 
+    @Override
+    public boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
+        return true;
+    }
+
     public void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
 
     }
