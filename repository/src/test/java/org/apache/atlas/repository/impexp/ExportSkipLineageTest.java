@@ -82,7 +82,7 @@ public class ExportSkipLineageTest extends ExportImportTestBase {
 
         entityStore = new AtlasEntityStoreV2(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
         createEntities(entityStore, ENTITIES_SUB_DIR, new String[]{"db", "table-columns", "table-view", "table-table-lineage"});
-        final Object[] entityGuids = new Object[]{DB_GUID, TABLE_GUID, TABLE_TABLE_GUID, TABLE_VIEW_GUID};
+        final String[] entityGuids = {DB_GUID, TABLE_GUID, TABLE_TABLE_GUID, TABLE_VIEW_GUID};
         verifyCreatedEntities(entityStore, entityGuids, 4);
     }
 
