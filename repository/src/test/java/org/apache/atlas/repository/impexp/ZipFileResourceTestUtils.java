@@ -285,6 +285,8 @@ public class ZipFileResourceTestUtils {
     }
 
     private static void addReplicationAttributes(AtlasTypesDef typesFromJson) throws IOException {
+        if(typesFromJson.getEntityDefs() == null || typesFromJson.getEntityDefs().size() == 0) return;
+
         AtlasEntityDef ed = typesFromJson.getEntityDefs().get(0);
         if(!ed.getName().equals("Referenceable")) return;
 
