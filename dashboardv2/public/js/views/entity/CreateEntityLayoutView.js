@@ -184,7 +184,7 @@ define(['require',
             },
             fetchCollections: function() {
                 if (this.guid) {
-                    this.collection.url = UrlLinks.entitiesApiUrl(this.guid);
+                    this.collection.url = UrlLinks.entitiesApiUrl({ guid: this.guid });
                     this.collection.fetch({ reset: true });
                 } else {
                     this.entityCollectionList();
@@ -212,7 +212,7 @@ define(['require',
                             _.each(attrObj, function(obj) {
                                 if (obj.guid && !referredEntities[obj.guid]) {
                                     ++that.asyncReferEntityCounter;
-                                    that.collection.url = UrlLinks.entitiesApiUrl(obj.guid);
+                                    that.collection.url = UrlLinks.entitiesApiUrl({ guid: obj.guid });
                                     that.collection.fetch({
                                         success: function(data, response) {
                                             referredEntities[obj.guid] = response.entity;

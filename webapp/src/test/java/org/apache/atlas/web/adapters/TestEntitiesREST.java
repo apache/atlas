@@ -165,7 +165,7 @@ public class TestEntitiesREST {
     @Test(dependsOnMethods = "testCreateOrUpdateEntities")
     public void testGetEntities() throws Exception {
 
-        final AtlasEntitiesWithExtInfo response = entityREST.getByGuids(createdGuids);
+        final AtlasEntitiesWithExtInfo response = entityREST.getByGuids(createdGuids, false);
         final List<AtlasEntity> entities = response.getEntities();
 
         Assert.assertNotNull(entities);

@@ -99,7 +99,7 @@ public class TestEntityREST {
     @Test
     public void testGetEntityById() throws Exception {
         createTestEntity();
-        AtlasEntityWithExtInfo response = entityREST.getById(dbEntity.getGuid());
+        AtlasEntityWithExtInfo response = entityREST.getById(dbEntity.getGuid(), false);
 
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.getEntity());
@@ -183,7 +183,7 @@ public class TestEntityREST {
     @Test(dependsOnMethods = "testAddAndGetClassification")
     public void  testGetEntityWithAssociations() throws Exception {
 
-        AtlasEntityWithExtInfo entity = entityREST.getById(dbEntity.getGuid());
+        AtlasEntityWithExtInfo entity = entityREST.getById(dbEntity.getGuid(), false);
         final List<AtlasClassification> retrievedClassifications = entity.getEntity().getClassifications();
 
         Assert.assertNotNull(retrievedClassifications);
@@ -315,7 +315,7 @@ public class TestEntityREST {
         Assert.assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.PARTIAL_UPDATE).get(0).getGuid(), dbGuid);
 
         //Get By unique attribute
-        AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
+        AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, false, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
         Assert.assertNotNull(entity);
         Assert.assertNotNull(entity.getEntity().getGuid());
         Assert.assertEquals(entity.getEntity().getGuid(), dbGuid);
@@ -340,7 +340,7 @@ public class TestEntityREST {
         Assert.assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.PARTIAL_UPDATE).get(0).getGuid(), dbGuid);
 
         //Get By unique attribute
-        AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
+        AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, false, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
         Assert.assertNotNull(entity);
         Assert.assertNotNull(entity.getEntity().getGuid());
         Assert.assertEquals(entity.getEntity().getGuid(), dbGuid);

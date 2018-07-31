@@ -41,7 +41,7 @@ define(['require',
          * Non - CRUD operations
          *************************/
         getEntity: function(id, options) {
-            var url = UrlLinks.entitiesApiUrl(id);
+            var url = UrlLinks.entitiesApiUrl({guid: id});
 
             options = _.extend({
                 contentType: 'application/json',

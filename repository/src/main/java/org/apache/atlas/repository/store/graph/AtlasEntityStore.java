@@ -21,6 +21,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
@@ -51,12 +52,38 @@ public interface AtlasEntityStore {
     AtlasEntityWithExtInfo getById(String guid) throws AtlasBaseException;
 
     /**
+     *
+     * Get entity definition by its guid
+     * @param guid
+     * @param isMinExtInfo
+     * @return AtlasEntity
+     */
+    AtlasEntityWithExtInfo getById(String guid, boolean isMinExtInfo) throws AtlasBaseException;
+
+    /**
+     * Get entity header for the given GUID
+     * @param guid
+     * @return
+     * @throws AtlasBaseException
+     */
+    AtlasEntityHeader getHeaderById(String guid) throws AtlasBaseException;
+
+    /**
      * Batch GET to retrieve entities by their ID
      * @param guid
      * @return
      * @throws AtlasBaseException
      */
     AtlasEntitiesWithExtInfo getByIds(List<String> guid) throws AtlasBaseException;
+
+    /**
+     * Batch GET to retrieve entities by their ID
+     * @param guid
+     * @param isMinExtInfo
+     * @return
+     * @throws AtlasBaseException
+     */
+    AtlasEntitiesWithExtInfo getByIds(List<String> guid, boolean isMinExtInfo) throws AtlasBaseException;
 
     /**
      *
@@ -66,6 +93,17 @@ public interface AtlasEntityStore {
      * @return EntityMutationResponse details of the updates performed by this call
      */
     AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
+            throws AtlasBaseException;
+
+    /**
+     *
+     * Get an eneity by its unique attribute
+     * @param entityType     type of the entity
+     * @param uniqAttributes Attributes that uniquely identify the entity
+     * @param isMinExtInfo
+     * @return EntityMutationResponse details of the updates performed by this call
+     */
+    AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes, boolean isMinExtInfo)
             throws AtlasBaseException;
 
     /**
@@ -130,7 +168,7 @@ public interface AtlasEntityStore {
      * @throws AtlasBaseException
      */
     EntityMutationResponse deleteByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
-                                                                                             throws AtlasBaseException;
+            throws AtlasBaseException;
     /**
      *
      * Get an entity guid by its unique attributes
