@@ -381,6 +381,8 @@ public final class EntityGraphRetriever {
 
             mapAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo);
 
+            mapRelationshipAttributes(entityVertex, entity);
+
             mapClassifications(entityVertex, entity);
         }
 
