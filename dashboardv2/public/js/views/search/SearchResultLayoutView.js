@@ -220,7 +220,7 @@ define(['require',
                 this.listenTo(this.searchCollection, "error", function(model, response) {
                     this.hideLoader({ type: 'error' });
                     var responseJSON = response && response.responseJSON ? response.responseJSON : null,
-                    errorText = (responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error ))|| 'Invalid Expression';
+                        errorText = (responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error)) || 'Invalid Expression';
                     if (errorText) {
                         Utils.notifyError({
                             content: errorText
@@ -492,7 +492,7 @@ define(['require',
                         this.searchCollection.url = UrlLinks.searchApiUrl(value.searchType);
                     }
                     _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset, 'query': _.trim(value.query), 'typeName': value.type || null, 'classification': value.tag || null });
-                    if (value.profileDBView && value.profileDBView && value.guid) {
+                    if (value.profileDBView && value.typeName && value.guid) {
                         var profileParam = {};
                         profileParam['guid'] = value.guid;
                         profileParam['relation'] = value.typeName === 'hive_db' ? '__hive_table.db' : '__hbase_table.namespace';
