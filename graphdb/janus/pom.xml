@@ -68,7 +68,7 @@
 
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-core</artifactId>
+            <artifactId>janusgraph-server</artifactId>
             <version>${janus.version}</version>
             <exclusions>
                 <exclusion>
@@ -219,7 +219,6 @@
             <version>${tinkerpop.version}</version>
         </dependency>
 
-        <!-- Test dependencies -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
