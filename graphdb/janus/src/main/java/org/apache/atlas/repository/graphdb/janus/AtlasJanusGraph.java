@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,9 +37,8 @@ import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.groovy.CompilerCustomizerProvider;
-import org.apache.tinkerpop.gremlin.groovy.DefaultImportCustomizerProvider;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
+import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
@@ -268,15 +267,11 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public GremlinGroovyScriptEngine getGremlinScriptEngine() {
-        Set<String> extraImports       = new HashSet<String>();
-        Set<String> extraStaticImports = new HashSet<String>();
-
-        extraImports.add(java.util.function.Function.class.getName());
-        extraStaticImports.add(P.class.getName() + ".*");
-        extraStaticImports.add(__.class.getName() + ".*");
-
-        CompilerCustomizerProvider provider     = new DefaultImportCustomizerProvider(extraImports, extraStaticImports);
-        GremlinGroovyScriptEngine  scriptEngine = new GremlinGroovyScriptEngine(provider);
+        DefaultImportCustomizer.Builder importBuilder = DefaultImportCustomizer.build()
+                                                                               .addClassImports(java.util.function.Function.class)
+                                                                               .addMethodImports(__.class.getMethods())
+                                                                               .addMethodImports(P.class.getMethods());
+        GremlinGroovyScriptEngine scriptEngine = new GremlinGroovyScriptEngine(importBuilder.create());
 
         return scriptEngine;
     }
@@ -285,7 +280,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     public void releaseGremlinScriptEngine(ScriptEngine scriptEngine) {
         if (scriptEngine instanceof GremlinGroovyScriptEngine) {
             try {
-                ((GremlinGroovyScriptEngine)scriptEngine).close();
+                ((GremlinGroovyScriptEngine) scriptEngine).close();
             } catch (Exception e) {
                 // ignore
             }
@@ -402,7 +397,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         } else if (rawValue instanceof Edge) {
             return GraphDbObjectFactory.createEdge(this, (Edge) rawValue);
         } else if (rawValue instanceof Map) {
-            Map<String,Object> rowValue = (Map<String,Object>)rawValue;
+            Map<String, Object> rowValue = (Map<String, Object>) rawValue;
 
             return Maps.transformValues(rowValue, GREMLIN_VALUE_CONVERSION_FUNCTION);
         } else if (rawValue instanceof ImmutablePath) {
@@ -410,7 +405,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
             return convertGremlinValue(path.objects());
         } else if (rawValue instanceof List) {
-            return Lists.transform((List)rawValue, GREMLIN_VALUE_CONVERSION_FUNCTION);
+            return Lists.transform((List) rawValue, GREMLIN_VALUE_CONVERSION_FUNCTION);
         } else if (rawValue instanceof Collection) {
             throw new UnsupportedOperationException("Unhandled collection type: " + rawValue.getClass());
         }
