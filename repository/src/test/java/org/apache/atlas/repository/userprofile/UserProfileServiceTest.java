@@ -59,6 +59,7 @@ public class UserProfileServiceTest {
 
     @Test
     public void filterInternalType() throws AtlasBaseException {
+        final int NUMER_OF_INTERNAL_TYPES = 4;
         SearchFilter searchFilter = new SearchFilter();
         AtlasTypesDef filteredTypeDefs = typeDefStore.searchTypesDef(searchFilter);
         int maxTypeDefs = filteredTypeDefs.getEntityDefs().size();
@@ -67,7 +68,7 @@ public class UserProfileServiceTest {
         filteredTypeDefs = typeDefStore.searchTypesDef(searchFilter);
 
         assertNotNull(filteredTypeDefs);
-        assertEquals(filteredTypeDefs.getEntityDefs().size(), maxTypeDefs - 3);
+        assertEquals(filteredTypeDefs.getEntityDefs().size(), maxTypeDefs - NUMER_OF_INTERNAL_TYPES);
     }
 
     @Test

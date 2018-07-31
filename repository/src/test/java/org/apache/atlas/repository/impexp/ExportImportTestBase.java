@@ -62,12 +62,11 @@ public class ExportImportTestBase {
     protected void assertAuditEntry(ExportImportAuditService auditService) {
         AtlasSearchResult result = null;
         try {
-            result = auditService.get("", "", getCurrentCluster(), "", "", "", 10, 0);
+            result = auditService.get("", "", "", "", "", "", 10, 0);
         } catch (AtlasBaseException e) {
             fail("auditService.get: failed!");
-        } catch (AtlasException e) {
-            fail("getCurrentCluster: failed!");
         }
+
         assertNotNull(result);
         assertNotNull(result.getEntities());
         assertTrue(result.getEntities().size() > 0);
