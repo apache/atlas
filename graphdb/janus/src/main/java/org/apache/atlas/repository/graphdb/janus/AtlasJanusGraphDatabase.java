@@ -30,6 +30,7 @@ import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.graphdb.database.serialize.attribute.SerializableSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     private static final Logger LOG      = LoggerFactory.getLogger(AtlasJanusGraphDatabase.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("AtlasJanusGraphDatabase");
 
+    private static final String OLDER_STORAGE_EXCEPTION = "Storage version is incompatible with current client";
 
     /**
      * Constant for the configuration property that indicates the prefix.
@@ -102,7 +104,16 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                         throw new RuntimeException(e);
                     }
 
-                    graphInstance = JanusGraphFactory.open(config);
+                    try {
+                        graphInstance = JanusGraphFactory.open(config);
+                    } catch (JanusGraphException e) {
+                        LOG.warn("JanusGraphException: {}", e.getMessage());
+                        if (e.getMessage().startsWith(OLDER_STORAGE_EXCEPTION)) {
+                            LOG.info("Newer client is being used with older janus storage version. Setting allow-upgrade=true and reattempting connection");
+                            config.addProperty("graph.allow-upgrade", true);
+                            graphInstance = JanusGraphFactory.open(config);
+                        }
+                    }
                     atlasGraphInstance = new AtlasJanusGraph();
                     validateIndexBackend(config);
                 }
