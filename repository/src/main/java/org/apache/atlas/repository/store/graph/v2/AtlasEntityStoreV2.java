@@ -105,6 +105,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
+    @GraphTransaction
     public AtlasEntityWithExtInfo getById(final String guid, final boolean isMinExtInfo) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getById({}, {})", guid, isMinExtInfo);
@@ -126,6 +127,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
+    @GraphTransaction
     public AtlasEntityHeader getHeaderById(final String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getHeaderById({})", guid);
@@ -147,6 +149,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
+    @GraphTransaction
     public AtlasEntitiesWithExtInfo getByIds(List<String> guids) throws AtlasBaseException {
         return getByIds(guids, false);
     }
@@ -170,6 +173,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
+    @GraphTransaction
     public AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
             throws AtlasBaseException {
         return getByUniqueAttributes(entityType, uniqAttributes, false);
