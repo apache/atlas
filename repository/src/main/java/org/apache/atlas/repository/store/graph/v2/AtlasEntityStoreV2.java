@@ -119,6 +119,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(ret.getEntity())), "read entity: guid=", guid);
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getById({}, {}): {}", guid, isMinExtInfo, ret);
         }
@@ -140,6 +142,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, ret), "read entity: guid=", guid);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getHeaderById({}): {}", guid, ret);
@@ -164,6 +168,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityGraphRetriever entityRetriever = new EntityGraphRetriever(typeRegistry);
 
         AtlasEntitiesWithExtInfo ret = entityRetriever.toAtlasEntitiesWithExtInfo(guids, isMinExtInfo);
+
+        if(ret != null){
+            for(String guid : guids){
+                AtlasEntity entity = ret.getEntity(guid);
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)), "read entity: guid=", guid);
+            }
+        }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getByIds({}, {}): {}", guids, isMinExtInfo, ret);
@@ -197,6 +209,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
                                          uniqAttributes.toString());
         }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(ret.getEntity())), "read entity: typeName=", entityType.getTypeName(), ", uniqueAttributes=", uniqAttributes);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getByUniqueAttribute({}, {}): {}", entityType.getTypeName(), uniqAttributes, ret);
