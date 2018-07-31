@@ -43,7 +43,17 @@ define(['require',
          *************************/
 
         getEntity: function(token, options) {
-            var url = UrlLinks.entitiesApiUrl(token);
+            var url = UrlLinks.entitiesApiUrl({ guid: token });
+
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+
+            return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
+        },
+        getEntityHeader: function(token, options) {
+            var url = UrlLinks.entityHeaderApiUrl(token);
 
             options = _.extend({
                 contentType: 'application/json',

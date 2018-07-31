@@ -125,7 +125,7 @@ define([
                         'id': id,
                         'value': paramObj
                     }, that.preFetchedCollectionLists, that.sharedObj)));
-                    this.entityCollection.url = UrlLinks.entitiesApiUrl(id);
+                    this.entityCollection.url = UrlLinks.entitiesApiUrl({ guid: id, minExtInfo: true });
                     this.entityCollection.fetch({ reset: true });
                 });
             }
