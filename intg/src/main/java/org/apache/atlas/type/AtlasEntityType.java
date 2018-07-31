@@ -45,15 +45,25 @@ import java.util.Set;
 public class AtlasEntityType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityType.class);
 
+    private static final String NAME        = "name";
+    private static final String DESCRIPTION = "description";
+    private static final String OWNER       = "owner";
+    private static final String CREATE_TIME = "createTime";
+
+    private static final String[] ENTITY_HEADER_ATTRIBUTES = new String[] { NAME, DESCRIPTION, OWNER, CREATE_TIME };
+    private static final String   OPTION_SCHEMA_ATTRIBUTES = "schemaAttributes";
+
     private final AtlasEntityDef entityDef;
     private final String         typeQryStr;
 
-    private List<AtlasEntityType> superTypes               = Collections.emptyList();
-    private Set<String>           allSuperTypes            = Collections.emptySet();
-    private Set<String>           subTypes                 = Collections.emptySet();
-    private Set<String>           allSubTypes              = Collections.emptySet();
-    private Set<String>           typeAndAllSubTypes       = Collections.emptySet();
-    private String                typeAndAllSubTypesQryStr = "";
+    private List<AtlasEntityType>       superTypes               = Collections.emptyList();
+    private Set<String>                 allSuperTypes            = Collections.emptySet();
+    private Set<String>                 subTypes                 = Collections.emptySet();
+    private Set<String>                 allSubTypes              = Collections.emptySet();
+    private Set<String>                 typeAndAllSubTypes       = Collections.emptySet();
+    private String                      typeAndAllSubTypesQryStr = "";
+    private Map<String, AtlasAttribute> headerAttributes         = Collections.emptyMap();
+    private Map<String, AtlasAttribute> minInfoAttributes        = Collections.emptyMap();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -102,6 +112,34 @@ public class AtlasEntityType extends AtlasStructType {
         this.typeAndAllSubTypes = new HashSet<>();   // this will be populated in resolveReferencesPhase2()
 
         this.typeAndAllSubTypes.add(this.getTypeName());
+
+        // headerAttributes includes uniqAttributes & ENTITY_HEADER_ATTRIBUTES
+        this.headerAttributes = new HashMap<>(this.uniqAttributes);
+
+        for (String headerAttributeName : ENTITY_HEADER_ATTRIBUTES) {
+            AtlasAttribute headerAttribute = getAttribute(headerAttributeName);
+
+            if (headerAttribute != null) {
+                this.headerAttributes.put(headerAttributeName, headerAttribute);
+            }
+        }
+
+        // minInfoAttributes includes all headerAttributes & schema-attributes
+        this.minInfoAttributes = new HashMap<>(this.headerAttributes);
+
+        Map<String, String> typeDefOptions       = entityDef.getOptions();
+        String              jsonList             = typeDefOptions != null ? typeDefOptions.get(OPTION_SCHEMA_ATTRIBUTES) : null;
+        List<String>        schemaAttributeNames = StringUtils.isNotEmpty(jsonList) ? AtlasType.fromJson(jsonList, List.class) : null;
+
+        if (CollectionUtils.isNotEmpty(schemaAttributeNames)) {
+            for (String schemaAttributeName : schemaAttributeNames) {
+                AtlasAttribute schemaAttribute = getAttribute(schemaAttributeName);
+
+                if (schemaAttribute != null) {
+                    this.minInfoAttributes.put(schemaAttributeName, schemaAttribute);
+                }
+            }
+        }
     }
 
     @Override
@@ -141,6 +179,10 @@ public class AtlasEntityType extends AtlasStructType {
     public Set<String> getAllSubTypes() { return allSubTypes; }
 
     public Set<String> getTypeAndAllSubTypes() { return typeAndAllSubTypes; }
+
+    public Map<String, AtlasAttribute> getHeaderAttributes() { return headerAttributes; }
+
+    public Map<String, AtlasAttribute> getMinInfoAttributes() { return minInfoAttributes; }
 
     public boolean isSuperTypeOf(AtlasEntityType entityType) {
         return entityType != null && allSubTypes.contains(entityType.getTypeName());

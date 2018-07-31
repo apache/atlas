@@ -21,9 +21,9 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
@@ -44,15 +44,7 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
@@ -92,17 +84,43 @@ public class EntityREST {
     @Path("/guid/{guid}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid) throws AtlasBaseException {
+    public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getById(" + guid + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getById(" + guid + ", " + minExtInfo + " )");
             }
 
-            return entitiesStore.getById(guid);
+            return entitiesStore.getById(guid, minExtInfo);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Get entity header given its GUID.
+     * @param guid GUID for the entity
+     * @return AtlasEntity
+     * @throws AtlasBaseException
+     */
+    @GET
+    @Path("/guid/{guid}/header")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasEntityHeader getHeaderById(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getHeaderById(" + guid + ")");
+            }
+
+            return entitiesStore.getHeaderById(guid);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -129,7 +147,7 @@ public class EntityREST {
     @Path("/uniqueAttribute/type/{typeName}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEntityWithExtInfo getByUniqueAttributes(@PathParam("typeName") String typeName,
+    public AtlasEntityWithExtInfo getByUniqueAttributes(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo,
                                                         @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
 
@@ -146,7 +164,7 @@ public class EntityREST {
 
             validateUniqueAttribute(entityType, attributes);
 
-            return entitiesStore.getByUniqueAttributes(entityType, attributes);
+            return entitiesStore.getByUniqueAttributes(entityType, attributes, minExtInfo);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -573,7 +591,7 @@ public class EntityREST {
     @Path("/bulk")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEntitiesWithExtInfo getByGuids(@QueryParam("guid") List<String> guids) throws AtlasBaseException {
+    public AtlasEntitiesWithExtInfo getByGuids(@QueryParam("guid") List<String> guids, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(guids)) {
             for (String guid : guids) {
                 Servlets.validateQueryParamLength("guid", guid);
@@ -591,7 +609,7 @@ public class EntityREST {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids);
             }
 
-            return entitiesStore.getByIds(guids);
+            return entitiesStore.getByIds(guids, minExtInfo);
         } finally {
             AtlasPerfTracer.log(perf);
         }

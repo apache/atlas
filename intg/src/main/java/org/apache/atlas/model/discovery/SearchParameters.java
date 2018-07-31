@@ -303,6 +303,20 @@ public class SearchParameters implements Serializable {
         private Condition            condition;
         private List<FilterCriteria> criterion;
 
+        public FilterCriteria() {
+        }
+
+        public FilterCriteria(String attributeName, Operator operator, String attributeValue) {
+            this.attributeName  = attributeName;
+            this.operator       = operator;
+            this.attributeValue = attributeValue;
+        }
+
+        public FilterCriteria(Condition condition, List<FilterCriteria> criterion) {
+            this.condition = condition;
+            this.criterion = criterion;
+        }
+
         public String getAttributeName() {
             return attributeName;
         }

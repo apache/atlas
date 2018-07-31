@@ -85,11 +85,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         var table = "",
             fetchInputOutputValue = function(id) {
                 var that = this;
-                scope.entityModel.getEntity(id, {
+                scope.entityModel.getEntityHeader(id, {
                     success: function(serverData) {
                         var value = "",
                             deleteButton = "",
-                            data = serverData.entity;
+                            data = serverData;
                         value = Utils.getName(data);
                         var id = "";
                         if (data.guid) {

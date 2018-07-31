@@ -24,6 +24,8 @@ import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import org.apache.atlas.model.discovery.SearchParameters.Operator;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.ogm.ExportImportAuditEntryDTO;
@@ -62,8 +64,7 @@ public class ExportImportAuditService {
     public AtlasSearchResult get(String userName, String operation, String sourceCluster, String targetCluster,
                                  String startTime, String endTime,
                                  int limit, int offset) throws AtlasBaseException {
-        SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
-        criteria.setCriterion(new ArrayList<SearchParameters.FilterCriteria>());
+        FilterCriteria criteria = new FilterCriteria(FilterCriteria.Condition.AND, new ArrayList<FilterCriteria>());
 
         addSearchParameters(criteria, userName, operation, sourceCluster, targetCluster, startTime, endTime);
 
@@ -72,19 +73,18 @@ public class ExportImportAuditService {
         return discoveryService.searchWithParameters(searchParameters);
     }
 
-    private SearchParameters getSearchParameters(int limit, int offset, SearchParameters.FilterCriteria criteria) {
+    private SearchParameters getSearchParameters(int limit, int offset, FilterCriteria criteria) {
         SearchParameters searchParameters = new SearchParameters();
         searchParameters.setTypeName(ENTITY_TYPE_NAME);
         searchParameters.setEntityFilters(criteria);
         searchParameters.setLimit(limit);
         searchParameters.setOffset(offset);
+
         return searchParameters;
     }
 
-    private void addSearchParameters(SearchParameters.FilterCriteria criteria,
-                                     String userName, String operation, String sourceCluster, String targetCluster,
-                                     String startTime, String endTime) {
-
+    private void addSearchParameters(FilterCriteria criteria, String userName, String operation,
+                                     String sourceCluster, String targetCluster, String startTime, String endTime) {
         addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_USER_NAME, userName);
         addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_OPERATION, operation);
         addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_SOURCE_CLUSTER_NAME, sourceCluster);
@@ -93,31 +93,11 @@ public class ExportImportAuditService {
         addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_END_TIME, endTime);
     }
 
-    private void addParameterIfValueNotEmpty(SearchParameters.FilterCriteria criteria,
-                                             String attributeName, String value) {
-        if(StringUtils.isEmpty(value)) return;
-
-        boolean isFirstCriteria = criteria.getAttributeName() == null;
-        SearchParameters.FilterCriteria cx = isFirstCriteria
-                                                ? criteria
-                                                : new SearchParameters.FilterCriteria();
-
-        setCriteria(cx, attributeName, value);
-
-        if(isFirstCriteria) {
-            cx.setCondition(SearchParameters.FilterCriteria.Condition.AND);
+    private void addParameterIfValueNotEmpty(FilterCriteria criteria, String attributeName, String value) {
+        if(StringUtils.isEmpty(value)) {
+            return;
         }
 
-        if(!isFirstCriteria) {
-            criteria.getCriterion().add(cx);
-        }
-    }
-
-    private SearchParameters.FilterCriteria setCriteria(SearchParameters.FilterCriteria criteria, String attributeName, String value) {
-        criteria.setAttributeName(attributeName);
-        criteria.setAttributeValue(value);
-        criteria.setOperator(SearchParameters.Operator.EQ);
-
-        return criteria;
+        criteria.getCriterion().add(new FilterCriteria(attributeName, Operator.EQ, value));
     }
 }
