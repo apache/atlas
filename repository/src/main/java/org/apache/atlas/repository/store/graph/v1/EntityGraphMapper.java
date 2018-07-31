@@ -31,6 +31,7 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -571,9 +572,14 @@ public class EntityGraphMapper {
         List<Object>   currentElements = getArrayElementsProperty(elementType, ctx.getReferringVertex(), ctx.getVertexProperty());
         boolean isReference = AtlasGraphUtilsV1.isReference(elementType);
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
+        Cardinality cardinality         = attribute.getAttributeDef().getCardinality();
         List<Object> newElementsCreated = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(newElements)) {
+            if (cardinality == Cardinality.SET) {
+                newElements = getUniqueElementsList(newElements);
+            }
+
             for (int index = 0; index < newElements.size(); index++) {
                 AtlasEdge               existingEdge = getEdgeAt(currentElements, index, elementType);
                 AttributeMutationContext arrCtx      = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index),
@@ -603,7 +609,6 @@ public class EntityGraphMapper {
 
         return newElementsCreated;
     }
-
 
     private AtlasEdge createVertex(AtlasStruct struct, AtlasVertex referringVertex, String edgeLabel, EntityMutationContext context) throws AtlasBaseException {
         AtlasVertex vertex = createStructVertex(struct);
@@ -1037,5 +1042,23 @@ public class EntityGraphMapper {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);
             }
         }
+    }
+
+    private List getUniqueElementsList(List list) {
+        final List ret;
+
+        if (CollectionUtils.isEmpty(list) || list.size() == 1) {
+            ret = list;
+        } else {
+            ret = new ArrayList(list.size());
+
+            for (Object elem : list) {
+                if (!ret.contains(elem)) {
+                    ret.add(elem);
+                }
+            }
+        }
+
+        return ret;
     }
 }
