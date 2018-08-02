@@ -18,8 +18,10 @@
 
 package org.apache.atlas.web.resources;
 
+//import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+//import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.web.service.ServiceState;
 import org.mockito.Mock;
@@ -51,9 +53,11 @@ public class AdminResourceTest {
 
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
 
-        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null, null);
+        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null,null,null);
         Response response = adminResource.getStatus();
         assertEquals(response.getStatus(), HttpServletResponse.SC_OK);
+        //JSONObject entity = (JSONObject) response.getEntity();
+        //assertEquals(entity.get("Status"), "ACTIVE");
         JsonNode entity = AtlasJson.parseToV1JsonNode((String) response.getEntity());
         assertEquals(entity.get("Status").asText(), "ACTIVE");
     }
@@ -62,10 +66,11 @@ public class AdminResourceTest {
     public void testResourceGetsValueFromServiceState() throws IOException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
 
-        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null, null);
+        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null,null,null);
         Response response = adminResource.getStatus();
-
         verify(serviceState).getState();
+        //JSONObject entity = (JSONObject) response.getEntity();
+        //assertEquals(entity.get("Status"), "PASSIVE");
         JsonNode entity = AtlasJson.parseToV1JsonNode((String) response.getEntity());
         assertEquals(entity.get("Status").asText(), "PASSIVE");
 

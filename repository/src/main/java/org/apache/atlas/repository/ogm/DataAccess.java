@@ -53,39 +53,21 @@ public class DataAccess {
     }
 
     public <T extends AtlasBaseModelObject> T save(T obj) throws AtlasBaseException {
-        Objects.requireNonNull(obj, "Can't save a null object");
+        saveNoLoad(obj);
+        return this.load(obj);
+    }
 
-        AtlasPerfTracer perf = null;
+    public <T extends AtlasBaseModelObject> void saveNoLoad(T obj) throws AtlasBaseException {
+            DataTransferObject<T> dto = (DataTransferObject<T>)dtoRegistry.get(obj.getClass());
 
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.save()");
-            }
+        AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
+        EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
 
-            DataTransferObject<T> dto = (DataTransferObject<T>) dtoRegistry.get(obj.getClass());
-
-            AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
-            EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
-
-            if (noEntityMutation(entityMutationResponse)) {
+            if (hasError(entityMutationResponse)) {
                 throw new AtlasBaseException(AtlasErrorCode.DATA_ACCESS_SAVE_FAILED, obj.toString());
             }
 
-            // Update GUID assignment for newly created entity
-            if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {
-                String assignedGuid = entityMutationResponse.getGuidAssignments().get(obj.getGuid());
-                if (!obj.getGuid().equals(assignedGuid)) {
-                    obj.setGuid(assignedGuid);
-                }
-            }
-
-            return this.load(obj);
-
-        } finally {
-            AtlasPerfTracer.log(perf);
         }
-
-    }
 
     public <T extends AtlasBaseModelObject> Iterable<T> save(Iterable<T> obj) throws AtlasBaseException {
         Objects.requireNonNull(obj, "Can't save a null object");
@@ -245,5 +227,15 @@ public class DataAccess {
     // Helper functions
     private boolean noEntityMutation(EntityMutationResponse er) {
         return er == null || (CollectionUtils.isEmpty(er.getCreatedEntities()) && CollectionUtils.isEmpty(er.getUpdatedEntities()));
+    }
+
+    private boolean hasError(EntityMutationResponse er) {
+        return (er == null ||
+                !((er.getCreatedEntities() != null &&
+                        er.getCreatedEntities().size() > 0)
+                        || (er.getUpdatedEntities() != null &&
+                        er.getUpdatedEntities().size() > 0)
+                )
+        );
     }
 }

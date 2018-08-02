@@ -19,12 +19,16 @@ package org.apache.atlas.repository.ogm;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.stereotype.Component;
+import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
+import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
 
 import javax.inject.Inject;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+//import java.util.Set;
 
 @Component
 public class DTORegistry {
@@ -32,19 +36,33 @@ public class DTORegistry {
 
     private final Map<Class, DataTransferObject> typeDTOMap = new HashMap<>();
 
-    @Inject
+    /*@Inject
     public DTORegistry(Set<DataTransferObject> availableDTOs) {
         for (DataTransferObject availableDTO : availableDTOs) {
             LOG.info("Registering DTO: {}", availableDTO.getClass().getSimpleName());
             registerDTO(availableDTO);
         }
-    }
+    }*/
 
-    public <T extends DataTransferObject> DataTransferObject get(Class t) {
-        return typeDTOMap.get(t);
-    }
+    @Inject
+    public DTORegistry(AtlasTypeRegistry typeRegistry){
+            AtlasSavedSearchDTO savedSearchDTO = new AtlasSavedSearchDTO(typeRegistry);
+            AtlasUserProfileDTO userProfileDTO = new AtlasUserProfileDTO(typeRegistry, savedSearchDTO);
 
-    private void registerDTO(DataTransferObject dto) {
-        typeDTOMap.put(dto.getObjectType(), dto);
-    }
+            registerDTO(savedSearchDTO);
+            registerDTO(userProfileDTO);
+            registerDTO(new AtlasClusterDTO(typeRegistry));
+            registerDTO(new ExportImportAuditEntryDTO(typeRegistry));
+
+        }
+
+        public <T extends DataTransferObject> DataTransferObject get(Type t) {
+            return typeDTOMap.get(t);
+        }
+
+        private void registerDTO (DataTransferObject dto){
+            typeDTOMap.put(dto.getObjectType(), dto);
+        }
+
 }
+
