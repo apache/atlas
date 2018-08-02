@@ -26,7 +26,7 @@ import static org.testng.Assert.assertTrue;
 public class ImportTransformerTest {
 
     @Test
-    public void createWithCorrectParameters() throws AtlasBaseException, IllegalAccessException {
+    public void createWithCorrectParameters() throws AtlasBaseException {
         String param1 = "@cl1";
         String param2 = "@cl2";
 
@@ -38,7 +38,7 @@ public class ImportTransformerTest {
     }
 
     @Test
-    public void createSeveralWithCorrectParameters() throws AtlasBaseException, IllegalAccessException {
+    public void createSeveralWithCorrectParameters() throws AtlasBaseException {
         String param1 = "@cl1";
         String param2 = "@cl2";
 

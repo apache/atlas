@@ -22,6 +22,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -42,6 +43,8 @@ public class ImportTransformsTest {
     private final String lowerCaseCL1   = "@cl1";
     private final String lowerCaseCL2   = "@cl2";
     private final String jsonTransforms = "{ \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
+    private final String ATTR_NAME_QUALIFIED_NAME =  "qualifiedName";
+
     private final String jsonLowerCaseReplace = "{ \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
     private final String jsonReplaceLowerCase = "{ \"Asset\": { \"qualifiedName\":[ \"replace:@cl1:@cl2\" ] }, \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
     private final String jsonReplaceRemoveClassification = "{ \"hive_table\": { \"qualifiedName\":[ \"replace:@%s:@%s\"], \"*\":[ \"removeClassification:%s_to_%s\" ] } }";
@@ -53,25 +56,28 @@ public class ImportTransformsTest {
     private final String jsonAddClasification2 = "{ \"hive_table\": { \"*\":[ \"addClassification:REPLICATED_2\" ] } }";
     private final String jsonAddClasificationScoped = "{ \"hive_column\": { \"*\":[ \"addClassification:REPLICATED_2:topLevel\" ] } }";
 
-
     private ImportTransforms transform;
     private String HIVE_TABLE_ATTR_SYNC_INFO = "hive_table.syncInfo";
     private String HIVE_TABLE_ATTR_REPLICATED_FROM = "replicatedFromCluster";
     private String HIVE_TABLE_ATTR_REPLICATED_TO = "replicatedToCluster";
 
     @BeforeTest
-    public void setup() throws AtlasBaseException {
-        transform = ImportTransforms.fromJson(jsonTransforms);
+    public void setup() {
+        transform = ImportTransforms.fromJson(jsonLowerCaseReplace);
+    }
+
+    @BeforeMethod
+    public void setUp() {
     }
 
     @Test
     public void transformEntityWith2Transforms() throws AtlasBaseException {
         AtlasEntity entity    = getHiveTableAtlasEntity();
-        String      attrValue = (String) entity.getAttribute(qualifiedName);
+        String      attrValue = (String) entity.getAttribute(ATTR_NAME_QUALIFIED_NAME);
 
         transform.apply(entity);
 
-        assertEquals(entity.getAttribute(qualifiedName), applyDefaultTransform(attrValue));
+        assertEquals(entity.getAttribute(ATTR_NAME_QUALIFIED_NAME), applyDefaultTransform(attrValue));
     }
 
     @Test
@@ -80,15 +86,15 @@ public class ImportTransformsTest {
 
         AtlasEntityWithExtInfo entityWithExtInfo = getAtlasEntityWithExtInfo();
         AtlasEntity            entity            = entityWithExtInfo.getEntity();
-        String                 attrValue         = (String) entity.getAttribute(qualifiedName);
+        String                 attrValue         = (String) entity.getAttribute(ATTR_NAME_QUALIFIED_NAME);
         String[]               expectedValues    = getExtEntityExpectedValues(entityWithExtInfo);
 
         transform.apply(entityWithExtInfo);
 
-        assertEquals(entityWithExtInfo.getEntity().getAttribute(qualifiedName), applyDefaultTransform(attrValue));
+        assertEquals(entityWithExtInfo.getEntity().getAttribute(ATTR_NAME_QUALIFIED_NAME), applyDefaultTransform(attrValue));
 
         for (int i = 0; i < expectedValues.length; i++) {
-            assertEquals(entityWithExtInfo.getReferredEntities().get(Integer.toString(i)).getAttribute(qualifiedName), expectedValues[i]);
+            assertEquals(entityWithExtInfo.getReferredEntities().get(Integer.toString(i)).getAttribute(ATTR_NAME_QUALIFIED_NAME), expectedValues[i]);
         }
     }
 
@@ -124,7 +130,7 @@ public class ImportTransformsTest {
         ImportTransforms t = ImportTransforms.fromJson(s);
 
         AtlasEntity entity = getHiveTableAtlasEntity();
-        String expected_qualifiedName = entity.getAttribute(qualifiedName).toString().replace("@cl1", "@cl2");
+        String expected_qualifiedName = entity.getAttribute(ATTR_NAME_QUALIFIED_NAME).toString().replace("@cl1", "@cl2");
         entity.setClassifications(classifications);
         assertEquals(entity.getClassifications().size(), 1);
 
@@ -132,7 +138,7 @@ public class ImportTransformsTest {
 
         assertEquals(entity.getClassifications().size(), 0);
         assertNotNull(t);
-        assertEquals(entity.getAttribute(qualifiedName), expected_qualifiedName);
+        assertEquals(entity.getAttribute(ATTR_NAME_QUALIFIED_NAME), expected_qualifiedName);
     }
 
     @Test
@@ -142,12 +148,12 @@ public class ImportTransformsTest {
         ImportTransforms t = ImportTransforms.fromJson(s);
 
         AtlasEntity entity = getHiveTableAtlasEntity();
-        String expected_qualifiedName = entity.getAttribute(qualifiedName).toString().replace("@cl1", "@cl2");
+        String expected_qualifiedName = entity.getAttribute(ATTR_NAME_QUALIFIED_NAME).toString().replace("@cl1", "@cl2");
 
         t.apply(entity);
 
         assertNotNull(t);
-        assertEquals(entity.getAttribute(qualifiedName), expected_qualifiedName);
+        assertEquals(entity.getAttribute(ATTR_NAME_QUALIFIED_NAME), expected_qualifiedName);
         assertEquals(entity.getAttribute(HIVE_TABLE_ATTR_SYNC_INFO), new ArrayList<String>() {{ add(expected_syncInfo); }});
     }
 
@@ -254,7 +260,7 @@ public class ImportTransformsTest {
         String[] ret = new String[entityWithExtInfo.getReferredEntities().size()];
 
         for (int i = 0; i < ret.length; i++) {
-            String attrValue = (String) entityWithExtInfo.getReferredEntities().get(Integer.toString(i)).getAttribute(qualifiedName);
+            String attrValue = (String) entityWithExtInfo.getReferredEntities().get(Integer.toString(i)).getAttribute(ATTR_NAME_QUALIFIED_NAME);
 
             ret[i] = attrValue.replace(lowerCaseCL1, lowerCaseCL2);
         }
@@ -267,9 +273,7 @@ public class ImportTransformsTest {
         List<ImportTransformer>              trList = new ArrayList<>();
 
         trList.add(ImportTransformer.getTransformer(String.format("replace:%s:%s", lowerCaseCL1, lowerCaseCL2)));
-
-        tr.put(qualifiedName, trList);
-
+        tr.put(ATTR_NAME_QUALIFIED_NAME, trList);
         transform.getTransforms().put("hive_column", tr);
     }
 
@@ -282,9 +286,12 @@ public class ImportTransformsTest {
         entity.setStatus(AtlasEntity.Status.ACTIVE);
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(qualifiedName, "TABLE1.default" + lowerCaseCL1);
+        attributes.put(ATTR_NAME_QUALIFIED_NAME, "TABLE1.default" + lowerCaseCL1);
         attributes.put("dbname", "someDB");
         attributes.put("name", "somename");
+        attributes.put(HIVE_TABLE_ATTR_SYNC_INFO, null);
+        attributes.put(HIVE_TABLE_ATTR_REPLICATED_FROM, "cl1");
+        attributes.put(HIVE_TABLE_ATTR_REPLICATED_TO, "clx");
 
         entity.setAttributes(attributes);
         return entity;
@@ -294,7 +301,7 @@ public class ImportTransformsTest {
         AtlasEntity entity = new AtlasEntity("hive_column");
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(qualifiedName, String.format("col%s.TABLE1.default@cl1", index));
+        attributes.put(ATTR_NAME_QUALIFIED_NAME, String.format("col%s.TABLE1.default@cl1", index));
         attributes.put("name", "col" + index);
 
         entity.setAttributes(attributes);

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,15 +19,15 @@ package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.commons.lang.StringUtils;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.commons.lang.StringUtils;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 
 public abstract class ImportTransformer {
     private static final String TRANSFORMER_PARAMETER_SEPARATOR = "\\:";
@@ -42,23 +42,22 @@ public abstract class ImportTransformer {
 
     private final String transformType;
 
-
     public static ImportTransformer getTransformer(String transformerSpec) throws AtlasBaseException {
         String[] params = StringUtils.split(transformerSpec, TRANSFORMER_PARAMETER_SEPARATOR);
-        String   key    = (params == null || params.length < 1) ? transformerSpec : params[0];
+        String key = (params == null || params.length < 1) ? transformerSpec : params[0];
 
         final ImportTransformer ret;
 
         if (StringUtils.isEmpty(key)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "Error creating ImportTransformer. Invalid transformer-specification: {}.", transformerSpec);
-        } else if (key.equals("replace")) {
-            String toFindStr  = (params == null || params.length < 2) ? "" : params[1];
+        } else if (key.equals(TRANSFORMER_NAME_REPLACE)) {
+            String toFindStr = (params == null || params.length < 2) ? "" : params[1];
             String replaceStr = (params == null || params.length < 3) ? "" : params[2];
 
             ret = new Replace(toFindStr, replaceStr);
-        } else if (key.equals("lowercase")) {
+        } else if (key.equals(TRANSFORMER_NAME_LOWERCASE)) {
             ret = new Lowercase();
-        } else if (key.equals("uppercase")) {
+        } else if (key.equals(TRANSFORMER_NAME_UPPERCASE)) {
             ret = new Uppercase();
         } else if (key.equals(TRANSFORMER_NAME_REMOVE_CLASSIFICATION)) {
             String name = (params == null || params.length < 1) ? "" : StringUtils.join(params, ":", 1, params.length);
@@ -81,7 +80,9 @@ public abstract class ImportTransformer {
         return ret;
     }
 
-    public String getTransformType() { return transformType; }
+    public String getTransformType() {
+        return transformType;
+    }
 
     public abstract Object apply(Object o) throws AtlasBaseException;
 
@@ -95,21 +96,25 @@ public abstract class ImportTransformer {
         private final String replaceStr;
 
         public Replace(String toFindStr, String replaceStr) {
-            super("replace");
+            super(TRANSFORMER_NAME_REPLACE);
 
-            this.toFindStr  = toFindStr;
+            this.toFindStr = toFindStr;
             this.replaceStr = replaceStr;
         }
 
-        public String getToFindStr() { return toFindStr; }
+        public String getToFindStr() {
+            return toFindStr;
+        }
 
-        public String getReplaceStr() { return replaceStr; }
+        public String getReplaceStr() {
+            return replaceStr;
+        }
 
         @Override
-        public Object apply(Object o) throws AtlasBaseException {
+        public Object apply(Object o) {
             Object ret = o;
 
-            if(o instanceof String) {
+            if (o instanceof String) {
                 ret = StringUtils.replace((String) o, toFindStr, replaceStr);
             }
 
@@ -119,14 +124,14 @@ public abstract class ImportTransformer {
 
     static class Lowercase extends ImportTransformer {
         public Lowercase() {
-            super("lowercase");
+            super(TRANSFORMER_NAME_LOWERCASE);
         }
 
         @Override
         public Object apply(Object o) {
             Object ret = o;
 
-            if(o instanceof String) {
+            if (o instanceof String) {
                 ret = StringUtils.lowerCase((String) o);
             }
 
@@ -136,14 +141,14 @@ public abstract class ImportTransformer {
 
     static class Uppercase extends ImportTransformer {
         public Uppercase() {
-            super("uppercase");
+            super(TRANSFORMER_NAME_UPPERCASE);
         }
 
         @Override
         public Object apply(Object o) {
             Object ret = o;
 
-            if(o instanceof String) {
+            if (o instanceof String) {
                 ret = StringUtils.upperCase((String) o);
             }
 
@@ -177,11 +182,11 @@ public abstract class ImportTransformer {
             }
 
             AtlasEntity entity = (AtlasEntity) o;
-            if(!passThruFilters(entity)) {
+            if (!passThruFilters(entity)) {
                 return o;
             }
 
-            if(entity.getClassifications() == null) {
+            if (entity.getClassifications() == null) {
                 entity.setClassifications(new ArrayList<AtlasClassification>());
             }
 
@@ -196,12 +201,12 @@ public abstract class ImportTransformer {
         }
 
         private boolean passThruFilters(AtlasEntity entity) {
-            if(StringUtils.isEmpty(scope) || !scope.equals(FILTER_SCOPE_TOP_LEVEL)) {
+            if (StringUtils.isEmpty(scope) || !scope.equals(FILTER_SCOPE_TOP_LEVEL)) {
                 return true;
             }
 
             for (AtlasObjectId filter : filters) {
-                if(isMatch(filter, entity)) {
+                if (isMatch(filter, entity)) {
                     return true;
                 }
             }
@@ -255,7 +260,7 @@ public abstract class ImportTransformer {
             }
 
             AtlasEntity entity = (AtlasEntity) o;
-            if(entity.getClassifications().size() == 0) {
+            if (entity.getClassifications().size() == 0) {
                 return o;
             }
 
@@ -300,18 +305,18 @@ public abstract class ImportTransformer {
 
         private void setAttrNameValue(String nameValuePair) {
             String SEPARATOR_EQUALS = "=";
-            if(!nameValuePair.contains(SEPARATOR_EQUALS)) return;
+            if (!nameValuePair.contains(SEPARATOR_EQUALS)) return;
 
             String splits[] = StringUtils.split(nameValuePair, SEPARATOR_EQUALS);
-            if(splits.length == 0) {
+            if (splits.length == 0) {
                 return;
             }
 
-            if(splits.length >= 1) {
+            if (splits.length >= 1) {
                 attrName = splits[0];
             }
 
-            if(splits.length >= 1) {
+            if (splits.length >= 1) {
                 attrValueRaw = splits[1];
             }
 
@@ -321,7 +326,7 @@ public abstract class ImportTransformer {
         private void setAttrValue(String attrValueRaw) {
             final String type_prefix = "list:";
 
-            if(attrValueRaw.startsWith(type_prefix)) {
+            if (attrValueRaw.startsWith(type_prefix)) {
                 final String item = StringUtils.remove(attrValueRaw, type_prefix);
                 attrValue = new ArrayList<String>() {{
                     add(item);
@@ -333,22 +338,22 @@ public abstract class ImportTransformer {
 
         @Override
         public Object apply(Object o) {
-            if(o == null) {
+            if (o == null) {
                 return o;
             }
 
-            if(!(o instanceof AtlasEntity)) {
+            if (!(o instanceof AtlasEntity)) {
                 return o;
             }
 
             AtlasEntity entity = (AtlasEntity) o;
             Object attrExistingValue = entity.getAttribute(attrName);
-            if(attrExistingValue == null) {
+            if (attrExistingValue == null) {
                 entity.setAttribute(attrName, attrValue);
-            } else if(attrExistingValue instanceof List) {
+            } else if (attrExistingValue instanceof List) {
                 List list = (List) attrExistingValue;
 
-                if(attrValue instanceof List) {
+                if (attrValue instanceof List) {
                     list.addAll((List) attrValue);
                 } else {
                     list.add(attrValue);
