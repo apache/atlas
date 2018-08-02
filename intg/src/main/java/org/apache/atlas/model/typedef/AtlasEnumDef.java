@@ -217,6 +217,9 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         sb.append(", elementDefs=[");
         dumpObjects(elementDefs, sb);
         sb.append("]");
+        sb.append(", defaultValue {");
+        sb.append(defaultValue);
+        sb.append('}');
         sb.append('}');
 
         return sb;
