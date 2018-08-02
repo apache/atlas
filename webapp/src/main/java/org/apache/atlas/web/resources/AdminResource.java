@@ -28,6 +28,7 @@ import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
@@ -37,9 +38,11 @@ import org.apache.atlas.repository.impexp.ExportService;
 import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.impexp.ZipSource;
+import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.SearchTracker;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
@@ -89,6 +92,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Service
 public class AdminResource {
     private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("AdminResource");
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -115,6 +119,7 @@ public class AdminResource {
     private final ExportService exportService;
     private final ImportService importService;
     private final SearchTracker activeSearches;
+    private ExportImportAuditService exportImportAuditService;
 
     static {
         try {
@@ -126,12 +131,14 @@ public class AdminResource {
 
     @Inject
     public AdminResource(ServiceState serviceState, MetricsService metricsService,
-                         ExportService exportService, ImportService importService, SearchTracker activeSearches) {
+                         ExportService exportService, ImportService importService, SearchTracker activeSearches,
+                         ExportImportAuditService exportImportAuditService) {
         this.serviceState               = serviceState;
         this.metricsService             = metricsService;
         this.exportService = exportService;
         this.importService = importService;
         this.activeSearches = activeSearches;
+        this.exportImportAuditService = exportImportAuditService;
         importExportOperationLock = new ReentrantLock();
     }
 
@@ -422,6 +429,31 @@ public class AdminResource {
         }
 
         return result;
+    }
+
+    @GET
+    @Path("/expimp/audit")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasSearchResult getExportImportAudit(@QueryParam("sourceClusterName") String sourceCluster,
+                                                  @QueryParam("targetCluster") String targetCluster,
+                                                  @QueryParam("userName") String userName,
+                                                  @QueryParam("operation") String operation,
+                                                  @QueryParam("startTime") String startTime,
+                                                  @QueryParam("endTime") String endTime,
+                                                  @QueryParam("limit") int limit,
+                                                  @QueryParam("offset") int offset) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "getExportImportAudit(" + sourceCluster + ")");
+            }
+
+            return exportImportAuditService.get(userName, operation, sourceCluster, targetCluster, startTime, endTime, limit, offset);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @GET

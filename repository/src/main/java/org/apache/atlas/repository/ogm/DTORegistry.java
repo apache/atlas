@@ -38,6 +38,7 @@ public class DTORegistry {
         registerDTO(savedSearchDTO);
         registerDTO(userProfileDTO);
         registerDTO(new AtlasClusterDTO(typeRegistry));
+        registerDTO(new ExportImportAuditEntryDTO(typeRegistry));
     }
 
     public <T extends DataTransferObject> DataTransferObject get(Type t) {

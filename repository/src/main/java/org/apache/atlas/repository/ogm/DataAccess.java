@@ -42,6 +42,11 @@ public class DataAccess {
     }
 
     public <T extends AtlasBaseModelObject> T save(T obj) throws AtlasBaseException {
+        saveNoLoad(obj);
+        return this.load(obj);
+    }
+
+    public <T extends AtlasBaseModelObject> void saveNoLoad(T obj) throws AtlasBaseException {
         DataTransferObject<T> dto = (DataTransferObject<T>)dtoRegistry.get(obj.getClass());
 
         AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
@@ -50,8 +55,6 @@ public class DataAccess {
         if (hasError(entityMutationResponse)) {
             throw new AtlasBaseException(AtlasErrorCode.DATA_ACCESS_SAVE_FAILED, obj.toString());
         }
-
-        return this.load(obj);
     }
 
     public <T extends AtlasBaseModelObject> T load(T obj) throws AtlasBaseException {
