@@ -37,6 +37,7 @@ public class DTORegistry {
 
         registerDTO(savedSearchDTO);
         registerDTO(userProfileDTO);
+        registerDTO(new AtlasClusterDTO(typeRegistry));
     }
 
     public <T extends DataTransferObject> DataTransferObject get(Type t) {

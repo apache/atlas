@@ -21,11 +21,16 @@ import com.google.common.collect.Sets;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityStreamForImport;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -34,7 +39,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.SkipException;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -78,11 +86,20 @@ public class ZipFileResourceTestUtils {
     }
 
     public static Object[][] getZipSource(String fileName) throws IOException {
-        FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream(fileName);
-
-        return new Object[][]{{new ZipSource(fs)}};
+        return new Object[][]{{getZipSourceFrom(fileName)}};
     }
 
+    public static ZipSource getZipSourceFrom(String fileName) throws IOException {
+        FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream(fileName);
+
+        return new ZipSource(fs);
+    }
+
+    private static ZipSource getZipSourceFrom(ByteArrayOutputStream baos) throws IOException {
+        ByteArrayInputStream bis = new ByteArrayInputStream(baos.toByteArray());
+        ZipSource zipSource = new ZipSource(bis);
+        return zipSource;
+    }
 
     public static void verifyImportedEntities(List<String> creationOrder, List<String> processedEntities) {
         Set<String> lhs = com.google.common.collect.Sets.newHashSet(creationOrder);
@@ -106,6 +123,62 @@ public class ZipFileResourceTestUtils {
         }
     }
 
+    public static AtlasTypesDef loadTypes(String entitiesSubDir, String fileName) {
+        try {
+            return TestResourceFileUtils.readObjectFromJson(entitiesSubDir, fileName, AtlasTypesDef.class);
+        } catch (IOException e) {
+            throw new SkipException(String.format("createTypes: '%s' could not be laoded.", fileName));
+        }
+    }
+
+
+    public static AtlasEntity.AtlasEntityWithExtInfo loadEntity(String entitiesSubDir, String fileName) {
+        try {
+            return TestResourceFileUtils.readObjectFromJson(entitiesSubDir, fileName, AtlasEntity.AtlasEntityWithExtInfo.class);
+        } catch (IOException e) {
+            throw new SkipException(String.format("createTypes: '%s' could not be laoded.", fileName));
+        }
+    }
+
+    public static void createTypes(AtlasTypeDefStore typeDefStore, String entitiesSubDir, String typesDef) {
+        try {
+            typeDefStore.createTypesDef(loadTypes(entitiesSubDir, typesDef));
+        } catch (AtlasBaseException e) {
+            throw new SkipException("setup: could not load typesDef.");
+        }
+    }
+
+    public static void createAtlasEntity(AtlasEntityStoreV1 entityStoreV1, AtlasEntity.AtlasEntityWithExtInfo atlasEntity) {
+        try {
+            EntityMutationResponse response = entityStoreV1.createOrUpdateForImport(new AtlasEntityStreamForImport(atlasEntity, null));
+            assertNotNull(response);
+            assertTrue((response.getCreatedEntities() != null && response.getCreatedEntities().size() > 0) ||
+                    (response.getMutatedEntities() != null && response.getMutatedEntities().size() > 0));
+        } catch (AtlasBaseException e) {
+            throw new SkipException(String.format("createAtlasEntity: could not load '%s'.", atlasEntity.getEntity().getTypeName()));
+        }
+    }
+
+    public static ZipSource runExportWithParameters(ExportService exportService, AtlasExportRequest request) {
+        final String requestingIP = "1.0.0.0";
+        final String hostName = "localhost";
+        final String userName = "admin";
+
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ZipSink zipSink = new ZipSink(baos);
+
+            AtlasExportResult result = exportService.run(zipSink, request, userName, hostName, requestingIP);
+            assertEquals(result.getOperationStatus(), AtlasExportResult.OperationStatus.SUCCESS);
+
+            zipSink.close();
+            return getZipSourceFrom(baos);
+        }
+        catch(Exception ex) {
+            throw new SkipException(String.format("runExportWithParameters: %s: failed!", request.toString()));
+        }
+    }
+
     private static Map<String,Integer> getImportMetricsForCompare(AtlasImportResult result) {
         Map<String, Integer> r = new HashMap<>();
         for (Map.Entry<String, Integer> entry : result.getMetrics().entrySet()) {
@@ -114,7 +187,6 @@ public class ZipFileResourceTestUtils {
 
         return r;
     }
-
 
     public static void loadModelFromJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         AtlasTypesDef typesFromJson = getAtlasTypesDefFromFile(fileName);
@@ -185,5 +257,17 @@ public class ZipFileResourceTestUtils {
         assertNotNull(result);
         verifyImportedMetrics(exportResult, result);
         verifyImportedEntities(creationOrder, result.getProcessedEntities());
+    }
+
+    public static void loadBaseModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
+        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
+    }
+
+    public static void loadFsModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
+        loadModelFromJson("0020-fs_model.json", typeDefStore, typeRegistry);
+    }
+
+    public static void loadHiveModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
+        loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
     }
 }

@@ -116,6 +116,46 @@
       ]
     },
     {
+      "name": "AtlasCluster",
+      "typeVersion": "1.0",
+      "superTypes": [
+      ],
+      "attributeDefs": [
+        {
+          "name": "displayName",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "qualifiedName",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": true
+        },
+        {
+          "name": "urls",
+          "typeName": "array<string>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "additionalInfo",
+          "typeName": "map<string,string>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
       "name": "__AtlasUserProfile",
       "superTypes": [
         "__internal"
