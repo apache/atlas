@@ -18,12 +18,16 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.inject.Inject;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -40,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.ITestContext;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
@@ -56,8 +61,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
+
+
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ImportServiceTest {
+public class ImportServiceTest extends ExportImportTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(ImportServiceTest.class);
     private static final int DEFAULT_LIMIT = 25;
     private final ImportService importService;
@@ -73,6 +84,10 @@ public class ImportServiceTest {
 
     @Inject
     AtlasEntityStore entityStore;
+
+    @Inject
+    private ExportImportAuditService auditService;
+
 
     @Inject
     public ImportServiceTest(ImportService importService) {
@@ -92,6 +107,11 @@ public class ImportServiceTest {
         if (useLocalSolr()) {
             LocalSolrRunner.stop();
         }
+    }
+
+    @AfterTest
+    public void postTest() {
+        assertAuditEntry(auditService);
     }
 
     @DataProvider(name = "sales")
@@ -337,7 +357,7 @@ public class ImportServiceTest {
 
     @Test
     public void importServiceProcessesIOException() {
-        ImportService importService = new ImportService(typeDefStore, typeRegistry, null);
+        ImportService importService = new ImportService(typeDefStore, typeRegistry, null, null);
         AtlasImportRequest req = mock(AtlasImportRequest.class);
 
         Answer<Map> answer = invocationOnMock -> {
