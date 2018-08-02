@@ -41,6 +41,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.graphdb.janus.migration.GraphDBGraphSONMigrator;
 import org.apache.atlas.repository.impexp.ExportService;
+import org.apache.atlas.repository.ogm.AtlasClusterDTO;
 import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
 import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
 import org.apache.atlas.repository.ogm.DTORegistry;
@@ -170,6 +171,7 @@ public class TestModules {
             availableDTOs.addBinding().to(AtlasGlossaryDTO.class);
             availableDTOs.addBinding().to(AtlasGlossaryTermDTO.class);
             availableDTOs.addBinding().to(AtlasGlossaryCategoryDTO.class);
+            availableDTOs.addBinding().to(AtlasClusterDTO.class);
 
             bind(DTORegistry.class).asEagerSingleton();
             bind(DataAccess.class).asEagerSingleton();
