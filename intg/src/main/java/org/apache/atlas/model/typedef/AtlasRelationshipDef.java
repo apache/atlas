@@ -255,9 +255,19 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         sb.append(',');
         sb.append(this.propagateTags);
         sb.append(',');
-        sb.append(this.endDef1.toString());
+        if (this.endDef1 != null) {
+            sb.append(this.endDef1.toString());
+        }
+        else {
+            sb.append(" end1 is null!");
+        }
         sb.append(',');
-        sb.append(this.endDef2.toString());
+        if (this.endDef2 != null) {
+            sb.append(this.endDef2.toString());
+        }
+        else {
+            sb.append(" end2 is null!");
+        }
         sb.append('}');
         return sb;
     }
