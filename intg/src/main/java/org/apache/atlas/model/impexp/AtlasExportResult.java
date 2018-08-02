@@ -60,6 +60,7 @@ public class AtlasExportResult implements Serializable {
     private Map<String, Integer> metrics;
     private AtlasExportData      data;
     private OperationStatus      operationStatus;
+    private String               sourceClusterName;
 
 
     public AtlasExportResult() {
@@ -142,6 +143,13 @@ public class AtlasExportResult implements Serializable {
         this.operationStatus = operationStatus;
     }
 
+    public String getSourceClusterName() {
+        return sourceClusterName;
+    }
+
+    public void setSourceClusterName(String sourceClusterName) {
+        this.sourceClusterName = sourceClusterName;
+    }
 
     public void incrementMeticsCounter(String key) {
         incrementMeticsCounter(key, 1);
@@ -163,6 +171,7 @@ public class AtlasExportResult implements Serializable {
         sb.append(", userName='").append(userName).append("'");
         sb.append(", clientIpAddress='").append(clientIpAddress).append("'");
         sb.append(", hostName='").append(hostName).append("'");
+        sb.append(", sourceCluster='").append(sourceClusterName).append("'");
         sb.append(", timeStamp='").append(timeStamp).append("'");
         sb.append(", metrics={");
         AtlasBaseTypeDef.dumpObjects(metrics, sb);
@@ -227,12 +236,12 @@ public class AtlasExportResult implements Serializable {
                 sb = new StringBuilder();
             }
 
-            sb.append("AtlasExportData{");
-            sb.append("typesDef={").append(typesDef).append("}");
-            sb.append("entities={");
+            sb.append("AtlasExportData {");
+            sb.append(", typesDef={").append(typesDef).append("}");
+            sb.append(", entities={");
             AtlasBaseTypeDef.dumpObjects(entities, sb);
             sb.append("}");
-            sb.append("entityCreationOrder={");
+            sb.append(", entityCreationOrder={");
             AtlasBaseTypeDef.dumpObjects(entityCreationOrder, sb);
             sb.append("}");
             sb.append("}");

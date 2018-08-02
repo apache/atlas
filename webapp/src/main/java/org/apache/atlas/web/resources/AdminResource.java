@@ -28,17 +28,19 @@ import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.clusterinfo.AtlasCluster;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.repository.clusterinfo.ClusterService;
+import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.impexp.ExportService;
 import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.impexp.ZipSource;
-import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.SearchTracker;
@@ -119,6 +121,7 @@ public class AdminResource {
     private final ExportService exportService;
     private final ImportService importService;
     private final SearchTracker activeSearches;
+    private ClusterService clusterService;
     private ExportImportAuditService exportImportAuditService;
 
     static {
@@ -132,14 +135,16 @@ public class AdminResource {
     @Inject
     public AdminResource(ServiceState serviceState, MetricsService metricsService,
                          ExportService exportService, ImportService importService, SearchTracker activeSearches,
+                         ClusterService clusterService,
                          ExportImportAuditService exportImportAuditService) {
         this.serviceState               = serviceState;
         this.metricsService             = metricsService;
         this.exportService = exportService;
         this.importService = importService;
         this.activeSearches = activeSearches;
+        this.clusterService = clusterService;
         this.exportImportAuditService = exportImportAuditService;
-        importExportOperationLock = new ReentrantLock();
+        this.importExportOperationLock = new ReentrantLock();
     }
 
     /**
@@ -429,6 +434,33 @@ public class AdminResource {
         }
 
         return result;
+    }
+
+    /**
+     * Fetch details of a cluster.
+     * @param clusterName name of target cluster with which it is paired
+     * @param entityQualifiedName qualified name of top level entity
+     * @return AtlasCluster
+     * @throws AtlasBaseException
+     */
+    @GET
+    @Path("/cluster/{clusterName}")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasCluster getCluster(@PathParam("clusterName") String clusterName,
+                                   @QueryParam("entity") String entityQualifiedName) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "cluster.getCluster(" + clusterName + ")");
+            }
+
+            AtlasCluster cluster = new AtlasCluster(clusterName, clusterName);
+            return clusterService.get(cluster);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @GET

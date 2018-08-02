@@ -38,6 +38,7 @@ public class AtlasImportRequest implements Serializable {
     private static final long   serialVersionUID = 1L;
 
     public  static final String TRANSFORMS_KEY             = "transforms";
+    public  static final String OPTION_KEY_REPLICATED_FROM = "replicatedFrom";
     private static final String START_POSITION_KEY         = "startPosition";
     private static final String START_GUID_KEY             = "startGuid";
     private static final String FILE_NAME_KEY              = "fileName";

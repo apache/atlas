@@ -278,7 +278,7 @@
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": true,
-          "isOptional": false,
+          "isOptional": true,
           "isUnique": false
         },
         {

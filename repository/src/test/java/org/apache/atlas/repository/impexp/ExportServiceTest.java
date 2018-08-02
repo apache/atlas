@@ -18,12 +18,18 @@
 package org.apache.atlas.repository.impexp;
 
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConstants;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
+import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -36,12 +42,15 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
@@ -62,9 +71,10 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ExportServiceTest {
+public class ExportServiceTest extends ExportImportTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(ExportServiceTest.class);
 
     @Inject
@@ -75,16 +85,22 @@ public class ExportServiceTest {
 
     @Inject
     private EntityGraphMapper graphMapper;
+
     @Inject
     ExportService exportService;
+
+    @Inject
+    private ExportImportAuditService auditService;
+
     private DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);;
     private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
     private AtlasEntityStoreV1 entityStore;
 
     @BeforeTest
-    public void setupTest() {
+    public void setupTest() throws IOException, AtlasBaseException {
         RequestContextV1.clear();
         RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+        ZipFileResourceTestUtils.loadBaseModel(typeDefStore, typeRegistry);
     }
 
     @BeforeClass
@@ -106,7 +122,9 @@ public class ExportServiceTest {
     }
 
     @AfterClass
-    public void clear() {
+    public void clear() throws InterruptedException {
+        Thread.sleep(1000);
+        assertAuditEntry(auditService);
         AtlasGraphProvider.cleanup();
     }
 
@@ -197,6 +215,7 @@ public class ExportServiceTest {
         assertEquals(result.getHostName(), hostName);
         assertEquals(result.getClientIpAddress(), requestingIP);
         assertEquals(request, result.getRequest());
+        assertNotNull(result.getSourceClusterName());
     }
 
     @Test
@@ -392,4 +411,5 @@ public class ExportServiceTest {
         assertEquals(zipSource.getTypesDef().getStructDefs().size(), 1);
         assertEquals(zipSource.getTypesDef().getEntityDefs().size(), 4);
     }
+
 }

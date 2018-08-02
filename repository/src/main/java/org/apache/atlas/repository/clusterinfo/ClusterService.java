@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.clusterinfo;
 
 import org.apache.atlas.annotation.AtlasService;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.clusterinfo.AtlasCluster;
 import org.apache.atlas.repository.ogm.DataAccess;
@@ -48,6 +49,7 @@ public class ClusterService {
         return null;
     }
 
+    @GraphTransaction
     public AtlasCluster save(AtlasCluster clusterInfo) throws AtlasBaseException {
         return dataAccess.save(clusterInfo);
     }
