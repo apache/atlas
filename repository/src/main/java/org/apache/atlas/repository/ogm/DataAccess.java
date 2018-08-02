@@ -53,6 +53,11 @@ public class DataAccess {
     }
 
     public <T extends AtlasBaseModelObject> T save(T obj) throws AtlasBaseException {
+        saveNoLoad(obj);
+        return this.load(obj);
+    }
+
+    public <T extends AtlasBaseModelObject> void saveNoLoad(T obj) throws AtlasBaseException {
         Objects.requireNonNull(obj, "Can't save a null object");
 
         AtlasPerfTracer perf = null;
@@ -78,13 +83,9 @@ public class DataAccess {
                     obj.setGuid(assignedGuid);
                 }
             }
-
-            return this.load(obj);
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
-
     }
 
     public <T extends AtlasBaseModelObject> Iterable<T> save(Iterable<T> obj) throws AtlasBaseException {
