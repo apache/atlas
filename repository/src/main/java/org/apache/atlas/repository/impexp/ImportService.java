@@ -47,15 +47,17 @@ public class ImportService {
     private final AtlasTypeDefStore typeDefStore;
     private final AtlasTypeRegistry typeRegistry;
     private final BulkImporter bulkImporter;
+    private AuditHelper auditHelper;
 
     private long startTimestamp;
     private long endTimestamp;
 
     @Inject
-    public ImportService(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry, BulkImporter bulkImporter) {
+    public ImportService(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry, BulkImporter bulkImporter, AuditHelper auditHelper) {
         this.typeDefStore = typeDefStore;
         this.typeRegistry = typeRegistry;
         this.bulkImporter = bulkImporter;
+        this.auditHelper = auditHelper;
     }
 
     public AtlasImportResult run(ZipSource source, String userName,
@@ -81,8 +83,7 @@ public class ImportService {
             startTimestamp = System.currentTimeMillis();
             processTypes(source.getTypesDef(), result);
             setStartPosition(request, source);
-            processEntities(source, result);
-
+            processEntities(userName, source, result);
 
             result.setOperationStatus(AtlasImportResult.OperationStatus.SUCCESS);
         } catch (AtlasBaseException excp) {
@@ -183,10 +184,15 @@ public class ImportService {
         importTypeDefProcessor.processTypes(typeDefinitionMap, result);
     }
 
-    private void processEntities(ZipSource importSource, AtlasImportResult result) throws AtlasBaseException {
+    private void processEntities(String userName, ZipSource importSource, AtlasImportResult result) throws AtlasBaseException {
         this.bulkImporter.bulkImport(importSource, result);
 
         endTimestamp = System.currentTimeMillis();
-        result.incrementMeticsCounter("duration", (int) (this.endTimestamp - this.startTimestamp));
+        result.incrementMeticsCounter("duration", getDuration(this.endTimestamp, this.startTimestamp));
+        auditHelper.audit(userName, result, startTimestamp, endTimestamp, !importSource.getCreationOrder().isEmpty());
+    }
+
+    private int getDuration(long endTime, long startTime) {
+        return (int) (endTime - startTime);
     }
 }

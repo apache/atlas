@@ -46,15 +46,16 @@ public class AtlasExportRequest implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public static final String OPTION_FETCH_TYPE      = "fetchType";
-    public static final String OPTION_ATTR_MATCH_TYPE = "matchType";
-    public static final String FETCH_TYPE_FULL        = "full";
-    public static final String FETCH_TYPE_CONNECTED   = "connected";
-    public static final String MATCH_TYPE_STARTS_WITH = "startsWith";
-    public static final String MATCH_TYPE_ENDS_WITH   = "endsWith";
-    public static final String MATCH_TYPE_CONTAINS    = "contains";
-    public static final String MATCH_TYPE_MATCHES     = "matches";
-    public static final String MATCH_TYPE_FOR_TYPE     = "forType";
+    public static final String OPTION_FETCH_TYPE                = "fetchType";
+    public static final String OPTION_ATTR_MATCH_TYPE           = "matchType";
+    public static final String OPTION_KEY_REPLICATED_TO         = "replicatedTo";
+    public static final String FETCH_TYPE_FULL                  = "full";
+    public static final String FETCH_TYPE_CONNECTED             = "connected";
+    public static final String MATCH_TYPE_STARTS_WITH           = "startsWith";
+    public static final String MATCH_TYPE_ENDS_WITH             = "endsWith";
+    public static final String MATCH_TYPE_CONTAINS              = "contains";
+    public static final String MATCH_TYPE_MATCHES               = "matches";
+    public static final String MATCH_TYPE_FOR_TYPE              = "forType";
 
     private List<AtlasObjectId> itemsToExport = new ArrayList<>();
     private Map<String, Object> options       = new HashMap<>();
