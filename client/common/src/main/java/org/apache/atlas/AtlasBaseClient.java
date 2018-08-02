@@ -27,9 +27,16 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
+import com.sun.jersey.multipart.BodyPart;
+import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
 import com.sun.jersey.multipart.MultiPart;
 import com.sun.jersey.multipart.file.FileDataBodyPart;
+import com.sun.jersey.multipart.file.StreamDataBodyPart;
+import com.sun.jersey.multipart.impl.MultiPartWriter;
+import org.apache.atlas.model.clusterinfo.AtlasCluster;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.metrics.AtlasMetrics;
@@ -37,6 +44,7 @@ import org.apache.atlas.security.SecureClientUtils;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONException;
@@ -50,8 +58,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.ConnectException;
 import java.nio.file.Paths;
 import java.util.List;
@@ -66,27 +77,32 @@ public abstract class AtlasBaseClient {
     public static final String ADMIN_STATUS = "admin/status";
     public static final String ADMIN_METRICS = "admin/metrics";
     public static final String ADMIN_IMPORT = "admin/import";
+    public static final String ADMIN_EXPORT = "admin/export";
     public static final String HTTP_AUTHENTICATION_ENABLED = "atlas.http.authentication.enabled";
 
     public static final String QUERY = "query";
     public static final String LIMIT = "limit";
     public static final String OFFSET = "offset";
 
-    public static final API API_STATUS  = new API(BASE_URI + ADMIN_STATUS, HttpMethod.GET, Response.Status.OK);;
-    public static final API API_VERSION = new API(BASE_URI + ADMIN_VERSION, HttpMethod.GET, Response.Status.OK);;
-    public static final API API_METRICS = new API(BASE_URI + ADMIN_METRICS, HttpMethod.GET, Response.Status.OK);;
+    public static final API API_STATUS = new API(BASE_URI + ADMIN_STATUS, HttpMethod.GET, Response.Status.OK);
+    public static final API API_VERSION = new API(BASE_URI + ADMIN_VERSION, HttpMethod.GET, Response.Status.OK);
+    public static final API API_METRICS = new API(BASE_URI + ADMIN_METRICS, HttpMethod.GET, Response.Status.OK);
 
-    static final        String JSON_MEDIA_TYPE                       = MediaType.APPLICATION_JSON + "; charset=UTF-8";
-    static final        String UNKNOWN_STATUS                        = "Unknown status";
-    static final        String ATLAS_CLIENT_HA_RETRIES_KEY           = "atlas.client.ha.retries";
+    static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
+    static final String UNKNOWN_STATUS = "Unknown status";
+    static final String ATLAS_CLIENT_HA_RETRIES_KEY = "atlas.client.ha.retries";
     // Setting the default value based on testing failovers while client code like quickstart is running.
-    static final        int    DEFAULT_NUM_RETRIES                   = 4;
-    static final        String ATLAS_CLIENT_HA_SLEEP_INTERVAL_MS_KEY = "atlas.client.ha.sleep.interval.ms";
+    static final int DEFAULT_NUM_RETRIES = 4;
+    static final String ATLAS_CLIENT_HA_SLEEP_INTERVAL_MS_KEY = "atlas.client.ha.sleep.interval.ms";
     // Setting the default value based on testing failovers while client code like quickstart is running.
     // With number of retries, this gives a total time of about 20s for the server to start.
     static final int DEFAULT_SLEEP_BETWEEN_RETRIES_MS = 5000;
     private static final Logger LOG = LoggerFactory.getLogger(AtlasBaseClient.class);
     private static final API IMPORT = new API(BASE_URI + ADMIN_IMPORT, HttpMethod.POST, Response.Status.OK, MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_JSON);
+    private static final API EXPORT = new API(BASE_URI + ADMIN_EXPORT, HttpMethod.POST, Response.Status.OK, MediaType.APPLICATION_JSON, MediaType.APPLICATION_OCTET_STREAM);
+    private static final String IMPORT_REQUEST_PARAMTER = "request";
+    private static final String IMPORT_DATA_PARAMETER = "data";
+
     protected WebResource service;
     protected Configuration configuration;
     private String basicAuthUser;
@@ -246,6 +262,8 @@ public abstract class AtlasBaseClient {
         DefaultClientConfig config = new DefaultClientConfig();
         // Enable POJO mapping feature
         config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
+        config.getClasses().add(MultiPartWriter.class);
+
         int readTimeout = configuration.getInt("atlas.client.readTimeoutMSecs", 60000);
         int connectTimeout = configuration.getInt("atlas.client.connectTimeoutMSecs", 60000);
         if (configuration.getBoolean(TLS_ENABLED, false)) {
@@ -357,7 +375,9 @@ public abstract class AtlasBaseClient {
                     return null;
                 }
                 try {
-                    if (responseType.getRawClass().equals(JSONObject.class)) {
+                    if(api.getProduces().equals(MediaType.APPLICATION_OCTET_STREAM)) {
+                        return (T) IOUtils.toByteArray(clientResponse.getEntityInputStream());
+                    } else if (responseType.getRawClass().equals(JSONObject.class)) {
                         String stringEntity = clientResponse.getEntity(String.class);
                         try {
                             JSONObject jsonObject = new JSONObject(stringEntity);
@@ -374,6 +394,8 @@ public abstract class AtlasBaseClient {
                         return entity;
                     }
                 } catch (ClientHandlerException e) {
+                    throw new AtlasServiceException(api, e);
+                } catch (IOException e) {
                     throw new AtlasServiceException(api, e);
                 }
             } else if (clientResponse.getStatus() != ClientResponse.Status.SERVICE_UNAVAILABLE.getStatusCode()) {
@@ -404,7 +426,7 @@ public abstract class AtlasBaseClient {
         return getResource(service, api, queryParams);
     }
 
-    protected abstract API formatPathParameters(API api, String ... params);
+    protected abstract API formatPathParameters(API api, String... params);
 
     void initializeState(String[] baseUrls, UserGroupInformation ugi, String doAsUser) {
         initializeState(getClientProperties(), baseUrls, ugi, doAsUser);
@@ -436,13 +458,57 @@ public abstract class AtlasBaseClient {
         return configuration.getInt(AtlasBaseClient.ATLAS_CLIENT_HA_RETRIES_KEY, AtlasBaseClient.DEFAULT_NUM_RETRIES);
     }
 
+    public byte[] exportData(AtlasExportRequest request) throws AtlasServiceException {
+        try {
+            return (byte[]) callAPI(EXPORT, Object.class, request);
+        } catch (Exception e) {
+            LOG.error("error writing to file", e);
+            throw new AtlasServiceException(e);
+        }
+    }
+
+    public void exportData(AtlasExportRequest request, String absolutePath) throws AtlasServiceException {
+        OutputStream fileOutputStream = null;
+        try {
+            byte[] fileBytes = exportData(request);
+            fileOutputStream = new FileOutputStream(new File(absolutePath));
+            IOUtils.write(fileBytes, fileOutputStream);
+        } catch (Exception e) {
+            LOG.error("error writing to file", e);
+            throw new AtlasServiceException(e);
+        } finally {
+            if(fileOutputStream != null) {
+                try {
+                    fileOutputStream.close();
+                } catch (IOException e) {
+                    LOG.error("error closing file", e);
+                    throw new AtlasServiceException(e);
+                }
+            }
+        }
+    }
+
     public AtlasImportResult importData(AtlasImportRequest request, String absoluteFilePath) throws AtlasServiceException {
-        FileDataBodyPart filePart = new FileDataBodyPart("data", new File(absoluteFilePath));
+        return performImportData(getImportRequestBodyPart(request),
+                            new FileDataBodyPart(IMPORT_DATA_PARAMETER, new File(absoluteFilePath)));
+    }
+
+    public AtlasImportResult importData(AtlasImportRequest request, byte[] fileData) throws AtlasServiceException {
+        return performImportData(getImportRequestBodyPart(request),
+                                new StreamDataBodyPart(IMPORT_DATA_PARAMETER, new ByteArrayInputStream(fileData)));
+    }
+
+    private AtlasImportResult performImportData(BodyPart requestPart, BodyPart filePart) throws AtlasServiceException {
         MultiPart multipartEntity = new FormDataMultiPart()
-                .field("request", AtlasType.toJson(request), MediaType.APPLICATION_JSON_TYPE)
+                .bodyPart(requestPart)
                 .bodyPart(filePart);
 
         return callAPI(IMPORT, AtlasImportResult.class, multipartEntity);
+    }
+
+
+    private FormDataBodyPart getImportRequestBodyPart(AtlasImportRequest request) {
+        return new FormDataBodyPart(IMPORT_REQUEST_PARAMTER, AtlasType.toJson(request), MediaType.APPLICATION_JSON_TYPE);
     }
 
     boolean isRetryableException(ClientHandlerException che) {
@@ -633,7 +699,7 @@ public abstract class AtlasBaseClient {
 
     /**
      * A class to capture input state while creating the client.
-     *
+     * <p>
      * The information here will be reused when the client is re-initialized on switch-over
      * in case of High Availability.
      */
