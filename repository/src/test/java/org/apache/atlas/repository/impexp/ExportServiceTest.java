@@ -63,9 +63,10 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ExportServiceTest {
+public class ExportServiceTest extends ExportImportTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(ExportServiceTest.class);
 
     @Inject
@@ -76,16 +77,22 @@ public class ExportServiceTest {
 
     @Inject
     private EntityGraphMapper graphMapper;
+
     @Inject
     ExportService exportService;
+
+    @Inject
+    private ExportImportAuditService auditService;
+
     private DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);;
     private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
     private AtlasEntityStoreV2        entityStore;
 
     @BeforeTest
-    public void setupTest() {
+    public void setupTest() throws IOException, AtlasBaseException {
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+        ZipFileResourceTestUtils.loadBaseModel(typeDefStore, typeRegistry);
     }
 
     @BeforeClass
@@ -108,6 +115,8 @@ public class ExportServiceTest {
 
     @AfterClass
     public void clear() throws Exception {
+        Thread.sleep(1000);
+        assertAuditEntry(auditService);
         AtlasGraphProvider.cleanup();
 
         if (useLocalSolr()) {
@@ -202,6 +211,7 @@ public class ExportServiceTest {
         assertEquals(result.getHostName(), hostName);
         assertEquals(result.getClientIpAddress(), requestingIP);
         assertEquals(request, result.getRequest());
+        assertNotNull(result.getSourceClusterName());
     }
 
     @Test

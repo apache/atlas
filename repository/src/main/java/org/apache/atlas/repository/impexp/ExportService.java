@@ -69,16 +69,18 @@ public class ExportService {
     private static final Logger LOG = LoggerFactory.getLogger(ExportService.class);
 
     private final AtlasTypeRegistry         typeRegistry;
+    private AuditHelper auditHelper;
     private final AtlasGraph                atlasGraph;
     private final EntityGraphRetriever      entityGraphRetriever;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
 
     @Inject
-    public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) throws AtlasBaseException {
+    public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, AuditHelper auditHelper) {
         this.typeRegistry         = typeRegistry;
         this.entityGraphRetriever = new EntityGraphRetriever(this.typeRegistry);
         this.atlasGraph           = atlasGraph;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
+        this.auditHelper = auditHelper;
     }
 
     public AtlasExportResult run(ZipSink exportSink, AtlasExportRequest request, String userName, String hostName,
@@ -93,7 +95,8 @@ public class ExportService {
             AtlasExportResult.OperationStatus[] statuses = processItems(request, context);
 
             processTypesDef(context);
-            updateSinkWithOperationMetrics(context, statuses, getOperationDuration(startTime));
+            long endTime = System.currentTimeMillis();
+            updateSinkWithOperationMetrics(userName, context, statuses, startTime, endTime);
         } catch(Exception ex) {
             LOG.error("Operation failed: ", ex);
         } finally {
@@ -106,10 +109,16 @@ public class ExportService {
         return context.result;
     }
 
-    private void updateSinkWithOperationMetrics(ExportContext context, AtlasExportResult.OperationStatus[] statuses, int duration) throws AtlasBaseException {
+    private void updateSinkWithOperationMetrics(String userName, ExportContext context,
+                                                AtlasExportResult.OperationStatus[] statuses,
+                                                long startTime, long endTime) throws AtlasBaseException {
+        int duration = getOperationDuration(startTime, endTime);
+        context.result.setSourceClusterName(AuditHelper.getCurrentClusterName());
         context.result.getData().getEntityCreationOrder().addAll(context.lineageProcessed);
         context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
         context.sink.setTypesDef(context.result.getData().getTypesDef());
+        auditHelper.audit(userName, context.result, startTime, endTime,
+                !context.result.getData().getEntityCreationOrder().isEmpty());
         clearContextData(context);
         context.result.setOperationStatus(getOverallOperationStatus(statuses));
         context.result.incrementMeticsCounter("duration", duration);
@@ -120,8 +129,8 @@ public class ExportService {
         context.result.setData(null);
     }
 
-    private int getOperationDuration(long startTime) {
-        return (int) (System.currentTimeMillis() - startTime);
+    private int getOperationDuration(long startTime, long endTime) {
+        return (int) (endTime - startTime);
     }
 
     private void processTypesDef(ExportContext context) {

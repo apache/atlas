@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.annotation.AtlasService;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
@@ -47,6 +48,7 @@ public class ExportImportAuditService {
         this.discoveryService = discoveryService;
     }
 
+    @GraphTransaction
     public void save(ExportImportAuditEntry entry) throws AtlasBaseException {
         dataAccess.saveNoLoad(entry);
     }

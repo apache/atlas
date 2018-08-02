@@ -43,7 +43,7 @@ public class ComplexAttributesTest extends MigrationBaseAsserts {
         String ENTITY_TYPE = "entity_type";
         String ENTITY_WITH_COMPLEX_COLL_TYPE = "entity_with_complex_collection_attr";
 
-        final int EXPECTED_TOTAL_COUNT  = 216;
+        final int EXPECTED_TOTAL_COUNT  = 217;
         final int EXPECTED_ENTITY_TYPE_COUNT = 16;
         final int EXPECTED_STRUCT_TYPE_COUNT = 3;
         final int EXPECTED_ENTITY_WITH_COMPLEX_COLL_TYPE_COUNT = 1;
