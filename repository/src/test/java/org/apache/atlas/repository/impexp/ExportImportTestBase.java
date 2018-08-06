@@ -18,16 +18,21 @@
 
 package org.apache.atlas.repository.impexp;
 
-import com.google.inject.Inject;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
-
+import org.testng.SkipException;
+import java.util.Arrays;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.createAtlasEntity;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadEntity;
 import static org.mockito.Mockito.mock;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -35,6 +40,23 @@ import static org.testng.Assert.fail;
 public class ExportImportTestBase {
 
     protected DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);
+
+    protected int createEntities(AtlasEntityStoreV2 entityStore, String subDir, String entityFileNames[]) {
+        for (String fileName : entityFileNames) {
+            createAtlasEntity(entityStore, loadEntity(subDir, fileName));
+        }
+
+        return entityFileNames.length;
+    }
+
+    protected void verifyCreatedEntities(AtlasEntityStoreV2 entityStore, String[] entityGuids, int expectedNumberOfEntitiesCreated) {
+        try {
+            AtlasEntity.AtlasEntitiesWithExtInfo entities = entityStore.getByIds( Arrays.asList(entityGuids));
+            assertEquals(entities.getEntities().size(), expectedNumberOfEntitiesCreated);
+        } catch (AtlasBaseException e) {
+            throw new SkipException(String.format("getByIds: could not load '%s'", entityGuids.toString()));
+        }
+    }
 
     protected void assertAuditEntry(ExportImportAuditService auditService) {
         AtlasSearchResult result = null;

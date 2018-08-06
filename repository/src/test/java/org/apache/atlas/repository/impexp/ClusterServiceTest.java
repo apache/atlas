@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository.clusterinfo;
+package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
