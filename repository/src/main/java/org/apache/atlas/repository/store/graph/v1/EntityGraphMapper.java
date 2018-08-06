@@ -924,21 +924,26 @@ public class EntityGraphMapper {
             final AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
 
             for (AtlasClassification classification : classifications) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("mapping classification {}", classification);
-                }
-
-                GraphHelper.addProperty(instanceVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, classification.getTypeName());
-                // add a new AtlasVertex for the struct or trait instance
-                AtlasVertex classificationVertex = createClassificationVertex(classification);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("created vertex {} for trait {}", string(classificationVertex), classification.getTypeName());
-                }
-
-                // add the attributes for the trait instance
-                mapClassification(EntityOperation.CREATE, context, classification, entityType, instanceVertex, classificationVertex);
+                addClassificationWithNoMetadataUpdate(context, instanceVertex, entityType, classification);
             }
+            updateModificationMetadata(instanceVertex);
         }
+    }
+
+    private void addClassificationWithNoMetadataUpdate(EntityMutationContext context, AtlasVertex instanceVertex, AtlasEntityType entityType, AtlasClassification classification) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("mapping classification {}", classification);
+        }
+
+        GraphHelper.addProperty(instanceVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, classification.getTypeName());
+        // add a new AtlasVertex for the struct or trait instance
+        AtlasVertex classificationVertex = createClassificationVertex(classification);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("created vertex {} for trait {}", string(classificationVertex), classification.getTypeName());
+        }
+
+        // add the attributes for the trait instance
+        mapClassification(EntityOperation.CREATE, context, classification, entityType, instanceVertex, classificationVertex);
     }
 
     public void updateClassification(final EntityMutationContext context, String guid, AtlasClassification classification)
@@ -968,6 +973,7 @@ public class EntityGraphMapper {
         }
 
         mapClassification(EntityOperation.UPDATE, context, classification, entityType, instanceVertex, classificationVertex);
+        updateModificationMetadata(instanceVertex);
     }
 
     private AtlasEdge mapClassification(EntityOperation operation,  final EntityMutationContext context, AtlasClassification classification, AtlasEntityType entityType, AtlasVertex parentInstanceVertex, AtlasVertex traitInstanceVertex)
