@@ -38,9 +38,9 @@ public class RequestContextV1 {
     private final Map<String, AtlasEntity>   entityCacheV2   = new HashMap<>();
     private final Metrics                    metrics         = new Metrics();
     private final long                       requestTime     = System.currentTimeMillis();
+    private       boolean                    shouldUpdateModificationTimestamp = true;
 
     private String user;
-
 
     private RequestContextV1() {
     }

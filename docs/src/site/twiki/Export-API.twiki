@@ -145,6 +145,6 @@ curl -X POST -u adminuser:password -H "Content-Type: application/json" -H "Cache
             { "typeName": "DB", "uniqueAttributes": { "name": "Logging" }
         }
     ],
-    "options": "full"
-}' "http://localhost:21000/api/atlas/admin/export" > quickStartDB.zip
+        "options": { "full" }
+    }' "http://localhost:21000/api/atlas/admin/export" > quickStartDB.zip
 </verbatim>

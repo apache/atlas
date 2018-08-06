@@ -99,6 +99,14 @@ public final class Constants {
     public static final String MAX_FULLTEXT_QUERY_STR_LENGTH  = "atlas.graph.fulltext-max-query-str-length";
     public static final String MAX_DSL_QUERY_STR_LENGTH  = "atlas.graph.dsl-max-query-str-length";
 
+    /*
+     * replication attributes
+     */
+
+    public static final String ATTR_NAME_REFERENCEABLE = "Referenceable.";
+    public static final String ATTR_NAME_REPLICATED_TO_CLUSTER = "replicatedToCluster";
+    public static final String ATTR_NAME_REPLICATED_FROM_CLUSTER = "replicatedFromCluster";
+
     private Constants() {
     }
 

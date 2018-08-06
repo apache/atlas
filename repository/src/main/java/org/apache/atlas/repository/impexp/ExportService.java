@@ -69,18 +69,18 @@ public class ExportService {
     private static final Logger LOG = LoggerFactory.getLogger(ExportService.class);
 
     private final AtlasTypeRegistry         typeRegistry;
-    private AuditHelper auditHelper;
+    private AuditsWriter auditsWriter;
     private final AtlasGraph                atlasGraph;
     private final EntityGraphRetriever      entityGraphRetriever;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
 
     @Inject
-    public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, AuditHelper auditHelper) {
+    public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, AuditsWriter auditsWriter) {
         this.typeRegistry         = typeRegistry;
         this.entityGraphRetriever = new EntityGraphRetriever(this.typeRegistry);
         this.atlasGraph           = atlasGraph;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
-        this.auditHelper = auditHelper;
+        this.auditsWriter = auditsWriter;
     }
 
     public AtlasExportResult run(ZipSink exportSink, AtlasExportRequest request, String userName, String hostName,
@@ -113,12 +113,11 @@ public class ExportService {
                                                 AtlasExportResult.OperationStatus[] statuses,
                                                 long startTime, long endTime) throws AtlasBaseException {
         int duration = getOperationDuration(startTime, endTime);
-        context.result.setSourceClusterName(AuditHelper.getCurrentClusterName());
+        context.result.setSourceClusterName(AuditsWriter.getCurrentClusterName());
         context.result.getData().getEntityCreationOrder().addAll(context.lineageProcessed);
         context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
         context.sink.setTypesDef(context.result.getData().getTypesDef());
-        auditHelper.audit(userName, context.result, startTime, endTime,
-                !context.result.getData().getEntityCreationOrder().isEmpty());
+        auditsWriter.write(userName, context.result, startTime, endTime, context.result.getData().getEntityCreationOrder());
         clearContextData(context);
         context.result.setOperationStatus(getOverallOperationStatus(statuses));
         context.result.incrementMeticsCounter("duration", duration);

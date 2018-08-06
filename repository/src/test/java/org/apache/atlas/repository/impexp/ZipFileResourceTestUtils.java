@@ -27,16 +27,19 @@ import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStreamForImport;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.common.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.SkipException;
@@ -65,7 +68,8 @@ public class ZipFileResourceTestUtils {
 
     public static String getModelJson(String fileName) throws IOException {
         final String userDir = System.getProperty("user.dir");
-        String filePath = userDir + "/../addons/models/" + fileName;
+        String modelsDir = "/../addons/models/";
+        String filePath = userDir + modelsDir + fileName;
         File f = new File(filePath);
         String s = FileUtils.readFileToString(f);
         assertFalse(StringUtils.isEmpty(s), "Model file read correctly!");
@@ -190,7 +194,19 @@ public class ZipFileResourceTestUtils {
 
     public static void loadModelFromJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         AtlasTypesDef typesFromJson = getAtlasTypesDefFromFile(fileName);
+        addReplicationAttributes(typesFromJson);
         createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
+    }
+
+    private static void addReplicationAttributes(AtlasTypesDef typesFromJson) throws IOException {
+        AtlasEntityDef ed = typesFromJson.getEntityDefs().get(0);
+        if(!ed.getName().equals("Referenceable")) return;
+
+        String replAttr1Json = TestResourceFileUtils.getJson("stocksDB-Entities","replicationAttrs");
+        String replAttr2Json = StringUtils.replace(replAttr1Json, "From", "To");
+
+        ed.addAttribute(AtlasType.fromJson(replAttr1Json, AtlasStructDef.AtlasAttributeDef.class));
+        ed.addAttribute(AtlasType.fromJson(replAttr2Json, AtlasStructDef.AtlasAttributeDef.class));
     }
 
     public static void loadModelFromResourcesJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
