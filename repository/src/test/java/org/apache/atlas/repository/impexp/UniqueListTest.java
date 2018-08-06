@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.impexp;
 
+import org.apache.atlas.repository.util.UniqueList;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -24,11 +25,11 @@ import static org.testng.Assert.assertEquals;
 
 public class UniqueListTest {
     private final String firstElement = "firstElement";
-    private ExportService.UniqueList<String> uniqueList;
+    private UniqueList<String> uniqueList;
 
     @BeforeClass
     public void setup() {
-        uniqueList = new ExportService.UniqueList();
+        uniqueList = new UniqueList();
         uniqueList.add(firstElement);
         uniqueList.add("def");
         uniqueList.add("firstElement");
@@ -42,7 +43,7 @@ public class UniqueListTest {
 
     @Test
     public void addAllList_ListHas2() {
-        ExportService.UniqueList<String> uniqueList2 = new ExportService.UniqueList<>();
+        UniqueList<String> uniqueList2 = new UniqueList<>();
         uniqueList2.addAll(uniqueList);
 
         assertEquals(3, uniqueList2.size());
@@ -50,7 +51,7 @@ public class UniqueListTest {
 
     @Test
     public void attemptClear_SizeIsZero() {
-        ExportService.UniqueList<String> uniqueList2 = new ExportService.UniqueList<>();
+        UniqueList<String> uniqueList2 = new UniqueList<>();
         uniqueList2.addAll(uniqueList);
         uniqueList2.clear();
 
@@ -59,7 +60,7 @@ public class UniqueListTest {
 
     @Test
     public void attemptOneRemove_SizeIsReduced() {
-        ExportService.UniqueList<String> uniqueList2 = new ExportService.UniqueList<>();
+        UniqueList<String> uniqueList2 = new UniqueList<>();
         uniqueList2.addAll(uniqueList);
         String removedElement = uniqueList2.remove(0);
 
