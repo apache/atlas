@@ -24,12 +24,17 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class ExportImportTestBase {
+
+    protected DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);
 
     protected void assertAuditEntry(ExportImportAuditService auditService) {
         AtlasSearchResult result = null;

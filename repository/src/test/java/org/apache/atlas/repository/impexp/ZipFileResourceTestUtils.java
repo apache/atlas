@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,12 +27,14 @@ import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
-//import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStreamForImport;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasJson;
@@ -69,12 +71,12 @@ public class ZipFileResourceTestUtils {
     }
 
     public static List<String> getAllModels(String dirName) throws IOException {
-        List<String> ret                  = null;
-        File         topModelsDir         = new File(System.getProperty("user.dir") + "/../addons/models");
-        File[]       topModelsDirContents = topModelsDir.exists() ? topModelsDir.listFiles() : null;
+        List<String> ret = null;
+        File topModelsDir = new File(System.getProperty("user.dir") + "/../addons/models");
+        File[] topModelsDirContents = topModelsDir.exists() ? topModelsDir.listFiles() : null;
 
         assertTrue(topModelsDirContents != null, topModelsDir.getAbsolutePath() + ": unable to find/read directory");
-        if(topModelsDirContents != null) {
+        if (topModelsDirContents != null) {
             Arrays.sort(topModelsDirContents);
             for (File modelDir : topModelsDirContents) {
                 if (modelDir.exists() && modelDir.isDirectory() && modelDir.getAbsolutePath().contains(dirName)) {
@@ -99,12 +101,13 @@ public class ZipFileResourceTestUtils {
     }
 
     public static String getModelJson(String fileName) throws IOException {
-        String  ret                 = null;
-        File   topModelsDir         = new File(System.getProperty("user.dir") + "/../addons/models");
+
+        String ret = null;
+        File topModelsDir = new File(System.getProperty("user.dir") + "/../addons/models");
         File[] topModelsDirContents = topModelsDir.exists() ? topModelsDir.listFiles() : null;
 
         assertTrue(topModelsDirContents != null, topModelsDir.getAbsolutePath() + ": unable to find/read directory");
-        if(topModelsDirContents != null) {
+        if (topModelsDirContents != null) {
             Arrays.sort(topModelsDirContents);
             for (File modelDir : topModelsDirContents) {
                 if (modelDir.exists() && modelDir.isDirectory()) {
@@ -125,8 +128,19 @@ public class ZipFileResourceTestUtils {
             throw new IOException("Unable to retrieve model contents.");
         }
 
+            final String userDir = System.getProperty("user.dir");
+            String modelsDir = "/../addons/models/";
+            String filePath = userDir + modelsDir + fileName;
+            File f = new File(filePath);
+            String s = FileUtils.readFileToString(f);
+            assertFalse(StringUtils.isEmpty(s), "Model file read correctly!");
+            if (StringUtils.isEmpty(s)) {
+                throw new IOException("Unable to read file: " + fileName);
+            }
+
         return ret;
     }
+
 
     public static String getFileContents(File dir, String fileName) throws IOException {
         if (dir.exists() && dir.isDirectory()) {
@@ -177,7 +191,7 @@ public class ZipFileResourceTestUtils {
     public static void verifyImportedMetrics(AtlasExportResult exportResult, AtlasImportResult importResult) {
         Map<String, Integer> metricsForCompare = getImportMetricsForCompare(importResult);
         for (Map.Entry<String, Integer> entry : exportResult.getMetrics().entrySet()) {
-            if(entry.getKey().startsWith("entity") == false ||
+            if (entry.getKey().startsWith("entity") == false ||
                     entry.getKey().contains("withExtInfo") ||
                     entry.getKey().contains("Column") ||
                     entry.getKey().contains("StorageDesc")) continue;
@@ -212,7 +226,8 @@ public class ZipFileResourceTestUtils {
         }
     }
 
-    public static void createAtlasEntity(AtlasEntityStoreV2 entityStoreV1, AtlasEntity.AtlasEntityWithExtInfo atlasEntity) {
+    public static void createAtlasEntity(AtlasEntityStoreV2 entityStoreV1, AtlasEntity.AtlasEntityWithExtInfo
+            atlasEntity) {
         try {
             EntityMutationResponse response = entityStoreV1.createOrUpdateForImport(new AtlasEntityStreamForImport(atlasEntity, null));
             assertNotNull(response);
@@ -237,13 +252,12 @@ public class ZipFileResourceTestUtils {
 
             zipSink.close();
             return getZipSourceFrom(baos);
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             throw new SkipException(String.format("runExportWithParameters: %s: failed!", request.toString()));
         }
     }
 
-    private static Map<String,Integer> getImportMetricsForCompare(AtlasImportResult result) {
+    private static Map<String, Integer> getImportMetricsForCompare(AtlasImportResult result) {
         Map<String, Integer> r = new HashMap<>();
         for (Map.Entry<String, Integer> entry : result.getMetrics().entrySet()) {
             r.put(entry.getKey().replace(":updated", "").replace(":created", ""), entry.getValue());
@@ -252,26 +266,43 @@ public class ZipFileResourceTestUtils {
         return r;
     }
 
-    public static void loadModelFromJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
+    public static void loadModelFromJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry
+            typeRegistry) throws IOException, AtlasBaseException {
         AtlasTypesDef typesFromJson = getAtlasTypesDefFromFile(fileName);
+        addReplicationAttributes(typesFromJson);
         createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
     }
 
-    public static void loadAllModels(String dirName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
-        List<String>  allModels     = getAllModels(dirName);
+
+    public static void loadAllModels(String dirName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws
+            IOException, AtlasBaseException {
+        List<String> allModels = getAllModels(dirName);
         for (String model : allModels) {
             AtlasTypesDef typesFromJson = AtlasJson.fromJson(model, AtlasTypesDef.class);
             createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
         }
     }
 
-    public static void loadModelFromResourcesJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
+    private static void addReplicationAttributes(AtlasTypesDef typesFromJson) throws IOException {
+        AtlasEntityDef ed = typesFromJson.getEntityDefs().get(0);
+        if (!ed.getName().equals("Referenceable")) return;
+
+        String replAttr1Json = TestResourceFileUtils.getJson("stocksDB-Entities", "replicationAttrs");
+        String replAttr2Json = StringUtils.replace(replAttr1Json, "From", "To");
+
+        ed.addAttribute(AtlasType.fromJson(replAttr1Json, AtlasStructDef.AtlasAttributeDef.class));
+        ed.addAttribute(AtlasType.fromJson(replAttr2Json, AtlasStructDef.AtlasAttributeDef.class));
+    }
+
+    public static void loadModelFromResourcesJson(String fileName, AtlasTypeDefStore
+            typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         AtlasTypesDef typesFromJson = getAtlasTypesDefFromResourceFile(fileName);
         createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
     }
 
-    private static void createTypesAsNeeded(AtlasTypesDef typesFromJson, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        if(typesFromJson == null) {
+    private static void createTypesAsNeeded(AtlasTypesDef typesFromJson, AtlasTypeDefStore
+            typeDefStore, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        if (typesFromJson == null) {
             return;
         }
 
@@ -283,7 +314,7 @@ public class ZipFileResourceTestUtils {
 
     private static AtlasTypesDef getAtlasTypesDefFromFile(String fileName) throws IOException {
         String sampleTypes = ZipFileResourceTestUtils.getModelJson(fileName);
-        if(sampleTypes == null) return null;
+        if (sampleTypes == null) return null;
         return AtlasType.fromJson(sampleTypes, AtlasTypesDef.class);
     }
 
@@ -297,7 +328,8 @@ public class ZipFileResourceTestUtils {
     }
 
 
-    public static AtlasImportResult runImportWithParameters(ImportService importService, AtlasImportRequest request, ZipSource source) throws AtlasBaseException, IOException {
+    public static AtlasImportResult runImportWithParameters(ImportService importService, AtlasImportRequest
+            request, ZipSource source) throws AtlasBaseException, IOException {
         final String requestingIP = "1.0.0.0";
         final String hostName = "localhost";
         final String userName = "admin";
@@ -307,7 +339,8 @@ public class ZipFileResourceTestUtils {
         return result;
     }
 
-    public static AtlasImportResult runImportWithNoParameters(ImportService importService, ZipSource source) throws AtlasBaseException, IOException {
+    public static AtlasImportResult runImportWithNoParameters(ImportService importService, ZipSource source) throws
+            AtlasBaseException, IOException {
         final String requestingIP = "1.0.0.0";
         final String hostName = "localhost";
         final String userName = "admin";
@@ -317,7 +350,8 @@ public class ZipFileResourceTestUtils {
         return result;
     }
 
-    public static void runAndVerifyQuickStart_v1_Import(ImportService importService, ZipSource zipSource) throws AtlasBaseException, IOException {
+    public static void runAndVerifyQuickStart_v1_Import(ImportService importService, ZipSource zipSource) throws
+            AtlasBaseException, IOException {
         AtlasExportResult exportResult = zipSource.getExportResult();
         List<String> creationOrder = zipSource.getCreationOrder();
 
@@ -332,15 +366,18 @@ public class ZipFileResourceTestUtils {
         verifyImportedEntities(creationOrder, result.getProcessedEntities());
     }
 
-    public static void loadBaseModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
+    public static void loadBaseModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws
+            IOException, AtlasBaseException {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
     }
 
-    public static void loadFsModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
+    public static void loadFsModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws
+            IOException, AtlasBaseException {
         loadModelFromJson("0020-fs_model.json", typeDefStore, typeRegistry);
     }
 
-    public static void loadHiveModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
+    public static void loadHiveModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws
+            IOException, AtlasBaseException {
         loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
     }
 }

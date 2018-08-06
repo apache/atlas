@@ -634,9 +634,11 @@
         <slf4j.version>1.7.21</slf4j.version>
         <jetty.version>9.3.14.v20161028</jetty.version>
         <jetty.jsp.version>9.2.12.v20150709</jetty.jsp.version>
-        <jersey.version>1.19</jersey.version>
         <jsr.version>1.1</jsr.version>
-
+        <jetty.maven.plugin.version>9.2.12.v20150709</jetty.maven.plugin.version>
+        <jersey.version>1.19.3</jersey.version>
+        <tinkerpop.version>2.6.0</tinkerpop.version>
+        <titan.version>0.5.4</titan.version>
         <hadoop.version>2.7.1</hadoop.version>
         <hbase.version>1.1.2</hbase.version>
         <solr.version>5.5.1</solr.version>
