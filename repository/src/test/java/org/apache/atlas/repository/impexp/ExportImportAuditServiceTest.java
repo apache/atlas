@@ -96,7 +96,8 @@ public class ExportImportAuditServiceTest {
     }
 
 
-    private ExportImportAuditEntry retrieveEntry(ExportImportAuditEntry entry) throws AtlasBaseException {
+    private ExportImportAuditEntry retrieveEntry(ExportImportAuditEntry entry) throws AtlasBaseException, InterruptedException {
+        Thread.sleep(5000);
         AtlasSearchResult result = auditService.get(entry.getUserName(), entry.getOperation(), entry.getSourceClusterName(),
                                                             entry.getTargetClusterName(), Long.toString(entry.getStartTime()), "", 10, 0);
         assertNotNull(result);

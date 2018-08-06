@@ -159,6 +159,14 @@ public final class Constants {
     public static final String VERTEX_ID_IN_IMPORT_KEY = "__vIdInImport";
     public static final String EDGE_ID_IN_IMPORT_KEY   = "__eIdInImport";
 
+    /*
+     * replication attributes
+     */
+
+    public static final String ATTR_NAME_REFERENCEABLE = "Referenceable.";
+    public static final String ATTR_NAME_REPLICATED_TO_CLUSTER = "replicatedToCluster";
+    public static final String ATTR_NAME_REPLICATED_FROM_CLUSTER = "replicatedFromCluster";
+
     private Constants() {
     }
 

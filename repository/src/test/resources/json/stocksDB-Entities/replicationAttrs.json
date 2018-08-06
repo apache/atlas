@@ -1,0 +1,8 @@
+{
+  "name": "replicatedFromCluster",
+  "typeName": "array<AtlasCluster>",
+  "cardinality": "SET",
+  "isIndexable": false,
+  "isOptional": true,
+  "isUnique": false
+}
