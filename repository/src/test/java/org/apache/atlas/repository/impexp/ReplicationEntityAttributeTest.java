@@ -166,23 +166,6 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         return request;
     }
 
-    private AtlasEntity.AtlasEntityWithExtInfo getEntities(ZipSource source, int expectedCount) {
-        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntity.AtlasEntityWithExtInfo();
-        try {
-            int count = 0;
-            for(String s : source.getCreationOrder()) {
-                AtlasEntity entity = source.getByGuid(s);
-                entityWithExtInfo.addReferredEntity(s, entity);
-                count++;
-            }
-
-            assertEquals(count, expectedCount);
-            return entityWithExtInfo;
-        } catch (AtlasBaseException e) {
-            throw new SkipException("getEntities: failed!");
-        }
-    }
-
     private AtlasExportRequest getExportRequestWithReplicationOption() {
         try {
             AtlasExportRequest request = TestResourceFileUtils.readObjectFromJson(ENTITIES_SUB_DIR, EXPORT_REQUEST_FILE, AtlasExportRequest.class);
