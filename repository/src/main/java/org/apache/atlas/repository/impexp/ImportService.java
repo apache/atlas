@@ -47,17 +47,17 @@ public class ImportService {
     private final AtlasTypeDefStore typeDefStore;
     private final AtlasTypeRegistry typeRegistry;
     private final BulkImporter bulkImporter;
-    private AuditHelper auditHelper;
+    private AuditsWriter auditsWriter;
 
     private long startTimestamp;
     private long endTimestamp;
 
     @Inject
-    public ImportService(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry, BulkImporter bulkImporter, AuditHelper auditHelper) {
+    public ImportService(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry, BulkImporter bulkImporter, AuditsWriter auditsWriter) {
         this.typeDefStore = typeDefStore;
         this.typeRegistry = typeRegistry;
         this.bulkImporter = bulkImporter;
-        this.auditHelper = auditHelper;
+        this.auditsWriter = auditsWriter;
     }
 
     public AtlasImportResult run(ZipSource source, String userName,
@@ -189,7 +189,7 @@ public class ImportService {
 
         endTimestamp = System.currentTimeMillis();
         result.incrementMeticsCounter("duration", getDuration(this.endTimestamp, this.startTimestamp));
-        auditHelper.audit(userName, result, startTimestamp, endTimestamp, !importSource.getCreationOrder().isEmpty());
+        auditsWriter.write(userName, result, startTimestamp, endTimestamp, importSource.getCreationOrder());
     }
 
     private int getDuration(long endTime, long startTime) {

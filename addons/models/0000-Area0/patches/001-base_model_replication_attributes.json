@@ -1,0 +1,29 @@
+{
+  "patches": [
+    {
+      "action": "ADD_ATTRIBUTE",
+      "typeName": "Referenceable",
+      "applyToVersion": "1.0",
+      "updateToVersion": "1.1",
+      "params": null,
+      "attributeDefs": [
+        {
+          "name": "replicatedFromCluster",
+          "typeName": "array<AtlasCluster>",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "replicatedToCluster",
+          "typeName": "array<AtlasCluster>",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ]
+}

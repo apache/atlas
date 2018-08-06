@@ -22,6 +22,7 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.clusterinfo.AtlasCluster;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.impexp.ClusterService;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;

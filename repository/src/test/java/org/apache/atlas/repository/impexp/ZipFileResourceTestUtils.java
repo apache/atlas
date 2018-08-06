@@ -27,6 +27,8 @@ import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
@@ -253,6 +255,7 @@ public class ZipFileResourceTestUtils {
 
     public static void loadModelFromJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         AtlasTypesDef typesFromJson = getAtlasTypesDefFromFile(fileName);
+        addReplicationAttributes(typesFromJson);
         createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
     }
 
@@ -262,6 +265,17 @@ public class ZipFileResourceTestUtils {
             AtlasTypesDef typesFromJson = AtlasJson.fromJson(model, AtlasTypesDef.class);
             createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
         }
+    }
+
+    private static void addReplicationAttributes(AtlasTypesDef typesFromJson) throws IOException {
+        AtlasEntityDef ed = typesFromJson.getEntityDefs().get(0);
+        if(!ed.getName().equals("Referenceable")) return;
+
+        String replAttr1Json = TestResourceFileUtils.getJson("stocksDB-Entities","replicationAttrs");
+        String replAttr2Json = StringUtils.replace(replAttr1Json, "From", "To");
+
+        ed.addAttribute(AtlasType.fromJson(replAttr1Json, AtlasStructDef.AtlasAttributeDef.class));
+        ed.addAttribute(AtlasType.fromJson(replAttr2Json, AtlasStructDef.AtlasAttributeDef.class));
     }
 
     public static void loadModelFromResourcesJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
@@ -332,14 +346,14 @@ public class ZipFileResourceTestUtils {
     }
 
     public static void loadBaseModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
-        loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
     }
 
     public static void loadFsModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
-        loadModelFromJson("1000-Hadoop/0020-fs_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("1020-fs_model.json", typeDefStore, typeRegistry);
     }
 
     public static void loadHiveModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
-        loadModelFromJson("1000-Hadoop/0030-hive_model.json", typeDefStore, typeRegistry);
+        loadModelFromJson("1030-hive_model.json", typeDefStore, typeRegistry);
     }
 }
