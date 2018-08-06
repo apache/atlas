@@ -1406,6 +1406,7 @@ public class EntityGraphMapper {
 
                 // add the attributes for the trait instance
                 mapClassification(EntityOperation.CREATE, context, classification, entityType, entityVertex, classificationVertex);
+                updateModificationMetadata(entityVertex);
 
                 if (propagateTags) {
                     // compute propagatedEntityVertices only once
@@ -1658,6 +1659,7 @@ public class EntityGraphMapper {
             }
 
             mapClassification(EntityOperation.UPDATE, context, classification, entityType, entityVertex, classificationVertex);
+            updateModificationMetadata(entityVertex);
 
             // handle update of 'propagate' flag
             Boolean currentTagPropagation = currentClassification.isPropagate();
