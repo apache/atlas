@@ -50,6 +50,10 @@ Follow the instructions below to setup Atlas hook in Hive:
       <name>hive.exec.post.hooks</name>
       <value>org.apache.atlas.hive.hook.HiveHook</value>
     </property></verbatim>
+
+   * untar apache-atlas-${project.version}-hive-hook.tar.gz
+   * cd apache-atlas-hive-hook-${project.version}
+   * Copy entire contents of folder apache-atlas-hive-hook-${project.version}/hook/hive to <atlas package>/hook/hive
    * Add 'export HIVE_AUX_JARS_PATH=<atlas package>/hook/hive' in hive-env.sh of your hive configuration
    * Copy <atlas-conf>/atlas-application.properties to the hive conf directory.
 

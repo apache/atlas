@@ -65,7 +65,7 @@ distro/target/apache-atlas-${project.version}-storm-hook.tar.gz</verbatim>
 ---++++ Installing Apache Atlas
 From the directory you would like Apache Atlas to be installed, run the following commands:
 <verbatim>
-tar -xzvf apache-atlas-${project.version}-bin.tar.gz
+tar -xzvf apache-atlas-${project.version}-server.tar.gz
 cd atlas-${project.version}</verbatim>
 
 ---++++ Running Apache Atlas with Local Apache HBase & Apache Solr

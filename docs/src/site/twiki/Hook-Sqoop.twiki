@@ -35,8 +35,12 @@ Add the following properties to  to enable Atlas hook in Sqoop:
      <name>sqoop.job.data.publish.class</name>
      <value>org.apache.atlas.sqoop.hook.SqoopHook</value>
    </property></verbatim>
+
+   * untar apache-atlas-${project.version}-sqoop-hook.tar.gz
+   * cd apache-atlas-sqoop-hook-${project.version}
+   * Copy entire contents of folder apache-atlas-sqoop-hook-${project.version}/hook/sqoop to <atlas package>/hook/sqoop
    * Copy <atlas-conf>/atlas-application.properties to to the sqoop conf directory <sqoop-conf>/
-   * Link <atlas-home>/hook/sqoop/*.jar in sqoop lib
+   * Link <atlas package>/hook/sqoop/*.jar in sqoop lib
 
 
 The following properties in atlas-application.properties control the thread pool and notification details:
