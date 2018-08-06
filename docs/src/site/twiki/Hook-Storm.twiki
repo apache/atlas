@@ -61,10 +61,12 @@ The following apply for the first version of the integration.
 
 ---++ Installation
 
-The Storm Atlas Hook needs to be manually installed in Storm on the client side. The hook
-artifacts are available at: $ATLAS_PACKAGE/hook/storm
+The Storm Atlas Hook needs to be manually installed in Storm on the client side.
+   * untar apache-atlas-${project.version}-storm-hook.tar.gz
+   * cd apache-atlas-storm-hook-${project.version}
+   * Copy entire contents of folder apache-atlas-storm-hook-${project.version}/hook/storm to $ATLAS_PACKAGE/hook/storm
 
-Storm Atlas hook jars need to be copied to $STORM_HOME/extlib.
+Storm Atlas hook jars in $ATLAS_PACKAGE/hook/storm need to be copied to $STORM_HOME/extlib.
 Replace STORM_HOME with storm installation path.
 
 Restart all daemons after you have installed the atlas hook into Storm.

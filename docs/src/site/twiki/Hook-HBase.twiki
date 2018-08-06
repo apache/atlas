@@ -30,7 +30,10 @@ Follow the instructions below to setup Atlas hook in HBase:
       <name>hbase.coprocessor.master.classes</name>
       <value>org.apache.atlas.hbase.hook.HBaseAtlasCoprocessor</value>
     </property></verbatim>
-   * Copy entire contents of folder <atlas package>/hook/hbase to HBase class path.
+   * untar apache-atlas-${project.version}-hbase-hook.tar.gz
+   * cd apache-atlas-hbase-hook-${project.version}
+   * Copy entire contents of folder apache-atlas-hbase-hook-${project.version}/hook/hbase to <atlas package>/hook/hbase
+   * Link Atlas hook jars in HBase classpath - 'ln -s <atlas package>/hook/hbase/* <hbase-home>/lib/'
    * Copy <atlas-conf>/atlas-application.properties to the HBase conf directory.
 
 The following properties in atlas-application.properties control the thread pool and notification details:
