@@ -192,6 +192,23 @@ public class ZipFileResourceTestUtils {
         return r;
     }
 
+    public static AtlasEntity.AtlasEntityWithExtInfo getEntities(ZipSource source, int expectedCount) {
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntity.AtlasEntityWithExtInfo();
+        try {
+            int count = 0;
+            for(String s : source.getCreationOrder()) {
+                AtlasEntity entity = source.getByGuid(s);
+                entityWithExtInfo.addReferredEntity(s, entity);
+                count++;
+            }
+
+            assertEquals(count, expectedCount);
+            return entityWithExtInfo;
+        } catch (AtlasBaseException e) {
+            throw new SkipException("getEntities: failed!");
+        }
+    }
+
     public static void loadModelFromJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         AtlasTypesDef typesFromJson = getAtlasTypesDefFromFile(fileName);
         addReplicationAttributes(typesFromJson);
