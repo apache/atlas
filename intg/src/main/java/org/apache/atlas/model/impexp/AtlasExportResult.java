@@ -61,7 +61,7 @@ public class AtlasExportResult implements Serializable {
     private AtlasExportData      data;
     private OperationStatus      operationStatus;
     private String               sourceClusterName;
-
+    private long                 lastModifiedTimestamp;
 
     public AtlasExportResult() {
         this(null, null, null, null, System.currentTimeMillis());
@@ -135,6 +135,14 @@ public class AtlasExportResult implements Serializable {
         this.data = data;
     }
 
+    public void setLastModifiedTimestamp(long lastModifiedTimestamp) {
+        this.lastModifiedTimestamp = lastModifiedTimestamp;
+    }
+
+    public long getLastModifiedTimestamp() {
+        return this.lastModifiedTimestamp;
+    }
+
     public OperationStatus getOperationStatus() {
         return operationStatus;
     }
@@ -171,6 +179,7 @@ public class AtlasExportResult implements Serializable {
         sb.append(", userName='").append(userName).append("'");
         sb.append(", clientIpAddress='").append(clientIpAddress).append("'");
         sb.append(", hostName='").append(hostName).append("'");
+        sb.append(", lastModifiedTimestamp='").append(lastModifiedTimestamp).append("'");
         sb.append(", sourceCluster='").append(sourceClusterName).append("'");
         sb.append(", timeStamp='").append(timeStamp).append("'");
         sb.append(", metrics={");

@@ -52,6 +52,8 @@ public class AtlasExportRequest implements Serializable {
     public static final String OPTION_KEY_REPLICATED_TO         = "replicatedTo";
     public static final String FETCH_TYPE_FULL                  = "full";
     public static final String FETCH_TYPE_CONNECTED             = "connected";
+    public static final String FETCH_TYPE_INCREMENTAL           = "incremental";
+    public static final String FETCH_TYPE_INCREMENTAL_FROM_TIME = "fromTime";
     public static final String MATCH_TYPE_STARTS_WITH           = "startsWith";
     public static final String MATCH_TYPE_ENDS_WITH             = "endsWith";
     public static final String MATCH_TYPE_CONTAINS              = "contains";

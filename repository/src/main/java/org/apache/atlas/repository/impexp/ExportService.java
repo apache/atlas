@@ -38,6 +38,7 @@ import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
 import org.apache.atlas.repository.util.UniqueList;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
@@ -120,6 +121,7 @@ public class ExportService {
         clearContextData(context);
         context.result.setOperationStatus(getOverallOperationStatus(statuses));
         context.result.incrementMeticsCounter("duration", duration);
+        context.result.setLastModifiedTimestamp(context.newestLastModifiedTimestamp);
         context.sink.setResult(context.result);
     }
 
@@ -278,7 +280,8 @@ public class ExportService {
     }
 
     private void logInfoStartingEntitiesFound(AtlasObjectId item, ExportContext context, List<String> ret) {
-        LOG.info("export(item={}; matchType={}, fetchType={}): found {} entities", item, context.matchType, context.fetchType, ret.size());
+        LOG.info("export(item={}; matchType={}, fetchType={}): found {} entities: options: {}", item,
+                context.matchType, context.fetchType, ret.size(), AtlasType.toJson(context.result.getRequest()));
     }
 
     private void setupBindingsForTypeName(ExportContext context, String typeName) {
@@ -327,9 +330,9 @@ public class ExportService {
             TraversalDirection      direction         = context.guidDirection.get(guid);
             AtlasEntityWithExtInfo  entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
 
-            if(!context.lineageProcessed.contains(guid)) {
-                context.result.getData().getEntityCreationOrder().add(entityWithExtInfo.getEntity().getGuid());
-            }
+        if (!context.lineageProcessed.contains(guid) && context.doesTimestampQualify(entityWithExtInfo.getEntity())) {
+            context.result.getData().getEntityCreationOrder().add(entityWithExtInfo.getEntity().getGuid());
+        }
 
             addEntity(entityWithExtInfo, context);
             exportTypeProcessor.addTypes(entityWithExtInfo.getEntity(), context);
@@ -358,6 +361,7 @@ public class ExportService {
                 getEntityGuidsForConnectedFetch(entity, context, direction);
                 break;
 
+            case INCREMENTAL:
             case FULL:
             default:
                 getEntityGuidsForFullFetch(entity, context);
@@ -470,21 +474,31 @@ public class ExportService {
         }
     }
 
-    private void addEntity(AtlasEntityWithExtInfo entity, ExportContext context) throws AtlasBaseException {
-        if(context.sink.hasEntity(entity.getEntity().getGuid())) {
+    private void addEntity(AtlasEntityWithExtInfo entityWithExtInfo, ExportContext context) throws AtlasBaseException {
+        if(context.sink.hasEntity(entityWithExtInfo.getEntity().getGuid())) {
             return;
         }
 
-        context.sink.add(entity);
+        if(context.doesTimestampQualify(entityWithExtInfo.getEntity())) {
+            context.addToSink(entityWithExtInfo);
 
-        context.result.incrementMeticsCounter(String.format("entity:%s", entity.getEntity().getTypeName()));
-        if(entity.getReferredEntities() != null) {
-            for (AtlasEntity e: entity.getReferredEntities().values()) {
+            context.result.incrementMeticsCounter(String.format("entity:%s", entityWithExtInfo.getEntity().getTypeName()));
+            if (entityWithExtInfo.getReferredEntities() != null) {
+                for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
+                    context.result.incrementMeticsCounter(String.format("entity:%s", e.getTypeName()));
+                }
+            }
+
+            context.result.incrementMeticsCounter("entity:withExtInfo");
+        } else {
+            List<AtlasEntity> entities = context.getEntitiesWithModifiedTimestamp(entityWithExtInfo);
+            for (AtlasEntity e : entities) {
+                context.result.getData().getEntityCreationOrder().add(e.getGuid());
+                context.addToSink(new AtlasEntityWithExtInfo(e));
                 context.result.incrementMeticsCounter(String.format("entity:%s", e.getTypeName()));
             }
         }
 
-        context.result.incrementMeticsCounter("entity:withExtInfo");
         context.reportProgress();
     }
 
@@ -516,7 +530,8 @@ public class ExportService {
 
     public enum ExportFetchType {
         FULL(FETCH_TYPE_FULL),
-        CONNECTED(FETCH_TYPE_CONNECTED);
+        CONNECTED(FETCH_TYPE_CONNECTED),
+        INCREMENTAL(FETCH_TYPE_INCREMENTAL);
 
         final String str;
         ExportFetchType(String s) {
@@ -535,6 +550,8 @@ public class ExportService {
     }
 
     static class ExportContext {
+        private static final int REPORTING_THREASHOLD = 1000;
+
         final Set<String>                     guidsProcessed = new HashSet<>();
         final UniqueList<String> guidsToProcess = new UniqueList<>();
         final UniqueList<String>              lineageToProcess = new UniqueList<>();
@@ -545,13 +562,15 @@ public class ExportService {
         final Set<String>                     structTypes         = new HashSet<>();
         final Set<String>                     enumTypes           = new HashSet<>();
         final AtlasExportResult               result;
-        final ZipSink                         sink;
+        private final ZipSink                 sink;
 
         private final ScriptEngine        scriptEngine;
         private final Map<String, Object> bindings;
         private final ExportFetchType     fetchType;
         private final String              matchType;
         private final boolean             skipLineage;
+        private final long                lastModifiedTimestampRequested;
+        private       long                newestLastModifiedTimestamp;
 
         private       int                 progressReportCount = 0;
 
@@ -564,6 +583,8 @@ public class ExportService {
             fetchType    = getFetchType(result.getRequest());
             matchType    = getMatchType(result.getRequest());
             skipLineage  = getOptionSkipLineage(result.getRequest());
+            this.lastModifiedTimestampRequested = getLastModifiedTimestamp(fetchType, result.getRequest());
+            this.newestLastModifiedTimestamp = 0;
         }
 
         private ExportFetchType getFetchType(AtlasExportRequest request) {
@@ -595,6 +616,34 @@ public class ExportService {
                     (boolean) request.getOptions().get(AtlasExportRequest.OPTION_SKIP_LINEAGE);
         }
 
+        private long getLastModifiedTimestamp(ExportFetchType fetchType, AtlasExportRequest request) {
+            if(fetchType == ExportFetchType.INCREMENTAL && request.getOptions().containsKey(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_FROM_TIME)) {
+                return Long.parseLong(request.getOptions().get(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_FROM_TIME).toString());
+            }
+
+            return 0L;
+        }
+
+        public List<AtlasEntity> getEntitiesWithModifiedTimestamp(AtlasEntityWithExtInfo entityWithExtInfo) {
+            if(fetchType != ExportFetchType.INCREMENTAL) {
+                return new ArrayList<>();
+            }
+
+            List<AtlasEntity> ret = new ArrayList<>();
+            if(doesTimestampQualify(entityWithExtInfo.getEntity())) {
+                ret.add(entityWithExtInfo.getEntity());
+                return ret;
+            }
+
+            for (AtlasEntity entity : entityWithExtInfo.getReferredEntities().values()) {
+                if((doesTimestampQualify(entity))) {
+                    ret.add(entity);
+                }
+            }
+
+            return ret;
+        }
+
         public void clear() {
             guidsToProcess.clear();
             guidsProcessed.clear();
@@ -614,16 +663,40 @@ public class ExportService {
         }
 
         public void reportProgress() {
-
-            if ((guidsProcessed.size() - progressReportCount) > 1000) {
+            if ((guidsProcessed.size() - progressReportCount) > REPORTING_THREASHOLD) {
                 progressReportCount = guidsProcessed.size();
 
                 LOG.info("export(): in progress.. number of entities exported: {}", this.guidsProcessed.size());
             }
         }
 
+        public boolean doesTimestampQualify(AtlasEntity entity) {
+            if(fetchType != ExportFetchType.INCREMENTAL) {
+                return true;
+            }
+
+            long entityModificationTimestamp = entity.getUpdateTime().getTime();
+            updateNewestLastModifiedTimestamp(entityModificationTimestamp);
+            return doesTimestampQualify(entityModificationTimestamp);
+        }
+
+        private void updateNewestLastModifiedTimestamp(long entityModificationTimestamp) {
+            if(newestLastModifiedTimestamp < entityModificationTimestamp) {
+                newestLastModifiedTimestamp = entityModificationTimestamp;
+            }
+        }
+
+        private boolean doesTimestampQualify(long modificationTimestamp) {
+            return lastModifiedTimestampRequested < modificationTimestamp;
+        }
+
         public boolean getSkipLineage() {
             return skipLineage;
+        }
+
+        public void addToSink(AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+            updateNewestLastModifiedTimestamp(entityWithExtInfo.getEntity().getUpdateTime().getTime());
+            sink.add(entityWithExtInfo);
         }
     }
 }

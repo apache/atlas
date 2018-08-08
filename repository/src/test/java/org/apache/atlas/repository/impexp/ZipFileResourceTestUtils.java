@@ -196,7 +196,7 @@ public class ZipFileResourceTestUtils {
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntity.AtlasEntityWithExtInfo();
         try {
             int count = 0;
-            for(String s : source.getCreationOrder()) {
+            for (String s : source.getCreationOrder()) {
                 AtlasEntity entity = source.getByGuid(s);
                 entityWithExtInfo.addReferredEntity(s, entity);
                 count++;
