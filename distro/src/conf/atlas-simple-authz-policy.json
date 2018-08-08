@@ -25,12 +25,12 @@
         {
           "privileges":     [ ".*" ],
           "relationshipTypes": [ ".*" ],
-          "endOneEntityType":      [ ".*" ],
-          "endOneEntityId":      [ ".*" ],
-          "endOneEntityClassification":      [ ".*" ],
-          "endTwoEntityType":      [ ".*" ],
-          "endTwoEntityId":      [ ".*" ],
-          "endTwoEntityClassification":      [ ".*" ]
+          "end1EntityType":           [ ".*" ],
+          "end1EntityId":             [ ".*" ],
+          "end1EntityClassification": [ ".*" ],
+          "end2EntityType":           [ ".*" ],
+          "end2EntityId":             [ ".*" ],
+          "end2EntityClassification": [ ".*" ]
         }
       ]
     },
