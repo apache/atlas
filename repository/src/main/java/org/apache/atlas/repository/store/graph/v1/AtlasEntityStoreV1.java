@@ -77,6 +77,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     @Override
+    @GraphTransaction
     public AtlasEntityWithExtInfo getById(String guid) throws AtlasBaseException {
         return getById(guid, false);
     }
@@ -124,7 +125,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         return ret;
     }
+
     @Override
+    @GraphTransaction
     public AtlasEntitiesWithExtInfo getByIds(List<String> guids) throws AtlasBaseException {
         return getByIds(guids, false);
     }
@@ -148,6 +151,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     @Override
+    @GraphTransaction
     public AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
             throws AtlasBaseException {
         return getByUniqueAttributes(entityType, uniqAttributes, false);
