@@ -53,12 +53,6 @@ import static org.testng.AssertJUnit.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ExportSkipLineageTest extends ExportImportTestBase {
-    private final String ENTITIES_SUB_DIR = "stocksDB-Entities";
-    private final String DB_GUID = "1637a33e-6512-447b-ade7-249c8cb5344b";
-    private final String TABLE_GUID = "df122fc3-5555-40f8-a30f-3090b8a622f8";
-    private final String TABLE_TABLE_GUID = "6f3b305a-c459-4ae4-b651-aee0deb0685f";
-    private final String TABLE_VIEW_GUID = "56415119-7cb0-40dd-ace8-1e50efd54991";
-
     @Inject
     AtlasTypeRegistry typeRegistry;
 
