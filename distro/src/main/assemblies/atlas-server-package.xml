@@ -92,6 +92,17 @@
         </fileSet>
 
         <fileSet>
+            <directory>../tools</directory>
+            <outputDirectory>tools</outputDirectory>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
+            <excludes>
+                <exclude>*</exclude>
+                <exclude>**/**</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
             <directory>../tools/atlas-migration-exporter/src/main/resources</directory>
             <outputDirectory>tools/migration-exporter</outputDirectory>
             <includes>
