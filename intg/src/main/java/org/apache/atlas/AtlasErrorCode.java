@@ -128,7 +128,7 @@ public enum AtlasErrorCode {
     CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY(400, "ATLAS-400-00-06D", "Classification {0} is not associated with entity"),
     UNKNOWN_GLOSSARY_TERM(400, "ATLAS-400-00-06E", "{0}: Unknown/invalid glossary term"),
     INVALID_CLASSIFICATION_PARAMS(400, "ATLAS-400-00-06F", "Invalid classification parameters passed for {0} operation for entity: {1}"),
-    PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY(400, "ATLAS-400-00-070", "Propagated classification {0} is not associated with entity"),
+    PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY(400, "ATLAS-400-00-070", "Propagated classification {0} is not associated with entity {2}, it is associated with entity {1}"),
     INVALID_BLOCKED_PROPAGATED_CLASSIFICATION(400, "ATLAS-400-00-071", "Invalid propagated classification: {0} with entityGuid: {1} added to blocked propagated classifications."),
     MISSING_MANDATORY_ANCHOR(400, "ATLAS-400-00-072", "Mandatory anchor attribute is missing"),
     MISSING_MANDATORY_QUALIFIED_NAME(400, "ATLAS-400-00-073", "Mandatory qualifiedName attribute is missing"),
@@ -152,6 +152,7 @@ public enum AtlasErrorCode {
     INVALID_TIMEBOUNDRY_START_TIME(400, "ATLAS-400-00-87B", "Invalid startTime {0}"),
     INVALID_TIMEBOUNDRY_END_TIME(400, "ATLAS-400-00-87C", "Invalid endTime {0}"),
     INVALID_TIMEBOUNDRY_DATERANGE(400, "ATLAS-400-00-87D", "Invalid dateRange: startTime {0} must be before endTime {1}"),
+    PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED(400, "ATLAS-400-00-87E", "Removal of classification {0}, which is propagated from entity {1}, is not supported"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
@@ -174,6 +175,7 @@ public enum AtlasErrorCode {
     INVALID_ENTITY_GUID_FOR_CLASSIFICATION_UPDATE(404, "ATLAS-404-00-010", "Updating entityGuid of classification is not allowed."),
     INSTANCE_GUID_NOT_DATASET(404, "ATLAS-404-00-011", "Given instance guid {0} is not a dataset"),
     INSTANCE_GUID_DELETED(404, "ATLAS-404-00-012", "Given instance guid {0} has been deleted"),
+    NO_PROPAGATED_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-013", "No propagated classifications associated with entity: {0}"),
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),

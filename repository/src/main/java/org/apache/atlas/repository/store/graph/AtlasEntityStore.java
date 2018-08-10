@@ -197,9 +197,11 @@ public interface AtlasEntityStore {
     void addClassification(List<String> guids, AtlasClassification classification) throws AtlasBaseException;
 
     /**
-     * Delete classification(s)
+     * Delete classification
      */
-    void deleteClassifications(String guid, List<String> classificationNames) throws AtlasBaseException;
+    void deleteClassification(String guid, String classificationName) throws AtlasBaseException;
+
+    void deleteClassification(String guid, String classificationName, String associatedEntityGuid) throws AtlasBaseException;
 
     List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException;
 

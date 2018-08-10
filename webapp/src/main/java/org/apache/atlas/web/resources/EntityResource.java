@@ -1083,7 +1083,7 @@ public class EntityResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.deleteTrait(" + guid + ", " + traitName + ")");
             }
 
-            entitiesStore.deleteClassifications(guid, new ArrayList<String>() {{ add(traitName); }});
+            entitiesStore.deleteClassification(guid, traitName);
 
             Map<String, Object> response = new HashMap<>();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());

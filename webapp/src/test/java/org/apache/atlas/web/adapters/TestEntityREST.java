@@ -20,6 +20,7 @@ package org.apache.atlas.web.adapters;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -177,7 +178,7 @@ public class TestEntityREST {
         Assert.assertNotNull(updatedClassification);
         Assert.assertEquals(updatedClassification.getAttribute("tag"), testClassification.getAttribute("tag"));
 
-        entityREST.deleteClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
+        deleteClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
     }
 
     @Test(dependsOnMethods = "testAddAndGetClassification")
@@ -193,7 +194,7 @@ public class TestEntityREST {
     @Test(dependsOnMethods = "testGetEntityWithAssociations")
     public void  testDeleteClassification() throws Exception {
 
-        entityREST.deleteClassification(dbEntity.getGuid(), TestUtilsV2.CLASSIFICATION);
+        deleteClassification(dbEntity.getGuid(), TestUtilsV2.CLASSIFICATION);
         final AtlasClassification.AtlasClassifications retrievedClassifications = entityREST.getClassifications(dbEntity.getGuid());
 
         Assert.assertNotNull(retrievedClassifications);
@@ -366,5 +367,9 @@ public class TestEntityREST {
         return new HashMap<String, String[]>() {{
             put(name, new String[] { value });
         }};
+    }
+
+    private void deleteClassification(String guid, String classificationName) throws AtlasBaseException {
+        entityREST.deleteClassification(guid, classificationName, null);
     }
 }
