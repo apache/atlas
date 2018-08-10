@@ -486,6 +486,24 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static List<AtlasEdge> getIncomingClassificationEdges(AtlasVertex classificationVertex) {
+        List<AtlasEdge> ret                = new ArrayList<>();
+        String          classificationName = getTypeName(classificationVertex);
+        Iterable        edges              = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
+                                                                 .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
+        if (edges != null) {
+            Iterator<AtlasEdge> iterator = edges.iterator();
+
+            while (iterator.hasNext()) {
+                AtlasEdge edge = iterator.next();
+
+                ret.add(edge);
+            }
+        }
+
+        return ret;
+    }
+
     public static List<AtlasVertex> getAllPropagatedEntityVertices(AtlasVertex classificationVertex) {
         List<AtlasVertex> ret = new ArrayList<>();
 
@@ -980,6 +998,10 @@ public final class GraphHelper {
         return getTraitNames(entityVertex, false);
     }
 
+    public static List<String> getPropagatedTraitNames(AtlasVertex entityVertex) {
+        return getTraitNames(entityVertex, true);
+    }
+
     public static List<String> getAllTraitNames(AtlasVertex entityVertex) {
         return getTraitNames(entityVertex, null);
     }
@@ -1194,6 +1216,21 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static boolean isClassificationEdge(AtlasEdge edge) {
+        boolean ret = false;
+
+        if (edge != null) {
+            String  edgeLabel    = edge.getLabel();
+            Boolean isPropagated = edge.getProperty(Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, Boolean.class);
+
+            if (edgeLabel != null && isPropagated != null) {
+                ret = edgeLabel.equals(CLASSIFICATION_LABEL) && !isPropagated;
+            }
+        }
+
+        return ret;
+    }
+
     public static List<String> getBlockedClassificationIds(AtlasEdge edge) {
         List<String> ret = null;
 
@@ -1210,6 +1247,12 @@ public final class GraphHelper {
         String propagateTags = element.getProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.class);
 
         return (propagateTags == null) ? null : PropagateTags.valueOf(propagateTags);
+    }
+
+    public static Status getClassificationEntityStatus(AtlasElement element) {
+        String status = element.getProperty(Constants.CLASSIFICATION_ENTITY_STATUS, String.class);
+
+        return (status == null) ? null : Status.valueOf(status);
     }
 
     //Added conditions in fetching system attributes to handle test failures in GremlinTest where these properties are not set

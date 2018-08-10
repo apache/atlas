@@ -122,6 +122,7 @@ public final class Constants {
     public static final String TEMP_STRUCT_NAME_PREFIX       = "__tempQueryResultStruct";
 
     public static final String CLASSIFICATION_ENTITY_GUID                     = INTERNAL_PROPERTY_KEY_PREFIX + "entityGuid";
+    public static final String CLASSIFICATION_ENTITY_STATUS                   = INTERNAL_PROPERTY_KEY_PREFIX + "entityStatus";
     public static final String CLASSIFICATION_VALIDITY_PERIODS_KEY            = INTERNAL_PROPERTY_KEY_PREFIX + "validityPeriods";
     public static final String CLASSIFICATION_VERTEX_PROPAGATE_KEY            = INTERNAL_PROPERTY_KEY_PREFIX + "propagate";
     public static final String CLASSIFICATION_VERTEX_NAME_KEY                 = TYPE_NAME_PROPERTY_KEY;

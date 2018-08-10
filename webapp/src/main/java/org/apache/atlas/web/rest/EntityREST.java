@@ -542,7 +542,7 @@ public class EntityREST {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, attributes.toString());
             }
 
-            entitiesStore.deleteClassifications(guid, Collections.singletonList(classificationName));
+            entitiesStore.deleteClassification(guid, classificationName);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -557,15 +557,17 @@ public class EntityREST {
     @Path("/guid/{guid}/classification/{classificationName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public void deleteClassification(@PathParam("guid") String guid,
-                                     @PathParam("classificationName") final String classificationName) throws AtlasBaseException {
+                                     @PathParam("classificationName") final String classificationName,
+                                     @QueryParam("associatedEntityGuid") final String associatedEntityGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
         Servlets.validateQueryParamLength("classificationName", classificationName);
+        Servlets.validateQueryParamLength("associatedEntityGuid", associatedEntityGuid);
 
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteClassification(" + guid + "," + classificationName + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteClassification(" + guid + "," + classificationName + "," + associatedEntityGuid + ")");
             }
 
             if (StringUtils.isEmpty(guid)) {
@@ -574,7 +576,7 @@ public class EntityREST {
 
             ensureClassificationType(classificationName);
 
-            entitiesStore.deleteClassifications(guid, new ArrayList<String>() {{ add(classificationName);}} );
+            entitiesStore.deleteClassification(guid, classificationName, associatedEntityGuid);
         } finally {
             AtlasPerfTracer.log(perf);
         }

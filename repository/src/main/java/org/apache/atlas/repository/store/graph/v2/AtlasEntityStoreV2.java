@@ -539,27 +539,36 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void deleteClassifications(final String guid, final List<String> classificationNames) throws AtlasBaseException {
+    public void deleteClassification(final String guid, final String classificationName) throws AtlasBaseException {
+        deleteClassification(guid, classificationName, null);
+    }
+
+    @Override
+    @GraphTransaction
+    public void deleteClassification(final String guid, final String classificationName, final String associatedEntityGuid) throws AtlasBaseException {
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
         }
-        if (CollectionUtils.isEmpty(classificationNames)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications(s) not specified");
+        if (StringUtils.isEmpty(classificationName)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications not specified");
         }
 
         AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
-        for (String classification : classificationNames) {
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION, entityHeader, new AtlasClassification(classification)), "remove classification: guid=", guid, ", classification=", classification);
+        // verify authorization only for removal of directly associated classification and not propagated one.
+        if (StringUtils.isEmpty(associatedEntityGuid) || guid.equals(associatedEntityGuid)) {
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION,
+                                                 entityHeader, new AtlasClassification(classificationName)),
+                                                 "remove classification: guid=", guid, ", classification=", classificationName);
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Deleting classifications={} from entity={}", classificationNames, guid);
+            LOG.debug("Deleting classification={} from entity={}", classificationName, guid);
         }
 
         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
 
-        entityGraphMapper.deleteClassifications(guid, classificationNames);
+        entityGraphMapper.deleteClassification(guid, classificationName, associatedEntityGuid);
     }
 
 

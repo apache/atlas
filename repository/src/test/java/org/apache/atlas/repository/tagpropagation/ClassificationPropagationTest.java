@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.tagpropagation;
 
+import com.vividsolutions.jts.util.Assert;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.discovery.AtlasLineageService;
@@ -25,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -57,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.AtlasErrorCode.PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED;
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.BOTH;
@@ -79,6 +82,10 @@ public class ClassificationPropagationTest {
     public static final String EMPLOYEES1_PROCESS      = "EMPLOYEES1_PROCESS";
     public static final String EMPLOYEES2_PROCESS      = "EMPLOYEES2_PROCESS";
     public static final String EMPLOYEES_UNION_PROCESS = "EMPLOYEES_UNION_PROCESS";
+    public static final String IMPORT_FILE             = "tag-propagation-data-1.zip";
+    public static final String EMPLOYEES_TABLE         = "EMPLOYEES_TABLE";
+    public static final String US_EMPLOYEES_TABLE      = "US_EMPLOYEES2_TABLE";
+    public static final String EMPLOYEES_PROCESS       = "EMPLOYEES_PROCESS";
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
@@ -121,13 +128,21 @@ public class ClassificationPropagationTest {
     /** This test uses the lineage graph:
      *
 
-                         [Process1] ----> [Employees1]
-                        /                              \
-                       /                                \
-       [hdfs_employees]                                  [Process3] ----> [ EmployeesUnion ]
-                       \                                /
-                        \                             /
-                         [Process2] ----> [Employees2]
+     Lineage - 1
+     -----------
+     [Process1] ----> [Employees1]
+     /                              \
+     /                                \
+     [hdfs_employees]                                  [Process3] ----> [ EmployeesUnion ]
+     \                                /
+     \                             /
+     [Process2] ----> [Employees2]
+
+
+     Lineage - 2
+     -----------
+
+     [Employees] ----> [Process] ----> [ US_Employees ]
 
      */
 
@@ -443,6 +458,31 @@ public class ClassificationPropagationTest {
         assertTrue(blockedClassifications.isEmpty());
     }
 
+    @Test(dependsOnMethods = {"removeBlockedPropagatedClassifications"})
+    public void addClassification_DeleteCase() throws AtlasBaseException {
+        AtlasEntity         employees = getEntity(EMPLOYEES_TABLE);
+        AtlasClassification tag1      = new AtlasClassification("tag1");
+
+        tag1.setEntityGuid(employees.getGuid());
+        tag1.setPropagate(true);
+
+        addClassification(employees, tag1);
+
+        List<String> propagatedEntities = Arrays.asList(EMPLOYEES_PROCESS, US_EMPLOYEES_TABLE);
+
+        assertClassificationExistInEntities(propagatedEntities, tag1);
+
+        AtlasEntity employees_process = getEntity(EMPLOYEES_PROCESS);
+        AtlasEntity us_employees      = getEntity(US_EMPLOYEES_TABLE);
+
+        deletePropagatedClassificationExpectFail(employees_process, tag1);
+        deletePropagatedClassificationExpectFail(us_employees, tag1);
+
+        deleteEntity(EMPLOYEES_PROCESS);
+        assertClassificationExistInEntity(EMPLOYEES_PROCESS, tag1);
+        assertClassificationExistInEntity(US_EMPLOYEES_TABLE, tag1);
+    }
+
     private void assertClassificationExistInList(Set<AtlasClassification> classifications, AtlasClassification classification) {
         String  classificationName  = classification.getTypeName();
         String  entityGuid          = classification.getEntityGuid();
@@ -521,7 +561,7 @@ public class ClassificationPropagationTest {
 
             loadSampleClassificationDefs();
 
-            runImportWithNoParameters(importService, getZipSource("tag-propagation-data.zip"));
+            runImportWithNoParameters(importService, getZipSource(IMPORT_FILE));
 
             initializeEntitiesMap();
         } catch (AtlasBaseException | IOException e) {
@@ -560,6 +600,10 @@ public class ClassificationPropagationTest {
         entitiesMap.put(EMPLOYEES2_PROCESS, "c0201260-dbeb-45f4-930d-5129eab31dc9");
         entitiesMap.put(EMPLOYEES_UNION_PROCESS, "470a2d1e-b1fd-47de-8f2d-8dfd0a0275a7");
 
+        entitiesMap.put(EMPLOYEES_TABLE, "b4edad46-d00f-4e94-be39-8d2619d17e6c");
+        entitiesMap.put(US_EMPLOYEES_TABLE, "44acef8e-fefe-491c-87d9-e2ea6a9ad3b0");
+        entitiesMap.put(EMPLOYEES_PROCESS, "a1c9a281-d30b-419c-8199-7434b245d7fe");
+
         lineageInfo = lineageService.getAtlasLineageInfo(entitiesMap.get(HDFS_PATH_EMPLOYEES), LineageDirection.BOTH, 3);
     }
 
@@ -568,6 +612,13 @@ public class ClassificationPropagationTest {
         AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(entityGuid);
 
         return entityWithExtInfo.getEntity();
+    }
+
+    private boolean deleteEntity(String entityName) throws AtlasBaseException {
+        String                 entityGuid = entitiesMap.get(entityName);
+        EntityMutationResponse response   = entityStore.deleteById(entityGuid);
+
+        return CollectionUtils.isNotEmpty(response.getDeletedEntities());
     }
 
     private AtlasClassification getClassification(AtlasEntity hdfs_employees, AtlasClassification tag2) throws AtlasBaseException {
@@ -595,7 +646,26 @@ public class ClassificationPropagationTest {
     }
 
     private void deleteClassifications(AtlasEntity entity, List<String> classificationNames) throws AtlasBaseException {
-        entityStore.deleteClassifications(entity.getGuid(), classificationNames);
+        for (String classificationName : classificationNames) {
+            entityStore.deleteClassification(entity.getGuid(), classificationName);
+        }
+    }
+
+    private void deletePropagatedClassification(AtlasEntity entity, AtlasClassification classification) throws AtlasBaseException {
+        deletePropagatedClassification(entity, classification.getTypeName(), classification.getEntityGuid());
+    }
+
+    private void deletePropagatedClassification(AtlasEntity entity, String classificationName, String associatedEntityGuid) throws AtlasBaseException {
+        entityStore.deleteClassification(entity.getGuid(), classificationName, associatedEntityGuid);
+    }
+
+    private void deletePropagatedClassificationExpectFail(AtlasEntity entity, AtlasClassification classification) {
+        try {
+            deletePropagatedClassification(entity, classification);
+            fail();
+        } catch (AtlasBaseException ex) {
+            Assert.equals(ex.getAtlasErrorCode(), PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED);
+        }
     }
 
     private AtlasRelationship getRelationship(String fromEntityName, String toEntityName) throws AtlasBaseException {

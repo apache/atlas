@@ -52,9 +52,6 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
             LOG.debug("==> HardDeleteHandlerV1.deleteEdge({}, {})", GraphHelper.string(edge), force);
         }
 
-        // re-evaluate tag propagation
-        removeTagPropagation(edge);
-
         graphHelper.removeEdge(edge);
     }
 }

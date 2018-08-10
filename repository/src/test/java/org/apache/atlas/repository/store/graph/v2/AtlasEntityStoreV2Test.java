@@ -273,7 +273,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         AtlasEntityHeader tableDefinition1 = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         AtlasEntity updatedTableDef1 = getEntityFromStore(tableDefinition1);
         validateEntity(entitiesInfo, updatedTableDef1);
-                
+
         Assert.assertTrue(partsMap.get("part0").equals(((Map<String, AtlasStruct>) updatedTableDef1.getAttribute("partitionsMap")).get("part0")));
 
         //update map - add a map key
@@ -905,7 +905,9 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         assertTrue(classificationSet.contains(TAG_NAME));
         assertTrue(classificationSet.contains(TAG_NAME_2));
 
-        entityStore.deleteClassifications(dbEntityGuid, actualClassifications);
+        for (String actualClassificationName : actualClassifications) {
+            entityStore.deleteClassification(dbEntityGuid, actualClassificationName);
+        }
     }
 
     @Test(dependsOnMethods = "testCreate")
@@ -936,7 +938,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         assertTrue(actualDBAssociatedEntityGuid.contains(dbEntityGuid));
         assertTrue(actualTblAssociatedEntityGuid.contains(tblEntityGuid));
 
-        entityStore.deleteClassifications(dbEntityGuid, Collections.singletonList(TAG_NAME));
-        entityStore.deleteClassifications(tblEntityGuid, Collections.singletonList(TAG_NAME));
+        entityStore.deleteClassification(dbEntityGuid, TAG_NAME);
+        entityStore.deleteClassification(tblEntityGuid, TAG_NAME);
     }
 }
