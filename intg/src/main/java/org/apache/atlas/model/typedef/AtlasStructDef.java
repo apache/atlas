@@ -256,6 +256,9 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     public static class AtlasAttributeDef implements Serializable {
         private static final long serialVersionUID = 1L;
 
+        public static final String ATTRDEF_OPTION_SOFT_REFERENCE = "isSoftReference";
+        private final String STRING_TRUE = "true";
+
         /**
          * single-valued attribute or multi-valued attribute.
          */
@@ -272,6 +275,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private boolean                  isUnique;
         private boolean                  isIndexable;
         private List<AtlasConstraintDef> constraints;
+        private Map<String, String>      options;
 
         public AtlasAttributeDef() { this(null, null); }
 
@@ -281,12 +285,12 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                  int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, List<AtlasConstraintDef> constraints) {
-            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, null, constraints, null);
+            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, null, constraints, null, null);
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                  int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, String defaultValue,
-                                 List<AtlasConstraintDef> constraints, String description) {
+                                 List<AtlasConstraintDef> constraints, Map<String,String> options, String description) {
             setName(name);
             setTypeName(typeName);
             setIsOptional(isOptional);
@@ -296,6 +300,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             setIsUnique(isUnique);
             setIsIndexable(isIndexable);
             setConstraints(constraints);
+            setOptions(options);
         }
 
         public AtlasAttributeDef(AtlasAttributeDef other) {
@@ -309,6 +314,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setIsUnique(other.getIsUnique());
                 setIsIndexable(other.getIsIndexable());
                 setConstraints(other.getConstraints());
+                setOptions(other.getOptions());
             }
         }
 
@@ -399,6 +405,23 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
             cDefs.add(constraintDef);
         }
+        public Map<String, String> getOptions() {
+            return options;
+        }
+
+        public void setOptions(Map<String, String> options) {
+            if (options != null) {
+                this.options = new HashMap<>(options);
+            } else {
+                this.options = null;
+            }
+        }
+
+        public boolean isSoftReferenced() {
+            return this.options != null &&
+                    getOptions().containsKey(AtlasAttributeDef.ATTRDEF_OPTION_SOFT_REFERENCE) &&
+                    getOptions().get(AtlasAttributeDef.ATTRDEF_OPTION_SOFT_REFERENCE).equals(STRING_TRUE);
+        }
 
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
@@ -414,6 +437,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", valuesMaxCount=").append(valuesMaxCount);
             sb.append(", isUnique=").append(isUnique);
             sb.append(", isIndexable=").append(isIndexable);
+            sb.append(", options='").append(options).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -444,12 +468,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(name, that.name) &&
                     Objects.equals(typeName, that.typeName) &&
                     cardinality == that.cardinality &&
-                    Objects.equals(constraints, that.constraints);
+                    Objects.equals(constraints, that.constraints) &&
+                    Objects.equals(options, that.options);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, constraints);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, constraints, options);
         }
 
         @Override
