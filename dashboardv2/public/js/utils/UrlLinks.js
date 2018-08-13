@@ -52,9 +52,12 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             var entitiesUrl = this.baseUrlV2 + '/entity';
             if (options) {
                 var guid = options.guid,
+                    associatedGuid = options.associatedGuid,
                     name = options.name,
                     minExtInfo = options.minExtInfo;
-                if (guid && name) {
+                if (guid && name && associatedGuid) {
+                    return entitiesUrl + '/guid/' + guid + '/classification/' + name + '?associatedEntityGuid=' + associatedGuid;
+                } else if (guid && name) {
                     entitiesUrl += '/guid/' + guid + '/classification/' + name;
                 } else if (guid && !name) {
                     entitiesUrl += '/guid/' + guid;
@@ -80,9 +83,6 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         },
         entityCollectionaudit: function(guid) {
             return this.baseUrlV2 + '/entity/' + guid + '/audit';
-        },
-        replicationCollectionaudit: function(name) {
-            return this.baseUrl + '/admin/cluster/audit/' + name;
         },
         classicationApiUrl: function(name, guid) {
             var typeUrl = this.typedefsUrl();
