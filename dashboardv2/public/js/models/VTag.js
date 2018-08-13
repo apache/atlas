@@ -40,8 +40,8 @@ define(['require',
         /*************************
          * Non - CRUD operations
          *************************/
-        deleteAssociation: function(guid, name, options) {
-            var url = UrlLinks.entitiesApiUrl({ guid: guid, name: name });
+        deleteAssociation: function(guid, name, associatedGuid, options) {
+            var url = UrlLinks.entitiesApiUrl({ guid: guid, name: name, associatedGuid: associatedGuid });
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'

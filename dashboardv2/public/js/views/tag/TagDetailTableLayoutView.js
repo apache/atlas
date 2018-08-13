@@ -151,12 +151,12 @@ define(['require',
                                             var val = _.isNull(values[sortedObj.name]) ? "-" : values[sortedObj.name],
                                                 key = sortedObj.name;
                                             if (_.isObject(val)) {
-                                                val = JSON.stringify(val); 
+                                                val = JSON.stringify(val);
                                             }
                                             if (sortedObj.typeName === "date") {
                                                 val = new Date(val)
                                             }
-                                            stringValue += "<tr><td class='html-cell string-cell renderable'>" + _.escape(key) + "</td><td class='html-cell string-cell renderable' data-type='"+sortedObj.typeName+"'>" + _.escape(val) + "</td>";
+                                            stringValue += "<tr><td class='html-cell string-cell renderable'>" + _.escape(key) + "</td><td class='html-cell string-cell renderable' data-type='" + sortedObj.typeName + "'>" + _.escape(val) + "</td>";
                                         });
                                         tagValue = "<div class='mainAttrTable'><table class='attriTable'><tr><th class='html-cell string-cell renderable'>Name</th><th class='html-cell string-cell renderable'>Value</th>" + stringValue + "</table></div>";
                                     }
@@ -171,13 +171,13 @@ define(['require',
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    var deleteData = '<button title="Delete" class="btn btn-action btn-sm" data-id="delete" data-name="' + model.get('typeName') + '"><i class="fa fa-trash"></i></button>',
+                                    var deleteData = '<button title="Delete" class="btn btn-action btn-sm" data-id="delete" data-entityguid="' + model.get('entityGuid') + '" data-name="' + model.get('typeName') + '"><i class="fa fa-trash"></i></button>',
                                         editData = '<button title="Edit" class="btn btn-action btn-sm" data-id="edit" data-name="' + model.get('typeName') + '"><i class="fa fa-pencil"></i></button>',
                                         btnObj = null;
                                     if (that.guid === model.get('entityGuid')) {
                                         return '<div class="btn-inline">' + deleteData + editData + '</div>'
-                                    } else {
-                                        return;
+                                    } else if (that.guid !== model.get('entityGuid') && model.get('entityStatus') === "DELETED") {
+                                        return '<div class="btn-inline">' + deleteData + '</div>';
                                     }
                                 }
                             })
@@ -198,10 +198,12 @@ define(['require',
             },
             onClickTagCross: function(e) {
                 var that = this,
-                    tagName = $(e.currentTarget).data("name");
+                    tagName = $(e.currentTarget).data("name"),
+                    entityGuid = $(e.currentTarget).data("entityguid");
                 CommonViewFunction.deleteTag({
                     tagName: tagName,
                     guid: that.guid,
+                    associatedGuid: that.guid != entityGuid ? entityGuid : null,
                     msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.entityName + "?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",

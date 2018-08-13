@@ -33,7 +33,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             if (options.showLoader) {
                                 options.showLoader();
                             }
-                            tagModel.deleteAssociation(options.guid, options.tagName, {
+                            tagModel.deleteAssociation(options.guid, options.tagName, options.associatedGuid, {
                                 skipDefaultError: true,
                                 success: function(data) {
                                     Utils.notifySuccess({
