@@ -54,7 +54,7 @@ public class AtlasHookTest {
         List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
         doThrow(new NotificationException(new Exception())).when(notificationInterface)
                 .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
-        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 0, notificationInterface, false,
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 0, null, notificationInterface, false,
                 failedMessagesLogger);
         // if we've reached here, the method finished OK.
     }
@@ -68,7 +68,7 @@ public class AtlasHookTest {
             };
         doThrow(new NotificationException(new Exception())).when(notificationInterface)
                 .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
-        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, false,
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, null, notificationInterface, false,
                 failedMessagesLogger);
 
         verify(notificationInterface, times(2)).
@@ -85,7 +85,7 @@ public class AtlasHookTest {
         doThrow(new NotificationException(new Exception(), Arrays.asList("test message")))
                 .when(notificationInterface)
                 .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
-        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, true,
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, null, notificationInterface, true,
                 failedMessagesLogger);
 
         verify(failedMessagesLogger, times(1)).log("test message");
@@ -97,7 +97,7 @@ public class AtlasHookTest {
         doThrow(new NotificationException(new Exception(), Arrays.asList("test message")))
                 .when(notificationInterface)
                 .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
-        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, false,
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, null, notificationInterface, false,
                 failedMessagesLogger);
 
         verifyZeroInteractions(failedMessagesLogger);
@@ -113,7 +113,7 @@ public class AtlasHookTest {
         doThrow(new NotificationException(new Exception(), Arrays.asList("test message1", "test message2")))
                 .when(notificationInterface)
                 .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
-        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, true,
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, null, notificationInterface, true,
                 failedMessagesLogger);
 
         verify(failedMessagesLogger, times(1)).log("test message1");
@@ -125,7 +125,7 @@ public class AtlasHookTest {
         List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
         doThrow(new RuntimeException("test message")).when(notificationInterface)
                 .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
-        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, true,
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, null, notificationInterface, true,
                 failedMessagesLogger);
 
         verifyZeroInteractions(failedMessagesLogger);

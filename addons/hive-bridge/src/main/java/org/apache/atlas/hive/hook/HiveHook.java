@@ -26,6 +26,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.hive.shims.Utils;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +45,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final Logger LOG = LoggerFactory.getLogger(HiveHook.class);
 
     public static final String CONF_PREFIX                    = "atlas.hook.hive.";
-    public static final String HOOK_NUM_RETRIES               = CONF_PREFIX + "numRetries";
     public static final String HOOK_DATABASE_NAME_CACHE_COUNT = CONF_PREFIX + "database.name.cache.count";
     public static final String HOOK_TABLE_NAME_CACHE_COUNT    = CONF_PREFIX + "table.name.cache.count";
     public static final String CONF_CLUSTER_NAME              = "atlas.cluster.name";
@@ -70,11 +71,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
     public HiveHook() {
-    }
-
-    @Override
-    protected String getNumberOfRetriesPropertyKey() {
-        return HOOK_NUM_RETRIES;
     }
 
     @Override
@@ -154,7 +150,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             }
 
             if (event != null) {
-                super.notifyEntities(event.getNotificationMessages());
+                final UserGroupInformation ugi = hookContext.getUgi() == null ? Utils.getUGI() : hookContext.getUgi();
+
+                super.notifyEntities(event.getNotificationMessages(), ugi);
             }
         } catch (Throwable t) {
             LOG.error("HiveHook.run(): failed to process operation {}", hookContext.getOperationName(), t);

@@ -52,8 +52,6 @@ import java.util.Date;
 public class SqoopHook extends SqoopJobDataPublisher {
     private static final Logger LOG = LoggerFactory.getLogger(SqoopHook.class);
 
-    public static final String CONF_PREFIX          = "atlas.hook.sqoop.";
-    public static final String HOOK_NUM_RETRIES     = CONF_PREFIX + "numRetries";
     public static final String ATLAS_CLUSTER_NAME   = "atlas.cluster.name";
     public static final String DEFAULT_CLUSTER_NAME = "primary";
 
@@ -70,8 +68,12 @@ public class SqoopHook extends SqoopJobDataPublisher {
     public static final String INPUTS         = "inputs";
     public static final String OUTPUTS        = "outputs";
 
+    private static final AtlasHookImpl atlasHook;
+
     static {
         org.apache.hadoop.conf.Configuration.addDefaultResource("sqoop-site.xml");
+
+        atlasHook = new AtlasHookImpl();
     }
 
     @Override
@@ -94,7 +96,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
 
             HookNotificationMessage message = new EntityCreateRequestV2(AtlasHook.getUser(), entities);
 
-            AtlasHook.notifyEntities(Collections.singletonList(message), atlasProperties.getInt(HOOK_NUM_RETRIES, 3));
+            atlasHook.sendNotification(message);
         } catch(Exception e) {
             LOG.error("SqoopHook.publish() failed", e);
 
@@ -223,5 +225,11 @@ public class SqoopHook extends SqoopJobDataPublisher {
         }
 
         return name.toString();
+    }
+
+    private static class AtlasHookImpl extends AtlasHook {
+        public void sendNotification(HookNotificationMessage notification) {
+            super.notifyEntities(Collections.singletonList(notification), null);
+        }
     }
 }
