@@ -63,16 +63,9 @@ import java.util.Date;
 public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     public static final Logger LOG = org.slf4j.LoggerFactory.getLogger(StormAtlasHook.class);
 
-    private static final String CONF_PREFIX             = "atlas.hook.storm.";
-    private static final String HOOK_NUM_RETRIES        = CONF_PREFIX + "numRetries";
     public  static final String ANONYMOUS_OWNER         = "anonymous"; // if Storm topology does not contain the owner instance; possible if Storm is running in unsecure mode.
     public  static final String HBASE_NAMESPACE_DEFAULT = "default";
     public  static final String ATTRIBUTE_DB            = "db";
-
-    @Override
-    protected String getNumberOfRetriesPropertyKey() {
-        return HOOK_NUM_RETRIES;
-    }
 
     /**
      * This is the client-side hook that storm fires when a topology is added.
@@ -106,7 +99,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
             List<HookNotification> hookNotifications = Collections.singletonList(new EntityCreateRequestV2(user, entity));
 
-            notifyEntities(hookNotifications);
+            notifyEntities(hookNotifications, null);
         } catch (Exception e) {
             throw new RuntimeException("Atlas hook is unable to process the topology.", e);
         }
