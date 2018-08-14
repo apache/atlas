@@ -952,6 +952,14 @@ public abstract class DeleteHandlerV1 {
         List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
 
         for (AtlasEdge edge : classificationEdges) {
+            AtlasVertex classificationVertex = edge.getInVertex();
+            boolean     isClassificationEdge = isClassificationEdge(edge);
+            boolean     removePropagations   = getRemovePropagations(classificationVertex);
+
+            if (isClassificationEdge && removePropagations) {
+                removeTagPropagation(classificationVertex);
+            }
+
             deleteEdgeReference(edge, CLASSIFICATION, false, false, instanceVertex);
         }
     }

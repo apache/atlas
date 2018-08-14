@@ -109,6 +109,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getReferenceMap;
 import static org.apache.atlas.repository.graph.GraphHelper.getOutGoingEdgesByLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
 import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
+import static org.apache.atlas.repository.graph.GraphHelper.getRemovePropagations;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
@@ -279,6 +280,7 @@ public final class EntityGraphRetriever {
         ret.setEntityGuid(AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
         ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
         ret.setPropagate(isPropagationEnabled(classificationVertex));
+        ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
 
         String strValidityPeriods = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
 

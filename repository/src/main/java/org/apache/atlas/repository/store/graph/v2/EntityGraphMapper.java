@@ -77,12 +77,14 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UP
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_KEY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getCollectionElementsUsingRelationship;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
+import static org.apache.atlas.repository.graph.GraphHelper.getDefaultRemovePropagations;
 import static org.apache.atlas.repository.graph.GraphHelper.getMapElementsProperty;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
@@ -1291,9 +1293,10 @@ public class EntityGraphMapper {
             List<AtlasClassification>                   addClassifications    = new ArrayList<>(classifications.size());
 
             for (AtlasClassification c : classifications) {
-                AtlasClassification classification     = new AtlasClassification(c);
-                String              classificationName = classification.getTypeName();
-                Boolean             propagateTags      = classification.isPropagate();
+                AtlasClassification classification      = new AtlasClassification(c);
+                String              classificationName  = classification.getTypeName();
+                Boolean             propagateTags       = classification.isPropagate();
+                Boolean             removePropagations  = classification.getRemovePropagationsOnEntityDelete();
 
                 if (propagateTags != null && propagateTags &&
                         classification.getEntityGuid() != null &&
@@ -1308,6 +1311,12 @@ public class EntityGraphMapper {
                     } else {
                         propagateTags = true;
                     }
+                }
+
+                if (removePropagations == null) {
+                    removePropagations = getDefaultRemovePropagations();
+
+                    classification.setRemovePropagationsOnEntityDelete(removePropagations);
                 }
 
                 // set associated entity id to classification
@@ -1630,6 +1639,14 @@ public class EntityGraphMapper {
                 }
             }
 
+            // handle update of 'removePropagationsOnEntityDelete' flag
+            Boolean currentRemovePropagations = currentClassification.getRemovePropagationsOnEntityDelete();
+            Boolean updatedRemovePropagations = classification.getRemovePropagationsOnEntityDelete();
+
+            if (updatedRemovePropagations != null && (updatedRemovePropagations != currentRemovePropagations)) {
+                AtlasGraphUtilsV2.setProperty(classificationVertex, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, updatedRemovePropagations);
+            }
+
             updatedClassifications.add(currentClassification);
         }
 
@@ -1674,6 +1691,11 @@ public class EntityGraphMapper {
 
         if (classification.isPropagate() != null) {
             AtlasGraphUtilsV2.setProperty(traitInstanceVertex, Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY, classification.isPropagate());
+        }
+
+        if (classification.getRemovePropagationsOnEntityDelete() != null) {
+            AtlasGraphUtilsV2.setProperty(traitInstanceVertex, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY,
+                                           classification.getRemovePropagationsOnEntityDelete());
         }
 
         // map all the attributes to this newly created AtlasVertex

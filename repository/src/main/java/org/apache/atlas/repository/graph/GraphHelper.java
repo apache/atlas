@@ -85,6 +85,7 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_NAME_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
@@ -105,21 +106,25 @@ public final class GraphHelper {
 
     public static final String RETRY_COUNT = "atlas.graph.storage.num.retries";
     public static final String RETRY_DELAY = "atlas.graph.storage.retry.sleeptime.ms";
+    public static final String DEFAULT_REMOVE_PROPAGATIONS_ON_ENTITY_DELETE = "atlas.graph.remove.propagations.default";
 
     private final AtlasGremlinQueryProvider queryProvider = AtlasGremlinQueryProvider.INSTANCE;
 
     private static volatile GraphHelper INSTANCE;
 
     private AtlasGraph graph;
-    private static int maxRetries;
-    public static long retrySleepTimeMillis;
+
+    private static int     maxRetries;
+    private static long    retrySleepTimeMillis;
+    private static boolean removePropagations;
 
     @VisibleForTesting
     GraphHelper(AtlasGraph graph) {
         this.graph = graph;
         try {
-            maxRetries = ApplicationProperties.get().getInt(RETRY_COUNT, 3);
+            maxRetries           = ApplicationProperties.get().getInt(RETRY_COUNT, 3);
             retrySleepTimeMillis = ApplicationProperties.get().getLong(RETRY_DELAY, 1000);
+            removePropagations   = ApplicationProperties.get().getBoolean(DEFAULT_REMOVE_PROPAGATIONS_ON_ENTITY_DELETE, true);
         } catch (AtlasException e) {
             LOG.error("Could not load configuration. Setting to default value for " + RETRY_COUNT, e);
         }
@@ -377,6 +382,18 @@ public final class GraphHelper {
 
         if (classificationVertex != null) {
             Boolean enabled = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_PROPAGATE_KEY, Boolean.class);
+
+            ret = (enabled == null) ? true : enabled;
+        }
+
+        return ret;
+    }
+
+    public static boolean getRemovePropagations(AtlasVertex classificationVertex) {
+        boolean ret = false;
+
+        if (classificationVertex != null) {
+            Boolean enabled = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, Boolean.class);
 
             ret = (enabled == null) ? true : enabled;
         }
@@ -1938,5 +1955,9 @@ public final class GraphHelper {
 
     private static boolean verticesEquals(AtlasVertex vertexA, AtlasVertex vertexB) {
         return StringUtils.equals(getGuid(vertexB), getGuid(vertexA));
+    }
+
+    public static boolean getDefaultRemovePropagations() {
+        return removePropagations;
     }
 }
