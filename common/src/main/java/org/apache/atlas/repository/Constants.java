@@ -125,6 +125,7 @@ public final class Constants {
     public static final String CLASSIFICATION_ENTITY_STATUS                   = INTERNAL_PROPERTY_KEY_PREFIX + "entityStatus";
     public static final String CLASSIFICATION_VALIDITY_PERIODS_KEY            = INTERNAL_PROPERTY_KEY_PREFIX + "validityPeriods";
     public static final String CLASSIFICATION_VERTEX_PROPAGATE_KEY            = INTERNAL_PROPERTY_KEY_PREFIX + "propagate";
+    public static final String CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY  = INTERNAL_PROPERTY_KEY_PREFIX + "removePropagations";
     public static final String CLASSIFICATION_VERTEX_NAME_KEY                 = TYPE_NAME_PROPERTY_KEY;
     public static final String CLASSIFICATION_EDGE_NAME_PROPERTY_KEY          = INTERNAL_PROPERTY_KEY_PREFIX + "name";
     public static final String CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "isPropagated";

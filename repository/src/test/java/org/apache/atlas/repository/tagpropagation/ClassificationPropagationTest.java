@@ -82,10 +82,13 @@ public class ClassificationPropagationTest {
     public static final String EMPLOYEES1_PROCESS      = "EMPLOYEES1_PROCESS";
     public static final String EMPLOYEES2_PROCESS      = "EMPLOYEES2_PROCESS";
     public static final String EMPLOYEES_UNION_PROCESS = "EMPLOYEES_UNION_PROCESS";
-    public static final String IMPORT_FILE             = "tag-propagation-data-1.zip";
     public static final String EMPLOYEES_TABLE         = "EMPLOYEES_TABLE";
     public static final String US_EMPLOYEES_TABLE      = "US_EMPLOYEES2_TABLE";
     public static final String EMPLOYEES_PROCESS       = "EMPLOYEES_PROCESS";
+    public static final String ORDERS_TABLE            = "ORDERS_TABLE";
+    public static final String US_ORDERS_TABLE         = "US_ORDERS_TABLE";
+    public static final String ORDERS_PROCESS          = "ORDERS_PROCESS";
+    public static final String IMPORT_FILE             = "tag-propagation-data.zip";
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
@@ -143,6 +146,12 @@ public class ClassificationPropagationTest {
      -----------
 
      [Employees] ----> [Process] ----> [ US_Employees ]
+
+
+     Lineage - 3
+     -----------
+
+     [Orders] ----> [Process] ----> [ US_Orders ]
 
      */
 
@@ -459,12 +468,39 @@ public class ClassificationPropagationTest {
     }
 
     @Test(dependsOnMethods = {"removeBlockedPropagatedClassifications"})
-    public void addClassification_DeleteCase() throws AtlasBaseException {
+    public void addClassification_removePropagationsTrue_DeleteCase() throws AtlasBaseException {
+        AtlasEntity         orders = getEntity(ORDERS_TABLE);
+        AtlasClassification tag2      = new AtlasClassification("tag2");
+
+        tag2.setEntityGuid(orders.getGuid());
+        tag2.setPropagate(true);
+        tag2.setRemovePropagationsOnEntityDelete(true);
+
+        addClassification(orders, tag2);
+
+        List<String> propagatedEntities = Arrays.asList(EMPLOYEES_PROCESS, US_EMPLOYEES_TABLE);
+
+        assertClassificationExistInEntities(propagatedEntities, tag2);
+
+        AtlasEntity orders_process = getEntity(ORDERS_PROCESS);
+        AtlasEntity us_orders      = getEntity(US_ORDERS_TABLE);
+
+        deletePropagatedClassificationExpectFail(orders_process, tag2);
+        deletePropagatedClassificationExpectFail(us_orders, tag2);
+
+        deleteEntity(ORDERS_TABLE);
+        assertClassificationNotExistInEntity(ORDERS_PROCESS, tag2);
+        assertClassificationNotExistInEntity(US_ORDERS_TABLE, tag2);
+    }
+
+    @Test(dependsOnMethods = {"addClassification_removePropagationsTrue_DeleteCase"})
+    public void addClassification_removePropagationsFalse_DeleteCase() throws AtlasBaseException {
         AtlasEntity         employees = getEntity(EMPLOYEES_TABLE);
         AtlasClassification tag1      = new AtlasClassification("tag1");
 
         tag1.setEntityGuid(employees.getGuid());
         tag1.setPropagate(true);
+        tag1.setRemovePropagationsOnEntityDelete(false);
 
         addClassification(employees, tag1);
 
@@ -603,6 +639,10 @@ public class ClassificationPropagationTest {
         entitiesMap.put(EMPLOYEES_TABLE, "b4edad46-d00f-4e94-be39-8d2619d17e6c");
         entitiesMap.put(US_EMPLOYEES_TABLE, "44acef8e-fefe-491c-87d9-e2ea6a9ad3b0");
         entitiesMap.put(EMPLOYEES_PROCESS, "a1c9a281-d30b-419c-8199-7434b245d7fe");
+
+        entitiesMap.put(ORDERS_TABLE, "ab995a8d-1f87-4908-91e4-d4e8e376ba22");
+        entitiesMap.put(US_ORDERS_TABLE, "70268a81-f145-4a37-ae39-b09daa85a928");
+        entitiesMap.put(ORDERS_PROCESS, "da016ad9-456a-4c99-895a-fa00f2de49ba");
 
         lineageInfo = lineageService.getAtlasLineageInfo(entitiesMap.get(HDFS_PATH_EMPLOYEES), LineageDirection.BOTH, 3);
     }

@@ -54,10 +54,11 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasClassification extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String             entityGuid      = null;
-    private Status             entityStatus    = Status.ACTIVE;
-    private Boolean            propagate       = null;
-    private List<TimeBoundary> validityPeriods = null;
+    private String             entityGuid                        = null;
+    private Status             entityStatus                      = Status.ACTIVE;
+    private Boolean            propagate                         = null;
+    private List<TimeBoundary> validityPeriods                   = null;
+    private Boolean            removePropagationsOnEntityDelete  = null;
 
     public AtlasClassification() {
         this(null, null);
@@ -87,6 +88,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
             setEntityStatus(other.getEntityStatus());
             setPropagate(other.isPropagate());
             setValidityPeriods(other.getValidityPeriods());
+            setRemovePropagationsOnEntityDelete(other.getRemovePropagationsOnEntityDelete());
         }
     }
 
@@ -122,6 +124,14 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         this.entityStatus = entityStatus;
     }
 
+    public Boolean getRemovePropagationsOnEntityDelete() {
+        return removePropagationsOnEntityDelete;
+    }
+
+    public void setRemovePropagationsOnEntityDelete(Boolean removePropagationsOnEntityDelete) {
+        this.removePropagationsOnEntityDelete = removePropagationsOnEntityDelete;
+    }
+
     @JsonIgnore
     public void addValityPeriod(TimeBoundary validityPeriod) {
         List<TimeBoundary> vpList = this.validityPeriods;
@@ -142,6 +152,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         if (!super.equals(o)) { return false; }
         AtlasClassification that = (AtlasClassification) o;
         return Objects.equals(propagate, that.propagate) &&
+               Objects.equals(removePropagationsOnEntityDelete, that.removePropagationsOnEntityDelete) &&
                Objects.equals(entityGuid, that.entityGuid) &&
                entityStatus == that.entityStatus &&
                Objects.equals(validityPeriods, that.validityPeriods);
@@ -149,7 +160,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), entityGuid, entityStatus, propagate);
+        return Objects.hash(super.hashCode(), entityGuid, entityStatus, propagate, removePropagationsOnEntityDelete);
     }
 
     @Override
@@ -159,6 +170,8 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         sb.append("entityGuid='").append(entityGuid).append('\'');
         sb.append(", entityStatus=").append(entityStatus);
         sb.append(", propagate=").append(propagate);
+        sb.append(", removePropagationsOnEntityDelete=").append(removePropagationsOnEntityDelete);
+        sb.append(", validityPeriods=").append(validityPeriods);
         sb.append(", validityPeriods=").append(validityPeriods);
         sb.append('}');
         return sb.toString();
