@@ -90,40 +90,18 @@
                 <exclude>**/**</exclude>
             </excludes>
         </fileSet>
-
+         <!-- for migration setup -->
         <fileSet>
-            <directory>../tools</directory>
-            <outputDirectory>tools</outputDirectory>
-            <fileMode>0755</fileMode>
-            <directoryMode>0755</directoryMode>
-            <excludes>
-                <exclude>*</exclude>
-                <exclude>**/**</exclude>
-            </excludes>
-        </fileSet>
-
-        <fileSet>
-            <directory>../tools/atlas-migration-exporter/src/main/resources</directory>
+            <directory>../tools/atlas-migration-exporter</directory>
             <outputDirectory>tools/migration-exporter</outputDirectory>
             <includes>
-                <include>*.py</include>
-                <include>migrationContext.xml</include>
-                <include>atlas-log4j.xml</include>
                 <include>README</include>
-            </includes>
-            <fileMode>0755</fileMode>
-            <directoryMode>0755</directoryMode>
-        </fileSet>
-        <fileSet>
-            <directory>../tools/atlas-migration-exporter/target</directory>
-            <outputDirectory>tools/migration-exporter</outputDirectory>
-            <includes>
+                <include>*.py</include>
+                <include>atlas-log4j.xml</include>
                 <include>atlas-migration-*.jar</include>
             </includes>
-            <excludes>
-                <exclude>*-test-sources.jar</exclude>
-                <exclude>*-sources.jar</exclude>
-            </excludes>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
         </fileSet>
 
         <fileSet>
