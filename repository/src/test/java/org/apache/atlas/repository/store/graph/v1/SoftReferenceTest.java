@@ -52,7 +52,7 @@ public class SoftReferenceTest {
     private static final String TYPE_RDBMS_DB = "rdbms_db";
     private static final String RDBMS_DB_FILE = "rdbms-db";
     private static final String TYPE_RDBMS_STORAGE = "rdbms_storage";
-    private static final String TYPESDEF_FILE_NAME = "typesdef-soft-ref";
+    private static final String TYPESDEF_FILE_NAME = "typesDef-soft-ref";
     private static final String RDBMS_DB_STORAGE_PROPERTY = "sd";
     private static final String RDBMS_DB_TABLES_PROPERTY = "tables";
     private static final String RDBMS_DB_REGIONS_PROPERTY = "regions";

@@ -81,7 +81,7 @@ public class ExportImportAuditServiceTest {
         assertEquals(actualEntry.getOperation(), entry.getOperation());
     }
 
-    @Test
+    @Test(enabled = false)
     public void numberOfSavedEntries_Retrieved() throws AtlasBaseException, InterruptedException {
         final String source1 = "cluster1";
         final String target1 = "cly";
