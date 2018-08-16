@@ -138,8 +138,15 @@ public final class EntityGraphRetriever {
 
     private final AtlasTypeRegistry typeRegistry;
 
+    private final boolean ignoreRelationshipAttr;
+
     public EntityGraphRetriever(AtlasTypeRegistry typeRegistry) {
+        this(typeRegistry, false);
+    }
+
+    public EntityGraphRetriever(AtlasTypeRegistry typeRegistry, boolean ignoreRelationshipAttr) {
         this.typeRegistry = typeRegistry;
+        this.ignoreRelationshipAttr = ignoreRelationshipAttr;
     }
 
     public AtlasEntity toAtlasEntity(String guid) throws AtlasBaseException {
@@ -385,7 +392,9 @@ public final class EntityGraphRetriever {
 
             mapAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo);
 
-            mapRelationshipAttributes(entityVertex, entity);
+            if (!ignoreRelationshipAttr) { // only map when really needed
+                mapRelationshipAttributes(entityVertex, entity);
+            }
 
             mapClassifications(entityVertex, entity);
         }
