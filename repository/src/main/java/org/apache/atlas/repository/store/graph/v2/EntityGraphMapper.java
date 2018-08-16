@@ -91,7 +91,7 @@ public class EntityGraphMapper {
 
     private final GraphHelper               graphHelper = GraphHelper.getInstance();
     private final AtlasGraph                graph;
-    private final DeleteHandlerV1 deleteHandler;
+    private final DeleteHandlerV1           deleteHandler;
     private final AtlasTypeRegistry         typeRegistry;
     private final AtlasRelationshipStore    relationshipStore;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
@@ -158,6 +158,10 @@ public class EntityGraphMapper {
 
         if (StringUtils.isNotEmpty(entity.getHomeId())) {
             AtlasGraphUtilsV2.setProperty(vertex, Constants.HOME_ID_KEY, entity.getHomeId());
+        }
+
+        if (entity.isProxy() != null) {
+            AtlasGraphUtilsV2.setProperty(vertex, Constants.IS_PROXY_KEY, entity.isProxy());
         }
     }
 
