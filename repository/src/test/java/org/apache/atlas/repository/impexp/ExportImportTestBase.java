@@ -22,10 +22,13 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
+//import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
+//import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
+//import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -33,6 +36,8 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.SkipException;
 import java.util.Arrays;
 import java.io.IOException;
+import java.util.List;
+
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.createAtlasEntity;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadEntity;
@@ -52,6 +57,7 @@ public class ExportImportTestBase {
     protected static final String COLUMN_GUID_HIGH = "f87a5320-1529-4369-8d63-b637ebdf2c1c";
 
     protected DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);
+    protected AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
 
     protected void basicSetup(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         loadBaseModel(typeDefStore, typeRegistry);
@@ -75,21 +81,28 @@ public class ExportImportTestBase {
         }
     }
 
-    protected void assertAuditEntry(ExportImportAuditService auditService) {
-        AtlasSearchResult result = null;
+    protected void assertAuditEntry(ExportImportAuditService auditService) throws InterruptedException {
+        pauseForIndexCreation();
+        List<ExportImportAuditEntry> result = null;
         try {
-            result = auditService.get("", "", getCurrentCluster(), "", "", "", 10, 0);
+            result = auditService.get("", "", "", "",  "", 10, 0);
         } catch (AtlasBaseException e) {
             fail("auditService.get: failed!");
-        } catch (AtlasException e) {
-            fail("getCurrentCluster: failed!");
         }
+
         assertNotNull(result);
-        assertNotNull(result.getEntities());
-        assertTrue(result.getEntities().size() > 0);
+        assertTrue(result.size() > 0);
     }
 
     private String getCurrentCluster() throws AtlasException {
         return ApplicationProperties.get().getString(AtlasConstants.CLUSTER_NAME_KEY, "default");
+    }
+
+    protected void pauseForIndexCreation() {
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException ex) {
+            throw new SkipException("pause interrupted.");
+        }
     }
 }

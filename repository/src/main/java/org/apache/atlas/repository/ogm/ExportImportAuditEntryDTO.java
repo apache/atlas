@@ -19,11 +19,14 @@
 package org.apache.atlas.repository.ogm;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class ExportImportAuditEntryDTO extends AbstractDataTransferObject<ExportImportAuditEntry> {
 
@@ -36,25 +39,39 @@ public class ExportImportAuditEntryDTO extends AbstractDataTransferObject<Export
     public static final String PROPERTY_SOURCE_CLUSTER_NAME    = "sourceClusterName";
     public static final String PROPERTY_TARGET_CLUSTER_NAME    = "targetClusterName";
 
+    private static final Set<String> ATTRIBUTE_NAMES = new HashSet<>(Arrays.asList(PROPERTY_USER_NAME,
+            PROPERTY_OPERATION, PROPERTY_OPERATION_PARAMS,
+            PROPERTY_START_TIME, PROPERTY_END_TIME,
+            PROPERTY_RESULT_SUMMARY,
+            PROPERTY_SOURCE_CLUSTER_NAME, PROPERTY_TARGET_CLUSTER_NAME));
+
     protected ExportImportAuditEntryDTO(AtlasTypeRegistry typeRegistry) {
         super(typeRegistry, ExportImportAuditEntry.class);
     }
 
-    @Override
-    public ExportImportAuditEntry from(AtlasEntity entity) {
+    public static Set<String> getAttributes() {
+        return ATTRIBUTE_NAMES;
+    }
+
+    public static ExportImportAuditEntry from(String guid, Map<String,Object> attributes) {
         ExportImportAuditEntry entry = new ExportImportAuditEntry();
 
-        setGuid(entry, entity);
-        entry.setUserName((String) entity.getAttribute(PROPERTY_USER_NAME));
-        entry.setOperation((String) entity.getAttribute(PROPERTY_OPERATION));
-        entry.setOperationParams((String) entity.getAttribute(PROPERTY_OPERATION_PARAMS));
-        entry.setStartTime((long) entity.getAttribute(PROPERTY_START_TIME));
-        entry.setEndTime((long) entity.getAttribute(PROPERTY_END_TIME));
-        entry.setSourceClusterName((String) entity.getAttribute(PROPERTY_SOURCE_CLUSTER_NAME));
-        entry.setTargetClusterName((String) entity.getAttribute(PROPERTY_TARGET_CLUSTER_NAME));
-        entry.setResultSummary((String) entity.getAttribute(PROPERTY_RESULT_SUMMARY));
+        entry.setGuid(guid);
+        entry.setUserName((String) attributes.get(PROPERTY_USER_NAME));
+        entry.setOperation((String) attributes.get(PROPERTY_OPERATION));
+        entry.setOperationParams((String) attributes.get(PROPERTY_OPERATION_PARAMS));
+        entry.setStartTime((long) attributes.get(PROPERTY_START_TIME));
+        entry.setEndTime((long) attributes.get(PROPERTY_END_TIME));
+        entry.setSourceClusterName((String) attributes.get(PROPERTY_SOURCE_CLUSTER_NAME));
+        entry.setTargetClusterName((String) attributes.get(PROPERTY_TARGET_CLUSTER_NAME));
+        entry.setResultSummary((String) attributes.get(PROPERTY_RESULT_SUMMARY));
 
         return entry;
+    }
+
+    @Override
+    public ExportImportAuditEntry from(AtlasEntity entity) {
+        return from(entity.getGuid(), entity.getAttributes());
     }
 
     @Override

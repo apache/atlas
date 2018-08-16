@@ -167,7 +167,6 @@ public class DataAccess {
         } finally {
             AtlasPerfTracer.log(perf);
         }
-
     }
 
     public void delete(String guid) throws AtlasBaseException {
@@ -201,6 +200,26 @@ public class DataAccess {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    public <T extends AtlasBaseModelObject> T load(String guid, Class<? extends AtlasBaseModelObject> clazz) throws AtlasBaseException {
+        DataTransferObject<T>  dto = (DataTransferObject<T>)dtoRegistry.get(clazz);
+
+        AtlasEntityWithExtInfo entityWithExtInfo = null;
+
+        if (StringUtils.isNotEmpty(guid)) {
+            entityWithExtInfo = entityStore.getById(guid);
+        }
+
+        if(entityWithExtInfo == null) {
+            return null;
+        }
+
+        return dto.from(entityWithExtInfo);
+    }
+
+    public void deleteUsingGuid(String guid) throws AtlasBaseException {
+        entityStore.deleteById(guid);
     }
 
     public <T extends AtlasBaseModelObject> void delete(T obj) throws AtlasBaseException {

@@ -88,6 +88,7 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 @Component
 public class EntityGraphMapper {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphMapper.class);
+    private static final String SOFT_REF_FORMAT = "%s:%s";
 
     private static final int INDEXED_STR_SAFE_LEN = AtlasConfiguration.GRAPHSTORE_INDEXED_STRING_SAFE_LENGTH.getInt();
 
@@ -1883,5 +1884,13 @@ public class EntityGraphMapper {
         }
 
         type.getNormalizedValueForUpdate(classification);
+    }
+
+    public static String getSoftRefFormattedValue(AtlasObjectId objectId) {
+        return getSoftRefFormattedString(objectId.getTypeName(), objectId.getGuid());
+    }
+
+    private static String getSoftRefFormattedString(String typeName, String resolvedGuid) {
+        return String.format(SOFT_REF_FORMAT, typeName, resolvedGuid);
     }
 }

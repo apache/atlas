@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.impexp;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
@@ -24,6 +25,8 @@ import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
@@ -100,6 +103,41 @@ public class ImportService {
         return result;
     }
 
+
+    @VisibleForTesting
+    void setImportTransform(ZipSource source, String transforms) throws AtlasBaseException {
+        ImportTransforms importTransform = ImportTransforms.fromJson(transforms);
+        if (importTransform == null) {
+            return;
+        }
+
+        updateTransformsWithSubTypes(importTransform);
+        source.setImportTransform(importTransform);
+
+        if(LOG.isDebugEnabled()) {
+            debugLog("   => transforms: {}", AtlasType.toJson(importTransform));
+        }
+    }
+
+    private void debugLog(String s, Object... params) {
+        if(!LOG.isDebugEnabled()) return;
+
+        LOG.debug(s, params);
+    }
+
+    private void updateTransformsWithSubTypes(ImportTransforms importTransforms) throws AtlasBaseException {
+        String[] transformTypes = importTransforms.getTypes().toArray(new String[importTransforms.getTypes().size()]);
+        for (int i = 0; i < transformTypes.length; i++) {
+            String typeName = transformTypes[i];
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+            if (entityType == null) {
+                continue;
+            }
+
+            importTransforms.addParentTransformsToSubTypes(typeName, entityType.getAllSubTypes());
+        }
+    }
+
     private void setStartPosition(AtlasImportRequest request, ZipSource source) throws AtlasBaseException {
         if (request.getStartGuid() != null) {
             source.setPositionUsingEntityGuid(request.getStartGuid());
@@ -163,6 +201,7 @@ public class ImportService {
 
         endTimestamp = System.currentTimeMillis();
         result.incrementMeticsCounter("duration", getDuration(this.endTimestamp, this.startTimestamp));
+        result.setExportResult(importSource.getExportResult());
         auditsWriter.write(userName, result, startTimestamp, endTimestamp, importSource.getCreationOrder());
     }
 

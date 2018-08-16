@@ -317,6 +317,20 @@ public class SearchParameters implements Serializable {
         // Can be presented as a group of conditions or a single condition
         public enum Condition { AND, OR }
 
+        public FilterCriteria() {
+        }
+
+        public FilterCriteria(String attributeName, Operator operator, String attributeValue) {
+            this.attributeName  = attributeName;
+            this.operator       = operator;
+            this.attributeValue = attributeValue;
+        }
+
+        public FilterCriteria(Condition condition, List<FilterCriteria> criterion) {
+            this.condition = condition;
+            this.criterion = criterion;
+        }
+
         // Single condition
         private String   attributeName;
         private Operator operator;

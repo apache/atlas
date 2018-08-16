@@ -152,17 +152,13 @@ public class AtlasExportResult implements Serializable {
         this.operationStatus = operationStatus;
     }
 
-//<<<<<<< HEAD
-//    public void setMetric(String key, int value) {
-//        metrics.put(key, value);
-//=======
+
     public String getSourceClusterName() {
         return sourceClusterName;
     }
 
     public void setSourceClusterName(String sourceClusterName) {
         this.sourceClusterName = sourceClusterName;
-//>>>>>>> 44dd6a1... ATLAS-2804: Export & Import Detailed Audits.
     }
 
     public void incrementMeticsCounter(String key) {
@@ -173,6 +169,22 @@ public class AtlasExportResult implements Serializable {
         int currentValue = metrics.containsKey(key) ? metrics.get(key) : 0;
 
         metrics.put(key, currentValue + incrementBy);
+    }
+
+    public AtlasExportResult shallowCopy() {
+        AtlasExportResult result  = new AtlasExportResult();
+
+        result.setRequest(getRequest());
+        result.setUserName(getUserName());
+        result.setClientIpAddress(getClientIpAddress());
+        result.setHostName(getHostName());
+        result.setTimeStamp(getTimeStamp());
+        result.setMetrics(getMetrics());
+        result.setOperationStatus(getOperationStatus());
+        result.setSourceClusterName(getSourceClusterName());
+        result.setLastModifiedTimestamp(getLastModifiedTimestamp());
+
+        return result;
     }
 
     public StringBuilder toString(StringBuilder sb) {
