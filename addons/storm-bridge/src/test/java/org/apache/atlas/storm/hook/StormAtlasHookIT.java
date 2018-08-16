@@ -36,7 +36,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-@Test
+@Test(enabled = false)
 public class StormAtlasHookIT {
 
     public static final Logger LOG = LoggerFactory.getLogger(StormAtlasHookIT.class);

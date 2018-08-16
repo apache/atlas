@@ -60,8 +60,11 @@ import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.testng.Assert.assertEquals;
@@ -874,10 +877,16 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertEquals(entityResult.getUpdateEntities().get(0), guid);
 
-        Referenceable entity = atlasClientV1.getEntity(guid);
-        List<Referenceable> refs = (List<Referenceable>) entity.get("columns");
+        Referenceable       entity   = atlasClientV1.getEntity(guid);
+        List<Referenceable> refs     = (List<Referenceable>) entity.get("columns");
+        Referenceable       actual   = refs.get(0);
+        Referenceable       expected = columns.get(0);
 
-        Assert.assertTrue(refs.get(0).equalsContents(columns.get(0)));
+        Assert.assertNotNull(actual);
+        Assert.assertNotNull(expected);
+        Assert.assertEquals(actual.getTypeName(), expected.getTypeName());
+        Assert.assertEquals(actual.getTraits(), expected.getTraits());
+        Assert.assertTrue(mapEqualsIgnoreNullValue(actual.getValuesMap(), expected.getValuesMap()), "actual: " + actual + "; expected: " +  expected);
     }
 
     @Test
@@ -929,7 +938,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Referenceable entity = atlasClientV1.getEntity(guid);
         List<Referenceable> refs = (List<Referenceable>) entity.get("columns");
 
-        Assert.assertTrue(refs.get(0).getValuesMap().equals(values));
+        Assert.assertTrue(mapEqualsIgnoreNullValue(refs.get(0).getValuesMap(), values), "actual: " + refs.get(0).getValuesMap() + "; expected: " + values);
         Assert.assertEquals(refs.get(0).get("type"), "int");
     }
 
@@ -986,8 +995,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         List<Referenceable> refs = (List<Referenceable>) hiveTableInstance.get("columns");
         Assert.assertEquals(refs.size(), 2);
 
-        Assert.assertTrue(refs.get(0).getValuesMap().equals(values1));
-        Assert.assertTrue(refs.get(1).getValuesMap().equals(values2));
+        Assert.assertTrue(mapEqualsIgnoreNullValue(refs.get(0).getValuesMap(), values1), "actual: " + refs.get(0).getValuesMap() + "; expected: " + values1);
+        Assert.assertTrue(mapEqualsIgnoreNullValue(refs.get(1).getValuesMap(), values2), "actual: " + refs.get(1).getValuesMap() + "; expected: " + values2);
     }
 
     @Test
@@ -1105,4 +1114,28 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
+    private boolean mapEqualsIgnoreNullValue(Map<String, Object> map1, Map<String, Object> map2) {
+        if (map1 == map2) {
+            return true;
+        }
+
+        if (map1 == null || map2 == null) {
+            return false;
+        }
+
+        Set<String> keys = new HashSet<String>(map1.keySet());
+
+        keys.addAll(map2.keySet());
+
+        for (String key : keys) {
+            Object val1 = map1.get(key);
+            Object val2 = map1.get(key);
+
+            if (!Objects.equals(val1, val2)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

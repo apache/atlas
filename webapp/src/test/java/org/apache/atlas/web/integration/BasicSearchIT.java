@@ -123,8 +123,8 @@ public class BasicSearchIT extends BaseResourceIT {
 
                 AtlasSearchResult searchResult = atlasClientV2.facetedSearch(testExpectation.searchParameters);
                 if (testExpectation.expectedCount > 0) {
-                    assertNotNull(searchResult.getEntities());
-                    assertEquals(searchResult.getEntities().size(), testExpectation.expectedCount);
+                    assertNotNull(searchResult.getEntities(), "jsonFile: " + jsonFile + ", description: " + testExpectation.testDescription);
+                    assertEquals(searchResult.getEntities().size(), testExpectation.expectedCount, "jsonFile: " + jsonFile + ", description: " + testExpectation.testDescription + "; result=" + searchResult.getEntities());
                 }
             }
         } catch (IOException | AtlasServiceException e) {
