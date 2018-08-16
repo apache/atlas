@@ -30,6 +30,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
@@ -69,6 +70,8 @@ public class SoftReferenceTest {
     private AtlasEntityStore entityStore;
 
     private AtlasType dbType;
+    private String dbGuid;
+    private String storageGuid;
 
     @Test
     public void typeCreationFromFile() throws IOException, AtlasBaseException {
@@ -92,15 +95,86 @@ public class SoftReferenceTest {
 
     @Test(dependsOnMethods = "typeCreationFromFile")
     public void entityCreationUsingSoftRef() throws IOException, AtlasBaseException {
+        final int EXPECTED_ENTITY_COUNT = 6;
         AtlasEntity.AtlasEntityWithExtInfo dbEntity = AtlasType.fromJson(
                 TestResourceFileUtils.getJson(RDBMS_DB_FILE), AtlasEntity.AtlasEntityWithExtInfo.class);
 
         EntityMutationResponse  response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
+
         assertNotNull(response);
-        assertTrue(response.getCreatedEntities().size() == 6);
+        assertTrue(response.getCreatedEntities().size() == EXPECTED_ENTITY_COUNT);
         assertGraphStructure(response.getCreatedEntities().get(0).getGuid(),
                                     response.getCreatedEntities().get(1).getGuid(), RDBMS_SD_PROPERTY);
+
+        dbGuid = response.getCreatedEntities().get(0).getGuid();
+        storageGuid = response.getCreatedEntities().get(1).getGuid();
     }
+
+    @Test(dependsOnMethods = "entityCreationUsingSoftRef")
+    public void deletetingCollections() throws AtlasBaseException {
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(dbGuid);
+
+        assertNotNull(entityWithExtInfo);
+        List list = (List)entityWithExtInfo.getEntity().getAttribute(RDBMS_DB_TABLES_PROPERTY);
+        list.remove(1);
+
+        Map map = (Map) entityWithExtInfo.getEntity().getAttribute(RDBMS_DB_REGIONS_PROPERTY);
+        map.remove("east");
+
+        EntityMutationResponse  response = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), true);
+        assertNotNull(response);
+        assertTrue(response.getPartialUpdatedEntities().size() > 0);
+        assertAttribute(dbGuid, storageGuid, 1, 1);
+    }
+
+    @Test(dependsOnMethods = "deletetingCollections")
+    public void addingCollections() throws AtlasBaseException {
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(dbGuid);
+
+        assertNotNull(entityWithExtInfo);
+        addNewTables(entityWithExtInfo);
+        addNewRegions(entityWithExtInfo);
+
+        EntityMutationResponse  response = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), true);
+        assertNotNull(response);
+        assertTrue(response.getPartialUpdatedEntities().size() > 0);
+        assertAttribute(dbGuid, storageGuid, 3, 3);
+    }
+
+    private void addNewRegions(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+        Map map = (Map) entityWithExtInfo.getEntity().getAttribute(RDBMS_DB_REGIONS_PROPERTY);
+
+        AtlasEntity region1 = getDefaultTableEntity("r1");
+        AtlasEntity region2 = getDefaultTableEntity("r2");
+
+        map.put("north", new AtlasObjectId(region1.getGuid(), region1.getTypeName()));
+        map.put("south", new AtlasObjectId(region2.getGuid(), region2.getTypeName()));
+
+        entityWithExtInfo.addReferredEntity(region1);
+        entityWithExtInfo.addReferredEntity(region2);
+    }
+
+    private void addNewTables(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+        List list = (List)entityWithExtInfo.getEntity().getAttribute(RDBMS_DB_TABLES_PROPERTY);
+        AtlasEntity table1 = getDefaultTableEntity("newTable-1");
+        AtlasEntity table2 = getDefaultTableEntity("newTable-2");
+
+        entityWithExtInfo.addReferredEntity(table1);
+        entityWithExtInfo.addReferredEntity(table2);
+
+        list.add(new AtlasObjectId(table1.getGuid(), table1.getTypeName()));
+        list.add(new AtlasObjectId(table2.getGuid(), table2.getTypeName()));
+    }
+
+    private AtlasEntity getDefaultTableEntity(String name) throws AtlasBaseException {
+        AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(TYPE_RDBMS_TABLES);
+
+        AtlasEntity ret = type.createDefaultValue();
+        ret.setAttribute("name", name);
+
+        return ret;
+    }
+
 
     private void assertGraphStructure(String dbGuid, String storageGuid, String propertyName) throws AtlasBaseException {
         AtlasVertex vertex = AtlasGraphUtilsV1.findByGuid(dbGuid);
@@ -110,13 +184,13 @@ public class SoftReferenceTest {
         String sd = AtlasGraphUtilsV1.getProperty(vertex, propertyName, String.class);
 
         assertNotNull(sd);
-        assertAttribute(dbGuid, storageGuid);
+        assertAttribute(dbGuid, storageGuid, 2, 2);
         assertFalse(edgesOut.hasNext());
         assertFalse(edgesIn.hasNext());
         assertNotNull(vertex);
     }
 
-    private void assertAttribute(String dbGuid, String storageGuid) throws AtlasBaseException {
+    private void assertAttribute(String dbGuid, String storageGuid, int expectedTableCount, int expectedRegionCount) throws AtlasBaseException {
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(dbGuid);
         AtlasEntity entity = entityWithExtInfo.getEntity();
 
@@ -125,8 +199,8 @@ public class SoftReferenceTest {
         assertEquals(((AtlasObjectId) val).getTypeName(), TYPE_RDBMS_STORAGE);
         assertEquals(((AtlasObjectId) val).getGuid(), storageGuid);
         assertNotNull(entity.getAttribute(RDBMS_DB_TABLES_PROPERTY));
-        assertEquals(((List) entity.getAttribute(RDBMS_DB_TABLES_PROPERTY)).size(), 2);
+        assertEquals(((List) entity.getAttribute(RDBMS_DB_TABLES_PROPERTY)).size(), expectedTableCount);
         assertNotNull(entity.getAttribute(RDBMS_DB_REGIONS_PROPERTY));
-        assertEquals(((Map) entity.getAttribute(RDBMS_DB_REGIONS_PROPERTY)).size(), 2);
+        assertEquals(((Map) entity.getAttribute(RDBMS_DB_REGIONS_PROPERTY)).size(), expectedRegionCount);
     }
 }

@@ -67,6 +67,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.string;
 @Component
 public class EntityGraphMapper {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphMapper.class);
+    private static final String SOFT_REF_FORMAT = "%s:%s";
 
     private final GraphHelper       graphHelper = GraphHelper.getInstance();
     private final AtlasGraph        graph;
@@ -342,16 +343,24 @@ public class EntityGraphMapper {
     }
 
     private Object mapSoftRefValue(AttributeMutationContext ctx, EntityMutationContext context) {
-        if(ctx.getValue() == null || !(ctx.getValue() instanceof AtlasObjectId)) {
+        if(ctx.getValue() != null && !(ctx.getValue() instanceof AtlasObjectId)) {
+            LOG.warn("mapSoftRefValue: Was expecting AtlasObjectId, but found: {}", ctx.getValue().getClass());
             return null;
         }
 
-        AtlasObjectId objectId = (AtlasObjectId) ctx.getValue();
-        String resolvedGuid = context.getGuidAssignments().get(objectId.getGuid());
-        String softRefValue = String.format("%s:%s", objectId.getTypeName(), resolvedGuid);
+        String softRefValue = null;
+        if(ctx.getValue() != null) {
+            AtlasObjectId objectId = (AtlasObjectId) ctx.getValue();
+            String resolvedGuid = AtlasTypeUtil.isUnAssignedGuid(objectId.getGuid())
+                                    ? context.getGuidAssignments().get(objectId.getGuid())
+                                    : objectId.getGuid();
 
-        ctx.setValue(softRefValue);
-        return mapPrimitiveValue(ctx);
+            softRefValue = String.format(SOFT_REF_FORMAT, objectId.getTypeName(), resolvedGuid);
+        }
+
+        AtlasGraphUtilsV1.setProperty(ctx.getReferringVertex(), ctx.getVertexProperty(), softRefValue);
+
+        return softRefValue;
     }
 
     private void addInverseReference(AttributeMutationContext ctx, AtlasAttribute inverseAttribute, AtlasEdge edge) throws AtlasBaseException {
@@ -588,8 +597,8 @@ public class EntityGraphMapper {
         AtlasArrayType arrType         = (AtlasArrayType) attribute.getAttributeType();
         AtlasType      elementType     = arrType.getElementType();
         List<Object>   currentElements = getArrayElementsProperty(elementType, ctx.getReferringVertex(), ctx.getVertexProperty());
-        boolean isReference = AtlasGraphUtilsV1.isReference(elementType);
-        boolean isSoftReference = ctx.getAttribute().getAttributeDef().isSoftReferenced();
+        boolean        isReference     = AtlasGraphUtilsV1.isReference(elementType);
+        boolean        isSoftReference = ctx.getAttribute().getAttributeDef().isSoftReferenced();
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
         Cardinality cardinality         = attribute.getAttributeDef().getCardinality();
         List<Object> newElementsCreated = new ArrayList<>();
@@ -614,7 +623,7 @@ public class EntityGraphMapper {
             }
         }
 
-        if (isReference) {
+        if (isReference && !isSoftReference) {
             List<AtlasEdge> additionalEdges = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated);
             newElementsCreated.addAll(additionalEdges);
         }
@@ -777,13 +786,14 @@ public class EntityGraphMapper {
     private Map<String, Object> removeUnusedMapEntries(AtlasAttribute attribute, AtlasVertex vertex, String propertyName,
                                                        Map<String, Object> currentMap, Map<String, Object> newMap)
                                                                              throws AtlasException, AtlasBaseException {
+        boolean             isSoftRef     = attribute.getAttributeDef().isSoftReferenced();
         AtlasMapType        mapType       = (AtlasMapType) attribute.getAttributeType();
         Map<String, Object> additionalMap = new HashMap<>();
 
         for (String currentKey : currentMap.keySet()) {
             boolean shouldDeleteKey = !newMap.containsKey(currentKey);
 
-            if (AtlasGraphUtilsV1.isReference(mapType.getValueType())) {
+            if (AtlasGraphUtilsV1.isReference(mapType.getValueType()) && !isSoftRef) {
                 //Delete the edge reference if its not part of new edges created/updated
                 AtlasEdge currentEdge = (AtlasEdge)currentMap.get(currentKey);
 
