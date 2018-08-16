@@ -126,10 +126,6 @@ public class AttributeMutationContext {
         return value;
     }
 
-    public void setValue(Object value) {
-        this.value = value;
-    }
-
     public String getVertexProperty() { return vertexProperty; }
 
     public AtlasVertex getReferringVertex() { return referringVertex; }
