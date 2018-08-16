@@ -57,14 +57,34 @@ define(['require',
             timeZoneDiv: "[data-id='timeZoneDiv']",
             checkTagModalPropagate: "[data-id='checkModalTagProperty']",
             addTimezoneParms: "[data-id='addTimezoneParms']",
-            validityPeriodBody: "[data-id='validityPeriodBody']"
+            validityPeriodBody: "[data-id='validityPeriodBody']",
+            removePropagationOnEntityDelete: "[data-id='removePropagationOnEntityDelete']",
+            removePropagationOnEntityDeleteBox: "[data-id='removePropagationOnEntityDeleteBox']"
         },
         events: function() {
-            var events = {};
+            var events = {},
+                that = this;
             events["change " + this.ui.addTagOptions] = 'onChangeTagDefination';
+            events["change " + this.ui.checkTagModalPropagate] = function(e) {
+                if (e.target.checked) {
+                    that.ui.removePropagationOnEntityDeleteBox.show();
+                    that.$('.addtag-propagte-box').removeClass('no-border');
+                } else {
+                    that.$('.addtag-propagte-box').addClass('no-border');
+                    that.ui.removePropagationOnEntityDeleteBox.hide();
+                }
+                if (that.tagModel) {
+                    that.buttonActive({ isButtonActive: true });
+                }
+            };
+            events["change " + this.ui.removePropagationOnEntityDelete] = function() {
+                if (that.tagModel) {
+                    that.buttonActive({ isButtonActive: true });
+                }
+            };
             events["change " + this.ui.checkTimeZone] = function(e) {
-                if(this.tagModel){
-                    this.buttonActive({isButtonActive: true});
+                if (this.tagModel) {
+                    this.buttonActive({ isButtonActive: true });
                 }
                 if (e.target.checked) {
                     this.ui.timeZoneDiv.show();
@@ -232,8 +252,10 @@ define(['require',
             this.tagsCollection();
             if (this.tagModel) {
                 this.fetchTagSubData(that.tagModel.typeName);
-                that.ui.checkTagModalPropagate.prop('checked', this.tagModel.propagate === true ? true : false);
+                // Added === true because if value is null then use false.
+                that.ui.checkTagModalPropagate.prop('checked', this.tagModel.propagate === true ? true : false).trigger('change');
                 that.ui.checkTimeZone.prop('checked', _.isEmpty(this.tagModel.validityPeriods) ? false : true);
+                that.ui.removePropagationOnEntityDelete.prop('checked', this.tagModel.removePropagationsOnEntityDelete == true ? true : false);
                 if (_.isEmpty(this.tagModel.validityPeriods)) {
                     that.ui.timeZoneDiv.hide()
                 } else {
@@ -307,11 +329,6 @@ define(['require',
                     that.buttonActive({ isButtonActive: true });
                 }
             });
-            this.ui.checkTagModalPropagate.on('change', function(e) {
-                if (that.tagModel) {
-                    that.buttonActive({ isButtonActive: true });
-                }
-            });
         },
         buttonActive: function(option) {
             if (option) {
@@ -342,7 +359,7 @@ define(['require',
                     } else {
                         var textElement = that.getElement(name, typeName);
                         if (_.isTypePrimitive(typeName)) {
-                            that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' + ' (' + typeName + ')' + textElement + '</div>');      
+                            that.ui.tagAttribute.append('<div class="form-group"><label>' + name + '</label>' + ' (' + typeName + ')' + textElement + '</div>');
                         }
                     }
                 });
@@ -404,22 +421,19 @@ define(['require',
             var tagName = options.tagName,
                 tagAttributes = options.tagAttributes,
                 validityPeriodVal = that.ui.checkTimeZone.is(':checked') ? that.collection.toJSON() : [],
-                json = {
-                    "classification": {
-                        "typeName": tagName,
-                        "attributes": tagAttributes,
-                        "propagate": that.ui.checkTagModalPropagate.is(":checked") === true ? true : false,
-                        "validityPeriods": validityPeriodVal
-                    },
-                    "entityGuids": options.guid
-                };
-            if (this.tagModel) {
-                json = [{
+                classificationData = {
                     "typeName": tagName,
                     "attributes": tagAttributes,
                     "propagate": that.ui.checkTagModalPropagate.is(":checked") === true ? true : false,
+                    "removePropagationsOnEntityDelete": that.ui.removePropagationOnEntityDelete.is(":checked") === true ? true : false,
                     "validityPeriods": validityPeriodVal
-                }]
+                },
+                json = {
+                    "classification": classificationData,
+                    "entityGuids": options.guid
+                };
+            if (this.tagModel) {
+                json = [classificationData]
             }
             if (this.showLoader) {
                 this.showLoader();
