@@ -93,6 +93,14 @@ public final class Constants {
      */
     public static final String HOME_ID_KEY          = INTERNAL_PROPERTY_KEY_PREFIX + "homeId";
 
+    /**
+     * The isProxy field is used when saving into Atlas a proxy of an entity - i.e. it is not a whole entity, but
+     * a partial representation of an entity that is referred to by a relationship end.
+     * The isProxy field will be set to true if the entity is a proxy. The field is used during retrieval of an
+     * entity (proxy) from Atlas to indicate that the entity does not contain full entity detail.
+     */
+    public static final String IS_PROXY_KEY         = INTERNAL_PROPERTY_KEY_PREFIX + "isProxy";
+
     public static final String TIMESTAMP_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "timestamp";
 
     public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY =

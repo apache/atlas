@@ -513,6 +513,8 @@ public final class EntityGraphRetriever {
 
         entity.setHomeId(GraphHelper.getHomeId(entityVertex));
 
+        entity.setIsProxy(GraphHelper.isProxy(entityVertex));
+
         return entity;
     }
 

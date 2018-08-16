@@ -1187,6 +1187,10 @@ public final class GraphHelper {
         return element.getProperty(Constants.HOME_ID_KEY, String.class);
     }
 
+    public static Boolean isProxy(AtlasElement element) {
+        return element.getProperty(Constants.IS_PROXY_KEY, Boolean.class);
+    }
+
     public static String getTypeName(AtlasElement element) {
         return element.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
     }
