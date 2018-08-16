@@ -251,11 +251,21 @@ public final class GraphToTypedInstanceMapper {
             return;
         }
 
-        String edgeLabel = GraphHelper.EDGE_LABEL_PREFIX + propertyName;
         ArrayList values = new ArrayList();
-        for (Object aList : list) {
-            values.add(mapVertexToCollectionEntry(instanceVertex, attributeInfo, elementType, aList,
-                    edgeLabel));
+        if(!attributeInfo.isSoftRef) {
+            String edgeLabel = GraphHelper.EDGE_LABEL_PREFIX + propertyName;
+            for (Object aList : list) {
+                values.add(mapVertexToCollectionEntry(instanceVertex, attributeInfo, elementType, aList,
+                        edgeLabel));
+            }
+        } else {
+            for (Object o : list) {
+                if(o == null) {
+                    continue;
+                }
+
+                values.add(o);
+            }
         }
 
         if (values.size() > 0) {

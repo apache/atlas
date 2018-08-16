@@ -45,6 +45,7 @@ public class ImportTransformsTest {
     private final String jsonReplaceAndAddAttrValue = "{ \"hive_table\": { \"qualifiedName\":[ \"replace:@%s:@%s\"], \"*\":[ \"add:%s=list:%s\" ] } }";
     private final String jsonSingleClearAttrValue = "{ \"hive_table\": { \"*\":[ \"clearAttrValue:replicatedToCluster\", \"clearAttrValue:replicatedFromCluster\" ] } }";
     private final String jsonMultipleClearAttrValue = "{ \"hive_table\": { \"*\":[ \"clearAttrValue:replicatedToCluster,replicatedFromCluster\" ] } }";
+    private final String jsonSetDeleted = "{ \"hive_table\": { \"*\":[ \"setDeleted\" ] } }";
 
     private ImportTransforms transform;
     private String HIVE_TABLE_ATTR_SYNC_INFO = "hive_table.syncInfo";
@@ -178,6 +179,20 @@ public class ImportTransformsTest {
         assertNull(entity.getAttribute(HIVE_TABLE_ATTR_REPLICATED_TO));
     }
 
+    @Test
+    public void setDeleted_SetsStatusToDeleted() throws AtlasBaseException {
+        AtlasEntity entity = getHiveTableAtlasEntity();
+        assertEquals(entity.getStatus(),  AtlasEntity.Status.ACTIVE);
+        ImportTransforms t = ImportTransforms.fromJson(jsonSetDeleted);
+
+        assertTrue(t.getTransforms().size() > 0);
+
+        t.apply(entity);
+        assertNotNull(t);
+        assertEquals(entity.getStatus(),  AtlasEntity.Status.DELETED);
+    }
+
+
     private String[] getExtEntityExpectedValues(AtlasEntityWithExtInfo entityWithExtInfo) {
         String[] ret = new String[entityWithExtInfo.getReferredEntities().size()];
 
@@ -205,6 +220,7 @@ public class ImportTransformsTest {
 
     private AtlasEntity getHiveTableAtlasEntity() {
         AtlasEntity entity = new AtlasEntity("hive_table");
+        entity.setStatus(AtlasEntity.Status.ACTIVE);
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ATTR_NAME_QUALIFIED_NAME, "TABLE1.default" + lowerCaseCL1);

@@ -26,6 +26,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
@@ -111,6 +112,16 @@ public class ImportService {
 
         updateTransformsWithSubTypes(importTransform);
         source.setImportTransform(importTransform);
+
+        if(LOG.isDebugEnabled()) {
+            debugLog("   => transforms: {}", AtlasType.toJson(importTransform));
+        }
+    }
+
+    private void debugLog(String s, Object... params) {
+        if(!LOG.isDebugEnabled()) return;
+
+        LOG.debug(s, params);
     }
 
     private void updateTransformsWithSubTypes(ImportTransforms importTransforms) throws AtlasBaseException {
@@ -189,6 +200,7 @@ public class ImportService {
 
         endTimestamp = System.currentTimeMillis();
         result.incrementMeticsCounter("duration", getDuration(this.endTimestamp, this.startTimestamp));
+        result.setExportResult(importSource.getExportResult());
         auditsWriter.write(userName, result, startTimestamp, endTimestamp, importSource.getCreationOrder());
     }
 

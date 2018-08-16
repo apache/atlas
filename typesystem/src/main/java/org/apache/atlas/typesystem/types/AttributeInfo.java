@@ -19,6 +19,7 @@
 package org.apache.atlas.typesystem.types;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.type.AtlasType;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -40,6 +41,7 @@ public class AttributeInfo {
      * that this refers to.
      */
     public final String reverseAttributeName;
+    public final boolean isSoftRef;
     private IDataType dataType;
 
     public AttributeInfo(TypeSystem t, AttributeDefinition def, Map<String, IDataType> tempTypes) throws AtlasException {
@@ -52,6 +54,7 @@ public class AttributeInfo {
         this.isUnique = def.isUnique;
         this.isIndexable = def.isIndexable;
         this.reverseAttributeName = def.reverseAttributeName;
+        this.isSoftRef = def.isSoftRef;
     }
 
     public IDataType dataType() {
@@ -124,11 +127,29 @@ public class AttributeInfo {
     public static AttributeDefinition fromJson(String jsonStr) throws JSONException {
         JSONObject json = new JSONObject(jsonStr);
         String reverseAttr = null;
+        boolean isSoftRef = false;
         if (json.has("reverseAttributeName")) {
             reverseAttr = json.getString("reverseAttributeName");
         }
-        return new AttributeDefinition(json.getString("name"), json.getString("dataType"),
+
+        AttributeDefinition attributeDefinition = new AttributeDefinition(json.getString("name"), json.getString("dataType"),
                 Multiplicity.fromJson(json.getString("multiplicity")), json.getBoolean("isComposite"),
                 json.getBoolean("isUnique"), json.getBoolean("isIndexable"), reverseAttr);
+
+        if (json.has("options")) {
+            isSoftRef = getSoftRef(json);
+            attributeDefinition.setSoftRef(isSoftRef);
+        }
+
+        return attributeDefinition;
+    }
+
+    private static boolean getSoftRef(JSONObject json) throws JSONException {
+        final String SOFT_REF_KEY = "isSoftReference";
+
+        boolean isSoftRef;
+        Map map = AtlasType.fromJson(json.getString("options"), Map.class);
+        isSoftRef = (map != null && map.containsKey(SOFT_REF_KEY)) ? Boolean.parseBoolean((String) map.get(SOFT_REF_KEY)) : false;
+        return isSoftRef;
     }
 }

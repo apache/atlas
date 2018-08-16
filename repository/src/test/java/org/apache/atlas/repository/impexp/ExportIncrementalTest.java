@@ -60,9 +60,6 @@ public class ExportIncrementalTest extends ExportImportTestBase {
     ExportService exportService;
 
     @Inject
-    ClusterService clusterService;
-
-    @Inject
     private AtlasEntityStoreV1 entityStore;
 
     private final String EXPORT_REQUEST_INCREMENTAL = "export-incremental";

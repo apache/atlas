@@ -37,6 +37,7 @@ public final class AttributeDefinition {
      * that this refers to.
      */
     public final String reverseAttributeName;
+    public boolean isSoftRef;
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
             String reverseAttributeName) {
@@ -77,5 +78,9 @@ public final class AttributeDefinition {
     @Override
     public String toString() {
         return name;
+    }
+
+    public void setSoftRef(boolean isSoftRef) {
+        this.isSoftRef = isSoftRef;
     }
 }

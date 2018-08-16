@@ -169,6 +169,22 @@ public class AtlasExportResult implements Serializable {
         metrics.put(key, currentValue + incrementBy);
     }
 
+    public AtlasExportResult shallowCopy() {
+        AtlasExportResult result  = new AtlasExportResult();
+
+        result.setRequest(getRequest());
+        result.setUserName(getUserName());
+        result.setClientIpAddress(getClientIpAddress());
+        result.setHostName(getHostName());
+        result.setTimeStamp(getTimeStamp());
+        result.setMetrics(getMetrics());
+        result.setOperationStatus(getOperationStatus());
+        result.setSourceClusterName(getSourceClusterName());
+        result.setLastModifiedTimestamp(getLastModifiedTimestamp());
+
+        return result;
+    }
+
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();

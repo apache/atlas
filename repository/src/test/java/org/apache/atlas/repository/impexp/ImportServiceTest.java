@@ -80,7 +80,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @AfterTest
-    public void postTest() {
+    public void postTest() throws InterruptedException {
         assertAuditEntry(auditService);
     }
 

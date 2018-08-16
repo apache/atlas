@@ -15,9 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.model.clusterinfo;
+package org.apache.atlas.model.impexp;
 
 import org.apache.atlas.model.AtlasBaseModelObject;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.type.AtlasType;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -37,9 +39,7 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 public class AtlasCluster extends AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public static final String SYNC_INFO_KEY            = "syncInfo";
-    public static final String OPERATION                = "operation";
-    public static final String NEXT_MODIFIED_TIMESTAMP  = "nextModifiedTimestamp";
+    public static final String KEY_REPLICATION_DETAILS = "REPL_DETAILS";
 
     private String name;
     private String qualifiedName;
@@ -48,9 +48,11 @@ public class AtlasCluster extends AtlasBaseModelObject implements Serializable {
 
     public AtlasCluster() {
         urls = new ArrayList<>();
+        additionalInfo = new HashMap<>();
     }
 
     public AtlasCluster(String name, String qualifiedName) {
+        this();
         this.name = name;
         this.qualifiedName = qualifiedName;
     }
@@ -64,19 +66,57 @@ public class AtlasCluster extends AtlasBaseModelObject implements Serializable {
     }
 
     public void setAdditionalInfo(Map<String, String> additionalInfo) {
-        if(this.additionalInfo == null) {
-            this.additionalInfo = new HashMap<>();
-        }
-
         this.additionalInfo = additionalInfo;
     }
 
     public void setAdditionalInfo(String key, String value) {
-        if(this.additionalInfo == null) {
-            this.additionalInfo = new HashMap<>();
+        if(additionalInfo == null) {
+            additionalInfo = new HashMap<>();
         }
 
         additionalInfo.put(key, value);
+    }
+
+    public void setAdditionalInfoRepl(String guid, long modifiedTimestamp) {
+        Map<String, Object> replicationDetailsMap = null;
+
+        if(additionalInfo != null && additionalInfo.containsKey(KEY_REPLICATION_DETAILS)) {
+            replicationDetailsMap = AtlasType.fromJson(getAdditionalInfo().get(KEY_REPLICATION_DETAILS), Map.class);
+        }
+
+        if(replicationDetailsMap == null) {
+            replicationDetailsMap = new HashMap<>();
+        }
+
+        if(modifiedTimestamp == 0) {
+            replicationDetailsMap.remove(guid);
+        } else {
+            replicationDetailsMap.put(guid, modifiedTimestamp);
+        }
+
+        updateReplicationMap(replicationDetailsMap);
+    }
+
+    private void updateReplicationMap(Map<String, Object> replicationDetailsMap) {
+        String json = AtlasType.toJson(replicationDetailsMap);
+        setAdditionalInfo(KEY_REPLICATION_DETAILS, json);
+    }
+
+
+    public Object getAdditionalInfoRepl(String guid) {
+        if(additionalInfo == null || !additionalInfo.containsKey(KEY_REPLICATION_DETAILS)) {
+            return null;
+        }
+
+        String key = guid;
+        String mapJson = additionalInfo.get(KEY_REPLICATION_DETAILS);
+
+        Map<String, String> replicationDetailsMap = AtlasType.fromJson(mapJson, Map.class);
+        if(!replicationDetailsMap.containsKey(key)) {
+            return null;
+        }
+
+        return replicationDetailsMap.get(key);
     }
 
     public Map<String, String> getAdditionalInfo() {

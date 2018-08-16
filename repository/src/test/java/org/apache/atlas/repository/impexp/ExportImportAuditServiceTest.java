@@ -20,9 +20,7 @@ package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -32,14 +30,16 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.List;
 
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ExportImportAuditServiceTest {
+public class ExportImportAuditServiceTest extends ExportImportTestBase {
     @Inject
     AtlasTypeRegistry typeRegistry;
 
@@ -70,7 +70,7 @@ public class ExportImportAuditServiceTest {
         String target2 = "clx1";
         ExportImportAuditEntry entry2 = saveAndGet(source2, ExportImportAuditEntry.OPERATION_EXPORT, target2);
 
-        Thread.sleep(1000);
+        pauseForIndexCreation();
         ExportImportAuditEntry actualEntry = retrieveEntry(entry);
         ExportImportAuditEntry actualEntry2 = retrieveEntry(entry2);
 
@@ -81,7 +81,7 @@ public class ExportImportAuditServiceTest {
         assertEquals(actualEntry.getOperation(), entry.getOperation());
     }
 
-    @Test(enabled = false)
+    @Test
     public void numberOfSavedEntries_Retrieved() throws AtlasBaseException, InterruptedException {
         final String source1 = "cluster1";
         final String target1 = "cly";
@@ -91,18 +91,20 @@ public class ExportImportAuditServiceTest {
             saveAndGet(source1, ExportImportAuditEntry.OPERATION_EXPORT, target1);
         }
 
-        Thread.sleep(1000);
-        AtlasSearchResult results = auditService.get(source1, ExportImportAuditEntry.OPERATION_EXPORT, "", "", "", "", 10, 0);
-        assertEquals(results.getEntities().size(), MAX_ENTRIES);
+        pauseForIndexCreation();
+        List<ExportImportAuditEntry> results = auditService.get("",
+                ExportImportAuditEntry.OPERATION_EXPORT,
+                "", "", "", 10, 0);
+        assertTrue(results.size() > 0);
     }
 
-
     private ExportImportAuditEntry retrieveEntry(ExportImportAuditEntry entry) throws AtlasBaseException {
-        AtlasSearchResult result = auditService.get(entry.getUserName(), entry.getOperation(), entry.getSourceClusterName(),
-                                                            entry.getTargetClusterName(), Long.toString(entry.getStartTime()), "", 10, 0);
+        List<ExportImportAuditEntry> result = auditService.get(entry.getUserName(), entry.getOperation(),
+                                                            entry.getSourceClusterName(),
+                                                            Long.toString(entry.getStartTime()), "", 10, 0);
         assertNotNull(result);
-        assertEquals(result.getEntities().size(), 1);
-        entry.setGuid(result.getEntities().get(0).getGuid());
+        assertEquals(result.size(), 1);
+        entry.setGuid(result.get(0).getGuid());
         return auditService.get(entry);
     }
 

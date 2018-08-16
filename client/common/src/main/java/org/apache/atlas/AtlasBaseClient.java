@@ -27,7 +27,6 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
 import com.sun.jersey.multipart.BodyPart;
 import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
@@ -35,7 +34,7 @@ import com.sun.jersey.multipart.MultiPart;
 import com.sun.jersey.multipart.file.FileDataBodyPart;
 import com.sun.jersey.multipart.file.StreamDataBodyPart;
 import com.sun.jersey.multipart.impl.MultiPartWriter;
-import org.apache.atlas.model.clusterinfo.AtlasCluster;
+import org.apache.atlas.model.impexp.AtlasCluster;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
@@ -78,7 +77,7 @@ public abstract class AtlasBaseClient {
     public static final String ADMIN_METRICS = "admin/metrics";
     public static final String ADMIN_IMPORT = "admin/import";
     public static final String ADMIN_EXPORT = "admin/export";
-    public static final String HTTP_AUTHENTICATION_ENABLED = "atlas.http.authentication.enabled";
+    public static final String ADMIN_CLUSTER_TEMPLATE = "%sadmin/cluster/%s";
 
     public static final String QUERY = "query";
     public static final String LIMIT = "limit";
@@ -509,6 +508,11 @@ public abstract class AtlasBaseClient {
 
     private FormDataBodyPart getImportRequestBodyPart(AtlasImportRequest request) {
         return new FormDataBodyPart(IMPORT_REQUEST_PARAMTER, AtlasType.toJson(request), MediaType.APPLICATION_JSON_TYPE);
+    }
+
+    public AtlasCluster getCluster(String clusterName) throws AtlasServiceException {
+        API api = new API(String.format(ADMIN_CLUSTER_TEMPLATE, BASE_URI, clusterName), HttpMethod.GET, Response.Status.OK);
+        return callAPI(api, AtlasCluster.class, null);
     }
 
     boolean isRetryableException(ClientHandlerException che) {

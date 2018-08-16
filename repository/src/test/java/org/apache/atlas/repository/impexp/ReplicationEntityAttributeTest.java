@@ -24,15 +24,22 @@ import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.clusterinfo.AtlasCluster;
+import org.apache.atlas.model.impexp.AtlasCluster;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
+import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.testng.SkipException;
@@ -46,15 +53,13 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.apache.atlas.model.impexp.AtlasExportRequest.OPTION_KEY_REPLICATED_TO;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.createAtlasEntity;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadEntity;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadHiveModel;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runExportWithParameters;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithParameters;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ReplicationEntityAttributeTest extends ExportImportTestBase {
@@ -86,29 +91,18 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
     @Inject
     ClusterService clusterService;
 
-    private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
     private AtlasEntityStoreV1 entityStore;
     private ZipSource zipSource;
 
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
-        loadBaseModel(typeDefStore, typeRegistry);
-        loadHiveModel(typeDefStore, typeRegistry);
-        createEntities();
-    }
-
-    private void createEntities() {
+        basicSetup(typeDefStore, typeRegistry);
         entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
+        createEntities(entityStore, ENTITIES_SUB_DIR, new String[]{"db", "table-columns"});
 
-        createAtlasEntity(entityStore, loadEntity(ENTITIES_SUB_DIR,"db"));
-        createAtlasEntity(entityStore, loadEntity(ENTITIES_SUB_DIR, "table-columns"));
-
-        try {
-            AtlasEntity.AtlasEntitiesWithExtInfo entities = entityStore.getByIds(ImmutableList.of(DB_GUID, TABLE_GUID));
-            assertEquals(entities.getEntities().size(), 2);
-        } catch (AtlasBaseException e) {
-            throw new SkipException(String.format("getByIds: could not load '%s' & '%s'.", DB_GUID, TABLE_GUID));
-        }
+        AtlasType refType = typeRegistry.getType("Referenceable");
+        AtlasEntityDef entityDef = (AtlasEntityDef) typeDefStore.getByName(refType.getTypeName());
+        assertNotNull(entityDef);
     }
 
     @BeforeMethod
@@ -128,20 +122,21 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         assertNotNull(zipSource.getCreationOrder());
         assertEquals(zipSource.getCreationOrder().size(), expectedEntityCount);
 
-        assertClusterInfo(REPLICATED_TO_CLUSTER_NAME);
+        assertCluster(REPLICATED_TO_CLUSTER_NAME, null);
         assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_TO_CLUSTER);
     }
 
     @Test(dependsOnMethods = "exportWithReplicationToOption_AddsClusterObjectIdToReplicatedFromAttribute")
     public void importWithReplicationFromOption_AddsClusterObjectIdToReplicatedFromAttribute() throws AtlasBaseException, IOException {
         AtlasImportRequest request = getImportRequestWithReplicationOption();
-        runImportWithParameters(importService, request, zipSource);
+        AtlasImportResult importResult = runImportWithParameters(importService, request, zipSource);
 
-        assertClusterInfo(REPLICATED_FROM_CLUSTER_NAME);
+        assertCluster(REPLICATED_FROM_CLUSTER_NAME, importResult);
         assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_FROM_CLUSTER);
     }
 
     private void assertReplicationAttribute(String attrNameReplication) throws AtlasBaseException {
+        pauseForIndexCreation();
         AtlasEntity.AtlasEntitiesWithExtInfo entities = entityStore.getByIds(ImmutableList.of(DB_GUID, TABLE_GUID));
         for (AtlasEntity e : entities.getEntities()) {
             Object ex = e.getAttribute(attrNameReplication);
@@ -152,11 +147,25 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         }
     }
 
-    private void assertClusterInfo(String name) {
+    private void assertCluster(String name, AtlasImportResult importResult) throws AtlasBaseException {
         AtlasCluster actual = clusterService.get(new AtlasCluster(name, name));
 
         assertNotNull(actual);
         assertEquals(actual.getName(), name);
+
+        if(importResult != null) {
+            assertClusterAdditionalInfo(actual, importResult);
+        }
+    }
+
+    private void assertClusterAdditionalInfo(AtlasCluster cluster, AtlasImportResult importResult) throws AtlasBaseException {
+        AtlasExportRequest request = importResult.getExportResult().getRequest();
+        AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(request.getItemsToExport().get(0).getTypeName());
+        AtlasEntity.AtlasEntityWithExtInfo entity = entityStore.getByUniqueAttributes(type, request.getItemsToExport().get(0).getUniqueAttributes());
+        long actualLastModifiedTimestamp = (long) cluster.getAdditionalInfoRepl(entity.getEntity().getGuid());
+
+        assertTrue(cluster.getAdditionalInfo().size() > 0);
+        assertEquals(actualLastModifiedTimestamp, importResult.getExportResult().getLastModifiedTimestamp());
     }
 
     private AtlasExportRequest getUpdateMetaInfoUpdateRequest() {

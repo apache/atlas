@@ -18,11 +18,12 @@
 
 package org.apache.atlas.repository.impexp;
 
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.clusterinfo.AtlasCluster;
+import org.apache.atlas.model.impexp.AtlasCluster;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.Constants;
@@ -31,10 +32,14 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityStreamForImport;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,43 +48,49 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.atlas.repository.Constants.ATTR_NAME_REFERENCEABLE;
+
 @AtlasService
 public class ClusterService {
     private static final Logger LOG = LoggerFactory.getLogger(ClusterService.class);
 
     private final DataAccess dataAccess;
     private final AtlasEntityStore entityStore;
+    private final AtlasTypeRegistry typeRegistry;
+    private final EntityGraphRetriever entityGraphRetriever;
 
     @Inject
-    public ClusterService(DataAccess dataAccess, AtlasEntityStore entityStore) {
+    public ClusterService(DataAccess dataAccess, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityGraphRetriever) {
         this.dataAccess = dataAccess;
         this.entityStore = entityStore;
+        this.typeRegistry = typeRegistry;
+        this.entityGraphRetriever = entityGraphRetriever;
     }
 
-    public AtlasCluster get(AtlasCluster cluster) {
+    public AtlasCluster get(AtlasCluster cluster) throws AtlasBaseException {
         try {
             return dataAccess.load(cluster);
         } catch (AtlasBaseException e) {
             LOG.error("dataAccess", e);
+            throw e;
+        }
+    }
+
+    @GraphTransaction
+    public AtlasCluster save(AtlasCluster cluster) throws AtlasBaseException {
+       return dataAccess.save(cluster);
+    }
+
+    @GraphTransaction
+    public void updateEntitiesWithCluster(AtlasCluster cluster, List<String> entityGuids, String attributeName) throws AtlasBaseException {
+        if (cluster != null && StringUtils.isEmpty(cluster.getGuid())) {
+            return;
         }
 
-        return null;
-    }
-
-    @GraphTransaction
-    public AtlasCluster save(AtlasCluster clusterInfo) throws AtlasBaseException {
-       return dataAccess.save(clusterInfo);
-    }
-
-    @GraphTransaction
-    public void updateEntityWithCluster(AtlasCluster cluster, List<String> guids, String attributeName) throws AtlasBaseException {
-        if(cluster != null && StringUtils.isEmpty(cluster.getGuid())) return;
-
         AtlasObjectId objectId = getObjectId(cluster);
-        for (String guid : guids) {
+        for (String guid : entityGuids) {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(guid);
             updateAttribute(entityWithExtInfo, attributeName, objectId);
-            entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), true);
         }
     }
 
@@ -92,33 +103,49 @@ public class ClusterService {
      * Attribute passed by name is updated with the value passed.
      * @param entityWithExtInfo Entity to be updated
      * @param propertyName attribute name
-     * @param value Value to be set for attribute
+     * @param objectId Value to be set for attribute
      */
-    private void updateAttribute(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, String propertyName, Object value) {
+    private void updateAttribute(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo,
+                                 String propertyName,
+                                 AtlasObjectId objectId) {
+        String value = EntityGraphMapper.getSoftRefFormattedValue(objectId);
         updateAttribute(entityWithExtInfo.getEntity(), propertyName, value);
         for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
             updateAttribute(e, propertyName, value);
         }
     }
 
-    private void updateAttribute(AtlasEntity e, String propertyName, Object value) {
-        if(e.hasAttribute(propertyName) == false) return;
+    private void updateAttribute(AtlasEntity entity, String attributeName, Object value) {
+        if(entity.hasAttribute(attributeName) == false) return;
 
-        Object oVal = e.getAttribute(propertyName);
-        if (oVal != null && !(oVal instanceof List)) return;
+        try {
+            AtlasVertex vertex = entityGraphRetriever.getEntityVertex(entity.getGuid());
+            if(vertex == null) {
+                return;
+            }
 
-        List list;
+            String qualifiedFieldName = getVertexPropertyName(entity, attributeName);
+            List list = vertex.getListProperty(qualifiedFieldName);
+            if (list == null) {
+                list = new ArrayList();
+            }
 
-        if (oVal == null) {
-            list = new ArrayList();
-        } else {
-            list = (List) oVal;
+            if (!list.contains(value)) {
+                list.add(value);
+                vertex.setListProperty(qualifiedFieldName, list);
+            }
+
         }
-
-        if (!list.contains(value)) {
-            list.add(value);
+        catch (AtlasBaseException ex) {
+            LOG.error("error retrieving vertex from guid: {}", entity.getGuid(), ex);
+        } catch (AtlasException ex) {
+            LOG.error("error setting property to vertex with guid: {}", entity.getGuid(), ex);
         }
+    }
 
-        e.setAttribute(propertyName, list);
+    private String getVertexPropertyName(AtlasEntity entity, String attributeName) throws AtlasBaseException {
+        AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
+        AtlasStructType.AtlasAttribute attribute = type.getAttribute(attributeName);
+        return attribute.getVertexPropertyName();
     }
 }

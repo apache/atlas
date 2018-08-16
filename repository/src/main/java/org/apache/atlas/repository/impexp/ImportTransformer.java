@@ -36,6 +36,7 @@ public abstract class ImportTransformer {
     private static final String TRANSFORMER_NAME_UPPERCASE = "uppercase";
     private static final String TRANSFORMER_NAME_REMOVE_CLASSIFICATION = "removeClassification";
     private static final String TRANSFORMER_NAME_REPLACE = "replace";
+    private static final String TRANSFORMER_SET_DELETED = "setDeleted";
 
     private final String transformType;
 
@@ -65,6 +66,8 @@ public abstract class ImportTransformer {
         } else if (key.equals(TRANSFORMER_NAME_CLEAR_ATTR)) {
             String name = (params == null || params.length < 1) ? "" : StringUtils.join(params, ":", 1, params.length);
             ret = new ClearAttributes(name);
+        } else if (key.equals(TRANSFORMER_SET_DELETED)) {
+            ret = new SetDeleted();
         } else {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "Error creating ImportTransformer. Unknown transformer: {}.", transformerSpec);
         }
@@ -288,6 +291,27 @@ public abstract class ImportTransformer {
                 entity.setAttribute(attrName, null);
             }
 
+            return entity;
+        }
+    }
+
+    static class SetDeleted extends ImportTransformer {
+        protected SetDeleted() {
+            super(TRANSFORMER_SET_DELETED);
+        }
+
+        @Override
+        public Object apply(Object o) {
+            if (o == null) {
+                return o;
+            }
+
+            if (!(o instanceof AtlasEntity)) {
+                return o;
+            }
+
+            AtlasEntity entity = (AtlasEntity) o;
+            entity.setStatus(AtlasEntity.Status.DELETED);
             return entity;
         }
     }

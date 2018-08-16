@@ -54,6 +54,7 @@ public class AtlasImportResult {
     private Map<String, Integer> metrics;
     private List<String>         processedEntities;
     private OperationStatus      operationStatus;
+    private AtlasExportResult    exportResultWithoutData;
 
     public AtlasImportResult() {
         this(null, null, null, null, System.currentTimeMillis());
@@ -140,6 +141,14 @@ public class AtlasImportResult {
     public void setProcessedEntities(List<String> processedEntities) { this.processedEntities = processedEntities; }
 
     public List<String> getProcessedEntities() { return this.processedEntities; }
+
+    public AtlasExportResult getExportResult() {
+        return exportResultWithoutData;
+    }
+
+    public void setExportResult(AtlasExportResult exportResult) {
+        this.exportResultWithoutData = exportResult.shallowCopy();
+    }
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {

@@ -20,10 +20,10 @@ package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.clusterinfo.AtlasCluster;
-import org.apache.atlas.repository.impexp.ClusterService;
+import org.apache.atlas.model.impexp.AtlasCluster;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
@@ -34,22 +34,24 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.atlas.repository.Constants.ATTR_NAME_REFERENCEABLE;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ClusterServiceTest {
     private final String TOP_LEVEL_ENTITY_NAME = "db1@cl1";
     private final String CLUSTER_NAME          = "testCl1";
     private final String TARGET_CLUSTER_NAME   = "testCl2";
+    private final String QUALIFIED_NAME_STOCKS = "stocks@cl1";
+    private final String TYPE_HIVE_DB = "hive_db";
 
     private AtlasTypeDefStore typeDefStore;
     private AtlasTypeRegistry typeRegistry;
     private ClusterService clusterService;
+    private String topLevelEntityGuid = "AAA-BBB-CCC";
 
     @Inject
     public void UserProfileServiceTest(AtlasTypeRegistry typeRegistry,
@@ -67,8 +69,8 @@ public class ClusterServiceTest {
 
     @Test
     public void saveAndRetrieveClusterInfo() throws AtlasBaseException {
-        AtlasCluster expected = getCluster(CLUSTER_NAME, TOP_LEVEL_ENTITY_NAME, "EXPORT", 0l, TARGET_CLUSTER_NAME);
-        AtlasCluster expected2 = getCluster(TARGET_CLUSTER_NAME, TOP_LEVEL_ENTITY_NAME, "IMPORT", 0L, TARGET_CLUSTER_NAME);
+        AtlasCluster expected = getCluster(CLUSTER_NAME + "_1", TOP_LEVEL_ENTITY_NAME, "EXPORT", 0l, TARGET_CLUSTER_NAME);
+        AtlasCluster expected2 = getCluster(TARGET_CLUSTER_NAME + "_1", TOP_LEVEL_ENTITY_NAME, "IMPORT", 0L, TARGET_CLUSTER_NAME);
         AtlasCluster expected3 = getCluster(TARGET_CLUSTER_NAME + "_3", TOP_LEVEL_ENTITY_NAME, "IMPORT", 0, TARGET_CLUSTER_NAME);
 
         AtlasCluster actual = clusterService.save(expected);
@@ -86,36 +88,38 @@ public class ClusterServiceTest {
 
         assertEquals(actual.getName(), expected.getName());
         assertEquals(actual.getQualifiedName(), expected.getQualifiedName());
-        assertEquals(getAdditionalInfo(actual, TOP_LEVEL_ENTITY_NAME).get(AtlasCluster.OPERATION),
-                    getAdditionalInfo(expected, TOP_LEVEL_ENTITY_NAME).get(AtlasCluster.OPERATION));
-
-        assertEquals(getAdditionalInfo(actual, TOP_LEVEL_ENTITY_NAME).get(AtlasCluster.NEXT_MODIFIED_TIMESTAMP),
-                    getAdditionalInfo(expected, TOP_LEVEL_ENTITY_NAME).get(AtlasCluster.NEXT_MODIFIED_TIMESTAMP));
     }
 
-    private AtlasCluster getCluster(String name, String topLevelEntity, String operation, long nextModifiedTimestamp, String targetClusterName) {
-        AtlasCluster cluster = new AtlasCluster(name, name);
+    private AtlasCluster getCluster(String clusterName, String topLevelEntity, String operation, long nextModifiedTimestamp, String targetClusterName) {
+        AtlasCluster cluster = new AtlasCluster(clusterName, clusterName);
 
-        Map<String, Object> syncMap = new HashMap<>();
+        Map<String, String> syncMap = new HashMap<>();
+
+        syncMap.put("topLevelEntity", topLevelEntity);
         syncMap.put("operation", operation);
-        syncMap.put("nextModifiedTimestamp", nextModifiedTimestamp);
+        syncMap.put("nextModifiedTimestamp", Long.toString(nextModifiedTimestamp));
         syncMap.put("targetCluster", targetClusterName);
 
-        String syncMapJson = AtlasType.toJson(syncMap);
-        String topLevelEntitySpecificKey = getTopLevelEntitySpecificKey(topLevelEntity);
-        cluster.setAdditionalInfo(topLevelEntitySpecificKey, syncMapJson);
+        cluster.setAdditionalInfo(syncMap);
+
         return cluster;
     }
 
-    private Map<String, Object> getAdditionalInfo(AtlasCluster cluster, String topLevelEntityName) {
-        String topLevelEntitySpecificKey = getTopLevelEntitySpecificKey(topLevelEntityName);
-        assertTrue(cluster.getAdditionalInfo().containsKey(topLevelEntitySpecificKey));
+    @Test
+    public void verifyAdditionalInfo() throws AtlasBaseException {
+        final long expectedLastModifiedTimestamp = 200L;
 
-        String json = cluster.getAdditionalInfo(topLevelEntitySpecificKey);
-        return AtlasType.fromJson(json, Map.class);
-    }
+        AtlasCluster expectedCluster = new AtlasCluster(CLUSTER_NAME, CLUSTER_NAME);
 
-    private String getTopLevelEntitySpecificKey(String topLevelEntity) {
-        return String.format("%s:%s", AtlasCluster.SYNC_INFO_KEY, topLevelEntity);
+        String qualifiedNameAttr = Constants.QUALIFIED_NAME.replace(ATTR_NAME_REFERENCEABLE, "");
+        AtlasObjectId objectId = new AtlasObjectId(TYPE_HIVE_DB, qualifiedNameAttr, QUALIFIED_NAME_STOCKS);
+        expectedCluster.setAdditionalInfoRepl(topLevelEntityGuid, expectedLastModifiedTimestamp);
+
+        AtlasCluster actualCluster = clusterService.save(expectedCluster);
+        assertEquals(actualCluster.getName(), expectedCluster.getName());
+
+        int actualModifiedTimestamp = (int) actualCluster.getAdditionalInfoRepl(topLevelEntityGuid);
+
+        assertEquals(actualModifiedTimestamp, expectedLastModifiedTimestamp);
     }
 }
