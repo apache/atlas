@@ -21,7 +21,6 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
-import java.util.Date;
 import java.util.Set;
 
 public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
@@ -32,11 +31,11 @@ public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
 
 
     public AtlasRelationshipAccessRequest(AtlasTypeRegistry typeRegistry, AtlasPrivilege action, String relationshipType, AtlasEntityHeader end1Entity, AtlasEntityHeader end2Entity) {
-        this(typeRegistry, action, relationshipType, end1Entity, end2Entity, null, null, null,null);
+        this(typeRegistry, action, relationshipType, end1Entity, end2Entity, null, null);
     }
 
-    public AtlasRelationshipAccessRequest(AtlasTypeRegistry typeRegistry, AtlasPrivilege action, String relationshipType, AtlasEntityHeader end1Entity, AtlasEntityHeader end2Entity, String user, Set<String> userGroups, Date accessTime, String clientIPAddress) {
-        super(action, user, userGroups, accessTime, clientIPAddress);
+    public AtlasRelationshipAccessRequest(AtlasTypeRegistry typeRegistry, AtlasPrivilege action, String relationshipType, AtlasEntityHeader end1Entity, AtlasEntityHeader end2Entity, String user, Set<String> userGroups) {
+        super(action, user, userGroups);
 
         this.typeRegistry     = typeRegistry;
         this.relationshipType = relationshipType;
@@ -66,7 +65,7 @@ public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
     }
 
     public String getEnd1EntityId() {
-        return super.getEntityId(end1Entity);
+        return super.getEntityId(end1Entity, typeRegistry);
     }
 
     public Set<String> getEnd2EntityTypeAndAllSuperTypes() {
@@ -78,10 +77,17 @@ public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
     }
 
     public String getEnd2EntityId() {
-        return super.getEntityId(end2Entity);
+        return super.getEntityId(end2Entity, typeRegistry);
     }
 
     public Set<String> getClassificationTypeAndAllSuperTypes(String classificationName) {
         return super.getClassificationTypeAndAllSuperTypes(classificationName, typeRegistry);
+    }
+
+    @Override
+    public String toString() {
+        return "AtlasRelationshipAccessRequest[relationshipType=" + relationshipType + ", end1Entity=" + end1Entity + ", end2Entity=" + end2Entity +
+                ", action=" + getAction() + ", accessTime=" + getAccessTime() + ", user=" + getUser() +
+                ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() + "]";
     }
 }

@@ -46,24 +46,31 @@ public class AtlasRelationshipType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipType.class);
 
     private final AtlasRelationshipDef relationshipDef;
+    private final boolean              hasLegacyAttributeEnd;
     private       AtlasEntityType      end1Type;
     private       AtlasEntityType      end2Type;
 
     public AtlasRelationshipType(AtlasRelationshipDef relationshipDef) {
         super(relationshipDef);
 
-        this.relationshipDef = relationshipDef;
+        AtlasRelationshipEndDef end1Def = relationshipDef != null ? relationshipDef.getEndDef1() : null;
+        AtlasRelationshipEndDef end2Def = relationshipDef != null ? relationshipDef.getEndDef2() : null;
+
+        this.relationshipDef       = relationshipDef;
+        this.hasLegacyAttributeEnd = (end1Def != null && end1Def.getIsLegacyAttribute()) || (end2Def != null && end2Def.getIsLegacyAttribute());
     }
 
     public AtlasRelationshipType(AtlasRelationshipDef relationshipDef, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        super(relationshipDef);
-
-        this.relationshipDef = relationshipDef;
+        this(relationshipDef);
 
         resolveReferences(typeRegistry);
     }
 
     public AtlasRelationshipDef getRelationshipDef() { return relationshipDef; }
+
+    public boolean hasLegacyAttributeEnd() {
+        return this.hasLegacyAttributeEnd;
+    }
 
     @Override
     void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
