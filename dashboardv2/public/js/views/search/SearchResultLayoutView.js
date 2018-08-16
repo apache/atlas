@@ -954,10 +954,12 @@ define(['require',
                 var that = this,
                     tagName = $(e.target).data("name"),
                     guid = $(e.target).data("guid"),
+                    entityGuid = $(e.target).data("entityguid"),
                     assetName = $(e.target).data("assetname");
                 CommonViewFunction.deleteTag({
                     tagName: tagName,
                     guid: guid,
+                    associatedGuid: guid != entityGuid ? entityGuid : null,
                     msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",
