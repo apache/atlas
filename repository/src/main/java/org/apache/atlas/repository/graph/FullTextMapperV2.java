@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,16 +53,17 @@ public class FullTextMapperV2 {
     private static final String FULL_TEXT_EXCLUDE_ATTRIBUTE_PROPERTY = "atlas.search.fulltext.type";
 
     private final EntityGraphRetriever     entityGraphRetriever;
+    private final Configuration            configuration;
     private final boolean                  followReferences;
     private final Map<String, Set<String>> excludeAttributesCache = new HashMap<>();
 
-    private Configuration APPLICATION_PROPERTIES = null;
 
     @Inject
     public FullTextMapperV2(AtlasTypeRegistry typeRegistry, Configuration configuration) {
-        entityGraphRetriever   = new EntityGraphRetriever(typeRegistry);
-        APPLICATION_PROPERTIES = configuration;
-        followReferences       = APPLICATION_PROPERTIES != null && APPLICATION_PROPERTIES.getBoolean(FULL_TEXT_FOLLOW_REFERENCES, false);
+        this.configuration = configuration;
+        followReferences = this.configuration != null && this.configuration.getBoolean(FULL_TEXT_FOLLOW_REFERENCES, false);
+        // If followReferences = false then ignore relationship attr loading
+        entityGraphRetriever = new EntityGraphRetriever(typeRegistry, !followReferences);
     }
 
     /**
@@ -234,7 +235,8 @@ public class FullTextMapperV2 {
         AtlasEntityWithExtInfo entityWithExtInfo = context.getEntityWithExtInfo(guid);
 
         if (entityWithExtInfo == null) {
-            entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
+            // Only map ownedRef and relationship attr when follow references is set to true
+            entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid, !followReferences);
 
             if (entityWithExtInfo != null) {
                 context.cache(entityWithExtInfo);
@@ -257,9 +259,9 @@ public class FullTextMapperV2 {
         if (excludeAttributesCache.containsKey(typeName)) {
             ret = excludeAttributesCache.get(typeName);
 
-        } else if (APPLICATION_PROPERTIES != null) {
-            String[] excludeAttributes = APPLICATION_PROPERTIES.getStringArray(FULL_TEXT_EXCLUDE_ATTRIBUTE_PROPERTY + "." +
-                                                                               typeName + "." + "attributes.exclude");
+        } else if (configuration != null) {
+            String[] excludeAttributes = configuration.getStringArray(FULL_TEXT_EXCLUDE_ATTRIBUTE_PROPERTY + "." +
+                                                                              typeName + "." + "attributes.exclude");
 
             if (ArrayUtils.isNotEmpty(excludeAttributes)) {
                 ret = new HashSet<>(Arrays.asList(excludeAttributes));
