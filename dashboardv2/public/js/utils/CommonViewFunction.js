@@ -253,6 +253,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     deleteIcon = "";
                 if (obj.guid === tag.entityGuid) {
                     deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag.typeName + '" data-type="tag" data-guid="' + obj.guid + '" ></i>';
+                } else if (obj.guid !== tag.entityGuid && tag.entityStatus === "DELETED") {
+                    deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + tag.typeName + '" data-type="tag" data-entityguid="' + tag.entityGuid + '" data-guid="' + obj.guid + '" ></i>';
                 } else {
                     className += " propagte-classification";
                 }

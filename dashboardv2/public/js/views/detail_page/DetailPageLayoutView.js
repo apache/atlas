@@ -320,8 +320,11 @@ define(['require',
             },
             onClickTagCross: function(e) {
                 var that = this,
-                    tagName = $(e.currentTarget).parent().text();
+                    tagName = $(e.currentTarget).parent().text(),
+                    entityGuid = $(e.currentTarget).data("entityguid");
                 CommonViewFunction.deleteTag(_.extend({}, {
+                    guid: that.id,
+                    associatedGuid: that.id != entityGuid ? entityGuid : null,
                     msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",
@@ -373,7 +376,8 @@ define(['require',
                     tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Tag"></i></span>';
                 });
                 _.each(tag.propagated, function(val) {
-                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span></span>';
+                    var crossButton = '<i class="fa fa-close" data-id="deleteTag" data-entityguid="' + val.entityGuid + '" data-type="tag" title="Remove Tag"></i>';
+                    propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span>' + ((that.id !== val.entityGuid && val.entityStatus === "DELETED") ? crossButton : "") + '</span>';
                 });
                 propagatedTagListData !== "" ? this.ui.propagatedTagDiv.show() : this.ui.propagatedTagDiv.hide();
                 this.ui.tagList.find("span.btn").remove();
