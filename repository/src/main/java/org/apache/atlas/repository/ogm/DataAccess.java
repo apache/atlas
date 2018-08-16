@@ -189,6 +189,26 @@ public class DataAccess {
 
     }
 
+    public <T extends AtlasBaseModelObject> T load(String guid, Class<? extends AtlasBaseModelObject> clazz) throws AtlasBaseException {
+        DataTransferObject<T>  dto = (DataTransferObject<T>)dtoRegistry.get(clazz);
+
+        AtlasEntityWithExtInfo entityWithExtInfo = null;
+
+        if (StringUtils.isNotEmpty(guid)) {
+            entityWithExtInfo = entityStore.getById(guid);
+        }
+
+        if(entityWithExtInfo == null) {
+            return null;
+        }
+
+        return dto.from(entityWithExtInfo);
+    }
+
+    public void deleteUsingGuid(String guid) throws AtlasBaseException {
+        entityStore.deleteById(guid);
+    }
+
     public void delete(String guid) throws AtlasBaseException {
         Objects.requireNonNull(guid, "guid");
         AtlasPerfTracer perf = null;

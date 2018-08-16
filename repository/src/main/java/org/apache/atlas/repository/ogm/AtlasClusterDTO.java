@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.ogm;
 
-import org.apache.atlas.model.clusterinfo.AtlasCluster;
+import org.apache.atlas.model.impexp.AtlasCluster;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.stereotype.Component;
@@ -63,6 +63,7 @@ public class AtlasClusterDTO extends AbstractDataTransferObject<AtlasCluster> {
         entity.setAttribute(PROPERTY_CLUSTER_NAME, obj.getName());
         entity.setAttribute(PROPERTY_QUALIFIED_NAME, obj.getQualifiedName());
         entity.setAttribute(PROPERTY_ADDITIONAL_INFO, obj.getAdditionalInfo());
+        entity.setAttribute(PROPERTY_URLS, obj.getUrls());
 
         return entity;
     }

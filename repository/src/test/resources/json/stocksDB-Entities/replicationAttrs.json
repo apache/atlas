@@ -4,5 +4,8 @@
   "cardinality": "SET",
   "isIndexable": false,
   "isOptional": true,
-  "isUnique": false
+  "isUnique": false,
+  "options": {
+    "isSoftReference": "true"
+  }
 }

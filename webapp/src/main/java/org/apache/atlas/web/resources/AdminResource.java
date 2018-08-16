@@ -28,7 +28,6 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.clusterinfo.AtlasCluster;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
@@ -450,7 +449,6 @@ public class AdminResource {
     /**
      * Fetch details of a cluster.
      * @param clusterName name of target cluster with which it is paired
-     * @param entityQualifiedName qualified name of top level entity
      * @return AtlasCluster
      * @throws AtlasBaseException
      */
@@ -458,8 +456,7 @@ public class AdminResource {
     @Path("/cluster/{clusterName}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasCluster getCluster(@PathParam("clusterName") String clusterName,
-                                   @QueryParam("entity") String entityQualifiedName) throws AtlasBaseException {
+    public AtlasCluster getCluster(@PathParam("clusterName") String clusterName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -478,22 +475,21 @@ public class AdminResource {
     @Path("/expimp/audit")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasSearchResult getExportImportAudit(@QueryParam("sourceClusterName") String sourceCluster,
-                                                  @QueryParam("targetCluster") String targetCluster,
-                                                  @QueryParam("userName") String userName,
-                                                  @QueryParam("operation") String operation,
-                                                  @QueryParam("startTime") String startTime,
-                                                  @QueryParam("endTime") String endTime,
-                                                  @QueryParam("limit") int limit,
-                                                  @QueryParam("offset") int offset) throws AtlasBaseException {
+    public List<ExportImportAuditEntry> getExportImportAudit(@QueryParam("clusterName") String cluster,
+                                                             @QueryParam("userName") String userName,
+                                                             @QueryParam("operation") String operation,
+                                                             @QueryParam("startTime") String startTime,
+                                                             @QueryParam("endTime") String endTime,
+                                                             @QueryParam("limit") int limit,
+                                                             @QueryParam("offset") int offset) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "getExportImportAudit(" + sourceCluster + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "getExportImportAudit(" + cluster + ")");
             }
 
-            return exportImportAuditService.get(userName, operation, sourceCluster, targetCluster, startTime, endTime, limit, offset);
+            return exportImportAuditService.get(userName, operation, cluster, startTime, endTime, limit, offset);
         } finally {
             AtlasPerfTracer.log(perf);
         }

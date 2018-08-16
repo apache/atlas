@@ -125,11 +125,11 @@ public class ExportService {
         context.result.getData().getEntityCreationOrder().addAll(context.lineageProcessed);
         context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
         context.sink.setTypesDef(context.result.getData().getTypesDef());
-        auditsWriter.write(userName, context.result, startTime, endTime, context.result.getData().getEntityCreationOrder());
-        clearContextData(context);
+        context.result.setLastModifiedTimestamp(context.newestLastModifiedTimestamp);
         context.result.setOperationStatus(getOverallOperationStatus(statuses));
         context.result.incrementMeticsCounter("duration", duration);
-        context.result.setLastModifiedTimestamp(context.newestLastModifiedTimestamp);
+        auditsWriter.write(userName, context.result, startTime, endTime, context.result.getData().getEntityCreationOrder());
+        clearContextData(context);
         context.sink.setResult(context.result);
     }
 
@@ -194,9 +194,7 @@ public class ExportService {
     }
 
     private AtlasExportResult.OperationStatus processObjectId(AtlasObjectId item, ExportContext context) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> processObjectId({})", item);
-        }
+        debugLog("==> processObjectId({})", item);
 
         try {
             List<String> entityGuids = getStartingEntity(item, context);
@@ -225,11 +223,16 @@ public class ExportService {
             return AtlasExportResult.OperationStatus.FAIL;
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== processObjectId({})", item);
+        debugLog("<== processObjectId({})", item);
+        return AtlasExportResult.OperationStatus.SUCCESS;
+    }
+
+    private void debugLog(String s, Object... params) {
+        if (!LOG.isDebugEnabled()) {
+            return;
         }
 
-        return AtlasExportResult.OperationStatus.SUCCESS;
+        LOG.debug(s, params);
     }
 
     private List<String> getStartingEntity(AtlasObjectId item, ExportContext context) throws AtlasBaseException {
@@ -330,9 +333,7 @@ public class ExportService {
     }
 
     private void processEntity(String guid, ExportContext context) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> processEntity({})", guid);
-        }
+        debugLog("==> processEntity({})", guid);
 
         if (!context.guidsProcessed.contains(guid)) {
             TraversalDirection      direction         = context.guidDirection.get(guid);
@@ -358,9 +359,7 @@ public class ExportService {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== processEntity({})", guid);
-        }
+        debugLog("<== processEntity({})", guid);
     }
 
     private void getConntedEntitiesBasedOnOption(AtlasEntity entity, ExportContext context, TraversalDirection direction) throws AtlasBaseException {
@@ -403,8 +402,8 @@ public class ExportService {
         for (TraversalDirection direction : directions) {
             String query = getQueryForTraversalDirection(direction);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("==> getConnectedEntityGuids({}): guidsToProcess {} query {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size(), query);
+            if(LOG.isDebugEnabled()) {
+                debugLog("==> getConnectedEntityGuids({}): guidsToProcess {} query {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size(), query);
             }
 
             context.bindings.clear();
@@ -433,8 +432,8 @@ public class ExportService {
                 }
             }
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== getConnectedEntityGuids({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcess.size());
+            if(LOG.isDebugEnabled()) {
+                debugLog("<== getConnectedEntityGuids({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcess.size());
             }
         }
     }
@@ -451,8 +450,8 @@ public class ExportService {
     }
 
     private void getEntityGuidsForFullFetch(AtlasEntity entity, ExportContext context) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> getEntityGuidsForFullFetch({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
+        if(LOG.isDebugEnabled()) {
+            debugLog("==> getEntityGuidsForFullFetch({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
         }
 
         String query = this.gremlinQueryProvider.getQuery(AtlasGremlinQuery.EXPORT_BY_GUID_FULL);
@@ -477,8 +476,9 @@ public class ExportService {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== getEntityGuidsForFullFetch({}): found {} guids; guidsToProcess {}", entity.getGuid(), result.size(), context.guidsToProcess.size());
+        if(LOG.isDebugEnabled()) {
+            debugLog("<== getEntityGuidsForFullFetch({}): found {} guids; guidsToProcess {}",
+                                            entity.getGuid(), result.size(), context.guidsToProcess.size());
         }
     }
 
