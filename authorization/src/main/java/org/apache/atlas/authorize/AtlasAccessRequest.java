@@ -21,17 +21,22 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class AtlasAccessRequest {
     private static Logger LOG = LoggerFactory.getLogger(AtlasAccessRequest.class);
+
+    private static final String DEFAULT_ENTITY_ID_ATTRIBUTE = "qualifiedName";
 
     private final AtlasPrivilege action;
     private final Date           accessTime;
@@ -118,17 +123,31 @@ public class AtlasAccessRequest {
     }
 
     public String getEntityId(AtlasEntityHeader entity) {
-        final String ret;
+        return getEntityId(entity, null);
+    }
 
-        if (entity == null) {
-            ret = null;
-        } else {
-            String qualifiedName = (String) entity.getAttribute("qualifiedName");
+    public String getEntityId(AtlasEntityHeader entity, AtlasTypeRegistry typeRegistry) {
+        Object ret = null;
 
-            ret = qualifiedName;
+        if (entity != null) {
+            AtlasEntityType             entityType     = typeRegistry == null ? null : typeRegistry.getEntityTypeByName(entity.getTypeName());
+            Map<String, AtlasAttribute> uniqAttributes = entityType == null ? null : entityType.getUniqAttributes();
+
+            if (MapUtils.isEmpty(uniqAttributes)) {
+                ret = entity.getAttribute(DEFAULT_ENTITY_ID_ATTRIBUTE);
+            } else {
+                for (AtlasAttribute uniqAttribute : uniqAttributes.values()) {
+                    ret = entity.getAttribute(uniqAttribute.getName());
+
+                    if (ret != null) {
+                        break;
+                    }
+                }
+
+            }
         }
 
-        return ret;
+        return ret == null ? "" : ret.toString();
     }
 
     public Set<String> getClassificationNames(AtlasEntityHeader entity) {

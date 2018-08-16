@@ -77,14 +77,14 @@ public class AtlasEntityType extends AtlasStructType {
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
 
-        this.entityDef = entityDef;
+        this.entityDef  = entityDef;
         this.typeQryStr = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
     }
 
     public AtlasEntityType(AtlasEntityDef entityDef, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super(entityDef);
 
-        this.entityDef = entityDef;
+        this.entityDef  = entityDef;
         this.typeQryStr = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
 
         resolveReferences(typeRegistry);
@@ -114,14 +114,14 @@ public class AtlasEntityType extends AtlasStructType {
             }
         }
 
-        this.superTypes = Collections.unmodifiableList(s);
-        this.allSuperTypes = Collections.unmodifiableSet(allS);
-        this.allAttributes = Collections.unmodifiableMap(allA);
-        this.uniqAttributes = getUniqueAttributes(this.allAttributes);
-        this.subTypes = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
-        this.allSubTypes = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
-        this.typeAndAllSubTypes = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
-        this.relationshipAttributes = new HashMap<>(); // this will be populated in resolveReferencesPhase3()
+        this.superTypes                 = Collections.unmodifiableList(s);
+        this.allSuperTypes              = Collections.unmodifiableSet(allS);
+        this.allAttributes              = Collections.unmodifiableMap(allA);
+        this.uniqAttributes             = getUniqueAttributes(this.allAttributes);
+        this.subTypes                   = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
+        this.allSubTypes                = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
+        this.typeAndAllSubTypes         = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
+        this.relationshipAttributes     = new HashMap<>(); // this will be populated in resolveReferencesPhase3()
         this.relationshipAttributesType = new HashMap<>(); // this will be populated in resolveReferencesPhase3()
 
         this.typeAndAllSubTypes.add(this.getTypeName());

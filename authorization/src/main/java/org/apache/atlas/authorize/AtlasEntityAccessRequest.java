@@ -65,7 +65,7 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
         super(action, userName, userGroups);
 
         this.entity                = entity;
-        this.entityId              = super.getEntityId(entity);
+        this.entityId              = super.getEntityId(entity, typeRegistry);
         this.classification        = classification;
         this.attributeName         = attributeName;
         this.typeRegistry          = typeRegistry;
@@ -106,7 +106,7 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
 
     @Override
     public String toString() {
-        return "AtlasEntityAccessRequest[entity=" + entity + ", classification=" + classification + ", attributeName" + attributeName +
+        return "AtlasEntityAccessRequest[entity=" + entity + ", classification=" + classification + ", attributeName=" + attributeName +
                                          ", action=" + getAction() + ", accessTime=" + getAccessTime() + ", user=" + getUser() +
                                          ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() + "]";
     }
