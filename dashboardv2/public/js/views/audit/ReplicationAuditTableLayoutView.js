@@ -198,7 +198,7 @@ define(['require',
                     var guid = $(e.target).data("guid"),
                         model = that.searchCollection.fullCollection.findWhere({ 'guid': guid }),
                         result = JSON.parse(model.get("resultSummary")),
-                        view = "<table class='table table-bordered table-striped'>" + CommonViewFunction.propertyTable({ scope: that, valueObject: result, attributeDefs: that.attributeDefs, extractJSON: { extractKey: 'value' } }) + "</table>";
+                        view = "<table class='table table-bordered table-striped'>" + CommonViewFunction.propertyTable({ scope: that, valueObject: result, attributeDefs: that.attributeDefs }) + "</table>";
                     var modal = new Modal({
                         title: model.get("operation") + " Details",
                         content: view,
