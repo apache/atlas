@@ -129,7 +129,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
                         var tempVarfor$check = inputOutputField.toString();
                         if (tempVarfor$check.indexOf("$") == -1) {
-                            valueOfArray.push('<span>' + _.escape(inputOutputField) + '</span>');
+                            valueOfArray.push('<span class="json-string">' + _.escape(inputOutputField) + '</span>');
                         }
                     } else if (_.isObject(inputOutputField) && !id) {
                         var attributesList = inputOutputField;
@@ -139,30 +139,26 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 attributesList = attributesList.attributes;
                             }
                         }
-                        _.each(attributesList, function(objValue, objKey) {
-                            var value = objValue,
-                                tempVarfor$check = objKey.toString();
-                            if (tempVarfor$check.indexOf("$") == -1) {
-                                if (_.isObject(value)) {
-                                    value = JSON.stringify(value);
-                                }
-                                if (extractJSON) {
-                                    if (extractJSON && extractJSON.extractKey) {
-                                        if (_.isObject(extractJSON.extractKey)) {
-                                            _.each(extractJSON.extractKey, function(extractKey) {
-                                                if (objKey === extractKey) {
-                                                    valueOfArray.push('<span>' + _.escape(objKey) + ':' + _.escape(value) + '</span>');
-                                                }
-                                            });
-                                        } else if (_.isString(extractJSON.extractKey) && extractJSON.extractKey === objKey) {
-                                            valueOfArray.push(_.escape(value));
+
+                        if (extractJSON && extractJSON.extractKey) {
+                            var newAttributesList = {};
+                            _.each(attributesList, function(objValue, objKey) {
+                                var value = _.isObject(objValue) ? objValue : _.escape(objValue);
+                                if (_.isObject(extractJSON.extractKey)) {
+                                    _.each(extractJSON.extractKey, function(extractKey) {
+                                        if (objKey === extractKey) {
+                                            newAttributesList[_.escape(objKey)] = value;
                                         }
-                                    }
-                                } else {
-                                    valueOfArray.push('<span>' + _.escape(objKey) + ':' + _.escape(value) + '</span>');
+                                    });
+                                } else if (_.isString(extractJSON.extractKey) && extractJSON.extractKey === objKey) {
+                                    newAttributesList[_.escape(objKey)] = value;
                                 }
-                            }
-                        });
+                            });
+                            valueOfArray.push(Utils.JSONPrettyPrint(newAttributesList));
+                        } else {
+                            valueOfArray.push(Utils.JSONPrettyPrint(attributesList));
+                        }
+
                     }
                     if (id && inputOutputField) {
                         var name = Utils.getName(inputOutputField);
@@ -229,7 +225,19 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 val = _.escape(keyValue);
             }
             if (isTable) {
-                table += '<tr><td>' + _.escape(key) + '</td><td><div ' + (_.isObject(valueObject[key]) ? 'class="scroll-y"' : '') + '>' + val + '</div></td></tr>';
+                var htmlTag = '<div class="scroll-y">' + val + '</div>';
+                if (_.isObject(valueObject[key])) {
+                    var matchedLinkString = val.match(/href|value-loader\w*/g),
+                        matchedJson = val.match(/json-value|json-string\w*/g),
+                        isMatchLinkStringIsSingle = matchedLinkString && matchedLinkString.length == 1,
+                        isMatchJSONStringIsSingle = matchedJson && matchedJson.length == 1,
+                        expandCollapseButton = "";
+                    if ((matchedJson && !isMatchJSONStringIsSingle) || (matchedLinkString && !isMatchLinkStringIsSingle)) {
+                        var expandCollapseButton = '<button class="expand-collapse-button"><i class="fa"></i></button>'
+                    }
+                    var htmlTag = '<pre class="shrink code-block ' + (isMatchJSONStringIsSingle ? 'fixed-height' : '') + '">' + expandCollapseButton + '<code>' + val + '</code></pre>';
+                }
+                table += '<tr><td>' + _.escape(key) + '</td><td>' + htmlTag + '</td></tr>';
             } else {
                 table += '<div>' + val + '</div>';
             }

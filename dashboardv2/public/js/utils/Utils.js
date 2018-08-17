@@ -664,6 +664,30 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
         return regexp.test(url);
     }
+
+    Utils.JSONPrettyPrint = function(obj) {
+        var replacer = function(match, pIndent, pKey, pVal, pEnd) {
+                var key = '<span class=json-key>';
+                var val = '<span class=json-value>';
+                var str = '<span class=json-string>';
+                var r = pIndent || '';
+                if (pKey)
+                    r = r + key + pKey.replace(/[": ]/g, '') + '</span>: ';
+                if (pVal)
+                    r = r + (pVal[0] == '"' ? str : val) + pVal + '</span>';
+                return r + (pEnd || '');
+            },
+            jsonLine = /^( *)("[\w]+": )?("[^"]*"|[\w.+-]*)?([,[{])?$/mg;
+        if (obj && _.isObject(obj)) {
+            return JSON.stringify(obj, null, 3)
+                .replace(/&/g, '&amp;').replace(/\\"/g, '&quot;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(jsonLine, replacer);
+        } else {
+            return {};
+        }
+    };
+
     $.fn.toggleAttribute = function(attributeName, firstString, secondString) {
         if (this.attr(attributeName) == firstString) {
             this.attr(attributeName, secondString);
@@ -707,8 +731,15 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             $('body').removeAttr("style");
             $(this).trigger('fullscreen_done', [$(this).parents('.panel')]);
         }
-
-
+    });
+    
+    $('body').on('click', 'pre.code-block .expand-collapse-button', function(e) {
+        var $el = $(this).parents('.code-block');
+        if ($el.hasClass('shrink')) {
+            $el.removeClass('shrink');
+        } else {
+            $el.addClass('shrink');
+        }
     });
     return Utils;
 });

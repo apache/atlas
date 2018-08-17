@@ -57,3 +57,80 @@
         }
     }
 }
+
+pre {
+    background-color: ghostwhite;
+    border: 1px solid silver;
+    padding: 10px;
+    white-space: -moz-pre-wrap;
+    /* Mozilla, supported since 1999 */
+    white-space: -pre-wrap;
+    /* Opera */
+    white-space: -o-pre-wrap;
+    /* Opera */
+    white-space: pre-wrap;
+    /* CSS3 - Text module (Candidate Recommendation) http://www.w3.org/TR/css3-text/#white-space */
+    word-wrap: break-word;
+    /* IE 5.5+ */
+    &.code-block {
+        code {
+            position: relative;
+            max-height: 400px;
+            display: block;
+            overflow: auto;
+        }
+        position: relative;
+        overflow: hidden;
+        &.shrink {
+            height: 40px;
+            white-space: -moz-pre-wrap;
+            /* Mozilla, supported since 1999 */
+            white-space: -pre-wrap;
+            /* Opera */
+            white-space: -o-pre-wrap;
+            /* Opera */
+            white-space: pre-wrap;
+            /* CSS3 - Text module (Candidate Recommendation) http://www.w3.org/TR/css3-text/#white-space */
+            word-wrap: break-word;
+            /* IE 5.5+ */
+            code {
+                height: 40px;
+            }
+            &.fixed-height {
+                height: 75px;
+                code {
+                    height: 54px;
+                }
+            }
+            &.medium-height {
+                height: 100px;
+            }
+            .expand-collapse-button {
+                i:before {
+                    content: "\f107";
+                }
+            }
+        }
+        .expand-collapse-button {
+            position: absolute;
+            right: 3px;
+            top: 4px;
+            z-index: 1;
+            i:before {
+                content: "\f106";
+            }
+        }
+        .json-key {
+            color: brown;
+        }
+        .json-value {
+            color: navy;
+        }
+        .json-string {
+            color: olive;
+        }
+    }
+    code {
+        font-family: monospace;
+    }
+}
