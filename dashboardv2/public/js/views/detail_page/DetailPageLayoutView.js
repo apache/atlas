@@ -44,6 +44,7 @@ define(['require',
                 RTagTableLayoutView: "#r_tagTableLayoutView",
                 RLineageLayoutView: "#r_lineageLayoutView",
                 RAuditTableLayoutView: "#r_auditTableLayoutView",
+                RReplicationAuditTableLayoutView: "#r_replicationAuditTableLayoutView",
                 RTermTableLayoutView: "#r_termTableLayoutView",
                 RProfileLayoutView: "#r_profileLayoutView"
 
@@ -203,6 +204,12 @@ define(['require',
                             typeName: collectionJSON.typeName,
                             value: that.value
                         }));
+                    }
+
+                    //to display ReplicationAudit tab
+                    if (collectionJSON && collectionJSON.typeName === "AtlasCluster") {
+                        this.$('.replicationTab').show();
+                        this.renderReplicationAuditTableLayoutView(obj);
                     }
 
                     // To render Schema check attribute "schemaElementsAttribute"
@@ -423,6 +430,12 @@ define(['require',
                 var that = this;
                 require(['views/audit/AuditTableLayoutView'], function(AuditTableLayoutView) {
                     that.RAuditTableLayoutView.show(new AuditTableLayoutView(obj));
+                });
+            },
+            renderReplicationAuditTableLayoutView: function(obj) {
+                var that = this;
+                require(['views/audit/ReplicationAuditTableLayoutView'], function(ReplicationAuditTableLayoutView) {
+                    that.RReplicationAuditTableLayoutView.show(new ReplicationAuditTableLayoutView(obj));
                 });
             },
             renderProfileLayoutView: function(obj) {

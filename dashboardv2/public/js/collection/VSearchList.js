@@ -58,6 +58,16 @@ define(['require',
                     return resp.entities ? resp.entities : [];
                 }
             },
+            getExpimpAudit: function(params, options) {
+                var url = UrlLinks.expimpAudit(params);
+
+                options = _.extend({
+                    contentType: 'application/json',
+                    dataType: 'json',
+                }, options);
+
+                return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
+            },
             getBasicRearchResult: function(options) {
                 var url = UrlLinks.searchApiUrl('basic');
 

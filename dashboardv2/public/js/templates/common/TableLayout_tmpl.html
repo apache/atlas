@@ -26,6 +26,12 @@
     <div class="clearfix banded">
         <div data-id="r_footerRecords" class="margin-top-10"></div>
     </div>
+    {{/if}} {{#if includeAtlasPagination}}
+    <div class="row form-group pagination-box filter-box">
+        <div class="col-sm-3">
+            <span class="labelShowRecord pull-left" data-id="pageRecordText"> </span>
+        </div>
+    </div>
     {{/if}}
     <div class="position-relative thick-border">
         <div data-id="r_tableList" class="table-responsive tableBorder"> </div>
@@ -46,6 +52,50 @@
                         <span class="control-label-sm inline ">Page Limit :</span>
                         <div class="select inline" style="width: 80px;">
                             <select data-id="pageSize" class="form-control"></select>
+                        </div>
+                    </div>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+    </div>
+    {{/if}} {{#if includeAtlasPagination}}
+    <div class="row pagination-box">
+        <div class="col-sm-offset-4 col-sm-8">
+            <div class="inline-content-fr">
+                <div class="backgrid-paginator inline">
+                    <ul class="" data-id="paginationDiv" style="display:none">
+                        <li>
+                            <button type="button" data-id="previousData" title="Previous" disabled=true>
+                                <i class="fa fa-angle-left" aria-hidden="true"></i>
+                            </button>
+                        </li>
+                        <li class="active">
+                            <a href="javascript:void(0)" data-id="activePage"></a>
+                        </li>
+                        <li>
+                            <button type="button" data-id="nextData" title="Next">
+                                <i class="fa fa-angle-right" aria-hidden="true"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                {{#if includeAtlasGotoPage}}
+                <div class="inline col-sm-4" data-id="paginationDiv" style="display:none">
+                    <div class="input-group" data-id="goToPageDiv">
+                        <input type="text" class="form-control number-input" data-id="gotoPage" placeholder="Goto Page" />
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button" data-id="gotoPagebtn" title="Goto Page" disabled="disabled">Go!</button>
+                        </span>
+                    </div>
+                </div>
+                {{/if}} {{#if includeAtlasPageSize}}
+                <div class="inline">
+                    <div class="form-group inline-content">
+                        <span class="control-label-sm inline ">Page Limit :</span>
+                        <div class="inline" style="width: 80px;">
+                            <select data-id="showPage" multiple="multiple" class="form-control">
+                            </select>
                         </div>
                     </div>
                 </div>

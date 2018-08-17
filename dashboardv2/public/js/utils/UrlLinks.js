@@ -87,8 +87,28 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         entityCollectionaudit: function(guid) {
             return this.baseUrl + '/entities/' + guid + '/audit';
         },
-        replicationCollectionaudit: function(name) {
-            return this.baseUrl + '/admin/cluster/audit/' + name;
+        expimpAudit: function(options) {
+            var url = this.baseUrl + '/admin/expimp/audit',
+                queryParam = [];
+            if (options) {
+                var clusterName = options.clusterName,
+                    limit = options.limit,
+                    offset = options.offset;
+            }
+
+            if (clusterName) {
+                queryParam.push("clusterName=" + sourceClusterName);
+            }
+            if (limit) {
+                queryParam.push("limit=" + limit);
+            }
+            if (offset) {
+                queryParam.push("offset=" + offset);
+            }
+            if (queryParam.length > 0) {
+                url = url + "?" + queryParam.join("&");
+            }
+            return url;
         },
         classicationApiUrl: function(name, guid) {
             var typeUrl = this.typedefsUrl();

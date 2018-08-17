@@ -70,7 +70,7 @@ define(['require',
                 showPage: "[data-id='showPage']",
                 gotoPage: "[data-id='gotoPage']",
                 gotoPagebtn: "[data-id='gotoPagebtn']",
-                activePage: "[data-id='activePage']",
+                activePage: "[data-id='activePage']"
             },
             templateHelpers: function() {
                 return {

@@ -88,6 +88,7 @@
                                 <li role="terms"><a href="#tab-termTable" aria-controls="tab-termTable" role="tab" data-toggle="tab">Terms</a></li>
                                 {{/if}}
                                 <li role="audits" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
+                                <li role="raudits" class="tab replicationTab" style="display:none"><a href="#tab-raudit" aria-controls="tab-raudit" role="tab" data-toggle="tab">Replication Audits</a></li>
                                 <li role="schema" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
                                 <li role="profile" class="tab profileTab" style="display:none"><a href="#tab-profile" aria-controls="tab-profile" role="tab" data-toggle="tab">Profile</a></li>
                             </ul>
@@ -117,6 +118,13 @@
                         </div>
                         <div id="tab-audit" role="audits" class="tab-pane">
                             <div id="r_auditTableLayoutView">
+                                <div class="fontLoader-relative">
+                                    <i class="fa fa-refresh fa-spin-custom"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="tab-raudit" role="raudits" class="tab-pane">
+                            <div id="r_replicationAuditTableLayoutView">
                                 <div class="fontLoader-relative">
                                     <i class="fa fa-refresh fa-spin-custom"></i>
                                 </div>
