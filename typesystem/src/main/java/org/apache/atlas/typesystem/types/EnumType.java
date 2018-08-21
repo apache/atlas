@@ -28,7 +28,7 @@ import java.security.MessageDigest;
 
 public class EnumType extends AbstractDataType<EnumValue> {
 
-    public final TypeSystem typeSystem;
+    public TypeSystem typeSystem;
     public final ImmutableMap<String, EnumValue> valueMap;
     public final ImmutableMap<Integer, EnumValue> ordinalMap;
 
@@ -47,6 +47,10 @@ public class EnumType extends AbstractDataType<EnumValue> {
         }
         valueMap = b1.build();
         ordinalMap = b2.build();
+    }
+
+    public void setTypeSystem(TypeSystem typeSystem) {
+        this.typeSystem = typeSystem;
     }
 
     @Override

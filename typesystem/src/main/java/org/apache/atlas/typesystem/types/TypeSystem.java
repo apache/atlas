@@ -345,6 +345,9 @@ public class TypeSystem {
             String typeName = typeEntry.getKey();
             IDataType type = typeEntry.getValue();
             //Add/replace the new type in the typesystem
+
+            type.setTypeSystem(this);
+
             typeCache.put(type);
         }
     }

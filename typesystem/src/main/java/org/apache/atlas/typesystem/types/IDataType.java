@@ -55,5 +55,7 @@ public interface IDataType<T> {
     void updateSignatureHash(MessageDigest digester, Object val) throws AtlasException;
 
     String getDescription();
+
+    void setTypeSystem(TypeSystem typeSystem);
 }
 

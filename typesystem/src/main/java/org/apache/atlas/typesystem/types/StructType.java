@@ -35,7 +35,7 @@ import org.apache.atlas.typesystem.ITypedStruct;
 
 public class StructType extends AbstractDataType<IStruct> implements IConstructableType<IStruct, ITypedStruct> {
 
-    public final TypeSystem typeSystem;
+    public TypeSystem typeSystem;
     public final FieldMapping fieldMapping;
     public final Map<AttributeInfo, List<String>> infoToNameMap;
     public final int numFields;
@@ -58,6 +58,10 @@ public class StructType extends AbstractDataType<IStruct> implements IConstructa
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(this.fieldMapping);
         this.numFields = this.fieldMapping.fields.size();
         this.handler = new TypedStructHandler(this);
+    }
+
+    public void setTypeSystem(TypeSystem typeSystem) {
+        this.typeSystem = typeSystem;
     }
 
     public FieldMapping fieldMapping() {

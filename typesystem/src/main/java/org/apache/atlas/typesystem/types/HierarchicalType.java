@@ -50,7 +50,7 @@ import java.util.Set;
  */
 public abstract class HierarchicalType<ST extends HierarchicalType, T> extends AbstractDataType<T> {
 
-    public final TypeSystem typeSystem;
+    public TypeSystem typeSystem;
     public final Class<ST> superTypeClass;
     public final FieldMapping fieldMapping;
     public final int numFields;
@@ -95,6 +95,10 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
         this.numFields = this.fieldMapping.fields.size();
         this.superTypes = superTypes == null ? ImmutableSet.<String>of() : superTypes;
         this.immediateAttrs = ImmutableList.copyOf(fields);
+    }
+
+    public void setTypeSystem(TypeSystem typeSystem) {
+        this.typeSystem = typeSystem;
     }
 
     public FieldMapping fieldMapping() {
