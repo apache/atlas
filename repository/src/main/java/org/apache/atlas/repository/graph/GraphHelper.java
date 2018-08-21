@@ -26,6 +26,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
@@ -76,6 +77,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.ATTRIBUTE_KEY_PROPERTY_KEY;
@@ -124,7 +126,7 @@ public final class GraphHelper {
         try {
             maxRetries           = ApplicationProperties.get().getInt(RETRY_COUNT, 3);
             retrySleepTimeMillis = ApplicationProperties.get().getLong(RETRY_DELAY, 1000);
-            removePropagations   = ApplicationProperties.get().getBoolean(DEFAULT_REMOVE_PROPAGATIONS_ON_ENTITY_DELETE, true);
+            removePropagations   = ApplicationProperties.get().getBoolean(DEFAULT_REMOVE_PROPAGATIONS_ON_ENTITY_DELETE, false);
         } catch (AtlasException e) {
             LOG.error("Could not load configuration. Setting to default value for " + RETRY_COUNT, e);
         }
@@ -1295,6 +1297,10 @@ public final class GraphHelper {
 
     public static long getModifiedTime(AtlasElement element){
         return element.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+    }
+
+    public static boolean isActive(AtlasEntity entity) {
+        return entity != null ? entity.getStatus() == ACTIVE : false;
     }
 
     /**

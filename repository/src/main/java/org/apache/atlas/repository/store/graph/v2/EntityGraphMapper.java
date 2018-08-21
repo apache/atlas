@@ -1530,6 +1530,7 @@ public class EntityGraphMapper {
         AtlasEntityType           entityType             = typeRegistry.getEntityTypeByName(entityTypeName);
         List<AtlasClassification> updatedClassifications = new ArrayList<>();
         List<AtlasVertex>         entitiesToPropagateTo  = new ArrayList<>();
+        Set<AtlasVertex>          notificationVertices   = new HashSet<AtlasVertex>() {{ add(entityVertex); }};
 
         Map<AtlasVertex, List<AtlasClassification>> addedPropagations   = null;
         Map<AtlasVertex, List<AtlasClassification>> removedPropagations = null;
@@ -1583,8 +1584,20 @@ public class EntityGraphMapper {
                 isClassificationUpdated = true;
             }
 
-            if (isClassificationUpdated && CollectionUtils.isEmpty(entitiesToPropagateTo)) {
-                entitiesToPropagateTo = graphHelper.getImpactedVerticesWithRestrictions(guid, classificationVertex.getIdForDisplay());
+            // check for removePropagationsOnEntityDelete update
+            Boolean currentRemovePropagations = currentClassification.getRemovePropagationsOnEntityDelete();
+            Boolean updatedRemovePropagations = classification.getRemovePropagationsOnEntityDelete();
+
+            if (updatedRemovePropagations != null && (updatedRemovePropagations != currentRemovePropagations)) {
+                AtlasGraphUtilsV2.setProperty(classificationVertex, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, updatedRemovePropagations);
+
+                isClassificationUpdated = true;
+            }
+
+            if (isClassificationUpdated) {
+                List<AtlasVertex> propagatedEntityVertices = graphHelper.getAllPropagatedEntityVertices(classificationVertex);
+
+                notificationVertices.addAll(propagatedEntityVertices);
             }
 
             if (LOG.isDebugEnabled()) {
@@ -1644,19 +1657,8 @@ public class EntityGraphMapper {
                 }
             }
 
-            // handle update of 'removePropagationsOnEntityDelete' flag
-            Boolean currentRemovePropagations = currentClassification.getRemovePropagationsOnEntityDelete();
-            Boolean updatedRemovePropagations = classification.getRemovePropagationsOnEntityDelete();
-
-            if (updatedRemovePropagations != null && (updatedRemovePropagations != currentRemovePropagations)) {
-                AtlasGraphUtilsV2.setProperty(classificationVertex, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, updatedRemovePropagations);
-            }
-
             updatedClassifications.add(currentClassification);
         }
-
-        // notify listeners on classification update
-        List<AtlasVertex> notificationVertices = new ArrayList<AtlasVertex>() {{ add(entityVertex); }};
 
         if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
             notificationVertices.addAll(entitiesToPropagateTo);
@@ -1667,7 +1669,9 @@ public class EntityGraphMapper {
             AtlasEntityWithExtInfo    entityWithExtInfo = instanceConverter.getAndCacheEntity(entityGuid);
             AtlasEntity               entity            = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
 
-            entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
+            if (isActive(entity)) {
+                entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
+            }
         }
 
         if (removedPropagations != null) {
@@ -1678,7 +1682,9 @@ public class EntityGraphMapper {
                 AtlasEntityWithExtInfo    entityWithExtInfo      = instanceConverter.getAndCacheEntity(entityGuid);
                 AtlasEntity               entity                 = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
 
-                entityChangeNotifier.onClassificationDeletedFromEntity(entity, removedClassifications);
+                if (isActive(entity)) {
+                    entityChangeNotifier.onClassificationDeletedFromEntity(entity, removedClassifications);
+                }
             }
         }
     }
