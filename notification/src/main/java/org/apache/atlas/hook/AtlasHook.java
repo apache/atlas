@@ -113,13 +113,13 @@ public abstract class AtlasHook {
 
         if (isAsync) {
             int  minThreads      = atlasProperties.getInt(ATLAS_NOTIFICATION_ASYNCHRONOUS_MIN_THREADS, 1);
-            int  maxThreads      = atlasProperties.getInt(ATLAS_NOTIFICATION_ASYNCHRONOUS_MAX_THREADS, 5);
+            int  maxThreads      = atlasProperties.getInt(ATLAS_NOTIFICATION_ASYNCHRONOUS_MAX_THREADS, 1);
             long keepAliveTimeMs = atlasProperties.getLong(ATLAS_NOTIFICATION_ASYNCHRONOUS_KEEP_ALIVE_TIME_MS, 10000);
             int  queueSize       = atlasProperties.getInt(ATLAS_NOTIFICATION_ASYNCHRONOUS_QUEUE_SIZE, 10000);
 
             executor = new ThreadPoolExecutor(minThreads, maxThreads, keepAliveTimeMs, TimeUnit.MILLISECONDS,
                                               new LinkedBlockingDeque<>(queueSize),
-                                              new ThreadFactoryBuilder().setNameFormat("Atlas Notifier %d").build());
+                                              new ThreadFactoryBuilder().setNameFormat("Atlas Notifier %d").setDaemon(true).build());
 
             ShutdownHookManager.get().addShutdownHook(new Thread() {
                 @Override
