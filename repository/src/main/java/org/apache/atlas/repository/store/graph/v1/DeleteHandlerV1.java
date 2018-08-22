@@ -153,6 +153,9 @@ public abstract class DeleteHandlerV1 {
                 continue;
             }
 
+            // re-evaluate tag propagation
+            removeTagPropagation(edge);
+
             deleteEdge(edge, isInternal || forceDelete);
         }
     }
