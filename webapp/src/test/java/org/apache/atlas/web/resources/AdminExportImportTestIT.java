@@ -109,14 +109,14 @@ public class AdminExportImportTestIT extends BaseResourceIT {
     }
 
     @AfterClass
-    protected void teardown() {
+    public void teardown() {
         AtlasImportRequest request = new AtlasImportRequest();
         request.getOptions().put(AtlasImportRequest.TRANSFORMS_KEY, IMPORT_TRANSFORM_SET_DELETED);
 
         try {
             performImport(FILE_TO_IMPORT, request);
         } catch (AtlasServiceException e) {
-            throw new SkipException("performTeardown: failed! Subsequent tests results may be affected.", e);
+            throw new SkipException("performTeardown: failed! Subsequent tests results may be affected.");
         }
     }
 }
