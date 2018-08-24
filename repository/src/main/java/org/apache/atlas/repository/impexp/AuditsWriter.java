@@ -28,18 +28,15 @@ import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.inject.Inject;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -101,6 +98,11 @@ public class AuditsWriter {
     private AtlasCluster saveCluster(String clusterName, String entityGuid, long lastModifiedTimestamp) throws AtlasBaseException {
         AtlasCluster cluster = new AtlasCluster(clusterName, clusterName);
         cluster.setAdditionalInfoRepl(entityGuid, lastModifiedTimestamp);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("saveCluster: {}", cluster);
+        }
+
         return clusterService.save(cluster);
     }
 
@@ -116,68 +118,77 @@ public class AuditsWriter {
 
     private class ExportAudits {
         private AtlasExportRequest request;
-        private AtlasCluster cluster;
         private String targetClusterName;
         private String optionKeyReplicatedTo;
         private boolean replicationOptionState;
 
-        public void add(String userName, AtlasExportResult result, long startTime, long endTime, List<String> entitityGuids) throws AtlasBaseException {
+        public void add(String userName, AtlasExportResult result,
+                        long startTime, long endTime,
+                        List<String> entityGuids) throws AtlasBaseException {
             optionKeyReplicatedTo = AtlasExportRequest.OPTION_KEY_REPLICATED_TO;
             request = result.getRequest();
             replicationOptionState = isReplicationOptionSet(request.getOptions(), optionKeyReplicatedTo);
-            targetClusterName = getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedTo);
 
-            cluster = saveCluster(getCurrentClusterName());
+            saveClusters();
 
             auditService.add(userName, getCurrentClusterName(), targetClusterName,
                     ExportImportAuditEntry.OPERATION_EXPORT,
-                    AtlasType.toJson(result), startTime, endTime, !entitityGuids.isEmpty());
+                    AtlasType.toJson(result), startTime, endTime, !entityGuids.isEmpty());
 
-            updateReplicationAttributeForExport(request, entitityGuids);
-        }
-
-        private void updateReplicationAttributeForExport(AtlasExportRequest request, List<String> entityGuids) throws AtlasBaseException {
-            if(!replicationOptionState) {
+            if (result.getOperationStatus() == AtlasExportResult.OperationStatus.FAIL) {
                 return;
             }
 
             updateReplicationAttribute(replicationOptionState, targetClusterName,
-                    entityGuids, Constants.ATTR_NAME_REPLICATED_TO_CLUSTER, 0L);
+                    entityGuids, Constants.ATTR_NAME_REPLICATED_TO_CLUSTER, result.getLastModifiedTimestamp());
+        }
+
+        private void saveClusters() throws AtlasBaseException {
+            saveCluster(getCurrentClusterName());
+
+            targetClusterName = getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedTo);
+            if(StringUtils.isNotEmpty(targetClusterName)) {
+                saveCluster(targetClusterName);
+            }
         }
     }
 
     private class ImportAudits {
         private AtlasImportRequest request;
         private boolean replicationOptionState;
-        private AtlasCluster cluster;
+        private String sourceClusterName;
+        private AtlasCluster sourceCluster;
         private String optionKeyReplicatedFrom;
-        private AtlasImportResult result;
 
-        public void add(String userName, AtlasImportResult result, long startTime, long endTime, List<String> entitityGuids) throws AtlasBaseException {
-            this.result = result;
-            request = result.getRequest();
+        public void add(String userName, AtlasImportResult result,
+                        long startTime, long endTime,
+                        List<String> entityGuids) throws AtlasBaseException {
             optionKeyReplicatedFrom = AtlasImportRequest.OPTION_KEY_REPLICATED_FROM;
+            request = result.getRequest();
             replicationOptionState = isReplicationOptionSet(request.getOptions(), optionKeyReplicatedFrom);
 
-            String sourceCluster = getClusterNameFromOptionsState();
-            cluster = saveCluster(sourceCluster);
+            saveClusters();
 
             auditService.add(userName,
-                    sourceCluster, getCurrentClusterName(),
-                    ExportImportAuditEntry.OPERATION_IMPORT, AtlasType.toJson(result), startTime, endTime, !entitityGuids.isEmpty());
+                    sourceClusterName, getCurrentClusterName(),
+                    ExportImportAuditEntry.OPERATION_IMPORT,
+                    AtlasType.toJson(result), startTime, endTime, !entityGuids.isEmpty());
 
-            updateReplicationAttributeForImport(entitityGuids);
+            if(result.getOperationStatus() == AtlasImportResult.OperationStatus.FAIL) {
+                return;
+            }
+
+            updateReplicationAttribute(replicationOptionState, this.sourceClusterName, entityGuids,
+                    Constants.ATTR_NAME_REPLICATED_FROM_CLUSTER, result.getExportResult().getLastModifiedTimestamp());
         }
 
-        private void updateReplicationAttributeForImport(List<String> entityGuids) throws AtlasBaseException {
-            if(!replicationOptionState) return;
+        private void saveClusters() throws AtlasBaseException {
+            saveCluster(getCurrentClusterName());
 
-            String targetClusterName = cluster.getName();
-
-            updateReplicationAttribute(replicationOptionState, targetClusterName,
-                    entityGuids,
-                    Constants.ATTR_NAME_REPLICATED_FROM_CLUSTER,
-                    result.getExportResult().getLastModifiedTimestamp());
+            sourceClusterName = getClusterNameFromOptionsState();
+            if(StringUtils.isNotEmpty(sourceClusterName)) {
+                this.sourceCluster = saveCluster(sourceClusterName);
+            }
         }
 
         private String getClusterNameFromOptionsState() {
