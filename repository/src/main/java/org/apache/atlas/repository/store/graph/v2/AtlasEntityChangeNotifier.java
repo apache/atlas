@@ -61,6 +61,7 @@ import java.util.Set;
 
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
+import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
 import static org.apache.atlas.util.AtlasRepositoryConfiguration.isV2EntityNotificationEnabled;
 
 
@@ -455,7 +456,7 @@ public class AtlasEntityChangeNotifier {
             try {
                 String fullText = fullTextMapperV2.getIndexTextForEntity(guid);
 
-                GraphHelper.setProperty(vertex, Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
+                AtlasGraphUtilsV2.setEncodedProperty(vertex, ENTITY_TEXT_PROPERTY_KEY, fullText);
             } catch (AtlasBaseException e) {
                 LOG.error("FullText mapping failed for Vertex[ guid = {} ]", guid, e);
             }
@@ -482,10 +483,10 @@ public class AtlasEntityChangeNotifier {
 
         try {
             String classificationFullText = fullTextMapperV2.getIndexTextForClassifications(entityId, classifications);
-            String existingFullText = (String) GraphHelper.getProperty(atlasVertex, Constants.ENTITY_TEXT_PROPERTY_KEY);
+            String existingFullText       = AtlasGraphUtilsV2.getEncodedProperty(atlasVertex, ENTITY_TEXT_PROPERTY_KEY, String.class);
+            String newFullText            = existingFullText + " " + classificationFullText;
 
-            String newFullText = existingFullText + " " + classificationFullText;
-            GraphHelper.setProperty(atlasVertex, Constants.ENTITY_TEXT_PROPERTY_KEY, newFullText);
+            AtlasGraphUtilsV2.setEncodedProperty(atlasVertex, ENTITY_TEXT_PROPERTY_KEY, newFullText);
         } catch (AtlasBaseException e) {
             LOG.error("FullText mapping failed for Vertex[ guid = {} ]", entityId, e);
         }

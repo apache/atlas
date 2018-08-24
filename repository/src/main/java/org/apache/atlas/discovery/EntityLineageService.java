@@ -61,6 +61,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
+
 @Service
 public class EntityLineageService implements AtlasLineageService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityLineageService.class);
@@ -222,7 +224,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasVertex outVertex    = edge.getOutVertex();
         String      inGuid       = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
         String      outGuid      = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
-        String      relationGuid = AtlasGraphUtilsV2.getProperty(edge, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
+        String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
         boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
         if (!entities.containsKey(inGuid)) {

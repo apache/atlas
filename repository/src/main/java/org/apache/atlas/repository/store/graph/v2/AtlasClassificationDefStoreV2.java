@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
+
 /**
  * ClassificationDef store in v1 format.
  */
@@ -301,7 +303,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         AtlasVertex ret = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.TRAIT);
 
-        String typeName = AtlasGraphUtilsV2.getProperty(ret, Constants.TYPENAME_PROPERTY_KEY, String.class);
+        String typeName = AtlasGraphUtilsV2.getEncodedProperty(ret, TYPENAME_PROPERTY_KEY, String.class);
 
         if (AtlasGraphUtilsV2.typeHasInstanceVertex(typeName)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, typeName);

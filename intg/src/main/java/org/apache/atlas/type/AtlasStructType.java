@@ -642,6 +642,14 @@ public class AtlasStructType extends AtlasType {
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
     }
 
+    public String getQualifiedAttributePropertyKey(String attrName) throws AtlasBaseException {
+        if ( allAttributes.containsKey(attrName)) {
+            return allAttributes.get(attrName).getVertexPropertyName();
+        }
+
+        throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
+    }
+
     AtlasEntityType getReferencedEntityType(AtlasType type) {
         if (type instanceof AtlasArrayType) {
             type = ((AtlasArrayType)type).getElementType();
@@ -853,12 +861,12 @@ public class AtlasStructType extends AtlasType {
             return attrName.contains(".") ? attrName : String.format("%s.%s", typeName, attrName);
         }
 
+        // Keys copied from org.janusgraph.graphdb.types.system.SystemTypeManager.RESERVED_CHARS
+        // JanusGraph checks that these chars are not part of any keys hence encoding
         private static String[][] RESERVED_CHAR_ENCODE_MAP = new String[][] {
                 new String[] { "{",  "_o" },
                 new String[] { "}",  "_c" },
                 new String[] { "\"", "_q" },
-                new String[] { "$",  "_d" },
-                new String[] { "%", "_p"  },
         };
 
         private static final char[] IDX_QRY_OFFENDING_CHARS = { '@', '/', ' ', '-' };

@@ -284,12 +284,12 @@ public final class EntityGraphRetriever {
     public AtlasClassification toAtlasClassification(AtlasVertex classificationVertex) throws AtlasBaseException {
         AtlasClassification ret = new AtlasClassification(getTypeName(classificationVertex));
 
-        ret.setEntityGuid(AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
+        ret.setEntityGuid(AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
         ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
         ret.setPropagate(isPropagationEnabled(classificationVertex));
         ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
 
-        String strValidityPeriods = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
+        String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
 
         if (strValidityPeriods != null) {
             ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));

@@ -70,6 +70,10 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
+import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationName;
@@ -353,7 +357,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                     String attrVertexProperty = attr.getVertexPropertyName();
                     Object attrValue          = relationship.getAttribute(attrName);
 
-                    AtlasGraphUtilsV2.setProperty(ret, attrVertexProperty, attrValue);
+                    AtlasGraphUtilsV2.setEncodedProperty(ret, attrVertexProperty, attrValue);
                 }
             }
         } catch (RepositoryException e) {
@@ -380,7 +384,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 String attrVertexProperty = attr.getVertexPropertyName();
 
                 if (relationship.hasAttribute(attrName)) {
-                    AtlasGraphUtilsV2.setProperty(relationshipEdge, attrVertexProperty, relationship.getAttribute(attrName));
+                    AtlasGraphUtilsV2.setEncodedProperty(relationshipEdge, attrVertexProperty, relationship.getAttribute(attrName));
                 }
             }
         }
@@ -485,7 +489,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
 
             // Update propagation edge
-            AtlasGraphUtilsV2.setProperty(edge, Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, newTagPropagation.name());
+            AtlasGraphUtilsV2.setEncodedProperty(edge, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, newTagPropagation.name());
 
             List<AtlasVertex>                   updatedClassificationVertices = getClassificationVertices(edge);
             List<AtlasVertex>                   classificationVerticesUnion   = (List<AtlasVertex>) CollectionUtils.union(currentClassificationVertices, updatedClassificationVertices);
@@ -741,10 +745,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             String relationshipGuid = relationship.getGuid();
             final String guid = AtlasTypeUtil.isAssignedGuid(relationshipGuid) ? relationshipGuid : UUID.randomUUID().toString();
 
-            AtlasGraphUtilsV2.setProperty(ret, Constants.ENTITY_TYPE_PROPERTY_KEY, relationship.getTypeName());
-            AtlasGraphUtilsV2.setProperty(ret, Constants.RELATIONSHIP_GUID_PROPERTY_KEY, guid);
-            AtlasGraphUtilsV2.setProperty(ret, Constants.VERSION_PROPERTY_KEY, getRelationshipVersion(relationship));
-            AtlasGraphUtilsV2.setProperty(ret, Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, tagPropagation.name());
+            AtlasGraphUtilsV2.setEncodedProperty(ret, ENTITY_TYPE_PROPERTY_KEY, relationship.getTypeName());
+            AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIP_GUID_PROPERTY_KEY, guid);
+            AtlasGraphUtilsV2.setEncodedProperty(ret, VERSION_PROPERTY_KEY, getRelationshipVersion(relationship));
+            AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, tagPropagation.name());
 
             // blocked propagated classifications
             handleBlockedClassifications(ret, relationship.getBlockedPropagatedClassifications());
