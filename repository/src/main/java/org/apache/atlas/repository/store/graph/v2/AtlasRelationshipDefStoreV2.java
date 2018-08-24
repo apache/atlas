@@ -345,7 +345,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
-        String typeName = AtlasGraphUtilsV2.getProperty(ret, Constants.TYPENAME_PROPERTY_KEY, String.class);
+        String typeName = AtlasGraphUtilsV2.getEncodedProperty(ret, Constants.TYPENAME_PROPERTY_KEY, String.class);
 
         if (AtlasGraphUtilsV2.relationshipTypeHasInstanceEdges(typeName)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, typeName);

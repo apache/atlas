@@ -61,6 +61,8 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_STATUS;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
+import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
@@ -270,8 +272,7 @@ public abstract class DeleteHandlerV1 {
         }
 
         boolean isInternalType = isInternalType(entityVertex);
-        boolean forceDelete = (typeCategory == STRUCT || typeCategory == CLASSIFICATION)
-                                      && (forceDeleteStructTrait || isInternalType);
+        boolean forceDelete    = (typeCategory == STRUCT || typeCategory == CLASSIFICATION) && (forceDeleteStructTrait || isInternalType);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("isInternal = {}, forceDelete = {}", isInternalType, forceDelete);
@@ -305,8 +306,8 @@ public abstract class DeleteHandlerV1 {
                     RequestContext requestContext = RequestContext.get();
 
                     if (!requestContext.isUpdatedEntity(GraphHelper.getGuid(referencedVertex))) {
-                        GraphHelper.setProperty(referencedVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
-                        GraphHelper.setProperty(referencedVertex, Constants.MODIFIED_BY_KEY, requestContext.getUser());
+                        AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
+                        AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFIED_BY_KEY, requestContext.getUser());
 
                         requestContext.recordEntityUpdate(entityRetriever.toAtlasObjectId(referencedVertex));
                     }
@@ -613,7 +614,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void deletePropagatedEdge(AtlasEdge edge) throws AtlasBaseException {
-        String      classificationName = AtlasGraphUtilsV2.getProperty(edge, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class);
+        String      classificationName = AtlasGraphUtilsV2.getEncodedProperty(edge, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class);
         AtlasVertex entityVertex       = edge.getOutVertex();
 
         if (LOG.isDebugEnabled()) {
@@ -655,7 +656,7 @@ public abstract class DeleteHandlerV1 {
         if (isClassificationEdge(edge)) {
             AtlasVertex classificationVertex = edge.getInVertex();
 
-            AtlasGraphUtilsV2.setProperty(classificationVertex, CLASSIFICATION_ENTITY_STATUS, DELETED.name());
+            AtlasGraphUtilsV2.setEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_STATUS, DELETED.name());
         }
 
         deleteEdge(edge, force);
@@ -801,7 +802,7 @@ public abstract class DeleteHandlerV1 {
                     edge = graphHelper.getEdgeForLabel(outVertex, edgeLabel);
 
                     if (shouldUpdateInverseReferences) {
-                        GraphHelper.setProperty(outVertex, propertyName, null);
+                        AtlasGraphUtilsV2.setEncodedProperty(outVertex, propertyName, null);
                     }
                 } else {
                     // Cannot unset a required attribute.
@@ -879,8 +880,8 @@ public abstract class DeleteHandlerV1 {
             RequestContext requestContext = RequestContext.get();
 
             if (! requestContext.isUpdatedEntity(outId)) {
-                GraphHelper.setProperty(outVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
-                GraphHelper.setProperty(outVertex, Constants.MODIFIED_BY_KEY, requestContext.getUser());
+                AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
+                AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFIED_BY_KEY, requestContext.getUser());
 
                 requestContext.recordEntityUpdate(entityRetriever.toAtlasObjectId(outVertex));
             }

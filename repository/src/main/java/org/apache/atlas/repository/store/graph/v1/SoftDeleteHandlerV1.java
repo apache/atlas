@@ -20,8 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
-import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -31,6 +30,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
+import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
@@ -53,18 +53,18 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
         if (force) {
             graphHelper.removeVertex(instanceVertex);
         } else {
-            AtlasEntity.Status state = AtlasGraphUtilsV2.getState(instanceVertex);
+            Status state = AtlasGraphUtilsV2.getState(instanceVertex);
 
-            if (state != AtlasEntity.Status.DELETED) {
-                GraphHelper.setProperty(instanceVertex, STATE_PROPERTY_KEY, AtlasEntity.Status.DELETED.name());
-                GraphHelper.setProperty(instanceVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-                GraphHelper.setProperty(instanceVertex, MODIFIED_BY_KEY, RequestContext.get().getUser());
+            if (state != DELETED) {
+                AtlasGraphUtilsV2.setEncodedProperty(instanceVertex, STATE_PROPERTY_KEY, DELETED.name());
+                AtlasGraphUtilsV2.setEncodedProperty(instanceVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+                AtlasGraphUtilsV2.setEncodedProperty(instanceVertex, MODIFIED_BY_KEY, RequestContext.get().getUser());
             }
         }
     }
 
     @Override
-    protected void deleteEdge(AtlasEdge edge, boolean force) throws AtlasBaseException {
+    protected void deleteEdge(AtlasEdge edge, boolean force) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})",GraphHelper.string(edge), force);
         }
@@ -72,12 +72,12 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
         if (force) {
             graphHelper.removeEdge(edge);
         } else {
-            AtlasEntity.Status state = AtlasGraphUtilsV2.getState(edge);
+            Status state = AtlasGraphUtilsV2.getState(edge);
 
-            if (state != AtlasEntity.Status.DELETED) {
-                GraphHelper.setProperty(edge, STATE_PROPERTY_KEY, AtlasEntity.Status.DELETED.name());
-                GraphHelper.setProperty(edge, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-                GraphHelper.setProperty(edge, MODIFIED_BY_KEY, RequestContext.get().getUser());
+            if (state != DELETED) {
+                AtlasGraphUtilsV2.setEncodedProperty(edge, STATE_PROPERTY_KEY, DELETED.name());
+                AtlasGraphUtilsV2.setEncodedProperty(edge, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+                AtlasGraphUtilsV2.setEncodedProperty(edge, MODIFIED_BY_KEY, RequestContext.get().getUser());
             }
         }
     }
