@@ -46,6 +46,8 @@ public class ImportTransformsTest {
     private final String jsonSingleClearAttrValue = "{ \"hive_table\": { \"*\":[ \"clearAttrValue:replicatedToCluster\", \"clearAttrValue:replicatedFromCluster\" ] } }";
     private final String jsonMultipleClearAttrValue = "{ \"hive_table\": { \"*\":[ \"clearAttrValue:replicatedToCluster,replicatedFromCluster\" ] } }";
     private final String jsonSetDeleted = "{ \"hive_table\": { \"*\":[ \"setDeleted\" ] } }";
+    private final String jsonAddClasification = "{ \"hive_table\": { \"*\":[ \"addClassification:REPLICATED\" ] } }";
+    private final String jsonAddClasification2 = "{ \"hive_table\": { \"*\":[ \"addClassification:REPLICATED_2\" ] } }";
 
     private ImportTransforms transform;
     private String HIVE_TABLE_ATTR_SYNC_INFO = "hive_table.syncInfo";
@@ -192,6 +194,36 @@ public class ImportTransformsTest {
         assertEquals(entity.getStatus(),  AtlasEntity.Status.DELETED);
     }
 
+    @Test
+    public void addClassification_AddsClassificationToEntitiy() throws AtlasBaseException {
+        AtlasEntity entity = getHiveTableAtlasEntity();
+        int existingClassificationsCount =  entity.getClassifications() != null ? entity.getClassifications().size() : 0;
+        ImportTransforms t = ImportTransforms.fromJson(jsonAddClasification);
+
+        assertTrue(t.getTransforms().size() > 0);
+
+        t.apply(entity);
+
+        assertNotNull(t);
+        assertEquals(entity.getClassifications().size(), existingClassificationsCount + 1);
+        addClassification_ExistingClassificationsAreHandled(entity);
+        addClassification_MultipleClassificationsAreAdded(entity);
+    }
+
+    private void addClassification_ExistingClassificationsAreHandled(AtlasEntity entity) throws AtlasBaseException {
+        int existingClassificationsCount =  entity.getClassifications() != null ? entity.getClassifications().size() : 0;
+        assertTrue(existingClassificationsCount > 0);
+        ImportTransforms.fromJson(jsonAddClasification).apply(entity);
+
+        assertEquals(entity.getClassifications().size(), existingClassificationsCount);
+    }
+
+    private void addClassification_MultipleClassificationsAreAdded(AtlasEntity entity) throws AtlasBaseException {
+        int existingClassificationsCount =  entity.getClassifications().size();
+        ImportTransforms.fromJson(jsonAddClasification2).apply(entity);
+
+        assertEquals(entity.getClassifications().size(), existingClassificationsCount + 1);
+    }
 
     private String[] getExtEntityExpectedValues(AtlasEntityWithExtInfo entityWithExtInfo) {
         String[] ret = new String[entityWithExtInfo.getReferredEntities().size()];

@@ -35,6 +35,7 @@ public abstract class ImportTransformer {
     private static final String TRANSFORMER_NAME_LOWERCASE = "lowercase";
     private static final String TRANSFORMER_NAME_UPPERCASE = "uppercase";
     private static final String TRANSFORMER_NAME_REMOVE_CLASSIFICATION = "removeClassification";
+    private static final String TRANSFORMER_NAME_ADD_CLASSIFICATION = "addClassification";
     private static final String TRANSFORMER_NAME_REPLACE = "replace";
     private static final String TRANSFORMER_SET_DELETED = "setDeleted";
 
@@ -68,6 +69,9 @@ public abstract class ImportTransformer {
             ret = new ClearAttributes(name);
         } else if (key.equals(TRANSFORMER_SET_DELETED)) {
             ret = new SetDeleted();
+        } else if (key.equals(TRANSFORMER_NAME_ADD_CLASSIFICATION)) {
+            String name = (params == null || params.length < 1) ? "" : StringUtils.join(params, ":", 1, params.length);
+            ret = new AddClassification(name);
         } else {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "Error creating ImportTransformer. Unknown transformer: {}.", transformerSpec);
         }
@@ -142,6 +146,46 @@ public abstract class ImportTransformer {
             }
 
             return ret;
+        }
+    }
+
+    static class AddClassification extends ImportTransformer {
+        private final String classificationName;
+
+        public AddClassification(String name) {
+            super(TRANSFORMER_NAME_REMOVE_CLASSIFICATION);
+
+            this.classificationName = name;
+        }
+
+        @Override
+        public Object apply(Object o) {
+            if (!(o instanceof AtlasEntity)) {
+                return o;
+            }
+
+            AtlasEntity entity = (AtlasEntity) o;
+            if(entity.getClassifications() == null) {
+                entity.setClassifications(new ArrayList<AtlasClassification>());
+            }
+
+            for (AtlasClassification c : entity.getClassifications()) {
+                if (c.getTypeName().equals(classificationName)) {
+                    return entity;
+                }
+            }
+
+            entity.getClassifications().add(new AtlasClassification(classificationName));
+            return entity;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s=%s", "AddClassification", classificationName);
+        }
+
+        public String getClassificationName() {
+            return classificationName;
         }
     }
 

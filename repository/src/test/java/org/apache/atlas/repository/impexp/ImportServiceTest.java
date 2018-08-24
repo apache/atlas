@@ -204,7 +204,7 @@ public class ImportServiceTest extends ExportImportTestBase {
 
     @Test
     public void importServiceProcessesIOException() {
-        ImportService importService = new ImportService(typeDefStore, typeRegistry, null, null);
+        ImportService importService = new ImportService(typeDefStore, typeRegistry, null, null,null);
         AtlasImportRequest req = mock(AtlasImportRequest.class);
 
         Answer<Map> answer = new Answer<Map>() {

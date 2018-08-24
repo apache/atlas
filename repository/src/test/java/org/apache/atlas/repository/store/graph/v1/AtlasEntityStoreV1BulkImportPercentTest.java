@@ -35,6 +35,7 @@ import static org.testng.Assert.assertTrue;
 public class AtlasEntityStoreV1BulkImportPercentTest {
 
     private final int MAX_PERCENT = 100;
+    private final float MAX_PERCENT_FLOAT = 100.0F;
     private List<Integer> percentHolder;
     private Logger log;
 
@@ -141,6 +142,15 @@ public class AtlasEntityStoreV1BulkImportPercentTest {
         double[] expected = fillPercentHolderWith100();
         runWithSize(streamSize);
         assertEqualsForPercentHolder(expected);
+    }
+
+    @Test
+    public void exceedingInitialStreamSize_KeepsPercentAt100() throws Exception {
+        runWithSize(4);
+        double[] expected = fillPercentHolderWith100();
+        float f = BulkImporterImpl.updateImportProgress(log, 5, 4, 100, "additional info");
+
+        assertTrue((f - MAX_PERCENT_FLOAT) <= 0.0001);
     }
 
     private void runWithSize(int streamSize) throws Exception {

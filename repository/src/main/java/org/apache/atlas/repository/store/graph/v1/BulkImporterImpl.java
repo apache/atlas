@@ -129,7 +129,7 @@ public class BulkImporterImpl implements BulkImporter {
 
         String lastEntityImported = String.format("entity:last-imported:%s:[%s]:(%s)", currentEntity.getEntity().getTypeName(), currentIndex, currentEntity.getEntity().getGuid());
 
-        return updateImportProgress(LOG, currentIndex + 1, streamSize, currentPercent, lastEntityImported);
+        return updateImportProgress(LOG, currentIndex, streamSize, currentPercent, lastEntityImported);
     }
 
     @VisibleForTesting
@@ -137,12 +137,13 @@ public class BulkImporterImpl implements BulkImporter {
         final double tolerance   = 0.000001;
         final int    MAX_PERCENT = 100;
 
-        float   percent        = (float) ((currentIndex * MAX_PERCENT) / streamSize);
+        int     maxSize        = (currentIndex <= streamSize) ? streamSize : currentIndex;
+        float   percent        = (float) ((currentIndex * MAX_PERCENT) / maxSize);
         boolean updateLog      = Double.compare(percent, currentPercent) > tolerance;
-        float   updatedPercent = (MAX_PERCENT < streamSize) ? percent : ((updateLog) ? ++currentPercent : currentPercent);
+        float   updatedPercent = (MAX_PERCENT < maxSize) ? percent : ((updateLog) ? ++currentPercent : currentPercent);
 
         if (updateLog) {
-            log.info("bulkImport(): progress: {}% (of {}) - {}", (int) Math.ceil(percent), streamSize, additionalInfo);
+            log.info("bulkImport(): progress: {}% (of {}) - {}", (int) Math.ceil(percent), maxSize, additionalInfo);
         }
 
         return updatedPercent;
