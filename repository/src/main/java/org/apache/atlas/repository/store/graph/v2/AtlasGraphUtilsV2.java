@@ -151,15 +151,11 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static String encodePropertyKey(String key) {
-        String ret = AtlasStructType.AtlasAttribute.encodePropertyKey(key);
-
-        return ret;
+        return AtlasAttribute.encodePropertyKey(key);
     }
 
     public static String decodePropertyKey(String key) {
-        String ret = AtlasStructType.AtlasAttribute.decodePropertyKey(key);
-
-        return ret;
+        return AtlasAttribute.decodePropertyKey(key);
     }
 
     /**

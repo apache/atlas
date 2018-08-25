@@ -42,6 +42,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -315,7 +316,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     private void createIndexForAttribute(AtlasGraphManagement management, String typeName, AtlasAttributeDef attributeDef) {
-        final String     propertyName   = GraphHelper.encodePropertyKey(typeName + "." + attributeDef.getName());
+        final String     propertyName   = AtlasGraphUtilsV2.encodePropertyKey(typeName + "." + attributeDef.getName());
         AtlasCardinality cardinality    = toAtlasCardinality(attributeDef.getCardinality());
         boolean          isUnique       = attributeDef.getIsUnique();
         boolean          isIndexable    = attributeDef.getIsIndexable();
@@ -729,7 +730,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     private void cleanupIndexForAttribute(AtlasGraphManagement management, String typeName, AtlasAttributeDef attributeDef) {
-        final String propertyName = GraphHelper.encodePropertyKey(typeName + "." + attributeDef.getName());
+        final String propertyName = AtlasGraphUtilsV2.encodePropertyKey(typeName + "." + attributeDef.getName());
         String  attribTypeName    = attributeDef.getTypeName();
         boolean isBuiltInType     = AtlasTypeUtil.isBuiltInType(attribTypeName);
         boolean isArrayType       = isArrayType(attribTypeName);
