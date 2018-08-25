@@ -863,10 +863,13 @@ public class AtlasStructType extends AtlasType {
 
         // Keys copied from org.janusgraph.graphdb.types.system.SystemTypeManager.RESERVED_CHARS
         // JanusGraph checks that these chars are not part of any keys hence encoding
-        private static String[][] RESERVED_CHAR_ENCODE_MAP = new String[][] {
-                new String[] { "{",  "_o" },
-                new String[] { "}",  "_c" },
-                new String[] { "\"", "_q" },
+        // also including Titan reserved characters to support migrated property keys
+        private static String[][] RESERVED_CHAR_ENCODE_MAP = new String[][]{
+                new String[] {"{", "_o"},
+                new String[] {"}", "_c"},
+                new String[] {"\"", "_q"},
+                new String[] {"$", "_d"}, //titan reserved character
+                new String[] {"%", "_p"}, //titan reserved characters
         };
 
         private static final char[] IDX_QRY_OFFENDING_CHARS = { '@', '/', ' ', '-' };

@@ -347,17 +347,23 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
             if (StringUtils.isEmpty(attributeDef.getName())) {
                 throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "name");
             }
+
             if (StringUtils.isEmpty(attributeDef.getTypeName())) {
                 throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "typeName");
             }
 
-            String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, attributeDef.getName());
+            String propertyKey        = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, attributeDef.getName());
+            String encodedPropertyKey = AtlasGraphUtilsV2.encodePropertyKey(propertyKey);
 
-            AtlasGraphUtilsV2.setProperty(vertex, propertyKey, toJsonFromAttribute(structType.getAttribute(attributeDef.getName())));
+            vertex.setProperty(encodedPropertyKey, toJsonFromAttribute(structType.getAttribute(attributeDef.getName())));
 
             attrNames.add(attributeDef.getName());
         }
-        AtlasGraphUtilsV2.setProperty(vertex, AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef), attrNames);
+
+        String typeNamePropertyKey        = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef);
+        String encodedtypeNamePropertyKey = AtlasGraphUtilsV2.encodePropertyKey(typeNamePropertyKey);
+
+        vertex.setProperty(encodedtypeNamePropertyKey, attrNames);
     }
 
     public static void updateVertexPreUpdate(AtlasStructDef structDef, AtlasStructType structType,
@@ -427,24 +433,27 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         }
     }
 
-    public static AtlasStructDef toStructDef(AtlasVertex vertex, AtlasStructDef structDef,
-                                             AtlasTypeDefGraphStoreV2 typeDefStore) throws AtlasBaseException {
-        AtlasStructDef ret = (structDef != null) ? structDef :new AtlasStructDef();
+    public static AtlasStructDef toStructDef(AtlasVertex vertex, AtlasStructDef structDef, AtlasTypeDefGraphStoreV2 typeDefStore)
+                                             throws AtlasBaseException {
+        AtlasStructDef ret = (structDef != null) ? structDef : new AtlasStructDef();
 
         typeDefStore.vertexToTypeDef(vertex, ret);
 
-        List<AtlasAttributeDef> attributeDefs = new ArrayList<>();
-        List<String> attrNames = vertex.getProperty(AtlasGraphUtilsV2.getTypeDefPropertyKey(ret), List.class);
+        List<AtlasAttributeDef> attributeDefs          = new ArrayList<>();
+        String                  typePropertyKey        = AtlasGraphUtilsV2.getTypeDefPropertyKey(ret);
+        String                  encodedTypePropertyKey = AtlasGraphUtilsV2.encodePropertyKey(typePropertyKey);
+        List<String>            attrNames              = vertex.getProperty(encodedTypePropertyKey, List.class);
 
         if (CollectionUtils.isNotEmpty(attrNames)) {
             for (String attrName : attrNames) {
-                String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(ret, attrName);
-                String attribJson  = vertex.getProperty(GraphHelper.encodePropertyKey(propertyKey), String.class);
+                String attrPropertyKey        = AtlasGraphUtilsV2.getTypeDefPropertyKey(ret, attrName);
+                String encodedAttrPropertyKey = AtlasGraphUtilsV2.encodePropertyKey(attrPropertyKey);
+                String attrJson               = vertex.getProperty(encodedAttrPropertyKey, String.class);
 
-                attributeDefs.add(toAttributeDefFromJson(structDef, AtlasType.fromJson(attribJson, Map.class),
-                                  typeDefStore));
+                attributeDefs.add(toAttributeDefFromJson(structDef, AtlasType.fromJson(attrJson, Map.class), typeDefStore));
             }
         }
+
         ret.setAttributeDefs(attributeDefs);
 
         return ret;

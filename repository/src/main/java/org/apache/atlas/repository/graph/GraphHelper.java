@@ -647,7 +647,7 @@ public final class GraphHelper {
     }
 
     public static <T extends AtlasElement> void setProperty(T element, String propertyName, Object value) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
 
         String elementStr = null;
 
@@ -688,7 +688,7 @@ public final class GraphHelper {
      * @return
      */
     public static <T> T getSingleValuedProperty(AtlasElement element, String propertyName, Class<T> clazz) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
 
         if (LOG.isTraceEnabled()) {
             LOG.trace("Reading property {} from {}", actualPropertyName, string(element));
@@ -699,7 +699,7 @@ public final class GraphHelper {
 
 
     public static Object getProperty(AtlasVertex<?,?> vertex, String propertyName) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
 
         if (LOG.isTraceEnabled()) {
             LOG.trace("Reading property {} from {}", actualPropertyName, string(vertex));
@@ -714,7 +714,7 @@ public final class GraphHelper {
     }
 
     public static Object getProperty(AtlasEdge<?,?> edge, String propertyName) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
 
         if (LOG.isTraceEnabled()) {
             LOG.trace("Reading property {} from {}", actualPropertyName, string(edge));
@@ -740,7 +740,7 @@ public final class GraphHelper {
      * @param value
      */
     public static void addProperty(AtlasVertex vertex, String propertyName, Object value) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Adding property {} = \"{}\" to vertex {}", actualPropertyName, value, string(vertex));
@@ -1686,7 +1686,7 @@ public final class GraphHelper {
 
     // map elements for primitive types
     public static Map<String, Object> getPrimitiveMap(AtlasVertex instanceVertex, String propertyName) {
-        Map<String, Object> ret = instanceVertex.getProperty(encodePropertyKey(propertyName), Map.class);
+        Map<String, Object> ret = instanceVertex.getProperty(AtlasGraphUtilsV2.encodePropertyKey(propertyName), Map.class);
 
         if (ret == null) {
             ret = new HashMap<>();
@@ -1788,17 +1788,6 @@ public final class GraphHelper {
             }});
 
 
-    public static String encodePropertyKey(String key) {
-        if (StringUtils.isBlank(key)) {
-            return key;
-        }
-
-        for (String str : RESERVED_CHARS_ENCODE_MAP.keySet()) {
-            key = key.replace(str, RESERVED_CHARS_ENCODE_MAP.get(str));
-        }
-        return key;
-    }
-
     public static String decodePropertyKey(String key) {
         if (StringUtils.isBlank(key)) {
             return key;
@@ -1840,25 +1829,25 @@ public final class GraphHelper {
 
     public static void setListPropertyFromElementIds(AtlasVertex<?, ?> instanceVertex, String propertyName,
             List<AtlasElement> elements) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
         instanceVertex.setPropertyFromElementsIds(actualPropertyName, elements);
 
     }
 
     public static void setPropertyFromElementId(AtlasVertex<?, ?> instanceVertex, String propertyName,
             AtlasElement value) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
         instanceVertex.setPropertyFromElementId(actualPropertyName, value);
 
     }
 
     public static void setListProperty(AtlasVertex instanceVertex, String propertyName, ArrayList<String> value) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
         instanceVertex.setListProperty(actualPropertyName, value);
     }
 
     public static List<String> getListProperty(AtlasVertex instanceVertex, String propertyName) {
-        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
         return instanceVertex.getListProperty(actualPropertyName);
     }
 
