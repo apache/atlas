@@ -25,6 +25,7 @@ import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -143,11 +144,11 @@ public class MigrationBaseAsserts {
             e = it.next();
         }
 
-        assertNotNull(GraphHelper.getProperty(e, R_GUID_PROPERTY_NAME));
-        assertNotNull(GraphHelper.getProperty(e, "tagPropagation"));
+        assertNotNull(AtlasGraphUtilsV2.getEncodedProperty(e, R_GUID_PROPERTY_NAME, Object.class));
+        assertNotNull(AtlasGraphUtilsV2.getEncodedProperty(e, "tagPropagation", Object.class));
 
         if(StringUtils.isNotEmpty(edgeTypeName)) {
-            assertEquals(GraphHelper.getProperty(e, TYPE_NAME_PROPERTY), edgeTypeName, edgeTypeName);
+            assertEquals(AtlasGraphUtilsV2.getEncodedProperty(e, TYPE_NAME_PROPERTY, Object.class), edgeTypeName, edgeTypeName);
         }
 
         assertEquals(count, expectedItems, String.format("%s", edgeTypeName));
@@ -160,8 +161,8 @@ public class MigrationBaseAsserts {
             e = it.next();
         }
 
-        assertNotNull(GraphHelper.getProperty(e, R_GUID_PROPERTY_NAME));
-        assertNotNull(GraphHelper.getProperty(e, "tagPropagation"));
+        assertNotNull(AtlasGraphUtilsV2.getEncodedProperty(e, R_GUID_PROPERTY_NAME, Object.class));
+        assertNotNull(AtlasGraphUtilsV2.getEncodedProperty(e, "tagPropagation", Object.class));
 
         if(StringUtils.isNotEmpty(edgeTypeName)) {
             assertEquals(e.getLabel(), edgeTypeName, edgeTypeName);
@@ -182,7 +183,7 @@ public class MigrationBaseAsserts {
             }
 
             if(StringUtils.isNotEmpty(name)) {
-                assertEquals(GraphHelper.getProperty(v, ASSERT_NAME_PROPERTY), name, name);
+                assertEquals(AtlasGraphUtilsV2.getEncodedProperty(v, ASSERT_NAME_PROPERTY, String.class), name, name);
             }
 
             count++;
@@ -193,6 +194,7 @@ public class MigrationBaseAsserts {
 
     protected void assertMigrationStatus(int expectedTotalCount) {
         AtlasVertex v = getVertex("__MigrationStatus", "");
-        assertEquals((long) GraphHelper.getProperty(v, "currentIndex"), expectedTotalCount);
+
+        assertEquals(AtlasGraphUtilsV2.getEncodedProperty(v, "currentIndex", Number.class).intValue(), expectedTotalCount);
     }
 }
