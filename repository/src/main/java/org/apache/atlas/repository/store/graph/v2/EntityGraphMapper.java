@@ -961,7 +961,7 @@ public class EntityGraphMapper {
            Object element = newElementsCreated.get(index);
 
            if (element instanceof AtlasEdge) {
-               AtlasGraphUtilsV2.setProperty((AtlasEdge) element, ATTRIBUTE_INDEX_PROPERTY_KEY, index);
+               AtlasGraphUtilsV2.setEncodedProperty((AtlasEdge) element, ATTRIBUTE_INDEX_PROPERTY_KEY, index);
             }
         }
 

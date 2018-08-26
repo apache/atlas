@@ -646,83 +646,6 @@ public final class GraphHelper {
                 + edge.getInVertex() + "]";
     }
 
-    public static <T extends AtlasElement> void setProperty(T element, String propertyName, Object value) {
-        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
-
-        String elementStr = null;
-
-        if (LOG.isDebugEnabled()) {
-            elementStr = string(element);
-
-            LOG.debug("Setting property {} = \"{}\" to {}", actualPropertyName, value, elementStr);
-        }
-
-        Object existValue = element.getProperty(actualPropertyName, Object.class);
-        if(value == null || (value instanceof Collection && ((Collection) value).isEmpty())) {
-            if(existValue != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Removing property - {} value from {}", actualPropertyName, elementStr);
-                }
-
-                element.removeProperty(actualPropertyName);
-            }
-        } else {
-            if (!value.equals(existValue)) {
-                element.setProperty(actualPropertyName, value);
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Set property {} = \"{}\" to {}", actualPropertyName, value, elementStr);
-                }
-            }
-        }
-    }
-
-    /**
-     * Gets the value of a property that is stored in the graph as a single property value.  If
-     * a multi-property such as {@link Constants#TRAIT_NAMES_PROPERTY_KEY} or {@link Constants#SUPER_TYPES_PROPERTY_KEY}
-     * is used, an exception will be thrown.
-     *
-     * @param element
-     * @param propertyName
-     * @param clazz
-     * @return
-     */
-    public static <T> T getSingleValuedProperty(AtlasElement element, String propertyName, Class<T> clazz) {
-        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
-
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("Reading property {} from {}", actualPropertyName, string(element));
-        }
-
-        return element.getProperty(actualPropertyName, clazz);
-    }
-
-
-    public static Object getProperty(AtlasVertex<?,?> vertex, String propertyName) {
-        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
-
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("Reading property {} from {}", actualPropertyName, string(vertex));
-        }
-
-        if(AtlasGraphProvider.getGraphInstance().isMultiProperty(actualPropertyName)) {
-            return vertex.getPropertyValues(actualPropertyName, String.class);
-        }
-        else {
-            return vertex.getProperty(actualPropertyName, Object.class);
-        }
-    }
-
-    public static Object getProperty(AtlasEdge<?,?> edge, String propertyName) {
-        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
-
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("Reading property {} from {}", actualPropertyName, string(edge));
-        }
-
-        return edge.getProperty(actualPropertyName, Object.class);
-    }
-
     private static <T extends AtlasElement> String string(T element) {
         if (element instanceof AtlasVertex) {
             return string((AtlasVertex) element);
@@ -732,43 +655,12 @@ public final class GraphHelper {
         return element.toString();
     }
 
-    /**
-     * Adds an additional value to a multi-property (SET).
-     *
-     * @param vertex
-     * @param propertyName
-     * @param value
-     */
-    public static void addProperty(AtlasVertex vertex, String propertyName, Object value) {
-        String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Adding property {} = \"{}\" to vertex {}", actualPropertyName, value, string(vertex));
-        }
-
-        vertex.addProperty(actualPropertyName, value);
-    }
-
     public static void addToPropagatedTraitNames(AtlasVertex entityVertex, String classificationName) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Adding property {} = \"{}\" to vertex {}", PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName, string(entityVertex));
         }
 
         entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
-    }
-
-    public static void removeFromPropagatedTraitNames(AtlasVertex entityVertex, String classificationName) {
-        if (entityVertex != null && StringUtils.isNotEmpty(classificationName)) {
-            List<String> propagatedTraitNames = getTraitNames(entityVertex, true);
-
-            propagatedTraitNames.remove(classificationName);
-
-            entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
-
-            for (String propagatedTraitName : propagatedTraitNames) {
-                addToPropagatedTraitNames(entityVertex, propagatedTraitName);
-            }
-        }
     }
 
     /**

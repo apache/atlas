@@ -24,6 +24,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -64,8 +65,8 @@ public class PathTest extends MigrationBaseAsserts {
         BigInteger bitExpected = bitRef.getNormalizedValue(612361213421234L);
         BigDecimal bdtExpected = bdtRef.getNormalizedValue(125353);
 
-        BigInteger bit = GraphHelper.getSingleValuedProperty(v, HASH_CODE_PROPERTY, BigInteger.class);
-        BigDecimal bdt = GraphHelper.getSingleValuedProperty(v, RETENTION_PROPERTY, BigDecimal.class);
+        BigInteger bit = AtlasGraphUtilsV2.getEncodedProperty(v, HASH_CODE_PROPERTY, BigInteger.class);
+        BigDecimal bdt = AtlasGraphUtilsV2.getEncodedProperty(v, RETENTION_PROPERTY, BigDecimal.class);
 
         assertEquals(bit, bitExpected);
         assertEquals(bdt.compareTo(bdtExpected), 0);
