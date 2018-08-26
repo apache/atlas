@@ -153,16 +153,21 @@ public class AtlasGraphUtilsV1 {
      * @param propertyName
      * @param value
      */
-    public static AtlasVertex addProperty(AtlasVertex vertex, String propertyName, Object value) {
+    public static AtlasVertex addEncodedProperty(AtlasVertex vertex, String propertyName, Object value) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> addProperty({}, {}, {})", toString(vertex), propertyName, value);
         }
-        propertyName = encodePropertyKey(propertyName);
+
         vertex.addProperty(propertyName, value);
+
         return vertex;
     }
 
     public static <T extends AtlasElement> void setProperty(T element, String propertyName, Object value) {
+        setEncodedProperty(element, encodePropertyKey(propertyName), value);
+    }
+
+    public static <T extends AtlasElement> void setEncodedProperty(T element, String propertyName, Object value) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> setProperty({}, {}, {})", toString(element), propertyName, value);
         }
@@ -195,8 +200,26 @@ public class AtlasGraphUtilsV1 {
         }
     }
 
+    public static <T extends AtlasVertex> Object getProperty(T vertex, String propertyName) {
+        String encodePropertyName = encodePropertyKey(propertyName);
+
+        if(AtlasGraphProvider.getGraphInstance().isMultiProperty(encodePropertyName)) {
+            return vertex.getPropertyValues(encodePropertyName, String.class);
+        }
+
+        return vertex.getProperty(encodePropertyKey(propertyName), Object.class);
+    }
+
+    public static <T extends AtlasElement> Object getProperty(T element, String propertyName) {
+        return element.getProperty(encodePropertyKey(propertyName), Object.class);
+    }
+
     public static <T extends AtlasElement, O> O getProperty(T element, String propertyName, Class<O> returnType) {
-        Object property = element.getProperty(encodePropertyKey(propertyName), returnType);
+        return getEncodedProperty(element, encodePropertyKey(propertyName), returnType);
+    }
+
+    public static <T extends AtlasElement, O> O getEncodedProperty(T element, String propertyName, Class<O> returnType) {
+        Object property = element.getProperty(propertyName, returnType);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("getProperty({}, {}) ==> {}", toString(element), propertyName, returnType.cast(property));

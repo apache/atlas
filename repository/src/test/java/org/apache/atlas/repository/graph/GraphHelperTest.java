@@ -25,6 +25,7 @@ import org.apache.atlas.repository.graph.GraphHelper.VertexInfo;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -174,10 +175,10 @@ public class GraphHelperTest {
 
     @Test(dataProvider = "encodeDecodeTestData")
     public void testEncodeDecode(String str, String expectedEncodedStr) throws Exception {
-        String encodedStr = GraphHelper.encodePropertyKey(str);
+        String encodedStr = AtlasGraphUtilsV1.encodePropertyKey(str);
         assertEquals(encodedStr, expectedEncodedStr);
 
-        String decodedStr = GraphHelper.decodePropertyKey(encodedStr);
+        String decodedStr = AtlasGraphUtilsV1.decodePropertyKey(encodedStr);
         assertEquals(decodedStr, str);
     }
 

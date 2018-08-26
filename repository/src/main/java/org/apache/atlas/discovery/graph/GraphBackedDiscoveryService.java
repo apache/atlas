@@ -38,6 +38,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.util.CompiledQueryCacheKey;
 import org.apache.atlas.util.NoopGremlinQuery;
 import org.codehaus.jettison.json.JSONArray;
@@ -234,7 +235,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
                 } else if (value instanceof AtlasVertex) {
                     AtlasVertex<?,?> vertex = (AtlasVertex<?,?>)value;
                     for (String key : vertex.getPropertyKeys()) {
-                        Object propertyValue = GraphHelper.getProperty(vertex,  key);
+                        Object propertyValue = AtlasGraphUtilsV1.getProperty(vertex,  key);
                         if (propertyValue != null) {
                             oRow.put(key, propertyValue.toString());
                         }
@@ -250,7 +251,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
                     oRow.put(GREMLIN_INVERTEX_KEY, edge.getInVertex().getId().toString());
                     oRow.put(GREMLIN_OUTVERTEX_KEY, edge.getOutVertex().getId().toString());
                     for (String propertyKey : edge.getPropertyKeys()) {
-                        oRow.put(propertyKey, GraphHelper.getProperty(edge, propertyKey).toString());
+                        oRow.put(propertyKey, AtlasGraphUtilsV1.getProperty(edge, propertyKey).toString());
                     }
                 } else {
                     throw new DiscoveryException(String.format("Cannot process result %s", String.valueOf(value)));

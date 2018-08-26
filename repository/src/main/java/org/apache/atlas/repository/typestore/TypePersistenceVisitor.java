@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.typestore;
 
-import static org.apache.atlas.repository.graph.GraphHelper.setProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,9 +24,9 @@ import java.util.Map;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.typesystem.types.EnumType;
@@ -68,16 +67,16 @@ public class TypePersistenceVisitor implements TypeVisitor {
         List<String> values = new ArrayList<>(dataType.values().size());
         for (EnumValue enumValue : dataType.values()) {
             String key = GraphBackedTypeStore.getPropertyKey(dataType.getName(), enumValue.value);
-            setProperty(vertex, key, enumValue.ordinal);
+            AtlasGraphUtilsV1.setProperty(vertex, key, enumValue.ordinal);
             values.add(enumValue.value);
         }
-        setProperty(vertex, GraphBackedTypeStore.getPropertyKey(dataType.getName()), values);
+        AtlasGraphUtilsV1.setProperty(vertex, GraphBackedTypeStore.getPropertyKey(dataType.getName()), values);
 
     }
     @Override
     public void visitAttributeDataType(String typeName, AttributeInfo attribute, IDataType attrType) throws AtlasException {
         AtlasVertex vertex = typeVertices.get(typeName);
-        String vertexTypeName = GraphHelper.getSingleValuedProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, String.class);
+        String vertexTypeName = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, String.class);
         AtlasVertex attrVertex = typeVertices.get(attrType.getName());
         String label = GraphBackedTypeStore.getEdgeLabel(vertexTypeName, attribute.name);
         graphHelper.getOrCreateEdge(vertex, attrVertex, label);
@@ -93,8 +92,7 @@ public class TypePersistenceVisitor implements TypeVisitor {
     @Override
     public void visitAttributeNames(String typeName, List<String> attrNames) throws AtlasException {
         AtlasVertex vertex = typeVertices.get(typeName);
-        setProperty(vertex, GraphBackedTypeStore.getPropertyKey(typeName), attrNames);
-
+        AtlasGraphUtilsV1.setProperty(vertex, GraphBackedTypeStore.getPropertyKey(typeName), attrNames);
     }
 
     @Override
@@ -102,7 +100,7 @@ public class TypePersistenceVisitor implements TypeVisitor {
         AtlasVertex vertex = typeVertices.get(typeName);
         String propertyKey = GraphBackedTypeStore.getPropertyKey(typeName, attribute.name);
         try {
-            setProperty(vertex, propertyKey, attribute.toJson());
+            AtlasGraphUtilsV1.setProperty(vertex, propertyKey, attribute.toJson());
         } catch (JSONException e) {
             throw new StorageException(typeName, e);
         }

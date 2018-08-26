@@ -347,10 +347,10 @@ public abstract class AtlasDeleteHandlerV1Test {
         ITypedReferenceableInstance max = metadataService.getEntityDefinition(maxEmployeeCreated.getGuid());
         String maxGuid = max.getId()._getId();
         AtlasVertex vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
-        Long creationTimestamp = GraphHelper.getSingleValuedProperty(vertex, Constants.TIMESTAMP_PROPERTY_KEY, Long.class);
+        Long creationTimestamp = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.TIMESTAMP_PROPERTY_KEY, Long.class);
         Assert.assertNotNull(creationTimestamp);
 
-        Long modificationTimestampPreUpdate = GraphHelper.getSingleValuedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+        Long modificationTimestampPreUpdate = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         Assert.assertNotNull(modificationTimestampPreUpdate);
 
         AtlasEntity maxEmployee = getEmployeeByName(hrDept, "Max");
@@ -371,7 +371,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         // Verify modification timestamp was updated.
         vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
-        Long modificationTimestampPostUpdate = GraphHelper.getSingleValuedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+        Long modificationTimestampPostUpdate = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         Assert.assertNotNull(modificationTimestampPostUpdate);
         Assert.assertTrue(creationTimestamp < modificationTimestampPostUpdate);
 
@@ -389,7 +389,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         // Verify modification timestamp was updated.
         vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
-        Long modificationTimestampPost2ndUpdate = GraphHelper.getSingleValuedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+        Long modificationTimestampPost2ndUpdate = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         Assert.assertNotNull(modificationTimestampPost2ndUpdate);
         Assert.assertTrue(modificationTimestampPostUpdate < modificationTimestampPost2ndUpdate);
 

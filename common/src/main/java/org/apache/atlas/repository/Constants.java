@@ -18,6 +18,8 @@
 
 package org.apache.atlas.repository;
 
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
+
 /**
  * Repository Constants.
  *
@@ -29,49 +31,45 @@ public final class Constants {
      */
 
     public static final String INTERNAL_PROPERTY_KEY_PREFIX = "__";
-    public static final String GUID_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "guid";
+    public static final String GUID_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "guid");
 
     /**
      * Entity type name property key.
      */
-    public static final String ENTITY_TYPE_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
+    public static final String ENTITY_TYPE_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typeName");
     public static final String TYPE_NAME_INTERNAL       = INTERNAL_PROPERTY_KEY_PREFIX + "internal";
 
     /**
      * Entity type's super types property key.
      */
-    public static final String SUPER_TYPES_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "superTypeNames";
+    public static final String SUPER_TYPES_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "superTypeNames");
 
     /**
      * Full-text for the entity for enabling full-text search.
      */
     //weird issue in TitanDB if __ added to this property key. Not adding it for now
-    public static final String ENTITY_TEXT_PROPERTY_KEY = "entityText";
+    public static final String ENTITY_TEXT_PROPERTY_KEY = encodePropertyKey("entityText");
 
     /**
      * Properties for type store graph.
      */
-    public static final String TYPE_CATEGORY_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "type.category";
-    public static final String VERTEX_TYPE_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "type";
-    public static final String TYPENAME_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "type.name";
-    public static final String TYPEDESCRIPTION_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "type.description";
-    public static final String TYPEVERSION_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "type.version";
-    public static final String TYPEOPTIONS_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "type.options";
+    public static final String TYPE_CATEGORY_PROPERTY_KEY   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.category");
+    public static final String VERTEX_TYPE_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type");
+    public static final String TYPENAME_PROPERTY_KEY        = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.name");
+    public static final String TYPEDESCRIPTION_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.description");
+    public static final String TYPEVERSION_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.version");
+    public static final String TYPEOPTIONS_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "type.options");
 
     /**
      * Trait names property key and index name.
      */
-    public static final String TRAIT_NAMES_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "traitNames";
-
-    public static final String VERSION_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "version";
-    public static final String STATE_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "state";
-    public static final String CREATED_BY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "createdBy";
-    public static final String MODIFIED_BY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "modifiedBy";
-
-    public static final String TIMESTAMP_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "timestamp";
-
-    public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY =
-        INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp";
+    public static final String TRAIT_NAMES_PROPERTY_KEY            = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "traitNames");
+    public static final String VERSION_PROPERTY_KEY                = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "version");
+    public static final String STATE_PROPERTY_KEY                  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "state");
+    public static final String CREATED_BY_KEY                      = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "createdBy");
+    public static final String MODIFIED_BY_KEY                     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modifiedBy");
+    public static final String TIMESTAMP_PROPERTY_KEY              = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "timestamp");
+    public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp");
 
     /**
      * search backing index name.
@@ -91,7 +89,7 @@ public final class Constants {
     public static final String FULLTEXT_INDEX = "fulltext_index";
 
     public static final String QUALIFIED_NAME = "Referenceable.qualifiedName";
-    public static final String TYPE_NAME_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
+    public static final String TYPE_NAME_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typeName");
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE = "atlas.graph.index.search.max-result-set-size";
     public static final String INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH = "atlas.graph.index.search.types.max-query-str-length";
     public static final String INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH  = "atlas.graph.index.search.tags.max-query-str-length";

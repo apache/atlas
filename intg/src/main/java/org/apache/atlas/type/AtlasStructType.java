@@ -567,6 +567,14 @@ public class AtlasStructType extends AtlasType {
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
     }
 
+    public String getQualifiedAttributePropertyKey(String attrName) throws AtlasBaseException {
+        if ( allAttributes.containsKey(attrName)) {
+            return allAttributes.get(attrName).getVertexPropertyName();
+        }
+
+        throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
+    }
+
     private AtlasEntityType getReferencedEntityType(AtlasType type) {
         if (type instanceof AtlasArrayType) {
             type = ((AtlasArrayType)type).getElementType();

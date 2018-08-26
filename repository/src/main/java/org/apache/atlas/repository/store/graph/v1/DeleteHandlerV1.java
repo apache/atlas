@@ -460,7 +460,7 @@ public abstract class DeleteHandlerV1 {
             if (attrDef.getIsOptional()) {
                 edge = graphHelper.getEdgeForLabel(outVertex, edgeLabel);
                 if (shouldUpdateInverseReferences) {
-                    GraphHelper.setProperty(outVertex, propertyName, null);
+                    AtlasGraphUtilsV1.setProperty(outVertex, propertyName, null);
                 }
             } else {
                 // Cannot unset a required attribute.
@@ -504,7 +504,7 @@ public abstract class DeleteHandlerV1 {
                             // This prevents dangling edge IDs (i.e. edge IDs for deleted edges)
                             // from the remaining in the list if there are duplicates.
                             elements.removeAll(Collections.singletonList(elementEdge.getId().toString()));
-                            GraphHelper.setProperty(outVertex, propertyName, elements);
+                            AtlasGraphUtilsV1.setProperty(outVertex, propertyName, elements);
                             break;
 
                         }
@@ -520,7 +520,7 @@ public abstract class DeleteHandlerV1 {
                 keys = new ArrayList<>(keys);   //Make a copy, else list.remove reflects on titan.getProperty()
                 for (String key : keys) {
                     String keyPropertyName = GraphHelper.getQualifiedNameForMapKey(propertyName, key);
-                    String mapEdgeId = GraphHelper.getSingleValuedProperty(outVertex, keyPropertyName, String.class);
+                    String mapEdgeId = AtlasGraphUtilsV1.getProperty(outVertex, keyPropertyName, String.class);
                     AtlasEdge mapEdge = graphHelper.getEdgeByEdgeId(outVertex, keyPropertyName, mapEdgeId);
                     if(mapEdge != null) {
                         AtlasVertex mapVertex = mapEdge.getInVertex();
@@ -540,8 +540,8 @@ public abstract class DeleteHandlerV1 {
                                 LOG.debug("Removing edge {}, key {} from the map attribute {}", string(mapEdge), key,
                                     attribute.getName());
                                 keys.remove(key);
-                                GraphHelper.setProperty(outVertex, propertyName, keys);
-                                GraphHelper.setProperty(outVertex, keyPropertyName, null);
+                                AtlasGraphUtilsV1.setProperty(outVertex, propertyName, keys);
+                                AtlasGraphUtilsV1.setProperty(outVertex, keyPropertyName, null);
                             }
                             break;
                         }
@@ -562,9 +562,9 @@ public abstract class DeleteHandlerV1 {
         if (edge != null) {
             deleteEdge(edge, false);
             RequestContextV1 requestContext = RequestContextV1.get();
-            GraphHelper.setProperty(outVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
+            AtlasGraphUtilsV1.setEncodedProperty(outVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                 requestContext.getRequestTime());
-            GraphHelper.setProperty(outVertex, Constants.MODIFIED_BY_KEY, requestContext.getUser());
+            AtlasGraphUtilsV1.setEncodedProperty(outVertex, Constants.MODIFIED_BY_KEY, requestContext.getUser());
             requestContext.recordEntityUpdate(new AtlasObjectId(outId, typeName));
         }
     }

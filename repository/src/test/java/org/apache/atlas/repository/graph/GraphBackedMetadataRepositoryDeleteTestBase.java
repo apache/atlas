@@ -32,6 +32,7 @@ import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
@@ -410,10 +411,10 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         ITypedReferenceableInstance max = repositoryService.getEntityDefinition(nameGuidMap.get("Max"));
         String maxGuid = max.getId()._getId();
         AtlasVertex vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
-        Long creationTimestamp = GraphHelper.getSingleValuedProperty(vertex, Constants.TIMESTAMP_PROPERTY_KEY, Long.class);
+        Long creationTimestamp = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.TIMESTAMP_PROPERTY_KEY, Long.class);
         Assert.assertNotNull(creationTimestamp);
 
-        Long modificationTimestampPreUpdate = GraphHelper.getSingleValuedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+        Long modificationTimestampPreUpdate = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         Assert.assertNotNull(modificationTimestampPreUpdate);
 
         ITypedReferenceableInstance jane = repositoryService.getEntityDefinition(nameGuidMap.get("Jane"));
@@ -434,7 +435,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
 
         // Verify modification timestamp was updated.
         vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
-        Long modificationTimestampPostUpdate = GraphHelper.getSingleValuedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+        Long modificationTimestampPostUpdate = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         Assert.assertNotNull(modificationTimestampPostUpdate);
         Assert.assertTrue(creationTimestamp < modificationTimestampPostUpdate);
 
@@ -451,7 +452,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
 
         // Verify modification timestamp was updated.
         vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
-        Long modificationTimestampPost2ndUpdate = GraphHelper.getSingleValuedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+        Long modificationTimestampPost2ndUpdate = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         Assert.assertNotNull(modificationTimestampPost2ndUpdate);
         Assert.assertTrue(modificationTimestampPostUpdate < modificationTimestampPost2ndUpdate);
 

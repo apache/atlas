@@ -37,6 +37,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -154,9 +155,9 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                 TypeSystem.IdType idType = TypeSystem.getInstance().getIdType();
 
                 if (dataType.getName().equals(idType.getName())) {
-                    structInstance.set(idType.typeNameAttrName(), GraphHelper.getSingleValuedProperty(structVertex, typeAttributeName(), String.class));
-                    structInstance.set(idType.idAttrName(), GraphHelper.getSingleValuedProperty(structVertex, idAttributeName(), String.class));
-                    String stateValue = GraphHelper.getSingleValuedProperty(structVertex, stateAttributeName(), String.class);
+                    structInstance.set(idType.typeNameAttrName(), AtlasGraphUtilsV1.getProperty(structVertex, typeAttributeName(), String.class));
+                    structInstance.set(idType.idAttrName(), AtlasGraphUtilsV1.getProperty(structVertex, idAttributeName(), String.class));
+                    String stateValue = AtlasGraphUtilsV1.getProperty(structVertex, stateAttributeName(), String.class);
                     if (stateValue != null) {
                         structInstance.set(idType.stateAttrName(), stateValue);
                     }

@@ -27,6 +27,7 @@ import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -198,9 +199,9 @@ public final class TypedInstanceToGraphMapper {
             }
             mapAttributeToVertex(typedInstance, instanceVertex, attributeInfo, operation);
         }
-        GraphHelper.setProperty(instanceVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
+        AtlasGraphUtilsV1.setEncodedProperty(instanceVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                 RequestContext.get().getRequestTime());
-        GraphHelper.setProperty(instanceVertex, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
+        AtlasGraphUtilsV1.setEncodedProperty(instanceVertex, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Setting modifiedBy: {} and modifiedTime: {}", RequestContext.get().getUser(), RequestContext.get().getRequestTime());
@@ -380,7 +381,7 @@ public final class TypedInstanceToGraphMapper {
         for (ITypedReferenceableInstance typedInstance : instances) { // Traverse
             AtlasVertex instanceVertex = getClassVertex(typedInstance);
             String fullText = fulltextMapper.mapRecursive(instanceVertex, true);
-            GraphHelper.setProperty(instanceVertex, Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
+            AtlasGraphUtilsV1.setEncodedProperty(instanceVertex, Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
         }
     }
 
@@ -391,7 +392,7 @@ public final class TypedInstanceToGraphMapper {
                 LOG.debug("mapping trait {}", traitName);
             }
 
-            GraphHelper.addProperty(instanceVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, traitName);
+            AtlasGraphUtilsV1.addEncodedProperty(instanceVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, traitName);
             ITypedStruct traitInstance = (ITypedStruct) typedInstance.getTrait(traitName);
 
             // add the attributes for the trait instance
@@ -576,7 +577,7 @@ public final class TypedInstanceToGraphMapper {
 
             if (shouldDeleteKey) {
                 String propertyNameForKey = GraphHelper.getQualifiedNameForMapKey(propertyName, currentKey);
-                GraphHelper.setProperty(instanceVertex, propertyNameForKey, null);
+                AtlasGraphUtilsV1.setProperty(instanceVertex, propertyNameForKey, null);
             }
         }
         return additionalMap;
@@ -677,7 +678,7 @@ public final class TypedInstanceToGraphMapper {
         // Update attributes
         final MessageDigest digester = SHA256Utils.getDigester();
         String newSignature = newAttributeValue.getSignatureHash(digester);
-        String curSignature = GraphHelper.getSingleValuedProperty(structInstanceVertex, SIGNATURE_HASH_PROPERTY_KEY, String.class);
+        String curSignature = AtlasGraphUtilsV1.getEncodedProperty(structInstanceVertex, SIGNATURE_HASH_PROPERTY_KEY, String.class);
 
         if (!newSignature.equals(curSignature)) {
             //Update struct vertex instance only if there is a change
@@ -686,7 +687,7 @@ public final class TypedInstanceToGraphMapper {
             }
 
             mapInstanceToVertex(newAttributeValue, structInstanceVertex, newAttributeValue.fieldMapping().fields, false, operation);
-            GraphHelper.setProperty(structInstanceVertex, SIGNATURE_HASH_PROPERTY_KEY, String.valueOf(newSignature));
+            AtlasGraphUtilsV1.setEncodedProperty(structInstanceVertex, SIGNATURE_HASH_PROPERTY_KEY, String.valueOf(newSignature));
         }
     }
 
@@ -838,7 +839,7 @@ public final class TypedInstanceToGraphMapper {
             }
         }
 
-        GraphHelper.setProperty(instanceVertex, vertexPropertyName, propertyValue);
+        AtlasGraphUtilsV1.setProperty(instanceVertex, vertexPropertyName, propertyValue);
     }
 
     public AtlasVertex lookupVertex(Id refId) {
@@ -934,7 +935,7 @@ public final class TypedInstanceToGraphMapper {
         }
 
         RequestContext requestContext = RequestContext.get();
-        GraphHelper.setProperty(reverseVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
+        AtlasGraphUtilsV1.setEncodedProperty(reverseVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                 requestContext.getRequestTime());
         requestContext.recordEntityUpdate(reverseId._getId());
     }

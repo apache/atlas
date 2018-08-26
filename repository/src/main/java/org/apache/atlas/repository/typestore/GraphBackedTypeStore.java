@@ -31,6 +31,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.*;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
@@ -50,7 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.repository.graph.GraphHelper.setProperty;
 
 @Singleton
 @Component
@@ -251,9 +251,9 @@ public class GraphBackedTypeStore implements ITypeStore {
 
         while (vertices.hasNext()) {
             AtlasVertex vertex = vertices.next();
-            DataTypes.TypeCategory typeCategory = GraphHelper.getSingleValuedProperty(vertex, Constants.TYPE_CATEGORY_PROPERTY_KEY, TypeCategory.class);
-            String typeName = GraphHelper.getSingleValuedProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, String.class);
-            String typeDescription = GraphHelper.getSingleValuedProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, String.class);
+            DataTypes.TypeCategory typeCategory = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.TYPE_CATEGORY_PROPERTY_KEY, TypeCategory.class);
+            String typeName = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, String.class);
+            String typeDescription = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, String.class);
             LOG.info("Restoring type {}.{}.{}", typeCategory, typeName, typeDescription);
             switch (typeCategory) {
             case ENUM:
@@ -289,13 +289,13 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     private EnumTypeDefinition getEnumType(AtlasVertex vertex) throws AtlasException {
-        String typeName = GraphHelper.getSingleValuedProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, String.class);
-        String typeDescription = GraphHelper.getSingleValuedProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, String.class);
+        String typeName = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, String.class);
+        String typeDescription = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, String.class);
         List<EnumValue> enumValues = new ArrayList<>();
         List<String> values = GraphHelper.getListProperty(vertex, getPropertyKey(typeName));
         for (String value : values) {
             String valueProperty = getPropertyKey(typeName, value);
-            enumValues.add(new EnumValue(value, GraphHelper.getSingleValuedProperty(vertex, valueProperty, Integer.class)));
+            enumValues.add(new EnumValue(value, AtlasGraphUtilsV1.getEncodedProperty(vertex, valueProperty, Integer.class)));
         }
         return new EnumTypeDefinition(typeName, typeDescription, enumValues.toArray(new EnumValue[enumValues.size()]));
     }
@@ -314,7 +314,7 @@ public class GraphBackedTypeStore implements ITypeStore {
         if (attrNames != null) {
             for (String attrName : attrNames) {
                 try {
-                    String encodedPropertyKey = GraphHelper.encodePropertyKey(getPropertyKey(typeName, attrName));
+                    String encodedPropertyKey = AtlasGraphUtilsV1.encodePropertyKey(getPropertyKey(typeName, attrName));
                     AttributeDefinition attrValue = AttributeInfo.fromJson((String) vertex.getJsonProperty(encodedPropertyKey));
                     if (attrValue != null)
                     {
@@ -378,15 +378,15 @@ public class GraphBackedTypeStore implements ITypeStore {
             if (! GraphHelper.elementExists(vertex)) {
                 LOG.debug("Adding vertex {}{}", PROPERTY_PREFIX, info.getTypeName());
                 vertex = graph.addVertex();
-                setProperty(vertex, Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE); // Mark as type AtlasVertex
-                setProperty(vertex, Constants.TYPE_CATEGORY_PROPERTY_KEY, info.getCategory());
-                setProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, info.getTypeName());
+                AtlasGraphUtilsV1.setEncodedProperty(vertex, Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE); // Mark as type AtlasVertex
+                AtlasGraphUtilsV1.setEncodedProperty(vertex, Constants.TYPE_CATEGORY_PROPERTY_KEY, info.getCategory());
+                AtlasGraphUtilsV1.setEncodedProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, info.getTypeName());
             }
             String newDescription = info.getTypeDescription();
             if (newDescription != null) {
                 String oldDescription = getPropertyKey(Constants.TYPEDESCRIPTION_PROPERTY_KEY);
                 if (!newDescription.equals(oldDescription)) {
-                    setProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, newDescription);
+                    AtlasGraphUtilsV1.setEncodedProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, newDescription);
                 }
             } else {
                 LOG.debug(" type description is null ");

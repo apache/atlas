@@ -419,7 +419,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1<AtlasStructDe
         if (CollectionUtils.isNotEmpty(attrNames)) {
             for (String attrName : attrNames) {
                 String propertyKey = AtlasGraphUtilsV1.getTypeDefPropertyKey(ret, attrName);
-                String attribJson  = vertex.getProperty(GraphHelper.encodePropertyKey(propertyKey), String.class);
+                String attribJson  = vertex.getProperty(AtlasGraphUtilsV1.encodePropertyKey(propertyKey), String.class);
 
                 attributeDefs.add(toAttributeDefFromJson(structDef, AtlasType.fromJson(attribJson, Map.class),
                                   typeDefStore));

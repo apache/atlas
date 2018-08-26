@@ -22,7 +22,6 @@ import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -50,10 +49,10 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
         } else {
             AtlasEntity.Status state = AtlasGraphUtilsV1.getState(instanceVertex);
             if (state != AtlasEntity.Status.DELETED) {
-                GraphHelper.setProperty(instanceVertex, STATE_PROPERTY_KEY, AtlasEntity.Status.DELETED.name());
-                GraphHelper.setProperty(instanceVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY,
+                AtlasGraphUtilsV1.setEncodedProperty(instanceVertex, STATE_PROPERTY_KEY, AtlasEntity.Status.DELETED.name());
+                AtlasGraphUtilsV1.setEncodedProperty(instanceVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                     RequestContextV1.get().getRequestTime());
-                GraphHelper.setProperty(instanceVertex, MODIFIED_BY_KEY, RequestContextV1.get().getUser());
+                AtlasGraphUtilsV1.setEncodedProperty(instanceVertex, MODIFIED_BY_KEY, RequestContextV1.get().getUser());
             }
         }
     }
@@ -65,10 +64,9 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
         } else {
             AtlasEntity.Status state = AtlasGraphUtilsV1.getState(edge);
             if (state != AtlasEntity.Status.DELETED) {
-                GraphHelper.setProperty(edge, STATE_PROPERTY_KEY, AtlasEntity.Status.DELETED.name());
-                GraphHelper
-                    .setProperty(edge, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
-                GraphHelper.setProperty(edge, MODIFIED_BY_KEY, RequestContextV1.get().getUser());
+                AtlasGraphUtilsV1.setEncodedProperty(edge, STATE_PROPERTY_KEY, AtlasEntity.Status.DELETED.name());
+                AtlasGraphUtilsV1.setEncodedProperty(edge, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContextV1.get().getRequestTime());
+                AtlasGraphUtilsV1.setEncodedProperty(edge, MODIFIED_BY_KEY, RequestContextV1.get().getUser());
             }
         }
     }
