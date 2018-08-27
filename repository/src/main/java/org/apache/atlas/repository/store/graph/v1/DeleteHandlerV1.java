@@ -29,7 +29,6 @@ import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasEdgeLabel;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -449,8 +448,14 @@ public abstract class DeleteHandlerV1 {
             }
         }
 
+        boolean isTermEntityEdge = isTermEntityEdge(edge);
+
         for (AtlasVertex classificationVertex : removePropagationsMap.keySet()) {
-            removeTagPropagation(classificationVertex, removePropagationsMap.get(classificationVertex));
+            boolean removePropagations = getRemovePropagations(classificationVertex);
+
+            if (isTermEntityEdge || removePropagations) {
+                removeTagPropagation(classificationVertex, removePropagationsMap.get(classificationVertex));
+            }
         }
     }
 
