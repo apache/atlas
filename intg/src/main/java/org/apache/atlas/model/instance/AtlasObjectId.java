@@ -31,6 +31,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
@@ -164,13 +165,12 @@ public class AtlasObjectId  implements Serializable {
 
         AtlasObjectId that = (AtlasObjectId) o;
 
-        // if guid is null, equality should be based on typeName/uniqueAttributes
-        if (guid != null && Objects.equals(guid, that.guid)) {
-            return true;
+        // if guid is empty/null, equality should be based on typeName/uniqueAttributes
+        if (StringUtils.isEmpty(guid) && StringUtils.isEmpty(that.guid)) {
+            return Objects.equals(typeName, that.typeName) && Objects.equals(uniqueAttributes, that.uniqueAttributes);
+        } else {
+            return Objects.equals(guid, that.guid);
         }
-
-        return Objects.equals(typeName, that.typeName) &&
-               Objects.equals(uniqueAttributes, that.uniqueAttributes);
     }
 
     @Override
