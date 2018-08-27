@@ -128,6 +128,7 @@ public class ImportTransformsTest {
 
         t.apply(entity);
 
+        assertEquals(entity.getClassifications().size(), 0);
         assertNotNull(t);
         assertEquals(entity.getAttribute(ATTR_NAME_QUALIFIED_NAME), expected_qualifiedName);
     }
@@ -145,6 +146,7 @@ public class ImportTransformsTest {
 
         assertNotNull(t);
         assertEquals(entity.getAttribute(ATTR_NAME_QUALIFIED_NAME), expected_qualifiedName);
+        assertEquals(entity.getAttribute(HIVE_TABLE_ATTR_SYNC_INFO), new ArrayList<String>() {{ add(expected_syncInfo); }});
     }
 
 
@@ -161,6 +163,8 @@ public class ImportTransformsTest {
         t.apply(entity);
 
         assertNotNull(t);
+        assertNull(entity.getAttribute(HIVE_TABLE_ATTR_REPLICATED_FROM));
+        assertNull(entity.getAttribute(HIVE_TABLE_ATTR_REPLICATED_TO));
     }
 
     @Test
@@ -173,6 +177,8 @@ public class ImportTransformsTest {
         t.apply(entity);
 
         assertNotNull(t);
+        assertNull(entity.getAttribute(HIVE_TABLE_ATTR_REPLICATED_FROM));
+        assertNull(entity.getAttribute(HIVE_TABLE_ATTR_REPLICATED_TO));
     }
 
     @Test
@@ -185,6 +191,7 @@ public class ImportTransformsTest {
 
         t.apply(entity);
         assertNotNull(t);
+        assertEquals(entity.getStatus(),  AtlasEntity.Status.DELETED);
     }
 
     @Test
