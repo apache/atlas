@@ -59,10 +59,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.URI;
@@ -385,7 +385,7 @@ public abstract class AtlasBaseClient {
                 }
                 try {
                     if(api.getProduces().equals(MediaType.APPLICATION_OCTET_STREAM)) {
-                        return (T) IOUtils.toByteArray(clientResponse.getEntityInputStream());
+                        return (T) clientResponse.getEntityInputStream();
                     } else if (responseType.getRawClass().equals(ObjectNode.class)) {
                         String stringEntity = clientResponse.getEntity(String.class);
                         try {
@@ -403,8 +403,6 @@ public abstract class AtlasBaseClient {
                         return entity;
                     }
                 } catch (ClientHandlerException e) {
-                    throw new AtlasServiceException(api, e);
-                } catch (IOException e) {
                     throw new AtlasServiceException(api, e);
                 }
             } else if (clientResponse.getStatus() != ClientResponse.Status.SERVICE_UNAVAILABLE.getStatusCode()) {
@@ -467,9 +465,9 @@ public abstract class AtlasBaseClient {
         return configuration.getInt(AtlasBaseClient.ATLAS_CLIENT_HA_RETRIES_KEY, AtlasBaseClient.DEFAULT_NUM_RETRIES);
     }
 
-    public byte[] exportData(AtlasExportRequest request) throws AtlasServiceException {
+    public InputStream exportData(AtlasExportRequest request) throws AtlasServiceException {
         try {
-            return (byte[]) callAPI(EXPORT, Object.class, request);
+            return (InputStream) callAPI(EXPORT, Object.class, request);
         } catch (Exception e) {
             LOG.error("error writing to file", e);
             throw new AtlasServiceException(e);
@@ -479,14 +477,22 @@ public abstract class AtlasBaseClient {
     public void exportData(AtlasExportRequest request, String absolutePath) throws AtlasServiceException {
         OutputStream fileOutputStream = null;
         try {
-            byte[] fileBytes = exportData(request);
+            InputStream inputStream = exportData(request);
             fileOutputStream = new FileOutputStream(new File(absolutePath));
-            IOUtils.write(fileBytes, fileOutputStream);
+            byte[] buffer = new byte[8 * 1024];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                fileOutputStream.write(buffer, 0, bytesRead);
+            }
+
+            IOUtils.closeQuietly(inputStream);
+            IOUtils.closeQuietly(fileOutputStream);
+
         } catch (Exception e) {
             LOG.error("error writing to file", e);
             throw new AtlasServiceException(e);
         } finally {
-            if(fileOutputStream != null) {
+            if (fileOutputStream != null) {
                 try {
                     fileOutputStream.close();
                 } catch (IOException e) {
@@ -502,9 +508,9 @@ public abstract class AtlasBaseClient {
                             new FileDataBodyPart(IMPORT_DATA_PARAMETER, new File(absoluteFilePath)));
     }
 
-    public AtlasImportResult importData(AtlasImportRequest request, byte[] fileData) throws AtlasServiceException {
+    public AtlasImportResult importData(AtlasImportRequest request, InputStream stream) throws AtlasServiceException {
         return performImportData(getImportRequestBodyPart(request),
-                                new StreamDataBodyPart(IMPORT_DATA_PARAMETER, new ByteArrayInputStream(fileData)));
+                                new StreamDataBodyPart(IMPORT_DATA_PARAMETER, stream));
     }
 
     private AtlasImportResult performImportData(BodyPart requestPart, BodyPart filePart) throws AtlasServiceException {
