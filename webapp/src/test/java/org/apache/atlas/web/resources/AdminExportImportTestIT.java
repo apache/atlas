@@ -32,15 +32,13 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class AdminExportImportTestIT extends BaseResourceIT {
@@ -69,10 +67,10 @@ public class AdminExportImportTestIT extends BaseResourceIT {
         final int EXPECTED_CREATION_ORDER_SIZE = 10;
 
         AtlasExportRequest request = TestResourceFileUtils.readObjectFromJson(".", EXPORT_REQUEST_FILE, AtlasExportRequest.class);
-        byte[] exportedBytes = atlasClientV2.exportData(request);
-        assertNotNull(exportedBytes);
+        InputStream exportedStream = atlasClientV2.exportData(request);
+        assertNotNull(exportedStream);
 
-        ZipSource zs = new ZipSource(new ByteArrayInputStream(exportedBytes));
+        ZipSource zs = new ZipSource(exportedStream);
         assertNotNull(zs.getExportResult());
         assertTrue(zs.getCreationOrder().size() > EXPECTED_CREATION_ORDER_SIZE);
     }
@@ -87,14 +85,15 @@ public class AdminExportImportTestIT extends BaseResourceIT {
 
     private void performImport(String fileToImport, AtlasImportRequest request) throws AtlasServiceException {
 
-        byte[] fileBytes = new byte[0];
+        FileInputStream fileInputStream = null;
+
         try {
-            fileBytes = Files.readAllBytes(Paths.get(TestResourceFileUtils.getTestFilePath(fileToImport)));
+            fileInputStream = new FileInputStream(TestResourceFileUtils.getTestFilePath(fileToImport));
         } catch (IOException e) {
             assertFalse(true, "Exception: " + e.getMessage());
         }
-        AtlasImportResult result = atlasClientV2.importData(request, fileBytes);
 
+        AtlasImportResult result = atlasClientV2.importData(request, fileInputStream);
         assertNotNull(result);
         assertEquals(result.getOperationStatus(), AtlasImportResult.OperationStatus.SUCCESS);
         assertNotNull(result.getMetrics());
