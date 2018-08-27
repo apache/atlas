@@ -98,6 +98,7 @@ import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_BLOCKED_PRO
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
@@ -165,6 +166,9 @@ public final class GraphHelper {
         return INSTANCE;
     }
 
+    public static boolean isTermEntityEdge(AtlasEdge edge) {
+        return StringUtils.equals(edge.getLabel(), TERM_ASSIGNMENT_LABEL);
+    }
 
     public AtlasVertex createVertexWithIdentity(Referenceable typedInstance, Set<String> superTypeNames) {
         final String guid = UUID.randomUUID().toString();
