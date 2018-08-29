@@ -6,6 +6,12 @@
     "type": "git",
     "url": "https://git-wip-us.apache.org/repos/asf/incubator-atlas.git"
   },
+  "scripts": {
+    "dev": "grunt dev",
+    "build": "grunt build",
+    "dev-minify": "grunt dev-minify",
+    "build-minify": "grunt build-minify"
+  },
   "engines": {
     "node": "4.4.x",
     "npm": "3.8.x"
