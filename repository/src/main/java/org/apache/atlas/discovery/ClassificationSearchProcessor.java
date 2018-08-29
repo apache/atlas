@@ -53,6 +53,8 @@ import java.util.Set;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.EQUAL;
@@ -169,7 +171,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                         SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
                         SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
             } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
-                orConditions.add(graph.query().createChildQuery().has(TRAIT_NAMES_PROPERTY_KEY, EQUAL, null).has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, EQUAL, null));
+                orConditions.add(graph.query().createChildQuery().has(GUID_PROPERTY_KEY, NOT_EQUAL, null).has(ENTITY_TYPE_PROPERTY_KEY, NOT_EQUAL, null)
+                                                                 .has(TRAIT_NAMES_PROPERTY_KEY, EQUAL, null).has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, EQUAL, null));
 
                 entityGraphQueryTraitNames = graph.query().or(orConditions);
                 entityPredicateTraitNames  = PredicateUtils.andPredicate(
