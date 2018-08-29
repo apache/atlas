@@ -143,15 +143,18 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         if (extractJSON && extractJSON.extractKey) {
                             var newAttributesList = {};
                             _.each(attributesList, function(objValue, objKey) {
-                                var value = _.isObject(objValue) ? objValue : _.escape(objValue);
-                                if (_.isObject(extractJSON.extractKey)) {
-                                    _.each(extractJSON.extractKey, function(extractKey) {
-                                        if (objKey === extractKey) {
-                                            newAttributesList[_.escape(objKey)] = value;
-                                        }
-                                    });
-                                } else if (_.isString(extractJSON.extractKey) && extractJSON.extractKey === objKey) {
-                                    newAttributesList[_.escape(objKey)] = value;
+                                var value = _.isObject(objValue) ? objValue : _.escape(objValue),
+                                    tempVarfor$check = objKey.toString();
+                                if (tempVarfor$check.indexOf("$") == -1) {
+                                    if (_.isObject(extractJSON.extractKey)) {
+                                        _.each(extractJSON.extractKey, function(extractKey) {
+                                            if (objKey === extractKey) {
+                                                newAttributesList[_.escape(objKey)] = value;
+                                            }
+                                        });
+                                    } else if (_.isString(extractJSON.extractKey) && extractJSON.extractKey === objKey) {
+                                        newAttributesList[_.escape(objKey)] = value;
+                                    }
                                 }
                             });
                             valueOfArray.push(Utils.JSONPrettyPrint(newAttributesList));

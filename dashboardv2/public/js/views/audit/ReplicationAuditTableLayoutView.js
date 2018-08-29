@@ -116,7 +116,7 @@ define(['require',
                     that.RReplicationAuditTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: columns
                     })));
-                    _.extend(that.searchCollection.queryParams, { limit: that.limit, offset: that.offset, "sourceClusterName": that.name });
+                    _.extend(that.searchCollection.queryParams, { limit: that.limit, offset: that.offset, "clusterName": that.name });
                     that.fetchCollection(_.extend({ 'fromUrl': true }));
                 });
             },

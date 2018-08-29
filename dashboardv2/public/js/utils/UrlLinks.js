@@ -97,7 +97,7 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             }
 
             if (clusterName) {
-                queryParam.push("clusterName=" + sourceClusterName);
+                queryParam.push("clusterName=" + clusterName);
             }
             if (limit) {
                 queryParam.push("limit=" + limit);

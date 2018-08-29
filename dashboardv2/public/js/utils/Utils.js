@@ -732,7 +732,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             $(this).trigger('fullscreen_done', [$(this).parents('.panel')]);
         }
     });
-    
+
     $('body').on('click', 'pre.code-block .expand-collapse-button', function(e) {
         var $el = $(this).parents('.code-block');
         if ($el.hasClass('shrink')) {
