@@ -45,7 +45,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
     public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");
     public static final SimpleEntry<String, String> DB_CACHE_SIZE_CONF          = new SimpleEntry<>("atlas.graph.cache.db-cache-size", "0.5");
-    public static final SimpleEntry<String, String> DB_TX_CACHE_SIZE_CONF       = new SimpleEntry<>("atlas.graph.cache.tx-cache.size", "15000");
+    public static final SimpleEntry<String, String> DB_TX_CACHE_SIZE_CONF       = new SimpleEntry<>("atlas.graph.cache.tx-cache-size", "15000");
     public static final SimpleEntry<String, String> DB_CACHE_TX_DIRTY_SIZE_CONF = new SimpleEntry<>("atlas.graph.cache.tx-dirty-size", "120");
 
     private static volatile Configuration instance = null;
