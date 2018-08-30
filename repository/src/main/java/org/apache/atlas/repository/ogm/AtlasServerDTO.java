@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.ogm;
 
-import org.apache.atlas.model.impexp.AtlasCluster;
+import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
@@ -26,21 +26,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class AtlasClusterDTO extends AbstractDataTransferObject<AtlasCluster> {
-    private final String PROPERTY_CLUSTER_NAME = "displayName";
+public class AtlasServerDTO extends AbstractDataTransferObject<AtlasServer> {
+    private final String PROPERTY_DISPLAY_NAME = "displayName";
     private final String PROPERTY_QUALIFIED_NAME = "qualifiedName";
     private final String PROPERTY_ADDITIONAL_INFO = "additionalInfo";
     private final String PROPERTY_URLS = "urls";
 
-    public AtlasClusterDTO(AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, AtlasCluster.class, AtlasCluster.class.getSimpleName());
+    public AtlasServerDTO(AtlasTypeRegistry typeRegistry) {
+        super(typeRegistry, AtlasServer.class, AtlasServer.class.getSimpleName());
     }
 
-    public AtlasCluster from(AtlasEntity entity) {
-        AtlasCluster cluster = new AtlasCluster();
+    public AtlasServer from(AtlasEntity entity) {
+        AtlasServer cluster = new AtlasServer();
 
         setGuid(cluster, entity);
-        cluster.setName((String) entity.getAttribute(PROPERTY_CLUSTER_NAME));
+        cluster.setName((String) entity.getAttribute(PROPERTY_DISPLAY_NAME));
         cluster.setQualifiedName((String) entity.getAttribute(PROPERTY_QUALIFIED_NAME));
         cluster.setAdditionalInfo((Map<String,String>) entity.getAttribute(PROPERTY_ADDITIONAL_INFO));
         cluster.setUrls((List<String>) entity.getAttribute(PROPERTY_URLS));
@@ -48,15 +48,15 @@ public class AtlasClusterDTO extends AbstractDataTransferObject<AtlasCluster> {
         return cluster;
     }
 
-    public AtlasCluster from(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
+    public AtlasServer from(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
         return from(entityWithExtInfo.getEntity());
     }
 
     @Override
-    public AtlasEntity toEntity(AtlasCluster obj) {
+    public AtlasEntity toEntity(AtlasServer obj) {
         AtlasEntity entity = getDefaultAtlasEntity(obj);
 
-        entity.setAttribute(PROPERTY_CLUSTER_NAME, obj.getName());
+        entity.setAttribute(PROPERTY_DISPLAY_NAME, obj.getName());
         entity.setAttribute(PROPERTY_QUALIFIED_NAME, obj.getQualifiedName());
         entity.setAttribute(PROPERTY_ADDITIONAL_INFO, obj.getAdditionalInfo());
         entity.setAttribute(PROPERTY_URLS, obj.getUrls());
@@ -65,12 +65,12 @@ public class AtlasClusterDTO extends AbstractDataTransferObject<AtlasCluster> {
     }
 
     @Override
-    public AtlasEntity.AtlasEntityWithExtInfo toEntityWithExtInfo(AtlasCluster obj) {
+    public AtlasEntity.AtlasEntityWithExtInfo toEntityWithExtInfo(AtlasServer obj) {
         return new AtlasEntity.AtlasEntityWithExtInfo(toEntity(obj));
     }
 
     @Override
-    public Map<String, Object> getUniqueAttributes(final AtlasCluster obj) {
+    public Map<String, Object> getUniqueAttributes(final AtlasServer obj) {
         return new HashMap<String, Object>() {{
             put(PROPERTY_QUALIFIED_NAME, obj.getQualifiedName());
         }};

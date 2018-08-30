@@ -22,7 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.impexp.AtlasCluster;
+import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
@@ -45,15 +45,15 @@ public class AuditsWriter {
     private static final Logger LOG = LoggerFactory.getLogger(AuditsWriter.class);
     private static final String CLUSTER_NAME_DEFAULT = "default";
 
-    private ClusterService clusterService;
+    private AtlasServerService atlasServerService;
     private ExportImportAuditService auditService;
 
     private ExportAudits auditForExport = new ExportAudits();
     private ImportAudits auditForImport = new ImportAudits();
 
     @Inject
-    public AuditsWriter(ClusterService clusterService, ExportImportAuditService auditService) {
-        this.clusterService = clusterService;
+    public AuditsWriter(AtlasServerService atlasServerService, ExportImportAuditService auditService) {
+        this.atlasServerService = atlasServerService;
         this.auditService = auditService;
     }
 
@@ -63,7 +63,9 @@ public class AuditsWriter {
         auditForExport.add(userName, result, startTime, endTime, entityCreationOrder);
     }
 
-    public void write(String userName, AtlasImportResult result, long startTime, long endTime, List<String> entityCreationOrder) throws AtlasBaseException {
+    public void write(String userName, AtlasImportResult result,
+                      long startTime, long endTime,
+                      List<String> entityCreationOrder) throws AtlasBaseException {
         auditForImport.add(userName, result, startTime, endTime, entityCreationOrder);
     }
 
@@ -72,7 +74,7 @@ public class AuditsWriter {
     }
 
     private void updateReplicationAttribute(boolean isReplicationSet,
-                                            String clusterName,
+                                            String serverName,
                                             List<String> exportedGuids,
                                             String attrNameReplicated,
                                             long lastModifiedTimestamp) throws AtlasBaseException {
@@ -80,30 +82,33 @@ public class AuditsWriter {
             return;
         }
 
-        AtlasCluster cluster = saveCluster(clusterName, exportedGuids.get(0), lastModifiedTimestamp);
-        clusterService.updateEntitiesWithCluster(cluster, exportedGuids, attrNameReplicated);
+        AtlasServer server = saveServer(serverName, exportedGuids.get(0), lastModifiedTimestamp);
+        atlasServerService.updateEntitiesWithServer(server, exportedGuids, attrNameReplicated);
     }
 
     private String getClusterNameFromOptions(Map options, String key) {
         return options.containsKey(key)
                 ? (String) options.get(key)
-                : "";
+                : StringUtils.EMPTY;
     }
 
-    private AtlasCluster saveCluster(String clusterName) throws AtlasBaseException {
-        AtlasCluster cluster = new AtlasCluster(clusterName, clusterName);
-        return clusterService.save(cluster);
+    private AtlasServer saveServer(String clusterName) throws AtlasBaseException {
+        AtlasServer cluster = new AtlasServer(clusterName, clusterName);
+        return atlasServerService.save(cluster);
     }
 
-    private AtlasCluster saveCluster(String clusterName, String entityGuid, long lastModifiedTimestamp) throws AtlasBaseException {
-        AtlasCluster cluster = new AtlasCluster(clusterName, clusterName);
-        cluster.setAdditionalInfoRepl(entityGuid, lastModifiedTimestamp);
+    private AtlasServer saveServer(String clusterName,
+                                   String entityGuid,
+                                   long lastModifiedTimestamp) throws AtlasBaseException {
+
+        AtlasServer server = new AtlasServer(clusterName, clusterName);
+        server.setAdditionalInfoRepl(entityGuid, lastModifiedTimestamp);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("saveCluster: {}", cluster);
+            LOG.debug("saveServer: {}", server);
         }
 
-        return clusterService.save(cluster);
+        return atlasServerService.save(server);
     }
 
     public static String getCurrentClusterName() {
@@ -113,12 +118,12 @@ public class AuditsWriter {
             LOG.error("getCurrentClusterName", e);
         }
 
-        return "";
+        return StringUtils.EMPTY;
     }
 
     private class ExportAudits {
         private AtlasExportRequest request;
-        private String targetClusterName;
+        private String targetServerName;
         private String optionKeyReplicatedTo;
         private boolean replicationOptionState;
 
@@ -129,9 +134,9 @@ public class AuditsWriter {
             request = result.getRequest();
             replicationOptionState = isReplicationOptionSet(request.getOptions(), optionKeyReplicatedTo);
 
-            saveClusters();
+            saveServers();
 
-            auditService.add(userName, getCurrentClusterName(), targetClusterName,
+            auditService.add(userName, getCurrentClusterName(), targetServerName,
                     ExportImportAuditEntry.OPERATION_EXPORT,
                     AtlasType.toJson(result), startTime, endTime, !entityGuids.isEmpty());
 
@@ -139,16 +144,16 @@ public class AuditsWriter {
                 return;
             }
 
-            updateReplicationAttribute(replicationOptionState, targetClusterName,
-                    entityGuids, Constants.ATTR_NAME_REPLICATED_TO_CLUSTER, result.getLastModifiedTimestamp());
+            updateReplicationAttribute(replicationOptionState, targetServerName,
+                    entityGuids, Constants.ATTR_NAME_REPLICATED_TO, result.getLastModifiedTimestamp());
         }
 
-        private void saveClusters() throws AtlasBaseException {
-            saveCluster(getCurrentClusterName());
+        private void saveServers() throws AtlasBaseException {
+            saveServer(getCurrentClusterName());
 
-            targetClusterName = getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedTo);
-            if(StringUtils.isNotEmpty(targetClusterName)) {
-                saveCluster(targetClusterName);
+            targetServerName = getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedTo);
+            if(StringUtils.isNotEmpty(targetServerName)) {
+                saveServer(targetServerName);
             }
         }
     }
@@ -156,8 +161,7 @@ public class AuditsWriter {
     private class ImportAudits {
         private AtlasImportRequest request;
         private boolean replicationOptionState;
-        private String sourceClusterName;
-        private AtlasCluster sourceCluster;
+        private String sourceServerName;
         private String optionKeyReplicatedFrom;
 
         public void add(String userName, AtlasImportResult result,
@@ -167,10 +171,10 @@ public class AuditsWriter {
             request = result.getRequest();
             replicationOptionState = isReplicationOptionSet(request.getOptions(), optionKeyReplicatedFrom);
 
-            saveClusters();
+            saveServers();
 
             auditService.add(userName,
-                    sourceClusterName, getCurrentClusterName(),
+                    sourceServerName, getCurrentClusterName(),
                     ExportImportAuditEntry.OPERATION_IMPORT,
                     AtlasType.toJson(result), startTime, endTime, !entityGuids.isEmpty());
 
@@ -178,23 +182,23 @@ public class AuditsWriter {
                 return;
             }
 
-            updateReplicationAttribute(replicationOptionState, this.sourceClusterName, entityGuids,
-                    Constants.ATTR_NAME_REPLICATED_FROM_CLUSTER, result.getExportResult().getLastModifiedTimestamp());
+            updateReplicationAttribute(replicationOptionState, this.sourceServerName, entityGuids,
+                    Constants.ATTR_NAME_REPLICATED_FROM, result.getExportResult().getLastModifiedTimestamp());
         }
 
-        private void saveClusters() throws AtlasBaseException {
-            saveCluster(getCurrentClusterName());
+        private void saveServers() throws AtlasBaseException {
+            saveServer(getCurrentClusterName());
 
-            sourceClusterName = getClusterNameFromOptionsState();
-            if(StringUtils.isNotEmpty(sourceClusterName)) {
-                this.sourceCluster = saveCluster(sourceClusterName);
+            sourceServerName = getClusterNameFromOptionsState();
+            if(StringUtils.isNotEmpty(sourceServerName)) {
+                saveServer(sourceServerName);
             }
         }
 
         private String getClusterNameFromOptionsState() {
             return replicationOptionState
                     ? getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedFrom)
-                    : "";
+                    : StringUtils.EMPTY;
         }
     }
 }

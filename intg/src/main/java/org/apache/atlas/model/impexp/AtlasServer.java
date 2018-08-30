@@ -18,12 +18,10 @@
 package org.apache.atlas.model.impexp;
 
 import org.apache.atlas.model.AtlasBaseModelObject;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.type.AtlasType;
-//import org.codehaus.jackson.annotate.JsonAutoDetect;
-//import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-//import org.codehaus.jackson.map.annotate.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -31,13 +29,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-//import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-//import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-//@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-//@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-//@JsonIgnoreProperties(ignoreUnknown = true)
-public class AtlasCluster extends AtlasBaseModelObject implements Serializable {
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AtlasServer extends AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final String KEY_REPLICATION_DETAILS = "REPL_DETAILS";
@@ -47,12 +45,12 @@ public class AtlasCluster extends AtlasBaseModelObject implements Serializable {
     private Map<String, String> additionalInfo;
     private List<String> urls;
 
-    public AtlasCluster() {
+    public AtlasServer() {
         urls = new ArrayList<>();
         additionalInfo = new HashMap<>();
     }
 
-    public AtlasCluster(String name, String qualifiedName) {
+    public AtlasServer(String name, String qualifiedName) {
         this();
         this.name = name;
         this.qualifiedName = qualifiedName;

@@ -25,10 +25,9 @@ import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
 import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
 
 import javax.inject.Inject;
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-//import java.util.Set;
+import java.util.Set;
 
 @Component
 public class DTORegistry {
@@ -36,13 +35,13 @@ public class DTORegistry {
 
     private final Map<Class, DataTransferObject> typeDTOMap = new HashMap<>();
 
-    /*@Inject
+    @Inject
     public DTORegistry(Set<DataTransferObject> availableDTOs) {
         for (DataTransferObject availableDTO : availableDTOs) {
             LOG.info("Registering DTO: {}", availableDTO.getClass().getSimpleName());
             registerDTO(availableDTO);
         }
-    }*/
+    }
 
     @Inject
     public DTORegistry(AtlasTypeRegistry typeRegistry){
@@ -51,16 +50,15 @@ public class DTORegistry {
 
             registerDTO(savedSearchDTO);
             registerDTO(userProfileDTO);
-            registerDTO(new AtlasClusterDTO(typeRegistry));
+            registerDTO(new AtlasServerDTO(typeRegistry));
             registerDTO(new ExportImportAuditEntryDTO(typeRegistry));
-
         }
 
-        public <T extends DataTransferObject> DataTransferObject get(Type t) {
+        public <T extends DataTransferObject> DataTransferObject get(Class t) {
             return typeDTOMap.get(t);
         }
 
-        private void registerDTO (DataTransferObject dto){
+        private void registerDTO(DataTransferObject dto) {
             typeDTOMap.put(dto.getObjectType(), dto);
         }
 
