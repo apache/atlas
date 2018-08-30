@@ -125,7 +125,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                 continue;
             }
 
-            messages.add(new EntityNotificationV2(toNotificationHeader(entity), operationType));
+            messages.add(new EntityNotificationV2(toNotificationHeader(entity), operationType, RequestContext.get().getRequestTime()));
         }
 
         if (!messages.isEmpty()) {
