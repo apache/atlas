@@ -37,7 +37,7 @@ public class DTORegistry {
 
         registerDTO(savedSearchDTO);
         registerDTO(userProfileDTO);
-        registerDTO(new AtlasClusterDTO(typeRegistry));
+        registerDTO(new AtlasServerDTO(typeRegistry));
         registerDTO(new ExportImportAuditEntryDTO(typeRegistry));
     }
 

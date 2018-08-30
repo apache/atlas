@@ -102,8 +102,8 @@ public final class Constants {
      */
 
     public static final String ATTR_NAME_REFERENCEABLE = "Referenceable.";
-    public static final String ATTR_NAME_REPLICATED_TO_CLUSTER = "replicatedToCluster";
-    public static final String ATTR_NAME_REPLICATED_FROM_CLUSTER = "replicatedFromCluster";
+    public static final String ATTR_NAME_REPLICATED_TO = "replicatedTo";
+    public static final String ATTR_NAME_REPLICATED_FROM = "replicatedFrom";
 
     private Constants() {
     }

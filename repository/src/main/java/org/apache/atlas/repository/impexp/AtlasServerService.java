@@ -22,7 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.impexp.AtlasCluster;
+import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -42,8 +42,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @AtlasService
-public class ClusterService {
-    private static final Logger LOG = LoggerFactory.getLogger(ClusterService.class);
+public class AtlasServerService {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasServerService.class);
 
     private final DataAccess dataAccess;
     private final AtlasEntityStore entityStore;
@@ -51,16 +51,19 @@ public class ClusterService {
     private final EntityGraphRetriever entityGraphRetriever;
 
     @Inject
-    public ClusterService(DataAccess dataAccess, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityGraphRetriever) {
+    public AtlasServerService(DataAccess dataAccess, AtlasEntityStore entityStore,
+                              AtlasTypeRegistry typeRegistry,
+                              EntityGraphRetriever entityGraphRetriever) {
+
         this.dataAccess = dataAccess;
         this.entityStore = entityStore;
         this.typeRegistry = typeRegistry;
         this.entityGraphRetriever = entityGraphRetriever;
     }
 
-    public AtlasCluster get(AtlasCluster cluster) throws AtlasBaseException {
+    public AtlasServer get(AtlasServer server) throws AtlasBaseException {
         try {
-            return dataAccess.load(cluster);
+            return dataAccess.load(server);
         } catch (AtlasBaseException e) {
             LOG.error("dataAccess", e);
             throw e;
@@ -68,25 +71,25 @@ public class ClusterService {
     }
 
     @GraphTransaction
-    public AtlasCluster save(AtlasCluster cluster) throws AtlasBaseException {
-       return dataAccess.save(cluster);
+    public AtlasServer save(AtlasServer server) throws AtlasBaseException {
+       return dataAccess.save(server);
     }
 
     @GraphTransaction
-    public void updateEntitiesWithCluster(AtlasCluster cluster, List<String> entityGuids, String attributeName) throws AtlasBaseException {
-        if (cluster != null && StringUtils.isEmpty(cluster.getGuid())) {
+    public void updateEntitiesWithServer(AtlasServer server, List<String> entityGuids, String attributeName) throws AtlasBaseException {
+        if (server != null && StringUtils.isEmpty(server.getGuid())) {
             return;
         }
 
-        AtlasObjectId objectId = getObjectId(cluster);
+        AtlasObjectId objectId = getObjectId(server);
         for (String guid : entityGuids) {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(guid);
             updateAttribute(entityWithExtInfo, attributeName, objectId);
         }
     }
 
-    private AtlasObjectId getObjectId(AtlasCluster cluster) {
-        return new AtlasObjectId(cluster.getGuid(), AtlasCluster.class.getSimpleName());
+    private AtlasObjectId getObjectId(AtlasServer server) {
+        return new AtlasObjectId(server.getGuid(), AtlasServer.class.getSimpleName());
     }
 
 

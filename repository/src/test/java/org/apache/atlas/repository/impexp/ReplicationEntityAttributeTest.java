@@ -24,21 +24,17 @@ import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.impexp.AtlasCluster;
+import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
@@ -53,8 +49,6 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.apache.atlas.model.impexp.AtlasExportRequest.OPTION_KEY_REPLICATED_TO;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadHiveModel;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runExportWithParameters;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithParameters;
 import static org.testng.Assert.assertEquals;
@@ -89,7 +83,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
     ImportService importService;
 
     @Inject
-    ClusterService clusterService;
+    AtlasServerService atlasServerService;
 
     private AtlasEntityStoreV1 entityStore;
     private ZipSource zipSource;
@@ -123,7 +117,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         assertEquals(zipSource.getCreationOrder().size(), expectedEntityCount);
 
         assertCluster(REPLICATED_TO_CLUSTER_NAME, null);
-        assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_TO_CLUSTER);
+        assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_TO);
     }
 
     @Test(dependsOnMethods = "exportWithReplicationToOption_AddsClusterObjectIdToReplicatedFromAttribute")
@@ -132,7 +126,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         AtlasImportResult importResult = runImportWithParameters(importService, request, zipSource);
 
         assertCluster(REPLICATED_FROM_CLUSTER_NAME, importResult);
-        assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_FROM_CLUSTER);
+        assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_FROM);
     }
 
     private void assertReplicationAttribute(String attrNameReplication) throws AtlasBaseException {
@@ -148,7 +142,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
     }
 
     private void assertCluster(String name, AtlasImportResult importResult) throws AtlasBaseException {
-        AtlasCluster actual = clusterService.get(new AtlasCluster(name, name));
+        AtlasServer actual = atlasServerService.get(new AtlasServer(name, name));
 
         assertNotNull(actual);
         assertEquals(actual.getName(), name);
@@ -158,7 +152,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         }
     }
 
-    private void assertClusterAdditionalInfo(AtlasCluster cluster, AtlasImportResult importResult) throws AtlasBaseException {
+    private void assertClusterAdditionalInfo(AtlasServer cluster, AtlasImportResult importResult) throws AtlasBaseException {
         AtlasExportRequest request = importResult.getExportResult().getRequest();
         AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(request.getItemsToExport().get(0).getTypeName());
         AtlasEntity.AtlasEntityWithExtInfo entity = entityStore.getByUniqueAttributes(type, request.getItemsToExport().get(0).getUniqueAttributes());

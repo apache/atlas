@@ -36,14 +36,14 @@ public class ExportImportAuditEntryDTO extends AbstractDataTransferObject<Export
     public static final String PROPERTY_START_TIME             = "operationStartTime";
     public static final String PROPERTY_END_TIME               = "operationEndTime";
     public static final String PROPERTY_RESULT_SUMMARY         = "resultSummary";
-    public static final String PROPERTY_SOURCE_CLUSTER_NAME    = "sourceClusterName";
-    public static final String PROPERTY_TARGET_CLUSTER_NAME    = "targetClusterName";
+    public static final String PROPERTY_SOURCE_SERVER_NAME     = "sourceServerName";
+    public static final String PROPERTY_TARGET_SERVER_NAME     = "targetServerName";
 
     private static final Set<String> ATTRIBUTE_NAMES = new HashSet<>(Arrays.asList(PROPERTY_USER_NAME,
             PROPERTY_OPERATION, PROPERTY_OPERATION_PARAMS,
             PROPERTY_START_TIME, PROPERTY_END_TIME,
             PROPERTY_RESULT_SUMMARY,
-            PROPERTY_SOURCE_CLUSTER_NAME, PROPERTY_TARGET_CLUSTER_NAME));
+            PROPERTY_SOURCE_SERVER_NAME, PROPERTY_TARGET_SERVER_NAME));
 
     protected ExportImportAuditEntryDTO(AtlasTypeRegistry typeRegistry) {
         super(typeRegistry, ExportImportAuditEntry.class);
@@ -62,8 +62,8 @@ public class ExportImportAuditEntryDTO extends AbstractDataTransferObject<Export
         entry.setOperationParams((String) attributes.get(PROPERTY_OPERATION_PARAMS));
         entry.setStartTime((long) attributes.get(PROPERTY_START_TIME));
         entry.setEndTime((long) attributes.get(PROPERTY_END_TIME));
-        entry.setSourceClusterName((String) attributes.get(PROPERTY_SOURCE_CLUSTER_NAME));
-        entry.setTargetClusterName((String) attributes.get(PROPERTY_TARGET_CLUSTER_NAME));
+        entry.setSourceServerName((String) attributes.get(PROPERTY_SOURCE_SERVER_NAME));
+        entry.setTargetServerName((String) attributes.get(PROPERTY_TARGET_SERVER_NAME));
         entry.setResultSummary((String) attributes.get(PROPERTY_RESULT_SUMMARY));
 
         return entry;
@@ -88,8 +88,8 @@ public class ExportImportAuditEntryDTO extends AbstractDataTransferObject<Export
         entity.setAttribute(PROPERTY_OPERATION_PARAMS, obj.getOperationParams());
         entity.setAttribute(PROPERTY_START_TIME, obj.getStartTime());
         entity.setAttribute(PROPERTY_END_TIME, obj.getEndTime());
-        entity.setAttribute(PROPERTY_SOURCE_CLUSTER_NAME, obj.getSourceClusterName());
-        entity.setAttribute(PROPERTY_TARGET_CLUSTER_NAME, obj.getTargetClusterName());
+        entity.setAttribute(PROPERTY_SOURCE_SERVER_NAME, obj.getSourceServerName());
+        entity.setAttribute(PROPERTY_TARGET_SERVER_NAME, obj.getTargetServerName());
         entity.setAttribute(PROPERTY_RESULT_SUMMARY, obj.getResultSummary());
 
         return entity;

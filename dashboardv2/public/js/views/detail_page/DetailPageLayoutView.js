@@ -207,7 +207,7 @@ define(['require',
                     }
 
                     //to display ReplicationAudit tab
-                    if (collectionJSON && collectionJSON.typeName === "AtlasCluster") {
+                    if (collectionJSON && collectionJSON.typeName === "AtlasServer") {
                         this.$('.replicationTab').show();
                         this.renderReplicationAuditTableLayoutView(obj);
                     }

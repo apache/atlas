@@ -116,7 +116,7 @@
       ]
     },
     {
-      "name": "AtlasCluster",
+      "name": "AtlasServer",
       "typeVersion": "1.0",
       "superTypes": [
       ],
@@ -274,7 +274,7 @@
           "isUnique": false
         },
         {
-          "name": "sourceClusterName",
+          "name": "sourceServerName",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": true,
@@ -282,7 +282,7 @@
           "isUnique": false
         },
         {
-          "name": "targetClusterName",
+          "name": "targetServerName",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": true,

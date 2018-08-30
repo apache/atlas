@@ -76,14 +76,14 @@ public class ExportImportAuditServiceTest extends ExportImportTestBase {
 
         assertNotEquals(actualEntry.getGuid(), actualEntry2.getGuid());
         assertNotNull(actualEntry.getGuid());
-        assertEquals(actualEntry.getSourceClusterName(), entry.getSourceClusterName());
-        assertEquals(actualEntry.getTargetClusterName(), entry.getTargetClusterName());
+        assertEquals(actualEntry.getSourceServerName(), entry.getSourceServerName());
+        assertEquals(actualEntry.getTargetServerName(), entry.getTargetServerName());
         assertEquals(actualEntry.getOperation(), entry.getOperation());
     }
 
     @Test
     public void numberOfSavedEntries_Retrieved() throws AtlasBaseException, InterruptedException {
-        final String source1 = "cluster1";
+        final String source1 = "server1";
         final String target1 = "cly";
         int MAX_ENTRIES = 5;
 
@@ -100,7 +100,7 @@ public class ExportImportAuditServiceTest extends ExportImportTestBase {
 
     private ExportImportAuditEntry retrieveEntry(ExportImportAuditEntry entry) throws AtlasBaseException {
         List<ExportImportAuditEntry> result = auditService.get(entry.getUserName(), entry.getOperation(),
-                                                            entry.getSourceClusterName(),
+                                                            entry.getSourceServerName(),
                                                             Long.toString(entry.getStartTime()), "", 10, 0);
         assertNotNull(result);
         assertEquals(result.size(), 1);
@@ -108,10 +108,10 @@ public class ExportImportAuditServiceTest extends ExportImportTestBase {
         return auditService.get(entry);
     }
 
-    private ExportImportAuditEntry saveAndGet(String sourceClusterName, String operation, String targetClusterName) throws AtlasBaseException {
-        ExportImportAuditEntry entry = new ExportImportAuditEntry(sourceClusterName, operation);
+    private ExportImportAuditEntry saveAndGet(String sourceServerName, String operation, String targetServerName) throws AtlasBaseException {
+        ExportImportAuditEntry entry = new ExportImportAuditEntry(sourceServerName, operation);
 
-        entry.setTargetClusterName(targetClusterName);
+        entry.setTargetServerName(targetServerName);
         entry.setUserName("default");
         entry.setStartTime(System.currentTimeMillis());
         entry.setEndTime(System.currentTimeMillis() + 1000L);

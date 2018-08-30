@@ -95,19 +95,19 @@ public class ExportImportAuditEntry extends AtlasBaseModelObject implements Seri
         return this.endTime;
     }
 
-    public String getTargetClusterName() {
+    public String getTargetServerName() {
         return this.targetClusterName;
     }
 
-    public String getSourceClusterName() {
+    public String getSourceServerName() {
         return this.sourceClusterName;
     }
 
-    public void setSourceClusterName(String sourceClusterName) {
+    public void setSourceServerName(String sourceClusterName) {
         this.sourceClusterName = sourceClusterName;
     }
 
-    public void setTargetClusterName(String targetClusterName) {
+    public void setTargetServerName(String targetClusterName) {
         this.targetClusterName = targetClusterName;
     }
 
