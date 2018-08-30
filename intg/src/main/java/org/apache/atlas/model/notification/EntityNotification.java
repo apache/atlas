@@ -105,16 +105,22 @@ public class EntityNotification implements Serializable {
 
         private AtlasEntityHeader entity;
         private OperationType     operationType;
+        private long              eventTime;
 
         public EntityNotificationV2() {
-            super(ENTITY_NOTIFICATION_V2);
+            this(null, null, System.currentTimeMillis());
         }
 
         public EntityNotificationV2(AtlasEntityHeader entity, OperationType operationType) {
+            this(entity, operationType, System.currentTimeMillis());
+        }
+
+        public EntityNotificationV2(AtlasEntityHeader entity, OperationType operationType, long eventTime) {
             super(ENTITY_NOTIFICATION_V2);
 
             setEntity(entity);
             setOperationType(operationType);
+            setEventTime(eventTime);
         }
 
         public AtlasEntityHeader getEntity() {
@@ -131,6 +137,14 @@ public class EntityNotification implements Serializable {
 
         public void setOperationType(OperationType operationType) {
             this.operationType = operationType;
+        }
+
+        public long getEventTime() {
+            return eventTime;
+        }
+
+        public void setEventTime(long eventTime) {
+            this.eventTime = eventTime;
         }
 
         @Override
@@ -163,6 +177,7 @@ public class EntityNotification implements Serializable {
                 sb.append(entity);
             }
             sb.append(", operationType=").append(operationType);
+            sb.append(", eventTime=").append(eventTime);
             sb.append("}");
 
             return sb;
