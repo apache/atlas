@@ -1,6 +1,6 @@
 {
-  "name": "replicatedFromCluster",
-  "typeName": "array<AtlasCluster>",
+  "name": "replicatedFrom",
+  "typeName": "array<AtlasServer>",
   "cardinality": "SET",
   "isIndexable": false,
   "isOptional": true,

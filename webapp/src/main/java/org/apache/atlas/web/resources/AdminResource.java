@@ -29,18 +29,21 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
-import org.apache.atlas.model.impexp.*;
+import org.apache.atlas.model.impexp.ExportImportAuditEntry;
+import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.repository.impexp.AtlasServerService;
+import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.impexp.ExportService;
 import org.apache.atlas.repository.impexp.ImportService;
+import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.impexp.ZipSource;
-import org.apache.atlas.repository.impexp.ExportImportAuditService;
-import org.apache.atlas.repository.impexp.*;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -126,10 +129,10 @@ public class AdminResource {
     private final  ImportService            importService;
     private final  SearchTracker            activeSearches;
     private final  AtlasTypeRegistry        typeRegistry;
-    private final  MigrationProgressService migrationProgressService;
+    private final MigrationProgressService migrationProgressService;
     private final  ReentrantLock            importExportOperationLock;
     private final  ExportImportAuditService exportImportAuditService;
-    private final  ClusterService           clusterService;
+    private final  AtlasServerService       atlasServerService;
 
     static {
         try {
@@ -143,7 +146,7 @@ public class AdminResource {
     public AdminResource(ServiceState serviceState, MetricsService metricsService, AtlasTypeRegistry typeRegistry,
                          ExportService exportService, ImportService importService, SearchTracker activeSearches,
                          MigrationProgressService migrationProgressService,
-                         ClusterService clusterService,
+                         AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService) {
         this.serviceState               = serviceState;
         this.metricsService             = metricsService;
@@ -152,7 +155,7 @@ public class AdminResource {
         this.activeSearches = activeSearches;
         this.typeRegistry = typeRegistry;
         this.migrationProgressService = migrationProgressService;
-        this.clusterService = clusterService;
+        this.atlasServerService = serverService;
         this.exportImportAuditService = exportImportAuditService;
         this.importExportOperationLock = new ReentrantLock();
     }
@@ -448,24 +451,24 @@ public class AdminResource {
 
     /**
      * Fetch details of a cluster.
-     * @param clusterName name of target cluster with which it is paired
-     * @return AtlasCluster
+     * @param serverName name of target cluster with which it is paired
+     * @return AtlasServer
      * @throws AtlasBaseException
      */
     @GET
-    @Path("/cluster/{clusterName}")
+    @Path("/server/{serverName}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasCluster getCluster(@PathParam("clusterName") String clusterName) throws AtlasBaseException {
+    public AtlasServer getCluster(@PathParam("serverName") String serverName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "cluster.getCluster(" + clusterName + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "cluster.getServer(" + serverName + ")");
             }
 
-            AtlasCluster cluster = new AtlasCluster(clusterName, clusterName);
-            return clusterService.get(cluster);
+            AtlasServer cluster = new AtlasServer(serverName, serverName);
+            return atlasServerService.get(cluster);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -475,7 +478,7 @@ public class AdminResource {
     @Path("/expimp/audit")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public List<ExportImportAuditEntry> getExportImportAudit(@QueryParam("clusterName") String cluster,
+    public List<ExportImportAuditEntry> getExportImportAudit(@QueryParam("serverName") String serverName,
                                                              @QueryParam("userName") String userName,
                                                              @QueryParam("operation") String operation,
                                                              @QueryParam("startTime") String startTime,
@@ -486,10 +489,10 @@ public class AdminResource {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "getExportImportAudit(" + cluster + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "getExportImportAudit(" + serverName + ")");
             }
 
-            return exportImportAuditService.get(userName, operation, cluster, startTime, endTime, limit, offset);
+            return exportImportAuditService.get(userName, operation, serverName, startTime, endTime, limit, offset);
         } finally {
             AtlasPerfTracer.log(perf);
         }

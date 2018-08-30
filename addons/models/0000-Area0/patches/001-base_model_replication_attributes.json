@@ -8,16 +8,16 @@
       "params": null,
       "attributeDefs": [
         {
-          "name": "replicatedFromCluster",
-          "typeName": "array<AtlasCluster>",
+          "name": "replicatedFrom",
+          "typeName": "array<AtlasServer>",
           "cardinality": "SET",
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false
         },
         {
-          "name": "replicatedToCluster",
-          "typeName": "array<AtlasCluster>",
+          "name": "replicatedTo",
+          "typeName": "array<AtlasServer>",
           "cardinality": "SET",
           "isIndexable": false,
           "isOptional": true,

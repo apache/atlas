@@ -21,7 +21,7 @@ package org.apache.atlas.web.resources;
 
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.impexp.AtlasCluster;
+import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
@@ -44,10 +44,10 @@ import static org.testng.Assert.assertTrue;
 public class AdminExportImportTestIT extends BaseResourceIT {
     private final String FILE_TO_IMPORT = "stocks-base.zip";
     private final String EXPORT_REQUEST_FILE = "export-incremental";
-    private final String SOURCE_CLUSTER_NAME = "cl1";
+    private final String SOURCE_SERVER_NAME = "cl1";
 
     static final String IMPORT_TRANSFORM_CLEAR_ATTRS =
-            "{ \"Asset\": { \"*\":[ \"clearAttrValue:replicatedToCluster,replicatedFromCluster\" ] } }";
+            "{ \"Asset\": { \"*\":[ \"clearAttrValue:replicatedTo,replicatedFrom\" ] } }";
     static final String IMPORT_TRANSFORM_SET_DELETED =
             "{ \"Asset\": { \"*\":[ \"setDeleted\" ] } }";
 
@@ -77,7 +77,7 @@ public class AdminExportImportTestIT extends BaseResourceIT {
 
     private void performImport(String fileToImport) throws AtlasServiceException {
         AtlasImportRequest request = new AtlasImportRequest();
-        request.getOptions().put(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM, SOURCE_CLUSTER_NAME);
+        request.getOptions().put(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM, SOURCE_SERVER_NAME);
         request.getOptions().put(AtlasImportRequest.TRANSFORMS_KEY, IMPORT_TRANSFORM_CLEAR_ATTRS);
 
         performImport(fileToImport, request);
@@ -100,11 +100,11 @@ public class AdminExportImportTestIT extends BaseResourceIT {
         assertEquals(result.getProcessedEntities().size(), 37);
     }
 
-    private void assertReplicationData(String clusterName) throws AtlasServiceException {
-        AtlasCluster cluster = atlasClientV2.getCluster(clusterName);
-        assertNotNull(cluster);
-        assertNotNull(cluster.getAdditionalInfo());
-        assertTrue(cluster.getAdditionalInfo().size() > 0);
+    private void assertReplicationData(String serverName) throws AtlasServiceException {
+        AtlasServer server = atlasClientV2.getServer(serverName);
+        assertNotNull(server);
+        assertNotNull(server.getAdditionalInfo());
+        assertTrue(server.getAdditionalInfo().size() > 0);
     }
 
     @AfterClass

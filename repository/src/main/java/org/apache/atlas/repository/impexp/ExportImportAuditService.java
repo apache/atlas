@@ -120,10 +120,10 @@ public class ExportImportAuditService {
         addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_START_TIME, startTime);
         addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_END_TIME, endTime);
 
-        addClusterFilterCriteria(criteria, cluster);
+        addServerFilterCriteria(criteria, cluster);
     }
 
-    private void addClusterFilterCriteria(SearchParameters.FilterCriteria parentCriteria, String cluster) {
+    private void addServerFilterCriteria(SearchParameters.FilterCriteria parentCriteria, String cluster) {
         if (StringUtils.isEmpty(cluster)) {
             return;
         }
@@ -132,8 +132,8 @@ public class ExportImportAuditService {
         criteria.setCondition(SearchParameters.FilterCriteria.Condition.OR);
         criteria.setCriterion(new ArrayList<>());
 
-        addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_SOURCE_CLUSTER_NAME, cluster);
-        addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_TARGET_CLUSTER_NAME, cluster);
+        addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_SOURCE_SERVER_NAME, cluster);
+        addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_TARGET_SERVER_NAME, cluster);
 
         parentCriteria.getCriterion().add(criteria);
     }
@@ -158,8 +158,8 @@ public class ExportImportAuditService {
         ExportImportAuditEntry entry = new ExportImportAuditEntry();
 
         entry.setUserName(userName);
-        entry.setSourceClusterName(sourceCluster);
-        entry.setTargetClusterName(targetCluster);
+        entry.setSourceServerName(sourceCluster);
+        entry.setTargetServerName(targetCluster);
         entry.setOperation(operation);
         entry.setResultSummary(result);
         entry.setStartTime(startTime);
@@ -167,6 +167,6 @@ public class ExportImportAuditService {
 
         save(entry);
         LOG.info("addAuditEntry: user: {}, source: {}, target: {}, operation: {}", entry.getUserName(),
-                entry.getSourceClusterName(), entry.getTargetClusterName(), entry.getOperation());
+                entry.getSourceServerName(), entry.getTargetServerName(), entry.getOperation());
     }
 }
