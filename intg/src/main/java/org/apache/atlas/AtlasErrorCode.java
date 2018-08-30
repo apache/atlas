@@ -104,7 +104,7 @@ public enum AtlasErrorCode {
     INDEX_ROLLBACK_FAILED(500, "ATLAS-500-00-003", "Index rollback failed for {0}"),
     DISCOVERY_QUERY_FAILED(500, "ATLAS-500-00-004", "Discovery query failed {0}"),
     FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK(500, "ATLAS-500-00-005", "Failed to get the lock; another type update might be in progress. Please try again"),
-    FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK(500, "ATLAS-500-00-006", "Another import or export is in progress. Please try again"),
+    FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK(409, "ATLAS-500-00-006", "Another import or export is in progress. Please try again"),
     NOTIFICATION_FAILED(500, "ATLAS-500-00-007", "Failed to notify {0} for change {1}"),
     FAILED_TO_OBTAIN_GREMLIN_SCRIPT_ENGINE(500, "ATLAS-500-00-008", "Failed to obtain gremlin script engine: {0}"),
     JSON_ERROR_OBJECT_MAPPER_NULL_RETURNED(500, "ATLAS-500-00-009", "ObjectMapper.readValue returned NULL for class: {0}"),
