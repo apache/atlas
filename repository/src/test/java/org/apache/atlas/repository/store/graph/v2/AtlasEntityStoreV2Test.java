@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -37,15 +38,17 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -63,6 +66,8 @@ import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2Test.class);
+
     private AtlasEntitiesWithExtInfo deptEntity;
     private AtlasEntityWithExtInfo   dbEntity;
     private AtlasEntityWithExtInfo   tblEntity;
@@ -101,6 +106,14 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         typesDef11.setEntityDefs(primitiveEntityDef);
 
         typeDefStore.createTypesDef(typesDef11);
+    }
+    @BeforeTest
+    public void init() throws Exception {
+        entityStore = new AtlasEntityStoreV2(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
+        RequestContext.clear();
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+
+        LOG.debug("RequestContext: activeCount={}, earliestActiveRequestTime={}", RequestContext.getActiveRequestsCount(), RequestContext.earliestActiveRequestTime());
     }
 
     @Test
