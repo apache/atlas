@@ -23,32 +23,38 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.commons.lang.StringUtils;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-
 public class RequestContext {
     private static final Logger LOG = LoggerFactory.getLogger(RequestContext.class);
-    private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
+    private static final Set<RequestContext> ACTIVE_REQUESTS = new HashSet<>();
 
     private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
 
-    private final Map<String, AtlasObjectId>             updatedEntities     = new HashMap<>();
-    private final Map<String, AtlasObjectId>             deletedEntities     = new HashMap<>();
-    private final Map<String, AtlasEntity>               entityCache         = new HashMap<>();
-    private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache  = new HashMap<>();
-    private final Map<String, List<AtlasClassification>> addedPropagations   = new HashMap<>();
+    private final Map<String, AtlasObjectId> updatedEntities = new HashMap<>();
+    private final Map<String, AtlasObjectId> deletedEntities = new HashMap<>();
+    private final Map<String, AtlasEntity> entityCache = new HashMap<>();
+    private final Map<String, AtlasEntityWithExtInfo> entityExtInfoCache = new HashMap<>();
+    private final Map<String, List<AtlasClassification>> addedPropagations = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations = new HashMap<>();
-    private final long                                   requestTime         = System.currentTimeMillis();
-    private       List<EntityGuidPair>                   entityGuidInRequest = null;
+    private final long requestTime = System.currentTimeMillis();
+    private List<EntityGuidPair> entityGuidInRequest = null;
 
-    private String      user;
+    private String user;
     private Set<String> userGroups;
     private String clientIPAddress;
-    private int    maxAttempts  = 1;
-    private int    attemptCount = 1;
-
+    private int maxAttempts = 1;
+    private int attemptCount = 1;
 
     private RequestContext() {
     }
@@ -90,19 +96,34 @@ public class RequestContext {
             }
         }
 
+
+        if (CURRENT_CONTEXT.get() == null) {
+            RequestContext context = new RequestContext();
+
+            CURRENT_CONTEXT.set(context);
+
+            synchronized (ACTIVE_REQUESTS) {
+                ACTIVE_REQUESTS.add(context);
+            }
+        }
+
         CURRENT_CONTEXT.remove();
     }
 
-    public String getUser() {
-        return user;
-    }
+
 
     public Set<String> getUserGroups() {
         return userGroups;
     }
 
+    public static RequestContext createContext() {
+        clear();
+
+        return get();
+    }
+
     public void setUser(String user, Set<String> userGroups) {
-        this.user       = user;
+        this.user = user;
         this.userGroups = userGroups;
     }
 
@@ -181,7 +202,6 @@ public class RequestContext {
 
     /**
      * Adds the specified instance to the cache
-     *
      */
     public void cache(AtlasEntityWithExtInfo entity) {
         if (entity != null && entity.getEntity() != null && entity.getEntity().getGuid() != null) {
@@ -222,6 +242,11 @@ public class RequestContext {
 
     public long getRequestTime() {
         return requestTime;
+    }
+
+    public String getUser() {
+        return user;
+
     }
 
     public boolean isUpdatedEntity(String guid) {
@@ -268,11 +293,11 @@ public class RequestContext {
 
     public class EntityGuidPair {
         private final AtlasEntity entity;
-        private final String      guid;
+        private final String guid;
 
         public EntityGuidPair(AtlasEntity entity, String guid) {
             this.entity = entity;
-            this.guid   = guid;
+            this.guid = guid;
         }
 
         public void resetEntityGuid() {

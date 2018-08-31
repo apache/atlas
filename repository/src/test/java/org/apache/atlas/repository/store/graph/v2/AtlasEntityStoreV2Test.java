@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -39,13 +40,13 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -61,8 +62,14 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2Test.class);
+
     private AtlasEntitiesWithExtInfo deptEntity;
     private AtlasEntityWithExtInfo   dbEntity;
     private AtlasEntityWithExtInfo   tblEntity;
@@ -77,6 +84,16 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
     @Inject
     private String dbEntityGuid;
     private String tblEntityGuid;
+
+    @BeforeTest
+    public void init() throws Exception {
+        entityStore = new AtlasEntityStoreV2(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
+        RequestContext.clear();
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER,null);
+
+        LOG.debug("RequestContextV1: activeCount={}, earliestActiveRequestTime={}", RequestContext.getActiveRequestsCount(), RequestContext.earliestActiveRequestTime());
+        LOG.debug("RequestContext: activeCount={}, earliestActiveRequestTime={}", RequestContext.getActiveRequestsCount(), RequestContext.earliestActiveRequestTime());
+    }
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -104,31 +121,34 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
     }
 
     @Test
-    public void testDefaultValueForPrimitiveTypes() throws Exception  {
+    public void testDefaultValueForPrimitiveTypes() throws Exception {
         init();
 
-        EntityMutationResponse  response                   = entityStore.createOrUpdate(new AtlasEntityStream(primitiveEntity), false);
-        List<AtlasEntityHeader> entitiesCreatedResponse    = response.getEntitiesByOperation(EntityOperation.CREATE);
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(primitiveEntity), false);
+        List<AtlasEntityHeader> entitiesCreatedResponse = response.getEntitiesByOperation(EntityOperation.CREATE);
         List<AtlasEntityHeader> entitiesCreatedwithdefault = response.getMutatedEntities().get(EntityOperation.CREATE);
-        AtlasEntity             entityCreated              = getEntityFromStore(entitiesCreatedResponse.get(0));
+        AtlasEntity entityCreated = getEntityFromStore(entitiesCreatedResponse.get(0));
 
-        Map     attributesMap = entityCreated.getAttributes();
-        String  description   = (String) attributesMap.get("description");
-        String  check         = (String) attributesMap.get("check");
-        String  sourceCode    = (String) attributesMap.get("sourcecode");
-        float   diskUsage     = (float) attributesMap.get("diskUsage");
-        boolean isstoreUse    = (boolean) attributesMap.get("isstoreUse");
-        int     cost          = (int) attributesMap.get("Cost");
+        Map attributesMap = entityCreated.getAttributes();
+        String description = (String) attributesMap.get("description");
+        String check = (String) attributesMap.get("check");
+        String sourceCode = (String) attributesMap.get("sourcecode");
+        float diskUsage = (float) attributesMap.get("diskUsage");
+        boolean isstoreUse = (boolean) attributesMap.get("isstoreUse");
+        int cost = (int) attributesMap.get("Cost");
 
-        assertEquals(description,"test");
-        assertEquals(check,"check");
+        assertEquals(description, "test");
+        assertEquals(check, "check");
 
         //defaultValue
-        assertEquals(diskUsage,70.5f);
-        assertEquals(isstoreUse,true);
-        assertEquals(sourceCode,"Hello World");
-        assertEquals(cost,30);
+        assertEquals(diskUsage, 70.5f);
+        assertEquals(isstoreUse, true);
+        assertEquals(sourceCode, "Hello World");
+        assertEquals(cost, 30);
+
     }
+
+
 
     @Test
     public void testCreate() throws Exception {
