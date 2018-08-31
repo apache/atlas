@@ -35,6 +35,8 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -45,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.notification.NotificationInterface.NotificationType.ENTITIES;
 import static org.apache.atlas.repository.graph.GraphHelper.isInternalType;
 import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.*;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.CREATE_TIME;
@@ -56,15 +57,17 @@ import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.QU
 
 @Component
 public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
-    private final AtlasTypeRegistry     typeRegistry;
-    private final NotificationInterface notificationInterface;
+    private static final Logger LOG = LoggerFactory.getLogger(EntityNotificationListenerV2.class);
+
+    private final AtlasTypeRegistry                              typeRegistry;
+    private final EntityNotificationSender<EntityNotificationV2> notificationSender;
 
     @Inject
     public EntityNotificationListenerV2(AtlasTypeRegistry typeRegistry,
                                         NotificationInterface notificationInterface,
                                         Configuration configuration) {
-        this.typeRegistry          = typeRegistry;
-        this.notificationInterface = notificationInterface;
+        this.typeRegistry       = typeRegistry;
+        this.notificationSender = new EntityNotificationSender<>(notificationInterface, configuration);
     }
 
     @Override
@@ -127,7 +130,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
         if (!messages.isEmpty()) {
             try {
-                notificationInterface.send(ENTITIES, messages);
+                notificationSender.send(messages);
             } catch (NotificationException e) {
                 throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
             }

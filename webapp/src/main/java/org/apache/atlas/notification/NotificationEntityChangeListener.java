@@ -18,11 +18,9 @@
 package org.apache.atlas.notification;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
-import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1;
@@ -45,11 +43,11 @@ import java.util.*;
 public class NotificationEntityChangeListener implements EntityChangeListener {
     protected static final String ATLAS_ENTITY_NOTIFICATION_PROPERTY = "atlas.notification.entity";
 
-    private final NotificationInterface     notificationInterface;
-    private final AtlasTypeRegistry         typeRegistry;
-    private final Map<String, List<String>> notificationAttributesCache = new HashMap<>();
+    private final AtlasTypeRegistry                              typeRegistry;
+    private final Configuration                                  configuration;
+    private final EntityNotificationSender<EntityNotificationV1> notificationSender;
+    private final Map<String, List<String>>                      notificationAttributesCache = new HashMap<>();
 
-    private static Configuration APPLICATION_PROPERTIES = null;
 
 
 
@@ -62,9 +60,11 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
      * @param typeRegistry the Atlas type system
      */
     @Inject
-    public NotificationEntityChangeListener(NotificationInterface notificationInterface, AtlasTypeRegistry typeRegistry) {
-        this.notificationInterface = notificationInterface;
-        this.typeRegistry          = typeRegistry;
+    public NotificationEntityChangeListener(NotificationInterface notificationInterface, AtlasTypeRegistry typeRegistry, Configuration configuration) {
+        this.typeRegistry       = typeRegistry;
+        this.configuration      = configuration;
+        this.notificationSender = new EntityNotificationSender<>(notificationInterface, configuration);
+
     }
 
 
@@ -184,20 +184,17 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
         }
 
         if (!messages.isEmpty()) {
-            notificationInterface.send(NotificationType.ENTITIES, messages);
+            notificationSender.send(messages);
         }
     }
 
     private List<String> getNotificationAttributes(String entityType) {
         List<String> ret = null;
 
-        initApplicationProperties();
-
         if (notificationAttributesCache.containsKey(entityType)) {
             ret = notificationAttributesCache.get(entityType);
-        } else if (APPLICATION_PROPERTIES != null) {
-            String[] notificationAttributes = APPLICATION_PROPERTIES.getStringArray(ATLAS_ENTITY_NOTIFICATION_PROPERTY + "." +
-                                                                                    entityType + "." + "attributes.include");
+        } else if (configuration != null) {
+            String[] notificationAttributes = configuration.getStringArray(ATLAS_ENTITY_NOTIFICATION_PROPERTY + "." + entityType + "." + "attributes.include");
 
             if (notificationAttributes != null) {
                 ret = Arrays.asList(notificationAttributes);
@@ -207,15 +204,5 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
         }
 
         return ret;
-    }
-
-    private void initApplicationProperties() {
-        if (APPLICATION_PROPERTIES == null) {
-            try {
-                APPLICATION_PROPERTIES = ApplicationProperties.get();
-            } catch (AtlasException ex) {
-                // ignore
-            }
-        }
     }
 }
