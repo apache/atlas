@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestUtils;
@@ -147,6 +148,9 @@ public class AtlasEntityStoreV1Test {
         entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
         RequestContextV1.clear();
         RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+
+        LOG.debug("RequestContextV1: activeCount={}, earliestActiveRequestTime={}", RequestContextV1.getActiveRequestsCount(), RequestContextV1.earliestActiveRequestTime());
+        LOG.debug("RequestContext: activeCount={}, earliestActiveRequestTime={}", RequestContext.getActiveRequestsCount(), RequestContext.earliestActiveRequestTime());
     }
 
     @Test

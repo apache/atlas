@@ -26,19 +26,21 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class RequestContextV1 {
     private static final Logger LOG = LoggerFactory.getLogger(RequestContextV1.class);
 
     private static final ThreadLocal<RequestContextV1> CURRENT_CONTEXT = new ThreadLocal<>();
+    private static final Set<RequestContextV1>         ACTIVE_REQUESTS = new HashSet<>();
 
     private final Map<String, AtlasObjectId> updatedEntities = new HashMap<>();
     private final Map<String, AtlasObjectId> deletedEntities = new HashMap<>();
     private final Map<String, AtlasEntity>   entityCacheV2   = new HashMap<>();
     private final Metrics                    metrics         = new Metrics();
     private final long                       requestTime     = System.currentTimeMillis();
-    private       boolean                    shouldUpdateModificationTimestamp = true;
 
     private String user;
 
@@ -53,10 +55,15 @@ public class RequestContextV1 {
         if (ret == null) {
             ret = new RequestContextV1();
             CURRENT_CONTEXT.set(ret);
+
+            synchronized (ACTIVE_REQUESTS) {
+                ACTIVE_REQUESTS.add(ret);
+            }
         }
 
         return ret;
     }
+
     public static void clear() {
         RequestContextV1 instance = CURRENT_CONTEXT.get();
 
@@ -64,9 +71,31 @@ public class RequestContextV1 {
             instance.updatedEntities.clear();
             instance.deletedEntities.clear();
             instance.entityCacheV2.clear();
+
+            synchronized (ACTIVE_REQUESTS) {
+                ACTIVE_REQUESTS.remove(instance);
+            }
         }
 
         CURRENT_CONTEXT.remove();
+    }
+
+    public static int getActiveRequestsCount() {
+        return ACTIVE_REQUESTS.size();
+    }
+
+    public static long earliestActiveRequestTime() {
+        long ret = System.currentTimeMillis();
+
+        synchronized (ACTIVE_REQUESTS) {
+            for (RequestContextV1 context : ACTIVE_REQUESTS) {
+                if (ret > context.getRequestTime()) {
+                    ret = context.getRequestTime();
+                }
+            }
+        }
+
+        return ret;
     }
 
     public String getUser() {

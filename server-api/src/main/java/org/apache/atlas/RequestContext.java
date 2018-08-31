@@ -21,6 +21,7 @@ package org.apache.atlas;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +30,6 @@ import java.util.Set;
 import org.apache.atlas.metrics.Metrics;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,19 +38,18 @@ public class RequestContext {
     private static final Logger LOG = LoggerFactory.getLogger(RequestContext.class);
 
     private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
+    private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
 
-    private Set<String> createdEntityIds = new LinkedHashSet<>();
-    private Set<String> updatedEntityIds = new LinkedHashSet<>();
-    private Set<String> deletedEntityIds = new LinkedHashSet<>();
-    private List<ITypedReferenceableInstance> deletedEntities = new ArrayList<>();
-    private Map<String,ITypedReferenceableInstance> entityCacheV1 = new HashMap<>();
-    private Map<String,AtlasEntityWithExtInfo> entityCacheV2 = new HashMap<>();
+    private final Set<String>                             createdEntityIds = new LinkedHashSet<>();
+    private final Set<String>                             updatedEntityIds = new LinkedHashSet<>();
+    private final Set<String>                             deletedEntityIds = new LinkedHashSet<>();
+    private final List<ITypedReferenceableInstance>       deletedEntities  = new ArrayList<>();
+    private final Map<String,ITypedReferenceableInstance> entityCacheV1    = new HashMap<>();
+    private final Map<String,AtlasEntityWithExtInfo>      entityCacheV2    = new HashMap<>();
+    private final Metrics                                 metrics          = new Metrics();
+    private final long                                    requestTime      = System.currentTimeMillis();
 
     private String user;
-    private long requestTime;
-
-    private TypeSystem typeSystem = TypeSystem.getInstance();
-    private Metrics metrics = new Metrics();
 
     private RequestContext() {
     }
@@ -61,10 +58,12 @@ public class RequestContext {
     //createContext called for every request in the filter
     public static RequestContext get() {
         if (CURRENT_CONTEXT.get() == null) {
-            synchronized (RequestContext.class) {
-                if (CURRENT_CONTEXT.get() == null) {
-                    createContext();
-                }
+            RequestContext context = new RequestContext();
+
+            CURRENT_CONTEXT.set(context);
+
+            synchronized (ACTIVE_REQUESTS) {
+                ACTIVE_REQUESTS.add(context);
             }
         }
 
@@ -74,11 +73,48 @@ public class RequestContext {
         return CURRENT_CONTEXT.get();
     }
 
+    public static void clear() {
+        RequestContext instance = CURRENT_CONTEXT.get();
+
+        if (instance != null) {
+            if (instance.entityCacheV1 != null) {
+                instance.entityCacheV1.clear();
+            }
+
+            if (instance.entityCacheV2 != null) {
+                instance.entityCacheV2.clear();
+            }
+
+            synchronized (ACTIVE_REQUESTS) {
+                ACTIVE_REQUESTS.remove(instance);
+            }
+        }
+
+        CURRENT_CONTEXT.remove();
+    }
+
     public static RequestContext createContext() {
-        RequestContext context = new RequestContext();
-        context.requestTime = System.currentTimeMillis();
-        CURRENT_CONTEXT.set(context);
-        return context;
+        clear();
+
+        return get();
+    }
+
+    public static int getActiveRequestsCount() {
+        return ACTIVE_REQUESTS.size();
+    }
+
+    public static long earliestActiveRequestTime() {
+        long ret = System.currentTimeMillis();
+
+        synchronized (ACTIVE_REQUESTS) {
+            for (RequestContext context : ACTIVE_REQUESTS) {
+                if (ret > context.getRequestTime()) {
+                    ret = context.getRequestTime();
+                }
+            }
+        }
+
+        return ret;
     }
 
     /**
@@ -119,22 +155,6 @@ public class RequestContext {
      */
     public AtlasEntityWithExtInfo getInstanceV2(String guid) {
         return entityCacheV2.get(guid);
-    }
-
-    public static void clear() {
-        RequestContext instance = CURRENT_CONTEXT.get();
-
-        if (instance != null) {
-            if (instance.entityCacheV1 != null) {
-                instance.entityCacheV1.clear();
-            }
-
-            if (instance.entityCacheV2 != null) {
-                instance.entityCacheV2.clear();
-            }
-        }
-
-        CURRENT_CONTEXT.remove();
     }
 
     public String getUser() {
