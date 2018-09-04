@@ -203,6 +203,7 @@ public class AdminResource {
 
                 JSONObject response = new JSONObject();
                 response.put("Version", configProperties.getString("build.version", "UNKNOWN"));
+                response.put("Revision",configProperties.getString("vc.revision", "UNKNOWN"));
                 response.put("Name", configProperties.getString("project.name", "apache-atlas"));
                 response.put("Description", configProperties.getString("project.description",
                         "Metadata Management and Data Governance Platform over Hadoop"));
