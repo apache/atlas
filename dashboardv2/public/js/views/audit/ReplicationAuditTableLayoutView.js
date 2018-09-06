@@ -132,14 +132,14 @@ define(['require',
                     className: "searchTableName"
                 };
                 col['sourceClusterName'] = {
-                    label: "source ClusterName",
+                    label: "Source Server",
                     cell: "string",
                     editable: false,
                     sortable: false,
                     className: "searchTableName"
                 };
                 col['targetClusterName'] = {
-                    label: "Target ClusterName",
+                    label: "Target Server",
                     cell: "string",
                     editable: false,
                     sortable: false,
