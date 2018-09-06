@@ -350,6 +350,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                     try {
                         RequestContext requestContext = RequestContext.createContext();
+
+                        requestContext.setAttemptCount(numRetries + 1);
+                        requestContext.setMaxAttempts(maxRetries);
                         requestContext.setUser(messageUser);
 
                         switch (message.getType()) {

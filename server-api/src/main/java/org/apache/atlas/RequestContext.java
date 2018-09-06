@@ -50,6 +50,8 @@ public class RequestContext {
     private final long                                    requestTime      = System.currentTimeMillis();
 
     private String user;
+    private int    maxAttempts  = 1;
+    private int    attemptCount = 1;
 
     private RequestContext() {
     }
@@ -165,6 +167,22 @@ public class RequestContext {
         this.user = user;
 
         RequestContextV1.get().setUser(user);
+    }
+
+    public int getMaxAttempts() {
+        return maxAttempts;
+    }
+
+    public void setMaxAttempts(int maxAttempts) {
+        this.maxAttempts = maxAttempts;
+    }
+
+    public int getAttemptCount() {
+        return attemptCount;
+    }
+
+    public void setAttemptCount(int attemptCount) {
+        this.attemptCount = attemptCount;
     }
 
     public void recordEntityCreate(Collection<String> createdEntityIds) {
