@@ -42,6 +42,8 @@ public class RequestContext {
     private String      user;
     private Set<String> userGroups;
     private String clientIPAddress;
+    private int    maxAttempts  = 1;
+    private int    attemptCount = 1;
 
 
     private RequestContext() {
@@ -94,6 +96,23 @@ public class RequestContext {
     public void setClientIPAddress(String clientIPAddress) {
         this.clientIPAddress = clientIPAddress;
     }
+
+    public int getMaxAttempts() {
+        return maxAttempts;
+    }
+
+    public void setMaxAttempts(int maxAttempts) {
+        this.maxAttempts = maxAttempts;
+    }
+
+    public int getAttemptCount() {
+        return attemptCount;
+    }
+
+    public void setAttemptCount(int attemptCount) {
+        this.attemptCount = attemptCount;
+    }
+
 
     public void recordEntityUpdate(AtlasObjectId entity) {
         if (entity != null && entity.getGuid() != null) {
