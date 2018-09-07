@@ -19,6 +19,7 @@
 package org.apache.atlas;
 
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.commons.lang.StringUtils;
@@ -38,6 +39,7 @@ public class RequestContext {
     private final Map<String, List<AtlasClassification>> addedPropagations   = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations = new HashMap<>();
     private final long                                   requestTime         = System.currentTimeMillis();
+    private       List<EntityGuidPair>                   entityGuidInRequest = null;
 
     private String      user;
     private Set<String> userGroups;
@@ -71,6 +73,10 @@ public class RequestContext {
             instance.entityCacheV2.clear();
             instance.addedPropagations.clear();
             instance.removedPropagations.clear();
+
+            if (instance.entityGuidInRequest != null) {
+                instance.entityGuidInRequest.clear();
+            }
         }
 
         CURRENT_CONTEXT.remove();
@@ -201,5 +207,35 @@ public class RequestContext {
 
     public boolean isDeletedEntity(String guid) {
         return deletedEntities.containsKey(guid);
+    }
+
+    public void recordEntityGuidUpdate(AtlasEntity entity, String guidInRequest) {
+        if (entityGuidInRequest == null) {
+            entityGuidInRequest = new ArrayList<>();
+        }
+
+        entityGuidInRequest.add(new EntityGuidPair(entity, guidInRequest));
+    }
+
+    public void resetEntityGuidUpdates() {
+        if (entityGuidInRequest != null) {
+            for (EntityGuidPair entityGuidPair : entityGuidInRequest) {
+                entityGuidPair.resetEntityGuid();
+            }
+        }
+    }
+
+    public class EntityGuidPair {
+        private final AtlasEntity entity;
+        private final String      guid;
+
+        public EntityGuidPair(AtlasEntity entity, String guid) {
+            this.entity = entity;
+            this.guid   = guid;
+        }
+
+        public void resetEntityGuid() {
+            entity.setGuid(guid);
+        }
     }
 }
