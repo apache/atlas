@@ -24,9 +24,11 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +43,7 @@ public class RequestContextV1 {
     private final Map<String, AtlasEntity>   entityCacheV2   = new HashMap<>();
     private final Metrics                    metrics         = new Metrics();
     private final long                       requestTime     = System.currentTimeMillis();
+    private       List<EntityGuidPair>       entityGuidInRequest = null;
 
     private String user;
 
@@ -71,6 +74,10 @@ public class RequestContextV1 {
             instance.updatedEntities.clear();
             instance.deletedEntities.clear();
             instance.entityCacheV2.clear();
+
+            if (instance.entityGuidInRequest != null) {
+                instance.entityGuidInRequest.clear();
+            }
 
             synchronized (ACTIVE_REQUESTS) {
                 ACTIVE_REQUESTS.remove(instance);
@@ -161,5 +168,36 @@ public class RequestContextV1 {
 
     public static Metrics getMetrics() {
         return get().metrics;
+    }
+
+
+    public void recordEntityGuidUpdate(AtlasEntity entity, String guidInRequest) {
+        if (entityGuidInRequest == null) {
+            entityGuidInRequest = new ArrayList<>();
+        }
+
+        entityGuidInRequest.add(new EntityGuidPair(entity, guidInRequest));
+    }
+
+    public void resetEntityGuidUpdates() {
+        if (entityGuidInRequest != null) {
+            for (EntityGuidPair entityGuidPair : entityGuidInRequest) {
+                entityGuidPair.resetEntityGuid();
+            }
+        }
+    }
+
+    public class EntityGuidPair {
+        private final AtlasEntity entity;
+        private final String      guid;
+
+        public EntityGuidPair(AtlasEntity entity, String guid) {
+            this.entity = entity;
+            this.guid   = guid;
+        }
+
+        public void resetEntityGuid() {
+            entity.setGuid(guid);
+        }
     }
 }

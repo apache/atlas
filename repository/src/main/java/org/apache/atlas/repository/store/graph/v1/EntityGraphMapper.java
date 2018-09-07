@@ -459,11 +459,13 @@ public class EntityGraphMapper {
                 }
 
                 if (trimmedLength < value.length()) {
-                    LOG.warn("Indexed-String-Attribute: {} length is {} characters, trimming to {}", ctx.getAttribute().getQualifiedName(), value.length(), trimmedLength);
+                    LOG.warn("Length of indexed attribute {} is {} characters, longer than safe-limit {}; trimming to {} - attempt #{}", ctx.getAttribute().getQualifiedName(), value.length(), INDEXED_STR_SAFE_LEN, trimmedLength, requestContext.getAttemptCount());
 
                     String checksumSuffix = ":" + DigestUtils.shaHex(value); // Storing SHA checksum in case verification is needed after retrieval
 
                     ret = value.substring(0, trimmedLength - checksumSuffix.length()) + checksumSuffix;
+                } else {
+                    LOG.warn("Length of indexed attribute {} is {} characters, longer than safe-limit {}", ctx.getAttribute().getQualifiedName(), value.length(), INDEXED_STR_SAFE_LEN);
                 }
             }
         }
