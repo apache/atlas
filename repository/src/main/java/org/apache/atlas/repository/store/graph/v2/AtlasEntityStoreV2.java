@@ -715,6 +715,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV2(typeRegistry, entityStream);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
+        RequestContext              requestContext   = RequestContext.get();
 
         for (String guid : discoveryContext.getReferencedGuids()) {
             AtlasVertex vertex = discoveryContext.getResolvedEntityVertex(guid);
@@ -734,6 +735,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                     if (!StringUtils.equals(guidVertex, guid)) { // if entity was found by unique attribute
                         entity.setGuid(guidVertex);
+
+                        requestContext.recordEntityGuidUpdate(entity, guid);
                     }
 
                     context.addUpdated(guid, entity, entityType, vertex);
@@ -755,6 +758,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     String generatedGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
 
                     entity.setGuid(generatedGuid);
+
+                    requestContext.recordEntityGuidUpdate(entity, guid);
 
                     context.addCreated(guid, entity, entityType, vertex);
                 }
