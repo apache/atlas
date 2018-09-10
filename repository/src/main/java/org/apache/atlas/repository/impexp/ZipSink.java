@@ -37,9 +37,10 @@ import java.util.zip.ZipOutputStream;
 public class ZipSink {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSink.class);
 
+    private static String FILE_EXTENSION_JSON = ".json";
+
     private ZipOutputStream zipOutputStream;
     final Set<String>       guids = new HashSet<>();
-
 
     public ZipSink(OutputStream outputStream) {
         zipOutputStream = new ZipOutputStream(outputStream);
@@ -93,7 +94,7 @@ public class ZipSink {
 
     private void saveToZip(String fileName, String jsonData) throws AtlasBaseException {
         try {
-            addToZipStream(fileName.toString() + ".json", jsonData);
+            addToZipStream(fileName.toString() + FILE_EXTENSION_JSON, jsonData);
         } catch (IOException e) {
             throw new AtlasBaseException(String.format("Error writing file %s.", fileName), e);
         }

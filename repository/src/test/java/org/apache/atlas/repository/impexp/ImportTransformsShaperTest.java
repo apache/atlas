@@ -72,6 +72,7 @@ public class ImportTransformsShaperTest extends ExportImportTestBase {
         assertNotNull(classification);
         assertEntities(result.getProcessedEntities(), TAG_NAME);
     }
+
     private void assertEntities(List<String> entityGuids, String tagName) throws AtlasBaseException {
         for (String guid : entityGuids) {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = this.entityStore.getById(guid);
