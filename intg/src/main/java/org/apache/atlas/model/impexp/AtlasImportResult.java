@@ -147,7 +147,7 @@ public class AtlasImportResult {
     }
 
     public void setExportResult(AtlasExportResult exportResult) {
-        this.exportResultWithoutData = exportResult.shallowCopy();
+        this.exportResultWithoutData = exportResult;
     }
 
     public StringBuilder toString(StringBuilder sb) {

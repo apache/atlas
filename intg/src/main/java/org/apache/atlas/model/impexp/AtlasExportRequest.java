@@ -20,6 +20,7 @@ package org.apache.atlas.model.impexp;
 
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -46,19 +47,19 @@ public class AtlasExportRequest implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public static final String OPTION_FETCH_TYPE                = "fetchType";
-    public static final String OPTION_ATTR_MATCH_TYPE           = "matchType";
-    public static final String OPTION_SKIP_LINEAGE              = "skipLineage";
-    public static final String OPTION_KEY_REPLICATED_TO         = "replicatedTo";
-    public static final String FETCH_TYPE_FULL                  = "full";
-    public static final String FETCH_TYPE_CONNECTED             = "connected";
-    public static final String FETCH_TYPE_INCREMENTAL           = "incremental";
-    public static final String FETCH_TYPE_INCREMENTAL_FROM_TIME = "fromTime";
-    public static final String MATCH_TYPE_STARTS_WITH           = "startsWith";
-    public static final String MATCH_TYPE_ENDS_WITH             = "endsWith";
-    public static final String MATCH_TYPE_CONTAINS              = "contains";
-    public static final String MATCH_TYPE_MATCHES               = "matches";
-    public static final String MATCH_TYPE_FOR_TYPE              = "forType";
+    public static final String OPTION_FETCH_TYPE                    = "fetchType";
+    public static final String OPTION_ATTR_MATCH_TYPE               = "matchType";
+    public static final String OPTION_SKIP_LINEAGE                  = "skipLineage";
+    public static final String OPTION_KEY_REPLICATED_TO             = "replicatedTo";
+    public static final String FETCH_TYPE_FULL                      = "full";
+    public static final String FETCH_TYPE_CONNECTED                 = "connected";
+    public static final String FETCH_TYPE_INCREMENTAL               = "incremental";
+    public static final String FETCH_TYPE_INCREMENTAL_CHANGE_MARKER = "changeMarker";
+    public static final String MATCH_TYPE_STARTS_WITH               = "startsWith";
+    public static final String MATCH_TYPE_ENDS_WITH                 = "endsWith";
+    public static final String MATCH_TYPE_CONTAINS                  = "contains";
+    public static final String MATCH_TYPE_MATCHES                   = "matches";
+    public static final String MATCH_TYPE_FOR_TYPE                  = "forType";
 
     private List<AtlasObjectId> itemsToExport = new ArrayList<>();
     private Map<String, Object> options       = new HashMap<>();
@@ -77,6 +78,48 @@ public class AtlasExportRequest implements Serializable {
 
     public void setOptions(Map<String, Object> options) {
         this.options = options;
+    }
+
+    public String getMatchTypeOptionValue() {
+        String matchType = null;
+
+        if (MapUtils.isNotEmpty(getOptions())) {
+            if (getOptions().get(OPTION_ATTR_MATCH_TYPE) != null) {
+                matchType = getOptions().get(OPTION_ATTR_MATCH_TYPE).toString();
+            }
+        }
+
+        return matchType;
+    }
+
+    public String getFetchTypeOptionValue() {
+        if(getOptions() == null || !getOptions().containsKey(OPTION_FETCH_TYPE)) {
+            return FETCH_TYPE_FULL;
+        }
+
+        Object o = getOptions().get(OPTION_FETCH_TYPE);
+        if (o instanceof String) {
+            return (String) o;
+        }
+
+        return FETCH_TYPE_FULL;
+    }
+
+    public boolean getSkipLineageOptionValue() {
+        if(!getOptions().containsKey(AtlasExportRequest.OPTION_SKIP_LINEAGE)) {
+            return false;
+        }
+
+        Object o = getOptions().get(AtlasExportRequest.OPTION_SKIP_LINEAGE);
+        if(o instanceof String) {
+            return Boolean.parseBoolean((String) o);
+        }
+
+        if(o instanceof Boolean) {
+            return (Boolean) o;
+        }
+
+        return false;
     }
 
     public StringBuilder toString(StringBuilder sb) {

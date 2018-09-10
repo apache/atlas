@@ -18,7 +18,6 @@
 package org.apache.atlas.model.impexp;
 
 
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -61,14 +60,15 @@ public class AtlasExportResult implements Serializable {
     private AtlasExportData      data;
     private OperationStatus      operationStatus;
     private String               sourceClusterName;
-    private long                 lastModifiedTimestamp;
+    private long                 changeMarker;
 
     public AtlasExportResult() {
-        this(null, null, null, null, System.currentTimeMillis());
+        this(null, null, null, null, System.currentTimeMillis(), 0L);
     }
 
     public AtlasExportResult(AtlasExportRequest request,
-                             String userName, String clientIpAddress, String hostName, long timeStamp) {
+                             String userName, String clientIpAddress, String hostName, long timeStamp,
+                              long changeMarker) {
         this.request         = request;
         this.userName        = userName;
         this.clientIpAddress = clientIpAddress;
@@ -77,6 +77,7 @@ public class AtlasExportResult implements Serializable {
         this.metrics         = new HashMap<>();
         this.operationStatus = OperationStatus.FAIL;
         this.data            = new AtlasExportData();
+        this.changeMarker    = changeMarker;
     }
 
     public AtlasExportRequest getRequest() {
@@ -135,12 +136,12 @@ public class AtlasExportResult implements Serializable {
         this.data = data;
     }
 
-    public void setLastModifiedTimestamp(long lastModifiedTimestamp) {
-        this.lastModifiedTimestamp = lastModifiedTimestamp;
+    public void setChangeMarker(long changeMarker) {
+        this.changeMarker = changeMarker;
     }
 
-    public long getLastModifiedTimestamp() {
-        return this.lastModifiedTimestamp;
+    public long getChangeMarker() {
+        return this.changeMarker;
     }
 
     public OperationStatus getOperationStatus() {
@@ -169,22 +170,6 @@ public class AtlasExportResult implements Serializable {
         metrics.put(key, currentValue + incrementBy);
     }
 
-    public AtlasExportResult shallowCopy() {
-        AtlasExportResult result  = new AtlasExportResult();
-
-        result.setRequest(getRequest());
-        result.setUserName(getUserName());
-        result.setClientIpAddress(getClientIpAddress());
-        result.setHostName(getHostName());
-        result.setTimeStamp(getTimeStamp());
-        result.setMetrics(getMetrics());
-        result.setOperationStatus(getOperationStatus());
-        result.setSourceClusterName(getSourceClusterName());
-        result.setLastModifiedTimestamp(getLastModifiedTimestamp());
-
-        return result;
-    }
-
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
@@ -195,14 +180,13 @@ public class AtlasExportResult implements Serializable {
         sb.append(", userName='").append(userName).append("'");
         sb.append(", clientIpAddress='").append(clientIpAddress).append("'");
         sb.append(", hostName='").append(hostName).append("'");
-        sb.append(", lastModifiedTimestamp='").append(lastModifiedTimestamp).append("'");
+        sb.append(", changeMarker='").append(changeMarker).append("'");
         sb.append(", sourceCluster='").append(sourceClusterName).append("'");
         sb.append(", timeStamp='").append(timeStamp).append("'");
         sb.append(", metrics={");
         AtlasBaseTypeDef.dumpObjects(metrics, sb);
         sb.append("}");
 
-        sb.append(", data='").append(data).append("'");
         sb.append(", operationStatus='").append(operationStatus).append("'");
         sb.append("}");
 
@@ -233,23 +217,17 @@ public class AtlasExportResult implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private AtlasTypesDef            typesDef;
-        private Map<String, AtlasEntity> entities;
         private List<String>             entityCreationOrder;
 
 
         public AtlasExportData() {
             typesDef            = new AtlasTypesDef();
-            entities            = new HashMap<>();
             entityCreationOrder = new ArrayList<>();
         }
 
         public AtlasTypesDef getTypesDef() { return typesDef; }
 
         public void setTypesDef(AtlasTypesDef typesDef) { this.typesDef = typesDef; }
-
-        public Map<String, AtlasEntity> getEntities() { return entities; }
-
-        public void setEntities(Map<String, AtlasEntity> entities) { this.entities = entities; }
 
         public List<String> getEntityCreationOrder() { return entityCreationOrder; }
 
@@ -264,7 +242,6 @@ public class AtlasExportResult implements Serializable {
             sb.append("AtlasExportData {");
             sb.append(", typesDef={").append(typesDef).append("}");
             sb.append(", entities={");
-            AtlasBaseTypeDef.dumpObjects(entities, sb);
             sb.append("}");
             sb.append(", entityCreationOrder={");
             AtlasBaseTypeDef.dumpObjects(entityCreationOrder, sb);

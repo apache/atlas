@@ -41,7 +41,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Map;
 
-import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_INCREMENTAL_FROM_TIME;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.createTypes;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getEntities;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runExportWithParameters;
@@ -98,7 +98,7 @@ public class ExportIncrementalTest extends ExportImportTestBase {
     }
 
     private long updateTimesampForNextIncrementalExport(ZipSource source) throws AtlasBaseException {
-        return source.getExportResult().getLastModifiedTimestamp();
+        return source.getExportResult().getChangeMarker();
     }
 
     @Test(dependsOnMethods = "atT0_ReturnsAllEntities")
@@ -161,7 +161,7 @@ public class ExportIncrementalTest extends ExportImportTestBase {
     private AtlasExportRequest getIncrementalRequest(long timestamp) {
         try {
             AtlasExportRequest request = TestResourceFileUtils.readObjectFromJson(ENTITIES_SUB_DIR, EXPORT_REQUEST_INCREMENTAL, AtlasExportRequest.class);
-            request.getOptions().put(FETCH_TYPE_INCREMENTAL_FROM_TIME, timestamp);
+            request.getOptions().put(FETCH_TYPE_INCREMENTAL_CHANGE_MARKER, timestamp);
 
             return request;
         } catch (IOException e) {
