@@ -30,6 +30,7 @@ import java.util.*;
 
 public class RequestContext {
     private static final Logger LOG = LoggerFactory.getLogger(RequestContext.class);
+    private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
 
     private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
 
@@ -60,6 +61,10 @@ public class RequestContext {
         if (ret == null) {
             ret = new RequestContext();
             CURRENT_CONTEXT.set(ret);
+
+            synchronized (ACTIVE_REQUESTS) {
+                ACTIVE_REQUESTS.add(ret);
+            }
         }
 
         return ret;
@@ -75,6 +80,10 @@ public class RequestContext {
             instance.entityExtInfoCache.clear();
             instance.addedPropagations.clear();
             instance.removedPropagations.clear();
+
+            synchronized (ACTIVE_REQUESTS) {
+                ACTIVE_REQUESTS.remove(instance);
+            }
 
             if (instance.entityGuidInRequest != null) {
                 instance.entityGuidInRequest.clear();
@@ -239,6 +248,24 @@ public class RequestContext {
         }
     }
 
+    public static long earliestActiveRequestTime() {
+        long ret = System.currentTimeMillis();
+
+        synchronized (ACTIVE_REQUESTS) {
+            for (RequestContext context : ACTIVE_REQUESTS) {
+                if (ret > context.getRequestTime()) {
+                    ret = context.getRequestTime();
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public static int getActiveRequestsCount() {
+        return ACTIVE_REQUESTS.size();
+    }
+
     public class EntityGuidPair {
         private final AtlasEntity entity;
         private final String      guid;
@@ -252,4 +279,6 @@ public class RequestContext {
             entity.setGuid(guid);
         }
     }
+
+
 }

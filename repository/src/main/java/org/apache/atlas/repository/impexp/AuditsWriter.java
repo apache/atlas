@@ -145,7 +145,7 @@ public class AuditsWriter {
             }
 
             updateReplicationAttribute(replicationOptionState, targetServerName,
-                    entityGuids, Constants.ATTR_NAME_REPLICATED_TO, result.getLastModifiedTimestamp());
+                    entityGuids, Constants.ATTR_NAME_REPLICATED_TO, result.getChangeMarker());
         }
 
         private void saveServers() throws AtlasBaseException {
@@ -183,7 +183,7 @@ public class AuditsWriter {
             }
 
             updateReplicationAttribute(replicationOptionState, this.sourceServerName, entityGuids,
-                    Constants.ATTR_NAME_REPLICATED_FROM, result.getExportResult().getLastModifiedTimestamp());
+                    Constants.ATTR_NAME_REPLICATED_FROM, result.getExportResult().getChangeMarker());
         }
 
         private void saveServers() throws AtlasBaseException {
