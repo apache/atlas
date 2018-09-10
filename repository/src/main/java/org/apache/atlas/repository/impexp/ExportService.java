@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
@@ -93,7 +94,9 @@ public class ExportService {
     public AtlasExportResult run(ZipSink exportSink, AtlasExportRequest request, String userName, String hostName,
                                  String requestingIP) throws AtlasBaseException {
         long              startTime = System.currentTimeMillis();
-        AtlasExportResult result    = new AtlasExportResult(request, userName, requestingIP, hostName, startTime);
+        AtlasExportResult result    = new AtlasExportResult(request, userName, requestingIP,
+                hostName, startTime, getCurrentChangeMarker());
+
         ExportContext     context   = new ExportContext(atlasGraph, result, exportSink);
                     exportTypeProcessor = new ExportTypeProcessor(typeRegistry, context);
 
@@ -117,6 +120,10 @@ public class ExportService {
         return context.result;
     }
 
+    private long getCurrentChangeMarker() {
+        return RequestContext.earliestActiveRequestTime();
+    }
+
     private void updateSinkWithOperationMetrics(String userName, ExportContext context,
                                                 AtlasExportResult.OperationStatus[] statuses,
                                                 long startTime, long endTime) throws AtlasBaseException {
@@ -125,7 +132,6 @@ public class ExportService {
         context.result.getData().getEntityCreationOrder().addAll(context.lineageProcessed);
         context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
         context.sink.setTypesDef(context.result.getData().getTypesDef());
-        context.result.setLastModifiedTimestamp(context.newestLastModifiedTimestamp);
         context.result.setOperationStatus(getOverallOperationStatus(statuses));
         context.result.incrementMeticsCounter("duration", duration);
         auditsWriter.write(userName, context.result, startTime, endTime, context.result.getData().getEntityCreationOrder());
@@ -362,7 +368,7 @@ public class ExportService {
         debugLog("<== processEntity({})", guid);
     }
 
-    private void getConntedEntitiesBasedOnOption(AtlasEntity entity, ExportContext context, TraversalDirection direction) throws AtlasBaseException {
+    private void getConntedEntitiesBasedOnOption(AtlasEntity entity, ExportContext context, TraversalDirection direction) {
         switch (context.fetchType) {
             case CONNECTED:
                 getEntityGuidsForConnectedFetch(entity, context, direction);
@@ -375,7 +381,7 @@ public class ExportService {
         }
     }
 
-    private void getEntityGuidsForConnectedFetch(AtlasEntity entity, ExportContext context, TraversalDirection direction) throws AtlasBaseException {
+    private void getEntityGuidsForConnectedFetch(AtlasEntity entity, ExportContext context, TraversalDirection direction) {
         if (direction == null || direction == TraversalDirection.UNKNOWN) {
             getConnectedEntityGuids(entity, context, TraversalDirection.OUTWARD, TraversalDirection.INWARD);
         } else {
@@ -688,8 +694,7 @@ public class ExportService {
         private final ExportFetchType     fetchType;
         private final String              matchType;
         private final boolean             skipLineage;
-        private final long                lastModifiedTimestampRequested;
-        private       long                newestLastModifiedTimestamp;
+        private final long changeMarker;
 
         private       int                 progressReportCount = 0;
 
@@ -699,45 +704,16 @@ public class ExportService {
 
             scriptEngine = atlasGraph.getGremlinScriptEngine();
             bindings     = new HashMap<>();
-            fetchType    = getFetchType(result.getRequest());
-            matchType    = getMatchType(result.getRequest());
-            skipLineage  = getOptionSkipLineage(result.getRequest());
-            this.lastModifiedTimestampRequested = getLastModifiedTimestamp(fetchType, result.getRequest());
-            this.newestLastModifiedTimestamp = 0;
+            fetchType    = ExportFetchType.from(result.getRequest().getFetchTypeOptionValue());
+            matchType    = result.getRequest().getMatchTypeOptionValue();
+            skipLineage  = result.getRequest().getSkipLineageOptionValue();
+            this.changeMarker = getChangeTokenFromOptions(fetchType, result.getRequest());
         }
 
-        private ExportFetchType getFetchType(AtlasExportRequest request) {
-            Object fetchOption = request.getOptions() != null ? request.getOptions().get(OPTION_FETCH_TYPE) : null;
-
-            if (fetchOption instanceof String) {
-                return ExportFetchType.from((String) fetchOption);
-            } else if (fetchOption instanceof ExportFetchType) {
-                return (ExportFetchType) fetchOption;
-            }
-
-            return ExportFetchType.FULL;
-        }
-
-        private String getMatchType(AtlasExportRequest request) {
-            String matchType = null;
-
-            if (MapUtils.isNotEmpty(request.getOptions())) {
-                if (request.getOptions().get(OPTION_ATTR_MATCH_TYPE) != null) {
-                    matchType = request.getOptions().get(OPTION_ATTR_MATCH_TYPE).toString();
-                }
-            }
-
-            return matchType;
-        }
-
-        private boolean getOptionSkipLineage(AtlasExportRequest request) {
-            return request.getOptions().containsKey(AtlasExportRequest.OPTION_SKIP_LINEAGE) &&
-                    (boolean) request.getOptions().get(AtlasExportRequest.OPTION_SKIP_LINEAGE);
-        }
-
-        private long getLastModifiedTimestamp(ExportFetchType fetchType, AtlasExportRequest request) {
-            if(fetchType == ExportFetchType.INCREMENTAL && request.getOptions().containsKey(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_FROM_TIME)) {
-                return Long.parseLong(request.getOptions().get(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_FROM_TIME).toString());
+        private long getChangeTokenFromOptions(ExportFetchType fetchType, AtlasExportRequest request) {
+            if(fetchType == ExportFetchType.INCREMENTAL &&
+                    request.getOptions().containsKey(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER)) {
+                return Long.parseLong(request.getOptions().get(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER).toString());
             }
 
             return 0L;
@@ -794,19 +770,7 @@ public class ExportService {
                 return true;
             }
 
-            long entityModificationTimestamp = entity.getUpdateTime().getTime();
-            updateNewestLastModifiedTimestamp(entityModificationTimestamp);
-            return doesTimestampQualify(entityModificationTimestamp);
-        }
-
-        private void updateNewestLastModifiedTimestamp(long entityModificationTimestamp) {
-            if(newestLastModifiedTimestamp < entityModificationTimestamp) {
-                newestLastModifiedTimestamp = entityModificationTimestamp;
-            }
-        }
-
-        private boolean doesTimestampQualify(long modificationTimestamp) {
-            return lastModifiedTimestampRequested < modificationTimestamp;
+            return changeMarker <= entity.getUpdateTime().getTime();
         }
 
         public boolean getSkipLineage() {
@@ -814,7 +778,6 @@ public class ExportService {
         }
 
         public void addToSink(AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
-            updateNewestLastModifiedTimestamp(entityWithExtInfo.getEntity().getUpdateTime().getTime());
             sink.add(entityWithExtInfo);
         }
     }

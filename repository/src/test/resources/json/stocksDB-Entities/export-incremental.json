@@ -6,6 +6,6 @@
   ],
   "options": {
     "fetchType": "incremental",
-    "fromTime": 0
+    "changeMarker": 0
   }
 }

@@ -159,7 +159,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         long actualLastModifiedTimestamp = (long) cluster.getAdditionalInfoRepl(entity.getEntity().getGuid());
 
         assertTrue(cluster.getAdditionalInfo().size() > 0);
-        assertEquals(actualLastModifiedTimestamp, importResult.getExportResult().getLastModifiedTimestamp());
+        assertEquals(actualLastModifiedTimestamp, importResult.getExportResult().getChangeMarker());
     }
 
     private AtlasExportRequest getUpdateMetaInfoUpdateRequest() {

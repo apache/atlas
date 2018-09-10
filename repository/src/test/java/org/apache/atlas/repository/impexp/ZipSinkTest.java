@@ -59,7 +59,7 @@ public class ZipSinkTest {
         itemsToExport.add(new AtlasObjectId("hive_db", "qualifiedName", "default"));
         request.setItemsToExport(itemsToExport);
 
-        defaultExportResult = new AtlasExportResult(request, "admin", "1.0.0.0", "root", 100);
+        defaultExportResult = new AtlasExportResult(request, "admin", "1.0.0.0", "root", 100, 0L);
         return defaultExportResult;
     }
 
