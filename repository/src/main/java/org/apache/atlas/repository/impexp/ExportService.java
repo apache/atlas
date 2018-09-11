@@ -81,14 +81,16 @@ public class ExportService {
     private final EntityGraphRetriever      entityGraphRetriever;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
     private       ExportTypeProcessor       exportTypeProcessor;
-
+    private final HdfsPathEntityCreator     hdfsPathEntityCreator;
     @Inject
-    public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, AuditsWriter auditsWriter) {
+    public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph,
+                         AuditsWriter auditsWriter, HdfsPathEntityCreator hdfsPathEntityCreator) {
         this.typeRegistry         = typeRegistry;
         this.entityGraphRetriever = new EntityGraphRetriever(this.typeRegistry);
         this.atlasGraph           = atlasGraph;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
-        this.auditsWriter = auditsWriter;
+        this.auditsWriter         = auditsWriter;
+        this.hdfsPathEntityCreator = hdfsPathEntityCreator;
     }
 
     public AtlasExportResult run(ZipSink exportSink, AtlasExportRequest request, String userName, String hostName,
@@ -243,6 +245,10 @@ public class ExportService {
 
     private List<String> getStartingEntity(AtlasObjectId item, ExportContext context) throws AtlasBaseException {
         List<String> ret = null;
+
+        if(item.getTypeName().equalsIgnoreCase(HdfsPathEntityCreator.HDFS_PATH_TYPE)) {
+            hdfsPathEntityCreator.getCreateEntity(item);
+        }
 
         if (StringUtils.isNotEmpty(item.getGuid())) {
             ret = Collections.singletonList(item.getGuid());
