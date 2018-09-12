@@ -21,10 +21,14 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.commons.lang.StringUtils;
+import scala.Tuple3;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 
 public abstract class ImportTransformer {
@@ -70,8 +74,8 @@ public abstract class ImportTransformer {
         } else if (key.equals(TRANSFORMER_SET_DELETED)) {
             ret = new SetDeleted();
         } else if (key.equals(TRANSFORMER_NAME_ADD_CLASSIFICATION)) {
-            String name = (params == null || params.length < 1) ? "" : StringUtils.join(params, ":", 1, params.length);
-            ret = new AddClassification(name);
+            String name = (params == null || params.length < 1) ? "" : params[1];
+            ret = new AddClassification(name, (params != null && params.length == 3) ? params[2] : "");
         } else {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "Error creating ImportTransformer. Unknown transformer: {}.", transformerSpec);
         }
@@ -150,12 +154,22 @@ public abstract class ImportTransformer {
     }
 
     static class AddClassification extends ImportTransformer {
-        private final String classificationName;
+        private static final String FILTER_SCOPE_TOP_LEVEL = "topLevel";
 
-        public AddClassification(String name) {
+        private final String scope;
+        private final String classificationName;
+        private List<AtlasObjectId> filters;
+
+        public AddClassification(String name, String scope) {
             super(TRANSFORMER_NAME_REMOVE_CLASSIFICATION);
 
             this.classificationName = name;
+            this.scope = scope;
+            filters = new ArrayList<>();
+        }
+
+        public void addFilter(AtlasObjectId objectId) {
+            filters.add(objectId);
         }
 
         @Override
@@ -165,6 +179,10 @@ public abstract class ImportTransformer {
             }
 
             AtlasEntity entity = (AtlasEntity) o;
+            if(!passThruFilters(entity)) {
+                return o;
+            }
+
             if(entity.getClassifications() == null) {
                 entity.setClassifications(new ArrayList<AtlasClassification>());
             }
@@ -177,6 +195,40 @@ public abstract class ImportTransformer {
 
             entity.getClassifications().add(new AtlasClassification(classificationName));
             return entity;
+        }
+
+        private boolean passThruFilters(AtlasEntity entity) {
+            if(StringUtils.isEmpty(scope) || !scope.equals(FILTER_SCOPE_TOP_LEVEL)) {
+                return true;
+            }
+
+            for (AtlasObjectId filter : filters) {
+                if(isMatch(filter, entity)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private boolean isMatch(AtlasObjectId objectId, AtlasEntity entity) {
+            boolean ret = true;
+            if (StringUtils.isEmpty(objectId.getGuid())) {
+                ret = Objects.equals(objectId.getTypeName(), entity.getTypeName());
+                if (ret) {
+                    for (Map.Entry<String, Object> entry : objectId.getUniqueAttributes().entrySet()) {
+                        ret = ret && Objects.equals(entity.getAttribute(entry.getKey()), entry.getValue());
+                        if (!ret) {
+                            break;
+                        }
+                    }
+                }
+
+                return ret;
+
+            } else {
+                return Objects.equals(objectId.getGuid(), entity.getGuid());
+            }
         }
 
         @Override

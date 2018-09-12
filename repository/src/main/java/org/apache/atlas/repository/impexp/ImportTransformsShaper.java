@@ -19,6 +19,8 @@
 package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -32,6 +34,7 @@ import javax.inject.Inject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class ImportTransformsShaper {
@@ -46,12 +49,12 @@ public class ImportTransformsShaper {
         this.typeDefStore = typeDefStore;
     }
 
-    public void shape(ImportTransforms importTransform) throws AtlasBaseException {
-        getCreateClassifications(importTransform);
+    public void shape(ImportTransforms importTransform, AtlasExportRequest request) throws AtlasBaseException {
+        getCreateClassifications(importTransform, request);
         updateTransformsWithSubTypes(importTransform);
     }
 
-    private void getCreateClassifications(ImportTransforms importTransform) throws AtlasBaseException {
+    private void getCreateClassifications(ImportTransforms importTransform, AtlasExportRequest request) throws AtlasBaseException {
         Map<String, Map<String, List<ImportTransformer>>> mapMapList = importTransform.getTransforms();
         for (Map<String, List<ImportTransformer>> mapList : mapMapList.values()) {
             for (List<ImportTransformer> list : mapList.values()) {
@@ -59,10 +62,17 @@ public class ImportTransformsShaper {
                     if((importTransformer instanceof ImportTransformer.AddClassification)) {
 
                         ImportTransformer.AddClassification addClassification = (ImportTransformer.AddClassification) importTransformer;
+                        addFilters(request, addClassification);
                         getCreateTag(addClassification.getClassificationName());
                     }
                 }
             }
+        }
+    }
+
+    private void addFilters(AtlasExportRequest request, ImportTransformer.AddClassification transformer) {
+        for(AtlasObjectId objectId : request.getItemsToExport()) {
+            transformer.addFilter(objectId);
         }
     }
 
