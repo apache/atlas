@@ -21,6 +21,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -36,8 +37,8 @@ import static org.testng.Assert.assertTrue;
 
 
 public class ImportTransformsTest {
-    private final String ATTR_NAME_QUALIFIED_NAME =  "qualifiedName";
     private final String qualifiedName  = "qualifiedName";
+    private final String COLUMN_QUALIFIED_NAME_FORMAT = "col%s.TABLE1.default@cl1";
     private final String lowerCaseCL1   = "@cl1";
     private final String lowerCaseCL2   = "@cl2";
     private final String jsonTransforms = "{ \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
@@ -50,6 +51,7 @@ public class ImportTransformsTest {
     private final String jsonSetDeleted = "{ \"hive_table\": { \"*\":[ \"setDeleted\" ] } }";
     private final String jsonAddClasification = "{ \"hive_table\": { \"*\":[ \"addClassification:REPLICATED\" ] } }";
     private final String jsonAddClasification2 = "{ \"hive_table\": { \"*\":[ \"addClassification:REPLICATED_2\" ] } }";
+    private final String jsonAddClasificationScoped = "{ \"hive_column\": { \"*\":[ \"addClassification:REPLICATED_2:topLevel\" ] } }";
 
 
     private ImportTransforms transform;
@@ -122,7 +124,7 @@ public class ImportTransformsTest {
         ImportTransforms t = ImportTransforms.fromJson(s);
 
         AtlasEntity entity = getHiveTableAtlasEntity();
-        String expected_qualifiedName = entity.getAttribute(ATTR_NAME_QUALIFIED_NAME).toString().replace("@cl1", "@cl2");
+        String expected_qualifiedName = entity.getAttribute(qualifiedName).toString().replace("@cl1", "@cl2");
         entity.setClassifications(classifications);
         assertEquals(entity.getClassifications().size(), 1);
 
@@ -130,7 +132,7 @@ public class ImportTransformsTest {
 
         assertEquals(entity.getClassifications().size(), 0);
         assertNotNull(t);
-        assertEquals(entity.getAttribute(ATTR_NAME_QUALIFIED_NAME), expected_qualifiedName);
+        assertEquals(entity.getAttribute(qualifiedName), expected_qualifiedName);
     }
 
     @Test
@@ -140,12 +142,12 @@ public class ImportTransformsTest {
         ImportTransforms t = ImportTransforms.fromJson(s);
 
         AtlasEntity entity = getHiveTableAtlasEntity();
-        String expected_qualifiedName = entity.getAttribute(ATTR_NAME_QUALIFIED_NAME).toString().replace("@cl1", "@cl2");
+        String expected_qualifiedName = entity.getAttribute(qualifiedName).toString().replace("@cl1", "@cl2");
 
         t.apply(entity);
 
         assertNotNull(t);
-        assertEquals(entity.getAttribute(ATTR_NAME_QUALIFIED_NAME), expected_qualifiedName);
+        assertEquals(entity.getAttribute(qualifiedName), expected_qualifiedName);
         assertEquals(entity.getAttribute(HIVE_TABLE_ATTR_SYNC_INFO), new ArrayList<String>() {{ add(expected_syncInfo); }});
     }
 
@@ -208,6 +210,29 @@ public class ImportTransformsTest {
         assertEquals(entity.getClassifications().size(), existingClassificationsCount + 1);
         addClassification_ExistingClassificationsAreHandled(entity);
         addClassification_MultipleClassificationsAreAdded(entity);
+    }
+
+    @Test
+    public void addScopedClassification() throws AtlasBaseException {
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = getAtlasEntityWithExtInfo();
+        AtlasEntity entity = entityWithExtInfo.getReferredEntities().get("2");
+
+        int existingClassificationsCount =  entityWithExtInfo.getEntity().getClassifications() != null ? entity.getClassifications().size() : 0;
+        ImportTransforms t = ImportTransforms.fromJson(jsonAddClasificationScoped);
+
+        assertTrue(t.getTransforms().size() > 0);
+
+        ImportTransformer.AddClassification classification = (ImportTransformer.AddClassification) t.getTransforms().get("hive_column").get("*").get(0);
+        AtlasObjectId objectId = new AtlasObjectId("hive_column", qualifiedName, String.format(COLUMN_QUALIFIED_NAME_FORMAT, 2));
+        classification.addFilter(objectId);
+        t.apply(entityWithExtInfo);
+
+        assertNotNull(t);
+
+        assertNull(entityWithExtInfo.getEntity().getClassifications());
+        assertNull(entityWithExtInfo.getReferredEntities().get("0").getClassifications());
+        assertEquals(entityWithExtInfo.getReferredEntities().get("1").getClassifications().size(), existingClassificationsCount + 1);
+        assertNull(entityWithExtInfo.getReferredEntities().get("2").getClassifications());
     }
 
     private void addClassification_ExistingClassificationsAreHandled(AtlasEntity entity) throws AtlasBaseException {
