@@ -112,7 +112,7 @@ public class ImportService {
             return;
         }
 
-        importTransformsShaper.shape(importTransform);
+        importTransformsShaper.shape(importTransform, source.getExportResult().getRequest());
 
         source.setImportTransform(importTransform);
         if(LOG.isDebugEnabled()) {
