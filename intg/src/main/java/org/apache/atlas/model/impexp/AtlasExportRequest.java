@@ -80,18 +80,6 @@ public class AtlasExportRequest implements Serializable {
         this.options = options;
     }
 
-    public String getMatchTypeOptionValue() {
-        String matchType = null;
-
-        if (MapUtils.isNotEmpty(getOptions())) {
-            if (getOptions().get(OPTION_ATTR_MATCH_TYPE) != null) {
-                matchType = getOptions().get(OPTION_ATTR_MATCH_TYPE).toString();
-            }
-        }
-
-        return matchType;
-    }
-
     public String getFetchTypeOptionValue() {
         if(getOptions() == null || !getOptions().containsKey(OPTION_FETCH_TYPE)) {
             return FETCH_TYPE_FULL;
@@ -120,6 +108,27 @@ public class AtlasExportRequest implements Serializable {
         }
 
         return false;
+    }
+
+    public String getMatchTypeOptionValue() {
+        String matchType = null;
+
+        if (MapUtils.isNotEmpty(getOptions())) {
+            if (getOptions().get(OPTION_ATTR_MATCH_TYPE) != null) {
+                matchType = getOptions().get(OPTION_ATTR_MATCH_TYPE).toString();
+            }
+        }
+
+        return matchType;
+    }
+
+    public long getChangeTokenFromOptions() {
+        if(getFetchTypeOptionValue().equalsIgnoreCase(FETCH_TYPE_INCREMENTAL) &&
+                getOptions().containsKey(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER)) {
+            return Long.parseLong(getOptions().get(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER).toString());
+        }
+
+        return 0L;
     }
 
     public StringBuilder toString(StringBuilder sb) {

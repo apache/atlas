@@ -6,6 +6,7 @@
   ],
   "options": {
     "fetchType": "incremental",
+    "skipLineage": "true",
     "changeMarker": 0
   }
 }
