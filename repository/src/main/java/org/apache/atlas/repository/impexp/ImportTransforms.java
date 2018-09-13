@@ -96,31 +96,37 @@ public class ImportTransforms {
             return entity;
         }
 
+        applyEntitySpecific(entity, entityTransforms);
+
+        applyAttributeSpecific(entity, entityTransforms);
+
+        return entity;
+    }
+
+    private void applyAttributeSpecific(AtlasEntity entity, Map<String, List<ImportTransformer>> entityTransforms) throws AtlasBaseException {
         for (Map.Entry<String, List<ImportTransformer>> entry : entityTransforms.entrySet()) {
             String                   attributeName  = entry.getKey();
             List<ImportTransformer> attrTransforms = entry.getValue();
-
-            if(attributeName.equals(ALL_ATTRIBUTES)) {
-                for (ImportTransformer attrTransform : attrTransforms) {
-                    attrTransform.apply(entity);
-                }
-
-                continue;
-            }
 
             if (!entity.hasAttribute(attributeName)) {
                 continue;
             }
 
-            Object transformedValue = entity.getAttribute(attributeName);
+            Object attributeValue = entity.getAttribute(attributeName);
             for (ImportTransformer attrTransform : attrTransforms) {
-                transformedValue = attrTransform.apply(transformedValue);
+                attributeValue = attrTransform.apply(attributeValue);
             }
 
-            entity.setAttribute(attributeName, transformedValue);
+            entity.setAttribute(attributeName, attributeValue);
         }
+    }
 
-        return entity;
+    private void applyEntitySpecific(AtlasEntity entity, Map<String, List<ImportTransformer>> entityTransforms) throws AtlasBaseException {
+        if(entityTransforms.containsKey(ALL_ATTRIBUTES)) {
+            for (ImportTransformer attrTransform : entityTransforms.get(ALL_ATTRIBUTES)) {
+                attrTransform.apply(entity);
+            }
+        }
     }
 
     private ImportTransforms() {
