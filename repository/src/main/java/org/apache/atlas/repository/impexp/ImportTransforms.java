@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,6 +34,7 @@ import java.util.Set;
 
 public class ImportTransforms {
     private static final Logger LOG = LoggerFactory.getLogger(ImportTransforms.class);
+    private static final String ALL_ATTRIBUTES = "*";
 
     private Map<String, Map<String, List<ImportTransformer>>> transforms;
 
@@ -52,13 +53,15 @@ public class ImportTransforms {
         return transforms;
     }
 
-    public Map<String, List<ImportTransformer>> getTransforms(String typeName) { return transforms.get(typeName); }
+    public Map<String, List<ImportTransformer>> getTransforms(String typeName) {
+        return transforms.get(typeName);
+    }
 
     public AtlasEntity.AtlasEntityWithExtInfo apply(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
         if (entityWithExtInfo != null) {
             apply(entityWithExtInfo.getEntity());
 
-            if(MapUtils.isNotEmpty(entityWithExtInfo.getReferredEntities())) {
+            if (MapUtils.isNotEmpty(entityWithExtInfo.getReferredEntities())) {
                 for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
                     apply(e);
                 }
@@ -68,13 +71,13 @@ public class ImportTransforms {
         return entityWithExtInfo;
     }
 
-    public  AtlasEntity apply(AtlasEntity entity) throws AtlasBaseException {
-        if(entity != null) {
+    public AtlasEntity apply(AtlasEntity entity) throws AtlasBaseException {
+        if (entity != null) {
             Map<String, List<ImportTransformer>> entityTransforms = getTransforms(entity.getTypeName());
 
             if (MapUtils.isNotEmpty(entityTransforms)) {
                 for (Map.Entry<String, List<ImportTransformer>> entry : entityTransforms.entrySet()) {
-                    String                   attributeName  = entry.getKey();
+                    String attributeName = entry.getKey();
                     List<ImportTransformer> attrTransforms = entry.getValue();
 
                     if (!entity.hasAttribute(attributeName)) {
@@ -88,11 +91,41 @@ public class ImportTransforms {
                     }
 
                     entity.setAttribute(attributeName, transformedValue);
+
+                    applyEntitySpecific(entity, entityTransforms);
+                    applyAttributeSpecific(entity, entityTransforms);
                 }
             }
         }
 
+
         return entity;
+    }
+
+    private void applyAttributeSpecific(AtlasEntity entity, Map<String, List<ImportTransformer>> entityTransforms) throws AtlasBaseException {
+        for (Map.Entry<String, List<ImportTransformer>> entry : entityTransforms.entrySet()) {
+            String attributeName = entry.getKey();
+            List<ImportTransformer> attrTransforms = entry.getValue();
+
+            if (!entity.hasAttribute(attributeName)) {
+                continue;
+            }
+
+            Object attributeValue = entity.getAttribute(attributeName);
+            for (ImportTransformer attrTransform : attrTransforms) {
+                attributeValue = attrTransform.apply(attributeValue);
+            }
+
+            entity.setAttribute(attributeName, attributeValue);
+        }
+    }
+
+    private void applyEntitySpecific(AtlasEntity entity, Map<String, List<ImportTransformer>> entityTransforms) throws AtlasBaseException {
+        if (entityTransforms.containsKey(ALL_ATTRIBUTES)) {
+            for (ImportTransformer attrTransform : entityTransforms.get(ALL_ATTRIBUTES)) {
+                attrTransform.apply(entity);
+            }
+        }
     }
 
     private ImportTransforms() {
@@ -102,19 +135,19 @@ public class ImportTransforms {
     private ImportTransforms(String jsonString) {
         this();
 
-        if(jsonString != null) {
+        if (jsonString != null) {
             Map typeTransforms = AtlasType.fromJson(jsonString, Map.class);
 
             if (MapUtils.isNotEmpty(typeTransforms)) {
                 for (Object key : typeTransforms.keySet()) {
-                    Object              value               = typeTransforms.get(key);
-                    String              entityType          = (String) key;
-                    Map<String, Object> attributeTransforms = (Map<String, Object>)value;
+                    Object value = typeTransforms.get(key);
+                    String entityType = (String) key;
+                    Map<String, Object> attributeTransforms = (Map<String, Object>) value;
 
                     if (MapUtils.isNotEmpty(attributeTransforms)) {
                         for (Map.Entry<String, Object> e : attributeTransforms.entrySet()) {
-                            String       attributeName = e.getKey();
-                            List<String> transforms    = (List<String>)e.getValue();
+                            String attributeName = e.getKey();
+                            List<String> transforms = (List<String>) e.getValue();
 
                             if (CollectionUtils.isNotEmpty(transforms)) {
                                 for (String transform : transforms) {
@@ -141,7 +174,7 @@ public class ImportTransforms {
     private void add(String typeName, String attributeName, ImportTransformer transformer) {
         Map<String, List<ImportTransformer>> attrMap;
 
-        if(transforms.containsKey(typeName)) {
+        if (transforms.containsKey(typeName)) {
             attrMap = transforms.get(typeName);
         } else {
             attrMap = new HashMap<>();
@@ -149,7 +182,7 @@ public class ImportTransforms {
         }
 
         List<ImportTransformer> list;
-        if(attrMap.containsKey(attributeName)) {
+        if (attrMap.containsKey(attributeName)) {
             list = attrMap.get(attributeName);
         } else {
             list = new ArrayList<>();
@@ -166,7 +199,7 @@ public class ImportTransforms {
     public void addParentTransformsToSubTypes(String parentType, Set<String> subTypes) {
         Map<String, List<ImportTransformer>> attribtueTransformMap = getTransforms().get(parentType);
         for (String subType : subTypes) {
-            if(!getTransforms().containsKey(subType)) {
+            if (!getTransforms().containsKey(subType)) {
                 getTransforms().put(subType, attribtueTransformMap);
             } else {
                 for (Map.Entry<String, List<ImportTransformer>> entry : attribtueTransformMap.entrySet()) {
