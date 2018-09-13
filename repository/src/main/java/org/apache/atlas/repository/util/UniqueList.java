@@ -44,6 +44,12 @@ public class UniqueList<T> {
         }
     }
 
+    public void addAll(List<T> list) {
+        for (T item : list) {
+            add(item);
+        }
+    }
+
     public T remove(int index) {
         T e = list.remove(index);
         set.remove(e);
