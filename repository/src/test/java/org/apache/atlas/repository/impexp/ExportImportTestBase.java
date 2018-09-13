@@ -22,13 +22,11 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
-//import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
-//import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
-//import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -72,9 +70,9 @@ public class ExportImportTestBase {
         return entityFileNames.length;
     }
 
-    protected void verifyCreatedEntities(AtlasEntityStoreV2 entityStore, String[] entityGuids, int expectedNumberOfEntitiesCreated) {
+    protected void verifyCreatedEntities(AtlasEntityStoreV2 entityStore, Object[] entityGuids, int expectedNumberOfEntitiesCreated) {
         try {
-            AtlasEntity.AtlasEntitiesWithExtInfo entities = entityStore.getByIds( Arrays.asList(entityGuids));
+            AtlasEntity.AtlasEntitiesWithExtInfo entities = entityStore.getByIds( Arrays.asList((String [])entityGuids));
             assertEquals(entities.getEntities().size(), expectedNumberOfEntitiesCreated);
         } catch (AtlasBaseException e) {
             throw new SkipException(String.format("getByIds: could not load '%s'", entityGuids.toString()));
