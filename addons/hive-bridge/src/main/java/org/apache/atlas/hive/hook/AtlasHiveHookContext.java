@@ -19,10 +19,10 @@
 package org.apache.atlas.hive.hook;
 
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.hive.hook.HiveHook.HiveHookObjectNamesCache;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.hive.metastore.api.Database;
-import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Hive;
@@ -46,12 +46,14 @@ public class AtlasHiveHookContext {
     private final HookContext              hiveContext;
     private final Hive                     hive;
     private final Map<String, AtlasEntity> qNameEntityMap = new HashMap<>();
+    private final HiveHookObjectNamesCache knownObjects;
 
-    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext) throws Exception {
+    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext, HiveHookObjectNamesCache knownObjects) throws Exception {
         this.hook          = hook;
         this.hiveOperation = hiveOperation;
         this.hiveContext   = hiveContext;
         this.hive          = Hive.get(hiveContext.getConf());
+        this.knownObjects  = knownObjects;
 
         init();
     }
@@ -102,39 +104,47 @@ public class AtlasHiveHookContext {
     }
 
     public boolean isKnownDatabase(String dbQualifiedName) {
-        return hook.isKnownDatabase(dbQualifiedName);
+        return knownObjects != null && dbQualifiedName != null ? knownObjects.isKnownDatabase(dbQualifiedName) : false;
     }
 
     public boolean isKnownTable(String tblQualifiedName) {
-        return hook.isKnownTable(tblQualifiedName);
+        return knownObjects != null && tblQualifiedName != null ? knownObjects.isKnownTable(tblQualifiedName) : false;
     }
 
     public void addToKnownEntities(Collection<AtlasEntity> entities) {
-        hook.addToKnownEntities(entities);
+        if (knownObjects != null && entities != null) {
+            knownObjects.addToKnownEntities(entities);
+        }
     }
 
     public void removeFromKnownDatabase(String dbQualifiedName) {
-        hook.removeFromKnownDatabase(dbQualifiedName);
+        if (knownObjects != null && dbQualifiedName != null) {
+            knownObjects.removeFromKnownDatabase(dbQualifiedName);
+        }
     }
 
     public void removeFromKnownTable(String tblQualifiedName) {
-        hook.removeFromKnownTable(tblQualifiedName);
+        if (knownObjects != null && tblQualifiedName != null) {
+            knownObjects.removeFromKnownTable(tblQualifiedName);
+        }
     }
 
     private void init() {
-        String operationName = hiveContext.getOperationName();
+        if (knownObjects != null) {
+            String operationName = hiveContext.getOperationName();
 
-        if (operationName != null && operationName.startsWith("CREATE") || operationName.startsWith("ALTER")) {
-            if (CollectionUtils.isNotEmpty(hiveContext.getOutputs())) {
-                for (WriteEntity output : hiveContext.getOutputs()) {
-                    switch (output.getType()) {
-                        case DATABASE:
-                            hook.removeFromKnownDatabase(getQualifiedName(output.getDatabase()));
-                            break;
+            if (operationName != null && operationName.startsWith("CREATE") || operationName.startsWith("ALTER")) {
+                if (CollectionUtils.isNotEmpty(hiveContext.getOutputs())) {
+                    for (WriteEntity output : hiveContext.getOutputs()) {
+                        switch (output.getType()) {
+                            case DATABASE:
+                                knownObjects.removeFromKnownDatabase(getQualifiedName(output.getDatabase()));
+                                break;
 
-                        case TABLE:
-                            hook.removeFromKnownTable(getQualifiedName(output.getTable()));
-                            break;
+                            case TABLE:
+                                knownObjects.removeFromKnownTable(getQualifiedName(output.getTable()));
+                                break;
+                        }
                     }
                 }
             }
