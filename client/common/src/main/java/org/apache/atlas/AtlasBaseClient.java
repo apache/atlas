@@ -272,7 +272,7 @@ public abstract class AtlasBaseClient {
             // to create a
             // configuration object, persist it, then subsequently pass in an empty configuration to SSLFactory
             try {
-                SecureClientUtils.persistSSLClientConfiguration(configuration);
+                SecureClientUtils.persistSSLClientConfiguration(configuration, System.getProperty("atlas.conf") );
             } catch (Exception e) {
                 LOG.info("Error processing client configuration.", e);
             }

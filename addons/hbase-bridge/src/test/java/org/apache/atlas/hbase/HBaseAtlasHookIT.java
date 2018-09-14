@@ -148,7 +148,7 @@ public class HBaseAtlasHookIT {
     private void createAtlasClient() {
         try {
             org.apache.commons.configuration.Configuration configuration = ApplicationProperties.get();
-            String[]                                       atlasEndPoint = configuration.getStringArray(HBaseAtlasHook.ATTR_ATLAS_ENDPOINT);
+            String[] atlasEndPoint = configuration.getStringArray(HBaseAtlasHook.ATTR_ATLAS_ENDPOINT);
 
             configuration.setProperty("atlas.cluster.name", CLUSTER_NAME);
 
@@ -163,7 +163,7 @@ public class HBaseAtlasHookIT {
             }
 
             if (AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-                atlasClient = new AtlasClientV2(configuration, atlasEndPoint, null);
+                atlasClient = new AtlasClientV2(atlasEndPoint);
             } else {
                 atlasClient = new AtlasClientV2(configuration, atlasEndPoint, new String[]{"admin", "admin"});
             }

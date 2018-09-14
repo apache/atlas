@@ -61,11 +61,21 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         if (instance == null) {
             synchronized (ApplicationProperties.class) {
                 if (instance == null) {
-                    instance = get(APPLICATION_PROPERTIES);
-                    InMemoryJAASConfiguration.init(instance);
+                    set(get(APPLICATION_PROPERTIES));
                 }
             }
         }
+
+        return instance;
+    }
+
+    public static Configuration set(Configuration configuration) throws AtlasException {
+        synchronized (ApplicationProperties.class) {
+            instance = configuration;
+
+            InMemoryJAASConfiguration.init(instance);
+        }
+
         return instance;
     }
 
