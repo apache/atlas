@@ -163,8 +163,7 @@ public class SecureClientUtils {
         connection.setReadTimeout(socketTimeout);
     }
 
-    private static File getSSLClientFile() throws AtlasException {
-        String confLocation = System.getProperty("atlas.conf");
+    private static File getSSLClientFile(String confLocation) throws AtlasException {
         File sslDir;
         try {
             if (confLocation == null) {
@@ -185,11 +184,11 @@ public class SecureClientUtils {
         return new File(sslDir, SecurityProperties.SSL_CLIENT_PROPERTIES);
     }
 
-    public static void persistSSLClientConfiguration(org.apache.commons.configuration.Configuration clientConfig)
+    public static void persistSSLClientConfiguration(org.apache.commons.configuration.Configuration clientConfig, String confLocation)
     throws AtlasException, IOException {
         //trust settings
         Configuration configuration = new Configuration(false);
-        File sslClientFile = getSSLClientFile();
+        File sslClientFile = getSSLClientFile(confLocation);
         if (!sslClientFile.exists()) {
             configuration.set("ssl.client.truststore.type", "jks");
             configuration.set("ssl.client.truststore.location", clientConfig.getString(TRUSTSTORE_FILE_KEY));
