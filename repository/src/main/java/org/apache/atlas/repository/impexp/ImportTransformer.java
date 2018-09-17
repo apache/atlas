@@ -23,7 +23,6 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.commons.lang.StringUtils;
-import scala.Tuple3;
 
 import java.util.ArrayList;
 import java.util.List;
