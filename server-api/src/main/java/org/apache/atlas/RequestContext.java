@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.atlas.metrics.Metrics;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.slf4j.Logger;
@@ -40,14 +41,15 @@ public class RequestContext {
     private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
     private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
 
-    private final Set<String>                             createdEntityIds = new LinkedHashSet<>();
-    private final Set<String>                             updatedEntityIds = new LinkedHashSet<>();
-    private final Set<String>                             deletedEntityIds = new LinkedHashSet<>();
-    private final List<ITypedReferenceableInstance>       deletedEntities  = new ArrayList<>();
-    private final Map<String,ITypedReferenceableInstance> entityCacheV1    = new HashMap<>();
-    private final Map<String,AtlasEntityWithExtInfo>      entityCacheV2    = new HashMap<>();
-    private final Metrics                                 metrics          = new Metrics();
-    private final long                                    requestTime      = System.currentTimeMillis();
+    private final Set<String>                             createdEntityIds   = new LinkedHashSet<>();
+    private final Set<String>                             updatedEntityIds   = new LinkedHashSet<>();
+    private final Set<String>                             deletedEntityIds   = new LinkedHashSet<>();
+    private final List<ITypedReferenceableInstance>       deletedEntities    = new ArrayList<>();
+    private final Map<String,ITypedReferenceableInstance> entityCacheV1      = new HashMap<>();
+    private final Map<String,AtlasEntity>                 entityCache        = new HashMap<>();
+    private final Map<String,AtlasEntityWithExtInfo>      entityExtInfoCache = new HashMap<>();
+    private final Metrics                                 metrics            = new Metrics();
+    private final long                                    requestTime        = System.currentTimeMillis();
 
     private String user;
     private int    maxAttempts  = 1;
@@ -79,13 +81,13 @@ public class RequestContext {
         RequestContext instance = CURRENT_CONTEXT.get();
 
         if (instance != null) {
-            if (instance.entityCacheV1 != null) {
-                instance.entityCacheV1.clear();
-            }
-
-            if (instance.entityCacheV2 != null) {
-                instance.entityCacheV2.clear();
-            }
+            instance.createdEntityIds.clear();
+            instance.updatedEntityIds.clear();
+            instance.deletedEntityIds.clear();
+            instance.deletedEntities.clear();
+            instance.entityCacheV1.clear();
+            instance.entityCache.clear();
+            instance.entityExtInfoCache.clear();
 
             synchronized (ACTIVE_REQUESTS) {
                 ACTIVE_REQUESTS.remove(instance);
@@ -131,9 +133,16 @@ public class RequestContext {
      * Adds the specified instance to the cache
      *
      */
+    public void cache(AtlasEntity entity) {
+        if (entity != null && entity.getGuid() != null) {
+            entityCache.put(entity.getGuid(), entity);
+        }
+    }
+
     public void cache(AtlasEntityWithExtInfo entity) {
         if (entity != null && entity.getEntity() != null && entity.getEntity().getGuid() != null) {
-            entityCacheV2.put(entity.getEntity().getGuid(), entity);
+            entityExtInfoCache.put(entity.getEntity().getGuid(), entity);
+            entityCache.put(entity.getEntity().getGuid(), entity.getEntity());
         }
     }
 
@@ -155,8 +164,12 @@ public class RequestContext {
      * @param guid the guid to find
      * @return Either the instance or null if it is not in the cache.
      */
-    public AtlasEntityWithExtInfo getInstanceV2(String guid) {
-        return entityCacheV2.get(guid);
+    public AtlasEntity getEntity(String guid) {
+        return entityCache.get(guid);
+    }
+
+    public AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) {
+        return entityExtInfoCache.get(guid);
     }
 
     public String getUser() {

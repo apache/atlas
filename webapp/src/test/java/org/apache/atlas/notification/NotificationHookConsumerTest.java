@@ -31,6 +31,7 @@ import org.apache.atlas.repository.store.graph.v1.EntityStream;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.configuration.Configuration;
 import org.apache.kafka.common.TopicPartition;
@@ -141,7 +142,7 @@ public class NotificationHookConsumerTest {
         HookNotification.EntityCreateRequest message = new HookNotification.EntityCreateRequest("user",
                 new ArrayList<Referenceable>() {
                     {
-                        add(mock(Referenceable.class));
+                        add(new Referenceable("testType"));
                     }
                 });
         when(atlasEntityStore.createOrUpdate(any(EntityStream.class), anyBoolean())).thenThrow(new RuntimeException("Simulating exception in processing message"));
