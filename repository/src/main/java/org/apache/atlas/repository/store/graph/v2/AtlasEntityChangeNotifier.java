@@ -254,8 +254,7 @@ public class AtlasEntityChangeNotifier {
                 continue;
             }
 
-            AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(guid);
-            AtlasEntity            entity            = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
+            AtlasEntity entity = instanceConverter.getAndCacheEntity(guid);
 
             if (entity == null) {
                 continue;
@@ -413,9 +412,7 @@ public class AtlasEntityChangeNotifier {
 
                     entity.setGuid(entityGuid);
                 } else {
-                    AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(entityGuid);
-
-                    entity = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+                    entity = instanceConverter.getAndCacheEntity(entityGuid);
                 }
 
                 if (entity != null) {

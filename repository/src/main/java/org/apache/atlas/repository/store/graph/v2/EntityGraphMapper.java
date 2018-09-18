@@ -1456,8 +1456,7 @@ public class EntityGraphMapper {
 
             for (AtlasVertex vertex : notificationVertices) {
                 String                    entityGuid           = GraphHelper.getGuid(vertex);
-                AtlasEntityWithExtInfo    entityWithExtInfo    = instanceConverter.getAndCacheEntity(entityGuid);
-                AtlasEntity               entity               = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+                AtlasEntity               entity               = instanceConverter.getAndCacheEntity(entityGuid);
                 List<AtlasClassification> addedClassifications = StringUtils.equals(entityGuid, guid) ? addClassifications : propagations.get(vertex);
 
                 if (CollectionUtils.isNotEmpty(addedClassifications)) {
@@ -1563,8 +1562,7 @@ public class EntityGraphMapper {
         for (Map.Entry<AtlasVertex, List<AtlasClassification>> entry : removedClassifications.entrySet()) {
             String                    guid                       = GraphHelper.getGuid(entry.getKey());
             List<AtlasClassification> deletedClassificationNames = entry.getValue();
-            AtlasEntityWithExtInfo    entityWithExtInfo          = instanceConverter.getAndCacheEntity(guid);
-            AtlasEntity               entity                     = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+            AtlasEntity               entity                     = instanceConverter.getAndCacheEntity(guid);
 
             entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassificationNames);
         }
@@ -1720,9 +1718,8 @@ public class EntityGraphMapper {
         }
 
         for (AtlasVertex vertex : notificationVertices) {
-            String                    entityGuid        = GraphHelper.getGuid(vertex);
-            AtlasEntityWithExtInfo    entityWithExtInfo = instanceConverter.getAndCacheEntity(entityGuid);
-            AtlasEntity               entity            = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+            String      entityGuid = GraphHelper.getGuid(vertex);
+            AtlasEntity entity     = instanceConverter.getAndCacheEntity(entityGuid);
 
             if (isActive(entity)) {
                 entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
@@ -1734,8 +1731,7 @@ public class EntityGraphMapper {
                 AtlasVertex               vertex                 = entry.getKey();
                 List<AtlasClassification> removedClassifications = entry.getValue();
                 String                    entityGuid             = GraphHelper.getGuid(vertex);
-                AtlasEntityWithExtInfo    entityWithExtInfo      = instanceConverter.getAndCacheEntity(entityGuid);
-                AtlasEntity               entity                 = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+                AtlasEntity               entity                 = instanceConverter.getAndCacheEntity(entityGuid);
 
                 if (isActive(entity)) {
                     entityChangeNotifier.onClassificationDeletedFromEntity(entity, removedClassifications);
