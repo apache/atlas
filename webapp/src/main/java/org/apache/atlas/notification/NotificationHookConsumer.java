@@ -294,7 +294,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     class HookConsumer extends ShutdownableThread {
         private final NotificationConsumer<HookNotification> consumer;
         private final AtomicBoolean                          shouldRun      = new AtomicBoolean(false);
-        private final List<HookNotification>                 failedMessages = new ArrayList<>();
+        private final List<String>                           failedMessages = new ArrayList<>();
         private final AdaptiveWaiter                         adaptiveWaiter = new AdaptiveWaiter(minWaitDuration, maxWaitDuration, minWaitDuration);
 
         @VisibleForTesting
@@ -523,26 +523,29 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     } catch (Throwable e) {
                         RequestContext.get().resetEntityGuidUpdates();
 
-                        LOG.warn("Error handling message", e);
-                        try {
-                            LOG.info("Sleeping for {} ms before retry", consumerRetryInterval);
-
-                            Thread.sleep(consumerRetryInterval);
-                        } catch (InterruptedException ie) {
-                            LOG.error("Notification consumer thread sleep interrupted");
-                        }
-
                         if (numRetries == (maxRetries - 1)) {
-                            LOG.warn("Max retries exceeded for message {}", message, e);
+                            String strMessage = AbstractNotification.getMessageJson(message);
+
+                            LOG.warn("Max retries exceeded for message {}", strMessage, e);
 
                             isFailedMsg = true;
 
-                            failedMessages.add(message);
+                            failedMessages.add(strMessage);
 
                             if (failedMessages.size() >= failedMsgCacheSize) {
                                 recordFailedMessages();
                             }
                             return;
+                        } else {
+                            LOG.warn("Error handling message", e);
+
+                            try {
+                                LOG.info("Sleeping for {} ms before retry", consumerRetryInterval);
+
+                                Thread.sleep(consumerRetryInterval);
+                            } catch (InterruptedException ie) {
+                                LOG.error("Notification consumer thread sleep interrupted");
+                            }
                         }
                     } finally {
                         RequestContext.clear();
@@ -564,8 +567,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         private void recordFailedMessages() {
             //logging failed messages
-            for (HookNotification message : failedMessages) {
-                FAILED_LOG.error("[DROPPED_NOTIFICATION] {}", AbstractNotification.getMessageJson(message));
+            for (String message : failedMessages) {
+                FAILED_LOG.error("[DROPPED_NOTIFICATION] {}", message);
             }
 
             failedMessages.clear();
