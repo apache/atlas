@@ -19,15 +19,17 @@ package org.apache.atlas.repository.impexp;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.entitytransform.BaseEntityHandler;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.impexp.AttributeTransform;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -40,6 +42,11 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.apache.atlas.model.impexp.AtlasImportRequest.TRANSFORMERS_KEY;
+import static org.apache.atlas.model.impexp.AtlasImportRequest.TRANSFORMS_KEY;
 
 @Component
 public class ImportService {
@@ -82,9 +89,12 @@ public class ImportService {
         try {
             LOG.info("==> import(user={}, from={}, request={})", userName, requestingIP, request);
 
-            String transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(AtlasImportRequest.TRANSFORMS_KEY) : null;
-
+            String transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMS_KEY) : null;
             setImportTransform(source, transforms);
+
+            String transformers = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMERS_KEY) : null;
+            setEntityTransformerHandlers(source, transformers);
+
             startTimestamp = System.currentTimeMillis();
             processTypes(source.getTypesDef(), result);
             setStartPosition(request, source);
@@ -121,6 +131,38 @@ public class ImportService {
 
     }
 
+    private void setEntityTransformerHandlers(ZipSource source, String transformersString) {
+        if (StringUtils.isEmpty(transformersString)) {
+            return;
+        }
+
+        Object transformersObj = AtlasType.fromJson(transformersString, Object.class);
+        List   transformers    = (transformersObj != null && transformersObj instanceof List) ? (List) transformersObj : null;
+
+        List<AttributeTransform> attributeTransforms = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(transformers)) {
+            for (Object transformer : transformers) {
+                String             transformerStr     = AtlasType.toJson(transformer);
+                AttributeTransform attributeTransform = AtlasType.fromJson(transformerStr, AttributeTransform.class);
+
+                if (attributeTransform == null) {
+                    continue;
+                }
+
+                attributeTransforms.add(attributeTransform);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(attributeTransforms)) {
+            List<BaseEntityHandler> entityHandlers = BaseEntityHandler.createEntityHandlers(attributeTransforms);
+
+            if (CollectionUtils.isNotEmpty(entityHandlers)) {
+                source.setEntityHandlers(entityHandlers);
+            }
+        }
+    }
+
     private void debugLog(String s, Object... params) {
         if(!LOG.isDebugEnabled()) return;
 
@@ -148,7 +190,7 @@ public class ImportService {
         try {
             LOG.info("==> import(user={}, from={}, fileName={})", userName, requestingIP, fileName);
 
-            String transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(AtlasImportRequest.TRANSFORMS_KEY) : null;
+            String transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMS_KEY) : null;
             File file = new File(fileName);
             ZipSource source = new ZipSource(new ByteArrayInputStream(FileUtils.readFileToByteArray(file)), ImportTransforms.fromJson(transforms));
             result = run(source, request, userName, hostName, requestingIP);
