@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.impexp;
 
+import org.apache.atlas.entitytransform.BaseEntityHandler;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -24,6 +25,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.v1.EntityImportStream;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,12 +44,13 @@ import java.util.zip.ZipInputStream;
 public class ZipSource implements EntityImportStream {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSource.class);
 
-    private final InputStream    inputStream;
-    private List<String>         creationOrder;
-    private Iterator<String>     iterator;
-    private Map<String, String>  guidEntityJsonMap;
-    private ImportTransforms     importTransform;
-    private int currentPosition;
+    private final InputStream       inputStream;
+    private List<String>            creationOrder;
+    private Iterator<String>        iterator;
+    private Map<String, String>     guidEntityJsonMap;
+    private ImportTransforms        importTransform;
+    private List<BaseEntityHandler> entityHandlers;
+    private int                     currentPosition;
 
     public ZipSource(InputStream inputStream) throws IOException {
         this(inputStream, null);
@@ -66,6 +69,14 @@ public class ZipSource implements EntityImportStream {
 
     public void setImportTransform(ImportTransforms importTransform) {
         this.importTransform = importTransform;
+    }
+
+    public List<BaseEntityHandler> getEntityHandlers() {
+        return entityHandlers;
+    }
+
+    public void setEntityHandlers(List<BaseEntityHandler> entityHandlers) {
+        this.entityHandlers = entityHandlers;
     }
 
     public AtlasTypesDef getTypesDef() throws AtlasBaseException {
@@ -123,15 +134,37 @@ public class ZipSource implements EntityImportStream {
         return this.creationOrder;
     }
 
-    public AtlasEntity.AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
+    public AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
         String s = getFromCache(guid);
-        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = convertFromJson(AtlasEntity.AtlasEntityWithExtInfo.class, s);
+        AtlasEntityWithExtInfo entityWithExtInfo = convertFromJson(AtlasEntityWithExtInfo.class, s);
 
-        if (importTransform != null) {
+        if (entityHandlers != null) {
+            applyTransformers(entityWithExtInfo);
+        } else if (importTransform != null) {
             entityWithExtInfo = importTransform.apply(entityWithExtInfo);
         }
 
         return entityWithExtInfo;
+    }
+
+    private void applyTransformers(AtlasEntityWithExtInfo entityWithExtInfo) {
+        if (entityWithExtInfo == null) {
+            return;
+        }
+
+        transform(entityWithExtInfo.getEntity());
+
+        if (MapUtils.isNotEmpty(entityWithExtInfo.getReferredEntities())) {
+            for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
+                transform(e);
+            }
+        }
+    }
+
+    private void transform(AtlasEntity e) {
+        for (BaseEntityHandler handler : entityHandlers) {
+            handler.transform(e);
+        }
     }
 
     private <T> T convertFromJson(Class<T> clazz, String jsonData) throws AtlasBaseException {
