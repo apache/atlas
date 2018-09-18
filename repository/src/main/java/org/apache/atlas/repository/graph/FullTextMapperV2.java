@@ -74,8 +74,16 @@ public class FullTextMapperV2 {
      * @throws AtlasBaseException
      */
     public String getIndexTextForClassifications(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        String                 ret               = null;
-        AtlasEntityWithExtInfo entityWithExtInfo = getAndCacheEntity(guid);
+        String                       ret     = null;
+        final AtlasEntityWithExtInfo entityWithExtInfo;
+
+        if (followReferences) {
+            entityWithExtInfo = getAndCacheEntityWithExtInfo(guid);
+        } else {
+            AtlasEntity entity = getAndCacheEntity(guid);
+
+            entityWithExtInfo = entity != null ? new AtlasEntityWithExtInfo(entity) : null;
+        }
 
         if (entityWithExtInfo != null) {
             StringBuilder sb = new StringBuilder();
@@ -101,13 +109,13 @@ public class FullTextMapperV2 {
     }
 
     public String getIndexTextForEntity(String guid) throws AtlasBaseException {
-        String                 ret    = null;
-        AtlasEntityWithExtInfo entity = getAndCacheEntity(guid);
+        String      ret    = null;
+        AtlasEntity entity = getAndCacheEntity(guid);
 
         if (entity != null) {
             StringBuilder sb = new StringBuilder();
 
-            map(entity.getEntity(), entity, sb, new HashSet<String>());
+            map(entity, null, sb, new HashSet<String>());
 
             ret = sb.toString();
         }
@@ -166,7 +174,7 @@ public class FullTextMapperV2 {
 
     private void mapAttribute(Object value, AtlasEntityExtInfo entityExtInfo, StringBuilder sb, Set<String> processedGuids) throws AtlasBaseException {
         if (value instanceof AtlasObjectId) {
-            if (followReferences) {
+            if (followReferences && entityExtInfo != null) {
                 AtlasObjectId objectId = (AtlasObjectId) value;
                 AtlasEntity   entity   = entityExtInfo.getEntity(objectId.getGuid());
 
@@ -203,9 +211,28 @@ public class FullTextMapperV2 {
         }
     }
 
-    private AtlasEntityWithExtInfo getAndCacheEntity(String guid) throws AtlasBaseException {
+    private AtlasEntity getAndCacheEntity(String guid) throws AtlasBaseException {
+        RequestContext context = RequestContext.get();
+        AtlasEntity    entity  = context.getEntity(guid);
+
+        if (entity == null) {
+            entity = entityGraphRetriever.toAtlasEntity(guid);
+
+            if (entity != null) {
+                context.cache(entity);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Cache miss -> GUID = {}", guid);
+                }
+            }
+        }
+
+        return entity;
+    }
+
+    private AtlasEntityWithExtInfo getAndCacheEntityWithExtInfo(String guid) throws AtlasBaseException {
         RequestContext         context           = RequestContext.get();
-        AtlasEntityWithExtInfo entityWithExtInfo = context.getInstanceV2(guid);
+        AtlasEntityWithExtInfo entityWithExtInfo = context.getEntityWithExtInfo(guid);
 
         if (entityWithExtInfo == null) {
             // Only map ownedRef and relationship attr when follow references is set to true

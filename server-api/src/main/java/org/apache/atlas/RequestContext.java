@@ -35,7 +35,8 @@ public class RequestContext {
 
     private final Map<String, AtlasObjectId>             updatedEntities     = new HashMap<>();
     private final Map<String, AtlasObjectId>             deletedEntities     = new HashMap<>();
-    private final Map<String, AtlasEntityWithExtInfo>    entityCacheV2       = new HashMap<>();
+    private final Map<String, AtlasEntity>               entityCache         = new HashMap<>();
+    private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache  = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations   = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations = new HashMap<>();
     private final long                                   requestTime         = System.currentTimeMillis();
@@ -70,7 +71,8 @@ public class RequestContext {
         if (instance != null) {
             instance.updatedEntities.clear();
             instance.deletedEntities.clear();
-            instance.entityCacheV2.clear();
+            instance.entityCache.clear();
+            instance.entityExtInfoCache.clear();
             instance.addedPropagations.clear();
             instance.removedPropagations.clear();
 
@@ -174,9 +176,17 @@ public class RequestContext {
      */
     public void cache(AtlasEntityWithExtInfo entity) {
         if (entity != null && entity.getEntity() != null && entity.getEntity().getGuid() != null) {
-            entityCacheV2.put(entity.getEntity().getGuid(), entity);
+            entityExtInfoCache.put(entity.getEntity().getGuid(), entity);
+            entityCache.put(entity.getEntity().getGuid(), entity.getEntity());
         }
     }
+
+    public void cache(AtlasEntity entity) {
+        if (entity != null && entity.getGuid() != null) {
+            entityCache.put(entity.getGuid(), entity);
+        }
+    }
+
 
     public Collection<AtlasObjectId> getUpdatedEntities() {
         return updatedEntities.values();
@@ -193,8 +203,12 @@ public class RequestContext {
      * @param guid the guid to find
      * @return Either the instance or null if it is not in the cache.
      */
-    public AtlasEntityWithExtInfo getInstanceV2(String guid) {
-        return entityCacheV2.get(guid);
+    public AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) {
+        return entityExtInfoCache.get(guid);
+    }
+
+    public AtlasEntity getEntity(String guid) {
+        return entityCache.get(guid);
     }
 
     public long getRequestTime() {

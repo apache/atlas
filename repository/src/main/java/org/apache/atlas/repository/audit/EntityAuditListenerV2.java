@@ -180,8 +180,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             List<EntityAuditEventV2> events = new ArrayList<>();
 
             for (AtlasRelatedObjectId relatedObjectId : entities) {
-                AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(relatedObjectId.getGuid());
-                AtlasEntity            entity            = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+                AtlasEntity entity = instanceConverter.getAndCacheEntity(relatedObjectId.getGuid());
 
                 if (entity != null) {
                     events.add(createEvent(entity, TERM_ADD, "Added term: " + term.toAuditString()));
@@ -198,8 +197,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             List<EntityAuditEventV2> events = new ArrayList<>();
 
             for (AtlasRelatedObjectId relatedObjectId : entities) {
-                AtlasEntityWithExtInfo entityWithExtInfo = instanceConverter.getAndCacheEntity(relatedObjectId.getGuid());
-                AtlasEntity            entity            = (entityWithExtInfo != null) ? entityWithExtInfo.getEntity() : null;
+                AtlasEntity entity = instanceConverter.getAndCacheEntity(relatedObjectId.getGuid());
 
                 if (entity != null) {
                     events.add(createEvent(entity, TERM_DELETE, "Deleted term: " + term.toAuditString()));

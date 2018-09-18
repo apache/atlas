@@ -28,6 +28,7 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
@@ -94,12 +95,12 @@ public class AtlasInstanceConverter {
     }
 
     public Referenceable getReferenceable(String guid) throws AtlasBaseException {
-        AtlasEntity.AtlasEntityWithExtInfo entity = getAndCacheEntity(guid);
+        AtlasEntityWithExtInfo entity = getAndCacheEntityExtInfo(guid);
 
         return getReferenceable(entity);
     }
 
-    public Referenceable getReferenceable(AtlasEntity.AtlasEntityWithExtInfo entity) throws AtlasBaseException {
+    public Referenceable getReferenceable(AtlasEntityWithExtInfo entity) throws AtlasBaseException {
         AtlasFormatConverter.ConverterContext ctx = new AtlasFormatConverter.ConverterContext();
 
         ctx.addEntity(entity.getEntity());
@@ -291,10 +292,29 @@ public class AtlasInstanceConverter {
         return ret;
     }
 
+    public AtlasEntity getAndCacheEntity(String guid) throws AtlasBaseException {
+        RequestContext context = RequestContext.get();
+        AtlasEntity    entity  = context.getEntity(guid);
 
-    public AtlasEntity.AtlasEntityWithExtInfo getAndCacheEntity(String guid) throws AtlasBaseException {
-        RequestContext                     context           = RequestContext.get();
-        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = context.getInstanceV2(guid);
+        if (entity == null) {
+            entity = entityGraphRetriever.toAtlasEntity(guid);
+
+            if (entity != null) {
+                context.cache(entity);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Cache miss -> GUID = {}", guid);
+                }
+            }
+        }
+
+        return entity;
+    }
+
+
+    public AtlasEntityWithExtInfo getAndCacheEntityExtInfo(String guid) throws AtlasBaseException {
+        RequestContext         context           = RequestContext.get();
+        AtlasEntityWithExtInfo entityWithExtInfo = context.getEntityWithExtInfo(guid);
 
         if (entityWithExtInfo == null) {
             entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
