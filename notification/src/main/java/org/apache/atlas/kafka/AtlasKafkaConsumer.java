@@ -69,7 +69,14 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
                             record.topic(), record.partition(), record.offset(), record.key(), record.value());
                 }
 
-                T message = deserializer.deserialize(record.value().toString());
+                T message = null;
+
+                try {
+                    message = deserializer.deserialize(record.value().toString());
+                } catch (OutOfMemoryError excp) {
+                    LOG.error("Ignoring message that failed to deserialize: topic={}, partition={}, offset={}, key={}, value={}",
+                              record.topic(), record.partition(), record.offset(), record.key(), record.value(), excp);
+                }
 
                 if (message == null) {
                     continue;

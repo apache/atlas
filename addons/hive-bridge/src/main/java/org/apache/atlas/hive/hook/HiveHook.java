@@ -51,6 +51,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String HOOK_NAME_CACHE_DATABASE_COUNT      = CONF_PREFIX + "name.cache.database.count";
     public static final String HOOK_NAME_CACHE_TABLE_COUNT         = CONF_PREFIX + "name.cache.table.count";
     public static final String HOOK_NAME_CACHE_REBUID_INTERVAL_SEC = CONF_PREFIX + "name.cache.rebuild.interval.seconds";
+    public static final String HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633                  = CONF_PREFIX + "skip.hive_column_lineage.hive-20633";
+    public static final String HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD = CONF_PREFIX + "skip.hive_column_lineage.hive-20633.inputs.threshold";
 
     public static final String DEFAULT_CLUSTER_NAME = "primary";
 
@@ -61,6 +63,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final int     nameCacheDatabaseMaxCount;
     private static final int     nameCacheTableMaxCount;
     private static final int     nameCacheRebuildIntervalSeconds;
+
+    private static final boolean skipHiveColumnLineageHive20633;
+    private static final int     skipHiveColumnLineageHive20633InputsThreshold;
 
     private static HiveHookObjectNamesCache knownObjects = null;
 
@@ -74,6 +79,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         nameCacheDatabaseMaxCount       = atlasProperties.getInt(HOOK_NAME_CACHE_DATABASE_COUNT, 10000);
         nameCacheTableMaxCount          = atlasProperties.getInt(HOOK_NAME_CACHE_TABLE_COUNT, 10000);
         nameCacheRebuildIntervalSeconds = atlasProperties.getInt(HOOK_NAME_CACHE_REBUID_INTERVAL_SEC, 60 * 60); // 60 minutes default
+        skipHiveColumnLineageHive20633                = atlasProperties.getBoolean(HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, true);
+        skipHiveColumnLineageHive20633InputsThreshold = atlasProperties.getInt(HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 5); // skip greater-than 5 inputs by default
 
         knownObjects = nameCacheEnabled ? new HiveHookObjectNamesCache(nameCacheDatabaseMaxCount, nameCacheTableMaxCount, nameCacheRebuildIntervalSeconds) : null;
     }
@@ -180,6 +187,14 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     public String getClusterName() {
         return clusterName;
+    }
+
+    public boolean getSkipHiveColumnLineageHive20633() {
+        return skipHiveColumnLineageHive20633;
+    }
+
+    public int getSkipHiveColumnLineageHive20633InputsThreshold() {
+        return skipHiveColumnLineageHive20633InputsThreshold;
     }
 
 

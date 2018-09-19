@@ -132,9 +132,17 @@ public class CreateHiveProcess extends BaseHiveEvent {
             return;
         }
 
+        final List<AtlasEntity> columnLineages    = new ArrayList<>();
+        boolean                 isSameInputsSize  = true;
+        int                     lineageInputsSize = -1;
+
         for (Map.Entry<DependencyKey, Dependency> entry : lineageInfo.entrySet()) {
             String      outputColName = getQualifiedName(entry.getKey());
             AtlasEntity outputColumn  = context.getEntity(outputColName);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("processColumnLineage(): DependencyKey={}; Dependency={}", entry.getKey(), entry.getValue());
+            }
 
             if (outputColumn == null) {
                 LOG.warn("column-lineage: non-existing output-column {}", outputColName);
@@ -161,6 +169,12 @@ public class CreateHiveProcess extends BaseHiveEvent {
                 continue;
             }
 
+            if (lineageInputsSize == -1) {
+                lineageInputsSize = inputColumns.size();
+            } else if (lineageInputsSize != inputColumns.size()) {
+                isSameInputsSize = false;
+            }
+
             AtlasEntity columnLineageProcess = new AtlasEntity(HIVE_TYPE_COLUMN_LINEAGE);
 
             columnLineageProcess.setAttribute(ATTRIBUTE_NAME, hiveProcess.getAttribute(ATTRIBUTE_NAME) + ":" + outputColumn.getAttribute(ATTRIBUTE_NAME));
@@ -171,7 +185,17 @@ public class CreateHiveProcess extends BaseHiveEvent {
             columnLineageProcess.setAttribute(ATTRIBUTE_DEPENDENCY_TYPE, entry.getValue().getType());
             columnLineageProcess.setAttribute(ATTRIBUTE_EXPRESSION, entry.getValue().getExpr());
 
-            entities.addEntity(columnLineageProcess);
+            columnLineages.add(columnLineageProcess);
+        }
+
+        boolean skipColumnLineage = context.getSkipHiveColumnLineageHive20633() && isSameInputsSize && lineageInputsSize > context.getSkipHiveColumnLineageHive20633InputsThreshold();
+
+        if (!skipColumnLineage) {
+            for (AtlasEntity columnLineage : columnLineages) {
+                entities.addEntity(columnLineage);
+            }
+        } else {
+            LOG.warn("skipping {} hive_column_lineage entities, each having {} inputs", columnLineages.size(), lineageInputsSize);
         }
     }
 
