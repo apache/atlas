@@ -25,9 +25,12 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.atlas.entitytransform.TransformationConstants.HDFS_PATH;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_TABLE;
 
 public class TransformationHandlerTest {
     @Test
@@ -97,6 +100,100 @@ public class TransformationHandlerTest {
                 Assert.assertTrue(transformedValue.endsWith("@cl1"), transformedValue + ": expected to end with @cl1");
             } else {
                 Assert.assertEquals(qualifiedName, transformedValue, "not expected to change");
+            }
+        }
+    }
+
+    @Test
+    public void testHiveTableClearAttributeHandler() {
+        // clear replicatedTo attribute for hive_table entities
+        AttributeTransform p1 = new AttributeTransform(Collections.singletonMap("hive_table.replicatedTo", "HAS_VALUE:"),
+                                                       Collections.singletonMap("hive_table.replicatedTo", "CLEAR:"));
+
+        List<BaseEntityHandler> handlers = initializeHandlers(Collections.singletonList(p1));
+
+        List<AtlasEntity> entities = getAllEntities();
+
+        for (AtlasEntity entity : entities) {
+            String  replicatedTo = (String) entity.getAttribute("replicatedTo");
+
+            if (entity.getTypeName() == HIVE_TABLE) {
+                Assert.assertTrue(StringUtils.isNotEmpty(replicatedTo));
+            }
+
+            applyTransforms(entity, handlers);
+
+            String transformedValue = (String) entity.getAttribute("replicatedTo");
+
+            if (entity.getTypeName() == HIVE_TABLE) {
+                Assert.assertTrue(StringUtils.isEmpty(transformedValue));
+            }
+        }
+    }
+
+    @Test
+    public void testEntityClearAttributesActionWithNoCondition() {
+        // clear replicatedFrom attribute for hive_table entities without any condition
+        Map<String, String> actions = new HashMap<String, String>() {{  put("__entity.replicatedTo", "CLEAR:");
+                                                                        put("__entity.replicatedFrom", "CLEAR:"); }};
+
+        AttributeTransform transform = new AttributeTransform(null, actions);
+
+        List<BaseEntityHandler> handlers = initializeHandlers(Collections.singletonList(transform));
+
+
+        List<AtlasEntity> entities = getAllEntities();
+
+        for (AtlasEntity entity : entities) {
+            String replicatedTo   = (String) entity.getAttribute("replicatedTo");
+            String replicatedFrom = (String) entity.getAttribute("replicatedFrom");
+
+            if (entity.getTypeName() == HIVE_TABLE) {
+                Assert.assertTrue(StringUtils.isNotEmpty(replicatedTo));
+                Assert.assertTrue(StringUtils.isNotEmpty(replicatedFrom));
+            }
+
+            applyTransforms(entity, handlers);
+
+            replicatedTo   = (String) entity.getAttribute("replicatedTo");
+            replicatedFrom = (String) entity.getAttribute("replicatedFrom");
+
+            if (entity.getTypeName() == HIVE_TABLE) {
+                Assert.assertTrue(StringUtils.isEmpty(replicatedTo));
+                Assert.assertTrue(StringUtils.isEmpty(replicatedFrom));
+            }
+        }
+    }
+
+    @Test
+    public void testEntityClearAttributesActionWithNoTypeNameAndNoCondition() {
+        // clear replicatedFrom attribute for hive_table entities without any condition
+        Map<String, String> actions = new HashMap<String, String>() {{  put("replicatedTo", "CLEAR:");
+                                                                        put("replicatedFrom", "CLEAR:"); }};
+
+        AttributeTransform transform = new AttributeTransform(null, actions);
+
+        List<BaseEntityHandler> handlers = initializeHandlers(Collections.singletonList(transform));
+
+        List<AtlasEntity> entities = getAllEntities();
+
+        for (AtlasEntity entity : entities) {
+            String replicatedTo   = (String) entity.getAttribute("replicatedTo");
+            String replicatedFrom = (String) entity.getAttribute("replicatedFrom");
+
+            if (entity.getTypeName() == HIVE_TABLE) {
+                Assert.assertTrue(StringUtils.isNotEmpty(replicatedTo));
+                Assert.assertTrue(StringUtils.isNotEmpty(replicatedFrom));
+            }
+
+            applyTransforms(entity, handlers);
+
+            replicatedTo   = (String) entity.getAttribute("replicatedTo");
+            replicatedFrom = (String) entity.getAttribute("replicatedFrom");
+
+            if (entity.getTypeName() == HIVE_TABLE) {
+                Assert.assertTrue(StringUtils.isEmpty(replicatedTo));
+                Assert.assertTrue(StringUtils.isEmpty(replicatedFrom));
             }
         }
     }
@@ -338,6 +435,8 @@ public class TransformationHandlerTest {
         entity.setAttribute("tableType", "EXTERNAL_TABLE");
         entity.setAttribute("createTime", "1535656355000");
         entity.setAttribute("retention", 0);
+        entity.setAttribute("replicatedTo", "[{\"guid\":\"f378cfa5-c4aa-4699-a733-8f11d2f089cd\",\"typeName\":\"AtlasServer\"},{\"guid\":\"58e42789-ea3e-4eaa-a0c4-d38d8632e548\",\"typeName\":\"AtlasServer\"}]");
+        entity.setAttribute("replicatedFrom", "[{\"guid\":\"f378cfa5-c4aa-4699-a733-8f11d2f089cd\",\"typeName\":\"AtlasServer\"},{\"guid\":\"58e42789-ea3e-4eaa-a0c4-d38d8632e548\",\"typeName\":\"AtlasServer\"}]");
 
         return entity;
     }

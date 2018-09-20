@@ -31,6 +31,7 @@ public abstract class Condition {
     private static final String CONDITION_NAME_EQUALS_IGNORE_CASE      = "EQUALS_IGNORE_CASE";
     private static final String CONDITION_NAME_STARTS_WITH             = "STARTS_WITH";
     private static final String CONDITION_NAME_STARTS_WITH_IGNORE_CASE = "STARTS_WITH_IGNORE_CASE";
+    private static final String CONDITION_NAME_HAS_VALUE               = "HAS_VALUE";
 
     protected final String attributeName;
 
@@ -74,6 +75,10 @@ public abstract class Condition {
             case CONDITION_NAME_STARTS_WITH_IGNORE_CASE:
                 ret = new StartsWithIgnoreCaseCondition(key, conditionValue);
             break;
+
+            case CONDITION_NAME_HAS_VALUE:
+                ret = new HasValueCondition(key, conditionValue);
+                break;
 
             default:
                 ret = new EqualsCondition(key, value); // treat unspecified/unknown condition as 'EQUALS'
@@ -156,6 +161,23 @@ public abstract class Condition {
             Object attributeValue = entity != null ? entity.getAttribute(attributeName) : null;
 
             return attributeValue != null && StringUtils.startsWithIgnoreCase(attributeValue.toString(), this.prefix);
+        }
+    }
+
+    public static class HasValueCondition extends Condition {
+        protected final String attributeValue;
+
+        public HasValueCondition(String attributeName, String attributeValue) {
+            super(attributeName);
+
+            this.attributeValue = attributeValue;
+        }
+
+        @Override
+        public boolean matches(AtlasTransformableEntity entity) {
+            Object attributeValue = entity != null ? entity.getAttribute(attributeName) : null;
+
+            return attributeValue != null ? StringUtils.isNotEmpty(attributeValue.toString()) : false;
         }
     }
 }
