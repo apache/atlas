@@ -258,6 +258,16 @@ public class StructInstance implements ITypedStruct {
             ints[pos] = 0;
         } else if (i.dataType() == DataTypes.BOOLEAN_TYPE) {
             bools[pos] = false;
+        } else if (i.dataType() == DataTypes.BYTE_TYPE) {
+            bytes[pos] = 0;
+        } else if (i.dataType() == DataTypes.SHORT_TYPE) {
+            shorts[pos] = 0;
+        } else if (i.dataType() == DataTypes.LONG_TYPE) {
+            longs[pos] = 0;
+        } else if (i.dataType() == DataTypes.FLOAT_TYPE) {
+            floats[pos] = 0;
+        } else if (i.dataType() == DataTypes.DOUBLE_TYPE) {
+            doubles[pos] = 0;
         } else if (i.dataType() == DataTypes.STRING_TYPE) {
             strings[pos] = null;
         } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.ENUM) {
