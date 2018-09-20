@@ -138,10 +138,12 @@ public class ZipSource implements EntityImportStream {
         String s = getFromCache(guid);
         AtlasEntityWithExtInfo entityWithExtInfo = convertFromJson(AtlasEntityWithExtInfo.class, s);
 
+        if (importTransform != null) {
+            entityWithExtInfo = importTransform.apply(entityWithExtInfo);
+        }
+
         if (entityHandlers != null) {
             applyTransformers(entityWithExtInfo);
-        } else if (importTransform != null) {
-            entityWithExtInfo = importTransform.apply(entityWithExtInfo);
         }
 
         return entityWithExtInfo;
