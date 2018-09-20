@@ -31,6 +31,7 @@ public abstract class Action {
     private static final String ACTION_NAME_REPLACE_PREFIX = "REPLACE_PREFIX";
     private static final String ACTION_NAME_TO_LOWER       = "TO_LOWER";
     private static final String ACTION_NAME_TO_UPPER       = "TO_UPPER";
+    private static final String ACTION_NAME_CLEAR          = "CLEAR";
 
     protected final String attributeName;
 
@@ -79,6 +80,10 @@ public abstract class Action {
             case ACTION_NAME_SET:
                 ret = new SetAction(key, actionValue);
             break;
+
+            case ACTION_NAME_CLEAR:
+                ret = new ClearAction(key);
+                break;
 
             default:
                 ret = new SetAction(key, value); // treat unspecified/unknown action as 'SET'
@@ -193,6 +198,19 @@ public abstract class Action {
                 if (strValue != null) {
                     entity.setAttribute(attributeName, strValue.toUpperCase());
                 }
+            }
+        }
+    }
+
+    public static class ClearAction extends Action {
+        public ClearAction(String attributeName) {
+            super(attributeName);
+        }
+
+        @Override
+        public void apply(AtlasTransformableEntity entity) {
+            if (isValid() && entity.hasAttribute(attributeName)) {
+                entity.setAttribute(attributeName, null);
             }
         }
     }
