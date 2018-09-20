@@ -19,8 +19,9 @@ package org.apache.atlas.entitytransform;
 
 import org.apache.atlas.model.impexp.AttributeTransform;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -30,6 +31,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.entitytransform.TransformationConstants.HDFS_PATH;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_TABLE;
 
 public class TransformationHandlerTest {
@@ -50,9 +55,9 @@ public class TransformationHandlerTest {
             String transformedValue = (String) hdfsPath.getAttribute("qualifiedName");
 
             if (endsWithCl1) {
-                Assert.assertTrue(transformedValue.endsWith("@cl2"), transformedValue + ": expected to end with @cl2");
+                assertTrue(transformedValue.endsWith("@cl2"), transformedValue + ": expected to end with @cl2");
             } else {
-                Assert.assertEquals(qualifiedName, transformedValue, "not expected to change");
+                assertEquals(qualifiedName, transformedValue, "not expected to change");
             }
         }
     }
@@ -76,9 +81,9 @@ public class TransformationHandlerTest {
             String transformedValue = (String) hdfsPath.getAttribute("qualifiedName");
 
             if (endsWithCl1) {
-                Assert.assertTrue(transformedValue.endsWith("@CL1"), transformedValue + ": expected to end with @CL1");
+                assertTrue(transformedValue.endsWith("@CL1"), transformedValue + ": expected to end with @CL1");
             } else {
-                Assert.assertEquals(qualifiedName, transformedValue, "not expected to change");
+                assertEquals(qualifiedName, transformedValue, "not expected to change");
             }
         }
 
@@ -97,9 +102,9 @@ public class TransformationHandlerTest {
             String transformedValue = (String) hdfsPath.getAttribute("qualifiedName");
 
             if (endsWithCL1) {
-                Assert.assertTrue(transformedValue.endsWith("@cl1"), transformedValue + ": expected to end with @cl1");
+                assertTrue(transformedValue.endsWith("@cl1"), transformedValue + ": expected to end with @cl1");
             } else {
-                Assert.assertEquals(qualifiedName, transformedValue, "not expected to change");
+                assertEquals(qualifiedName, transformedValue, "not expected to change");
             }
         }
     }
@@ -118,7 +123,7 @@ public class TransformationHandlerTest {
             String  replicatedTo = (String) entity.getAttribute("replicatedTo");
 
             if (entity.getTypeName() == HIVE_TABLE) {
-                Assert.assertTrue(StringUtils.isNotEmpty(replicatedTo));
+                assertTrue(StringUtils.isNotEmpty(replicatedTo));
             }
 
             applyTransforms(entity, handlers);
@@ -126,7 +131,7 @@ public class TransformationHandlerTest {
             String transformedValue = (String) entity.getAttribute("replicatedTo");
 
             if (entity.getTypeName() == HIVE_TABLE) {
-                Assert.assertTrue(StringUtils.isEmpty(transformedValue));
+                assertTrue(StringUtils.isEmpty(transformedValue));
             }
         }
     }
@@ -149,8 +154,8 @@ public class TransformationHandlerTest {
             String replicatedFrom = (String) entity.getAttribute("replicatedFrom");
 
             if (entity.getTypeName() == HIVE_TABLE) {
-                Assert.assertTrue(StringUtils.isNotEmpty(replicatedTo));
-                Assert.assertTrue(StringUtils.isNotEmpty(replicatedFrom));
+                assertTrue(StringUtils.isNotEmpty(replicatedTo));
+                assertTrue(StringUtils.isNotEmpty(replicatedFrom));
             }
 
             applyTransforms(entity, handlers);
@@ -159,8 +164,8 @@ public class TransformationHandlerTest {
             replicatedFrom = (String) entity.getAttribute("replicatedFrom");
 
             if (entity.getTypeName() == HIVE_TABLE) {
-                Assert.assertTrue(StringUtils.isEmpty(replicatedTo));
-                Assert.assertTrue(StringUtils.isEmpty(replicatedFrom));
+                assertTrue(StringUtils.isEmpty(replicatedTo));
+                assertTrue(StringUtils.isEmpty(replicatedFrom));
             }
         }
     }
@@ -182,8 +187,8 @@ public class TransformationHandlerTest {
             String replicatedFrom = (String) entity.getAttribute("replicatedFrom");
 
             if (entity.getTypeName() == HIVE_TABLE) {
-                Assert.assertTrue(StringUtils.isNotEmpty(replicatedTo));
-                Assert.assertTrue(StringUtils.isNotEmpty(replicatedFrom));
+                assertTrue(StringUtils.isNotEmpty(replicatedTo));
+                assertTrue(StringUtils.isNotEmpty(replicatedFrom));
             }
 
             applyTransforms(entity, handlers);
@@ -192,8 +197,8 @@ public class TransformationHandlerTest {
             replicatedFrom = (String) entity.getAttribute("replicatedFrom");
 
             if (entity.getTypeName() == HIVE_TABLE) {
-                Assert.assertTrue(StringUtils.isEmpty(replicatedTo));
-                Assert.assertTrue(StringUtils.isEmpty(replicatedFrom));
+                assertTrue(StringUtils.isEmpty(replicatedTo));
+                assertTrue(StringUtils.isEmpty(replicatedFrom));
             }
         }
     }
@@ -215,9 +220,9 @@ public class TransformationHandlerTest {
             String transformedValue = (String) hdfsPath.getAttribute("name");
 
             if (startsWith_aa_bb_) {
-                Assert.assertTrue(transformedValue.startsWith("/xx/yy/"), transformedValue + ": expected to start with /xx/yy/");
+                assertTrue(transformedValue.startsWith("/xx/yy/"), transformedValue + ": expected to start with /xx/yy/");
             } else {
-                Assert.assertEquals(name, transformedValue, "not expected to change");
+                assertEquals(name, transformedValue, "not expected to change");
             }
         }
     }
@@ -241,11 +246,11 @@ public class TransformationHandlerTest {
             String transformedValue = (String) entity.getAttribute("qualifiedName");
 
             if (!isHdfsPath && endsWithCl1) {
-                Assert.assertTrue(transformedValue.endsWith("@cl1_backup"), transformedValue + ": expected to end with @cl1_backup");
+                assertTrue(transformedValue.endsWith("@cl1_backup"), transformedValue + ": expected to end with @cl1_backup");
             } else if (!isHdfsPath && containsCl1) {
-                Assert.assertTrue(transformedValue.contains("@cl1_backup"), transformedValue + ": expected to contains @cl1_backup");
+                assertTrue(transformedValue.contains("@cl1_backup"), transformedValue + ": expected to contains @cl1_backup");
             } else {
-                Assert.assertEquals(qualifiedName, transformedValue, "not expected to change");
+                assertEquals(qualifiedName, transformedValue, "not expected to change");
             }
         }
     }
@@ -266,11 +271,11 @@ public class TransformationHandlerTest {
             applyTransforms(entity, handlers);
 
             if (startsWithHrDot) {
-                Assert.assertTrue(((String) entity.getAttribute("qualifiedName")).startsWith("hr_backup."));
+                assertTrue(((String) entity.getAttribute("qualifiedName")).startsWith("hr_backup."));
             } else if (startsWithHrAt) {
-                Assert.assertTrue(((String) entity.getAttribute("qualifiedName")).startsWith("hr_backup@"));
+                assertTrue(((String) entity.getAttribute("qualifiedName")).startsWith("hr_backup@"));
             } else {
-                Assert.assertEquals(qualifiedName, (String) entity.getAttribute("qualifiedName"), "not expected to change");
+                assertEquals(qualifiedName, (String) entity.getAttribute("qualifiedName"), "not expected to change");
             }
         }
     }
@@ -293,11 +298,11 @@ public class TransformationHandlerTest {
             applyTransforms(entity, handlers);
 
             if (startsWithHrEmployeesDot) {
-                Assert.assertTrue(((String) entity.getAttribute("qualifiedName")).startsWith("hr.employees_backup."));
+                assertTrue(((String) entity.getAttribute("qualifiedName")).startsWith("hr.employees_backup."));
             } else if (startsWithHrEmployeesAt) {
-                Assert.assertTrue(((String) entity.getAttribute("qualifiedName")).startsWith("hr.employees_backup@"));
+                assertTrue(((String) entity.getAttribute("qualifiedName")).startsWith("hr.employees_backup@"));
             } else {
-                Assert.assertEquals(qualifiedName, (String) entity.getAttribute("qualifiedName"), "not expected to change");
+                assertEquals(qualifiedName, (String) entity.getAttribute("qualifiedName"), "not expected to change");
             }
         }
     }
@@ -320,15 +325,56 @@ public class TransformationHandlerTest {
             applyTransforms(entity, handlers);
 
             if (startsWithHrEmployeesAgeAt) {
-                Assert.assertTrue(((String) entity.getAttribute("qualifiedName")).startsWith("hr.employees.age_backup@"));
+                assertTrue(((String) entity.getAttribute("qualifiedName")).startsWith("hr.employees.age_backup@"));
             } else {
-                Assert.assertEquals(qualifiedName, (String) entity.getAttribute("qualifiedName"), "not expected to change");
+                assertEquals(qualifiedName, (String) entity.getAttribute("qualifiedName"), "not expected to change");
+            }
+        }
+    }
+
+    @Test
+    public void verifyAddClassification() {
+        AtlasEntityTransformer entityTransformer = new AtlasEntityTransformer(
+                Collections.singletonMap("hdfs_path.qualifiedName", "EQUALS: hr@cl1"),
+                Collections.singletonMap("__entity", "addClassification: replicated")
+        );
+
+        List<BaseEntityHandler> handlers = new ArrayList<>();
+        handlers.add(new BaseEntityHandler(Collections.singletonList(entityTransformer)));
+        assertApplyTransform(handlers);
+    }
+
+    @Test
+    public void verifyAddClassificationUsingScope() {
+        AtlasObjectId objectId = new AtlasObjectId("hive_db", Collections.singletonMap("qualifiedName", "hr@cl1"));
+        AtlasEntityTransformer entityTransformer = new AtlasEntityTransformer(
+                Collections.singletonMap("__entity", "topLevel: "),
+                Collections.singletonMap("__entity", "addClassification: replicated")
+        );
+
+        List<BaseEntityHandler> handlers = new ArrayList<>();
+        handlers.add(new BaseEntityHandler(Collections.singletonList(entityTransformer)));
+        Condition condition = handlers.get(0).transformers.get(0).getConditions().get(0);
+        Condition.ObjectIdEquals objectIdEquals = (Condition.ObjectIdEquals) condition;
+        objectIdEquals.add(objectId);
+
+        assertApplyTransform(handlers);
+    }
+
+    private void assertApplyTransform(List<BaseEntityHandler> handlers) {
+        for (AtlasEntity entity : getAllEntities()) {
+            applyTransforms(entity, handlers);
+
+            if(entity.getAttribute("qualifiedName").equals("hr@cl1")) {
+                assertNotNull(entity.getClassifications());
+            } else{
+                assertNull(entity.getClassifications());
             }
         }
     }
 
     private List<BaseEntityHandler> initializeHandlers(List<AttributeTransform> params) {
-        return BaseEntityHandler.createEntityHandlers(params);
+        return BaseEntityHandler.createEntityHandlers(params, null);
     }
 
     private void applyTransforms(AtlasEntity entity, List<BaseEntityHandler> handlers) {
@@ -425,10 +471,12 @@ public class TransformationHandlerTest {
     }
 
     private AtlasEntity getHiveTableEntity(String clusterName, String dbName, String tableName) {
+        String qualifiedName = dbName + "." + tableName + "@" + clusterName;
+
         AtlasEntity entity = new AtlasEntity(TransformationConstants.HIVE_TABLE);
 
         entity.setAttribute("name", tableName);
-        entity.setAttribute("qualifiedName", dbName + "." + tableName + "@" + clusterName);
+        entity.setAttribute("qualifiedName", qualifiedName);
         entity.setAttribute("owner", "hive");
         entity.setAttribute("temporary", false);
         entity.setAttribute("lastAccessTime", "1535656355000");
@@ -442,11 +490,13 @@ public class TransformationHandlerTest {
     }
 
     private AtlasEntity getHiveStorageDescriptorEntity(String clusterName, String dbName, String tableName) {
+        String qualifiedName = "hdfs://localhost.localdomain:8020/warehouse/tablespace/managed/hive/" + dbName + ".db" + "/" + tableName;
+
         AtlasEntity entity = new AtlasEntity(TransformationConstants.HIVE_STORAGE_DESCRIPTOR);
 
         entity.setAttribute("qualifiedName", dbName + "." + tableName + "@" + clusterName + "_storage");
         entity.setAttribute("storedAsSubDirectories", false);
-        entity.setAttribute("location", "hdfs://localhost.localdomain:8020/warehouse/tablespace/managed/hive/" + dbName + ".db" + "/" + tableName);
+        entity.setAttribute("location", qualifiedName);
         entity.setAttribute("compressed", false);
         entity.setAttribute("inputFormat", "org.apache.hadoop.mapred.TextInputFormat");
         entity.setAttribute("outputFormat", "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat");
@@ -456,10 +506,12 @@ public class TransformationHandlerTest {
     }
 
     private AtlasEntity getHiveColumnEntity(String clusterName, String dbName, String tableName, String columnName) {
+        String qualifiedName = dbName + "." + tableName + "." + columnName + "@" + clusterName;
+
         AtlasEntity entity = new AtlasEntity(TransformationConstants.HIVE_COLUMN);
 
         entity.setAttribute("owner", "hive");
-        entity.setAttribute("qualifiedName", dbName + "." + tableName + "." + columnName +"@" + clusterName);
+        entity.setAttribute("qualifiedName", qualifiedName);
         entity.setAttribute("name", columnName);
         entity.setAttribute("position", 1);
         entity.setAttribute("type", "string");
