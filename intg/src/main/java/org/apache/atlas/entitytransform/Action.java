@@ -17,16 +17,26 @@
  */
 package org.apache.atlas.entitytransform;
 
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.commons.lang.StringUtils;
 import org.apache.atlas.entitytransform.BaseEntityHandler.AtlasTransformableEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 
 public abstract class Action {
     private static final Logger LOG = LoggerFactory.getLogger(Action.class);
 
+    private static final String ENTITY_KEY                  = "__entity";
     private static final String ACTION_DELIMITER           = ":";
+    private static final String ACTION_ADD_CLASSIFICATION  = "ADDCLASSIFICATION";
     private static final String ACTION_NAME_SET            = "SET";
     private static final String ACTION_NAME_REPLACE_PREFIX = "REPLACE_PREFIX";
     private static final String ACTION_NAME_TO_LOWER       = "TO_LOWER";
@@ -65,6 +75,10 @@ public abstract class Action {
         value       = StringUtils.trim(value);
 
         switch (actionName.toUpperCase()) {
+            case ACTION_ADD_CLASSIFICATION:
+                ret = new AddClassificationAction(actionValue);
+                break;
+
             case ACTION_NAME_REPLACE_PREFIX:
                 ret = new PrefixReplaceAction(key, actionValue);
             break;
@@ -115,6 +129,60 @@ public abstract class Action {
         }
     }
 
+    public static class AddClassificationAction extends Action implements NeedsContext {
+
+        private final String classificationName;
+        private TransformerContext transformerContext;
+
+        public AddClassificationAction(String classificationName) {
+            super(ENTITY_KEY);
+
+            this.classificationName = classificationName;
+        }
+
+        @Override
+        public void apply(AtlasTransformableEntity transformableEntity) {
+            AtlasEntity entity = transformableEntity.entity;
+            if (entity.getClassifications() == null) {
+                entity.setClassifications(new ArrayList<AtlasClassification>());
+            }
+
+            for (AtlasClassification c : entity.getClassifications()) {
+                if (c.getTypeName().equals(classificationName)) {
+                    return;
+                }
+            }
+
+            entity.getClassifications().add(new AtlasClassification(classificationName));
+        }
+
+        @Override
+        public void setContext(TransformerContext transformerContext) {
+            this.transformerContext = transformerContext;
+            getCreateTag(classificationName);
+        }
+
+        private void getCreateTag(String classificationName) {
+            if (transformerContext == null) {
+                return;
+            }
+
+            try {
+                AtlasClassificationDef classificationDef = transformerContext.getTypeRegistry().getClassificationDefByName(classificationName);
+                if (classificationDef != null) {
+                    return;
+                }
+
+                classificationDef = new AtlasClassificationDef(classificationName);
+                AtlasTypesDef typesDef = new AtlasTypesDef();
+                typesDef.setClassificationDefs(Collections.singletonList(classificationDef));
+                transformerContext.getTypeDefStore().createTypesDef(typesDef);
+                LOG.info("created classification: {}", classificationName);
+            } catch (AtlasBaseException e) {
+                LOG.error("Error creating classification: {}", classificationName, e);
+            }
+        }
+    }
 
     public static class PrefixReplaceAction extends Action {
         private final String fromPrefix;

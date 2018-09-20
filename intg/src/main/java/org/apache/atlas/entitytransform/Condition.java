@@ -18,15 +18,25 @@
 package org.apache.atlas.entitytransform;
 
 import org.apache.atlas.entitytransform.BaseEntityHandler.AtlasTransformableEntity;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 
 public abstract class Condition {
     private static final Logger LOG = LoggerFactory.getLogger(Condition.class);
 
     private static final String CONDITION_DELIMITER                    = ":";
+    private static final String CONDITION_ENTITY_OBJECT_ID             = "OBJECTID";
+    private static final String CONDITION_ENTITY_TOP_LEVEL             = "TOPLEVEL";
+    private static final String CONDITION_ENTITY_ALL                   = "ALL";
     private static final String CONDITION_NAME_EQUALS                  = "EQUALS";
     private static final String CONDITION_NAME_EQUALS_IGNORE_CASE      = "EQUALS_IGNORE_CASE";
     private static final String CONDITION_NAME_STARTS_WITH             = "STARTS_WITH";
@@ -60,6 +70,18 @@ public abstract class Condition {
         value          = StringUtils.trim(value);
 
         switch (conditionName.toUpperCase()) {
+            case CONDITION_ENTITY_ALL:
+                ret = new ObjectIdEquals(key, CONDITION_ENTITY_ALL);
+                break;
+
+            case CONDITION_ENTITY_TOP_LEVEL:
+                ret = new ObjectIdEquals(key, CONDITION_ENTITY_TOP_LEVEL);
+                break;
+
+            case CONDITION_ENTITY_OBJECT_ID:
+                ret = new ObjectIdEquals(key, conditionValue);
+                break;
+
             case CONDITION_NAME_EQUALS:
                 ret = new EqualsCondition(key, conditionValue);
             break;
@@ -163,6 +185,70 @@ public abstract class Condition {
             return attributeValue != null && StringUtils.startsWithIgnoreCase(attributeValue.toString(), this.prefix);
         }
     }
+
+    static class ObjectIdEquals extends Condition implements NeedsContext {
+        private final List<AtlasObjectId> objectIds;
+        private String scope;
+        private TransformerContext transformerContext;
+
+        public ObjectIdEquals(String key, String conditionValue) {
+            super(key);
+
+            objectIds = new ArrayList<>();
+            this.scope = conditionValue;
+        }
+
+        @Override
+        public boolean matches(AtlasTransformableEntity entity) {
+            for (AtlasObjectId objectId : objectIds) {
+                return isMatch(objectId, entity.entity);
+            }
+
+            return objectIds.size() == 0;
+        }
+
+        public void add(AtlasObjectId objectId) {
+            this.objectIds.add(objectId);
+        }
+
+        private boolean isMatch(AtlasObjectId objectId, AtlasEntity entity) {
+            boolean ret = true;
+            if (!StringUtils.isEmpty(objectId.getGuid())) {
+                return Objects.equals(objectId.getGuid(), entity.getGuid());
+            }
+
+            ret = Objects.equals(objectId.getTypeName(), entity.getTypeName());
+            if (!ret) {
+                return ret;
+            }
+
+            for (Map.Entry<String, Object> entry : objectId.getUniqueAttributes().entrySet()) {
+                ret = ret && Objects.equals(entity.getAttribute(entry.getKey()), entry.getValue());
+                if (!ret) {
+                    break;
+                }
+            }
+
+            return ret;
+        }
+
+        @Override
+        public void setContext(TransformerContext transformerContext) {
+            this.transformerContext = transformerContext;
+            if(StringUtils.isEmpty(scope) || scope.equals(CONDITION_ENTITY_ALL)) {
+                return;
+            }
+
+            addObjectIdsFromExportRequest();
+        }
+
+        private void addObjectIdsFromExportRequest() {
+            for(AtlasObjectId objectId : this.transformerContext.getExportRequest().getItemsToExport()) {
+                add(objectId);
+            }
+        }
+    }
+
 
     public static class HasValueCondition extends Condition {
         protected final String attributeValue;

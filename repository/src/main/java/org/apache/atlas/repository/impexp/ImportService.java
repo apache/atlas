@@ -20,10 +20,10 @@ package org.apache.atlas.repository.impexp;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.entitytransform.BaseEntityHandler;
+import org.apache.atlas.entitytransform.TransformerContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
-import org.apache.atlas.model.impexp.AttributeTransform;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -42,7 +42,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.atlas.model.impexp.AtlasImportRequest.TRANSFORMERS_KEY;
@@ -131,36 +130,19 @@ public class ImportService {
 
     }
 
-    private void setEntityTransformerHandlers(ZipSource source, String transformersString) {
-        if (StringUtils.isEmpty(transformersString)) {
+    @VisibleForTesting
+    void setEntityTransformerHandlers(ZipSource source, String transformersJson) throws AtlasBaseException {
+        if (StringUtils.isEmpty(transformersJson)) {
             return;
         }
 
-        Object transformersObj = AtlasType.fromJson(transformersString, Object.class);
-        List   transformers    = (transformersObj != null && transformersObj instanceof List) ? (List) transformersObj : null;
-
-        List<AttributeTransform> attributeTransforms = new ArrayList<>();
-
-        if (CollectionUtils.isNotEmpty(transformers)) {
-            for (Object transformer : transformers) {
-                String             transformerStr     = AtlasType.toJson(transformer);
-                AttributeTransform attributeTransform = AtlasType.fromJson(transformerStr, AttributeTransform.class);
-
-                if (attributeTransform == null) {
-                    continue;
-                }
-
-                attributeTransforms.add(attributeTransform);
-            }
+        TransformerContext context = new TransformerContext(typeRegistry, typeDefStore, source.getExportResult().getRequest());
+        List<BaseEntityHandler> entityHandlers = BaseEntityHandler.fromJson(transformersJson, context);
+        if (CollectionUtils.isEmpty(entityHandlers)) {
+            return;
         }
 
-        if (CollectionUtils.isNotEmpty(attributeTransforms)) {
-            List<BaseEntityHandler> entityHandlers = BaseEntityHandler.createEntityHandlers(attributeTransforms);
-
-            if (CollectionUtils.isNotEmpty(entityHandlers)) {
-                source.setEntityHandlers(entityHandlers);
-            }
-        }
+        source.setEntityHandlers(entityHandlers);
     }
 
     private void debugLog(String s, Object... params) {

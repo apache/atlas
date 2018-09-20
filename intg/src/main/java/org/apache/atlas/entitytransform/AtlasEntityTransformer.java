@@ -19,13 +19,16 @@ package org.apache.atlas.entitytransform;
 
 import org.apache.atlas.entitytransform.BaseEntityHandler.AtlasTransformableEntity;
 import org.apache.atlas.model.impexp.AttributeTransform;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-
 
 public class AtlasEntityTransformer {
     private final List<Condition> conditions;
@@ -33,6 +36,10 @@ public class AtlasEntityTransformer {
 
     public AtlasEntityTransformer(AttributeTransform attributeTransform) {
         this(attributeTransform.getConditions(), attributeTransform.getAction());
+    }
+
+    public AtlasEntityTransformer(AtlasObjectId objectId, Map<String, String> actions) {
+        this(Collections.singletonMap("__entity", AtlasType.toJson(objectId)), actions);
     }
 
     public AtlasEntityTransformer(Map<String, String> conditions, Map<String, String> actions) {
