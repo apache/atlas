@@ -47,7 +47,6 @@ public abstract class Action {
 
     protected final EntityAttribute attribute;
 
-
     protected Action(EntityAttribute attribute) {
         this.attribute = attribute;
     }
@@ -284,7 +283,7 @@ public abstract class Action {
 
     public static class ClearAction extends Action {
         public ClearAction(EntityAttribute attribute) {
-            super(attribute);
+           super(attribute);
         }
 
         @Override

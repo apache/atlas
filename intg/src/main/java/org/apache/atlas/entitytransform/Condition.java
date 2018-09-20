@@ -48,7 +48,6 @@ public abstract class Condition {
 
     protected final EntityAttribute attribute;
 
-
     protected Condition(EntityAttribute attribute) {
         this.attribute = attribute;
     }
@@ -226,7 +225,7 @@ public abstract class Condition {
             }
         }
 
-       // @VisibleForTesting
+        //@VisibleForTesting
         void addObjectId(AtlasObjectId objId) {
             this.objectIds.add(objId);
         }
@@ -261,7 +260,6 @@ public abstract class Condition {
         @Override
         public boolean matches(AtlasTransformableEntity entity) {
             Object attributeValue = entity != null ? entity.getAttribute(attribute) : null;
-
             return attributeValue != null ? StringUtils.isNotEmpty(attributeValue.toString()) : false;
         }
     }

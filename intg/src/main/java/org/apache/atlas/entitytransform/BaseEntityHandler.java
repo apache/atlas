@@ -152,6 +152,7 @@ public class BaseEntityHandler {
             }
         }
 
+
         public boolean hasAttribute(EntityAttribute attribute) {
             return getAttribute(attribute) != null;
         }

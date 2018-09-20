@@ -34,9 +34,9 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 import static org.apache.atlas.entitytransform.TransformationConstants.HDFS_PATH;
 import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_COLUMN;
@@ -46,6 +46,9 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+
+import static org.apache.atlas.entitytransform.TransformationConstants.HDFS_PATH;
+
 import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_TABLE;
 
 public class TransformationHandlerTest {
@@ -224,6 +227,7 @@ public class TransformationHandlerTest {
             }
         }
     }
+
 
     @Test
     public void testHdfsPathNameReplacePrefixHandler() {
@@ -577,6 +581,8 @@ public class TransformationHandlerTest {
         entity.setAttribute("tableType", "EXTERNAL_TABLE");
         entity.setAttribute("createTime", "1535656355000");
         entity.setAttribute("retention", 0);
+        entity.setAttribute("replicatedTo", "[{\"guid\":\"f378cfa5-c4aa-4699-a733-8f11d2f089cd\",\"typeName\":\"AtlasServer\"},{\"guid\":\"58e42789-ea3e-4eaa-a0c4-d38d8632e548\",\"typeName\":\"AtlasServer\"}]");
+        entity.setAttribute("replicatedFrom", "[{\"guid\":\"f378cfa5-c4aa-4699-a733-8f11d2f089cd\",\"typeName\":\"AtlasServer\"},{\"guid\":\"58e42789-ea3e-4eaa-a0c4-d38d8632e548\",\"typeName\":\"AtlasServer\"}]");
 
         return entity;
     }
