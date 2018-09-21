@@ -23,13 +23,13 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
 public class TransformerContext {
-    private final AtlasTypeRegistry typeRegistry;
-    private final AtlasTypeDefStore typeDefStore;
+    private final AtlasTypeRegistry  typeRegistry;
+    private final AtlasTypeDefStore  typeDefStore;
     private final AtlasExportRequest exportRequest;
 
     public TransformerContext(AtlasTypeRegistry typeRegistry, AtlasTypeDefStore typeDefStore, AtlasExportRequest exportRequest) {
-        this.typeRegistry = typeRegistry;
-        this.typeDefStore = typeDefStore;
+        this.typeRegistry  = typeRegistry;
+        this.typeDefStore  = typeDefStore;
         this.exportRequest = exportRequest;
     }
 

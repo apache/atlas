@@ -22,6 +22,8 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
 import org.apache.atlas.entitytransform.BaseEntityHandler.AtlasTransformableEntity;
 import org.slf4j.Logger;
@@ -31,35 +33,35 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 
+
 public abstract class Action {
     private static final Logger LOG = LoggerFactory.getLogger(Action.class);
 
-    private static final String ENTITY_KEY                  = "__entity";
     private static final String ACTION_DELIMITER           = ":";
-    private static final String ACTION_ADD_CLASSIFICATION  = "ADDCLASSIFICATION";
+    private static final String ACTION_ADD_CLASSIFICATION  = "ADD_CLASSIFICATION";
     private static final String ACTION_NAME_SET            = "SET";
     private static final String ACTION_NAME_REPLACE_PREFIX = "REPLACE_PREFIX";
     private static final String ACTION_NAME_TO_LOWER       = "TO_LOWER";
     private static final String ACTION_NAME_TO_UPPER       = "TO_UPPER";
     private static final String ACTION_NAME_CLEAR          = "CLEAR";
 
-    protected final String attributeName;
+    protected final EntityAttribute attribute;
 
 
-    protected Action(String attributeName) {
-        this.attributeName = attributeName;
+    protected Action(EntityAttribute attribute) {
+        this.attribute = attribute;
     }
 
-    public String getAttributeName() { return attributeName; }
+    public EntityAttribute getAttribute() { return attribute; }
 
     public boolean isValid() {
-        return StringUtils.isNotEmpty(attributeName);
+        return true;
     }
 
     public abstract void apply(AtlasTransformableEntity entity);
 
 
-    public static Action createAction(String key, String value) {
+    public static Action createAction(String key, String value, TransformerContext context) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> Action.createAction(key={}, value={})", key, value);
         }
@@ -74,33 +76,35 @@ public abstract class Action {
         actionValue = StringUtils.trim(actionValue);
         value       = StringUtils.trim(value);
 
+        EntityAttribute attribute = new EntityAttribute(StringUtils.trim(key), context);
+
         switch (actionName.toUpperCase()) {
             case ACTION_ADD_CLASSIFICATION:
-                ret = new AddClassificationAction(actionValue);
-                break;
+                ret = new AddClassificationAction(attribute, actionValue, context);
+            break;
 
             case ACTION_NAME_REPLACE_PREFIX:
-                ret = new PrefixReplaceAction(key, actionValue);
+                ret = new PrefixReplaceAction(attribute, actionValue);
             break;
 
             case ACTION_NAME_TO_LOWER:
-                ret = new ToLowerCaseAction(key);
+                ret = new ToLowerCaseAction(attribute);
             break;
 
             case ACTION_NAME_TO_UPPER:
-                ret = new ToUpperCaseAction(key);
+                ret = new ToUpperCaseAction(attribute);
             break;
 
             case ACTION_NAME_SET:
-                ret = new SetAction(key, actionValue);
+                ret = new SetAction(attribute, actionValue);
             break;
 
             case ACTION_NAME_CLEAR:
-                ret = new ClearAction(key);
-                break;
+                ret = new ClearAction(attribute);
+            break;
 
             default:
-                ret = new SetAction(key, value); // treat unspecified/unknown action as 'SET'
+                ret = new SetAction(attribute, value); // treat unspecified/unknown action as 'SET'
             break;
         }
 
@@ -115,71 +119,79 @@ public abstract class Action {
     public static class SetAction extends Action {
         private final String attributeValue;
 
-        public SetAction(String attributeName, String attributeValue) {
-            super(attributeName);
+        public SetAction(EntityAttribute attribute, String attributeValue) {
+            super(attribute);
 
             this.attributeValue = attributeValue;
         }
 
         @Override
         public void apply(AtlasTransformableEntity entity) {
-            if (isValid()) {
-                entity.setAttribute(attributeName, attributeValue);
-            }
+            entity.setAttribute(attribute, attributeValue);
         }
     }
 
-    public static class AddClassificationAction extends Action implements NeedsContext {
-
+    public static class AddClassificationAction extends Action {
         private final String classificationName;
-        private TransformerContext transformerContext;
 
-        public AddClassificationAction(String classificationName) {
-            super(ENTITY_KEY);
+        public AddClassificationAction(EntityAttribute attribute, String classificationName, TransformerContext context) {
+            super(attribute);
 
             this.classificationName = classificationName;
+
+            createClassificationDefIfNotExists(classificationName, context);
         }
 
         @Override
         public void apply(AtlasTransformableEntity transformableEntity) {
-            AtlasEntity entity = transformableEntity.entity;
+            AtlasEntity entity = transformableEntity.getEntity();
+
             if (entity.getClassifications() == null) {
-                entity.setClassifications(new ArrayList<AtlasClassification>());
+                entity.setClassifications(new ArrayList<>());
             }
+
+            boolean hasClassification = false;
 
             for (AtlasClassification c : entity.getClassifications()) {
-                if (c.getTypeName().equals(classificationName)) {
-                    return;
+                hasClassification = c.getTypeName().equals(classificationName);
+
+                if (hasClassification) {
+                    break;
                 }
             }
 
-            entity.getClassifications().add(new AtlasClassification(classificationName));
-        }
-
-        @Override
-        public void setContext(TransformerContext transformerContext) {
-            this.transformerContext = transformerContext;
-            getCreateTag(classificationName);
-        }
-
-        private void getCreateTag(String classificationName) {
-            if (transformerContext == null) {
-                return;
+            if (!hasClassification) {
+                entity.getClassifications().add(new AtlasClassification(classificationName));
             }
+        }
 
-            try {
-                AtlasClassificationDef classificationDef = transformerContext.getTypeRegistry().getClassificationDefByName(classificationName);
-                if (classificationDef != null) {
-                    return;
+        private void createClassificationDefIfNotExists(String classificationName, TransformerContext context) {
+            AtlasTypeRegistry typeRegistry = context != null ? context.getTypeRegistry() : null;
+
+            if (typeRegistry != null) {
+                try {
+                    AtlasClassificationDef classificationDef = typeRegistry.getClassificationDefByName(classificationName);
+
+                    if (classificationDef == null) {
+                        AtlasTypeDefStore typeDefStore = context.getTypeDefStore();
+
+                        if (typeDefStore != null) {
+                            classificationDef = new AtlasClassificationDef(classificationName);
+
+                            AtlasTypesDef typesDef = new AtlasTypesDef();
+
+                            typesDef.setClassificationDefs(Collections.singletonList(classificationDef));
+
+                            typeDefStore.createTypesDef(typesDef);
+
+                            LOG.info("created classification: {}", classificationName);
+                        } else {
+                            LOG.warn("skipped creation of classification {}. typeDefStore is null", classificationName);
+                        }
+                    }
+                } catch (AtlasBaseException e) {
+                    LOG.error("Error creating classification: {}", classificationName, e);
                 }
-
-                classificationDef = new AtlasClassificationDef(classificationName);
-                AtlasTypesDef typesDef = new AtlasTypesDef();
-                typesDef.setClassificationDefs(Collections.singletonList(classificationDef));
-                transformerContext.getTypeDefStore().createTypesDef(typesDef);
-                LOG.info("created classification: {}", classificationName);
-            } catch (AtlasBaseException e) {
-                LOG.error("Error creating classification: {}", classificationName, e);
             }
         }
     }
@@ -188,8 +200,8 @@ public abstract class Action {
         private final String fromPrefix;
         private final String toPrefix;
 
-        public PrefixReplaceAction(String attributeName, String actionValue) {
-            super(attributeName);
+        public PrefixReplaceAction(EntityAttribute attribute, String actionValue) {
+            super(attribute);
 
             // actionValue => =:prefixToReplace=replacedValue
             if (actionValue != null) {
@@ -224,61 +236,61 @@ public abstract class Action {
         @Override
         public void apply(AtlasTransformableEntity entity) {
             if (isValid()) {
-                Object currValue = entity.getAttribute(attributeName);
+                Object currValue = entity.getAttribute(attribute);
                 String strValue  = currValue != null ? currValue.toString() : null;
 
                 if (strValue != null && strValue.startsWith(fromPrefix)) {
-                    entity.setAttribute(attributeName, StringUtils.replace(strValue, fromPrefix, toPrefix, 1));
+                    entity.setAttribute(attribute, StringUtils.replace(strValue, fromPrefix, toPrefix, 1));
                 }
             }
         }
     }
 
     public static class ToLowerCaseAction extends Action {
-        public ToLowerCaseAction(String attributeName) {
-            super(attributeName);
+        public ToLowerCaseAction(EntityAttribute attribute) {
+            super(attribute);
         }
 
         @Override
         public void apply(AtlasTransformableEntity entity) {
             if (isValid()) {
-                Object currValue = entity.getAttribute(attributeName);
+                Object currValue = entity.getAttribute(attribute);
                 String strValue  = currValue instanceof String ? (String) currValue : null;
 
                 if (strValue != null) {
-                    entity.setAttribute(attributeName, strValue.toLowerCase());
+                    entity.setAttribute(attribute, strValue.toLowerCase());
                 }
             }
         }
     }
 
     public static class ToUpperCaseAction extends Action {
-        public ToUpperCaseAction(String attributeName) {
-            super(attributeName);
+        public ToUpperCaseAction(EntityAttribute attribute) {
+            super(attribute);
         }
 
         @Override
         public void apply(AtlasTransformableEntity entity) {
             if (isValid()) {
-                Object currValue = entity.getAttribute(attributeName);
+                Object currValue = entity.getAttribute(attribute);
                 String strValue  = currValue instanceof String ? (String) currValue : null;
 
                 if (strValue != null) {
-                    entity.setAttribute(attributeName, strValue.toUpperCase());
+                    entity.setAttribute(attribute, strValue.toUpperCase());
                 }
             }
         }
     }
 
     public static class ClearAction extends Action {
-        public ClearAction(String attributeName) {
-            super(attributeName);
+        public ClearAction(EntityAttribute attribute) {
+            super(attribute);
         }
 
         @Override
         public void apply(AtlasTransformableEntity entity) {
-            if (isValid() && entity.hasAttribute(attributeName)) {
-                entity.setAttribute(attributeName, null);
+            if (isValid() && entity.hasAttribute(attribute)) {
+                entity.setAttribute(attribute, null);
             }
         }
     }
