@@ -17,20 +17,31 @@
  */
 package org.apache.atlas.entitytransform;
 
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AttributeTransform;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.entitytransform.TransformationConstants.HDFS_PATH;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_COLUMN;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_DATABASE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_STORAGE_DESCRIPTOR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -38,6 +49,17 @@ import static org.testng.Assert.assertTrue;
 import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_TABLE;
 
 public class TransformationHandlerTest {
+    private static final Logger LOG = LoggerFactory.getLogger(TransformationHandlerTest.class);
+
+    private static final String TYPENAME_REFERENCEABLE = "Referenceable";
+    private static final String TYPENAME_ASSET         = "Asset";
+    private static final String TYPENAME_NON_ASSET     = "non_asset";
+
+    private static final String[] CLUSTER_NAMES  = new String[] { "cl1", "prod" };
+    private static final String[] DATABASE_NAMES = new String[] { "hr", "sales", "engg" };
+    private static final String[] TABLE_NAMES    = new String[] { "employees", "products", "invoice" };
+    private static final String[] COLUMN_NAMES   = new String[] { "name", "age", "dob" };
+
     @Test
     public void testHdfsClusterRenameHandler() {
         // Rename clusterName from cl1 to cl2
@@ -139,8 +161,8 @@ public class TransformationHandlerTest {
     @Test
     public void testEntityClearAttributesActionWithNoCondition() {
         // clear replicatedFrom attribute for hive_table entities without any condition
-        Map<String, String> actions = new HashMap<String, String>() {{  put("__entity.replicatedTo", "CLEAR:");
-                                                                        put("__entity.replicatedFrom", "CLEAR:"); }};
+        Map<String, String> actions = new HashMap<String, String>() {{  put("Referenceable.replicatedTo", "CLEAR:");
+                                                                        put("Referenceable.replicatedFrom", "CLEAR:"); }};
 
         AttributeTransform transform = new AttributeTransform(null, actions);
 
@@ -334,38 +356,75 @@ public class TransformationHandlerTest {
 
     @Test
     public void verifyAddClassification() {
-        AtlasEntityTransformer entityTransformer = new AtlasEntityTransformer(
-                Collections.singletonMap("hdfs_path.qualifiedName", "EQUALS: hr@cl1"),
-                Collections.singletonMap("__entity", "addClassification: replicated")
-        );
+        AtlasEntityTransformer transformer = new AtlasEntityTransformer(Collections.singletonMap("hive_db.qualifiedName", "EQUALS: hr@cl1"),
+                                                                        Collections.singletonMap("Referenceable.", "ADD_CLASSIFICATION: replicated"),
+                                                                        getTransformerContext());
 
-        List<BaseEntityHandler> handlers = new ArrayList<>();
-        handlers.add(new BaseEntityHandler(Collections.singletonList(entityTransformer)));
+        List<BaseEntityHandler> handlers = Collections.singletonList(new BaseEntityHandler(Collections.singletonList(transformer)));
+
         assertApplyTransform(handlers);
     }
 
     @Test
     public void verifyAddClassificationUsingScope() {
-        AtlasObjectId objectId = new AtlasObjectId("hive_db", Collections.singletonMap("qualifiedName", "hr@cl1"));
-        AtlasEntityTransformer entityTransformer = new AtlasEntityTransformer(
-                Collections.singletonMap("__entity", "topLevel: "),
-                Collections.singletonMap("__entity", "addClassification: replicated")
-        );
+        AtlasExportRequest exportRequest = new AtlasExportRequest();
 
-        List<BaseEntityHandler> handlers = new ArrayList<>();
-        handlers.add(new BaseEntityHandler(Collections.singletonList(entityTransformer)));
-        Condition condition = handlers.get(0).transformers.get(0).getConditions().get(0);
-        Condition.ObjectIdEquals objectIdEquals = (Condition.ObjectIdEquals) condition;
-        objectIdEquals.add(objectId);
+        exportRequest.setItemsToExport(Collections.singletonList(new AtlasObjectId("hive_db", Collections.singletonMap("qualifiedName", "hr@cl1"))));
+
+        AtlasEntityTransformer transformer = new AtlasEntityTransformer(Collections.singletonMap("Referenceable.", "topLevel: "),
+                                                                        Collections.singletonMap("Referenceable", "ADD_CLASSIFICATION: replicated"),
+                                                                        new TransformerContext(getTypeRegistry(), null, exportRequest));
+
+        List<BaseEntityHandler> handlers = Collections.singletonList(new BaseEntityHandler(Collections.singletonList(transformer)));
 
         assertApplyTransform(handlers);
+    }
+
+    @Test
+    public void verifyEntityTypeInAttributeName() {
+        AttributeTransform p = new AttributeTransform();
+        p.addAction("Asset.name", "SET: renamed");
+
+        List<BaseEntityHandler> handlers = initializeHandlers(Collections.singletonList(p));
+
+        AtlasEntity assetEntity    = new AtlasEntity(TYPENAME_ASSET, "name", "originalName");
+        AtlasEntity assetSubEntity = new AtlasEntity(HIVE_DATABASE, "name", "originalName");
+        AtlasEntity nonAssetEntity = new AtlasEntity(TYPENAME_NON_ASSET, "name", "originalName");
+
+        applyTransforms(assetEntity, handlers);
+        applyTransforms(assetSubEntity, handlers);
+        applyTransforms(nonAssetEntity, handlers);
+
+        assertEquals((String) assetEntity.getAttribute("name"), "renamed", "Asset.name expected to be updated for Asset entity");
+        assertEquals((String) assetSubEntity.getAttribute("name"), "renamed", "Asset.name expected to be updated for Asset sub-type entity");
+        assertEquals((String) nonAssetEntity.getAttribute("name"), "originalName", "Asset.name expected to be not updated for non-Asset type entity");
+    }
+
+    @Test
+    public void verifyNoEntityTypeInAttributeName() {
+        AttributeTransform p = new AttributeTransform();
+        p.addAction("name", "SET: renamed");
+
+        List<BaseEntityHandler> handlers = initializeHandlers(Collections.singletonList(p));
+
+        AtlasEntity assetEntity    = new AtlasEntity(TYPENAME_ASSET, "name", "originalName");
+        AtlasEntity assetSubEntity = new AtlasEntity(HIVE_DATABASE, "name", "originalName");
+        AtlasEntity nonAssetEntity = new AtlasEntity(TYPENAME_NON_ASSET, "name", "originalName");
+
+        applyTransforms(assetEntity, handlers);
+        applyTransforms(assetSubEntity, handlers);
+        applyTransforms(nonAssetEntity, handlers);
+
+        assertEquals((String) assetEntity.getAttribute("name"), "renamed", "name expected to be updated for Asset entity");
+        assertEquals((String) assetSubEntity.getAttribute("name"), "renamed", "name expected to be updated for Asset sub-type entity");
+        assertEquals((String) nonAssetEntity.getAttribute("name"), "renamed", "name expected to be not updated for non-Asset type entity");
     }
 
     private void assertApplyTransform(List<BaseEntityHandler> handlers) {
         for (AtlasEntity entity : getAllEntities()) {
             applyTransforms(entity, handlers);
 
-            if(entity.getAttribute("qualifiedName").equals("hr@cl1")) {
+            if(entity.getTypeName().equals("hive_db") && entity.getAttribute("qualifiedName").equals("hr@cl1")) {
                 assertNotNull(entity.getClassifications());
             } else{
                 assertNull(entity.getClassifications());
@@ -374,7 +433,7 @@ public class TransformationHandlerTest {
     }
 
     private List<BaseEntityHandler> initializeHandlers(List<AttributeTransform> params) {
-        return BaseEntityHandler.createEntityHandlers(params, null);
+        return BaseEntityHandler.createEntityHandlers(params, getTransformerContext());
     }
 
     private void applyTransforms(AtlasEntity entity, List<BaseEntityHandler> handlers) {
@@ -383,15 +442,50 @@ public class TransformationHandlerTest {
         }
     }
 
-    final String[] clusterNames  = new String[] { "cl1", "prod" };
-    final String[] databaseNames = new String[] { "hr", "sales", "engg" };
-    final String[] tableNames    = new String[] { "employees", "products", "invoice" };
-    final String[] columnNames   = new String[] { "name", "age", "dob" };
+    private TransformerContext getTransformerContext() {
+        return new TransformerContext(getTypeRegistry(), null, null);
+    }
+
+    private AtlasTypeRegistry getTypeRegistry() {
+        AtlasTypeRegistry ret = new AtlasTypeRegistry();
+
+        AtlasEntityDef defReferenceable = new AtlasEntityDef(TYPENAME_REFERENCEABLE);
+        AtlasEntityDef defAsset         = new AtlasEntityDef(TYPENAME_ASSET);
+        AtlasEntityDef defHdfsPath      = new AtlasEntityDef(HDFS_PATH);
+        AtlasEntityDef defHiveDb        = new AtlasEntityDef(HIVE_DATABASE);
+        AtlasEntityDef defHiveTable     = new AtlasEntityDef(HIVE_TABLE);
+        AtlasEntityDef defHiveColumn    = new AtlasEntityDef(HIVE_COLUMN);
+        AtlasEntityDef defHiveStorDesc  = new AtlasEntityDef(HIVE_STORAGE_DESCRIPTOR);
+        AtlasEntityDef defNonAsset      = new AtlasEntityDef(TYPENAME_NON_ASSET);
+
+        defAsset.addSuperType(TYPENAME_REFERENCEABLE);
+        defHdfsPath.addSuperType(TYPENAME_ASSET);
+        defHiveDb.addSuperType(TYPENAME_ASSET);
+        defHiveTable.addSuperType(TYPENAME_ASSET);
+        defHiveColumn.addSuperType(TYPENAME_ASSET);
+        defNonAsset.addSuperType(TYPENAME_REFERENCEABLE);
+
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+
+        typesDef.setEntityDefs(Arrays.asList(defReferenceable, defAsset, defHdfsPath, defHiveDb, defHiveTable, defHiveColumn, defHiveStorDesc, defNonAsset));
+
+        try {
+            AtlasTypeRegistry.AtlasTransientTypeRegistry ttr = ret.lockTypeRegistryForUpdate();
+
+            ttr.addTypes(typesDef);
+
+            ret.releaseTypeRegistryForUpdate(ttr, true);
+        } catch (AtlasBaseException excp) {
+            LOG.warn("failed to initialize type-registry", excp);
+        }
+
+        return ret;
+    }
 
     private List<AtlasEntity> getHdfsPathEntities() {
         List<AtlasEntity> ret = new ArrayList<>();
 
-        for (String clusterName : clusterNames) {
+        for (String clusterName : CLUSTER_NAMES) {
             ret.add(getHdfsPathEntity1(clusterName));
             ret.add(getHdfsPathEntity2(clusterName));
         }
@@ -402,18 +496,18 @@ public class TransformationHandlerTest {
     private List<AtlasEntity> getAllEntities() {
         List<AtlasEntity> ret = new ArrayList<>();
 
-        for (String clusterName : clusterNames) {
+        for (String clusterName : CLUSTER_NAMES) {
             ret.add(getHdfsPathEntity1(clusterName));
             ret.add(getHdfsPathEntity2(clusterName));
 
-            for (String databaseName : databaseNames) {
+            for (String databaseName : DATABASE_NAMES) {
                 ret.add(getHiveDbEntity(clusterName, databaseName));
 
-                for (String tableName : tableNames) {
+                for (String tableName : TABLE_NAMES) {
                     ret.add(getHiveTableEntity(clusterName, databaseName, tableName));
                     ret.add(getHiveStorageDescriptorEntity(clusterName, databaseName, tableName));
 
-                    for (String columnName : columnNames) {
+                    for (String columnName : COLUMN_NAMES) {
                         ret.add(getHiveColumnEntity(clusterName, databaseName, tableName, columnName));
                     }
                 }
@@ -517,5 +611,9 @@ public class TransformationHandlerTest {
         entity.setAttribute("type", "string");
 
         return entity;
+    }
+
+    private AtlasEntity getNonAssetEntity() {
+        return new AtlasEntity(TYPENAME_NON_ASSET);
     }
 }
