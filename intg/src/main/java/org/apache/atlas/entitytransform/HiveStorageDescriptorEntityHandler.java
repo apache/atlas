@@ -26,11 +26,11 @@ import java.util.List;
 import static org.apache.atlas.entitytransform.TransformationConstants.*;
 
 public class HiveStorageDescriptorEntityHandler extends BaseEntityHandler {
-    private static final List<String> CUSTOM_TRANSFORM_ATTRIBUTES = Arrays.asList(HIVE_DB_NAME_ATTRIBUTE, HIVE_TABLE_NAME_ATTRIBUTE, HIVE_DB_CLUSTER_NAME_ATTRIBUTE);
+    static final List<String> CUSTOM_TRANSFORM_ATTRIBUTES = Arrays.asList(HIVE_DB_NAME_ATTRIBUTE, HIVE_TABLE_NAME_ATTRIBUTE, HIVE_DB_CLUSTER_NAME_ATTRIBUTE);
 
 
     public HiveStorageDescriptorEntityHandler(List<AtlasEntityTransformer> transformers) {
-        super(transformers, CUSTOM_TRANSFORM_ATTRIBUTES);
+        super(transformers);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class HiveStorageDescriptorEntityHandler extends BaseEntityHandler {
         private String  tableName;
         private String  clusterName;
         private String  location;
-        private boolean isCustomerAttributeUpdated = false;
+        private boolean isCustomAttributeUpdated = false;
 
 
         public HiveStorageDescriptorEntity(AtlasEntity entity) {
@@ -80,8 +80,8 @@ public class HiveStorageDescriptorEntityHandler extends BaseEntityHandler {
         }
 
         @Override
-        public Object getAttribute(String attributeName) {
-            switch (attributeName) {
+        public Object getAttribute(EntityAttribute attribute) {
+            switch (attribute.getAttributeKey()) {
                 case HIVE_DB_NAME_ATTRIBUTE:
                     return databaseName;
 
@@ -92,39 +92,39 @@ public class HiveStorageDescriptorEntityHandler extends BaseEntityHandler {
                     return clusterName;
             }
 
-            return super.getAttribute(attributeName);
+            return super.getAttribute(attribute);
         }
 
         @Override
-        public void setAttribute(String attributeName, String attributeValue) {
-            switch (attributeName) {
+        public void setAttribute(EntityAttribute attribute, String attributeValue) {
+            switch (attribute.getAttributeKey()) {
                 case HIVE_DB_NAME_ATTRIBUTE:
                     databaseName = attributeValue;
 
-                    isCustomerAttributeUpdated = true;
+                    isCustomAttributeUpdated = true;
                 break;
 
                 case HIVE_TABLE_NAME_ATTRIBUTE:
                     tableName = attributeValue;
 
-                    isCustomerAttributeUpdated = true;
+                    isCustomAttributeUpdated = true;
                 break;
 
                 case HIVE_DB_CLUSTER_NAME_ATTRIBUTE:
                     clusterName = attributeValue;
 
-                    isCustomerAttributeUpdated = true;
+                    isCustomAttributeUpdated = true;
                 break;
 
                 default:
-                    super.setAttribute(attributeName, attributeValue);
+                    super.setAttribute(attribute, attributeValue);
                 break;
             }
         }
 
         @Override
         public void transformComplete() {
-            if (isCustomerAttributeUpdated) {
+            if (isCustomAttributeUpdated) {
                 entity.setAttribute(LOCATION_ATTRIBUTE, toLocation());
                 entity.setAttribute(QUALIFIED_NAME_ATTRIBUTE, toQualifiedName());
             }

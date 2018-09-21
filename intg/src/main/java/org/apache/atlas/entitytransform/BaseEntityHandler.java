@@ -17,12 +17,9 @@
  */
 package org.apache.atlas.entitytransform;
 
-import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AttributeTransform;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -31,34 +28,24 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.atlas.entitytransform.TransformationConstants.TYPE_NAME_ATTRIBUTE_NAME_SEP;
 
 public class BaseEntityHandler {
     private static final Logger LOG = LoggerFactory.getLogger(BaseEntityHandler.class);
 
     protected final List<AtlasEntityTransformer> transformers;
-    protected final boolean                      hasCustomAttributeTransformer;
-    private TransformerContext                   transformerContext;
+
 
     public BaseEntityHandler(List<AtlasEntityTransformer> transformers) {
-        this(transformers, null);
-    }
-
-    public BaseEntityHandler(List<AtlasEntityTransformer> transformers, List<String> customTransformAttributes) {
-        this.transformers                  = transformers;
-        this.hasCustomAttributeTransformer = hasTransformerForAnyAttribute(customTransformAttributes);
-    }
-
-    public boolean hasCustomAttributeTransformer() {
-        return hasCustomAttributeTransformer;
+        this.transformers = transformers;
     }
 
     public AtlasEntity transform(AtlasEntity entity) {
-        if (!CollectionUtils.isNotEmpty(transformers)) {
+        if (CollectionUtils.isEmpty(transformers)) {
             return entity;
         }
 
         AtlasTransformableEntity transformableEntity = getTransformableEntity(entity);
+
         if (transformableEntity == null) {
             return entity;
         }
@@ -72,22 +59,6 @@ public class BaseEntityHandler {
         return entity;
     }
 
-    private void setContextForActions(List<Action> actions) {
-        for(Action action : actions) {
-            if (action instanceof NeedsContext) {
-                ((NeedsContext) action).setContext(transformerContext);
-            }
-        }
-    }
-
-    private void setContextForConditions(List<Condition> conditions) {
-        for(Condition condition : conditions) {
-            if (condition instanceof NeedsContext) {
-                ((NeedsContext) condition).setContext(transformerContext);
-            }
-        }
-    }
-
     public AtlasTransformableEntity getTransformableEntity(AtlasEntity entity) {
         return new AtlasTransformableEntity(entity);
     }
@@ -97,39 +68,38 @@ public class BaseEntityHandler {
             LOG.debug("==> BaseEntityHandler.createEntityHandlers(transforms={})", transforms);
         }
 
-        List<AtlasEntityTransformer> transformers = new ArrayList<>();
-
-        for (AttributeTransform transform : transforms) {
-            transformers.add(new AtlasEntityTransformer(transform));
-        }
-
-        BaseEntityHandler[] handlers = new BaseEntityHandler[] {
-                new HdfsPathEntityHandler(transformers),
-                new HiveDatabaseEntityHandler(transformers),
-                new HiveTableEntityHandler(transformers),
-                new HiveColumnEntityHandler(transformers),
-                new HiveStorageDescriptorEntityHandler(transformers)
-        };
-
         List<BaseEntityHandler> ret = new ArrayList<>();
 
-        // include customer handlers, only if its customer attribute is transformed
-        for (BaseEntityHandler handler : handlers) {
-            if (handler.hasCustomAttributeTransformer()) {
-                ret.add(handler);
-                handler.setContext(context);
+        if (CollectionUtils.isNotEmpty(transforms)) {
+            List<AtlasEntityTransformer> transformers = new ArrayList<>();
+
+            for (AttributeTransform transform : transforms) {
+                transformers.add(new AtlasEntityTransformer(transform, context));
             }
-        }
 
-        if (CollectionUtils.isEmpty(ret)) {
-            BaseEntityHandler be = new BaseEntityHandler(transformers);
-            be.setContext(context);
+            if (hasTransformerForAnyAttribute(transformers, HdfsPathEntityHandler.CUSTOM_TRANSFORM_ATTRIBUTES)) {
+                ret.add(new HdfsPathEntityHandler(transformers));
+            }
 
-            ret.add(be);
-        }
+            if (hasTransformerForAnyAttribute(transformers, HiveDatabaseEntityHandler.CUSTOM_TRANSFORM_ATTRIBUTES)) {
+                ret.add(new HiveDatabaseEntityHandler(transformers));
+            }
 
-        if (CollectionUtils.isEmpty(ret)) {
-            ret.add(new BaseEntityHandler(transformers));
+            if (hasTransformerForAnyAttribute(transformers, HiveTableEntityHandler.CUSTOM_TRANSFORM_ATTRIBUTES)) {
+                ret.add(new HiveTableEntityHandler(transformers));
+            }
+
+            if (hasTransformerForAnyAttribute(transformers, HiveColumnEntityHandler.CUSTOM_TRANSFORM_ATTRIBUTES)) {
+                ret.add(new HiveColumnEntityHandler(transformers));
+            }
+
+            if (hasTransformerForAnyAttribute(transformers, HiveStorageDescriptorEntityHandler.CUSTOM_TRANSFORM_ATTRIBUTES)) {
+                ret.add(new HiveStorageDescriptorEntityHandler(transformers));
+            }
+
+            if (CollectionUtils.isEmpty(ret)) {
+                ret.add(new BaseEntityHandler(transformers));
+            }
         }
 
         if (LOG.isDebugEnabled()) {
@@ -139,11 +109,11 @@ public class BaseEntityHandler {
         return ret;
     }
 
-    private boolean hasTransformerForAnyAttribute(List<String> attributes) {
+    private static boolean hasTransformerForAnyAttribute(List<AtlasEntityTransformer> transformers, List<String> attributes) {
         if (CollectionUtils.isNotEmpty(transformers) && CollectionUtils.isNotEmpty(attributes)) {
             for (AtlasEntityTransformer transformer : transformers) {
                 for (Action action : transformer.getActions()) {
-                    if (attributes.contains(action.getAttributeName())) {
+                    if (attributes.contains(action.getAttribute().getAttributeKey())) {
                         return true;
                     }
                 }
@@ -151,20 +121,6 @@ public class BaseEntityHandler {
         }
 
         return false;
-    }
-    public void setContext(AtlasTypeRegistry typeRegistry, AtlasTypeDefStore typeDefStore, AtlasExportRequest request) {
-        setContext(new TransformerContext(typeRegistry, typeDefStore, request));
-    }
-
-    public void setContext(TransformerContext context) {
-        this.transformerContext = context;
-
-        for (AtlasEntityTransformer transformer : transformers) {
-            if (transformerContext != null) {
-                setContextForActions(transformer.getActions());
-                setContextForConditions(transformer.getConditions());
-            }
-        }
     }
 
     public static class AtlasTransformableEntity {
@@ -178,38 +134,26 @@ public class BaseEntityHandler {
             return entity;
         }
 
-        public Object getAttribute(String attributeName) {
-            Object ret = null;
+        public Object getAttribute(EntityAttribute attribute) {
+            final Object ret;
 
-            if (entity != null && attributeName != null) {
-                ret = entity.getAttribute(attributeName);
-
-                if (ret == null) { // try after dropping typeName prefix, if attributeName contains it
-                    int idxSep = attributeName.indexOf(TYPE_NAME_ATTRIBUTE_NAME_SEP);
-
-                    if (idxSep != -1) {
-                        ret = entity.getAttribute(attributeName.substring(idxSep + 1));
-                    }
-                }
+            if (attribute.appliesToEntityType(entity.getTypeName())) {
+                ret = entity.getAttribute(attribute.getAttributeName());
+            } else {
+                ret = null;
             }
 
             return ret;
         }
 
-        public void setAttribute(String attributeName, String attributeValue) {
-            if (entity != null && attributeName != null) {
-                int idxSep = attributeName.indexOf(TYPE_NAME_ATTRIBUTE_NAME_SEP); // drop typeName prefix, if attributeName contains it
-
-                if (idxSep != -1) {
-                    entity.setAttribute(attributeName.substring(idxSep + 1), attributeValue);
-                } else {
-                    entity.setAttribute(attributeName, attributeValue);
-                }
+        public void setAttribute(EntityAttribute attribute, String attributeValue) {
+            if (attribute.appliesToEntityType(entity.getTypeName())) {
+                entity.setAttribute(attribute.getAttributeName(), attributeValue);
             }
         }
 
-        public boolean hasAttribute(String attributeName) {
-            return getAttribute(attributeName) != null;
+        public boolean hasAttribute(EntityAttribute attribute) {
+            return getAttribute(attribute) != null;
         }
 
         public void transformComplete() {
