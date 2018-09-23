@@ -87,7 +87,7 @@ public class AtlasServerServiceTest {
 
 
         assertEquals(actual.getName(), expected.getName());
-        assertEquals(actual.getQualifiedName(), expected.getQualifiedName());
+        assertEquals(actual.getFullName(), expected.getFullName());
     }
 
     private AtlasServer getServer(String serverName, String topLevelEntity, String operation, long nextModifiedTimestamp, String targetServerName) {

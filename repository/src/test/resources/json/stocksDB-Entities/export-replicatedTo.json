@@ -6,6 +6,6 @@
   ],
   "options": {
     "fetchType": "full",
-    "replicatedTo": "clTarget"
+    "replicatedTo": "dc2$clTarget"
   }
 }

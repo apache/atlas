@@ -122,6 +122,14 @@
       ],
       "attributeDefs": [
         {
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
           "name": "displayName",
           "typeName": "string",
           "cardinality": "SINGLE",
@@ -130,7 +138,7 @@
           "isUnique": false
         },
         {
-          "name": "qualifiedName",
+          "name": "fullName",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": true,
