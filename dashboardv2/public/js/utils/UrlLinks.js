@@ -91,13 +91,13 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             var url = this.baseUrl + '/admin/expimp/audit',
                 queryParam = [];
             if (options) {
-                var clusterName = options.clusterName,
+                var serverName = options.serverName,
                     limit = options.limit,
                     offset = options.offset;
             }
 
-            if (clusterName) {
-                queryParam.push("clusterName=" + clusterName);
+            if (serverName) {
+                queryParam.push("serverName=" + serverName);
             }
             if (limit) {
                 queryParam.push("limit=" + limit);
