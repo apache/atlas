@@ -40,20 +40,23 @@ public class AtlasServer extends AtlasBaseModelObject implements Serializable {
 
     public static final String KEY_REPLICATION_DETAILS = "REPL_DETAILS";
 
-    private String name;
-    private String qualifiedName;
-    private Map<String, String> additionalInfo;
-    private List<String> urls;
+    private String              name;
+    private String              fullName;
+    private String              displayName;
+    private Map<String, String> additionalInfo = new HashMap<>();
+    private List<String>        urls           = new ArrayList<>();
 
     public AtlasServer() {
-        urls = new ArrayList<>();
-        additionalInfo = new HashMap<>();
     }
 
-    public AtlasServer(String name, String qualifiedName) {
-        this();
-        this.name = name;
-        this.qualifiedName = qualifiedName;
+    public AtlasServer(String name, String fullName) {
+        this(name, name, fullName);
+    }
+
+    public AtlasServer(String name, String displayName, String fullName) {
+        this.name        = name;
+        this.displayName = displayName;
+        this.fullName    = fullName;
     }
 
     public void setName(String name) {
@@ -64,58 +67,24 @@ public class AtlasServer extends AtlasBaseModelObject implements Serializable {
         return this.name;
     }
 
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
     public void setAdditionalInfo(Map<String, String> additionalInfo) {
         this.additionalInfo = additionalInfo;
-    }
-
-    public void setAdditionalInfo(String key, String value) {
-        if(additionalInfo == null) {
-            additionalInfo = new HashMap<>();
-        }
-
-        additionalInfo.put(key, value);
-    }
-
-    public void setAdditionalInfoRepl(String guid, long modifiedTimestamp) {
-        Map<String, Object> replicationDetailsMap = null;
-
-        if(additionalInfo != null && additionalInfo.containsKey(KEY_REPLICATION_DETAILS)) {
-            replicationDetailsMap = AtlasType.fromJson(getAdditionalInfo().get(KEY_REPLICATION_DETAILS), Map.class);
-        }
-
-        if(replicationDetailsMap == null) {
-            replicationDetailsMap = new HashMap<>();
-        }
-
-        if(modifiedTimestamp == 0) {
-            replicationDetailsMap.remove(guid);
-        } else {
-            replicationDetailsMap.put(guid, modifiedTimestamp);
-        }
-
-        updateReplicationMap(replicationDetailsMap);
-    }
-
-    private void updateReplicationMap(Map<String, Object> replicationDetailsMap) {
-        String json = AtlasType.toJson(replicationDetailsMap);
-        setAdditionalInfo(KEY_REPLICATION_DETAILS, json);
-    }
-
-
-    public Object getAdditionalInfoRepl(String guid) {
-        if(additionalInfo == null || !additionalInfo.containsKey(KEY_REPLICATION_DETAILS)) {
-            return null;
-        }
-
-        String key = guid;
-        String mapJson = additionalInfo.get(KEY_REPLICATION_DETAILS);
-
-        Map<String, String> replicationDetailsMap = AtlasType.fromJson(mapJson, Map.class);
-        if(!replicationDetailsMap.containsKey(key)) {
-            return null;
-        }
-
-        return replicationDetailsMap.get(key);
     }
 
     public Map<String, String> getAdditionalInfo() {
@@ -126,14 +95,6 @@ public class AtlasServer extends AtlasBaseModelObject implements Serializable {
         return additionalInfo.get(key);
     }
 
-    public String getQualifiedName() {
-        return qualifiedName;
-    }
-
-    public void setQualifiedName(String qualifiedName) {
-        this.qualifiedName = qualifiedName;
-    }
-
     public void setUrls(List<String> urls) {
         this.urls = urls;
     }
@@ -142,13 +103,66 @@ public class AtlasServer extends AtlasBaseModelObject implements Serializable {
         return this.urls;
     }
 
+
+    public void setAdditionalInfo(String key, String value) {
+        if (additionalInfo == null) {
+            additionalInfo = new HashMap<>();
+        }
+
+        additionalInfo.put(key, value);
+    }
+
+    public void setAdditionalInfoRepl(String guid, long modifiedTimestamp) {
+        Map<String, Object> replicationDetailsMap = null;
+
+        if (additionalInfo != null && additionalInfo.containsKey(KEY_REPLICATION_DETAILS)) {
+            replicationDetailsMap = AtlasType.fromJson(getAdditionalInfo().get(KEY_REPLICATION_DETAILS), Map.class);
+        }
+
+        if (replicationDetailsMap == null) {
+            replicationDetailsMap = new HashMap<>();
+        }
+
+        if (modifiedTimestamp == 0) {
+            replicationDetailsMap.remove(guid);
+        } else {
+            replicationDetailsMap.put(guid, modifiedTimestamp);
+        }
+
+        updateReplicationMap(replicationDetailsMap);
+    }
+
+    public Object getAdditionalInfoRepl(String guid) {
+        if (additionalInfo == null || !additionalInfo.containsKey(KEY_REPLICATION_DETAILS)) {
+            return null;
+        }
+
+        String key     = guid;
+        String mapJson = additionalInfo.get(KEY_REPLICATION_DETAILS);
+
+        Map<String, String> replicationDetailsMap = AtlasType.fromJson(mapJson, Map.class);
+
+        if (!replicationDetailsMap.containsKey(key)) {
+            return null;
+        }
+
+        return replicationDetailsMap.get(key);
+    }
+
     @Override
     public StringBuilder toString(StringBuilder sb) {
         sb.append(", name=").append(name);
-        sb.append(", qualifiedName=").append(getQualifiedName());
-        sb.append(", urls=").append(urls);
+        sb.append(", fullName=").append(fullName);
+        sb.append(", displayName=").append(displayName);
         sb.append(", additionalInfo=").append(additionalInfo);
-        sb.append("}");
+        sb.append(", urls=").append(urls);
+
         return sb;
+    }
+
+    private void updateReplicationMap(Map<String, Object> replicationDetailsMap) {
+        String json = AtlasType.toJson(replicationDetailsMap);
+
+        setAdditionalInfo(KEY_REPLICATION_DETAILS, json);
     }
 }

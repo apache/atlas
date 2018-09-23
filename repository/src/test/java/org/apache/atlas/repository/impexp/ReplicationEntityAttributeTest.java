@@ -116,7 +116,10 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         assertNotNull(zipSource.getCreationOrder());
         assertEquals(zipSource.getCreationOrder().size(), expectedEntityCount);
 
-        assertCluster(REPLICATED_TO_CLUSTER_NAME, null);
+        assertCluster(
+                AuditsWriter.getServerNameFromFullName(REPLICATED_TO_CLUSTER_NAME),
+                REPLICATED_TO_CLUSTER_NAME, null);
+
         assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_TO);
     }
 
@@ -125,7 +128,9 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         AtlasImportRequest request = getImportRequestWithReplicationOption();
         AtlasImportResult importResult = runImportWithParameters(importService, request, zipSource);
 
-        assertCluster(REPLICATED_FROM_CLUSTER_NAME, importResult);
+        assertCluster(
+                AuditsWriter.getServerNameFromFullName(REPLICATED_FROM_CLUSTER_NAME),
+                REPLICATED_FROM_CLUSTER_NAME, importResult);
         assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_FROM);
     }
 
@@ -141,11 +146,12 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         }
     }
 
-    private void assertCluster(String name, AtlasImportResult importResult) throws AtlasBaseException {
-        AtlasServer actual = atlasServerService.get(new AtlasServer(name, name));
+    private void assertCluster(String name, String fullName, AtlasImportResult importResult) throws AtlasBaseException {
+        AtlasServer actual = atlasServerService.get(new AtlasServer(name, fullName));
 
         assertNotNull(actual);
         assertEquals(actual.getName(), name);
+        assertEquals(actual.getFullName(), fullName);
 
         if(importResult != null) {
             assertClusterAdditionalInfo(actual, importResult);

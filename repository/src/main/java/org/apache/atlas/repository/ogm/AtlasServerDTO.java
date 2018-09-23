@@ -27,8 +27,9 @@ import java.util.List;
 import java.util.Map;
 
 public class AtlasServerDTO extends AbstractDataTransferObject<AtlasServer> {
+    private final String PROPERTY_NAME = "name";
     private final String PROPERTY_DISPLAY_NAME = "displayName";
-    private final String PROPERTY_QUALIFIED_NAME = "qualifiedName";
+    private final String PROPERTY_FULL_NAME = "fullName";
     private final String PROPERTY_ADDITIONAL_INFO = "additionalInfo";
     private final String PROPERTY_URLS = "urls";
 
@@ -40,8 +41,9 @@ public class AtlasServerDTO extends AbstractDataTransferObject<AtlasServer> {
         AtlasServer cluster = new AtlasServer();
 
         setGuid(cluster, entity);
-        cluster.setName((String) entity.getAttribute(PROPERTY_DISPLAY_NAME));
-        cluster.setQualifiedName((String) entity.getAttribute(PROPERTY_QUALIFIED_NAME));
+        cluster.setName((String) entity.getAttribute(PROPERTY_NAME));
+        cluster.setFullName((String) entity.getAttribute(PROPERTY_FULL_NAME));
+        cluster.setDisplayName((String) entity.getAttribute(PROPERTY_DISPLAY_NAME));
         cluster.setAdditionalInfo((Map<String,String>) entity.getAttribute(PROPERTY_ADDITIONAL_INFO));
         cluster.setUrls((List<String>) entity.getAttribute(PROPERTY_URLS));
 
@@ -56,8 +58,9 @@ public class AtlasServerDTO extends AbstractDataTransferObject<AtlasServer> {
     public AtlasEntity toEntity(AtlasServer obj) {
         AtlasEntity entity = getDefaultAtlasEntity(obj);
 
-        entity.setAttribute(PROPERTY_DISPLAY_NAME, obj.getName());
-        entity.setAttribute(PROPERTY_QUALIFIED_NAME, obj.getQualifiedName());
+        entity.setAttribute(PROPERTY_NAME, obj.getName());
+        entity.setAttribute(PROPERTY_DISPLAY_NAME, obj.getDisplayName());
+        entity.setAttribute(PROPERTY_FULL_NAME, obj.getFullName());
         entity.setAttribute(PROPERTY_ADDITIONAL_INFO, obj.getAdditionalInfo());
         entity.setAttribute(PROPERTY_URLS, obj.getUrls());
 
@@ -72,7 +75,7 @@ public class AtlasServerDTO extends AbstractDataTransferObject<AtlasServer> {
     @Override
     public Map<String, Object> getUniqueAttributes(final AtlasServer obj) {
         return new HashMap<String, Object>() {{
-            put(PROPERTY_QUALIFIED_NAME, obj.getQualifiedName());
+            put(PROPERTY_FULL_NAME, obj.getFullName());
         }};
     }
 }
