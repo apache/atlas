@@ -1,5 +1,5 @@
 {
   "options": {
-    "replicatedFrom": "clSource"
+    "replicatedFrom": "dc1$clSource"
   }
 }

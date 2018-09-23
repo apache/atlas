@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.entitytransform;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.entitytransform.BaseEntityHandler.AtlasTransformableEntity;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -226,7 +225,6 @@ public abstract class Condition {
             }
         }
 
-        @VisibleForTesting
         void addObjectId(AtlasObjectId objId) {
             this.objectIds.add(objId);
         }

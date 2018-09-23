@@ -61,7 +61,7 @@ public class ExportImportAuditServiceTest extends ExportImportTestBase {
     }
 
     @Test
-    public void saveLogEntry() throws AtlasBaseException, InterruptedException {
+    public void saveLogEntry() throws AtlasBaseException {
         final String source1 = "clx";
         final String target1 = "cly";
         ExportImportAuditEntry entry = saveAndGet(source1, ExportImportAuditEntry.OPERATION_EXPORT, target1);
