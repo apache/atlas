@@ -130,6 +130,10 @@ public class AuditsWriter {
         return StringUtils.split(fullName, "$")[1];
     }
 
+    private void saveCurrentServer() throws AtlasBaseException {
+        saveServer(getCurrentClusterName(), getCurrentClusterName());
+    }
+
     private class ExportAudits {
         private AtlasExportRequest request;
         private String targetServerName;
@@ -144,8 +148,10 @@ public class AuditsWriter {
             request = result.getRequest();
             replicationOptionState = isReplicationOptionSet(request.getOptions(), optionKeyReplicatedTo);
 
-            saveServers();
+            saveCurrentServer();
 
+            targetServerFullName = getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedTo);
+            targetServerName = getServerNameFromFullName(targetServerFullName);
             auditService.add(userName, getCurrentClusterName(), targetServerName,
                     ExportImportAuditEntry.OPERATION_EXPORT,
                     AtlasType.toJson(result), startTime, endTime, !entityGuids.isEmpty());
@@ -156,16 +162,6 @@ public class AuditsWriter {
 
             updateReplicationAttribute(replicationOptionState, targetServerName, targetServerFullName,
                     entityGuids, Constants.ATTR_NAME_REPLICATED_TO, result.getChangeMarker());
-        }
-
-        private void saveServers() throws AtlasBaseException {
-            saveServer(getCurrentClusterName(), getCurrentClusterName());
-
-            targetServerFullName = getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedTo);
-            targetServerName = getServerNameFromFullName(targetServerFullName);
-            if(StringUtils.isNotEmpty(targetServerName)) {
-                saveServer(targetServerName, targetServerFullName);
-            }
         }
     }
 
@@ -183,8 +179,10 @@ public class AuditsWriter {
             request = result.getRequest();
             replicationOptionState = isReplicationOptionSet(request.getOptions(), optionKeyReplicatedFrom);
 
-            saveServers();
+            saveCurrentServer();
 
+            sourceServerFullName = getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedFrom);
+            sourceServerName = getServerNameFromFullName(sourceServerFullName);
             auditService.add(userName,
                     sourceServerName, getCurrentClusterName(),
                     ExportImportAuditEntry.OPERATION_IMPORT,
@@ -196,22 +194,6 @@ public class AuditsWriter {
 
             updateReplicationAttribute(replicationOptionState, sourceServerName, sourceServerFullName, entityGuids,
                     Constants.ATTR_NAME_REPLICATED_FROM, result.getExportResult().getChangeMarker());
-        }
-
-        private void saveServers() throws AtlasBaseException {
-            saveServer(getCurrentClusterName(), getCurrentClusterName());
-
-            sourceServerFullName = getClusterNameFromOptionsState();
-            sourceServerName = getServerNameFromFullName(sourceServerFullName);
-            if(StringUtils.isNotEmpty(sourceServerName)) {
-                saveServer(sourceServerName, sourceServerFullName);
-            }
-        }
-
-        private String getClusterNameFromOptionsState() {
-            return replicationOptionState
-                    ? getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedFrom)
-                    : StringUtils.EMPTY;
         }
     }
 }
