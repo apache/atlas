@@ -21,7 +21,9 @@ package org.apache.atlas.web.integration;
 import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClientV2;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -45,6 +47,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 
+import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_NOT_FOUND;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import static org.apache.atlas.type.AtlasTypeUtil.createClassTypeDef;
 import static org.testng.Assert.assertEquals;
@@ -83,23 +86,22 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
     public void testCreate() throws Exception {
         createType(typeDefinitions);
 
+        // validate if all types created successfully
         for (AtlasEnumDef enumDef : typeDefinitions.getEnumDefs()) {
-            AtlasEnumDef byName = atlasClientV2.getEnumDefByName(enumDef.getName());
-            assertNotNull(byName);
-        }
-        for (AtlasStructDef structDef : typeDefinitions.getStructDefs()) {
-            AtlasStructDef byName = atlasClientV2.getStructDefByName(structDef.getName());
-            assertNotNull(byName);
-        }
-        for (AtlasClassificationDef classificationDef : typeDefinitions.getClassificationDefs()) {
-            AtlasClassificationDef byName = atlasClientV2.getClassificationDefByName(classificationDef.getName());
-            assertNotNull(byName);
-        }
-        for (AtlasEntityDef entityDef : typeDefinitions.getEntityDefs()) {
-            AtlasEntityDef byName = atlasClientV2.getEntityDefByName(entityDef.getName());
-            assertNotNull(byName);
+            checkIfTypeExists(enumDef.getName());
         }
 
+        for (AtlasStructDef structDef : typeDefinitions.getStructDefs()) {
+            checkIfTypeExists(structDef.getName());
+        }
+
+        for (AtlasClassificationDef classificationDef : typeDefinitions.getClassificationDefs()) {
+            checkIfTypeExists(classificationDef.getName());
+        }
+
+        for (AtlasEntityDef entityDef : typeDefinitions.getEntityDefs()) {
+            checkIfTypeExists(entityDef.getName());
+        }
     }
 
     @Test
@@ -366,5 +368,27 @@ public class TypedefsJerseyResourceIT extends BaseResourceIT {
         def.getStructDefs().clear();
         def.getClassificationDefs().clear();
         def.getEntityDefs().clear();
+    }
+
+    private void checkIfTypeExists(String typeName) throws Exception {
+        int retryCount = 0;
+        int maxRetries = 3;
+        int sleepTime  = 5000;
+
+        while (true) {
+            try {
+                boolean typeExists = atlasClientV2.typeWithNameExists(typeName);
+
+                if (!typeExists) {
+                    throw new AtlasBaseException(TYPE_NAME_NOT_FOUND, typeName);
+                } else {
+                    break;
+                }
+            } catch (AtlasBaseException e) {
+                Thread.sleep(sleepTime);
+
+                if (++retryCount == maxRetries) throw e;
+            }
+        }
     }
 }
