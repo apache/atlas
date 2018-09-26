@@ -123,7 +123,19 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
         assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_TO);
     }
 
-    @Test(dependsOnMethods = "exportWithReplicationToOption_AddsClusterObjectIdToReplicatedFromAttribute", enabled = false)
+    @Test
+    public void fullServerName() {
+        final String expectedClusterName = "cl1";
+
+        assertEquals(AuditsWriter.getServerNameFromFullName(""), "");
+        assertEquals(AuditsWriter.getServerNameFromFullName(expectedClusterName), expectedClusterName);
+        assertEquals(AuditsWriter.getServerNameFromFullName("SFO$cl1"), expectedClusterName);
+        assertEquals(AuditsWriter.getServerNameFromFullName("cl1$"), expectedClusterName);
+        assertEquals(AuditsWriter.getServerNameFromFullName("$cl1"), expectedClusterName);
+    }
+
+
+    @Test(dependsOnMethods = "exportWithReplicationToOption_AddsClusterObjectIdToReplicatedFromAttribute")
     public void importWithReplicationFromOption_AddsClusterObjectIdToReplicatedFromAttribute() throws AtlasBaseException, IOException {
         AtlasImportRequest request = getImportRequestWithReplicationOption();
         AtlasImportResult importResult = runImportWithParameters(importService, request, zipSource);
