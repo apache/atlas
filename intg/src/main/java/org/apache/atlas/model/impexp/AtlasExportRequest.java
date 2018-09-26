@@ -81,7 +81,7 @@ public class AtlasExportRequest implements Serializable {
     }
 
     public String getFetchTypeOptionValue() {
-        if(getOptions() == null || !getOptions().containsKey(OPTION_FETCH_TYPE)) {
+        if(MapUtils.isEmpty(getOptions()) || !getOptions().containsKey(OPTION_FETCH_TYPE)) {
             return FETCH_TYPE_FULL;
         }
 
@@ -94,7 +94,8 @@ public class AtlasExportRequest implements Serializable {
     }
 
     public boolean getSkipLineageOptionValue() {
-        if(!getOptions().containsKey(AtlasExportRequest.OPTION_SKIP_LINEAGE)) {
+        if(MapUtils.isEmpty(getOptions()) ||
+                !getOptions().containsKey(AtlasExportRequest.OPTION_SKIP_LINEAGE)) {
             return false;
         }
 
@@ -123,12 +124,13 @@ public class AtlasExportRequest implements Serializable {
     }
 
     public long getChangeTokenFromOptions() {
-        if(getFetchTypeOptionValue().equalsIgnoreCase(FETCH_TYPE_INCREMENTAL) &&
-                getOptions().containsKey(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER)) {
-            return Long.parseLong(getOptions().get(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER).toString());
+        if (MapUtils.isEmpty(getOptions()) ||
+                !getFetchTypeOptionValue().equalsIgnoreCase(FETCH_TYPE_INCREMENTAL) ||
+                !getOptions().containsKey(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER)) {
+            return 0L;
         }
 
-        return 0L;
+        return Long.parseLong(getOptions().get(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER).toString());
     }
 
     public StringBuilder toString(StringBuilder sb) {
