@@ -63,7 +63,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
     }
 
     public AtlasEntitiesWithExtInfo getEntities() throws Exception {
-        AtlasEntitiesWithExtInfo ret         = null;
+        AtlasEntitiesWithExtInfo ret = null;
 
         if (!skipProcess()) {
             List<AtlasEntity> inputs         = new ArrayList<>();
@@ -189,7 +189,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
                         ret = (Collection) retGetBaseCols;
                     } else {
                         LOG.warn("{}: unexpected return type from LineageInfo.Dependency.getBaseCols(), expected type {}",
-                                retGetBaseCols.getClass().getName(), "Collection");
+                                 retGetBaseCols.getClass().getName(), "Collection");
                     }
                 }
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ex) {
@@ -202,8 +202,8 @@ public class CreateHiveProcess extends BaseHiveEvent {
 
 
     private boolean skipProcess() {
-        Set<ReadEntity>  inputs  = getHiveContext().getInputs();
-        Set<WriteEntity> outputs = getHiveContext().getOutputs();
+        Set<ReadEntity>  inputs        = getHiveContext().getInputs();
+        Set<WriteEntity> outputs       = getHiveContext().getOutputs();
 
         boolean ret = CollectionUtils.isEmpty(inputs) && CollectionUtils.isEmpty(outputs);
 
@@ -219,6 +219,15 @@ public class CreateHiveProcess extends BaseHiveEvent {
                         }
                     }
 
+                }
+
+                // skip insert into tbl_x values() statements
+                if (!ret && CollectionUtils.isNotEmpty(inputs) && inputs.size() == 1) {
+                    ReadEntity input = inputs.iterator().next();
+
+                    if (input.getType() == Entity.Type.TABLE && input.getTable().isTemporary()) {
+                        ret = true;
+                    }
                 }
             }
         }
