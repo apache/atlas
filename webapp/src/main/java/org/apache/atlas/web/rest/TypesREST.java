@@ -47,6 +47,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -372,6 +373,31 @@ public class TypesREST {
             }
 
             typeDefStore.deleteTypesDef(typesDef);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Delete API for type identified by its name.
+     * @param typeName Name of the type to be deleted.
+     * @throws AtlasBaseException
+     * @HTTP 204 On successful deletion of the requested type definitions
+     * @HTTP 400 On validation failure for any type definitions
+     */
+    @DELETE
+    @Path("/typedef/name/{typeName}")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public void deleteAtlasTypeByName(@PathParam("typeName") final String typeName) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByName(" + typeName + ")");
+            }
+
+            typeDefStore.deleteTypeByName(typeName);
         } finally {
             AtlasPerfTracer.log(perf);
         }

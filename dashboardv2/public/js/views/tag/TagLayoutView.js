@@ -586,7 +586,7 @@ define(['require',
                         structDefs: []
                     };
                 deleteTagData.deleteTag({
-                    data: JSON.stringify(deleteJson),
+                    typeName: that.tag,
                     success: function() {
                         Utils.notifySuccess({
                             content: "Tag " + that.tag + Messages.deleteSuccessMessage

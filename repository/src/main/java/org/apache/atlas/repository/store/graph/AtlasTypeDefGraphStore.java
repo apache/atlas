@@ -51,6 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -534,6 +535,31 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                     CollectionUtils.size(typesDef.getClassificationDefs()),
                     CollectionUtils.size(typesDef.getEntityDefs()));
         }
+    }
+
+
+    @Override
+    @GraphTransaction
+    public void deleteTypeByName(String typeName) throws AtlasBaseException {
+        AtlasType atlasType = typeRegistry.getType(typeName);
+        if (atlasType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS.TYPE_NAME_NOT_FOUND, typeName);
+        }
+
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+        AtlasBaseTypeDef baseTypeDef = getByName(typeName);
+
+        if (baseTypeDef instanceof AtlasClassificationDef) {
+            typesDef.setClassificationDefs(Collections.singletonList((AtlasClassificationDef) baseTypeDef));
+        } else if (baseTypeDef instanceof AtlasEntityDef) {
+            typesDef.setEntityDefs(Collections.singletonList((AtlasEntityDef) baseTypeDef));
+        } else if (baseTypeDef instanceof AtlasEnumDef) {
+            typesDef.setEnumDefs(Collections.singletonList((AtlasEnumDef) baseTypeDef));
+        } else if (baseTypeDef instanceof AtlasStructDef) {
+            typesDef.setStructDefs(Collections.singletonList((AtlasStructDef) baseTypeDef));
+        }
+
+        deleteTypesDef(typesDef);
     }
 
     @Override

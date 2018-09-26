@@ -91,8 +91,11 @@ public interface AtlasTypeDefStore {
 
     AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException;
 
+
     /* Generic operation */
     AtlasBaseTypeDef getByName(String name) throws AtlasBaseException;
 
     AtlasBaseTypeDef getByGuid(String guid) throws AtlasBaseException;
+
+    void deleteTypeByName(String typeName) throws AtlasBaseException;
 }

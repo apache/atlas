@@ -23,6 +23,7 @@ import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -31,6 +32,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.TestResourceFileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -39,6 +41,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -307,6 +310,19 @@ public class AtlasTypeDefGraphStoreTest {
     public void testDelete(AtlasTypesDef atlasTypesDef){
         try {
             typeDefStore.deleteTypesDef(atlasTypesDef);
+        } catch (AtlasBaseException e) {
+            fail("Deletion should've succeeded");
+        }
+    }
+
+    @Test
+    public void deleteTypeByName() throws IOException {
+        try {
+            final String HIVEDB_v2_JSON = "hiveDBv2";
+            final String hiveDB2 = "hive_db_v2";
+            AtlasTypesDef typesDef = TestResourceFileUtils.readObjectFromJson(".", HIVEDB_v2_JSON, AtlasTypesDef.class);
+            typeDefStore.createTypesDef(typesDef);
+            typeDefStore.deleteTypeByName(hiveDB2);
         } catch (AtlasBaseException e) {
             fail("Deletion should've succeeded");
         }
