@@ -127,7 +127,14 @@ public class AuditsWriter {
             return fullName;
         }
 
-        return StringUtils.split(fullName, "$")[1];
+        String[] splits = StringUtils.split(fullName, DC_SERVER_NAME_SEPARATOR);
+        if (splits == null || splits.length < 1) {
+            return "";
+        } else if (splits.length >= 2) {
+            return splits[1];
+        } else {
+            return splits[0];
+        }
     }
 
     private void saveCurrentServer() throws AtlasBaseException {
