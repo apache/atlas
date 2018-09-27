@@ -89,17 +89,17 @@ public class ZipFileResourceTestUtils {
         return s;
     }
 
-    public static Object[][] getZipSource(String fileName) throws IOException {
+    public static Object[][] getZipSource(String fileName) throws IOException, AtlasBaseException {
         return new Object[][]{{getZipSourceFrom(fileName)}};
     }
 
-    public static ZipSource getZipSourceFrom(String fileName) throws IOException {
+    public static ZipSource getZipSourceFrom(String fileName) throws IOException, AtlasBaseException {
         FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream(fileName);
 
         return new ZipSource(fs);
     }
 
-    private static ZipSource getZipSourceFrom(ByteArrayOutputStream baos) throws IOException {
+    private static ZipSource getZipSourceFrom(ByteArrayOutputStream baos) throws IOException, AtlasBaseException {
         ByteArrayInputStream bis = new ByteArrayInputStream(baos.toByteArray());
         ZipSource zipSource = new ZipSource(bis);
         return zipSource;

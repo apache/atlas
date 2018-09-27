@@ -77,6 +77,7 @@ public enum AtlasErrorCode {
     SAVED_SEARCH_CHANGE_USER(400, "ATLAS-400-00-056", "saved-search {0} can not be moved from user {1} to {2}"),
     INVALID_QUERY_PARAM_LENGTH(400, "ATLAS-400-00-057" , "Length of query param {0} exceeds the limit"),
     INVALID_QUERY_LENGTH(400, "ATLAS-400-00-057" , "Invalid query length, update {0} to change the limit" ),
+    IMPORT_ATTEMPTING_EMPTY_ZIP(400, "ATLAS-400-00-058", "Attempting to import empty ZIP file."),
 
     // All Not found enums go here
     UNKNOWN_CLASSIFICATION(400, "ATLAS-400-00-046", "{0}: Unknown/invalid classification"),
