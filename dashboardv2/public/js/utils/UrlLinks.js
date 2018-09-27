@@ -41,11 +41,16 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             return this.getDefApiUrl('enum', name);
         },
         getDefApiUrl: function(type, name) {
-            var defApiUrl = this.typedefsUrl();
+            var defApiUrl = this.typedefsUrl(), defUrl;
             if (name) {
-                return defApiUrl.def + '/name/' + name + '?type=' + type;
+                defUrl = defApiUrl.def + '/name/' + name;
             } else {
-                return defApiUrl.defs + '?type=' + type;
+                defUrl = defApiUrl.defs;
+            }
+            if (type) {
+                return defUrl += '?type=' + type;
+            } else {
+                return defUrl;
             }
         },
         taxonomiesApiUrl: function() {
