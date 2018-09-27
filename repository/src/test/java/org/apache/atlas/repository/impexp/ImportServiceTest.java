@@ -115,7 +115,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "sales")
-    public static Object[][] getDataFromQuickStart_v1_Sales(ITestContext context) throws IOException {
+    public static Object[][] getDataFromQuickStart_v1_Sales(ITestContext context) throws IOException, AtlasBaseException {
         return getZipSource("sales-v1-full.zip");
     }
 
@@ -132,7 +132,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "reporting")
-    public static Object[][] getDataFromReporting() throws IOException {
+    public static Object[][] getDataFromReporting() throws IOException, AtlasBaseException {
         return getZipSource("reporting-v1-full.zip");
     }
 
@@ -143,7 +143,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "logging")
-    public static Object[][] getDataFromLogging(ITestContext context) throws IOException {
+    public static Object[][] getDataFromLogging(ITestContext context) throws IOException, AtlasBaseException {
         return getZipSource("logging-v1-full.zip");
     }
 
@@ -154,7 +154,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "salesNewTypeAttrs")
-    public static Object[][] getDataFromSalesNewTypeAttrs(ITestContext context) throws IOException {
+    public static Object[][] getDataFromSalesNewTypeAttrs(ITestContext context) throws IOException, AtlasBaseException {
         return getZipSource("salesNewTypeAttrs.zip");
     }
 
@@ -165,7 +165,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "salesNewTypeAttrs-next")
-    public static Object[][] getDataFromSalesNewTypeAttrsNext(ITestContext context) throws IOException {
+    public static Object[][] getDataFromSalesNewTypeAttrsNext(ITestContext context) throws IOException, AtlasBaseException {
         return getZipSource("salesNewTypeAttrs-next.zip");
     }
 
@@ -202,7 +202,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "ctas")
-    public static Object[][] getDataFromCtas(ITestContext context) throws IOException {
+    public static Object[][] getDataFromCtas(ITestContext context) throws IOException, AtlasBaseException {
         return getZipSource("ctas.zip");
     }
 
@@ -215,7 +215,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "stocks-legacy")
-    public static Object[][] getDataFromLegacyStocks(ITestContext context) throws IOException {
+    public static Object[][] getDataFromLegacyStocks(ITestContext context) throws IOException,AtlasBaseException {
         return getZipSource("stocks.zip");
     }
 
@@ -256,7 +256,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "stocks-glossary")
-    public static Object[][] getDataFromGlossary(ITestContext context) throws IOException {
+    public static Object[][] getDataFromGlossary(ITestContext context) throws IOException,AtlasBaseException {
         return getZipSource("stocks-glossary.zip");
     }
 
@@ -278,7 +278,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "hdfs_path1")
-    public static Object[][] getDataFromHdfsPath1(ITestContext context) throws IOException {
+    public static Object[][] getDataFromHdfsPath1(ITestContext context) throws IOException, AtlasBaseException {
         return getZipSource("hdfs_path1.zip");
     }
 
@@ -300,12 +300,12 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "relationshipLineage")
-    public static Object[][] getImportWithRelationships(ITestContext context) throws IOException {
+    public static Object[][] getImportWithRelationships(ITestContext context) throws IOException,AtlasBaseException {
         return getZipSource("rel-lineage.zip");
     }
 
     @DataProvider(name = "tag-prop-2")
-    public static Object[][] getImportWithTagProp2(ITestContext context) throws IOException {
+    public static Object[][] getImportWithTagProp2(ITestContext context) throws IOException,AtlasBaseException {
         return getZipSource("tag-prop-2.zip");
     }
 
@@ -318,7 +318,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @DataProvider(name = "relationship")
-    public static Object[][] getImportWithRelationshipsWithLineage(ITestContext context) throws IOException {
+    public static Object[][] getImportWithRelationshipsWithLineage(ITestContext context) throws IOException,AtlasBaseException {
         return getZipSource("stocks-rel-2.zip");
     }
 
@@ -393,5 +393,15 @@ public class ImportServiceTest extends ExportImportTestBase {
 
     private AtlasEntity.AtlasEntityWithExtInfo getEntity(AtlasEntityHeader header) throws AtlasBaseException {
         return entityStore.getById(header.getGuid());
+    }
+
+    @Test(dataProvider = "empty-zip", expectedExceptions = AtlasBaseException.class)
+    public void importEmptyZip(ZipSource zipSource) {
+
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void importEmptyZip() throws IOException, AtlasBaseException {
+        getZipSource("empty.zip");
     }
 }
