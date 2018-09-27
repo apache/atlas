@@ -38,21 +38,21 @@ import static org.testng.AssertJUnit.assertTrue;
 
 public class ZipSourceTest {
     @DataProvider(name = "zipFileStocks")
-    public static Object[][] getDataFromZipFile() throws IOException {
+    public static Object[][] getDataFromZipFile() throws IOException, AtlasBaseException {
         FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream("stocks.zip");
 
         return new Object[][] {{ new ZipSource(fs) }};
     }
 
     @DataProvider(name = "zipFileStocksFloat")
-    public static Object[][] getDataFromZipFileWithLongFloats() throws IOException {
+    public static Object[][] getDataFromZipFileWithLongFloats() throws IOException, AtlasBaseException {
         FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream("stocks-float.zip");
 
         return new Object[][] {{ new ZipSource(fs) }};
     }
 
     @DataProvider(name = "sales")
-    public static Object[][] getDataFromQuickStart_v1_Sales(ITestContext context) throws IOException {
+    public static Object[][] getDataFromQuickStart_v1_Sales(ITestContext context) throws IOException, AtlasBaseException {
         return getZipSource("sales-v1-full.zip");
     }
 
@@ -66,7 +66,7 @@ public class ZipSourceTest {
     }
 
     @Test(dataProvider = "zipFileStocks")
-    public void examineContents_BehavesAsExpected(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void examineContents_BehavesAsExpected(ZipSource zipSource) throws AtlasBaseException {
         List<String> creationOrder = zipSource.getCreationOrder();
 
         assertNotNull(creationOrder);
