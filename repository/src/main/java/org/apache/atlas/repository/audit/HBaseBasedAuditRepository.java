@@ -66,6 +66,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 
 import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_ADD;
 import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_DELETE;
@@ -505,14 +506,17 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
      * @param atlasConf
      */
     public static org.apache.hadoop.conf.Configuration getHBaseConfiguration(Configuration atlasConf) throws AtlasException {
-        Configuration subsetAtlasConf =
-                ApplicationProperties.getSubsetConfiguration(atlasConf, CONFIG_PREFIX);
-        org.apache.hadoop.conf.Configuration hbaseConf = HBaseConfiguration.create();
-        Iterator<String> keys = subsetAtlasConf.getKeys();
-        while (keys.hasNext()) {
-            String key = keys.next();
-            hbaseConf.set(key, subsetAtlasConf.getString(key));
+        Properties                           properties = ApplicationProperties.getSubsetAsProperties(atlasConf, CONFIG_PREFIX);
+        org.apache.hadoop.conf.Configuration hbaseConf  = HBaseConfiguration.create();
+
+        for (String key : properties.stringPropertyNames()) {
+            String value = properties.getProperty(key);
+
+            LOG.info("adding HBase configuration: {}={}", key, value);
+
+            hbaseConf.set(key, value);
         }
+
         return hbaseConf;
     }
 
