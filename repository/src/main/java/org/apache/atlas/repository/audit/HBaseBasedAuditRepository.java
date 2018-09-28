@@ -27,6 +27,7 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -55,9 +56,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * HBase based repository for entity audit events
@@ -325,13 +326,16 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
      * @param atlasConf
      */
     public static org.apache.hadoop.conf.Configuration getHBaseConfiguration(Configuration atlasConf) throws AtlasException {
-        Configuration subsetAtlasConf =
-                ApplicationProperties.getSubsetConfiguration(atlasConf, CONFIG_PREFIX);
-        org.apache.hadoop.conf.Configuration hbaseConf = HBaseConfiguration.create();
-        Iterator<String> keys = subsetAtlasConf.getKeys();
-        while (keys.hasNext()) {
-            String key = keys.next();
-            hbaseConf.set(key, subsetAtlasConf.getString(key));
+        Configuration                        subsetAtlasConf = ApplicationProperties.getSubsetConfiguration(atlasConf, CONFIG_PREFIX);
+        Properties                           properties      = ConfigurationConverter.getProperties(subsetAtlasConf);
+        org.apache.hadoop.conf.Configuration hbaseConf       = HBaseConfiguration.create();
+
+        for (String key : properties.stringPropertyNames()) {
+            String value = properties.getProperty(key);
+
+            LOG.info("adding HBase configuration: {}={}", key, value);
+
+            hbaseConf.set(key, value);
         }
         return hbaseConf;
     }

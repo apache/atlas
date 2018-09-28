@@ -103,7 +103,8 @@ public class Solr5Index implements IndexProvider {
     private static final Logger logger = LoggerFactory.getLogger(Solr5Index.class);
 
 
-    private static final String DEFAULT_ID_FIELD = "id";
+    private static final String DEFAULT_ID_FIELD  = "id";
+    private static final char   CHROOT_START_CHAR = '/';
 
     private enum Mode {
         HTTP, CLOUD;
@@ -138,9 +139,9 @@ public class Solr5Index implements IndexProvider {
 
     /** SolrCloud Configuration */
 
-    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<>(SOLR_NS, "zookeeper-url",
+    public static final ConfigOption<String[]> ZOOKEEPER_URL = new ConfigOption<>(SOLR_NS, "zookeeper-url",
             "URL of the Zookeeper instance coordinating the SolrCloud cluster",
-            ConfigOption.Type.MASKABLE, "localhost:2181");
+            ConfigOption.Type.MASKABLE, new String[]{"localhost:2181"});
 
     public static final ConfigOption<Integer> ZOOKEEPER_CONNECT_TIMEOUT = new ConfigOption<>(SOLR_NS,"zookeeper-connect-timeout",
         "SolrCloud Zookeeper connect timeout",
@@ -216,8 +217,9 @@ public class Solr5Index implements IndexProvider {
 
         if (mode==Mode.CLOUD) {
             HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
-            String zookeeperUrl = config.get(Solr5Index.ZOOKEEPER_URL);
-            CloudSolrClient cloudServer = new CloudSolrClient(zookeeperUrl, true);
+
+            String[]        zkHosts     = config.get(Solr5Index.ZOOKEEPER_URL);
+            CloudSolrClient cloudServer = getCloudSolrClient(zkHosts);
 
             logger.info("Zookeeper connect timeout : " + config.get(ZOOKEEPER_CONNECT_TIMEOUT));
             cloudServer.setZkConnectTimeout(config.get(ZOOKEEPER_CONNECT_TIMEOUT));
@@ -237,8 +239,6 @@ public class Solr5Index implements IndexProvider {
             }});
 
             solrClient = new LBHttpSolrClient(clientParams, config.get(HTTP_URLS));
-
-
         } else {
             throw new IllegalArgumentException("Unsupported Solr operation mode: " + mode);
         }
@@ -964,6 +964,42 @@ public class Solr5Index implements IndexProvider {
         } finally {
             logger.info("Exiting solr wait");
         }
+    }
+
+    private CloudSolrClient getCloudSolrClient(String[] zkHosts) {
+        logger.info("==> Solr5Index.getCloudSolrClient({})", zkHosts);
+
+        CloudSolrClient ret = null;
+
+        if (zkHosts != null) {
+            List<String> zkServers = new ArrayList<>(zkHosts.length);
+            String       chroot    = null;
+
+            for (String zkHost : zkHosts) {
+                if (zkHost != null) {
+                    int idxSlash = zkHost.indexOf(CHROOT_START_CHAR);
+
+                    if (idxSlash != -1) {
+                        chroot = zkHost.substring(idxSlash); // chroot of the last url will be used
+                        zkHost = zkHost.substring(0, idxSlash);
+                    }
+
+                    if (StringUtils.isNotEmpty(zkHost)) {
+                        logger.info("Solr5Index: adding zkHost={}. chroot={}", zkHost, chroot);
+
+                        zkServers.add(zkHost);
+                    }
+                }
+            }
+
+            logger.info("Solr5Index: number of zkUrls={}. chroot={}", zkServers.size(), chroot);
+
+            ret = new CloudSolrClient(zkServers, chroot);
+        }
+
+        logger.info("<== Solr5Index.getCloudSolrClient({}): ret={}", zkHosts, ret);
+
+        return ret;
     }
 
     private static class GeoToWktConverter {
