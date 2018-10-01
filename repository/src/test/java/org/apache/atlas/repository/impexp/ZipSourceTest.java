@@ -56,7 +56,7 @@ public class ZipSourceTest {
         return getZipSource("sales-v1-full.zip");
     }
 
-    @Test
+    @Test(expectedExceptions = AtlasBaseException.class)
     public void improperInit_ReturnsNullCreationOrder() throws IOException, AtlasBaseException {
         byte bytes[] = new byte[10];
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
