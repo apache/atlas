@@ -70,6 +70,24 @@ public class AtlasServerService {
         }
     }
 
+    public AtlasServer getCreateAtlasServer(String clusterName, String serverFullName) throws AtlasBaseException {
+        AtlasServer defaultServer = new AtlasServer(clusterName, serverFullName);
+        AtlasServer server = getAtlasServer(defaultServer);
+        if (server == null) {
+            return save(defaultServer);
+        }
+
+        return server;
+    }
+
+    private AtlasServer getAtlasServer(AtlasServer server) {
+        try {
+            return get(server);
+        } catch (AtlasBaseException ex) {
+            return null;
+        }
+    }
+
     @GraphTransaction
     public AtlasServer save(AtlasServer server) throws AtlasBaseException {
        return dataAccess.save(server);

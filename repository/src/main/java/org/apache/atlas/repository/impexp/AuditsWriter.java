@@ -93,18 +93,12 @@ public class AuditsWriter {
                 : StringUtils.EMPTY;
     }
 
-    private AtlasServer saveServer(String clusterName, String serverFullName) throws AtlasBaseException {
-        AtlasServer cluster = new AtlasServer(clusterName, serverFullName);
-        return atlasServerService.save(cluster);
-    }
-
     private AtlasServer saveServer(String clusterName, String serverFullName,
                                    String entityGuid,
                                    long lastModifiedTimestamp) throws AtlasBaseException {
 
-        AtlasServer server = new AtlasServer(clusterName, serverFullName);
+        AtlasServer server = atlasServerService.getCreateAtlasServer(clusterName, serverFullName);
         server.setAdditionalInfoRepl(entityGuid, lastModifiedTimestamp);
-
         if (LOG.isDebugEnabled()) {
             LOG.debug("saveServer: {}", server);
         }
@@ -138,7 +132,7 @@ public class AuditsWriter {
     }
 
     private void saveCurrentServer() throws AtlasBaseException {
-        saveServer(getCurrentClusterName(), getCurrentClusterName());
+        atlasServerService.getCreateAtlasServer(getCurrentClusterName(), getCurrentClusterName());
     }
 
     private class ExportAudits {
