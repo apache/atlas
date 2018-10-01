@@ -70,8 +70,8 @@ public class AtlasServerService {
         }
     }
 
-    public AtlasServer getCreateAtlasServer(String name, String fullName) throws AtlasBaseException {
-        AtlasServer defaultServer = new AtlasServer(name, fullName);
+    public AtlasServer getCreateAtlasServer(String clusterName, String serverFullName) throws AtlasBaseException {
+        AtlasServer defaultServer = new AtlasServer(clusterName, serverFullName);
         AtlasServer server = getAtlasServer(defaultServer);
         if (server == null) {
             return save(defaultServer);
