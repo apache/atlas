@@ -74,9 +74,6 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
     private AtlasTypeDefStore typeDefStore;
 
     @Inject
-    private EntityGraphMapper graphMapper;
-
-    @Inject
     ExportService exportService;
 
     @Inject
@@ -85,6 +82,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
     @Inject
     AtlasServerService atlasServerService;
 
+    @Inject
     private AtlasEntityStoreV2 entityStore;
 
     private ZipSource zipSource;
@@ -92,7 +90,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
         basicSetup(typeDefStore, typeRegistry);
-        entityStore = new AtlasEntityStoreV2(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
+
         createEntities(entityStore, ENTITIES_SUB_DIR, new String[]{"db", "table-columns"});
         AtlasType refType = typeRegistry.getType("Referenceable");
         AtlasEntityDef entityDef = (AtlasEntityDef) typeDefStore.getByName(refType.getTypeName());
