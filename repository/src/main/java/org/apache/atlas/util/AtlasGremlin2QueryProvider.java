@@ -44,13 +44,13 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return "g.V().has('__typeName',typeName).filter({it.getProperty(attrName).matches(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_DEFAULT:
                 return "g.V().has('__typeName',typeName).has(attrName, attrValue).has('__guid').__guid.toList()";
-            case FULL_LINEAGE:
+            case FULL_LINEAGE_DATASET:
                 return "g.V('__guid', '%s').as('src').in('%s').out('%s')." +
                         "loop('src', {((it.path.contains(it.object)) ? false : true)}, " +
                         "{((it.object.'__superTypeNames') ? " +
                         "(it.object.'__superTypeNames'.contains('DataSet')) : false)})." +
                         "path().toList()";
-            case PARTIAL_LINEAGE:
+            case PARTIAL_LINEAGE_DATASET:
                 return "g.V('__guid', '%s').as('src').in('%s').out('%s')." +
                         "loop('src', {it.loops <= %s}, {((it.object.'__superTypeNames') ? " +
                         "(it.object.'__superTypeNames'.contains('DataSet')) : false)})." +

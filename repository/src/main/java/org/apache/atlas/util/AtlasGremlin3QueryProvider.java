@@ -45,10 +45,14 @@ public class AtlasGremlin3QueryProvider extends AtlasGremlin2QueryProvider {
                 return "g.V().has('__guid', startGuid).outE().inV().has('__guid').project('__guid', 'isProcess').by('__guid').by(map {it.get().values('__superTypeNames').toSet().contains('Process')}).dedup().toList()";
             case EXPORT_TYPE_ALL_FOR_TYPE:
                 return "g.V().has('__typeName', within(typeName)).has('__guid').values('__guid').toList()";
-            case FULL_LINEAGE:
+            case FULL_LINEAGE_DATASET:
                 return "g.V().has('__guid', '%s').repeat(__.inE('%s').as('e1').outV().outE('%s').as('e2').inV()).emit().select('e1', 'e2').toList()";
-            case PARTIAL_LINEAGE:
+            case PARTIAL_LINEAGE_DATASET:
                 return "g.V().has('__guid', '%s').repeat(__.inE('%s').as('e1').outV().outE('%s').as('e2').inV()).times(%s).emit().select('e1', 'e2').toList()";
+            case FULL_LINEAGE_PROCESS:
+                return "g.V().has('__guid', '%s').repeat(__.outE('%s').as('e1').inV().inE('%s').as('e2').outV()).emit().select('e1', 'e2').toList()";
+            case PARTIAL_LINEAGE_PROCESS:
+                return "g.V().has('__guid', '%s').repeat(__.outE('%s').as('e1').inV().inE('%s').as('e2').outV()).times(%s).emit().select('e1', 'e2').toList()";
             case TO_RANGE_LIST:
                 return ".range(startIdx, endIdx).toList()";
             case RELATIONSHIP_SEARCH:
