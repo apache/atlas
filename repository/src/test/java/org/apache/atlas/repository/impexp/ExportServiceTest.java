@@ -26,6 +26,7 @@ import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
@@ -84,9 +85,11 @@ public class ExportServiceTest extends ExportImportTestBase {
     @Inject
     private ExportImportAuditService auditService;
 
+    @Inject
+    private AtlasEntityStoreV2 entityStore;
+
     private DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);;
     private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
-    private AtlasEntityStoreV2        entityStore;
 
     @BeforeTest
     public void setupTest() throws IOException, AtlasBaseException {
@@ -106,11 +109,12 @@ public class ExportServiceTest extends ExportImportTestBase {
             typeDefStore.createTypesDef(typesToCreate);
         }
 
-        AtlasEntity.AtlasEntitiesWithExtInfo  hrDept = TestUtilsV2.createDeptEg2();
-
-        AtlasEntityStream entityStream = new AtlasEntityStream(hrDept);
-        entityStore.createOrUpdate(entityStream, false);
-        LOG.debug("==> setupSampleData: ", AtlasEntity.dumpObjects(hrDept.getEntities(), null).toString());
+        AtlasEntity.AtlasEntitiesWithExtInfo  deptEg2 = TestUtilsV2.createDeptEg2();
+        AtlasEntityStream entityStream = new AtlasEntityStream(deptEg2);
+        EntityMutationResponse emr = entityStore.createOrUpdate(entityStream, false);
+        assertNotNull(emr);
+        assertNotNull(emr.getCreatedEntities());
+        assertTrue(emr.getCreatedEntities().size() > 0);
     }
 
     @AfterClass

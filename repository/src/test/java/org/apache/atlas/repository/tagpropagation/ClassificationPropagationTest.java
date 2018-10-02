@@ -605,7 +605,7 @@ public class ClassificationPropagationTest {
         }
     }
 
-    public static ZipSource getZipSource(String fileName) throws IOException {
+    public static ZipSource getZipSource(String fileName) throws IOException, AtlasBaseException {
         FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream(fileName);
         return new ZipSource(fs);
     }

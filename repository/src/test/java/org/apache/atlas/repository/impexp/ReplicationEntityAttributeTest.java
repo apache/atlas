@@ -84,14 +84,14 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
     @Inject
     AtlasServerService atlasServerService;
 
-    private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
+    @Inject
     private AtlasEntityStoreV2 entityStore;
+
     private ZipSource zipSource;
 
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
         basicSetup(typeDefStore, typeRegistry);
-        entityStore = new AtlasEntityStoreV2(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
         createEntities(entityStore, ENTITIES_SUB_DIR, new String[]{"db", "table-columns"});
 
         AtlasType refType = typeRegistry.getType("Referenceable");
