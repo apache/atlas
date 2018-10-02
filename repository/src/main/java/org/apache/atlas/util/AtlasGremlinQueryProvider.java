@@ -53,8 +53,10 @@ public abstract class AtlasGremlinQueryProvider {
         EXPORT_TYPE_DEFAULT,
 
         // Lineage Queries
-        FULL_LINEAGE,
-        PARTIAL_LINEAGE,
+        FULL_LINEAGE_DATASET,
+        FULL_LINEAGE_PROCESS,
+        PARTIAL_LINEAGE_DATASET,
+        PARTIAL_LINEAGE_PROCESS,
 
         // Discovery Queries
         BASIC_SEARCH_TYPE_FILTER,

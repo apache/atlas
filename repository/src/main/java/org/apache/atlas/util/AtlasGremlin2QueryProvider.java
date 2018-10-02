@@ -55,18 +55,14 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return "g.V().has('__typeName',typeName).filter({it.getProperty(attrName).matches(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_DEFAULT:
                 return "g.V().has('__typeName',typeName).has(attrName, attrValue).has('__guid').__guid.toList()";
-            case FULL_LINEAGE:
-                return "g.V('__guid', '%s').as('src').in('%s').out('%s')." +
-                        "loop('src', {((it.path.contains(it.object)) ? false : true)}, " +
-                        "{((it.object.'__superTypeNames') ? " +
-                        "(it.object.'__superTypeNames'.contains('DataSet')) : false)})." +
-                        "path().toList()";
-            case PARTIAL_LINEAGE:
-                return "g.V('__guid', '%s').as('src').in('%s').out('%s')." +
-                        "loop('src', {it.loops <= %s}, {((it.object.'__superTypeNames') ? " +
-                        "(it.object.'__superTypeNames'.contains('DataSet')) : false)})." +
-                        "path().toList()";
-
+            case FULL_LINEAGE_DATASET:
+                return "g.V('__guid', '%s').as('src').in('%s').out('%s').loop('src', {((it.path.contains(it.object)) ? false : true)}, {true}).path().toList()";
+            case FULL_LINEAGE_PROCESS:
+                return "g.V('__guid', '%s').as('src').out('%s').in('%s').loop('src', {((it.path.contains(it.object)) ? false : true)}, {true}).path().toList()";
+            case PARTIAL_LINEAGE_DATASET:
+                return "g.V('__guid', '%s').as('src').in('%s').out('%s').loop('src', {it.loops <= %s}, {true}).path().toList()";
+            case PARTIAL_LINEAGE_PROCESS:
+                return "g.V('__guid', '%s').as('src').out('%s').in('%s').loop('src', {it.loops <= %s}, {true}).path().toList()";
             case BASIC_SEARCH_TYPE_FILTER:
                 return ".has('__typeName', T.in, typeNames)";
             case BASIC_SEARCH_CLASSIFICATION_FILTER:
