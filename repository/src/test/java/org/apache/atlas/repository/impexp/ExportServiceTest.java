@@ -18,39 +18,26 @@
 package org.apache.atlas.repository.impexp;
 
 
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
-import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
@@ -67,16 +54,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ExportServiceTest extends ExportImportTestBase {
-    private static final Logger LOG = LoggerFactory.getLogger(ExportServiceTest.class);
-
     @Inject
     AtlasTypeRegistry typeRegistry;
 
@@ -92,21 +75,18 @@ public class ExportServiceTest extends ExportImportTestBase {
     @Inject
     private ExportImportAuditService auditService;
 
-    private DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);;
-    private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
+    @Inject
     private AtlasEntityStoreV1 entityStore;
 
     @BeforeTest
     public void setupTest() throws IOException, AtlasBaseException {
         RequestContextV1.clear();
         RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
-        ZipFileResourceTestUtils.loadBaseModel(typeDefStore, typeRegistry);
+        basicSetup(typeDefStore, typeRegistry);
     }
 
     @BeforeClass
     public void setupSampleData() throws AtlasBaseException {
-        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);;
-
         AtlasTypesDef sampleTypes = TestUtilsV2.defineDeptEmployeeTypes();
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(sampleTypes, typeRegistry);
 
@@ -114,16 +94,16 @@ public class ExportServiceTest extends ExportImportTestBase {
             typeDefStore.createTypesDef(typesToCreate);
         }
 
-        AtlasEntity.AtlasEntitiesWithExtInfo  hrDept = TestUtilsV2.createDeptEg2();
-
-        AtlasEntityStream entityStream = new AtlasEntityStream(hrDept);
-        entityStore.createOrUpdate(entityStream, false);
-        LOG.debug("==> setupSampleData: ", AtlasEntity.dumpObjects(hrDept.getEntities(), null).toString());
+        AtlasEntity.AtlasEntitiesWithExtInfo  deptEg2 = TestUtilsV2.createDeptEg2();
+        AtlasEntityStream entityStream = new AtlasEntityStream(deptEg2);
+        EntityMutationResponse emr = entityStore.createOrUpdate(entityStream, false);
+        assertNotNull(emr);
+        assertNotNull(emr.getCreatedEntities());
+        assertTrue(emr.getCreatedEntities().size() > 0);
     }
 
     @AfterClass
     public void clear() throws InterruptedException {
-        Thread.sleep(1000);
         assertAuditEntry(auditService);
         AtlasGraphProvider.cleanup();
     }
