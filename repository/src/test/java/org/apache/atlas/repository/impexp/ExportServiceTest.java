@@ -294,7 +294,6 @@ public class ExportServiceTest extends ExportImportTestBase {
 
         assertNotNull(zipSource.getCreationOrder());
         assertEquals(zipSource.getCreationOrder().size(), 0);
-        assertEquals(AtlasExportResult.OperationStatus.FAIL, zipSource.getExportResult().getOperationStatus());
     }
 
     @Test

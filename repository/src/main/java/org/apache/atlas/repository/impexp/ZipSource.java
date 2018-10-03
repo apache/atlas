@@ -64,11 +64,18 @@ public class ZipSource implements EntityImportStream {
         this.importTransform   = importTransform;
 
         updateGuidZipEntryMap();
-        if (MapUtils.isEmpty(guidEntityJsonMap)) {
+        if (isZipFileEmpty()) {
             throw new AtlasBaseException(IMPORT_ATTEMPTING_EMPTY_ZIP, "Attempting to import empty ZIP.");
         }
 
         setCreationOrder();
+    }
+
+    private boolean isZipFileEmpty() {
+        return MapUtils.isEmpty(guidEntityJsonMap) ||
+                (guidEntityJsonMap.containsKey(ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString()) &&
+                        (guidEntityJsonMap.get(ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString()) == null)
+                );
     }
 
     public ImportTransforms getImportTransform() { return this.importTransform; }
@@ -136,7 +143,7 @@ public class ZipSource implements EntityImportStream {
         zipInputStream.close();
     }
 
-    public List<String> getCreationOrder() throws AtlasBaseException {
+    public List<String> getCreationOrder() {
         return this.creationOrder;
     }
 
@@ -228,12 +235,8 @@ public class ZipSource implements EntityImportStream {
 
     @Override
     public void reset() {
-        try {
-            getCreationOrder();
-            this.iterator = this.creationOrder.iterator();
-        } catch (AtlasBaseException e) {
-            LOG.error("reset", e);
-        }
+        getCreationOrder();
+        this.iterator = this.creationOrder.iterator();
     }
 
     @Override
