@@ -214,10 +214,10 @@ public class EntityLineageServiceTest extends BaseRepositoryTest {
         return new Object[][]{
                 {"", null, 0, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND},
                 {" ", null, 0, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND},
-                {null, null, 0, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND},
+                {null, null, 0, AtlasErrorCode.TYPE_NAME_NOT_FOUND},
                 {"invalidGuid", LineageDirection.OUTPUT, 6, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND},
-                {entityGuid, null, -10, AtlasErrorCode.INSTANCE_LINEAGE_INVALID_PARAMS},
-                {entityGuid, null, 5, AtlasErrorCode.INSTANCE_LINEAGE_INVALID_PARAMS}
+                {entityGuid, null, -10, AtlasErrorCode.TYPE_NAME_NOT_FOUND},
+                {entityGuid, null, 5, AtlasErrorCode.TYPE_NAME_NOT_FOUND}
         };
     }
 
