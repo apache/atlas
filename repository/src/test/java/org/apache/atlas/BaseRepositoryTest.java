@@ -20,9 +20,12 @@ package org.apache.atlas;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.repository.converters.TypeConverterUtil;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -51,6 +54,12 @@ public class BaseRepositoryTest {
     protected MetadataService metadataService;
 
     @Inject
+    protected AtlasTypeRegistry typeRegistry;
+
+    @Inject
+    protected AtlasTypeDefStore typeDefStore;
+
+    @Inject
     protected MetadataRepository repository;
 
 
@@ -69,12 +78,6 @@ public class BaseRepositoryTest {
 
     protected void tearDown() throws Exception {
         TypeSystem.getInstance().reset();
-    }
-
-    private void setUpTypes() throws Exception {
-        TypesDef typesDef = createTypeDefinitions();
-        String typesAsJSON = TypesSerialization.toJson(typesDef);
-        metadataService.createType(typesAsJSON);
     }
 
     protected static final String DATABASE_TYPE = "hive_db";
@@ -389,9 +392,18 @@ public class BaseRepositoryTest {
     }
 
     private void setUpDefaultTypes() throws Exception {
-        TypesDef typesDef = createDefaultTypeDefinitions();
-        String typesAsJSON = TypesSerialization.toJson(typesDef);
-        metadataService.createType(typesAsJSON);
+        createTypesDef(createDefaultTypeDefinitions());
+    }
+
+    private void setUpTypes() throws Exception {
+        createTypesDef(createTypeDefinitions());
+    }
+
+    private void createTypesDef(TypesDef typesDef) throws Exception {
+        String        typesAsJSON   = TypesSerialization.toJson(typesDef);
+        AtlasTypesDef atlasTypesDef = TypeConverterUtil.toAtlasTypesDef(typesAsJSON, typeRegistry);
+
+        typeDefStore.createTypesDef(atlasTypesDef);
     }
 
     TypesDef createDefaultTypeDefinitions() {
