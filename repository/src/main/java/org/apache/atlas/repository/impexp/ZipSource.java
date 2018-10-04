@@ -72,10 +72,14 @@ public class ZipSource implements EntityImportStream {
     }
 
     private boolean isZipFileEmpty() {
-        return MapUtils.isEmpty(guidEntityJsonMap) ||
-                (guidEntityJsonMap.containsKey(ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString()) &&
-                        (guidEntityJsonMap.get(ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString()) == null)
-                );
+        if (MapUtils.isEmpty(guidEntityJsonMap))  {
+            return true;
+        }
+
+        String key = ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString();
+        return (guidEntityJsonMap.containsKey(key) &&
+                         StringUtils.isNotEmpty(guidEntityJsonMap.get(key)) &&
+                                 guidEntityJsonMap.get(key).equals("[]"));
     }
 
     public ImportTransforms getImportTransform() { return this.importTransform; }
