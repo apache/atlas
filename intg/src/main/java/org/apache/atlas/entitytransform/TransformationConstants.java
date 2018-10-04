@@ -37,6 +37,7 @@ public final class TransformationConstants {
     public static final String HDFS_PATH_NAME_ATTRIBUTE       = "hdfs_path.name";
     public static final String HDFS_PATH_PATH_ATTRIBUTE       = "hdfs_path.path";
     public static final String HDFS_CLUSTER_NAME_ATTRIBUTE    = "hdfs_path.clusterName";
+    public static final String HIVE_STORAGE_DESC_LOCATION_ATTRIBUTE = "hive_storagedesc.location";
 
     public static final char   TYPE_NAME_ATTRIBUTE_NAME_SEP = '.';
     public static final char   CLUSTER_DELIMITER            = '@';
