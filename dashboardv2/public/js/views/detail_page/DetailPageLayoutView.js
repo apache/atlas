@@ -245,7 +245,15 @@ define(['require',
                             });
                         }
 
-                        if (_.contains(Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }), "DataSet")) {
+
+                        var containsList = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
+                            superType = _.find(containsList, function(type) {
+                                if (type === "DataSet" || type === "Process") {
+                                    return true;
+                                }
+                            });
+
+                        if (superType) {
                             this.$('.lineageGraph').show();
                             this.renderLineageLayoutView({
                                 guid: this.id,
