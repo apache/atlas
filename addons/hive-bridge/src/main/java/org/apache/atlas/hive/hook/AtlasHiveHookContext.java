@@ -85,6 +85,14 @@ public class AtlasHiveHookContext {
         return hook.getClusterName();
     }
 
+    public boolean getSkipHiveColumnLineageHive20633() {
+        return hook.getSkipHiveColumnLineageHive20633();
+    }
+
+    public int getSkipHiveColumnLineageHive20633InputsThreshold() {
+        return hook.getSkipHiveColumnLineageHive20633InputsThreshold();
+    }
+
     public String getQualifiedName(Database db) {
         return (db.getName() + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
     }

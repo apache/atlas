@@ -19,6 +19,7 @@ package org.apache.atlas;
 
 import org.apache.atlas.security.InMemoryJAASConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
@@ -32,6 +33,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Iterator;
+import java.util.Properties;
 
 /**
  * Application properties used by Atlas.
@@ -133,6 +135,13 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
     public static Configuration getSubsetConfiguration(Configuration inConf, String prefix) {
         return inConf.subset(prefix);
+    }
+
+    public static Properties getSubsetAsProperties(Configuration inConf, String prefix) {
+        Configuration subset = inConf.subset(prefix);
+        Properties   ret     = ConfigurationConverter.getProperties(subset);
+
+        return ret;
     }
 
     public static Class getClass(Configuration configuration, String propertyName, String defaultValue,
