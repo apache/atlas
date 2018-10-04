@@ -26,7 +26,7 @@ import java.util.List;
 import static org.apache.atlas.entitytransform.TransformationConstants.*;
 
 public class HiveStorageDescriptorEntityHandler extends BaseEntityHandler {
-    static final List<String> CUSTOM_TRANSFORM_ATTRIBUTES = Arrays.asList(HIVE_DB_NAME_ATTRIBUTE, HIVE_TABLE_NAME_ATTRIBUTE, HIVE_DB_CLUSTER_NAME_ATTRIBUTE);
+    static final List<String> CUSTOM_TRANSFORM_ATTRIBUTES = Arrays.asList(HIVE_DB_NAME_ATTRIBUTE, HIVE_TABLE_NAME_ATTRIBUTE, HIVE_DB_CLUSTER_NAME_ATTRIBUTE, HIVE_STORAGE_DESC_LOCATION_ATTRIBUTE);
 
 
     public HiveStorageDescriptorEntityHandler(List<AtlasEntityTransformer> transformers) {
@@ -90,6 +90,9 @@ public class HiveStorageDescriptorEntityHandler extends BaseEntityHandler {
 
                 case HIVE_DB_CLUSTER_NAME_ATTRIBUTE:
                     return clusterName;
+
+                case HIVE_STORAGE_DESC_LOCATION_ATTRIBUTE:
+                    return location;
             }
 
             return super.getAttribute(attribute);
@@ -114,6 +117,10 @@ public class HiveStorageDescriptorEntityHandler extends BaseEntityHandler {
                     clusterName = attributeValue;
 
                     isCustomAttributeUpdated = true;
+                break;
+
+                case HIVE_STORAGE_DESC_LOCATION_ATTRIBUTE:
+                    location = attributeValue;
                 break;
 
                 default:
