@@ -91,6 +91,11 @@ public class RequestContextV1 {
         return ACTIVE_REQUESTS.size();
     }
 
+    public static String getCurrentUser() {
+        RequestContextV1 context = CURRENT_CONTEXT.get();
+        return context != null ? context.getUser() : null;
+    }
+
     public static long earliestActiveRequestTime() {
         long ret = System.currentTimeMillis();
 
