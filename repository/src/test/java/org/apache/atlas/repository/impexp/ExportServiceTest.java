@@ -95,13 +95,11 @@ public class ExportServiceTest extends ExportImportTestBase {
     public void setupTest() throws IOException, AtlasBaseException {
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
-        ZipFileResourceTestUtils.loadBaseModel(typeDefStore, typeRegistry);
+        basicSetup(typeDefStore, typeRegistry);
     }
 
     @BeforeClass
     public void setupSampleData() throws AtlasBaseException {
-        entityStore = new AtlasEntityStoreV2(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);;
-
         AtlasTypesDef sampleTypes = TestUtilsV2.defineDeptEmployeeTypes();
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(sampleTypes, typeRegistry);
 
