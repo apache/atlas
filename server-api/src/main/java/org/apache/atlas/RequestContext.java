@@ -93,6 +93,11 @@ public class RequestContext {
         CURRENT_CONTEXT.remove();
     }
 
+    public static String getCurrentUser() {
+        RequestContext context = CURRENT_CONTEXT.get();
+        return context != null ? context.getUser() : null;
+    }
+
     public String getUser() {
         return user;
     }

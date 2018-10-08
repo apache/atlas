@@ -88,13 +88,8 @@ public class AtlasServerService {
     }
 
     @GraphTransaction
-    public AtlasServer save(AtlasServer server) {
-
-        try {
-            return dataAccess.save(server);
-        } catch (AtlasBaseException e) {
-            return server;
-        }
+    public AtlasServer save(AtlasServer server) throws AtlasBaseException {
+       return dataAccess.save(server);
     }
 
     @GraphTransaction
