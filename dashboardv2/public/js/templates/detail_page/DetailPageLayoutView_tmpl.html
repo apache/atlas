@@ -52,6 +52,7 @@
                 <li role="relationship" class="tab"><a href="#tab-relationship" aria-controls="tab-relationship" role="tab" data-toggle="tab">Relationships</a></li>
                 <li role="classification"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Classifications</a></li>
                 <li role="audit" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
+                <li role="raudits" class="tab replicationTab" style="display:none"><a href="#tab-raudit" aria-controls="tab-raudit" role="tab" data-toggle="tab">Export/Import Audits</a></li>
                 <li role="schema" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
                 <li role="profile" class="tab profileTab" style="display:none"><a href="#tab-profile" aria-controls="tab-profile" role="tab" data-toggle="tab">Profile</a></li>
             </ul>
@@ -94,6 +95,13 @@
         </div>
         <div id="tab-audit" role="audit" class="tab-pane animated fadeIn">
             <div id="r_auditTableLayoutView">
+                <div class="fontLoader-relative">
+                    <i class="fa fa-refresh fa-spin-custom"></i>
+                </div>
+            </div>
+        </div>
+        <div id="tab-raudit" role="raudits" class="tab-pane">
+            <div id="r_replicationAuditTableLayoutView">
                 <div class="fontLoader-relative">
                     <i class="fa fa-refresh fa-spin-custom"></i>
                 </div>
