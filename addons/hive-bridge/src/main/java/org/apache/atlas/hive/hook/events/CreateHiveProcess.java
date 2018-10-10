@@ -188,7 +188,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
             columnLineages.add(columnLineageProcess);
         }
 
-        boolean skipColumnLineage = context.getSkipHiveColumnLineageHive20633() && isSameInputsSize && lineageInputsSize > context.getSkipHiveColumnLineageHive20633InputsThreshold();
+        boolean skipColumnLineage = context.getSkipHiveColumnLineageHive20633() && columnLineages.size() > 1 && isSameInputsSize && lineageInputsSize > context.getSkipHiveColumnLineageHive20633InputsThreshold();
 
         if (!skipColumnLineage) {
             for (AtlasEntity columnLineage : columnLineages) {

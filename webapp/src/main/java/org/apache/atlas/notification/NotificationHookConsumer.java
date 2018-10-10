@@ -652,12 +652,15 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         if (entities != null && entities.getEntities() != null) {
             boolean isSameInputsSize  = true;
             int     lineageInputsSize = -1;
+            int     lineageCount      = 0;
 
             // find if all hive_column_lineage entities have same number of inputs, which is likely to be caused by HIVE-20633 that results in incorrect lineage in some cases
             for (ListIterator<AtlasEntity> iter = entities.getEntities().listIterator(); iter.hasNext(); ) {
                 AtlasEntity entity = iter.next();
 
                 if (StringUtils.equals(entity.getTypeName(), TYPE_HIVE_COLUMN_LINEAGE)) {
+                    lineageCount++;
+
                     Object objInputs = entity.getAttribute(ATTRIBUTE_INPUTS);
 
                     if (objInputs instanceof Collection) {
@@ -674,7 +677,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 }
             }
 
-            if (isSameInputsSize && lineageInputsSize > skipHiveColumnLineageHive20633InputsThreshold) {
+            if (isSameInputsSize && lineageCount > 1 && lineageInputsSize > skipHiveColumnLineageHive20633InputsThreshold) {
                 int numRemovedEntities = 0;
 
                 for (ListIterator<AtlasEntity> iter = entities.getEntities().listIterator(); iter.hasNext(); ) {
