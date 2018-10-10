@@ -430,6 +430,17 @@
             <organization>Freestone Infotech</organization>
         </developer>
         <developer>
+            <id>rmani</id>
+            <name>Ramesh Mani</name>
+            <email>rmani@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
             <id>sarath</id>
             <name>Sarath Subramanian</name>
             <email>sarath@apache.org</email>
