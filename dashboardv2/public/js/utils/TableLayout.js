@@ -22,13 +22,15 @@
 define(['require',
     'backbone',
     'hbs!tmpl/common/TableLayout_tmpl',
+    'utils/Messages',
+    'utils/Utils',
     'backgrid-filter',
     'backgrid-paginator',
     'backgrid-sizeable',
     'backgrid-orderable',
     'backgrid-select-all',
     'backgrid-columnmanager'
-], function(require, Backbone, FSTablelayoutTmpl) {
+], function(require, Backbone, FSTablelayoutTmpl, Messages, Utils) {
     'use strict';
 
     var FSTableLayout = Backbone.Marionette.LayoutView.extend(
@@ -51,7 +53,15 @@ define(['require',
 
             // /** ui selector cache */
             ui: {
-                selectPageSize: 'select[data-id="pageSize"]'
+                selectPageSize: 'select[data-id="pageSize"]',
+                paginationDiv: '[data-id="paginationDiv"]',
+                previousData: "[data-id='previousData']",
+                nextData: "[data-id='nextData']",
+                pageRecordText: "[data-id='pageRecordText']",
+                showPage: "[data-id='showPage']",
+                gotoPage: "[data-id='gotoPage']",
+                gotoPagebtn: "[data-id='gotoPagebtn']",
+                activePage: "[data-id='activePage']"
             },
 
             gridOpts: {
@@ -113,6 +123,8 @@ define(['require',
 
             includePagination: true,
 
+            includeAtlasPagination: false,
+
             includeFilter: false,
 
             includeHeaderSearch: false,
@@ -132,8 +144,26 @@ define(['require',
 
             /** ui events hash */
             events: function() {
-                var events = {};
+                var events = {},
+                    that = this;
                 events['change ' + this.ui.selectPageSize] = 'onPageSizeChange';
+                events["click " + this.ui.nextData] = "onClicknextData";
+                events["click " + this.ui.previousData] = "onClickpreviousData";
+                events["click " + this.ui.gotoPagebtn] = 'gotoPagebtn';
+                events["keyup " + this.ui.gotoPage] = function(e) {
+                    var code = e.which,
+                        goToPage = parseInt(e.currentTarget.value);
+                    if (e.currentTarget.value) {
+                        that.ui.gotoPagebtn.attr('disabled', false);
+                    } else {
+                        that.ui.gotoPagebtn.attr('disabled', true);
+                    }
+                    if (code == 13) {
+                        if (e.currentTarget.value) {
+                            that.gotoPagebtn();
+                        }
+                    }
+                };
                 return events;
             },
 
@@ -142,10 +172,11 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'collection', 'columns', 'includePagination',
-                    'includeHeaderSearch', 'includeFilter', 'includePageSize',
-                    'includeFooterRecords', 'includeColumnManager', 'includeSizeAbleColumns', 'includeOrderAbleColumns', 'includeTableLoader'));
-
+                this.limit = 25;
+                this.offset = 0;
+                _.extend(this, _.pick(options, 'collection', 'columns', 'includePagination', 'includeHeaderSearch', 'includeFilter', 'includePageSize',
+                    'includeFooterRecords', 'includeColumnManager', 'includeSizeAbleColumns', 'includeOrderAbleColumns', 'includeTableLoader', 'includeAtlasPagination', 'atlasPaginationOpts'));
+                _.extend(this, this.atlasPaginationOpts);
                 _.extend(this.gridOpts, options.gridOpts, { collection: this.collection, columns: this.columns });
                 _.extend(this.filterOpts, options.filterOpts);
                 _.extend(this.paginatorOpts, options.paginatorOpts);
@@ -164,12 +195,16 @@ define(['require',
                     this.$('div[data-id="r_tableSpinner"]').removeClass('show');
                 }, this);
 
-                this.listenTo(this.collection, 'reset', function(collection, response) {
+                this.listenTo(this.collection, 'reset', function(collection, options) {
+                    this.$('div[data-id="r_tableSpinner"]').removeClass('show');
                     if (this.includePagination) {
                         this.renderPagination();
                     }
                     if (this.includeFooterRecords) {
                         this.renderFooterRecords(this.collection.state);
+                    }
+                    if (this.includeAtlasPagination) {
+                        this.renderAtlasPagination(options);
                     }
                 }, this);
 
@@ -183,6 +218,17 @@ define(['require',
                 which in turn removes chevrons from every 'sortable' header-cells*/
                 this.listenTo(this.collection, "backgrid:sort", function() {
                     this.collection.trigger("sort");
+                });
+                this.listenTo(this, "grid:refresh", function() {
+                    if (this.grid) {
+                        this.grid.trigger("backgrid:refresh");
+                    }
+                });
+                this.listenTo(this, "grid:refresh:update", function() {
+                    if (this.grid) {
+                        this.grid.trigger("backgrid:refresh");
+                        if (this.grid.collection) { this.grid.collection.trigger("backgrid:colgroup:updated"); }
+                    }
                 });
 
                 // It will show tool tip when td has ellipsis  Property
@@ -203,6 +249,9 @@ define(['require',
                 if (this.includePagination) {
                     this.renderPagination();
                 }
+                if (this.includeAtlasPagination) {
+                    this.renderAtlasPagination();
+                }
                 if (this.includeFilter) {
                     this.renderFilter();
                 }
@@ -211,12 +260,6 @@ define(['require',
                 }
                 if (this.includeColumnManager) {
                     this.renderColumnManager();
-                }
-                if (this.includeSizeAbleColumns) {
-                    this.renderSizeAbleColumns();
-                }
-                if (this.includeOrderAbleColumns) {
-                    this.renderOrderAbleColumns();
                 }
                 if (this.includePageSize) {
                     this.ui.selectPageSize.select2({
@@ -234,11 +277,20 @@ define(['require',
              */
             renderTable: function() {
                 var that = this;
-                this.rTableList.show(new Backgrid.Grid(this.gridOpts).on('backgrid:rendered', function() {
-                    that.trigger('backgrid:rendered', this)
-                }));
-            },
+                this.grid = new Backgrid.Grid(this.gridOpts).on('backgrid:rendered', function() {
+                    that.trigger('backgrid:manual:rendered', this)
+                });
 
+                this.rTableList.show(this.grid);
+            },
+            onShow: function() {
+                if (this.includeSizeAbleColumns) {
+                    this.renderSizeAbleColumns();
+                }
+                if (this.includeOrderAbleColumns) {
+                    this.renderOrderAbleColumns();
+                }
+            },
             /**
              * show pagination buttons(first, last, next, prev and numbers)
              */
@@ -254,6 +306,74 @@ define(['require',
                 } else if (this.regions.rPagination) {
                     this.$('div[data-id="r_pagination"]').show(new Backgrid.Extension.Paginator(options));
                 }
+            },
+
+            renderAtlasPagination: function(options) {
+                var isFirstPage = this.offset === 0,
+                    dataLength = this.collection.length,
+                    goToPage = this.ui.gotoPage.val();
+
+                if (!dataLength && this.offset >= this.limit && ((options && options.next) || goToPage) && (options && !options.fromUrl)) {
+                    /* User clicks on next button and server returns
+                    empty response then disabled the next button without rendering table*/
+
+                    var pageNumber = this.activePage + 1;
+                    if (goToPage) {
+                        pageNumber = goToPage;
+                        this.offset = (this.activePage - 1) * this.limit;
+                    } else {
+                        this.ui.nextData.attr('disabled', true);
+                        this.offset = this.offset - this.limit;
+                    }
+                    if (this.value) {
+                        this.value.pageOffset = this.offset;
+                        if (this.triggerUrl) {
+                            this.triggerUrl();
+                        }
+                    }
+                    Utils.notifyInfo({
+                        html: true,
+                        content: Messages.search.noRecordForPage + '<b>' + Utils.getNumberSuffix({ number: pageNumber, sup: true }) + '</b> page'
+                    });
+                    return;
+                }
+
+                /*Next button check.
+                It's outside of Previous button else condition
+                because when user comes from 2 page to 1 page than we need to check next button.*/
+                if (dataLength < this.limit) {
+                    this.ui.nextData.attr('disabled', true);
+                } else {
+                    this.ui.nextData.attr('disabled', false);
+                }
+
+                if (isFirstPage && (!dataLength || dataLength < this.limit)) {
+                    this.ui.paginationDiv.hide();
+                } else {
+                    this.ui.paginationDiv.show();
+                }
+
+                // Previous button check.s
+                if (isFirstPage) {
+                    this.ui.previousData.attr('disabled', true);
+                    this.pageFrom = 1;
+                    this.pageTo = this.limit;
+                } else {
+                    this.ui.previousData.attr('disabled', false);
+                }
+
+                if (options && options.next) {
+                    //on next click, adding "1" for showing the another records.
+                    this.pageTo = this.offset + this.limit;
+                    this.pageFrom = this.offset + 1;
+                } else if (!isFirstPage && options && options.previous) {
+                    this.pageTo = this.pageTo - this.limit;
+                    this.pageFrom = (this.pageTo - this.limit) + 1;
+                }
+                this.ui.pageRecordText.html("Showing  <u>" + this.collection.length + " records</u> From " + this.pageFrom + " - " + this.pageTo);
+                this.activePage = Math.round(this.pageTo / this.limit);
+                this.ui.activePage.attr('title', "Page " + this.activePage);
+                this.ui.activePage.text(this.activePage);
             },
 
             /**
@@ -329,11 +449,12 @@ define(['require',
 
             renderSizeAbleColumns: function() {
                 // Add sizeable columns
-                var sizeAbleCol = new Backgrid.Extension.SizeAbleColumns({
-                    collection: this.collection,
-                    columns: this.columns,
-                    grid: this.getGridObj()
-                });
+                var that = this,
+                    sizeAbleCol = new Backgrid.Extension.SizeAbleColumns({
+                        collection: this.collection,
+                        columns: this.columns,
+                        grid: this.getGridObj()
+                    });
                 this.$('thead').before(sizeAbleCol.render().el);
 
                 // Add resize handlers
@@ -397,6 +518,99 @@ define(['require',
                             reset: true,
                             cache: false
                         });
+                    }
+                }
+            },
+            onClicknextData: function() {
+                this.offset = this.offset + this.limit;
+                _.extend(this.collection.queryParams, {
+                    offset: this.offset
+                });
+                if (this.value) {
+                    this.value.pageOffset = this.offset;
+                    if (this.triggerUrl) {
+                        this.triggerUrl();
+                    }
+                }
+                this.ui.gotoPage.val('');
+                this.ui.gotoPage.parent().removeClass('has-error');
+                if (this.fetchCollection) {
+                    this.fetchCollection({
+                        next: true
+                    });
+                }
+            },
+            onClickpreviousData: function() {
+                this.offset = this.offset - this.limit;
+                if (this.offset <= -1) {
+                    this.offset = 0;
+                }
+                _.extend(this.collection.queryParams, {
+                    offset: this.offset
+                });
+                if (this.value) {
+                    this.value.pageOffset = this.offset;
+                    if (this.triggerUrl) {
+                        this.triggerUrl();
+                    }
+                }
+                this.ui.gotoPage.val('');
+                this.ui.gotoPage.parent().removeClass('has-error');
+                if (this.fetchCollection) {
+                    this.fetchCollection({
+                        previous: true
+                    });
+                }
+            },
+            // TODO : Need to add pageLimit for atlasPagination
+            changePageLimit: function(e, obj) {
+                if (!obj || (obj && !obj.skipViewChange)) {
+                    var limit = parseInt(this.ui.showPage.val());
+                    if (limit == 0) {
+                        this.ui.showPage.data('select2').$container.addClass('has-error');
+                        return;
+                    } else {
+                        this.ui.showPage.data('select2').$container.removeClass('has-error');
+                    }
+                    this.limit = limit;
+                    this.offset = 0;
+                    if (this.value) {
+                        this.value.pageLimit = this.limit;
+                        this.value.pageOffset = this.offset;
+                        if (this.triggerUrl) {
+                            this.triggerUrl();
+                        }
+                    }
+                    this.ui.gotoPage.val('');
+                    this.ui.gotoPage.parent().removeClass('has-error');
+                    _.extend(this.collection.queryParams, { limit: this.limit, offset: this.offset });
+                    this.fetchCollection();
+                }
+            },
+            gotoPagebtn: function(e) {
+                var that = this;
+                var goToPage = parseInt(this.ui.gotoPage.val());
+                if (!(_.isNaN(goToPage) || goToPage <= -1)) {
+                    this.offset = (goToPage - 1) * this.limit;
+                    if (this.offset <= -1) {
+                        this.offset = 0;
+                    }
+                    _.extend(this.collection.queryParams, { limit: this.limit, offset: this.offset });
+                    if (this.offset == (this.pageFrom - 1)) {
+                        Utils.notifyInfo({
+                            content: Messages.search.onSamePage
+                        });
+                    } else {
+                        if (this.value) {
+                            this.value.pageOffset = this.offset;
+                            if (this.triggerUrl) {
+                                this.triggerUrl();
+                            }
+                        }
+                        // this.offset is updated in gotoPagebtn function so use next button calculation.
+                        if (this.fetchCollection) {
+                            this.fetchCollection({ 'next': true });
+                        }
                     }
                 }
             }

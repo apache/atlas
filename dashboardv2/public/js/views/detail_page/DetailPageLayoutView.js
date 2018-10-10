@@ -44,6 +44,7 @@ define(['require',
                 RTagTableLayoutView: "#r_tagTableLayoutView",
                 RLineageLayoutView: "#r_lineageLayoutView",
                 RAuditTableLayoutView: "#r_auditTableLayoutView",
+                RReplicationAuditTableLayoutView: "#r_replicationAuditTableLayoutView",
                 RProfileLayoutView: "#r_profileLayoutView",
                 RRelationshipLayoutView: "#r_relationshipLayoutView"
             },
@@ -228,6 +229,11 @@ define(['require',
                     }
 
                     if (this.activeEntityDef) {
+                        //to display ReplicationAudit tab
+                        if (collectionJSON && collectionJSON.typeName === "AtlasServer") {
+                            this.$('.replicationTab').show();
+                            this.renderReplicationAuditTableLayoutView(obj);
+                        }
                         // To render Schema check attribute "schemaElementsAttribute"
                         var schemaOptions = this.activeEntityDef.get('options');
                         if (schemaOptions && schemaOptions.hasOwnProperty('schemaElementsAttribute') && schemaOptions.schemaElementsAttribute !== "") {
@@ -487,6 +493,12 @@ define(['require',
                 var that = this;
                 require(['views/audit/AuditTableLayoutView'], function(AuditTableLayoutView) {
                     that.RAuditTableLayoutView.show(new AuditTableLayoutView(obj));
+                });
+            },
+            renderReplicationAuditTableLayoutView: function(obj) {
+                var that = this;
+                require(['views/audit/ReplicationAuditTableLayoutView'], function(ReplicationAuditTableLayoutView) {
+                    that.RReplicationAuditTableLayoutView.show(new ReplicationAuditTableLayoutView(obj));
                 });
             },
             renderProfileLayoutView: function(obj) {
