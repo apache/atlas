@@ -122,6 +122,7 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 public class EntityGraphMapper {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphMapper.class);
 
+    private static final String SOFT_REF_FORMAT      = "%s:%s";
     private static final int INDEXED_STR_SAFE_LEN = AtlasConfiguration.GRAPHSTORE_INDEXED_STRING_SAFE_LENGTH.getInt();
 
     private final GraphHelper               graphHelper = GraphHelper.getInstance();
@@ -426,6 +427,10 @@ public class EntityGraphMapper {
             }
 
             case OBJECT_ID_TYPE: {
+                if (ctx.getAttributeDef().isSoftReferenced()) {
+                    return mapSoftRefValueWithUpdate(ctx, context);
+                }
+
                 AtlasRelationshipEdgeDirection edgeDirection = ctx.getAttribute().getRelationshipEdgeDirection();
                 String edgeLabel = ctx.getAttribute().getRelationshipEdgeLabel();
 
@@ -503,6 +508,33 @@ public class EntityGraphMapper {
             default:
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_CATEGORY_INVALID, ctx.getAttrType().getTypeCategory().name());
         }
+    }
+
+    private Object mapSoftRefValue(AttributeMutationContext ctx, EntityMutationContext context) {
+        if(ctx.getValue() != null && !(ctx.getValue() instanceof AtlasObjectId)) {
+            LOG.warn("mapSoftRefValue: Was expecting AtlasObjectId, but found: {}", ctx.getValue().getClass());
+            return null;
+        }
+
+        String softRefValue = null;
+        if(ctx.getValue() != null) {
+            AtlasObjectId objectId = (AtlasObjectId) ctx.getValue();
+            String resolvedGuid = AtlasTypeUtil.isUnAssignedGuid(objectId.getGuid())
+                    ? context.getGuidAssignments().get(objectId.getGuid())
+                    : objectId.getGuid();
+
+            softRefValue = String.format(SOFT_REF_FORMAT, objectId.getTypeName(), resolvedGuid);
+        }
+
+        return softRefValue;
+    }
+
+    private Object mapSoftRefValueWithUpdate(AttributeMutationContext ctx, EntityMutationContext context) {
+
+        String softRefValue = (String) mapSoftRefValue(ctx, context);
+        AtlasGraphUtilsV2.setProperty(ctx.getReferringVertex(), ctx.getVertexProperty(), softRefValue);
+
+        return softRefValue;
     }
 
     private void addInverseReference(EntityMutationContext context, AtlasAttribute inverseAttribute, AtlasEdge edge, Map<String, Object> relationshipAttributes) throws AtlasBaseException {
@@ -878,6 +910,7 @@ public class EntityGraphMapper {
         AtlasAttribute      attribute   = ctx.getAttribute();
         Map<String, Object> currentMap  = getMapElementsProperty(mapType, ctx.getReferringVertex(), ctx.getVertexProperty(), attribute);
         boolean             isReference = isReference(mapType.getValueType());
+        boolean             isSoftReference = ctx.getAttribute().getAttributeDef().isSoftReferenced();
 
         if (MapUtils.isNotEmpty(newVal)) {
             String propertyName = ctx.getVertexProperty();
@@ -885,14 +918,14 @@ public class EntityGraphMapper {
             if (isReference) {
                 for (Map.Entry<Object, Object> entry : newVal.entrySet()) {
                     String    key          = entry.getKey().toString();
-                    AtlasEdge existingEdge = getEdgeIfExists(mapType, currentMap, key);
+                    AtlasEdge existingEdge = isSoftReference ? null : getEdgeIfExists(mapType, currentMap, key);
 
                     AttributeMutationContext mapCtx =  new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), attribute, entry.getValue(),
                                                                                      propertyName, mapType.getValueType(), existingEdge);
                     // Add/Update/Remove property value
                     Object newEntry = mapCollectionElementsToVertex(mapCtx, context);
 
-                    if (newEntry instanceof AtlasEdge) {
+                    if (!isSoftReference && newEntry instanceof AtlasEdge) {
                         AtlasEdge edge = (AtlasEdge) newEntry;
 
                         edge.setProperty(ATTRIBUTE_KEY_PROPERTY_KEY, key);
@@ -909,6 +942,10 @@ public class EntityGraphMapper {
 
                         newMap.put(key, newEntry);
                     }
+
+                    if (isSoftReference) {
+                        newMap.put(key, newEntry);
+                    }
                 }
 
                 Map<String, Object> finalMap = removeUnusedMapEntries(attribute, ctx.getReferringVertex(), currentMap, newMap);
@@ -918,6 +955,10 @@ public class EntityGraphMapper {
                 ctx.getReferringVertex().setProperty(propertyName, new HashMap<>(newVal));
 
                 newVal.forEach((key, value) -> newMap.put(key.toString(), value));
+            }
+
+            if (isSoftReference) {
+                ctx.getReferringVertex().setProperty(propertyName, new HashMap<>(newMap));
             }
         }
 
@@ -938,15 +979,16 @@ public class EntityGraphMapper {
         AtlasArrayType arrType             = (AtlasArrayType) attribute.getAttributeType();
         AtlasType      elementType         = arrType.getElementType();
         boolean        isReference         = isReference(elementType);
+        boolean        isSoftReference     = ctx.getAttribute().getAttributeDef().isSoftReferenced();
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
         Cardinality    cardinality         = attribute.getAttributeDef().getCardinality();
         List<Object>   newElementsCreated  = new ArrayList<>();
         List<Object>   currentElements;
 
-        if (isReference) {
+        if (isReference && !isSoftReference) {
             currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute);
         } else {
-            currentElements = (List) getArrayElementsProperty(elementType, ctx.getReferringVertex(), ctx.getVertexProperty());
+            currentElements = (List) getArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty());
         }
 
         if (CollectionUtils.isNotEmpty(newElements)) {
@@ -955,7 +997,7 @@ public class EntityGraphMapper {
             }
 
             for (int index = 0; index < newElements.size(); index++) {
-                AtlasEdge               existingEdge = getEdgeAt(currentElements, index, elementType);
+                AtlasEdge               existingEdge = (isSoftReference) ? null : getEdgeAt(currentElements, index, elementType);
                 AttributeMutationContext arrCtx      = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index),
                                                                                      ctx.getVertexProperty(), elementType, existingEdge);
 
@@ -974,7 +1016,7 @@ public class EntityGraphMapper {
             }
         }
 
-        if (isReference) {
+        if (isReference && !isSoftReference) {
             List<AtlasEdge> additionalEdges = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx.getReferringVertex());
             newElementsCreated.addAll(additionalEdges);
         }
@@ -989,7 +1031,7 @@ public class EntityGraphMapper {
         }
 
         // for dereference on way out
-        setArrayElementsProperty(elementType, ctx.getReferringVertex(), ctx.getVertexProperty(), newElementsCreated);
+        setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), newElementsCreated);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== mapArrayValue({})", ctx);
@@ -1054,6 +1096,10 @@ public class EntityGraphMapper {
         case OBJECT_ID_TYPE:
             AtlasEntityType instanceType = getInstanceType(ctx.getValue());
             ctx.setElementType(instanceType);
+            if (ctx.getAttributeDef().isSoftReferenced()) {
+                return mapSoftRefValue(ctx, context);
+            }
+
             return mapObjectIdValueUsingRelationship(ctx, context);
 
         default:
@@ -1254,8 +1300,8 @@ public class EntityGraphMapper {
         return ret;
     }
 
-    public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex vertex, String vertexPropertyName) {
-        if (isReference(elementType)) {
+    public static List<Object> getArrayElementsProperty(AtlasType elementType, boolean isSoftReference, AtlasVertex vertex, String vertexPropertyName) {
+        if (!isSoftReference && isReference(elementType)) {
             return (List)vertex.getListProperty(vertexPropertyName, AtlasEdge.class);
         }
         else {
@@ -1303,8 +1349,8 @@ public class EntityGraphMapper {
 
         return Collections.emptyList();
     }
-    private void setArrayElementsProperty(AtlasType elementType, AtlasVertex vertex, String vertexPropertyName, List<Object> values) {
-        if (!isReference(elementType)) {
+    private void setArrayElementsProperty(AtlasType elementType, boolean isSoftReference, AtlasVertex vertex, String vertexPropertyName, List<Object> values) {
+        if (!isReference(elementType) || isSoftReference) {
             AtlasGraphUtilsV2.setEncodedProperty(vertex, vertexPropertyName, values);
         }
     }
@@ -1326,7 +1372,7 @@ public class EntityGraphMapper {
     }
 
     private void updateInConsistentOwnedMapVertices(AttributeMutationContext ctx, AtlasMapType mapType, Object val) {
-        if (mapType.getValueType().getTypeCategory() == TypeCategory.OBJECT_ID_TYPE) {
+        if (mapType.getValueType().getTypeCategory() == TypeCategory.OBJECT_ID_TYPE && !ctx.getAttributeDef().isSoftReferenced()) {
             AtlasEdge edge = (AtlasEdge) val;
 
             if (ctx.getAttribute().isOwnedRef() && getStatus(edge) == DELETED && getStatus(edge.getInVertex()) == DELETED) {

@@ -79,39 +79,12 @@ import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_EXPRE
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_SOURCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STATUS;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STEWARD;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BYTE;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DATE;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_FLOAT;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_INT;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_SHORT;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VALIDITY_PERIODS_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
-import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
-import static org.apache.atlas.repository.graph.GraphHelper.getAdjacentEdgesByLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
-import static org.apache.atlas.repository.graph.GraphHelper.getAllTraitNames;
-import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
-import static org.apache.atlas.repository.graph.GraphHelper.getArrayElementsProperty;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityStatus;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertices;
-import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
-import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getPrimitiveMap;
-import static org.apache.atlas.repository.graph.GraphHelper.getReferenceMap;
-import static org.apache.atlas.repository.graph.GraphHelper.getOutGoingEdgesByLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
-import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
-import static org.apache.atlas.repository.graph.GraphHelper.getRemovePropagations;
-import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
-import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
+import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
@@ -131,6 +104,9 @@ public final class EntityGraphRetriever {
     public static final String DESCRIPTION    = "description";
     public static final String OWNER          = "owner";
     public static final String CREATE_TIME    = "createTime";
+    private static final String SOFT_REFERENCE_FORMAT_SEPERATOR = ":";
+    private static final int SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME = 0;
+    private static final int SOFT_REFERENCE_FORMAT_INDEX_GUID = 1;
     public static final String QUALIFIED_NAME = "qualifiedName";
 
     private static final TypeReference<List<TimeBoundary>> TIME_BOUNDARIES_LIST_TYPE = new TypeReference<List<TimeBoundary>>() {};
@@ -679,13 +655,25 @@ public final class EntityGraphRetriever {
                 ret = mapVertexToStruct(entityVertex, edgeLabel, null, entityExtInfo, isMinExtInfo);
                 break;
             case OBJECT_ID_TYPE:
-                ret = mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute, edgeDirection, isMinExtInfo);
+                if(attribute.getAttributeDef().isSoftReferenced()) {
+                    ret = mapVertexToObjectIdForSoftRef(entityVertex, attribute.getVertexPropertyName());
+                } else {
+                	ret = mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute, edgeDirection, isMinExtInfo);
+				}
                 break;
             case ARRAY:
-                ret = mapVertexToArray(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo);
+                if(attribute.getAttributeDef().isSoftReferenced()) {
+                    ret = mapVertexToArrayForSoftRef(entityVertex, attribute.getVertexPropertyName());
+                } else {
+                	ret = mapVertexToArray(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo);
+				}
                 break;
             case MAP:
-                ret = mapVertexToMap(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo);
+                if(attribute.getAttributeDef().isSoftReferenced()) {
+                    ret = mapVertexToMapForSoftRef(entityVertex, attribute.getVertexPropertyName());
+                } else {
+                	ret = mapVertexToMap(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo);
+				}
                 break;
             case CLASSIFICATION:
                 // do nothing
@@ -693,6 +681,76 @@ public final class EntityGraphRetriever {
         }
 
         return ret;
+    }
+
+    private Map<String, AtlasObjectId> mapVertexToMapForSoftRef(AtlasVertex entityVertex, String propertyName) {
+        Map map = entityVertex.getProperty(propertyName, Map.class);
+        if (MapUtils.isEmpty(map)) {
+            return null;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Mapping map attribute {} for vertex {}", propertyName, entityVertex);
+        }
+
+        Map ret = new HashMap();
+        for (Object mapKey : map.keySet()) {
+            String softRefRaw = (String) map.get(mapKey);
+            AtlasObjectId mapValue = getAtlasObjectIdFromSoftRefFormat(softRefRaw);
+            if (mapValue != null) {
+                ret.put(mapKey, mapValue);
+            }
+        }
+
+        return ret;
+    }
+
+    private List<AtlasObjectId> mapVertexToArrayForSoftRef(AtlasVertex entityVertex, String propertyName) {
+        List rawValue = entityVertex.getListProperty(propertyName, List.class);
+        if (CollectionUtils.isEmpty(rawValue)) {
+            return null;
+        }
+
+        List list = (List) rawValue;
+        List<AtlasObjectId> objectIds = new ArrayList<>();
+        for (Object o : list) {
+            if (!(o instanceof String)) {
+                continue;
+            }
+
+            AtlasObjectId objectId = getAtlasObjectIdFromSoftRefFormat((String) o);
+            if(objectId == null) {
+                continue;
+            }
+
+            objectIds.add(objectId);
+        }
+
+        return objectIds;
+    }
+
+    private AtlasObjectId mapVertexToObjectIdForSoftRef(AtlasVertex entityVertex, String vertexPropertyName) {
+        String rawValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, vertexPropertyName, String.class);
+        if(StringUtils.isEmpty(rawValue)) {
+            return null;
+        }
+
+        return getAtlasObjectIdFromSoftRefFormat(rawValue);
+    }
+
+    private AtlasObjectId getAtlasObjectIdFromSoftRefFormat(String rawValue) {
+        if(StringUtils.isEmpty(rawValue)) {
+            return null;
+        }
+
+        String[] objectIdParts = StringUtils.split(rawValue, SOFT_REFERENCE_FORMAT_SEPERATOR);
+        if(objectIdParts.length < 2) {
+            LOG.warn("Expecting value to be formatted for softRef. Instead found: {}", rawValue);
+            return null;
+        }
+
+        return new AtlasObjectId(objectIdParts[SOFT_REFERENCE_FORMAT_INDEX_GUID],
+                objectIdParts[SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME]);
     }
 
     private Map<String, Object> mapVertexToMap(AtlasVertex entityVertex, AtlasEntityExtInfo entityExtInfo,
