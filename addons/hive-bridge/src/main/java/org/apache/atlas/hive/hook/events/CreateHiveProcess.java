@@ -132,9 +132,8 @@ public class CreateHiveProcess extends BaseHiveEvent {
             return;
         }
 
-        final List<AtlasEntity> columnLineages    = new ArrayList<>();
-        boolean                 isSameInputsSize  = true;
-        int                     lineageInputsSize = -1;
+        final List<AtlasEntity> columnLineages     = new ArrayList<>();
+        int                     lineageInputsCount = 0;
 
         for (Map.Entry<DependencyKey, Dependency> entry : lineageInfo.entrySet()) {
             String      outputColName = getQualifiedName(entry.getKey());
@@ -169,11 +168,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
                 continue;
             }
 
-            if (lineageInputsSize == -1) {
-                lineageInputsSize = inputColumns.size();
-            } else if (lineageInputsSize != inputColumns.size()) {
-                isSameInputsSize = false;
-            }
+            lineageInputsCount += inputColumns.size();
 
             AtlasEntity columnLineageProcess = new AtlasEntity(HIVE_TYPE_COLUMN_LINEAGE);
 
@@ -188,14 +183,15 @@ public class CreateHiveProcess extends BaseHiveEvent {
             columnLineages.add(columnLineageProcess);
         }
 
-        boolean skipColumnLineage = context.getSkipHiveColumnLineageHive20633() && columnLineages.size() > 1 && isSameInputsSize && lineageInputsSize > context.getSkipHiveColumnLineageHive20633InputsThreshold();
+        float   avgInputsCount    = columnLineages.size() > 0 ? (((float) lineageInputsCount) / columnLineages.size()) : 0;
+        boolean skipColumnLineage = context.getSkipHiveColumnLineageHive20633() && avgInputsCount > context.getSkipHiveColumnLineageHive20633InputsThreshold();
 
         if (!skipColumnLineage) {
             for (AtlasEntity columnLineage : columnLineages) {
                 entities.addEntity(columnLineage);
             }
         } else {
-            LOG.warn("skipping {} hive_column_lineage entities, each having {} inputs", columnLineages.size(), lineageInputsSize);
+            LOG.warn("skipped {} hive_column_lineage entities. Average # of inputs={}, threshold={}, total # of inputs={}", columnLineages.size(), avgInputsCount, context.getSkipHiveColumnLineageHive20633InputsThreshold(), lineageInputsCount);
         }
     }
 
