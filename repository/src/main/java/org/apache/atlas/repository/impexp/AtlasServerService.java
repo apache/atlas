@@ -88,8 +88,13 @@ public class AtlasServerService {
     }
 
     @GraphTransaction
-    public AtlasServer save(AtlasServer server) throws AtlasBaseException {
-       return dataAccess.save(server);
+    public AtlasServer save(AtlasServer server) {
+        try {
+            return dataAccess.save(server);
+        }
+        catch (AtlasBaseException ex) {
+            return server;
+        }
     }
 
     @GraphTransaction
@@ -100,7 +105,7 @@ public class AtlasServerService {
 
         AtlasObjectId objectId = getObjectId(server);
         for (String guid : entityGuids) {
-            AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(guid);
+            AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(guid, false);
             updateAttribute(entityWithExtInfo, attributeName, objectId);
         }
     }
