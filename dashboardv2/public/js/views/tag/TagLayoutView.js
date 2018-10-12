@@ -569,14 +569,7 @@ define(['require',
             },
             onNotifyOk: function(data) {
                 var that = this,
-                    deleteTagData = this.collection.fullCollection.findWhere({ name: this.tag }),
-                    classificationData = deleteTagData.toJSON(),
-                    deleteJson = {
-                        classificationDefs: [classificationData],
-                        entityDefs: [],
-                        enumDefs: [],
-                        structDefs: []
-                    };
+                    deleteTagData = this.collection.fullCollection.findWhere({ name: this.tag });
                 deleteTagData.deleteTag({
                     typeName: that.tag,
                     success: function() {

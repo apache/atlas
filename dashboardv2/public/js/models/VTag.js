@@ -49,7 +49,7 @@ define(['require',
             return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
         },
         deleteTag: function(options) {
-            var url = UrlLinks.classificationDefApiUrl(options.typeName);
+            var url = UrlLinks.getDefApiUrl(null, options.typeName);
             return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
         },
         saveTagAttribute: function(options) {
