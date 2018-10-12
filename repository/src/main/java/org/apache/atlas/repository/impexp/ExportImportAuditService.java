@@ -28,7 +28,6 @@ import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.ogm.ExportImportAuditEntryDTO;
-import org.apache.cassandra.cql3.statements.Restriction;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
