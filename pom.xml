@@ -645,6 +645,7 @@
         <kafka.scala.binary.version>2.11</kafka.scala.binary.version>
         <curator.version>2.11.0</curator.version>
         <zookeeper.version>3.4.6</zookeeper.version>
+        <janus.version>0.3.1</janus.version>
 
         <json.version>3.2.11</json.version>
         <log4j.version>1.2.17</log4j.version>
