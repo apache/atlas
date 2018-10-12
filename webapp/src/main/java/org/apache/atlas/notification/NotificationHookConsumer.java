@@ -144,7 +144,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         maxWaitDuration       = applicationProperties.getInt(CONSUMER_MAX_RETRY_INTERVAL, minWaitDuration * 60);  //  30 sec by default
 
         skipHiveColumnLineageHive20633                = applicationProperties.getBoolean(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false);
-        skipHiveColumnLineageHive20633InputsThreshold = applicationProperties.getInt(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 5); // skip greater-than 5 inputs by default
+        skipHiveColumnLineageHive20633InputsThreshold = applicationProperties.getInt(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
 
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
@@ -685,34 +685,29 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         if (entities != null && entities.getEntities() != null) {
-            boolean isSameInputsSize  = true;
-            int     lineageInputsSize = -1;
-            int     lineageCount      = 0;
+            int lineageCount       = 0;
+            int lineageInputsCount = 0;
 
             // find if all hive_column_lineage entities have same number of inputs, which is likely to be caused by HIVE-20633 that results in incorrect lineage in some cases
             for (ListIterator<AtlasEntity> iter = entities.getEntities().listIterator(); iter.hasNext(); ) {
                 AtlasEntity entity = iter.next();
 
                 if (StringUtils.equals(entity.getTypeName(), TYPE_HIVE_COLUMN_LINEAGE)) {
+                    lineageCount++;
+
                     Object objInputs = entity.getAttribute(ATTRIBUTE_INPUTS);
 
                     if (objInputs instanceof Collection) {
                         Collection inputs = (Collection) objInputs;
 
-                        lineageCount++;
-
-                        if (lineageInputsSize == -1) { // first entry
-                            lineageInputsSize = inputs.size();
-                        } else if (inputs.size() != lineageInputsSize) {
-                            isSameInputsSize = false;
-
-                            break;
-                        }
+                        lineageInputsCount += inputs.size();
                     }
                 }
             }
 
-            if (lineageCount > 1 && isSameInputsSize && lineageInputsSize > skipHiveColumnLineageHive20633InputsThreshold) {
+            float avgInputsCount = lineageCount > 0 ? (((float) lineageInputsCount) / lineageCount) : 0;
+
+            if (avgInputsCount > skipHiveColumnLineageHive20633InputsThreshold) {
                 int numRemovedEntities = 0;
 
                 for (ListIterator<AtlasEntity> iter = entities.getEntities().listIterator(); iter.hasNext(); ) {
@@ -726,7 +721,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 }
 
                 if (numRemovedEntities > 0) {
-                    LOG.warn("removed {} hive_column_lineage entities, each having {} inputs. offset={}, partition={}", numRemovedEntities, lineageInputsSize, kafkaMessage.getOffset(), kafkaMessage.getPartition());
+                    LOG.warn("removed {} hive_column_lineage entities. Average # of inputs={}, threshold={}, total # of inputs={}. topic-offset={}, partition={}", numRemovedEntities, avgInputsCount, skipHiveColumnLineageHive20633InputsThreshold, lineageInputsCount, kafkaMessage.getOffset(), kafkaMessage.getPartition());
                 }
             }
         }
