@@ -141,10 +141,6 @@ import static org.janusgraph.diskstorage.solr.SolrIndex.WAIT_SEARCHER;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
 
 /**
- * @author Jared Holmberg (jholmberg@bericotechnoLogies.com), Pavel Yaskevich (pavel@thinkaurelius.com)
- */
-
-/**
  * NOTE: Copied from JanusGraph for supporting Kerberos and adding support for multiple zookeeper clients. Do not change
  * This is a copy of SolrIndex.java from org.janusgraph.diskstorage.solr
  */
