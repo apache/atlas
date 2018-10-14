@@ -42,12 +42,14 @@ define(['require',
 
             /** ui selector cache */
             ui: {
-                graph: ".graph"
+                graph: ".graph",
+                checkHideProcess: "[data-id='checkHideProcess']"
             },
 
             /** ui events hash */
             events: function() {
                 var events = {};
+                events["click " + this.ui.checkHideProcess] = 'onCheckHideProcess';
                 return events;
             },
 
@@ -56,7 +58,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'actionCallBack', 'fetchCollection'));
+                _.extend(this, _.pick(options, 'processCheck', 'guid', 'entityDefCollection', 'actionCallBack', 'fetchCollection'));
                 this.collection = new VLineageList();
                 this.lineageData = null;
                 this.typeMap = {};
@@ -64,16 +66,9 @@ define(['require',
                 this.asyncFetchCounter = 0;
                 this.edgeCall;
             },
-            onRender: function() {
-                var that = this;
-                this.$('.fontLoader').show();
-                this.fetchGraphData();
-                if (platform.name === "IE") {
-                    this.$('svg').css('opacity', '0');
-                }
-                if (this.layoutRendered) {
-                    this.layoutRendered();
-                }
+
+            initializeGraph: function() {
+                this.g = {};
                 this.g = new dagreD3.graphlib.Graph()
                     .setGraph({
                         nodesep: 50,
@@ -89,6 +84,31 @@ define(['require',
                         return {};
                     });
             },
+
+            onRender: function() {
+                var that = this;
+                this.fetchGraphData();
+                if (platform.name === "IE") {
+                    this.$('svg').css('opacity', '0');
+                }
+                if (this.layoutRendered) {
+                    this.layoutRendered();
+                }
+                if (this.processCheck) {
+                    this.hideCheckForProcess();
+                }
+                this.initializeGraph();
+            },
+            onShow: function() {
+                this.$('.fontLoader').show();
+            },
+            onCheckHideProcess: function(e) {
+                var data = $.extend(true, {}, this.lineageData);
+                this.fromToObj = {};
+                this.initializeGraph();
+                this.generateData(data.relations, data.guidEntityMap, e.target.checked);
+            },
+
             fetchGraphData: function() {
                 var that = this;
                 this.fromToObj = {};
@@ -96,10 +116,11 @@ define(['require',
                     skipDefaultError: true,
                     success: function(data) {
                         if (data.relations.length) {
-                            that.lineageData = data;
+                            that.lineageData = $.extend(true, {}, data)
                             that.generateData(data.relations, data.guidEntityMap);
                         } else {
                             that.noLineage();
+                            that.hideCheckForProcess();
                         }
                     },
                     cust_error: function(model, response) {
@@ -116,8 +137,16 @@ define(['require',
                     this.actionCallBack();
                 }
             },
-            generateData: function(relations, guidEntityMap) {
+            hideCheckForProcess: function() {
+                this.$('.hideProcessContainer').hide();
+            },
+            generateData: function(relations, guidEntityMap, hideProcess) {
                 var that = this;
+
+                function isProcess(typeName) {
+                    var entityDef = that.entityDefCollection.fullCollection.find({ name: typeName });
+                    return _.contains(Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: that.entityDefCollection}), "Process")
+                }
 
                 function makeNodeObj(relationObj) {
                     var obj = {};
@@ -131,15 +160,53 @@ define(['require',
                     if (relationObj.status) {
                         obj['status'] = relationObj.status;
                     }
-                    var entityDef = that.entityDefCollection.fullCollection.find({ name: relationObj.typeName });
-                    if (entityDef && entityDef.get('superTypes')) {
-                        obj['isProcess'] = _.contains(entityDef.get('superTypes'), "Process") ? true : false;
+                    if (hideProcess) {
+                        obj['isProcess'] = relationObj.isProcess;
+                    } else {
+                        obj['isProcess'] = isProcess(relationObj.typeName);
                     }
 
                     return obj;
                 }
 
-                _.each(relations, function(obj, index) {
+                var newRelations = [];
+
+                if (hideProcess) {
+                    _.each(relations, function(obj, index, relationArr) {
+                        var isFromEntityIdProcess = isProcess(guidEntityMap[obj.fromEntityId].typeName);
+                        var isToEntityProcess = isProcess(guidEntityMap[obj.toEntityId].typeName);
+                        if (isToEntityProcess) {
+                            guidEntityMap[obj.toEntityId]["isProcess"] = true;
+                            _.filter(relationArr, function(flrObj) {
+                                if (flrObj.fromEntityId === obj.toEntityId) {
+                                    newRelations.push({
+                                        fromEntityId: obj.fromEntityId,
+                                        toEntityId: flrObj.toEntityId
+                                    });
+                                }
+                            })
+                        } else if (isFromEntityIdProcess) {
+                            guidEntityMap[obj.fromEntityId]["isProcess"] = true;
+                            _.filter(relationArr, function(flrObj) {
+                                if (flrObj.toEntityId === obj.fromEntityId) {
+                                    newRelations.push({
+                                        fromEntityId: flrObj.fromEntityId,
+                                        toEntityId: obj.toEntityId
+                                    });
+                                }
+                            })
+                        } else {
+                            newRelations.push(obj);
+                        }
+                    });
+                }
+
+
+                var finalRelations = hideProcess ? newRelations : relations;
+
+
+
+                _.each(finalRelations, function(obj, index) {
                     if (!that.fromToObj[obj.fromEntityId]) {
                         that.fromToObj[obj.fromEntityId] = makeNodeObj(guidEntityMap[obj.fromEntityId]);
                         that.g.setNode(obj.fromEntityId, that.fromToObj[obj.fromEntityId]);
@@ -158,7 +225,7 @@ define(['require',
 
                 if (this.fromToObj[this.guid]) {
                     this.fromToObj[this.guid]['isLineage'] = false;
-                    this.checkForLineageOrImpactFlag(relations, this.guid);
+                    this.checkForLineageOrImpactFlag(finalRelations, this.guid);
                 }
                 if (this.asyncFetchCounter == 0) {
                     this.createGraph();
@@ -308,6 +375,9 @@ define(['require',
                     return shapeSvg;
                 };
                 // Set up an SVG group so that we can translate the final graph.
+                if (this.$("svg").find('.output').length) {
+                    this.$("svg").find('.output').parent('g').remove();
+                }
                 var svg = this.svg = d3.select(this.$("svg")[0])
                     .attr("viewBox", "0 0 " + width + " " + height)
                     .attr("enable-background", "new 0 0 " + width + " " + height),
