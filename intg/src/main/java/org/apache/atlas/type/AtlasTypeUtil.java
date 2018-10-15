@@ -481,6 +481,7 @@ public class AtlasTypeUtil {
         ret.setReverseAttributeName(attribute.getInverseRefAttributeName());
         ret.setDefaultValue(attributeDef.getDefaultValue());
         ret.setDescription(attributeDef.getDescription());
+        ret.setOptions(attributeDef.getOptions());
 
         final int lower;
         final int upper;
