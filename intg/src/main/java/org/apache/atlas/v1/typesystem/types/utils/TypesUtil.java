@@ -63,19 +63,19 @@ public class TypesUtil {
     }
 
     public static AttributeDefinition createUniqueRequiredAttrDef(String name, String dataTypeName) {
-        AttributeDefinition ret = new AttributeDefinition(name, dataTypeName, Multiplicity.REQUIRED, false, true, true, null);
+        AttributeDefinition ret = new AttributeDefinition(name, dataTypeName, Multiplicity.REQUIRED, false, true, true, null, null);
 
         return ret;
     }
 
     public static AttributeDefinition createRequiredAttrDef(String name, String dataTypeName) {
-        AttributeDefinition ret = new AttributeDefinition(name, dataTypeName, Multiplicity.REQUIRED, false, false, true, null);
+        AttributeDefinition ret = new AttributeDefinition(name, dataTypeName, Multiplicity.REQUIRED, false, false, true, null, null);
 
         return ret;
     }
 
     public static AttributeDefinition createOptionalAttrDef(String name, String dataTypeName) {
-        AttributeDefinition ret = new AttributeDefinition(name, dataTypeName, Multiplicity.OPTIONAL, false, false, true, null);
+        AttributeDefinition ret = new AttributeDefinition(name, dataTypeName, Multiplicity.OPTIONAL, false, false, true, null, null);
 
         return ret;
     }

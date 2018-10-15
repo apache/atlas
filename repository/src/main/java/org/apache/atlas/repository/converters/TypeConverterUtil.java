@@ -362,7 +362,7 @@ public final class TypeConverterUtil {
 
                 AttributeDefinition oldAttrDef = AtlasStructDefStoreV2.toAttributeDefinition(attribute);
 
-                ret.add(new AttributeDefinition(oldAttrDef.getName(), oldAttrDef.getDataTypeName(), new Multiplicity(oldAttrDef.getMultiplicity()), oldAttrDef.getIsComposite(), oldAttrDef.getIsUnique(), oldAttrDef.getIsIndexable(), oldAttrDef.getReverseAttributeName()));
+                ret.add(new AttributeDefinition(oldAttrDef.getName(), oldAttrDef.getDataTypeName(), new Multiplicity(oldAttrDef.getMultiplicity()), oldAttrDef.getIsComposite(), oldAttrDef.getIsUnique(), oldAttrDef.getIsIndexable(), oldAttrDef.getReverseAttributeName(), oldAttrDef.getOptions()));
             }
         }
 
