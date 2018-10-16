@@ -25,8 +25,9 @@ define(['require',
     'dagreD3',
     'd3-tip',
     'utils/Enums',
-    'utils/UrlLinks'
-], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip, Enums, UrlLinks) {
+    'utils/UrlLinks',
+    'platform'
+], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip, Enums, UrlLinks, platform) {
     'use strict';
 
     var LineageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -41,12 +42,14 @@ define(['require',
 
             /** ui selector cache */
             ui: {
-                graph: ".graph"
+                graph: ".graph",
+                checkHideProcess: "[data-id='checkHideProcess']"
             },
 
             /** ui events hash */
             events: function() {
                 var events = {};
+                events["click " + this.ui.checkHideProcess] = 'onCheckHideProcess';
                 return events;
             },
 
@@ -55,19 +58,17 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entityDefCollection', 'actionCallBack'));
-                this.entityModel = new VEntity();
+                _.extend(this, _.pick(options, 'processCheck', 'guid', 'entityDefCollection', 'actionCallBack', 'fetchCollection'));
                 this.collection = new VLineageList();
+                this.lineageData = null;
                 this.typeMap = {};
+                this.apiGuid = {};
                 this.asyncFetchCounter = 0;
-                this.fetchGraphData();
+                this.edgeCall;
             },
-            onRender: function() {
-                var that = this;
-                this.$('.fontLoader').show();
-                if (this.layoutRendered) {
-                    this.layoutRendered();
-                }
+
+            initializeGraph: function() {
+                this.g = {};
                 this.g = new dagreD3.graphlib.Graph()
                     .setGraph({
                         nodesep: 50,
@@ -83,6 +84,31 @@ define(['require',
                         return {};
                     });
             },
+
+            onRender: function() {
+                var that = this;
+                this.fetchGraphData();
+                if (platform.name === "IE") {
+                    this.$('svg').css('opacity', '0');
+                }
+                if (this.layoutRendered) {
+                    this.layoutRendered();
+                }
+                if (this.processCheck) {
+                    this.hideCheckForProcess();
+                }
+                this.initializeGraph();
+            },
+            onShow: function() {
+                this.$('.fontLoader').show();
+            },
+            onCheckHideProcess: function(e) {
+                var data = $.extend(true, {}, this.lineageData);
+                this.fromToObj = {};
+                this.initializeGraph();
+                this.generateData(data.relations, data.guidEntityMap, e.target.checked);
+            },
+
             fetchGraphData: function() {
                 var that = this;
                 this.fromToObj = {};
@@ -90,12 +116,15 @@ define(['require',
                     skipDefaultError: true,
                     success: function(data) {
                         if (data.relations.length) {
+                            that.lineageData = $.extend(true, {}, data)
                             that.generateData(data.relations, data.guidEntityMap);
                         } else {
                             that.noLineage();
+                            that.hideCheckForProcess();
                         }
                     },
                     cust_error: function(model, response) {
+                        that.lineageData = [];
                         that.noLineage();
                     }
                 })
@@ -103,13 +132,21 @@ define(['require',
             noLineage: function() {
                 this.$('.fontLoader').hide();
                 //this.$('svg').height('100');
-                this.$('svg').html('<text x="' + (this.$('svg').width() - 150) / 2 + '" y="' + this.$('svg').height() / 2 + '" fill="black">No lineage data found</text>');
+                this.$('svg').html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No lineage data found</text>');
                 if (this.actionCallBack) {
                     this.actionCallBack();
                 }
             },
-            generateData: function(relations, guidEntityMap) {
+            hideCheckForProcess: function() {
+                this.$('.hideProcessContainer').hide();
+            },
+            generateData: function(relations, guidEntityMap, hideProcess) {
                 var that = this;
+
+                function isProcess(typeName) {
+                    var entityDef = that.entityDefCollection.fullCollection.find({ name: typeName });
+                    return _.contains(Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: that.entityDefCollection}), "Process")
+                }
 
                 function makeNodeObj(relationObj) {
                     var obj = {};
@@ -123,15 +160,53 @@ define(['require',
                     if (relationObj.status) {
                         obj['status'] = relationObj.status;
                     }
-                    var entityDef = that.entityDefCollection.fullCollection.find({ name: relationObj.typeName });
-                    if (entityDef && entityDef.get('superTypes')) {
-                        obj['isProcess'] = _.contains(entityDef.get('superTypes'), "Process") ? true : false;
+                    if (hideProcess) {
+                        obj['isProcess'] = relationObj.isProcess;
+                    } else {
+                        obj['isProcess'] = isProcess(relationObj.typeName);
                     }
 
                     return obj;
                 }
 
-                _.each(relations, function(obj, index) {
+                var newRelations = [];
+
+                if (hideProcess) {
+                    _.each(relations, function(obj, index, relationArr) {
+                        var isFromEntityIdProcess = isProcess(guidEntityMap[obj.fromEntityId].typeName);
+                        var isToEntityProcess = isProcess(guidEntityMap[obj.toEntityId].typeName);
+                        if (isToEntityProcess) {
+                            guidEntityMap[obj.toEntityId]["isProcess"] = true;
+                            _.filter(relationArr, function(flrObj) {
+                                if (flrObj.fromEntityId === obj.toEntityId) {
+                                    newRelations.push({
+                                        fromEntityId: obj.fromEntityId,
+                                        toEntityId: flrObj.toEntityId
+                                    });
+                                }
+                            })
+                        } else if (isFromEntityIdProcess) {
+                            guidEntityMap[obj.fromEntityId]["isProcess"] = true;
+                            _.filter(relationArr, function(flrObj) {
+                                if (flrObj.toEntityId === obj.fromEntityId) {
+                                    newRelations.push({
+                                        fromEntityId: flrObj.fromEntityId,
+                                        toEntityId: obj.toEntityId
+                                    });
+                                }
+                            })
+                        } else {
+                            newRelations.push(obj);
+                        }
+                    });
+                }
+
+
+                var finalRelations = hideProcess ? newRelations : relations;
+
+
+
+                _.each(finalRelations, function(obj, index) {
                     if (!that.fromToObj[obj.fromEntityId]) {
                         that.fromToObj[obj.fromEntityId] = makeNodeObj(guidEntityMap[obj.fromEntityId]);
                         that.g.setNode(obj.fromEntityId, that.fromToObj[obj.fromEntityId]);
@@ -142,14 +217,15 @@ define(['require',
                     }
                     var styleObj = {
                         fill: 'none',
-                        stroke: '#8bc152'
+                        stroke: '#8bc152',
+                        width: 2
                     }
-                    that.g.setEdge(obj.fromEntityId, obj.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + "", 'styleObj': styleObj });
+                    that.g.setEdge(obj.fromEntityId, obj.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + ";stroke-width:" + styleObj.width + "", 'styleObj': styleObj });
                 });
 
                 if (this.fromToObj[this.guid]) {
                     this.fromToObj[this.guid]['isLineage'] = false;
-                    this.checkForLineageOrImpactFlag(relations, this.guid);
+                    this.checkForLineageOrImpactFlag(finalRelations, this.guid);
                 }
                 if (this.asyncFetchCounter == 0) {
                     this.createGraph();
@@ -174,23 +250,33 @@ define(['require',
                     });
                 }
             },
+            toggleInformationSlider: function(options) {
+                if (options.open && !this.$('.lineage-edge-details').hasClass("open")) {
+                    this.$('.lineage-edge-details').addClass('open');
+                } else if (options.close && this.$('.lineage-edge-details').hasClass("open")) {
+                    d3.selectAll('circle').attr("stroke", "none");
+                    this.$('.lineage-edge-details').removeClass('open');
+                }
+            },
             setGraphZoomPositionCal: function(argument) {
                 var initialScale = 1.2,
                     svgEl = this.$('svg'),
                     scaleEl = this.$('svg').find('>g'),
                     translateValue = [(this.$('svg').width() - this.g.graph().width * initialScale) / 2, (this.$('svg').height() - this.g.graph().height * initialScale) / 2]
                 if (_.keys(this.g._nodes).length > 15) {
-                    translateValue = [((this.$('svg').width() / 2)) / 2, 20];
                     initialScale = 0;
                     this.$('svg').addClass('noScale');
                 }
-                if (svgEl.parents('.panel.panel-fullscreen').length && svgEl.hasClass('noScale')) {
-                    if (!scaleEl.hasClass('scaleLinage')) {
-                        scaleEl.addClass('scaleLinage');
-                        initialScale = 1.2;
-                    } else {
-                        scaleEl.removeClass('scaleLinage');
-                        initialScale = 0;
+                if (svgEl.parents('.panel.panel-fullscreen').length) {
+                    translateValue = [20, 20];
+                    if (svgEl.hasClass('noScale')) {
+                        if (!scaleEl.hasClass('scaleLinage')) {
+                            scaleEl.addClass('scaleLinage');
+                            initialScale = 1.2;
+                        } else {
+                            scaleEl.removeClass('scaleLinage');
+                            initialScale = 0;
+                        }
                     }
                 } else {
                     scaleEl.removeClass('scaleLinage');
@@ -205,7 +291,9 @@ define(['require',
                 );
             },
             createGraph: function() {
-                var that = this;
+                var that = this,
+                    width = this.$('svg').width(),
+                    height = this.$('svg').height();
                 this.g.nodes().forEach(function(v) {
                     var node = that.g.node(v);
                     // Round the corners of the nodes
@@ -287,7 +375,12 @@ define(['require',
                     return shapeSvg;
                 };
                 // Set up an SVG group so that we can translate the final graph.
-                var svg = this.svg = d3.select(this.$("svg")[0]),
+                if (this.$("svg").find('.output').length) {
+                    this.$("svg").find('.output').parent('g').remove();
+                }
+                var svg = this.svg = d3.select(this.$("svg")[0])
+                    .attr("viewBox", "0 0 " + width + " " + height)
+                    .attr("enable-background", "new 0 0 " + width + " " + height),
                     svgGroup = svg.append("g");
                 var zoom = this.zoom = d3.behavior.zoom()
                     .scaleExtent([0.5, 6])
@@ -340,7 +433,7 @@ define(['require',
                 d3.selectAll(this.$('span.lineageZoomButton')).on('click', zoomClick);
                 var tooltip = d3Tip()
                     .attr('class', 'd3-tip')
-                    .offset([-18, 0])
+                    .offset([10, 0])
                     .html(function(d) {
                         var value = that.g.node(d);
                         var htmlStr = "";
@@ -359,7 +452,9 @@ define(['require',
 
                 svg.call(zoom)
                     .call(tooltip);
-                this.$('.fontLoader').hide();
+                if (platform.name !== "IE") {
+                    this.$('.fontLoader').hide();
+                }
                 render(svgGroup, this.g);
                 svg.on("dblclick.zoom", null)
                     .on("wheel.zoom", null);
@@ -396,7 +491,7 @@ define(['require',
                     .on('dblclick', function(d) {
                         tooltip.hide(d);
                         Utils.setUrl({
-                            url: '#!/detailPage/' + d,
+                            url: '#!/detailPage/' + d + '?tabActive=lineage',
                             mergeBrowserUrl: false,
                             trigger: true
                         });
@@ -410,6 +505,19 @@ define(['require',
                             }
                         }, 400)
                     });
+                svgGroup.selectAll("g.edgePath path.path").on('click', function(d) {
+                    var data = { obj: _.find(that.lineageData.relations, { "fromEntityId": d.v, "toEntityId": d.w }) },
+                        relationshipId = data.obj.relationshipId;
+                    require(['views/graph/PropagationPropertyModal'], function(PropagationPropertyModal) {
+                        var view = new PropagationPropertyModal({
+                            edgeInfo: data,
+                            relationshipId: relationshipId,
+                            lineageData: that.lineageData,
+                            apiGuid: that.apiGuid,
+                            detailPageFetchCollection: that.fetchCollection
+                        });
+                    });
+                })
                 $('body').on('mouseover', '.d3-tip', function(el) {
                     that.activeTip = true;
                 });
@@ -423,7 +531,23 @@ define(['require',
                 this.setGraphZoomPositionCal();
                 zoom.event(svg);
                 //svg.attr('height', this.g.graph().height * initialScale + 40);
-
+                if (platform.name === "IE") {
+                    this.IEGraphRenderDone = 0;
+                    this.$('svg .edgePath').each(function(argument) {
+                        var childNode = $(this).find('marker');
+                        $(this).find('marker').remove();
+                        var eleRef = this;
+                        ++that.IEGraphRenderDone;
+                        setTimeout(function(argument) {
+                            $(eleRef).find('defs').append(childNode);
+                            --that.IEGraphRenderDone;
+                            if (that.IEGraphRenderDone === 0) {
+                                this.$('.fontLoader').hide();
+                                this.$('svg').fadeTo(1000, 1)
+                            }
+                        }, 1000);
+                    });
+                }
             }
         });
     return LineageLayoutView;

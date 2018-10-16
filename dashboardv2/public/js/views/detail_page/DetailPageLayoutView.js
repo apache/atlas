@@ -108,7 +108,6 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection'));
-                this.bindEvents();
             },
             bindEvents: function() {
                 var that = this;
@@ -176,6 +175,7 @@ define(['require',
                         }
                     }
                     this.hideLoader();
+                    this.activeEntityDef = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName });
                     var obj = {
                         entity: collectionJSON,
                         guid: this.id,
@@ -212,6 +212,26 @@ define(['require',
                         this.renderReplicationAuditTableLayoutView(obj);
                     }
 
+                    var processCheck = false,
+                        containsList = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
+                        superType = _.find(containsList, function(type) {
+                            if (type === "DataSet" || type === "Process") {
+                                if (type === "Process") {
+                                    processCheck = true;
+                                }
+                                return true;
+                            }
+                        });
+
+                    this.renderLineageLayoutView({
+                        processCheck: processCheck,
+                        guid: this.id,
+                        entityDefCollection: this.entityDefCollection,
+                        actionCallBack: function() {
+                            that.$('#expand_collapse_panel').click();
+                        }
+                    });
+
                     // To render Schema check attribute "schemaElementsAttribute"
                     var schemaOptions = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName }).get('options');
                     if (schemaOptions && schemaOptions.hasOwnProperty('schemaElementsAttribute') && schemaOptions.schemaElementsAttribute !== "") {
@@ -232,15 +252,9 @@ define(['require',
             },
             onRender: function() {
                 var that = this;
+                this.bindEvents();
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.entityDetail'));
                 this.$('.fontLoader').show(); // to show tab loader
-                this.renderLineageLayoutView({
-                    guid: this.id,
-                    entityDefCollection: this.entityDefCollection,
-                    actionCallBack: function() {
-                        that.$('#expand_collapse_panel').click();
-                    }
-                });
                 this.$(".resize-graph").resizable({
                     handles: ' s',
                     minHeight: 375,

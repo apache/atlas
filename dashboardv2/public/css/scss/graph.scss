@@ -111,11 +111,9 @@ g.type-TK>rect {
     fill: $color_bright_turquoise_approx;
 }
 
-.zoomButtonGroup {
-    background-color: $white;
+.hideProcessContainer {
     position: absolute;
-    top: 4px;
-    right: 5px;
+    top: 12px;
 }
 
 .legends {
@@ -124,4 +122,73 @@ g.type-TK>rect {
             font-family: 'Source Sans Pro';
         }
     }
+}
+
+.lineage-box {
+    .lineage-edge-details {
+        position: absolute;
+        left: 0;
+        overflow: auto;
+        top: 0px;
+        max-height: 100%;
+        box-shadow: 4px 13px 14px -12px;
+        background: #e7e7e7;
+        transform: scaleX(0);
+        width: 200px;
+        transition: transform 0.3s ease-in;
+        &.open {
+            transform: scaleX(1);
+        }
+        .title {
+            background: black;
+            color: white;
+            padding: 10px;
+            padding-left: 17px;
+            margin-top: 0;
+            font-size: 14px;
+            .navigation-font {
+                font-family: sans-serif;
+                padding: 0px 5px;
+                color: #fb4200;
+            }
+        }
+        .close-details {
+            position: absolute;
+            top: 0;
+            color: white;
+            left: 0;
+            height: 21px;
+            width: 21px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .propagation-list {
+            overflow: auto;
+            list-style-type: none;
+            list-style-position: outside;
+            padding-left: 30px;
+        }
+        .overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            background: #d2d2d2b8;
+            z-index: 99;
+        }
+        ul>li {
+            word-wrap: break-word;
+            margin-bottom: 5px;
+            text-align: left;
+        }
+    }
+}
+
+.lineage-filter-box {
+    background-color: #e6e6e6;
+    padding: 4px;
+    border-radius: 5px;
+    width: 100%;
+    box-shadow: 1px 3px 3px 2px #bfbfbf;
 }

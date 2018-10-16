@@ -14,17 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div style="position: absolute;height: calc(100% - 45px);width: calc(100% - 30px);">
+<!-- <div class="graph-toolbar clearfix"></div> -->
+<!-- for 0.8 we used position of lineage-box - Relative -->
+<div style="position: relative;height:100%;width:100%;" class="white-bg no-padding lineage-box">
+    <div class="lineage-filter-box clearfix">
+        <div class="hideProcessContainer">
+            <span class="pull-left"><b>Load Process:</b>&nbsp</span>
+            <span class="pull-left">Show</span>
+            <label class="switch pull-left">
+                <input type="checkbox" class="switch-input" data-id="checkHideProcess" value="" />
+                <span class="switch-slider"></span>
+            </label>
+            <span class="pull-left">Hide</span>
+        </div>
+        <div class="zoomButtonGroup pull-right">
+            <span type="button" id="zoom_in" class="btn btn-atlas btn-md lineageZoomButton" title="Zoom In" data-id="refreshBtn"> <i class="fa fa-search-plus"></i></span>
+            <span type="button" id="zoom_out" class="btn btn-atlas btn-md lineageZoomButton" title="Zoom Out" data-id="refreshBtn"> <i class="fa fa-search-minus"></i></span>
+        </div>
+    </div>
     <div class="fontLoader">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <svg width="100%" height="100%" " viewBox="0 0 854 330" enable-background="new 0 0 854 330" xml:space="preserve"></svg>
+    <svg width="100%" height="calc(100% - 80px)" viewBox="0 0 854 330" enable-background="new 0 0 854 330" xml:space="preserve"></svg>
     <div class="legends" style="height: 20px">
         <i class="fa fa-long-arrow-right" aria-hidden="true" style="margin-right: 12px; color:#8bc152;">&nbsp<span>Lineage</span></i>
         <i class="fa fa-long-arrow-right" aria-hidden="true" style="color:#fb4200;">&nbsp<span>Impact</span></i>
-    </div>
-    <div class="zoomButtonGroup">
-        <span type="button" id="zoom_in" class="btn btn-action btn-md lineageZoomButton" title="Zoom In" data-id="refreshBtn"> <i class="fa fa-search-plus"></i></span>
-        <span type="button" id="zoom_out" class="btn btn-action btn-md lineageZoomButton" title="Zoom Out" data-id="refreshBtn"> <i class="fa fa-search-minus"></i></span>
     </div>
 </div>

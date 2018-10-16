@@ -534,6 +534,28 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             });
         }
     }
+    Utils.getNestedSuperTypes = function(options) {
+        var data = options.data,
+            collection = options.collection,
+            superTypes = [];
+
+        var getData = function(data, collection) {
+            superTypes = superTypes.concat(data.superTypes);
+
+            if (data.superTypes && data.superTypes.length) {
+                _.each(data.superTypes, function(superTypeName) {
+                    if (collection.fullCollection) {
+                        var collectionData = collection.fullCollection.findWhere({ name: superTypeName }).toJSON();
+                    } else {
+                        var collectionData = collection.findWhere({ name: superTypeName }).toJSON();
+                    }
+                    return getData(collectionData, collection);
+                });
+            }
+        }
+        getData(data, collection);
+        return _.uniq(superTypes);
+    }
     Utils.getNestedSuperTypeObj = function(options) {
         var flag = 0,
             data = options.data,
