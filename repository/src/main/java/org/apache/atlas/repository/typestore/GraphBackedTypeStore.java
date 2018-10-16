@@ -295,7 +295,7 @@ public class GraphBackedTypeStore implements ITypeStore {
         List<String> values = GraphHelper.getListProperty(vertex, getPropertyKey(typeName));
         for (String value : values) {
             String valueProperty = getPropertyKey(typeName, value);
-            enumValues.add(new EnumValue(value, AtlasGraphUtilsV1.getEncodedProperty(vertex, valueProperty, Integer.class)));
+            enumValues.add(new EnumValue(value, AtlasGraphUtilsV1.getProperty(vertex, valueProperty, Integer.class)));
         }
         return new EnumTypeDefinition(typeName, typeDescription, enumValues.toArray(new EnumValue[enumValues.size()]));
     }

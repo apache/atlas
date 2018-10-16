@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.repository.graph.GraphHelper.string;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
 @Component
 @Deprecated
@@ -77,7 +78,7 @@ public final class TypedInstanceToGraphMapper {
         this.deleteHandler = deleteHandler;
     }
 
-    private final String SIGNATURE_HASH_PROPERTY_KEY = Constants.INTERNAL_PROPERTY_KEY_PREFIX + "signature";
+    private final String SIGNATURE_HASH_PROPERTY_KEY = encodePropertyKey(Constants.INTERNAL_PROPERTY_KEY_PREFIX + "signature");
 
     public enum Operation {
         CREATE,

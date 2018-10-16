@@ -60,6 +60,7 @@ import java.util.Set;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
 @Component
 public final class EntityGraphRetriever {
@@ -491,9 +492,10 @@ public final class EntityGraphRetriever {
         Map<String, AtlasObjectId> ret          = new HashMap<>(mapKeys.size());
 
         for (Object mapKey : mapKeys) {
-            final String keyPropertyName = String.format(MAP_VALUE_FORMAT, propertyName, mapKey);
+            String        keyPropertyName        = String.format(MAP_VALUE_FORMAT, propertyName, mapKey);
+            String        encodedKeyPropertyName = encodePropertyKey(keyPropertyName);
+            AtlasObjectId mapValue               = mapVertexToObjectIdForSoftRef(entityVertex, encodedKeyPropertyName);
 
-            AtlasObjectId mapValue = mapVertexToObjectIdForSoftRef(entityVertex, keyPropertyName);
             if (mapValue != null) {
                 ret.put((String) mapKey, mapValue);
             }
