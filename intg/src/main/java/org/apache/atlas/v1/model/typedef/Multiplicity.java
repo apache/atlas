@@ -125,15 +125,21 @@ public class Multiplicity implements Serializable {
         @Override
         public void serialize(Multiplicity value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             if (value != null) {
-                if (value.equals(Multiplicity.REQUIRED)) {
-                    jgen.writeString("required");
-                } else if (value.equals(Multiplicity.OPTIONAL)) {
-                    jgen.writeString("optional");
+                final String serializedValue;
+
+                if (value.getLower() < 1) {
+                    serializedValue = "optional";
                 } else if (value.equals(Multiplicity.COLLECTION)) {
-                    jgen.writeString("collection");
+                    serializedValue = "collection";
                 } else if (value.equals(Multiplicity.SET)) {
-                    jgen.writeString("set");
+                    serializedValue = "set";
+                } else if (value.equals(Multiplicity.REQUIRED)) {
+                    serializedValue = "required";
+                } else { // default value
+                    serializedValue = "required";
                 }
+
+                jgen.writeString(serializedValue);
             }
         }
     }

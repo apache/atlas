@@ -589,29 +589,6 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         return ret;
     }
 
-    public static Multiplicity getMultiplicity(AtlasAttributeDef attributeDef) {
-        final int     lower;
-        final int     upper;
-        final boolean isUnique = AtlasAttributeDef.Cardinality.SET.equals(attributeDef.getCardinality());
-
-        if (attributeDef.getCardinality() == AtlasAttributeDef.Cardinality.SINGLE) {
-            lower = attributeDef.getIsOptional() ? 0 : 1;
-            upper = 1;
-        } else {
-            if(attributeDef.getIsOptional()) {
-                lower = 0;
-            } else {
-                lower = attributeDef.getValuesMinCount() < 1 ? 1 : attributeDef.getValuesMinCount();
-            }
-
-            upper = attributeDef.getValuesMaxCount() < 2 ? Integer.MAX_VALUE : attributeDef.getValuesMaxCount();
-        }
-
-        Multiplicity ret = new Multiplicity(lower, upper, isUnique);
-
-        return ret;
-    }
-
     public static AttributeDefinition toAttributeDefinition(AtlasAttribute attribute) {
         final AtlasAttributeDef attrDef = attribute.getAttributeDef();
 
@@ -619,7 +596,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
         ret.setName(attrDef.getName());
         ret.setDataTypeName(attrDef.getTypeName());
-        ret.setMultiplicity(getMultiplicity(attrDef));
+        ret.setMultiplicity(AtlasTypeUtil.getMultiplicity(attrDef));
         ret.setIsComposite(attribute.isOwnedRef());
         ret.setIsUnique(attrDef.getIsUnique());
         ret.setIsIndexable(attrDef.getIsIndexable());
