@@ -49,6 +49,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
+
 /**
  * StructDef store in v1 format.
  */
@@ -377,7 +379,9 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
             }
         }
 
-        List<String> currAttrNames = vertex.getProperty(AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef), List.class);
+        String       structDefPropertyKey        = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef);
+        String       encodedStructDefPropertyKey = encodePropertyKey(structDefPropertyKey);
+        List<String> currAttrNames               = vertex.getProperty(encodedStructDefPropertyKey, List.class);
 
         // delete attributes that are not present in updated structDef
         if (CollectionUtils.isNotEmpty(currAttrNames)) {
@@ -423,7 +427,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
             }
         }
 
-        AtlasGraphUtilsV2.setProperty(vertex, AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef), attrNames);
+        AtlasGraphUtilsV2.setEncodedProperty(vertex, encodedStructDefPropertyKey, attrNames);
     }
 
     public static void updateVertexAddReferences(AtlasStructDef structDef, AtlasVertex vertex,
