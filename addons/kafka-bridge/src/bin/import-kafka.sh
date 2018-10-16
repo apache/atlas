@@ -143,3 +143,6 @@ echo "Log file for import is $LOGFILE"
 RETVAL=$?
 [ $RETVAL -eq 0 ] && echo Kafka Data Model imported successfully!!!
 [ $RETVAL -ne 0 ] && echo Failed to import Kafka Data Model!!!
+
+exit $RETVAL
+
