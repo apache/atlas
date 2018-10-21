@@ -97,6 +97,10 @@
                     <groupId>ch.qos.logback</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-handler</artifactId>
+                </exclusion>
             </exclusions>
             <version>2.1.8</version>
         </dependency>
@@ -188,6 +192,10 @@
                 <exclusion>
                     <groupId>io.dropwizard.metrics</groupId>
                     <artifactId>metrics-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-handler</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
