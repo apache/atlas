@@ -41,7 +41,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
-import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -51,6 +50,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,6 +62,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
+import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.BOTH;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.INPUT;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.OUTPUT;
@@ -203,16 +205,16 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private AtlasLineageInfo getLineageInfo(String guid, LineageDirection direction, int depth, boolean isDataSet) throws AtlasBaseException {
+        final Map<String, Object>      bindings     = new HashMap<>();
+        String                         lineageQuery = getLineageQuery(guid, direction, depth, isDataSet, bindings);
+        List                           results      = executeGremlinScript(bindings, lineageQuery);
         Map<String, AtlasEntityHeader> entities     = new HashMap<>();
         Set<LineageRelation>           relations    = new HashSet<>();
-        String                         lineageQuery = getLineageQuery(guid, direction, depth, isDataSet);
 
-        List edgeMapList = (List) graph.executeGremlinScript(lineageQuery, false);
-
-        if (CollectionUtils.isNotEmpty(edgeMapList)) {
-            for (Object edgeMap : edgeMapList) {
-                if (edgeMap instanceof Map) {
-                    for (final Object o : ((Map) edgeMap).entrySet()) {
+        if (CollectionUtils.isNotEmpty(results)) {
+            for (Object result : results) {
+                if (result instanceof Map) {
+                    for (final Object o : ((Map) result).entrySet()) {
                         final Map.Entry entry = (Map.Entry) o;
                         Object          value = entry.getValue();
 
@@ -230,11 +232,28 @@ public class EntityLineageService implements AtlasLineageService {
                             LOG.warn("Invalid value of type {} found, ignoring", (value != null ? value.getClass().getSimpleName() : "null"));
                         }
                     }
+                } else if (result instanceof AtlasEdge) {
+                    processEdge((AtlasEdge) result, entities, relations);
                 }
             }
         }
 
         return new AtlasLineageInfo(guid, entities, relations, direction, depth);
+    }
+
+    private List executeGremlinScript(Map<String, Object> bindings, String lineageQuery) throws AtlasBaseException {
+        List         ret;
+        ScriptEngine engine = graph.getGremlinScriptEngine();
+
+        try {
+            ret = (List) graph.executeGremlinScript(engine, bindings, lineageQuery, false);
+        } catch (ScriptException e) {
+            throw new AtlasBaseException(INSTANCE_LINEAGE_QUERY_FAILED, lineageQuery);
+        } finally {
+            graph.releaseGremlinScriptEngine(engine);
+        }
+
+        return ret;
     }
 
     private void processEdge(final AtlasEdge edge, final Map<String, AtlasEntityHeader> entities, final Set<LineageRelation> relations) throws AtlasBaseException {
@@ -274,29 +293,32 @@ public class EntityLineageService implements AtlasLineageService {
         return ret;
     }
 
-    private String getLineageQuery(String entityGuid, LineageDirection direction, int depth, boolean isDataSet) {
-        String ret = null;
+    private String getLineageQuery(String entityGuid, LineageDirection direction, int depth, boolean isDataSet, Map<String, Object> bindings) {
+        String incomingFrom = null;
+        String outgoingTo   = null;
+        String ret;
 
         if (direction.equals(INPUT)) {
-            ret = generateLineageQuery(entityGuid, depth, isDataSet, PROCESS_OUTPUTS_EDGE, PROCESS_INPUTS_EDGE);
-
+            incomingFrom = PROCESS_OUTPUTS_EDGE;
+            outgoingTo   = PROCESS_INPUTS_EDGE;
         } else if (direction.equals(OUTPUT)) {
-            ret = generateLineageQuery(entityGuid, depth, isDataSet, PROCESS_INPUTS_EDGE, PROCESS_OUTPUTS_EDGE);
+            incomingFrom = PROCESS_INPUTS_EDGE;
+            outgoingTo   = PROCESS_OUTPUTS_EDGE;
+        }
+
+        bindings.put("guid", entityGuid);
+        bindings.put("incomingEdgeLabel", incomingFrom);
+        bindings.put("outgoingEdgeLabel", outgoingTo);
+        bindings.put("depth", depth);
+
+        if (depth < 1) {
+            ret = isDataSet ? gremlinQueryProvider.getQuery(FULL_LINEAGE_DATASET) :
+                              gremlinQueryProvider.getQuery(FULL_LINEAGE_PROCESS);
+        } else {
+            ret = isDataSet ? gremlinQueryProvider.getQuery(PARTIAL_LINEAGE_DATASET) :
+                              gremlinQueryProvider.getQuery(PARTIAL_LINEAGE_PROCESS);
         }
 
         return ret;
-    }
-
-    private String generateLineageQuery(String entityGuid, int depth, boolean isDataSet, String incomingFrom, String outgoingTo) {
-        String lineageQuery;
-
-        if (depth < 1) {
-            String query = isDataSet ? gremlinQueryProvider.getQuery(FULL_LINEAGE_DATASET) : gremlinQueryProvider.getQuery(FULL_LINEAGE_PROCESS);
-            lineageQuery = String.format(query, entityGuid, incomingFrom, outgoingTo);
-        } else {
-            String query = isDataSet ? gremlinQueryProvider.getQuery(PARTIAL_LINEAGE_DATASET) : gremlinQueryProvider.getQuery(PARTIAL_LINEAGE_PROCESS);
-            lineageQuery = String.format(query, entityGuid, incomingFrom, outgoingTo, depth);
-        }
-        return lineageQuery;
     }
 }
