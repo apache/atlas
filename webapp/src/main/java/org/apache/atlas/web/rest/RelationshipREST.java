@@ -29,16 +29,8 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 
 /**
  * REST interface for entity relationships.
@@ -46,6 +38,8 @@ import javax.ws.rs.QueryParam;
 @Path("v2/relationship")
 @Singleton
 @Service
+@Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+@Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class RelationshipREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.RelationshipREST");
 
@@ -60,8 +54,6 @@ public class RelationshipREST {
      * Create a new relationship between entities.
      */
     @POST
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasRelationship create(AtlasRelationship relationship) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -81,8 +73,6 @@ public class RelationshipREST {
      * Update an existing relationship between entities.
      */
     @PUT
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasRelationship update(AtlasRelationship relationship) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -103,8 +93,6 @@ public class RelationshipREST {
      */
     @GET
     @Path("/guid/{guid}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasRelationshipWithExtInfo getById(@PathParam("guid") String guid,
                                                 @QueryParam("extendedInfo") @DefaultValue("false") boolean extendedInfo)
                                                 throws AtlasBaseException {
@@ -136,8 +124,6 @@ public class RelationshipREST {
      */
     @DELETE
     @Path("/guid/{guid}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public void deleteById(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
