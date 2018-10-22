@@ -39,9 +39,16 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import java.util.Collections;
+import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Set;
 
@@ -51,6 +58,8 @@ import java.util.Set;
 @Path("v2/types")
 @Singleton
 @Service
+@Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+@Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class TypesREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesREST");
 
@@ -71,7 +80,6 @@ public class TypesREST {
      */
     @GET
     @Path("/typedef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasBaseTypeDef getTypeDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -89,7 +97,6 @@ public class TypesREST {
      */
     @GET
     @Path("/typedef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasBaseTypeDef getTypeDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -107,7 +114,6 @@ public class TypesREST {
      */
     @GET
     @Path("/typedefs/headers")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public List<AtlasTypeDefHeader> getTypeDefHeaders(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
 
@@ -124,7 +130,6 @@ public class TypesREST {
      */
     @GET
     @Path("/typedefs")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasTypesDef getAllTypeDefs(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
 
@@ -143,7 +148,6 @@ public class TypesREST {
      */
     @GET
     @Path("/enumdef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEnumDef getEnumDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -162,7 +166,6 @@ public class TypesREST {
      */
     @GET
     @Path("/enumdef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEnumDef getEnumDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -182,7 +185,6 @@ public class TypesREST {
      */
     @GET
     @Path("/structdef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasStructDef getStructDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -201,7 +203,6 @@ public class TypesREST {
      */
     @GET
     @Path("/structdef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasStructDef getStructDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -220,7 +221,6 @@ public class TypesREST {
      */
     @GET
     @Path("/classificationdef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasClassificationDef getClassificationDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -239,7 +239,6 @@ public class TypesREST {
      */
     @GET
     @Path("/classificationdef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasClassificationDef getClassificationDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -258,7 +257,6 @@ public class TypesREST {
      */
     @GET
     @Path("/entitydef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntityDef getEntityDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -277,7 +275,6 @@ public class TypesREST {
      */
     @GET
     @Path("/entitydef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntityDef getEntityDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -295,7 +292,6 @@ public class TypesREST {
      */
     @GET
     @Path("/relationshipdef/name/{name}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasRelationshipDef getRelationshipDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -314,7 +310,6 @@ public class TypesREST {
      */
     @GET
     @Path("/relationshipdef/guid/{guid}")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasRelationshipDef getRelationshipDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -336,8 +331,6 @@ public class TypesREST {
      */
     @POST
     @Path("/typedefs")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -363,8 +356,6 @@ public class TypesREST {
      */
     @PUT
     @Path("/typedefs")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     @Experimental
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
@@ -390,8 +381,6 @@ public class TypesREST {
      */
     @DELETE
     @Path("/typedefs")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     @Experimental
     public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
@@ -419,8 +408,6 @@ public class TypesREST {
      */
     @DELETE
     @Path("/typedef/name/{typeName}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public void deleteAtlasTypeByName(@PathParam("typeName") final String typeName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 

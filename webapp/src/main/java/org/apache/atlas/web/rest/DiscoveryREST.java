@@ -51,6 +51,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 
@@ -60,6 +61,8 @@ import java.util.List;
 @Path("v2/search")
 @Singleton
 @Service
+@Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+@Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class DiscoveryREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.DiscoveryREST");
 
@@ -95,8 +98,6 @@ public class DiscoveryREST {
      */
     @GET
     @Path("/dsl")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult searchUsingDSL(@QueryParam("query")          String query,
                                             @QueryParam("typeName")       String typeName,
                                             @QueryParam("classification") String classification,
@@ -144,8 +145,6 @@ public class DiscoveryREST {
      */
     @GET
     @Path("/fulltext")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult searchUsingFullText(@QueryParam("query")                  String  query,
                                                  @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
                                                  @QueryParam("limit")                  int     limit,
@@ -185,8 +184,6 @@ public class DiscoveryREST {
      */
     @GET
     @Path("/basic")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult searchUsingBasic(@QueryParam("query")                  String  query,
                                               @QueryParam("typeName")               String  typeName,
                                               @QueryParam("classification")         String  classification,
@@ -237,8 +234,6 @@ public class DiscoveryREST {
      */
     @GET
     @Path("/attribute")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult searchUsingAttribute(@QueryParam("attrName")        String attrName,
                                                   @QueryParam("attrValuePrefix") String attrValuePrefix,
                                                   @QueryParam("typeName")        String typeName,
@@ -312,8 +307,6 @@ public class DiscoveryREST {
      */
     @Path("basic")
     @POST
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult searchWithParameters(SearchParameters parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -362,8 +355,6 @@ public class DiscoveryREST {
      */
     @GET
     @Path("relationship")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")                   String    guid,
                                                    @QueryParam("relation")               String    relation,
                                                    @QueryParam("sortBy")                 String    sortByAttribute,
@@ -397,8 +388,6 @@ public class DiscoveryREST {
      */
     @POST
     @Path("saved")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasUserSavedSearch addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException, IOException {
         validateUserSavedSearch(savedSearch);
 
@@ -423,8 +412,6 @@ public class DiscoveryREST {
      */
     @PUT
     @Path("saved")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasUserSavedSearch updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
         validateUserSavedSearch(savedSearch);
 
@@ -450,8 +437,6 @@ public class DiscoveryREST {
      */
     @GET
     @Path("saved/{name}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasUserSavedSearch getSavedSearch(@PathParam("name") String searchName,
                                                @QueryParam("user") String userName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", searchName);
@@ -478,8 +463,6 @@ public class DiscoveryREST {
      */
     @GET
     @Path("saved")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public List<AtlasUserSavedSearch> getSavedSearches(@QueryParam("user") String userName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("user", userName);
 
@@ -501,8 +484,6 @@ public class DiscoveryREST {
      */
     @DELETE
     @Path("saved/{guid}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public void deleteSavedSearch(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -530,8 +511,6 @@ public class DiscoveryREST {
      */
     @Path("saved/execute/{name}")
     @GET
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult executeSavedSearchByName(@PathParam("name") String searchName,
                                                       @QueryParam("user") String userName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", searchName);
@@ -562,8 +541,6 @@ public class DiscoveryREST {
      */
     @Path("saved/execute/guid/{guid}")
     @GET
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasSearchResult executeSavedSearchByGuid(@PathParam("guid") String searchGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", searchGuid);
 

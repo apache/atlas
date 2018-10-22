@@ -683,7 +683,7 @@
         <jettison.version>1.3.7</jettison.version>
         <paranamer.version>2.7</paranamer.version>
         <zkclient.version>0.8</zkclient.version>
-        <enunciate-maven-plugin.version>2.10.1</enunciate-maven-plugin.version>
+        <enunciate-maven-plugin.version>2.11.1</enunciate-maven-plugin.version>
         <antlr4.plugin.version>4.5</antlr4.plugin.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <doxia.version>1.8</doxia.version>
@@ -706,7 +706,7 @@
         <skipITs>false</skipITs>
         <skipDocs>true</skipDocs>
         <skipSite>true</skipSite>
-        <skipEnunciate>true</skipEnunciate>
+        <skipEnunciate>false</skipEnunciate>
         <projectBaseDir>${project.basedir}</projectBaseDir>
         <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
 

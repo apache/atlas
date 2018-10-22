@@ -36,17 +36,16 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.apache.atlas.web.util.Servlets.JSON_MEDIA_TYPE;
-
 @Path("v2/glossary")
 @Service
-@Consumes(JSON_MEDIA_TYPE)
-@Produces(JSON_MEDIA_TYPE)
+@Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+@Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class GlossaryREST {
     private static final Logger LOG = LoggerFactory.getLogger(GlossaryREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.GlossaryREST");
