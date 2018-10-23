@@ -17,17 +17,16 @@
  */
 package org.apache.atlas.repository.graphdb;
 
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.groovy.GroovyExpression;
+import org.apache.atlas.type.AtlasType;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptException;
-
-import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.groovy.GroovyExpression;
-import org.apache.atlas.type.AtlasType;
 
 /**
  * Represents a graph.
@@ -142,6 +141,14 @@ public interface AtlasGraph<V, E> {
      * @return
      */
     AtlasGraphQuery<V, E> query();
+
+    /**
+     * Start a graph traversal
+     * @return
+     */
+    AtlasGraphTraversal<AtlasVertex, AtlasEdge> V(Object ... vertexIds);
+
+    AtlasGraphTraversal<AtlasVertex, AtlasEdge> E(Object ... edgeIds);
 
     /**
      * Creates an index query.
