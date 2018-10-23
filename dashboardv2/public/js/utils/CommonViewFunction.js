@@ -83,7 +83,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             attributeDefs = options.attributeDefs;
 
         var table = "",
-            fetchInputOutputValue = function(id) {
+            fetchInputOutputValue = function(id, defEntity) {
                 var that = this;
                 scope.entityModel.getEntityHeader(id, {
                     success: function(serverData) {
@@ -108,10 +108,19 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             scope.$('td div[data-id="' + id + '"]').append(deleteButton);
                         }
                     },
+                    cust_error: function(error, xhr) {
+                        if (xhr.status == 403) {
+                            scope.$('td div[data-id="' + id + '"]').html('<div><span class="text-danger"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Not Authorized</span></div>');
+                        } else if (defEntity && defEntity.options && defEntity.options.isSoftReference === "true") {
+                            scope.$('td div[data-id="' + id + '"]').html('<div> ' + id + '</div>');
+                        } else {
+                            scope.$('td div[data-id="' + id + '"]').html('<div><span class="text-danger"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> ' + Messages.defaultErrorMessage + '</span></div>');
+                        }
+                    },
                     complete: function() {}
                 });
             },
-            extractObject = function(keyValue) {
+            extractObject = function(keyValue, defEntity) {
                 var valueOfArray = [];
                 if (!_.isArray(keyValue) && _.isObject(keyValue)) {
                     keyValue = [keyValue];
@@ -168,7 +177,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         if ((name === "-" || name === id) && !inputOutputField.attributes) {
                             var fetch = true;
                             var fetchId = (_.isObject(id) ? id.id : id);
-                            fetchInputOutputValue(fetchId);
+                            fetchInputOutputValue(fetchId, defEntity);
                             tempLink += '<div data-id="' + fetchId + '"><div class="value-loader"></div></div>';
                         } else {
                             tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
@@ -208,7 +217,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (defEntityType === 'date' || defEntityType === 'time') {
                     keyValue = new Date(keyValue);
                 } else if (_.isObject(keyValue)) {
-                    keyValue = extractObject(keyValue);
+                    keyValue = extractObject(keyValue, defEntity);
                 }
             } else {
                 if (_.isObject(keyValue)) {
