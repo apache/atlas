@@ -18,6 +18,8 @@
 package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasCheckStateRequest;
+import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -96,6 +98,14 @@ public interface AtlasEntityStore {
      */
     AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes, boolean isMinExtInfo)
             throws AtlasBaseException;
+
+    /**
+     * Check state of entities in the store
+     * @param request AtlasCheckStateRequest
+     * @return AtlasCheckStateResult
+     * @throws AtlasBaseException
+     */
+    AtlasCheckStateResult checkState(AtlasCheckStateRequest request) throws AtlasBaseException;
 
     /**
      * Create or update  entities in the stream

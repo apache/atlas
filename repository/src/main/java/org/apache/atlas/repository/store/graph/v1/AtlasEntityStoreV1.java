@@ -23,6 +23,8 @@ import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasCheckStateRequest;
+import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -178,6 +180,30 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getByUniqueAttribute({}, {}): {}", entityType.getTypeName(), uniqAttributes, ret);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Check state of entities in the store
+     * @param request AtlasCheckStateRequest
+     * @return AtlasCheckStateResult
+     * @throws AtlasBaseException
+     */
+    @Override
+    @GraphTransaction
+    public AtlasCheckStateResult checkState(AtlasCheckStateRequest request) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> checkState({})", request);
+        }
+
+        EntityStateChecker entityStateChecker = new EntityStateChecker(typeRegistry);
+
+        AtlasCheckStateResult ret = entityStateChecker.checkState(request);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== checkState({}, {})", request, ret);
         }
 
         return ret;
