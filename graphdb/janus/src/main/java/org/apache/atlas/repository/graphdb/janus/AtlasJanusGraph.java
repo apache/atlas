@@ -29,6 +29,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasGraphTraversal;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -40,7 +41,9 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -124,6 +127,22 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public AtlasGraphQuery<AtlasJanusVertex, AtlasJanusEdge> query() {
         return new AtlasJanusGraphQuery(this);
+    }
+
+    @Override
+    public AtlasGraphTraversal<AtlasVertex, AtlasEdge> V(final Object... vertexIds) {
+        AtlasGraphTraversal traversal = new AtlasJanusGraphTraversal(this, getGraph().traversal());
+        traversal.getBytecode().addStep(GraphTraversal.Symbols.V, vertexIds);
+        traversal.addStep(new GraphStep<>(traversal, Vertex.class, true, vertexIds));
+        return traversal;
+    }
+
+    @Override
+    public AtlasGraphTraversal<AtlasVertex, AtlasEdge> E(final Object... edgeIds) {
+        AtlasGraphTraversal traversal = new AtlasJanusGraphTraversal(this, getGraph().traversal());
+        traversal.getBytecode().addStep(GraphTraversal.Symbols.E, edgeIds);
+        traversal.addStep(new GraphStep<>(traversal, Vertex.class, true, edgeIds));
+        return traversal;
     }
 
     @Override
