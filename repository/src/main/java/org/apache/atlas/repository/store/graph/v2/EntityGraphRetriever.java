@@ -325,6 +325,28 @@ public final class EntityGraphRetriever {
         return ret;
     }
 
+    public Map<String, Object> getEntityUniqueAttribute(AtlasVertex entityVertex) throws AtlasBaseException {
+        Map<String, Object> ret        = null;
+        String              typeName   = AtlasGraphUtilsV2.getTypeName(entityVertex);
+        AtlasEntityType     entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        if (entityType != null && MapUtils.isNotEmpty(entityType.getUniqAttributes())) {
+            for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
+                Object val = mapVertexToAttribute(entityVertex, attribute, null, false);
+
+                if (val != null) {
+                    if (ret == null) {
+                        ret = new HashMap<>();
+                    }
+
+                    ret.put(attribute.getName(), val);
+                }
+            }
+        }
+
+        return ret;
+    }
+
     private AtlasVertex getEntityVertex(AtlasObjectId objId) throws AtlasBaseException {
         AtlasVertex ret = null;
 

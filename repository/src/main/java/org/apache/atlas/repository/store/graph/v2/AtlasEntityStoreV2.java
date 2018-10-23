@@ -219,6 +219,30 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return ret;
     }
 
+    /**
+     * Check state of entities in the store
+     * @param request AtlasCheckStateRequest
+     * @return AtlasCheckStateResult
+     * @throws AtlasBaseException
+     */
+    @Override
+    @GraphTransaction
+    public AtlasCheckStateResult checkState(AtlasCheckStateRequest request) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> checkState({})", request);
+        }
+
+        EntityStateChecker entityStateChecker = new EntityStateChecker(typeRegistry);
+
+        AtlasCheckStateResult ret = entityStateChecker.checkState(request);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== checkState({}, {})", request, ret);
+        }
+
+        return ret;
+    }
+
     @Override
     @GraphTransaction
     public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException {
