@@ -101,7 +101,7 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
             } catch (Exception ex) {
                 retryCounter++;
 
-                LOG.info("Failed to obtain graph instance on retry " + retryCounter + " of " + MAX_RETRY_COUNT + " error: " + ex);
+                LOG.warn("Failed to obtain graph instance on attempt " + retryCounter + " of " + MAX_RETRY_COUNT, ex);
 
                 if (retryCounter >= MAX_RETRY_COUNT) {
                     LOG.info("Max retries exceeded.");

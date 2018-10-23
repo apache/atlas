@@ -481,11 +481,16 @@ public class AtlasTypeUtil {
         ret.setReverseAttributeName(attribute.getInverseRefAttributeName());
         ret.setDefaultValue(attributeDef.getDefaultValue());
         ret.setDescription(attributeDef.getDescription());
+        ret.setOptions(attributeDef.getOptions());
+        ret.setMultiplicity(getMultiplicity(attributeDef));
 
-        final int lower;
-        final int upper;
+        return ret;
+    }
 
-        if (attributeDef.getCardinality() == AtlasAttributeDef.Cardinality.SINGLE) {
+    public static Multiplicity getMultiplicity(AtlasAttributeDef attributeDef) {
+        int lower;
+        int upper;
+        if (attributeDef.getCardinality() == Cardinality.SINGLE) {
             lower = attributeDef.getIsOptional() ? 0 : 1;
             upper = 1;
         } else {
@@ -498,14 +503,7 @@ public class AtlasTypeUtil {
             upper = attributeDef.getValuesMaxCount() < 2 ? Integer.MAX_VALUE : attributeDef.getValuesMaxCount();
         }
 
-        Multiplicity multiplicity = new Multiplicity();
-        multiplicity.setLower(lower);
-        multiplicity.setUpper(upper);
-        multiplicity.setIsUnique(AtlasAttributeDef.Cardinality.SET.equals(attributeDef.getCardinality()));
-
-        ret.setMultiplicity(multiplicity);
-
-        return ret;
+        return new Multiplicity(lower, upper, Cardinality.SET.equals(attributeDef.getCardinality()));
     }
 
     public static Map<String, Object> toMap(AtlasEntity entity) {

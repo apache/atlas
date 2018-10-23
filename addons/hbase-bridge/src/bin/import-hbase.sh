@@ -153,3 +153,5 @@ echo "Log file for import is $LOGFILE"
 RETVAL=$?
 [ $RETVAL -eq 0 ] && echo HBase Data Model imported successfully!!!
 [ $RETVAL -ne 0 ] && echo Failed to import HBase Data Model!!!
+
+exit $RETVAL

@@ -26,6 +26,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -48,22 +50,23 @@ public class AttributeDefinition implements Serializable {
     private String       reverseAttributeName; // If this is a reference attribute, then the name of the attribute on the Class that this refers to.
     private String       defaultValue;
     private String       description;
-
-
+    private Map<String, String> options;
 
     public AttributeDefinition() {
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity) {
-        this(name, dataTypeName, multiplicity, false, false, true, null);
+        this(name, dataTypeName, multiplicity, false, false, true, null, null);
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                String reverseAttributeName) {
-        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName);
+        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName, null);
     }
 
-    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite, boolean isUnique, boolean isIndexable, String reverseAttributeName) {
+    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
+                               boolean isUnique, boolean isIndexable, String reverseAttributeName,
+                               Map<String, String> options) {
         this.name                 = name;
         this.dataTypeName         = dataTypeName;
         this.multiplicity         = multiplicity;
@@ -71,6 +74,7 @@ public class AttributeDefinition implements Serializable {
         this.isUnique             = isUnique;
         this.isIndexable          = isIndexable;
         this.reverseAttributeName = reverseAttributeName;
+        this.options              = options;
     }
 
 
@@ -146,6 +150,18 @@ public class AttributeDefinition implements Serializable {
         this.description = description;
     }
 
+    public Map<String, String> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Map<String, String> options) {
+        if (options != null) {
+            this.options = new HashMap<>(options);
+        } else {
+            this.options = null;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -166,12 +182,13 @@ public class AttributeDefinition implements Serializable {
                Objects.equals(multiplicity, that.multiplicity) &&
                Objects.equals(defaultValue, that.defaultValue) &&
                Objects.equals(description, that.description) &&
-               Objects.equals(reverseAttributeName, that.reverseAttributeName);
+               Objects.equals(reverseAttributeName, that.reverseAttributeName) &&
+                Objects.equals(options, that.options);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,
-                            reverseAttributeName, defaultValue, description);
+                            reverseAttributeName, defaultValue, description, options);
     }
 }
