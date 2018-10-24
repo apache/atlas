@@ -56,13 +56,13 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
             case EXPORT_TYPE_DEFAULT:
                 return "g.V().has('__typeName',typeName).has(attrName, attrValue).has('__guid').__guid.toList()";
             case FULL_LINEAGE_DATASET:
-                return "g.V('__guid', '%s').as('src').in('%s').out('%s').loop('src', {((it.path.contains(it.object)) ? false : true)}, {true}).path().toList()";
-            case FULL_LINEAGE_PROCESS:
-                return "g.V('__guid', '%s').as('src').out('%s').in('%s').loop('src', {((it.path.contains(it.object)) ? false : true)}, {true}).path().toList()";
+                return "e=[]; g.V('__guid', guid).as('src').inE(incomingEdgeLabel).aggregate(e).outV().outE(outgoingEdgeLabel).aggregate(e).inV().loop('src', {true}, {true}).toList(); e;";
             case PARTIAL_LINEAGE_DATASET:
-                return "g.V('__guid', '%s').as('src').in('%s').out('%s').loop('src', {it.loops <= %s}, {true}).path().toList()";
+                return "e=[]; g.V('__guid', guid).as('src').inE(incomingEdgeLabel).aggregate(e).outV().outE(outgoingEdgeLabel).aggregate(e).inV().loop('src', {it.loops <= dataSetDepth}, {true}).toList(); e;";
+            case FULL_LINEAGE_PROCESS:
+                return "e=[]; g.V('__guid', guid).outE(outgoingEdgeLabel).aggregate(e).inV().as('src').inE(incomingEdgeLabel).aggregate(e).outV().outE(outgoingEdgeLabel).aggregate(e).inV().loop('src', {true}, {true}).toList(); e;";
             case PARTIAL_LINEAGE_PROCESS:
-                return "g.V('__guid', '%s').as('src').out('%s').in('%s').loop('src', {it.loops <= %s}, {true}).path().toList()";
+                return "e=[]; g.V('__guid', guid).outE(outgoingEdgeLabel).aggregate(e).inV().as('src').inE(incomingEdgeLabel).aggregate(e).outV().outE(outgoingEdgeLabel).aggregate(e).inV().loop('src', {it.loops <= processDepth}, {true}).toList(); e;";
             case BASIC_SEARCH_TYPE_FILTER:
                 return ".has('__typeName', T.in, typeNames)";
             case BASIC_SEARCH_CLASSIFICATION_FILTER:
