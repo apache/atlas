@@ -12,10 +12,6 @@
     "dev-minify": "grunt dev-minify",
     "build-minify": "grunt build-minify"
   },
-  "engines": {
-    "node": "4.4.x",
-    "npm": "3.8.x"
-  },
   "keywords": [
     "Apache",
     "Atlas"

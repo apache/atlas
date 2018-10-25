@@ -641,7 +641,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <node.version>v0.10.30</node.version>
-        <node-for-v2.version>v4.4.2</node-for-v2.version>
+        <node-for-v2.version>v8.9.0</node-for-v2.version>
+        <npm-for-v2.version>5.5.1</npm-for-v2.version>
         <slf4j.version>1.7.21</slf4j.version>
         <jetty.version>9.3.14.v20161028</jetty.version>
         <jetty.jsp.version>9.2.12.v20150709</jetty.jsp.version>
