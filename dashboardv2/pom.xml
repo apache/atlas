@@ -95,7 +95,7 @@
                         </goals>
                         <configuration>
                             <nodeVersion>${node-for-v2.version}</nodeVersion>
-                            <npmVersion>3.8.5</npmVersion>
+                            <npmVersion>${npm-for-v2.version}</npmVersion>
                         </configuration>
                     </execution>
                     <execution>
