@@ -42,6 +42,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -233,30 +234,30 @@ public final class EntityStateChecker {
             }
         }
 
+        if (traitVertexNames == null) {
+            traitVertexNames = Collections.emptyList();
+        }
+
         List<String> traitNamesToRemove = null;
         List<String> traitNamesToAdd    = null;
 
-        if (traitNames != null) {
-            for (String traitName : traitNames) {
-                if (traitVertexNames == null || !traitVertexNames.contains(traitName)) {
-                    if (traitNamesToRemove == null) {
-                        traitNamesToRemove = new ArrayList<>();
-                    }
-
-                    traitNamesToRemove.add(traitName);
+        for (String traitName : traitNames) {
+            if (!traitVertexNames.contains(traitName)) {
+                if (traitNamesToRemove == null) {
+                    traitNamesToRemove = new ArrayList<>();
                 }
+
+                traitNamesToRemove.add(traitName);
             }
         }
 
-        if (traitVertexNames != null) {
-            for (String traitVertexName : traitVertexNames) {
-                if (traitNames == null || !traitNames.contains(traitVertexName)) {
-                    if (traitNamesToAdd == null) {
-                        traitNamesToAdd = new ArrayList<>();
-                    }
-
-                    traitNamesToAdd.add(traitVertexName);
+        for (String traitVertexName : traitVertexNames) {
+            if (!traitNames.contains(traitVertexName)) {
+                if (traitNamesToAdd == null) {
+                    traitNamesToAdd = new ArrayList<>();
                 }
+
+                traitNamesToAdd.add(traitVertexName);
             }
         }
 
