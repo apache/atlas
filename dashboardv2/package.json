@@ -12,10 +12,6 @@
     "dev-minify": "grunt dev-minify",
     "build-minify": "grunt build-minify"
   },
-  "engines": {
-    "node": "4.4.x",
-    "npm": "3.8.x"
-  },
   "keywords": [
     "Apache",
     "Atlas"
@@ -54,18 +50,18 @@
     "underscore": "1.8.3"
   },
   "devDependencies": {
-    "grunt": "^1.0.1",
-    "grunt-cli": "^1.2.0",
-    "grunt-contrib-clean": "^1.1.0",
-    "grunt-contrib-connect": "^1.0.0",
-    "grunt-contrib-copy": "^1.0.0",
+    "grunt": "1.0.2",
+    "grunt-cli": "1.2.0",
+    "grunt-contrib-clean": "1.1.0",
+    "grunt-contrib-connect": "1.0.2",
+    "grunt-contrib-copy": "1.0.0",
     "grunt-contrib-cssmin": "2.0.0",
     "grunt-contrib-htmlmin": "2.2.0",
     "grunt-contrib-uglify": "2.1.0",
-    "grunt-contrib-watch": "^1.0.0",
-    "grunt-middleware-proxy": "^1.0.7",
-    "grunt-sass": "^1.1.0",
+    "grunt-contrib-watch": "1.0.0",
+    "grunt-middleware-proxy": "1.0.7",
+    "grunt-sass": "2.1.0",
     "grunt-template": "1.0.0",
-    "load-grunt-tasks": "^3.1.0"
+    "load-grunt-tasks": "3.5.2"
   }
 }
