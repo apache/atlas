@@ -43,13 +43,15 @@ define(['require',
             /** ui selector cache */
             ui: {
                 graph: ".graph",
-                checkHideProcess: "[data-id='checkHideProcess']"
+                checkHideProcess: "[data-id='checkHideProcess']",
+                selectDepth: 'select[data-id="selectDepth"]'
             },
 
             /** ui events hash */
             events: function() {
                 var events = {};
                 events["click " + this.ui.checkHideProcess] = 'onCheckHideProcess';
+                events['change ' + this.ui.selectDepth] = 'onSelectDepthChange';
                 return events;
             },
 
@@ -65,6 +67,10 @@ define(['require',
                 this.apiGuid = {};
                 this.asyncFetchCounter = 0;
                 this.edgeCall;
+                this.filterObj = {
+                    isProcessHideCheck: false,
+                    depthCount: ''
+                };
             },
 
             initializeGraph: function() {
@@ -98,6 +104,12 @@ define(['require',
                     this.hideCheckForProcess();
                 }
                 this.initializeGraph();
+                this.ui.selectDepth.select2({
+                    data: _.sortBy([3, 6, 9, 12, 15, 18, 21]),
+                    tags: true,
+                    dropdownCssClass: "number-input",
+                    multiple: false
+                });
             },
             onShow: function() {
                 this.$('.fontLoader').show();
@@ -106,14 +118,23 @@ define(['require',
                 var data = $.extend(true, {}, this.lineageData);
                 this.fromToObj = {};
                 this.initializeGraph();
-                this.generateData(data.relations, data.guidEntityMap, e.target.checked);
+                this.filterObj.isProcessHideCheck = e.target.checked;
+                this.generateData(data.relations, data.guidEntityMap);
             },
 
-            fetchGraphData: function() {
-                var that = this;
+            onSelectDepthChange: function(e, options) {
+                this.initializeGraph();
+                this.filterObj.depthCount = e.currentTarget.value;
+                this.fetchGraphData({ queryParam: { 'depth': this.filterObj.depthCount } });
+            },
+
+            fetchGraphData: function(options) {
+                var that = this,
+                    queryParam = options && options.queryParam || {};
                 this.fromToObj = {};
                 this.collection.getLineage(this.guid, {
                     skipDefaultError: true,
+                    queryParam: queryParam,
                     success: function(data) {
                         if (data.relations.length) {
                             that.lineageData = $.extend(true, {}, data)
@@ -131,6 +152,7 @@ define(['require',
             },
             noLineage: function() {
                 this.$('.fontLoader').hide();
+                this.$('.depthContainer').hide();
                 //this.$('svg').height('100');
                 this.$('svg').html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No lineage data found</text>');
                 if (this.actionCallBack) {
@@ -140,12 +162,12 @@ define(['require',
             hideCheckForProcess: function() {
                 this.$('.hideProcessContainer').hide();
             },
-            generateData: function(relations, guidEntityMap, hideProcess) {
+            generateData: function(relations, guidEntityMap) {
                 var that = this;
 
                 function isProcess(typeName) {
                     var entityDef = that.entityDefCollection.fullCollection.find({ name: typeName });
-                    return _.contains(Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: that.entityDefCollection}), "Process")
+                    return _.contains(Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: that.entityDefCollection }), "Process")
                 }
 
                 function makeNodeObj(relationObj) {
@@ -160,7 +182,7 @@ define(['require',
                     if (relationObj.status) {
                         obj['status'] = relationObj.status;
                     }
-                    if (hideProcess) {
+                    if (that.filterObj.isProcessHideCheck) {
                         obj['isProcess'] = relationObj.isProcess;
                     } else {
                         obj['isProcess'] = isProcess(relationObj.typeName);
@@ -171,7 +193,7 @@ define(['require',
 
                 var newRelations = [];
 
-                if (hideProcess) {
+                if (this.filterObj.isProcessHideCheck) {
                     _.each(relations, function(obj, index, relationArr) {
                         var isFromEntityIdProcess = isProcess(guidEntityMap[obj.fromEntityId].typeName);
                         var isToEntityProcess = isProcess(guidEntityMap[obj.toEntityId].typeName);
@@ -202,7 +224,7 @@ define(['require',
                 }
 
 
-                var finalRelations = hideProcess ? newRelations : relations;
+                var finalRelations = this.filterObj.isProcessHideCheck ? newRelations : relations;
 
 
 

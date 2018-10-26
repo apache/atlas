@@ -239,3 +239,15 @@ g.type-TK>rect {
     width: 100%;
     box-shadow: 1px 3px 3px 2px #bfbfbf;
 }
+
+.zoomButtonGroup {
+    text-align: right;
+}
+
+.depthContainer {
+    display: inline-block;
+    margin-top: 3px;
+    .inline {
+        display: inline-block;
+    }
+}
