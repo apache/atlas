@@ -176,6 +176,10 @@ public class EntityGraphMapper {
             AtlasGraphUtilsV2.setEncodedProperty(vertex, STATE_PROPERTY_KEY, entity.getStatus().name());
         }
 
+        if (entity.getVersion() != null) {
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, VERSION_PROPERTY_KEY, entity.getVersion());
+        }
+
         if (entity.getCreateTime() != null) {
             AtlasGraphUtilsV2.setEncodedProperty(vertex, TIMESTAMP_PROPERTY_KEY, entity.getCreateTime().getTime());
         }
