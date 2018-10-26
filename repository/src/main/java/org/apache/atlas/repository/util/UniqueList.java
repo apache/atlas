@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.util;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -44,8 +45,8 @@ public class UniqueList<T> {
         }
     }
 
-    public void addAll(List<T> list) {
-        for (T item : list) {
+    public void addAll(Collection<T> collection) {
+        for (T item : collection) {
             add(item);
         }
     }
