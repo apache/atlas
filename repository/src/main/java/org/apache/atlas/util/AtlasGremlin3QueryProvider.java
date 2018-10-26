@@ -48,11 +48,11 @@ public class AtlasGremlin3QueryProvider extends AtlasGremlin2QueryProvider {
             case FULL_LINEAGE_DATASET:
                 return "g.V().has('__guid', guid).repeat(__.inE(incomingEdgeLabel).as('e1').outV().outE(outgoingEdgeLabel).as('e2').inV()).emit().select('e1', 'e2').toList()";
             case PARTIAL_LINEAGE_DATASET:
-                return "g.V().has('__guid', guid).repeat(__.inE(incomingEdgeLabel).as('e1').outV().outE(outgoingEdgeLabel).as('e2').inV()).times(depth).emit().select('e1', 'e2').toList()";
+                return "g.V().has('__guid', guid).repeat(__.inE(incomingEdgeLabel).as('e1').outV().outE(outgoingEdgeLabel).as('e2').inV()).times(dataSetDepth).emit().select('e1', 'e2').toList()";
             case FULL_LINEAGE_PROCESS:
                 return "g.V().has('__guid', guid).outE(outgoingEdgeLabel).store('e').inV().repeat(__.inE(incomingEdgeLabel).store('e').outV().outE(outgoingEdgeLabel).store('e').inV()).cap('e').unfold().toList()";
             case PARTIAL_LINEAGE_PROCESS:
-                return "g.V().has('__guid', guid).outE(outgoingEdgeLabel).store('e').inV().repeat(__.inE(incomingEdgeLabel).store('e').outV().outE(outgoingEdgeLabel).store('e').inV()).times(depth).cap('e').unfold().toList()";
+                return "g.V().has('__guid', guid).outE(outgoingEdgeLabel).store('e').inV().until(loops().is(eq(processDepth))).repeat(__.inE(incomingEdgeLabel).store('e').outV().outE(outgoingEdgeLabel).store('e').inV()).cap('e').unfold().toList()";
             case TO_RANGE_LIST:
                 return ".range(startIdx, endIdx).toList()";
             case RELATIONSHIP_SEARCH:
