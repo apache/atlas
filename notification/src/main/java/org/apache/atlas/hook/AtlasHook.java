@@ -214,14 +214,18 @@ public abstract class AtlasHook {
             }
         }
 
-        if (shouldLogFailedMessages && notificationFailure instanceof NotificationException) {
-            final List<String> failedMessages = ((NotificationException) notificationFailure).getFailedMessages();
+        if (shouldLogFailedMessages) {
+            if (notificationFailure instanceof NotificationException) {
+        	final List<String> failedMessages = ((NotificationException) notificationFailure).getFailedMessages();
 
-            for (String msg : failedMessages) {
-                logger.log(msg);
+                for (String msg : failedMessages) {
+                    logger.log(msg);
+                }
             }
-
-            LOG.error("Giving up after {} failed attempts to send notification to Atlas: {}", maxAttempts, message, notificationFailure);
+            
+            if (notificationFailure instanceof Exception) {
+        	LOG.error("Giving up after {} failed attempts to send notification to Atlas: {}", maxAttempts, message, notificationFailure);
+            }
         }
     }
 
