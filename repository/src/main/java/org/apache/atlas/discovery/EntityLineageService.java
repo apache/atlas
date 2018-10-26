@@ -309,7 +309,8 @@ public class EntityLineageService implements AtlasLineageService {
         bindings.put("guid", entityGuid);
         bindings.put("incomingEdgeLabel", incomingFrom);
         bindings.put("outgoingEdgeLabel", outgoingTo);
-        bindings.put("depth", depth);
+        bindings.put("dataSetDepth", depth);
+        bindings.put("processDepth", depth - 1);
 
         if (depth < 1) {
             ret = isDataSet ? gremlinQueryProvider.getQuery(FULL_LINEAGE_DATASET) :
