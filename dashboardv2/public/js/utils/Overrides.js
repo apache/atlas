@@ -26,6 +26,14 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
     var oldBackboneSync = Backbone.sync;
     Backbone.sync = function(method, model, options) {
         var that = this;
+        if (options.queryParam) {
+            var generateQueryParam = $.param(options.queryParam);
+            if (options.url.indexOf('?') !== -1) {
+                options.url = options.url + "&" + generateQueryParam;
+            } else {
+                options.url = options.url + "?" + generateQueryParam;
+            }
+        }
         return oldBackboneSync.apply(this, [method, model,
             _.extend(options, {
                 error: function(response) {
