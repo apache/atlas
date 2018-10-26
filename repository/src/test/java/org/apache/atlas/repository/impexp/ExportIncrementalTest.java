@@ -27,6 +27,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
+import org.apache.atlas.repository.util.UniqueList;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -39,6 +40,7 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER;
@@ -63,6 +65,7 @@ public class ExportIncrementalTest extends ExportImportTestBase {
     private AtlasEntityStoreV1 entityStore;
 
     private final String EXPORT_REQUEST_INCREMENTAL = "export-incremental";
+    private final String EXPORT_REQUEST_CONNECTED = "export-connected";
     private long nextTimestamp;
 
     @BeforeClass
@@ -158,6 +161,17 @@ public class ExportIncrementalTest extends ExportImportTestBase {
         assertNotNull(source);
     }
 
+    @Test
+    public void connectedExport() {
+        ZipSource source = runExportWithParameters(exportService, getConnected());
+
+        UniqueList<String> creationOrder = new UniqueList<>();
+        List<String> zipCreationOrder = source.getCreationOrder();
+        creationOrder.addAll(zipCreationOrder);
+        assertNotNull(source);
+        assertEquals(creationOrder.size(), zipCreationOrder.size());
+    }
+
     private AtlasExportRequest getIncrementalRequest(long timestamp) {
         try {
             AtlasExportRequest request = TestResourceFileUtils.readObjectFromJson(ENTITIES_SUB_DIR, EXPORT_REQUEST_INCREMENTAL, AtlasExportRequest.class);
@@ -168,4 +182,13 @@ public class ExportIncrementalTest extends ExportImportTestBase {
             throw new SkipException(String.format("getIncrementalRequest: '%s' could not be laoded.", EXPORT_REQUEST_INCREMENTAL));
         }
     }
+
+    private AtlasExportRequest getConnected() {
+        try {
+            return TestResourceFileUtils.readObjectFromJson(ENTITIES_SUB_DIR, EXPORT_REQUEST_CONNECTED, AtlasExportRequest.class);
+        } catch (IOException e) {
+            throw new SkipException(String.format("getIncrementalRequest: '%s' could not be laoded.", EXPORT_REQUEST_CONNECTED));
+        }
+    }
+
 }

@@ -128,18 +128,16 @@ public class ExportService {
                                                 long startTime, long endTime) throws AtlasBaseException {
         int duration = getOperationDuration(startTime, endTime);
         context.result.setSourceClusterName(AuditsWriter.getCurrentClusterName());
-        context.result.getData().getEntityCreationOrder().addAll(context.lineageProcessed);
-        context.sink.setExportOrder(context.result.getData().getEntityCreationOrder());
+        context.addToEntityCreationOrder(context.lineageProcessed);
+
+        context.sink.setExportOrder(context.entityCreationOrder.getList());
         context.sink.setTypesDef(context.result.getData().getTypesDef());
         context.result.setOperationStatus(getOverallOperationStatus(statuses));
         context.result.incrementMeticsCounter("duration", duration);
-        auditsWriter.write(userName, context.result, startTime, endTime, context.result.getData().getEntityCreationOrder());
-        clearContextData(context);
-        context.sink.setResult(context.result);
-    }
+        auditsWriter.write(userName, context.result, startTime, endTime, context.entityCreationOrder.getList());
 
-    private void clearContextData(ExportContext context) {
         context.result.setData(null);
+        context.sink.setResult(context.result);
     }
 
     private int getOperationDuration(long startTime, long endTime) {
@@ -368,7 +366,7 @@ public class ExportService {
                                TraversalDirection direction) throws AtlasBaseException {
 
         if (!context.lineageProcessed.contains(guid) && context.doesTimestampQualify(entityWithExtInfo.getEntity())) {
-            context.result.getData().getEntityCreationOrder().add(entityWithExtInfo.getEntity().getGuid());
+            context.addToEntityCreationOrder(entityWithExtInfo.getEntity().getGuid());
         }
 
         addEntity(entityWithExtInfo, context);
@@ -539,7 +537,7 @@ public class ExportService {
         } else {
             List<AtlasEntity> entities = context.getEntitiesWithModifiedTimestamp(entityWithExtInfo);
             for (AtlasEntity e : entities) {
-                context.result.getData().getEntityCreationOrder().add(e.getGuid());
+                context.addToEntityCreationOrder(e.getGuid());
                 context.addToSink(new AtlasEntityWithExtInfo(e));
                 context.result.incrementMeticsCounter(String.format("entity:%s", e.getTypeName()));
             }
@@ -600,6 +598,7 @@ public class ExportService {
         private static final String ATLAS_TYPE_HIVE_DB = "hive_db";
 
 
+        final UniqueList<String>              entityCreationOrder = new UniqueList<>();
         final Set<String>                     guidsProcessed = new HashSet<>();
         final private UniqueList<String>      guidsToProcess = new UniqueList<>();
         final UniqueList<String>              lineageToProcess = new UniqueList<>();
@@ -707,6 +706,14 @@ public class ExportService {
 
         public boolean isHiveDBIncrementalSkipLineage() {
             return isHiveDBIncremental;
+        }
+
+        public void addToEntityCreationOrder(String guid) {
+            entityCreationOrder.add(guid);
+        }
+
+        public void addToEntityCreationOrder(Collection<String> guids) {
+            entityCreationOrder.addAll(guids);
         }
     }
 }

@@ -366,7 +366,7 @@ public class ExportServiceTest extends ExportImportTestBase {
 
     private void verifyExportForHrDataForConnected(ZipSource zipSource) throws IOException, AtlasBaseException {
         assertNotNull(zipSource.getCreationOrder());
-        assertTrue(zipSource.getCreationOrder().size() == 2);
+        assertEquals(zipSource.getCreationOrder().size(), 1);
         assertTrue(zipSource.hasNext());
 
         AtlasEntity entity = zipSource.next();
