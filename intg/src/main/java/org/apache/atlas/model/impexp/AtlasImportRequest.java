@@ -25,6 +25,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -102,11 +104,21 @@ public class AtlasImportRequest implements Serializable {
     }
 
     private String getOptionForKey(String key) {
-        if (this.options == null || !this.options.containsKey(key)) {
+        if (MapUtils.isEmpty(this.options) || !this.options.containsKey(key)) {
             return null;
         }
 
         return (String) this.options.get(key);
+    }
+
+    @JsonIgnore
+    public boolean isReplicationOptionSet() {
+        return MapUtils.isNotEmpty(options) && options.containsKey(OPTION_KEY_REPLICATED_FROM);
+    }
+
+    @JsonIgnore
+    public String getOptionKeyReplicatedFrom() {
+        return isReplicationOptionSet() ? options.get(OPTION_KEY_REPLICATED_FROM) : StringUtils.EMPTY;
     }
 
     @JsonAnySetter

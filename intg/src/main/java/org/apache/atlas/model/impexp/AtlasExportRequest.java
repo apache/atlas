@@ -19,11 +19,13 @@ package org.apache.atlas.model.impexp;
 
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -131,6 +133,16 @@ public class AtlasExportRequest implements Serializable {
         }
 
         return Long.parseLong(getOptions().get(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER).toString());
+    }
+
+    @JsonIgnore
+    public boolean isReplicationOptionSet() {
+        return MapUtils.isNotEmpty(options) && options.containsKey(OPTION_KEY_REPLICATED_TO);
+    }
+
+    @JsonIgnore
+    public String getOptionKeyReplicatedTo() {
+        return isReplicationOptionSet() ? (String) options.get(OPTION_KEY_REPLICATED_TO) : StringUtils.EMPTY;
     }
 
     public StringBuilder toString(StringBuilder sb) {
