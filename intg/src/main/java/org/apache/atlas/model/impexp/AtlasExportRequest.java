@@ -22,8 +22,10 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
+import org.apache.commons.lang.StringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -131,6 +133,16 @@ public class AtlasExportRequest implements Serializable {
         }
 
         return Long.parseLong(getOptions().get(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER).toString());
+    }
+
+    @JsonIgnore
+    public boolean isReplicationOptionSet() {
+        return MapUtils.isNotEmpty(options) && options.containsKey(OPTION_KEY_REPLICATED_TO);
+    }
+
+    @JsonIgnore
+    public String getOptionKeyReplicatedTo() {
+        return isReplicationOptionSet() ? (String) options.get(OPTION_KEY_REPLICATED_TO) : StringUtils.EMPTY;
     }
 
     public StringBuilder toString(StringBuilder sb) {

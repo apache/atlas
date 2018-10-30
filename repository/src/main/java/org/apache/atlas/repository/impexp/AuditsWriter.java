@@ -22,11 +22,11 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasType;
@@ -38,7 +38,6 @@ import org.springframework.util.CollectionUtils;
 
 import javax.inject.Inject;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class AuditsWriter {
@@ -70,10 +69,6 @@ public class AuditsWriter {
         auditForImport.add(userName, result, startTime, endTime, entityCreationOrder);
     }
 
-    private boolean isReplicationOptionSet(Map<String, ? extends Object> options, String replicatedKey) {
-        return options.containsKey(replicatedKey);
-    }
-
     private void updateReplicationAttribute(boolean isReplicationSet,
                                             String serverName, String serverFullName,
                                             List<String> exportedGuids,
@@ -85,12 +80,6 @@ public class AuditsWriter {
 
         AtlasServer server = saveServer(serverName, serverFullName, exportedGuids.get(0), lastModifiedTimestamp);
         atlasServerService.updateEntitiesWithServer(server, exportedGuids, attrNameReplicated);
-    }
-
-    private String getClusterNameFromOptions(Map options, String key) {
-        return options.containsKey(key)
-                ? (String) options.get(key)
-                : StringUtils.EMPTY;
     }
 
     private AtlasServer saveServer(String clusterName, String serverFullName,
@@ -138,20 +127,18 @@ public class AuditsWriter {
     private class ExportAudits {
         private AtlasExportRequest request;
         private String targetServerName;
-        private String optionKeyReplicatedTo;
         private boolean replicationOptionState;
         private String targetServerFullName;
 
         public void add(String userName, AtlasExportResult result,
                         long startTime, long endTime,
                         List<String> entityGuids) throws AtlasBaseException {
-            optionKeyReplicatedTo = AtlasExportRequest.OPTION_KEY_REPLICATED_TO;
             request = result.getRequest();
-            replicationOptionState = isReplicationOptionSet(request.getOptions(), optionKeyReplicatedTo);
+            replicationOptionState = request.isReplicationOptionSet();
 
             saveCurrentServer();
 
-            targetServerFullName = getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedTo);
+            targetServerFullName = request.getOptionKeyReplicatedTo();
             targetServerName = getServerNameFromFullName(targetServerFullName);
             auditService.add(userName, getCurrentClusterName(), targetServerName,
                     ExportImportAuditEntry.OPERATION_EXPORT,
@@ -170,19 +157,17 @@ public class AuditsWriter {
         private AtlasImportRequest request;
         private boolean replicationOptionState;
         private String sourceServerName;
-        private String optionKeyReplicatedFrom;
         private String sourceServerFullName;
 
         public void add(String userName, AtlasImportResult result,
                         long startTime, long endTime,
                         List<String> entityGuids) throws AtlasBaseException {
-            optionKeyReplicatedFrom = AtlasImportRequest.OPTION_KEY_REPLICATED_FROM;
             request = result.getRequest();
-            replicationOptionState = isReplicationOptionSet(request.getOptions(), optionKeyReplicatedFrom);
+            replicationOptionState = request.isReplicationOptionSet();
 
             saveCurrentServer();
 
-            sourceServerFullName = getClusterNameFromOptions(request.getOptions(), optionKeyReplicatedFrom);
+            sourceServerFullName = request.getOptionKeyReplicatedFrom();
             sourceServerName = getServerNameFromFullName(sourceServerFullName);
             auditService.add(userName,
                     sourceServerName, getCurrentClusterName(),
