@@ -87,7 +87,8 @@ define(['require',
                     this.ui.name.text(name);
                     if (parseDetailsObject) {
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
-                        table = CommonViewFunction.propertyTable({ scope: this, valueObject: parseDetailsObject, attributeDefs: this.attributeDefs });
+                        var value = parseDetailsObject.attributes || parseDetailsObject;
+                        table = CommonViewFunction.propertyTable({ scope: this, valueObject: value, attributeDefs: this.attributeDefs });
                         if (table.length) {
                             this.ui.noData.hide();
                             this.ui.tableAudit.show();
