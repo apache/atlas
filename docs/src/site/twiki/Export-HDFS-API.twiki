@@ -10,7 +10,6 @@ Also, HDFS paths tend to be hierarchical, in the sense that users tend to model 
 
 __Sample HDFS Setup__
 
-
 <table border="1" cellpadding="pixels" cellspacing="pixels">
   <tr>
     <th><strong>HDFS Path</strong></th> <th><strong>Atlas Entity</strong></th>
@@ -77,3 +76,6 @@ curl -X POST -u adminuser:password -H "Content-Type: application/json" -H "Cache
     }
 }' "http://localhost:21000/api/atlas/admin/export" > financeAll.zip
 </verbatim>
+
+---+++ Automatic Creation of HDFS entities
+Given that HDFS entity creation is a manual process. The Export API offers a mechanism for creation of requested HDFS entities.
