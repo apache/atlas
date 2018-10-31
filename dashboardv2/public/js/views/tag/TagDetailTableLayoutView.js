@@ -82,7 +82,7 @@ define(['require',
                         }
                     }
                 });
-                this.tagTermCollection.set(tagTermList);
+                this.tagTermCollection.fullCollection.reset(tagTermList);
                 this.commonTableOptions = {
                     collection: this.tagTermCollection,
                     includeFilter: false,
