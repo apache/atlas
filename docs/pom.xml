@@ -78,12 +78,17 @@
                     </dependency>
                     <dependency>
                         <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-module-markdown</artifactId>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
                         <artifactId>doxia-core</artifactId>
                         <version>${doxia.version}</version>
                     </dependency>
                 </dependencies>
                 <configuration>
-				    <port>8080</port>
+				    <port>8081</port>
                 </configuration>
                 <executions>
                     <execution>

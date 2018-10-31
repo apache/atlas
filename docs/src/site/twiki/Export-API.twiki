@@ -36,6 +36,7 @@ Current implementation has 2 options. Both are optional:
    * _fetchType_ This option configures the approach used for fetching entities. It has following values:
       * _FULL_: This fetches all the entities that are connected directly and indirectly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table, database and all the other tables within the database.
       * _CONNECTED_: This fetches all the etnties that are connected directly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table and the database entity only.
+      * _INCREMENTAL_: See [[Incremental-Export][here]] for details.
 
 If no _matchType_ is specified, exact match is used. Which means, that the entire string is used in the search criteria.
 

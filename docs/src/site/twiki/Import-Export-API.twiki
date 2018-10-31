@@ -1,5 +1,14 @@
 ---+ Export & Import REST APIs
 
+---+++ What's New
+The release of 0.8.3 includes the following improvements to Export and Import APIs:
+   * Export: Support for _[[Incremental-Export][Incremental Export]]_.
+   * Export & Import: Support for [[ReplicatedToFromAttributes][replicated attributes]] to entities made possible by _[[SoftReference][SoftReference]]_ entity attribute option.
+   * Export option: _[[Incremental-Export][skipLineage]]_.
+   * New entity transforms framework.
+   * New _[[AtlasServer][AtlasServer]]_ entity type.
+   * Export: [[Export-HDFS-API][Automatic creation of HDFS path]] requested entities.
+   * New [[ExportImportAudits][audits]] for Export & Import operations.
 
 ---+++ Background
 The Import-Export APIs for Atlas facilitate transfer of data to and from a cluster that has Atlas provisioned.
