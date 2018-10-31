@@ -18,6 +18,7 @@
 
 package org.apache.atlas.kafka;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
@@ -53,10 +54,11 @@ import static org.testng.Assert.*;
 public class KafkaConsumerTest {
     private static final String TRAIT_NAME = "MyTrait";
 
+    private final String ATLAS_HOOK_TOPIC = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
+
 
     @Mock
     private KafkaConsumer kafkaConsumer;
-
 
     @BeforeMethod
     public void setup() {
@@ -68,8 +70,8 @@ public class KafkaConsumerTest {
         Referenceable                        entity  = getEntity(TRAIT_NAME);
         EntityUpdateRequest                  message = new EntityUpdateRequest("user1", entity);
         String                               json    = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), message));
-        TopicPartition                       tp      = new TopicPartition("ATLAS_HOOK", 0);
-        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>("ATLAS_HOOK", 0, 0L, "mykey", json));
+        TopicPartition                       tp      = new TopicPartition(ATLAS_HOOK_TOPIC, 0);
+        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>(ATLAS_HOOK_TOPIC, 0, 0L, "mykey", json));
         Map                                  mp      = Collections.singletonMap(tp, klist);
         ConsumerRecords                      records = new ConsumerRecords(mp);
 
@@ -92,8 +94,8 @@ public class KafkaConsumerTest {
         Referenceable                        entity  = getEntity(TRAIT_NAME);
         EntityUpdateRequest                  message = new EntityUpdateRequest("user1", entity);
         String                               json    = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), message));
-        TopicPartition                       tp      = new TopicPartition("ATLAS_HOOK",0);
-        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>("ATLAS_HOOK", 0, 0L, "mykey", json));
+        TopicPartition                       tp      = new TopicPartition(ATLAS_HOOK_TOPIC,0);
+        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>(ATLAS_HOOK_TOPIC, 0, 0L, "mykey", json));
         Map                                  mp      = Collections.singletonMap(tp,klist);
         ConsumerRecords                      records = new ConsumerRecords(mp);
 
@@ -119,7 +121,7 @@ public class KafkaConsumerTest {
 
     @Test
     public void testCommitIsCalledIfAutoCommitDisabled() {
-        TopicPartition     tp       = new TopicPartition("ATLAS_HOOK",0);
+        TopicPartition     tp       = new TopicPartition(ATLAS_HOOK_TOPIC,0);
         AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationType.HOOK, kafkaConsumer, false, 100L);
 
         consumer.commit(tp, 1);
@@ -129,7 +131,7 @@ public class KafkaConsumerTest {
 
     @Test
     public void testCommitIsNotCalledIfAutoCommitEnabled() {
-        TopicPartition     tp       = new TopicPartition("ATLAS_HOOK",0);
+        TopicPartition     tp       = new TopicPartition(ATLAS_HOOK_TOPIC,0);
         AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationType.HOOK, kafkaConsumer, true , 100L);
 
         consumer.commit(tp, 1);
