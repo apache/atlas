@@ -21,11 +21,14 @@ package org.apache.atlas.kafka;
 import kafka.message.MessageAndMetadata;
 import org.apache.atlas.notification.*;
 import org.apache.atlas.notification.AtlasNotificationMessage;
+import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.notification.entity.EntityNotificationImplTest;
 import org.apache.atlas.notification.hook.HookNotification;
+import org.apache.atlas.notification.hook.HookNotification.EntityUpdateRequest;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -40,9 +43,6 @@ import org.testng.annotations.Test;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.Mockito.mock;
@@ -58,10 +58,11 @@ public class KafkaConsumerTest {
 
     private static final String TRAIT_NAME = "MyTrait";
 
+    private final String ATLAS_HOOK_TOPIC = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
+
 
     @Mock
     private KafkaConsumer kafkaConsumer;
-
 
     @BeforeMethod
     public void setup() {
@@ -70,27 +71,15 @@ public class KafkaConsumerTest {
 
     @Test
     public void testReceive() throws Exception {
-
+        Referenceable                        entity  = getEntity(TRAIT_NAME);
+        EntityUpdateRequest                  message = new EntityUpdateRequest("user1", entity);
+        String                               json    = AbstractNotification.GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), message));
+        TopicPartition                       tp      = new TopicPartition(ATLAS_HOOK_TOPIC, 0);
+        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>(ATLAS_HOOK_TOPIC, 0, 0L, "mykey", json));
+        Map                                  mp      = Collections.singletonMap(tp, klist);
+        ConsumerRecords                      records = new ConsumerRecords(mp);
 
         MessageAndMetadata<String, String> messageAndMetadata = mock(MessageAndMetadata.class);
-
-        Referenceable entity = getEntity(TRAIT_NAME);
-
-        HookNotification.EntityUpdateRequest message =
-            new HookNotification.EntityUpdateRequest("user1", entity);
-
-        String json = AbstractNotification.GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), message));
-
-        kafkaConsumer.assign(Arrays.asList(new TopicPartition("ATLAS_HOOK", 0)));
-        List<ConsumerRecord> klist = new ArrayList<>();
-        klist.add(new ConsumerRecord<String, String>("ATLAS_HOOK",
-                0, 0L, "mykey", json));
-
-        TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
-        Map mp = new HashMap();
-        mp.put(tp,klist);
-        ConsumerRecords records = new ConsumerRecords(mp);
-
 
         when(kafkaConsumer.poll(100)).thenReturn(records);
         when(messageAndMetadata.message()).thenReturn(json);
@@ -108,25 +97,15 @@ public class KafkaConsumerTest {
 
     @Test
     public void testNextVersionMismatch() throws Exception {
+        Referenceable                        entity  = getEntity(TRAIT_NAME);
+        EntityUpdateRequest                  message = new EntityUpdateRequest("user1", entity);
+        String                               json    = AbstractNotification.GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), message));
+        TopicPartition                       tp      = new TopicPartition(ATLAS_HOOK_TOPIC,0);
+        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>(ATLAS_HOOK_TOPIC, 0, 0L, "mykey", json));
+        Map                                  mp      = Collections.singletonMap(tp,klist);
+        ConsumerRecords                      records = new ConsumerRecords(mp);
 
         MessageAndMetadata<String, String> messageAndMetadata = mock(MessageAndMetadata.class);
-
-        Referenceable entity = getEntity(TRAIT_NAME);
-
-        HookNotification.EntityUpdateRequest message =
-            new HookNotification.EntityUpdateRequest("user1", entity);
-
-        String json = AbstractNotification.GSON.toJson(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), message));
-
-        kafkaConsumer.assign(Arrays.asList(new TopicPartition("ATLAS_HOOK", 0)));
-        List<ConsumerRecord> klist = new ArrayList<>();
-        klist.add(new ConsumerRecord<String, String>("ATLAS_HOOK",
-                0, 0L, "mykey", json));
-
-        TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
-        Map mp = new HashMap();
-        mp.put(tp,klist);
-        ConsumerRecords records = new ConsumerRecords(mp);
 
         when(kafkaConsumer.poll(100L)).thenReturn(records);
         when(messageAndMetadata.message()).thenReturn(json);
@@ -148,10 +127,8 @@ public class KafkaConsumerTest {
 
     @Test
     public void testCommitIsCalledIfAutoCommitDisabled() {
-
-        TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
-
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, false, 100L);
+        TopicPartition     tp       = new TopicPartition(ATLAS_HOOK_TOPIC,0);
+        AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationType.HOOK.getDeserializer(), kafkaConsumer, false, 100L);
 
         consumer.commit(tp, 1);
 
@@ -160,10 +137,8 @@ public class KafkaConsumerTest {
 
     @Test
     public void testCommitIsNotCalledIfAutoCommitEnabled() {
-
-        TopicPartition tp = new TopicPartition("ATLAS_HOOK",0);
-
-        AtlasKafkaConsumer consumer =new AtlasKafkaConsumer(NotificationInterface.NotificationType.HOOK.getDeserializer(), kafkaConsumer, true , 100L);
+        TopicPartition     tp       = new TopicPartition(ATLAS_HOOK_TOPIC,0);
+        AtlasKafkaConsumer consumer = new AtlasKafkaConsumer(NotificationType.HOOK.getDeserializer(), kafkaConsumer, true , 100L);
 
         consumer.commit(tp, 1);
 

@@ -20,7 +20,15 @@ package org.apache.atlas.notification;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import kafka.utils.ShutdownableThread;
-import org.apache.atlas.*;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasBaseClient;
+import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasClientV2;
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -88,6 +96,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private static final String ATTRIBUTE_INPUTS         = "inputs";
 
     private static final String THREADNAME_PREFIX = NotificationHookConsumer.class.getSimpleName();
+    private static final String ATLAS_HOOK_TOPIC  = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
 
     public static final String CONSUMER_THREADS_PROPERTY         = "atlas.notification.hook.numthreads";
     public static final String CONSUMER_RETRIES_PROPERTY         = "atlas.notification.hook.maxretries";
@@ -99,6 +108,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     public static final String CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633                  = "atlas.notification.consumer.skip.hive_column_lineage.hive-20633";
     public static final String CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD = "atlas.notification.consumer.skip.hive_column_lineage.hive-20633.inputs.threshold";
+
 
 
     private final AtlasEntityStore       atlasEntityStore;
@@ -570,7 +580,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             try {
                 recordFailedMessages();
 
-                TopicPartition partition = new TopicPartition("ATLAS_HOOK", kafkaMessage.getPartition());
+                TopicPartition partition = new TopicPartition(ATLAS_HOOK_TOPIC, kafkaMessage.getPartition());
 
                 consumer.commit(partition, kafkaMessage.getOffset() + 1);
                 commitSucceessStatus = true;
