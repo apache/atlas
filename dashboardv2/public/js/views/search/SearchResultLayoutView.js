@@ -583,7 +583,8 @@ define(['require',
             getColumnOrder: function(arr) {
                 var obj = {};
                 for (var i = 0; i < arr.length; ++i) {
-                    obj[(arr[i].innerText == "" ? 'Select' : arr[i].innerText)] = i;
+                    var innerText = arr[i].innerText.trim();
+                    obj[(innerText == "" ? 'Select' : innerText)] = i;
                 }
                 return obj;
             },
