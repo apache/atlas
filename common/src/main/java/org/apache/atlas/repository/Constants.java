@@ -103,6 +103,14 @@ public final class Constants {
      */
     public static final String IS_PROXY_KEY           = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "isProxy");
 
+    /**
+     * The provenanceType field is used to record the provenance of an instance of an entity or relationship - this
+     * indicates how the instance was created. This corresponds to the InstanceProvenanceType enum defined in ODPi.
+     * To avoid creating a hard dependency on the ODPi class, the value is stored as an int corresponding to the
+     * ordinal in the ODPi enum.
+     */
+    public static final String PROVENANCE_TYPE_KEY    = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "provenanceType");
+
     public static final String TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "timestamp");
 
     public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp");
