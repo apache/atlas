@@ -525,6 +525,8 @@ public final class EntityGraphRetriever {
 
         entity.setIsProxy(GraphHelper.isProxy(entityVertex));
 
+        entity.setProvenanceType(GraphHelper.getProvenanceType(entityVertex));
+
         return entity;
     }
 
@@ -1166,12 +1168,17 @@ public final class EntityGraphRetriever {
         relationship.setUpdateTime(new Date(GraphHelper.getModifiedTime(edge)));
 
         Long version = GraphHelper.getVersion(edge);
-
         if (version == null) {
             version = Long.valueOf(1L);
         }
-
         relationship.setVersion(version);
+
+        Integer provenanceType = GraphHelper.getProvenanceType(edge);
+        if (provenanceType == null) {
+            provenanceType = Integer.valueOf(0);
+        }
+        relationship.setProvenanceType(provenanceType);
+
         relationship.setStatus(GraphHelper.getEdgeStatus(edge));
 
         AtlasVertex end1Vertex = edge.getOutVertex();

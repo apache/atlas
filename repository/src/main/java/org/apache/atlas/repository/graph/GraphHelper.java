@@ -1086,6 +1086,10 @@ public final class GraphHelper {
         return element.getProperty(Constants.IS_PROXY_KEY, Boolean.class);
     }
 
+    public static Integer getProvenanceType(AtlasElement element) {
+        return element.getProperty(Constants.PROVENANCE_TYPE_KEY, Integer.class);
+    }
+
     public static String getTypeName(AtlasElement element) {
         return element.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
     }

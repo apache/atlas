@@ -199,6 +199,10 @@ public class EntityGraphMapper {
         if (entity.isProxy() != null) {
             AtlasGraphUtilsV2.setEncodedProperty(vertex, IS_PROXY_KEY, entity.isProxy());
         }
+
+        if (entity.getProvenanceType() != null) {
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, PROVENANCE_TYPE_KEY, entity.getProvenanceType());
+        }
     }
 
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications) throws AtlasBaseException {
