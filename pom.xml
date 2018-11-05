@@ -2058,6 +2058,7 @@
                         <exclude>.gitignore</exclude>
                         <exclude>**/.idea/**</exclude>
                         <exclude>**/*.twiki</exclude>
+                        <exclude>**/*.md</exclude>
                         <exclude>**/*.iml</exclude>
                         <exclude>**/*.json</exclude>
                         <exclude>**/*.log</exclude>
