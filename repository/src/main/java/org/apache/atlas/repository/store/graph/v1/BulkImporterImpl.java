@@ -19,6 +19,8 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -98,6 +100,9 @@ public class BulkImporterImpl implements BulkImporter {
                 if (!updateResidualList(abe, residualList, entityWithExtInfo.getEntity().getGuid())) {
                     throw abe;
                 }
+            } finally {
+                RequestContext.clear();
+                RequestContextV1.clear();
             }
         }
 
