@@ -1902,6 +1902,8 @@
                     <systemProperties>
                         <user.dir>${project.basedir}</user.dir>
                         <atlas.data>${project.build.directory}/data</atlas.data>
+                        <atlas.log.dir>${project.build.directory}/logs</atlas.log.dir>
+                        <atlas.log.file>application.log</atlas.log.file>
                         <log4j.configuration>atlas-log4j.xml</log4j.configuration>
                         <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
                     </systemProperties>
@@ -1932,6 +1934,8 @@
                     <systemPropertyVariables>
                         <projectBaseDir>${projectBaseDir}</projectBaseDir>
                         <atlas.data>${project.build.directory}/data</atlas.data>
+                        <atlas.log.dir>${project.build.directory}/logs</atlas.log.dir>
+                        <atlas.log.file>application.log</atlas.log.file>
                         <log4j.configuration>atlas-log4j.xml</log4j.configuration>
                         <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
                     </systemPropertyVariables>
