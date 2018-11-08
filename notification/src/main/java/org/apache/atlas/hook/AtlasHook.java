@@ -172,9 +172,8 @@ public abstract class AtlasHook {
             return;
         }
 
-        final int    maxAttempts         = maxRetries < 1 ? 1 : maxRetries;
-        final String message             = messages.toString();
-        Exception    notificationFailure = null;
+        final int maxAttempts         = maxRetries < 1 ? 1 : maxRetries;
+        Exception notificationFailure = null;
 
         for (int numAttempt = 1; numAttempt <= maxAttempts; numAttempt++) {
             if (numAttempt > 1) { // retry attempt
@@ -214,14 +213,16 @@ public abstract class AtlasHook {
             }
         }
 
-        if (shouldLogFailedMessages && notificationFailure instanceof NotificationException) {
-            final List<String> failedMessages = ((NotificationException) notificationFailure).getFailedMessages();
+        if (notificationFailure != null) {
+            if (shouldLogFailedMessages && notificationFailure instanceof NotificationException) {
+                final List<String> failedMessages = ((NotificationException) notificationFailure).getFailedMessages();
 
-            for (String msg : failedMessages) {
-                logger.log(msg);
+                for (String msg : failedMessages) {
+                    logger.log(msg);
+                }
             }
 
-            LOG.error("Giving up after {} failed attempts to send notification to Atlas: {}", maxAttempts, message, notificationFailure);
+            LOG.error("Giving up after {} failed attempts to send notification to Atlas: {}", maxAttempts, messages.toString(), notificationFailure);
         }
     }
 
