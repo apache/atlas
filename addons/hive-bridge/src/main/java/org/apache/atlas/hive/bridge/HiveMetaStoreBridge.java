@@ -204,7 +204,7 @@ public class HiveMetaStoreBridge {
      * @param hiveConf {@link HiveConf} for Hive component in the cluster
      */
     public HiveMetaStoreBridge(Configuration atlasProperties, HiveConf hiveConf, AtlasClientV2 atlasClientV2) throws Exception {
-        this(atlasProperties.getString(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME), Hive.get(hiveConf), atlasClientV2, atlasProperties.getBoolean(HDFS_PATH_CONVERT_TO_LOWER_CASE, true));
+        this(atlasProperties.getString(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME), Hive.get(hiveConf), atlasClientV2, atlasProperties.getBoolean(HDFS_PATH_CONVERT_TO_LOWER_CASE, false));
     }
 
     /**
@@ -690,7 +690,7 @@ public class HiveMetaStoreBridge {
         AtlasEntity ret           = new AtlasEntity(HDFS_PATH);
         Path        path          = new Path(pathUri);
 
-        ret.setAttribute(ATTRIBUTE_NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
+        ret.setAttribute(ATTRIBUTE_NAME, Path.getPathWithoutSchemeAndAuthority(path).toString());
         ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, clusterName);
         ret.setAttribute(ATTRIBUTE_PATH, pathUri);
 

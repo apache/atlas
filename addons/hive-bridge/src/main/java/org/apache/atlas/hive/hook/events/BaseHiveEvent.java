@@ -124,6 +124,7 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_EXPRESSION                = "expression";
     public static final String ATTRIBUTE_ALIASES                   = "aliases";
 
+    public static final String HDFS_PATH_PREFIX = "hdfs://";
 
     public static final long   MILLIS_CONVERT_FACTOR  = 1000;
 
@@ -481,7 +482,14 @@ public abstract class BaseHiveEvent {
     }
 
     protected AtlasEntity getHDFSPathEntity(Path path) {
-        String      strPath           = path.toString().toLowerCase();
+        String strPath = path.toString();
+        String name    = Path.getPathWithoutSchemeAndAuthority(path).toString();
+
+        if (strPath.startsWith(HDFS_PATH_PREFIX) && context.isConvertHdfsPathToLowerCase()) {
+            strPath = strPath.toLowerCase();
+            name    = name.toLowerCase();
+        }
+
         String      pathQualifiedName = getQualifiedName(strPath);
         AtlasEntity ret               = context.getEntity(pathQualifiedName);
 
@@ -490,7 +498,7 @@ public abstract class BaseHiveEvent {
 
             ret.setAttribute(ATTRIBUTE_PATH, strPath);
             ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, pathQualifiedName);
-            ret.setAttribute(ATTRIBUTE_NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
+            ret.setAttribute(ATTRIBUTE_NAME, name);
             ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, getClusterName());
 
             context.putEntity(pathQualifiedName, ret);
@@ -625,14 +633,18 @@ public abstract class BaseHiveEvent {
     }
 
     protected String getQualifiedName(URI location) {
-        String strPath = new Path(location).toString().toLowerCase();
+        String strPath = new Path(location).toString();
+
+        if (strPath.startsWith(HDFS_PATH_PREFIX) && context.isConvertHdfsPathToLowerCase()) {
+            strPath = strPath.toLowerCase();
+        }
 
         return getQualifiedName(strPath);
     }
 
     protected String getQualifiedName(String path) {
-        if (path.startsWith("hdfs://")) {
-            return (path + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+        if (path.startsWith(HDFS_PATH_PREFIX)) {
+            return path + QNAME_SEP_CLUSTER_NAME + getClusterName();
         }
 
         return path.toLowerCase();
