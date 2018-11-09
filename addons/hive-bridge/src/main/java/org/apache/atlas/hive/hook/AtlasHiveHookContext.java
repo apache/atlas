@@ -85,6 +85,10 @@ public class AtlasHiveHookContext {
         return hook.getClusterName();
     }
 
+    public boolean isConvertHdfsPathToLowerCase() {
+        return hook.isConvertHdfsPathToLowerCase();
+    }
+
     public boolean getSkipHiveColumnLineageHive20633() {
         return hook.getSkipHiveColumnLineageHive20633();
     }
