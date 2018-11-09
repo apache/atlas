@@ -17,13 +17,12 @@
  */
 package org.apache.atlas.services;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.annotation.AtlasService;
-import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -32,13 +31,14 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
-import static org.apache.atlas.util.AtlasGremlinQueryProvider.INSTANCE;
+import static org.apache.atlas.discovery.SearchProcessor.AND_STR;
+import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
+import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 
 @AtlasService
 public class MetricsService {
@@ -53,53 +53,31 @@ public class MetricsService {
     // Query names
     protected static final String METRIC_TYPE_COUNT        = TYPE + "Count";
     protected static final String METRIC_TYPE_UNUSED_COUNT = TYPE + "UnusedCount";
-    protected static final String METRIC_TYPE_ENTITIES     = TYPE + "Entities";
+    protected static final String METRIC_ENTITY_COUNT      = ENTITY + "Count";
+    protected static final String METRIC_ENTITY_DELETED    = ENTITY + "Deleted";
+    protected static final String METRIC_ENTITY_ACTIVE     = ENTITY + "Active";
+    protected static final String METRIC_TAG_COUNT         = TAG + "Count";
+    protected static final String METRIC_ENTITIES_PER_TAG  = TAG + "Entities";
 
-    protected static final String METRIC_ENTITY_COUNT    = ENTITY + "Count";
-    protected static final String METRIC_ENTITY_DELETED  = ENTITY + "Deleted";
-    protected static final String METRIC_ENTITY_ACTIVE   = ENTITY + "Active";
-    protected static final String METRIC_TAGGED_ENTITIES = ENTITY + "Tagged";
-    protected static final String METRIC_TAGS_PER_ENTITY = ENTITY + "Tags";
-
-    protected static final String METRIC_TAG_COUNT        = TAG + "Count";
-    protected static final String METRIC_ENTITIES_PER_TAG = TAG + "Entities";
-
-    public static final String METRIC_QUERY_PREFIX                   = "atlas.metric.query.";
     public static final String METRIC_QUERY_CACHE_TTL                = "atlas.metric.query.cache.ttlInSecs";
     public static final String METRIC_QUERY_GREMLIN_TYPES_BATCH_SIZE = "atlas.metric.query.gremlin.typesBatchSize";
-
-    public static final int DEFAULT_CACHE_TTL_IN_SECS  = 900;
-    public static final int DEFAULT_GREMLIN_BATCH_SIZE = 25;
-
-    public static final String METRIC_COLLECTION_TIME = "collectionTime";
-
-    private static Configuration             configuration        = null;
-    private static AtlasGremlinQueryProvider gremlinQueryProvider = null;
+    public static final int    DEFAULT_CACHE_TTL_IN_SECS             = 900;
+    public static final String METRIC_COLLECTION_TIME                = "collectionTime";
 
     private final AtlasGraph        atlasGraph;
     private final AtlasTypeRegistry typeRegistry;
     private final int               cacheTTLInSecs;
-    private final int               gremlinBatchSize;
+    private final String            indexSearchPrefix = AtlasGraphUtilsV2.getIndexSearchPrefix();
 
     private AtlasMetrics cachedMetrics       = null;
     private long         cacheExpirationTime = 0;
 
-
     @Inject
     public MetricsService(final Configuration configuration, final AtlasGraph graph, final AtlasTypeRegistry typeRegistry) {
-        this(configuration, graph, typeRegistry, INSTANCE);
-    }
-
-    @VisibleForTesting
-    MetricsService(Configuration configuration, AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasGremlinQueryProvider queryProvider) {
-        MetricsService.configuration = configuration;
-        atlasGraph = graph;
-        cacheTTLInSecs = configuration != null ? configuration.getInt(METRIC_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS)
-                                 : DEFAULT_CACHE_TTL_IN_SECS;
-        gremlinBatchSize = configuration != null ? configuration.getInt(METRIC_QUERY_GREMLIN_TYPES_BATCH_SIZE, DEFAULT_GREMLIN_BATCH_SIZE)
-                                   : DEFAULT_GREMLIN_BATCH_SIZE;
-        gremlinQueryProvider = queryProvider;
+        this.atlasGraph = graph;
+        this.cacheTTLInSecs = configuration != null ? configuration.getInt(METRIC_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS) : DEFAULT_CACHE_TTL_IN_SECS;
         this.typeRegistry = typeRegistry;
+
     }
 
     @SuppressWarnings("unchecked")
@@ -107,62 +85,51 @@ public class MetricsService {
         if (ignoreCache || !isCacheValid()) {
             AtlasMetrics metrics = new AtlasMetrics();
 
-            int typeCount = 0, unusedTypeCount = 0;
+            metrics.addMetric(GENERAL, METRIC_TYPE_COUNT, getAllTypesCount());
+            metrics.addMetric(GENERAL, METRIC_TAG_COUNT, getAllTagsCount());
 
-            Collection<String> typeNames = typeRegistry.getAllTypeNames();
-            if (CollectionUtils.isNotEmpty(typeNames)) {
-                typeCount = typeNames.size();
+            Map<String, Long> activeCountMap  = new HashMap<>();
+            Map<String, Long> deletedCountMap = new HashMap<>();
+
+            // metrics for classifications
+            Collection<String> classificationDefNames = typeRegistry.getAllClassificationDefNames();
+
+            if (classificationDefNames != null) {
+                for (String classificationDefName : classificationDefNames) {
+                    activeCountMap.put(classificationDefName, getTypeCount(classificationDefName, ACTIVE));
+                }
             }
-            metrics.addMetric(GENERAL, METRIC_TYPE_COUNT, typeCount);
 
-            int tagCount = 0;
+            // metrics for entities
+            Collection<String> entityDefNames = typeRegistry.getAllEntityDefNames();
 
-            Map<String, Number> activeCountMap  = new HashMap<>();
-            Map<String, Number> deletedCountMap = new HashMap<>();
-
-            List<String> classificationDefNames = typeRegistry.getAllClassificationDefNames()
-                                                              .stream()
-                                                              .map(x -> "'" + x + "'")
-                                                              .collect(Collectors.toList());
-
-            if (CollectionUtils.isNotEmpty(classificationDefNames)) {
-                tagCount = classificationDefNames.size();
+            if (entityDefNames != null) {
+                for (String entityDefName : entityDefNames) {
+                    activeCountMap.put(entityDefName, getTypeCount(entityDefName, ACTIVE));
+                    deletedCountMap.put(entityDefName, getTypeCount(entityDefName, DELETED));
+                }
             }
-            metrics.addMetric(GENERAL, METRIC_TAG_COUNT, tagCount);
 
-            IntStream
-                    .range(0, (classificationDefNames.size() + gremlinBatchSize - 1) / gremlinBatchSize)
-                    .mapToObj(i -> classificationDefNames.subList(i * gremlinBatchSize, Math.min(classificationDefNames.size(), (i + 1) * gremlinBatchSize)))
-                    .forEach(batch -> captureCounts(batch, activeCountMap, deletedCountMap));
-
-
-            List<String> entityDefNames = typeRegistry.getAllEntityDefNames()
-                                                      .stream()
-                                                      .map(x -> "'" + x + "'")
-                                                      .collect(Collectors.toList());
-            IntStream
-                    .range(0, (entityDefNames.size() + gremlinBatchSize - 1) / gremlinBatchSize)
-                    .mapToObj(i -> entityDefNames.subList(i * gremlinBatchSize, Math.min(entityDefNames.size(), (i + 1) * gremlinBatchSize)))
-                    .forEach(batch -> captureCounts(batch, activeCountMap, deletedCountMap));
-
-            int totalEntities = 0;
-
-            Map<String, Number> activeEntityCount  = new HashMap<>();
-            Map<String, Number> deletedEntityCount = new HashMap<>();
+            Map<String, Long> activeEntityCount  = new HashMap<>();
+            Map<String, Long> deletedEntityCount = new HashMap<>();
+            long              unusedTypeCount    = 0;
+            long              totalEntities      = 0;
 
             for (String entityDefName : typeRegistry.getAllEntityDefNames()) {
-                Number activeCount  = activeCountMap.getOrDefault(entityDefName, null);
-                Number deletedCount = deletedCountMap.getOrDefault(entityDefName, null);
+                Long activeCount  = activeCountMap.get(entityDefName);
+                Long deletedCount = deletedCountMap.get(entityDefName);
 
-                if (activeCount != null) {
+                if (activeCount > 0) {
                     activeEntityCount.put(entityDefName, activeCount);
-                    totalEntities += activeCount.intValue();
+                    totalEntities += activeCount.longValue();
                 }
-                if (deletedCount != null) {
+
+                if (deletedCount > 0) {
                     deletedEntityCount.put(entityDefName, deletedCount);
-                    totalEntities += deletedCount.intValue();
+                    totalEntities += deletedCount.longValue();
                 }
-                if (activeCount == null && deletedCount == null) {
+
+                if (activeCount == 0 && deletedCount == 0) {
                     unusedTypeCount++;
                 }
             }
@@ -172,70 +139,49 @@ public class MetricsService {
             metrics.addMetric(ENTITY, METRIC_ENTITY_ACTIVE, activeEntityCount);
             metrics.addMetric(ENTITY, METRIC_ENTITY_DELETED, deletedEntityCount);
 
-            Map<String, Number> taggedEntityCount = new HashMap<>();
+            Map<String, Long> taggedEntityCount = new HashMap<>();
+
             for (String classificationName : typeRegistry.getAllClassificationDefNames()) {
-                Object count = activeCountMap.getOrDefault(classificationName, null);
-                if (count != null) {
-                    taggedEntityCount.put(classificationName, (Number) count);
+                Long count = activeCountMap.get(classificationName);
+
+                if (count > 0) {
+                    taggedEntityCount.put(classificationName, count);
                 }
             }
-            metrics.addMetric(TAG, METRIC_ENTITIES_PER_TAG, taggedEntityCount);
 
+            metrics.addMetric(TAG, METRIC_ENTITIES_PER_TAG, taggedEntityCount);
 
             // Miscellaneous metrics
             long collectionTime = System.currentTimeMillis();
 
             metrics.addMetric(GENERAL, METRIC_COLLECTION_TIME, collectionTime);
 
-            this.cachedMetrics = metrics;
+            this.cachedMetrics       = metrics;
             this.cacheExpirationTime = (collectionTime + cacheTTLInSecs * 1000);
         }
 
         return cachedMetrics;
     }
 
-    private void captureCounts(List<String> typeNames, Map<String, Number> activeCountMap, Map<String, Number> deletedCountMap) {
-        String typeNamesAsStr = String.join(",", typeNames);
-        String query          = String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.ENTITY_ACTIVE_METRIC), typeNamesAsStr);
-        activeCountMap.putAll(extractCounts(query));
+    private Long getTypeCount(String typeName, Status status) {
+        String indexQuery = indexSearchPrefix + "\"" + ENTITY_TYPE_PROPERTY_KEY + "\" : (%s)" + AND_STR +
+                            indexSearchPrefix + "\"" + STATE_PROPERTY_KEY       + "\" : (%s)";
 
-        query = String.format(gremlinQueryProvider.getQuery(AtlasGremlinQuery.ENTITY_DELETED_METRIC), typeNamesAsStr);
-        deletedCountMap.putAll(extractCounts(query));
+        indexQuery = String.format(indexQuery, typeName, status.name());
 
+        return atlasGraph.indexQuery(VERTEX_INDEX, indexQuery).vertexTotals();
     }
 
-    private Map<String, Number> extractCounts(final String query) {
-        Map<String, Number> ret = new HashMap<>();
-        try {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Executing query: {}", query);
-            }
+    private int getAllTypesCount() {
+        Collection<String> allTypeNames = typeRegistry.getAllTypeNames();
 
-            Object result = executeQuery(query);
-            if (result instanceof List) {
-                for (Object entry : (List) result) {
-                    if (entry instanceof Map) {
-                        ret.putAll((Map<String, Number>) entry);
-                    }
-                }
-            } else if (result instanceof Map) {
-                ret.putAll((Map<String, Number>) result);
-            } else {
-                String returnClassName = result != null ? result.getClass().getSimpleName() : "null";
-                LOG.warn("Unhandled return type {} for {}. Ignoring", returnClassName, query);
-            }
-        } catch (AtlasBaseException e) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Gremlin execution failed for metric {}", query, e);
-            } else {
-                LOG.warn("Gremlin execution failed for metric {}", query);
-            }
-        }
-        return ret;
+        return CollectionUtils.isNotEmpty(allTypeNames) ? allTypeNames.size() : 0;
     }
 
-    private Object executeQuery(final String query) throws AtlasBaseException {
-        return atlasGraph.executeGremlinScript(query, false);
+    private int getAllTagsCount() {
+        Collection<String> allTagNames = typeRegistry.getAllClassificationDefNames();
+
+        return CollectionUtils.isNotEmpty(allTagNames) ? allTagNames.size() : 0;
     }
 
     private boolean isCacheValid() {
@@ -248,16 +194,5 @@ public class MetricsService {
         }
 
         return valid;
-    }
-
-    private static String getQuery(String type, String name, String defaultQuery) {
-        String ret = configuration != null ? configuration.getString(METRIC_QUERY_PREFIX + type + "." + name, defaultQuery)
-                             : defaultQuery;
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("query for {}.{}: {}", type, name, ret);
-        }
-
-        return ret;
     }
 }
