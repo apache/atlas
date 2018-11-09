@@ -44,6 +44,12 @@ public interface AtlasIndexQuery<V, E> {
     Iterator<Result<V, E>> vertices(int offset, int limit);
 
     /**
+     * Gets the total count of query results
+     * @return
+     */
+    Long vertexTotals();
+
+    /**
      * Query result from an index query.
      *
      * @param <V>

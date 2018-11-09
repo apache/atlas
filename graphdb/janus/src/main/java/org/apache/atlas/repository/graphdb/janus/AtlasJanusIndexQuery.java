@@ -77,6 +77,11 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         return Iterators.transform(results, function);
     }
 
+    @Override
+    public Long vertexTotals() {
+        return query.vertexTotals();
+    }
+
     /**
      * Janus implementation of AtlasIndexQuery.Result.
      */
