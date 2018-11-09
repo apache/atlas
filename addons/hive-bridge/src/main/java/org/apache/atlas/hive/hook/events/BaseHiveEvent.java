@@ -145,6 +145,7 @@ public abstract class BaseHiveEvent {
     public static final String HBASE_NAMESPACE_TABLE_DELIMITER     = ":";
     public static final String HBASE_PARAM_TABLE_NAME              = "hbase.table.name";
     public static final long   MILLIS_CONVERT_FACTOR               = 1000;
+    public static final String HDFS_PATH_PREFIX                    = "hdfs://";
 
     public static final Map<Integer, String> OWNER_TYPE_TO_ENUM_VALUE = new HashMap<>();
 
@@ -505,7 +506,11 @@ public abstract class BaseHiveEvent {
 
     protected AtlasEntity getPathEntity(Path path, AtlasEntityExtInfo extInfo) {
         AtlasEntity ret;
-        String      strPath = path.toString().toLowerCase();
+        String strPath = path.toString();
+
+        if (strPath.startsWith(HDFS_PATH_PREFIX) && context.isConvertHdfsPathToLowerCase()) {
+            strPath = strPath.toLowerCase();
+        }
 
         if (isS3Path(strPath)) {
             String      bucketName          = path.toUri().getAuthority();
@@ -550,9 +555,15 @@ public abstract class BaseHiveEvent {
                     ret.setAttribute(ATTRIBUTE_NAMESERVICE_ID, nameServiceID);
                 }
 
+                String name = Path.getPathWithoutSchemeAndAuthority(path).toString();
+
+                if (strPath.startsWith(HDFS_PATH_PREFIX) && context.isConvertHdfsPathToLowerCase()) {
+                    name = name.toLowerCase();
+                }
+
                 ret.setAttribute(ATTRIBUTE_PATH, attrPath);
                 ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, pathQualifiedName);
-                ret.setAttribute(ATTRIBUTE_NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
+                ret.setAttribute(ATTRIBUTE_NAME, name);
                 ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, getClusterName());
 
                 context.putEntity(pathQualifiedName, ret);
@@ -688,7 +699,12 @@ public abstract class BaseHiveEvent {
     }
 
     protected String getQualifiedName(URI location) {
-        String strPath       = new Path(location).toString().toLowerCase();
+        String strPath = new Path(location).toString();
+
+        if (strPath.startsWith(HDFS_PATH_PREFIX) && context.isConvertHdfsPathToLowerCase()) {
+            strPath = strPath.toLowerCase();
+        }
+
         String nameServiceID = HdfsNameServiceResolver.getNameServiceIDForPath(strPath);
         String attrPath      = StringUtils.isEmpty(nameServiceID) ? strPath : HdfsNameServiceResolver.getPathWithNameServiceID(strPath);
 
@@ -697,7 +713,7 @@ public abstract class BaseHiveEvent {
 
     protected String getQualifiedName(String path) {
         if (path.startsWith(HdfsNameServiceResolver.HDFS_SCHEME)) {
-            return (path + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+            return path + QNAME_SEP_CLUSTER_NAME + getClusterName();
         }
 
         return path.toLowerCase();
