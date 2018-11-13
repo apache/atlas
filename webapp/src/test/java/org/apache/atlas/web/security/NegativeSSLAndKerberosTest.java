@@ -91,6 +91,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
                 + "/users-credentials");
         configuration.setProperty("atlas.auth.policy.file",persistDir
                 + "/policy-store.txt" );
+        configuration.setProperty("atlas.authentication.method.trustedproxy", "false");
 
         TestUtils.writeConfiguration(configuration, persistDir + File.separator +
                 ApplicationProperties.APPLICATION_PROPERTIES);
