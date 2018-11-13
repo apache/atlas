@@ -91,6 +91,7 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
         configuration.setProperty("atlas.authentication.principal","dgi/localhost@"+kdc.getRealm());
 
         configuration.setProperty("atlas.authentication.method.file", "false");
+        configuration.setProperty("atlas.authentication.method.trustedproxy", "false");
         configuration.setProperty("atlas.authentication.method.kerberos", "true");
         configuration.setProperty("atlas.authentication.method.kerberos.principal", "HTTP/localhost@" + kdc.getRealm());
         configuration.setProperty("atlas.authentication.method.kerberos.keytab", httpKeytabFile.getAbsolutePath());
