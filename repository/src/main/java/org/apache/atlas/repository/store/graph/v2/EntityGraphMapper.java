@@ -26,7 +26,6 @@ import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
@@ -43,7 +42,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -93,7 +92,7 @@ public class EntityGraphMapper {
 
     private final GraphHelper               graphHelper = GraphHelper.getInstance();
     private final AtlasGraph                graph;
-    private final DeleteHandlerV1           deleteHandler;
+    private final DeleteHandlerDelegate     deleteDelegate;
     private final AtlasTypeRegistry         typeRegistry;
     private final AtlasRelationshipStore    relationshipStore;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
@@ -101,10 +100,10 @@ public class EntityGraphMapper {
     private final EntityGraphRetriever      entityRetriever;
 
     @Inject
-    public EntityGraphMapper(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph,
+    public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph,
                              AtlasRelationshipStore relationshipStore, AtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter) {
-        this.deleteHandler        = deleteHandler;
+        this.deleteDelegate       = deleteDelegate;
         this.typeRegistry         = typeRegistry;
         this.graph                = atlasGraph;
         this.relationshipStore    = relationshipStore;
@@ -394,7 +393,7 @@ public class EntityGraphMapper {
                 AtlasEdge newEdge = mapStructValue(ctx, context);
 
                 if (currentEdge != null && !currentEdge.equals(newEdge)) {
-                    deleteHandler.deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), false, true, ctx.getReferringVertex());
+                    deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), false, true, ctx.getReferringVertex());
                 }
 
                 return newEdge;
@@ -466,7 +465,7 @@ public class EntityGraphMapper {
                     }
 
                     //delete old reference
-                    deleteHandler.deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(),
+                    deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(),
                                                       true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
                 }
 
@@ -527,7 +526,7 @@ public class EntityGraphMapper {
             if (inverseEdge != null) {
                 if (!inverseEdge.equals(newEdge)) {
                     // Disconnect old reference
-                    deleteHandler.deleteEdgeReference(inverseEdge, inverseAttribute.getAttributeType().getTypeCategory(),
+                    deleteDelegate.getHandler().deleteEdgeReference(inverseEdge, inverseAttribute.getAttributeType().getTypeCategory(),
                                                       inverseAttribute.isOwnedRef(), true, inverseVertex);
                 }
                 else {
@@ -1178,7 +1177,7 @@ public class EntityGraphMapper {
             AtlasEdge currentEdge = (AtlasEdge) currentMap.get(currentKey);
 
             if (!newMap.values().contains(currentEdge)) {
-                boolean deleted = deleteHandler.deleteEdgeReference(currentEdge, mapType.getValueType().getTypeCategory(), attribute.isOwnedRef(), true, vertex);
+                boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(currentEdge, mapType.getValueType().getTypeCategory(), attribute.isOwnedRef(), true, vertex);
 
                 if (!deleted) {
                     additionalMap.put(currentKey, currentEdge);
@@ -1308,7 +1307,7 @@ public class EntityGraphMapper {
                     List<AtlasEdge> additionalElements = new ArrayList<>();
 
                     for (AtlasEdge edge : edgesToRemove) {
-                        boolean deleted = deleteHandler.deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
+                        boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
                                                                              true, attribute.getRelationshipEdgeDirection(), entityVertex);
 
                         if (!deleted) {
@@ -1447,7 +1446,7 @@ public class EntityGraphMapper {
                             LOG.debug("Propagating tag: [{}][{}] to {}", classificationName, entityTypeName, getTypeNames(entitiesToPropagateTo));
                         }
 
-                        List<AtlasVertex> entitiesPropagatedTo = deleteHandler.addTagPropagation(classificationVertex, entitiesToPropagateTo);
+                        List<AtlasVertex> entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, entitiesToPropagateTo);
 
                         if (entitiesPropagatedTo != null) {
                             for (AtlasVertex entityPropagatedTo : entitiesPropagatedTo) {
@@ -1506,7 +1505,7 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
         }
 
-        deleteHandler.deletePropagatedClassification(entityVertex, classificationName, associatedEntityGuid);
+        deleteDelegate.getHandler().deletePropagatedClassification(entityVertex, classificationName, associatedEntityGuid);
     }
 
     public void deleteClassification(String entityGuid, String classificationName) throws AtlasBaseException {
@@ -1535,7 +1534,7 @@ public class EntityGraphMapper {
 
         // remove classification from propagated entities if propagation is turned on
         if (isPropagationEnabled(classificationVertex)) {
-            List<AtlasVertex> propagatedEntityVertices = deleteHandler.removeTagPropagation(classificationVertex);
+            List<AtlasVertex> propagatedEntityVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
 
             // add propagated entities and deleted classification details to removeClassifications map
             if (CollectionUtils.isNotEmpty(propagatedEntityVertices)) {
@@ -1572,7 +1571,7 @@ public class EntityGraphMapper {
 
         AtlasEdge edge = getClassificationEdge(entityVertex, classificationVertex);
 
-        deleteHandler.deleteEdgeReference(edge, CLASSIFICATION, false, true, entityVertex);
+        deleteDelegate.getHandler().deleteEdgeReference(edge, CLASSIFICATION, false, true, entityVertex);
 
         traitNames.remove(classificationName);
 
@@ -1701,7 +1700,7 @@ public class EntityGraphMapper {
                             }
                         }
 
-                        List<AtlasVertex> entitiesPropagatedTo = deleteHandler.addTagPropagation(classificationVertex, entitiesToPropagateTo);
+                        List<AtlasVertex> entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, entitiesToPropagateTo);
 
                         if (entitiesPropagatedTo != null) {
                             for (AtlasVertex entityPropagatedTo : entitiesPropagatedTo) {
@@ -1710,7 +1709,7 @@ public class EntityGraphMapper {
                         }
                     }
                 } else {
-                    List<AtlasVertex> impactedVertices = deleteHandler.removeTagPropagation(classificationVertex);
+                    List<AtlasVertex> impactedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
 
                     if (CollectionUtils.isNotEmpty(impactedVertices)) {
                         if (removedPropagations == null) {

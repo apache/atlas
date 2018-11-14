@@ -30,12 +30,8 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
@@ -60,11 +56,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ExportServiceTest extends ExportImportTestBase {
@@ -77,9 +71,6 @@ public class ExportServiceTest extends ExportImportTestBase {
     private AtlasTypeDefStore typeDefStore;
 
     @Inject
-    private EntityGraphMapper graphMapper;
-
-    @Inject
     ExportService exportService;
 
     @Inject
@@ -87,9 +78,6 @@ public class ExportServiceTest extends ExportImportTestBase {
 
     @Inject
     private AtlasEntityStoreV2 entityStore;
-
-    private DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);;
-    private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
 
     @BeforeTest
     public void setupTest() throws IOException, AtlasBaseException {

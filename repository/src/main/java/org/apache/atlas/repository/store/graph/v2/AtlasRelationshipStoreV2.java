@@ -41,7 +41,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -95,15 +95,15 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     private final AtlasTypeRegistry         typeRegistry;
     private final EntityGraphRetriever      entityRetriever;
-    private final DeleteHandlerV1 deleteHandler;
+    private final DeleteHandlerDelegate     deleteDelegate;
     private final GraphHelper               graphHelper = GraphHelper.getInstance();
     private final AtlasEntityChangeNotifier entityChangeNotifier;
 
     @Inject
-    public AtlasRelationshipStoreV2(AtlasTypeRegistry typeRegistry, DeleteHandlerV1 deleteHandler, AtlasEntityChangeNotifier entityChangeNotifier) {
+    public AtlasRelationshipStoreV2(AtlasTypeRegistry typeRegistry, DeleteHandlerDelegate deleteDelegate, AtlasEntityChangeNotifier entityChangeNotifier) {
         this.typeRegistry         = typeRegistry;
         this.entityRetriever      = new EntityGraphRetriever(typeRegistry);
-        this.deleteHandler        = deleteHandler;
+        this.deleteDelegate       = deleteDelegate;
         this.entityChangeNotifier = entityChangeNotifier;
     }
 
@@ -277,7 +277,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry,AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
 
 
-        deleteHandler.deleteRelationships(Collections.singleton(edge), forceDelete);
+        deleteDelegate.getHandler().deleteRelationships(Collections.singleton(edge), forceDelete);
 
         // notify entities for added/removed classification propagation
         entityChangeNotifier.notifyPropagatedEntities();
@@ -426,7 +426,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             for (AtlasVertex classificationVertex : addedBlockedClassifications) {
                 List<AtlasVertex> removePropagationFromVertices = graphHelper.getPropagatedEntityVertices(classificationVertex);
 
-                deleteHandler.removeTagPropagation(classificationVertex, removePropagationFromVertices);
+                deleteDelegate.getHandler().removeTagPropagation(classificationVertex, removePropagationFromVertices);
             }
 
             // add propagated tag for removed entry
@@ -435,7 +435,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             for (AtlasVertex classificationVertex : removedBlockedClassifications) {
                 List<AtlasVertex> addPropagationToVertices = graphHelper.getPropagatedEntityVertices(classificationVertex);
 
-                deleteHandler.addTagPropagation(classificationVertex, addPropagationToVertices);
+                deleteDelegate.getHandler().addTagPropagation(classificationVertex, addPropagationToVertices);
             }
         }
     }
@@ -527,11 +527,11 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             }
 
             for (AtlasVertex classificationVertex : addPropagationsMap.keySet()) {
-                deleteHandler.addTagPropagation(classificationVertex, addPropagationsMap.get(classificationVertex));
+                deleteDelegate.getHandler().addTagPropagation(classificationVertex, addPropagationsMap.get(classificationVertex));
             }
 
             for (AtlasVertex classificationVertex : removePropagationsMap.keySet()) {
-                deleteHandler.removeTagPropagation(classificationVertex, removePropagationsMap.get(classificationVertex));
+                deleteDelegate.getHandler().removeTagPropagation(classificationVertex, removePropagationsMap.get(classificationVertex));
             }
         } else {
             // update blocked propagated classifications only if there is no change is tag propagation (don't update both)
@@ -758,7 +758,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             handleBlockedClassifications(ret, relationship.getBlockedPropagatedClassifications());
 
             // propagate tags
-            deleteHandler.addTagPropagation(ret, tagPropagation);
+            deleteDelegate.getHandler().addTagPropagation(ret, tagPropagation);
         }
 
         return ret;

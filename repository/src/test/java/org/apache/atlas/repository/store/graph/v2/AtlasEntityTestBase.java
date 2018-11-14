@@ -38,7 +38,7 @@ import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasArrayType;
@@ -78,7 +78,7 @@ public class AtlasEntityTestBase {
     AtlasEntityStore entityStore;
 
     @Inject
-    DeleteHandlerV1 deleteHandler;
+    DeleteHandlerDelegate deleteDelegate;
 
     @Inject
     private EntityGraphMapper graphMapper;
@@ -107,7 +107,7 @@ public class AtlasEntityTestBase {
 
     @BeforeTest
     public void init() throws Exception {
-        entityStore = new AtlasEntityStoreV2(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
+        entityStore = new AtlasEntityStoreV2(deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
 
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
