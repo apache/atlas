@@ -59,10 +59,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2;
 import org.apache.atlas.repository.store.graph.v2.BulkImporterImpl;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -125,8 +122,6 @@ public class TestModules {
 
             bindAuditRepository(binder());
 
-            bindDeleteHandler(binder());
-
             bind(AtlasGraph.class).toProvider(AtlasGraphProvider.class);
 
             // allow for dynamic binding of graph service
@@ -186,10 +181,6 @@ public class TestModules {
             bindInterceptor(Matchers.any(), Matchers.annotatedWith(GraphTransaction.class), graphTransactionInterceptor);
         }
 
-        protected void bindDeleteHandler(Binder binder) {
-            binder.bind(DeleteHandlerV1.class).to(AtlasRepositoryConfiguration.getDeleteHandlerV1Impl()).asEagerSingleton();
-        }
-
         protected void bindAuditRepository(Binder binder) {
 
             Class<? extends EntityAuditRepository> auditRepoImpl = AtlasRepositoryConfiguration.getAuditRepositoryImpl();
@@ -203,22 +194,6 @@ public class TestModules {
                 Multibinder<Service> serviceBinder = Multibinder.newSetBinder(binder, Service.class);
                 serviceBinder.addBinding().to(auditRepoService);
             }
-        }
-    }
-
-    public static class SoftDeleteModule extends TestOnlyModule {
-        @Override
-        protected void bindDeleteHandler(Binder binder) {
-            bind(DeleteHandlerV1.class).to(SoftDeleteHandlerV1.class).asEagerSingleton();
-            bind(AtlasEntityChangeNotifier.class).toProvider(MockNotifier.class);
-        }
-    }
-
-    public static class HardDeleteModule extends TestOnlyModule {
-        @Override
-        protected void bindDeleteHandler(Binder binder) {
-            bind(DeleteHandlerV1.class).to(HardDeleteHandlerV1.class).asEagerSingleton();
-            bind(AtlasEntityChangeNotifier.class).toProvider(MockNotifier.class);
         }
     }
 }

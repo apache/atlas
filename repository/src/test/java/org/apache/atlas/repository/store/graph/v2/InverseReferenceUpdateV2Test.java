@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -33,12 +34,14 @@ import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
@@ -58,6 +61,7 @@ import static org.apache.atlas.TestUtilsV2.NAME;
  * Test automatic inverse reference updating in V1 (V2?) code path.
  *
  */
+@Guice(modules = TestModules.TestOnlyModule.class)
 public abstract class InverseReferenceUpdateV2Test {
     @Inject
     AtlasTypeRegistry typeRegistry;
@@ -69,8 +73,13 @@ public abstract class InverseReferenceUpdateV2Test {
     AtlasEntityStore entityStore;
 
     private AtlasEntitiesWithExtInfo deptEntity;
+    private final DeleteType         deleteType;
 
     protected Map<String, AtlasObjectId> nameIdMap = new HashMap<>();
+
+    protected InverseReferenceUpdateV2Test(DeleteType deleteType) {
+        this.deleteType = deleteType;
+    }
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -110,6 +119,7 @@ public abstract class InverseReferenceUpdateV2Test {
     public void init() throws Exception {
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+        RequestContext.get().setDeleteType(deleteType);
     }
 
     @Test

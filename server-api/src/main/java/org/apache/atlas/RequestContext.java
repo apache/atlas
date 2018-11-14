@@ -22,6 +22,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.store.DeleteType;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,20 +35,21 @@ public class RequestContext {
     private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
     private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
 
+    private final long                                   requestTime         = System.currentTimeMillis();
     private final Map<String, AtlasObjectId>             updatedEntities     = new HashMap<>();
     private final Map<String, AtlasObjectId>             deletedEntities     = new HashMap<>();
     private final Map<String, AtlasEntity>               entityCache         = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache  = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations   = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations = new HashMap<>();
-    private final long                                   requestTime         = System.currentTimeMillis();
     private       List<EntityGuidPair>                   entityGuidInRequest = null;
 
     private String      user;
     private Set<String> userGroups;
-    private String clientIPAddress;
-    private int    maxAttempts  = 1;
-    private int    attemptCount = 1;
+    private String      clientIPAddress;
+    private DeleteType  deleteType   = DeleteType.DEFAULT;
+    private int         maxAttempts  = 1;
+    private int         attemptCount = 1;
 
 
     private RequestContext() {
@@ -74,16 +76,7 @@ public class RequestContext {
         RequestContext instance = CURRENT_CONTEXT.get();
 
         if (instance != null) {
-            instance.updatedEntities.clear();
-            instance.deletedEntities.clear();
-            instance.entityCache.clear();
-            instance.entityExtInfoCache.clear();
-            instance.addedPropagations.clear();
-            instance.removedPropagations.clear();
-
-            if (instance.entityGuidInRequest != null) {
-                instance.entityGuidInRequest.clear();
-            }
+            instance.clearCache();
 
             synchronized (ACTIVE_REQUESTS) {
                 ACTIVE_REQUESTS.remove(instance);
@@ -91,6 +84,19 @@ public class RequestContext {
         }
 
         CURRENT_CONTEXT.remove();
+    }
+
+    public void clearCache() {
+        this.updatedEntities.clear();
+        this.deletedEntities.clear();
+        this.entityCache.clear();
+        this.entityExtInfoCache.clear();
+        this.addedPropagations.clear();
+        this.removedPropagations.clear();
+
+        if (this.entityGuidInRequest != null) {
+            this.entityGuidInRequest.clear();
+        }
     }
 
     public static String getCurrentUser() {
@@ -110,6 +116,10 @@ public class RequestContext {
         this.user       = user;
         this.userGroups = userGroups;
     }
+
+    public DeleteType getDeleteType() { return deleteType; }
+
+    public void setDeleteType(DeleteType deleteType) { this.deleteType = (deleteType == null) ? DeleteType.DEFAULT : deleteType; }
 
     public String getClientIPAddress() {
         return clientIPAddress;
@@ -160,12 +170,6 @@ public class RequestContext {
 
             addedPropagations.put(guid, classifications);
         }
-    }
-
-    public static RequestContext createContext() {
-        clear();
-
-        return get();
     }
 
     public static int getActiveRequestsCount() {

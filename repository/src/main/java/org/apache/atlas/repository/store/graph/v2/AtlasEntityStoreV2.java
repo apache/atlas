@@ -33,7 +33,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -62,16 +62,16 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("store.EntityStore");
 
 
-    private final DeleteHandlerV1 deleteHandler;
+    private final DeleteHandlerDelegate     deleteDelegate;
     private final AtlasTypeRegistry         typeRegistry;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphMapper         entityGraphMapper;
     private final EntityGraphRetriever      entityRetriever;
 
     @Inject
-    public AtlasEntityStoreV2(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry,
+    public AtlasEntityStoreV2(DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry,
                               AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper) {
-        this.deleteHandler        = deleteHandler;
+        this.deleteDelegate       = deleteDelegate;
         this.typeRegistry         = typeRegistry;
         this.entityChangeNotifier = entityChangeNotifier;
         this.entityGraphMapper    = entityGraphMapper;
@@ -802,7 +802,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityMutationResponse response = new EntityMutationResponse();
         RequestContext         req      = RequestContext.get();
 
-        deleteHandler.deleteEntities(deletionCandidates); // this will update req with list of deleted/updated entities
+        deleteDelegate.getHandler().deleteEntities(deletionCandidates); // this will update req with list of deleted/updated entities
 
         for (AtlasObjectId entity : req.getDeletedEntities()) {
             response.addEntity(DELETE, entity);

@@ -109,7 +109,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
     }
     @BeforeTest
     public void init() throws Exception {
-        entityStore = new AtlasEntityStoreV2(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
+        entityStore = new AtlasEntityStoreV2(deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
 

@@ -18,11 +18,11 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.TestModules;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
-import org.testng.annotations.Guice;
+import org.apache.atlas.store.DeleteType;
+import org.testng.annotations.BeforeTest;
 
 import java.util.List;
 
@@ -32,10 +32,13 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
 /**
- * Inverse reference update test with {@link HardDeleteHandlerV1}
+ * Inverse reference update test with HardDeleteHandlerV1
  */
-@Guice(modules = TestModules.HardDeleteModule.class)
 public class AtlasRelationshipStoreHardDeleteV2Test extends AtlasRelationshipStoreV2Test {
+
+    public AtlasRelationshipStoreHardDeleteV2Test() {
+        super(DeleteType.HARD);
+    }
 
     @Override
     protected void verifyRelationshipAttributeUpdate_NonComposite_OneToMany(AtlasEntity jane) throws Exception {

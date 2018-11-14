@@ -35,9 +35,10 @@ import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
@@ -77,7 +78,7 @@ public abstract class AtlasRelationshipStoreV2Test {
     AtlasTypeDefStore typeDefStore;
 
     @Inject
-    DeleteHandlerV1 deleteHandler;
+    DeleteHandlerDelegate deleteDelegate;
 
     @Inject
     EntityGraphMapper graphMapper;
@@ -88,8 +89,13 @@ public abstract class AtlasRelationshipStoreV2Test {
     AtlasEntityStore          entityStore;
     AtlasRelationshipStore    relationshipStore;
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
+    private final DeleteType  deleteType;
 
     protected Map<String, AtlasObjectId> employeeNameIdMap = new HashMap<>();
+
+    protected AtlasRelationshipStoreV2Test(DeleteType delteType) {
+        this.deleteType = delteType;
+    }
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -118,11 +124,12 @@ public abstract class AtlasRelationshipStoreV2Test {
 
     @BeforeTest
     public void init() throws Exception {
-        entityStore       = new AtlasEntityStoreV2(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);
-        relationshipStore = new AtlasRelationshipStoreV2(typeRegistry, deleteHandler, entityNotifier);
+        entityStore       = new AtlasEntityStoreV2(deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
+        relationshipStore = new AtlasRelationshipStoreV2(typeRegistry, deleteDelegate, entityNotifier);
 
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+        RequestContext.get().setDeleteType(deleteType);
     }
 
     @AfterClass

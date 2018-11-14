@@ -18,12 +18,10 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.TestModules;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.testng.annotations.Guice;
 
 import java.util.Map;
 
@@ -32,10 +30,13 @@ import static org.testng.Assert.assertTrue;
 
 
 /**
- * Inverse reference update test with {@link SoftDeleteHandlerV1}
+ * Inverse reference update test with SoftDeleteHandlerV1
  */
-@Guice(modules = TestModules.SoftDeleteModule.class)
 public class InverseReferenceUpdateSoftDeleteV2Test extends InverseReferenceUpdateV2Test {
+
+    public InverseReferenceUpdateSoftDeleteV2Test() {
+        super(DeleteType.SOFT);
+    }
 
     @Override
     protected void verify_testInverseReferenceAutoUpdate_NonComposite_OneToMany(AtlasEntity jane)
