@@ -81,13 +81,7 @@ public class RequestContext {
         RequestContext instance = CURRENT_CONTEXT.get();
 
         if (instance != null) {
-            instance.createdEntityIds.clear();
-            instance.updatedEntityIds.clear();
-            instance.deletedEntityIds.clear();
-            instance.deletedEntities.clear();
-            instance.entityCacheV1.clear();
-            instance.entityCache.clear();
-            instance.entityExtInfoCache.clear();
+            instance.clearCache();
 
             synchronized (ACTIVE_REQUESTS) {
                 ACTIVE_REQUESTS.remove(instance);
@@ -95,6 +89,16 @@ public class RequestContext {
         }
 
         CURRENT_CONTEXT.remove();
+    }
+
+    public void clearCache() {
+        this.createdEntityIds.clear();
+        this.updatedEntityIds.clear();
+        this.deletedEntityIds.clear();
+        this.deletedEntities.clear();
+        this.entityCacheV1.clear();
+        this.entityCache.clear();
+        this.entityExtInfoCache.clear();
     }
 
     public static RequestContext createContext() {

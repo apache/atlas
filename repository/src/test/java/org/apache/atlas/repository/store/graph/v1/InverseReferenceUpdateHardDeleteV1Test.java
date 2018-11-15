@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.testng.annotations.Guice;
 
@@ -30,10 +31,13 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 /**
- * Inverse reference update test with {@link HardDeleteHandlerV1}
+ * Inverse reference update test with HardDeleteHandlerV1
  */
-@Guice(modules = TestModules.HardDeleteModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class InverseReferenceUpdateHardDeleteV1Test extends InverseReferenceUpdateV1Test {
+    public InverseReferenceUpdateHardDeleteV1Test() {
+        super(DeleteType.HARD);
+    }
 
     @Override
     protected void verify_testInverseReferenceAutoUpdate_NonComposite_OneToMany(AtlasEntity jane) throws Exception {

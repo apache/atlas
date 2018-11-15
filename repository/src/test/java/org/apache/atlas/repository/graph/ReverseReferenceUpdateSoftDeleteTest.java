@@ -21,6 +21,7 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.testng.Assert;
@@ -34,8 +35,12 @@ import java.util.List;
  * Run tests in {@link ReverseReferenceUpdateTestBase} with soft delete enabled.
  *
  */
-@Guice(modules = TestModules.SoftDeleteModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class ReverseReferenceUpdateSoftDeleteTest extends ReverseReferenceUpdateTestBase {
+    public ReverseReferenceUpdateSoftDeleteTest() {
+        super(DeleteType.SOFT);
+    }
+
     @Override
     void assertTestOneToOneReference(Object actual, ITypedReferenceableInstance expectedValue, ITypedReferenceableInstance referencingInstance) throws Exception {
         // Verify reference was not disconnected if soft deletes are enabled.

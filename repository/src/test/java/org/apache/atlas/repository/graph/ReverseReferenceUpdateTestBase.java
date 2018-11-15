@@ -21,8 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import org.apache.atlas.CreateUpdateEntitiesResult;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
@@ -58,8 +60,14 @@ public abstract class ReverseReferenceUpdateTestBase {
     protected ClassType typeA;
     protected ClassType typeB;
 
+    private final DeleteType deleteType;
+
     abstract void assertTestOneToOneReference(Object actual, ITypedReferenceableInstance expectedValue, ITypedReferenceableInstance referencingInstance) throws Exception;
     abstract void assertTestOneToManyReference(Object refValue, ITypedReferenceableInstance referencingInstance) throws Exception;
+
+    protected ReverseReferenceUpdateTestBase(DeleteType deleteType) {
+        this.deleteType = deleteType;
+    }
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -92,6 +100,8 @@ public abstract class ReverseReferenceUpdateTestBase {
     @BeforeMethod
     public void setupContext() {
         TestUtils.resetRequestContext();
+
+        RequestContextV1.get().setDeleteType(deleteType);
     }
 
     @Test

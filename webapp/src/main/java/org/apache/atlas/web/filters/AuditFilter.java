@@ -23,10 +23,12 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.metrics.Metrics;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -43,6 +45,8 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.UUID;
 
+import static org.apache.atlas.AtlasConfiguration.REST_API_ENABLE_DELETE_TYPE_OVERRIDE;
+
 /**
  * This records audit information as part of the filter after processing the request
  * and also introduces a UUID into request and response for tracing requests in logs.
@@ -53,9 +57,15 @@ public class AuditFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(AuditFilter.class);
     private static final Logger METRICS_LOG = LoggerFactory.getLogger("METRICS");
 
+    private boolean deleteTypeOverrideEnabled = false;
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         LOG.info("AuditFilter initialization started");
+
+        deleteTypeOverrideEnabled = REST_API_ENABLE_DELETE_TYPE_OVERRIDE.getBoolean();
+
+        LOG.info("REST_API_ENABLE_DELETE_TYPE_OVERRIDE={}", deleteTypeOverrideEnabled);
     }
 
     @Override
@@ -67,12 +77,26 @@ public class AuditFilter implements Filter {
         final Thread currentThread = Thread.currentThread();
         final String oldName = currentThread.getName();
         String user = getUserFromRequest(httpRequest);
+        final String deleteType = httpRequest.getParameter("deleteType");
 
         try {
             currentThread.setName(formatName(oldName, requestId));
             RequestContext requestContext = RequestContext.createContext();
             requestContext.setUser(user);
-            recordAudit(httpRequest, requestTimeISO9601, user);
+
+            RequestContextV1.clear();
+            RequestContextV1 requestContextV1 = RequestContextV1.get();
+            requestContextV1.setUser(user);
+
+            if (StringUtils.isNotEmpty(deleteType)) {
+                if (deleteTypeOverrideEnabled) {
+                    requestContextV1.setDeleteType(DeleteType.from(deleteType));
+                } else {
+                    LOG.warn("Override of deleteType is not enabled. Ignoring parameter deleteType={}, in request from user={}", deleteType, user);
+                }
+            }
+
+                recordAudit(httpRequest, requestTimeISO9601, user);
             filterChain.doFilter(request, response);
         } finally {
             // put the request id into the response so users can trace logs for this request

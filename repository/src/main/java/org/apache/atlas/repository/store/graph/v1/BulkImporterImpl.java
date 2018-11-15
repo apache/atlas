@@ -101,8 +101,8 @@ public class BulkImporterImpl implements BulkImporter {
                     throw abe;
                 }
             } finally {
-                RequestContext.clear();
-                RequestContextV1.clear();
+                RequestContext.get().clearCache();
+                RequestContextV1.get().clearCache();
             }
         }
 

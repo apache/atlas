@@ -32,7 +32,6 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -65,9 +64,6 @@ public class ExportServiceTest extends ExportImportTestBase {
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
-
-    @Inject
-    private EntityGraphMapper graphMapper;
 
     @Inject
     ExportService exportService;

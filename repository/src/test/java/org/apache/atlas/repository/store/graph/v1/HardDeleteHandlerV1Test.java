@@ -29,6 +29,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -45,9 +46,11 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 import static org.testng.AssertJUnit.assertNotNull;
 
-@Guice(modules = TestModules.HardDeleteModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class HardDeleteHandlerV1Test extends AtlasDeleteHandlerV1Test {
-
+    public HardDeleteHandlerV1Test() {
+        super(DeleteType.HARD);
+    }
 
     @Override
     protected void assertTableForTestDeleteReference(String tableId) {

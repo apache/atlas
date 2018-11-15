@@ -35,6 +35,7 @@ import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -68,7 +69,7 @@ public abstract class AbstractGremlinQueryOptimizerTest implements IAtlasGraphPr
         GremlinQueryOptimizer.setExpressionFactory(getFactory());
         when(STRATEGY.typeAttributeName()).thenReturn(Constants.ENTITY_TYPE_PROPERTY_KEY);
         when(STRATEGY.superTypeAttributeName()).thenReturn(Constants.SUPER_TYPES_PROPERTY_KEY);
-        repo = new GraphBackedMetadataRepository(new HardDeleteHandler(TypeSystem.getInstance()), this.get());
+        repo = new GraphBackedMetadataRepository(new DeleteHandlerDelegate(TypeSystem.getInstance()), this.get());
     }
 
     private FieldInfo getTestFieldInfo() throws AtlasException {

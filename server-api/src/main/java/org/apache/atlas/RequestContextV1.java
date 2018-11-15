@@ -21,6 +21,7 @@ package org.apache.atlas;
 import org.apache.atlas.metrics.Metrics;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.store.DeleteType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,14 +39,15 @@ public class RequestContextV1 {
     private static final ThreadLocal<RequestContextV1> CURRENT_CONTEXT = new ThreadLocal<>();
     private static final Set<RequestContextV1>         ACTIVE_REQUESTS = new HashSet<>();
 
+    private final long                       requestTime     = System.currentTimeMillis();
     private final Map<String, AtlasObjectId> updatedEntities = new HashMap<>();
     private final Map<String, AtlasObjectId> deletedEntities = new HashMap<>();
     private final Map<String, AtlasEntity>   entityCacheV2   = new HashMap<>();
     private final Metrics                    metrics         = new Metrics();
-    private final long                       requestTime     = System.currentTimeMillis();
     private       List<EntityGuidPair>       entityGuidInRequest = null;
 
-    private String user;
+    private String     user;
+    private DeleteType deleteType = DeleteType.DEFAULT;
 
     private RequestContextV1() {
     }
@@ -71,13 +73,7 @@ public class RequestContextV1 {
         RequestContextV1 instance = CURRENT_CONTEXT.get();
 
         if (instance != null) {
-            instance.updatedEntities.clear();
-            instance.deletedEntities.clear();
-            instance.entityCacheV2.clear();
-
-            if (instance.entityGuidInRequest != null) {
-                instance.entityGuidInRequest.clear();
-            }
+            instance.clearCache();
 
             synchronized (ACTIVE_REQUESTS) {
                 ACTIVE_REQUESTS.remove(instance);
@@ -85,6 +81,16 @@ public class RequestContextV1 {
         }
 
         CURRENT_CONTEXT.remove();
+    }
+
+    public void clearCache() {
+        this.updatedEntities.clear();
+        this.deletedEntities.clear();
+        this.entityCacheV2.clear();
+
+        if (this.entityGuidInRequest != null) {
+            this.entityGuidInRequest.clear();
+        }
     }
 
     public static int getActiveRequestsCount() {
@@ -117,6 +123,10 @@ public class RequestContextV1 {
     public void setUser(String user) {
         this.user = user;
     }
+
+    public DeleteType getDeleteType() { return deleteType; }
+
+    public void setDeleteType(DeleteType deleteType) { this.deleteType = (deleteType == null) ? DeleteType.DEFAULT : deleteType; }
 
     public void recordEntityUpdate(AtlasObjectId entity) {
         if (entity != null && entity.getGuid() != null) {

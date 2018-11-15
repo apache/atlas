@@ -18,7 +18,10 @@
 
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
+import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -30,10 +33,12 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -48,7 +53,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-@Guice(modules = TestModules.SoftDeleteModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class SoftReferenceTest {
     private static final String TYPE_RDBMS_DB = "rdbms_db";
     private static final String RDBMS_DB_FILE = "rdbms-db";
@@ -72,6 +77,12 @@ public class SoftReferenceTest {
     private AtlasType dbType;
     private String dbGuid;
     private String storageGuid;
+
+    @BeforeMethod
+    public void init() throws Exception {
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER);
+        RequestContextV1.get().setDeleteType(DeleteType.SOFT);
+    }
 
     @Test
     public void typeCreationFromFile() throws IOException, AtlasBaseException {

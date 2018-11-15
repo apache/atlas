@@ -28,6 +28,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -69,13 +70,13 @@ public final class TypedInstanceToGraphMapper {
     private final TypeSystem typeSystem = TypeSystem.getInstance();
     private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
-    private DeleteHandler deleteHandler;
+    private DeleteHandlerDelegate deleteDelegate;
     private GraphToTypedInstanceMapper graphToTypedInstanceMapper;
 
     @Inject
-    public TypedInstanceToGraphMapper(GraphToTypedInstanceMapper graphToTypedInstanceMapper, DeleteHandler deleteHandler) {
+    public TypedInstanceToGraphMapper(GraphToTypedInstanceMapper graphToTypedInstanceMapper, DeleteHandlerDelegate deleteDelegate) {
         this.graphToTypedInstanceMapper = graphToTypedInstanceMapper;
-        this.deleteHandler = deleteHandler;
+        this.deleteDelegate = deleteDelegate;
     }
 
     private final String SIGNATURE_HASH_PROPERTY_KEY = encodePropertyKey(Constants.INTERNAL_PROPERTY_KEY_PREFIX + "signature");
@@ -243,7 +244,7 @@ public final class TypedInstanceToGraphMapper {
                         attrValue, currentEdge, edgeLabel, operation);
 
                 if (currentEdge != null && !currentEdge.equals(newEdge)) {
-                    deleteHandler.deleteEdgeReference(currentEdge, attributeInfo.dataType().getTypeCategory(),
+                    deleteDelegate.getHandler().deleteEdgeReference(currentEdge, attributeInfo.dataType().getTypeCategory(),
                             attributeInfo.isComposite, true);
                 }
                 if (attributeInfo.reverseAttributeName != null && newEdge != null) {
@@ -481,7 +482,7 @@ public final class TypedInstanceToGraphMapper {
 
                 if (!cloneElements.isEmpty()) {
                     for (AtlasEdge edge : cloneElements) {
-                        boolean deleted = deleteHandler.deleteEdgeReference(edge, entryType.getTypeCategory(),
+                        boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(),
                                 attributeInfo.isComposite, true);
                         if (!deleted) {
                             additionalElements.add(edge);
@@ -568,7 +569,7 @@ public final class TypedInstanceToGraphMapper {
                 if (!newMap.values().contains(currentEdge)) {
 
                     boolean deleted =
-                            deleteHandler.deleteEdgeReference(currentEdge, elementType.getTypeCategory(), attributeInfo.isComposite, true);
+                            deleteDelegate.getHandler().deleteEdgeReference(currentEdge, elementType.getTypeCategory(), attributeInfo.isComposite, true);
                     if (!deleted) {
                         additionalMap.put(currentKey, currentEdge);
                         shouldDeleteKey = false;
@@ -914,7 +915,7 @@ public final class TypedInstanceToGraphMapper {
         case CLASS:
             if (reverseEdge != null && !reverseEdge.getId().toString().equals(newEdge.getId().toString())) {
                 // Disconnect old reference
-                deleteHandler.deleteEdgeReference(reverseEdge, reverseAttrInfo.dataType().getTypeCategory(),
+                deleteDelegate.getHandler().deleteEdgeReference(reverseEdge, reverseAttrInfo.dataType().getTypeCategory(),
                     reverseAttrInfo.isComposite, true);
             }
             break;

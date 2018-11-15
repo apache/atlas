@@ -45,6 +45,7 @@ import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
@@ -98,6 +99,12 @@ public abstract class AtlasDeleteHandlerV1Test {
 
     private TypeSystem typeSystem = TypeSystem.getInstance();
 
+    private final DeleteType deleteType;
+
+    protected AtlasDeleteHandlerV1Test(DeleteType deleteType) {
+        this.deleteType = deleteType;
+    }
+
     @BeforeClass
     public void setUp() throws Exception {
         RequestContextV1.clear();
@@ -146,6 +153,7 @@ public abstract class AtlasDeleteHandlerV1Test {
     public void init() throws Exception {
         RequestContextV1.clear();
         RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+        RequestContextV1.get().setDeleteType(deleteType);
     }
 
     @AfterClass

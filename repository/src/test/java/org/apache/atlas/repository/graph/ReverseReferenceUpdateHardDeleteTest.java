@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.graph;
 
 import org.apache.atlas.TestModules;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.testng.Assert;
 import org.testng.annotations.Guice;
@@ -29,8 +30,12 @@ import java.util.List;
  * Run tests in {@link ReverseReferenceUpdateTestBase} with hard delete enabled.
  *
  */
-@Guice(modules = TestModules.HardDeleteModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class ReverseReferenceUpdateHardDeleteTest extends ReverseReferenceUpdateTestBase {
+    public ReverseReferenceUpdateHardDeleteTest() {
+        super(DeleteType.HARD);
+    }
+
     @Override
     void assertTestOneToOneReference(Object refValue, ITypedReferenceableInstance expectedValue, ITypedReferenceableInstance referencingInstance) throws Exception {
         // Verify reference was disconnected

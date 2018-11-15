@@ -64,15 +64,15 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UP
 public class AtlasEntityStoreV1 implements AtlasEntityStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV1.class);
 
-    private final DeleteHandlerV1           deleteHandler;
+    private final DeleteHandlerDelegateV1   deleteDelegate;
     private final AtlasTypeRegistry         typeRegistry;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphMapper         entityGraphMapper;
 
     @Inject
-    public AtlasEntityStoreV1(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry,
+    public AtlasEntityStoreV1(DeleteHandlerDelegateV1 deleteDelegate, AtlasTypeRegistry typeRegistry,
                               AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper) {
-        this.deleteHandler        = deleteHandler;
+        this.deleteDelegate       = deleteDelegate;
         this.typeRegistry         = typeRegistry;
         this.entityChangeNotifier = entityChangeNotifier;
         this.entityGraphMapper    = entityGraphMapper;
@@ -671,7 +671,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     private EntityMutationResponse deleteVertices(Collection<AtlasVertex> deletionCandidates) throws AtlasBaseException {
         EntityMutationResponse response = new EntityMutationResponse();
-        deleteHandler.deleteEntities(deletionCandidates);
+        deleteDelegate.getHandlerV1().deleteEntities(deletionCandidates);
         RequestContextV1 req = RequestContextV1.get();
         for (AtlasObjectId id : req.getDeletedEntities()) {
             response.addEntity(DELETE, EntityGraphMapper.constructHeader(id));

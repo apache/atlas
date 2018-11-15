@@ -24,6 +24,7 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.model.legacy.EntityResult;
@@ -33,6 +34,8 @@ import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
@@ -86,7 +89,16 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     private ClassType compositeMapValueType;
 
     @Inject
+    private DeleteHandlerDelegate deleteHandler;
+
+    private final DeleteType deleteType;
+
+    @Inject
     AtlasGraph atlasGraph;
+
+    protected GraphBackedMetadataRepositoryDeleteTestBase(DeleteType deleteType) {
+        this.deleteType = deleteType;
+    }
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -95,7 +107,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         typeSystem.reset();
 
         new GraphBackedSearchIndexer(new AtlasTypeRegistry());
-        final GraphBackedMetadataRepository delegate = new GraphBackedMetadataRepository(getDeleteHandler(typeSystem), atlasGraph);
+        final GraphBackedMetadataRepository delegate = new GraphBackedMetadataRepository(deleteHandler, atlasGraph);
 
         repositoryService = TestUtils.addTransactionWrapper(delegate);
 
@@ -121,11 +133,11 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         compositeMapValueType = typeSystem.getDataType(ClassType.class, "CompositeMapValue");
     }
 
-    abstract DeleteHandler getDeleteHandler(TypeSystem typeSystem);
-
     @BeforeMethod
     public void setupContext() {
         TestUtils.resetRequestContext();
+
+        RequestContextV1.get().setDeleteType(deleteType);
     }
 
     @AfterClass

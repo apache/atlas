@@ -24,13 +24,13 @@ import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.persistence.Id.EntityState;
-import org.apache.atlas.typesystem.types.TypeSystem;
 import org.testng.Assert;
 
 import java.util.List;
@@ -44,9 +44,8 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class GraphBackedRepositorySoftDeleteTest extends GraphBackedMetadataRepositoryDeleteTestBase {
-    @Override
-    DeleteHandler getDeleteHandler(TypeSystem typeSystem) {
-        return new SoftDeleteHandler(typeSystem);
+    public GraphBackedRepositorySoftDeleteTest() {
+        super(DeleteType.SOFT);
     }
 
     @Override

@@ -22,14 +22,9 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.SkipException;
@@ -42,7 +37,6 @@ import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.create
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadEntity;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadHiveModel;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -55,9 +49,6 @@ public class ExportImportTestBase {
     protected static final String TABLE_TABLE_GUID = "6f3b305a-c459-4ae4-b651-aee0deb0685f";
     protected static final String TABLE_VIEW_GUID = "56415119-7cb0-40dd-ace8-1e50efd54991";
     protected static final String COLUMN_GUID_HIGH = "f87a5320-1529-4369-8d63-b637ebdf2c1c";
-
-    protected DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);
-    protected AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
 
     protected void basicSetup(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         loadBaseModel(typeDefStore, typeRegistry);
@@ -92,10 +83,6 @@ public class ExportImportTestBase {
 
         assertNotNull(result);
         assertTrue(result.size() > 0);
-    }
-
-    private String getCurrentCluster() throws AtlasException {
-        return ApplicationProperties.get().getString(AtlasConstants.CLUSTER_NAME_KEY, "default");
     }
 
     protected void pauseForIndexCreation() {

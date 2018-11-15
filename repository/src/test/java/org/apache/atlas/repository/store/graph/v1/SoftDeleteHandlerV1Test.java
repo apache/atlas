@@ -25,9 +25,9 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -45,11 +45,15 @@ import static org.apache.atlas.TestUtils.NAME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-@Guice(modules = TestModules.SoftDeleteModule.class)
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class SoftDeleteHandlerV1Test extends AtlasDeleteHandlerV1Test {
 
     @Inject
     MetadataService metadataService;
+
+    public SoftDeleteHandlerV1Test() {
+        super(DeleteType.SOFT);
+    }
 
     @Override
     protected void assertDeletedColumn(final AtlasEntity.AtlasEntityWithExtInfo tableInstance) throws AtlasBaseException {

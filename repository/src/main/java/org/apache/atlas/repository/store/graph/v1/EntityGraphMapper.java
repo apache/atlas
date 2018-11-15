@@ -75,17 +75,17 @@ public class EntityGraphMapper {
     private static final String SOFT_REF_FORMAT      = "%s:%s";
     private static final int    INDEXED_STR_SAFE_LEN = AtlasConfiguration.GRAPHSTORE_INDEXED_STRING_SAFE_LENGTH.getInt();
 
-    private final GraphHelper       graphHelper = GraphHelper.getInstance();
-    private final AtlasGraph        graph;
-    private final DeleteHandlerV1   deleteHandler;
-    private final AtlasTypeRegistry typeRegistry;
+    private final GraphHelper             graphHelper = GraphHelper.getInstance();
+    private final AtlasGraph              graph;
+    private final DeleteHandlerDelegateV1 deleteDelegate;
+    private final AtlasTypeRegistry       typeRegistry;
 
 
     @Inject
-    public EntityGraphMapper(DeleteHandlerV1 deleteHandler, AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) {
-        this.deleteHandler = deleteHandler;
-        this.typeRegistry  = typeRegistry;
-        this.graph         = atlasGraph;
+    public EntityGraphMapper(DeleteHandlerDelegateV1 deleteDelegate, AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) {
+        this.deleteDelegate = deleteDelegate;
+        this.typeRegistry   = typeRegistry;
+        this.graph          = atlasGraph;
     }
 
     public AtlasVertex createVertex(AtlasEntity entity) {
@@ -302,7 +302,7 @@ public class EntityGraphMapper {
                 AtlasEdge newEdge = mapStructValue(ctx, context);
 
                 if (currentEdge != null && !currentEdge.equals(newEdge)) {
-                    deleteHandler.deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), false, true);
+                    deleteDelegate.getHandlerV1().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), false, true);
                 }
 
                 return newEdge;
@@ -331,7 +331,7 @@ public class EntityGraphMapper {
                     }
                 }
                 if (currentEdge != null && !currentEdge.equals(newEdge)) {
-                    deleteHandler.deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(), true);
+                    deleteDelegate.getHandlerV1().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(), true);
                 }
 
                 return newEdge;
@@ -391,7 +391,7 @@ public class EntityGraphMapper {
             if (inverseEdge != null) {
                 if (!inverseEdge.equals(newEdge)) {
                     // Disconnect old reference
-                    deleteHandler.deleteEdgeReference(inverseEdge, inverseAttribute.getAttributeType().getTypeCategory(),
+                    deleteDelegate.getHandlerV1().deleteEdgeReference(inverseEdge, inverseAttribute.getAttributeType().getTypeCategory(),
                         inverseAttribute.isOwnedRef(), true);
                 }
                 else {
@@ -842,7 +842,7 @@ public class EntityGraphMapper {
                 AtlasEdge currentEdge = (AtlasEdge)currentMap.get(currentKey);
 
                 if (!newMap.values().contains(currentEdge)) {
-                    boolean deleted = deleteHandler.deleteEdgeReference(currentEdge, mapType.getValueType().getTypeCategory(), attribute.isOwnedRef(), true);
+                    boolean deleted = deleteDelegate.getHandlerV1().deleteEdgeReference(currentEdge, mapType.getValueType().getTypeCategory(), attribute.isOwnedRef(), true);
 
                     if (!deleted) {
                         additionalMap.put(currentKey, currentEdge);
@@ -932,7 +932,7 @@ public class EntityGraphMapper {
                     List<AtlasEdge> additionalElements = new ArrayList<>();
 
                     for (AtlasEdge edge : edgesToRemove) {
-                        boolean deleted = deleteHandler.deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(), true);
+                        boolean deleted = deleteDelegate.getHandlerV1().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(), true);
 
                         if (!deleted) {
                             additionalElements.add(edge);
@@ -1098,7 +1098,7 @@ public class EntityGraphMapper {
                 String relationshipLabel = GraphHelper.getTraitLabel(entityTypeName, classificationName);
                 AtlasEdge edge = graphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
                 if (edge != null) {
-                    deleteHandler.deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true);
+                    deleteDelegate.getHandlerV1().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true);
 
                     // update the traits in entity once trait removal is successful
                     traitNames.remove(classificationName);

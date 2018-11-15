@@ -39,11 +39,8 @@ import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.audit.EntityAuditListener;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
-import org.apache.atlas.repository.graph.DeleteHandler;
 import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
-import org.apache.atlas.repository.graph.HardDeleteHandler;
-import org.apache.atlas.repository.graph.SoftDeleteHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.impexp.ExportService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -52,10 +49,7 @@ import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
 import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
 import org.apache.atlas.repository.store.graph.v1.BulkImporterImpl;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.repository.typestore.GraphBackedTypeStore;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.repository.typestore.StoreBackedTypeCache;
@@ -120,8 +114,6 @@ public class TestModules {
 
             bindAuditRepository(binder());
 
-            bindDeleteHandler(binder());
-
             bind(AtlasGraph.class).toProvider(AtlasGraphProvider.class);
 
             // allow for dynamic binding of the metadata repo & graph service
@@ -183,11 +175,6 @@ public class TestModules {
             bind(TypeCache.class).to(AtlasRepositoryConfiguration.getTypeCache()).asEagerSingleton();
         }
 
-        protected void bindDeleteHandler(Binder binder) {
-            binder.bind(DeleteHandler.class).to(AtlasRepositoryConfiguration.getDeleteHandlerImpl()).asEagerSingleton();
-            binder.bind(DeleteHandlerV1.class).to(AtlasRepositoryConfiguration.getDeleteHandlerV1Impl()).asEagerSingleton();
-        }
-
         protected void bindAuditRepository(Binder binder) {
 
             Class<? extends EntityAuditRepository> auditRepoImpl = AtlasRepositoryConfiguration.getAuditRepositoryImpl();
@@ -201,24 +188,6 @@ public class TestModules {
                 Multibinder<Service> serviceBinder = Multibinder.newSetBinder(binder, Service.class);
                 serviceBinder.addBinding().to(auditRepoService);
             }
-        }
-    }
-
-    public static class SoftDeleteModule extends TestOnlyModule {
-        @Override
-        protected void bindDeleteHandler(Binder binder) {
-            bind(DeleteHandler.class).to(SoftDeleteHandler.class).asEagerSingleton();
-            bind(DeleteHandlerV1.class).to(SoftDeleteHandlerV1.class).asEagerSingleton();
-            bind(AtlasEntityChangeNotifier.class).toProvider(MockNotifier.class);
-        }
-    }
-
-    public static class HardDeleteModule extends TestOnlyModule {
-        @Override
-        protected void bindDeleteHandler(Binder binder) {
-            bind(DeleteHandler.class).to(HardDeleteHandler.class).asEagerSingleton();
-            bind(DeleteHandlerV1.class).to(HardDeleteHandlerV1.class).asEagerSingleton();
-            bind(AtlasEntityChangeNotifier.class).toProvider(MockNotifier.class);
         }
     }
 
