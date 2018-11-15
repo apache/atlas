@@ -30,6 +30,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.commons.lang.time.DateUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
@@ -256,8 +257,9 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         init();
         AtlasEntity              complexEntity       = getEntityFromStore(complexCollectionAttrEntity.getEntity().getGuid());
         AtlasEntitiesWithExtInfo complexEntitiesInfo = new AtlasEntitiesWithExtInfo(complexEntity);
+        AtlasEntityType          entityType          = typeRegistry.getEntityTypeByName(ENTITY_TYPE);
 
-        // Modify array of entities
+        // Replace list of entities with new values
         AtlasEntity e0Array = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityArray00"); put("isReplicated", true); }});
         AtlasEntity e1Array = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityArray11"); put("isReplicated", false); }});
         AtlasEntity e2Array = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityArray22"); put("isReplicated", true); }});
@@ -274,11 +276,18 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         AtlasEntityHeader      updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
-        // add a new element to array of entities
+        // add a new element to list of entities
         init();
+
+        e0Array = entityStore.getByUniqueAttributes(entityType, new HashMap<String, Object>() {{ put(NAME, "entityArray00"); put("isReplicated", true); }}).getEntity();
+        e1Array = entityStore.getByUniqueAttributes(entityType, new HashMap<String, Object>() {{ put(NAME, "entityArray11"); put("isReplicated", false); }}).getEntity();
+        e2Array = entityStore.getByUniqueAttributes(entityType, new HashMap<String, Object>() {{ put(NAME, "entityArray22"); put("isReplicated", true); }}).getEntity();
         AtlasEntity e3Array = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityArray33"); put("isReplicated", true); }});
-        entityList.add(getAtlasObjectId(e3Array));
+
+        entityList = new ArrayList<>(Arrays.asList(getAtlasObjectId(e0Array), getAtlasObjectId(e1Array), getAtlasObjectId(e2Array), getAtlasObjectId(e3Array)));
+
         complexEntity.setAttribute("listOfEntities", entityList);
+        complexEntitiesInfo.getReferredEntities().clear();
         complexEntitiesInfo.addReferredEntity(e3Array);
 
         response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
@@ -287,8 +296,10 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
 
         // remove one of the entity values - entityArray00
         init();
-        entityList.remove(0);
+        e3Array = entityStore.getByUniqueAttributes(entityType, new HashMap<String, Object>() {{ put(NAME, "entityArray33"); put("isReplicated", true); }}).getEntity();
+        entityList = new ArrayList<>(Arrays.asList(getAtlasObjectId(e1Array), getAtlasObjectId(e2Array), getAtlasObjectId(e3Array)));
         complexEntity.setAttribute("listOfEntities", entityList);
+        complexEntitiesInfo.getReferredEntities().clear();
 
         response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
@@ -308,6 +319,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         AtlasEntity e3Array_duplicate = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityArray33"); put("isReplicated", true); }});
         entityList.add(getAtlasObjectId(e3Array_duplicate));
         complexEntity.setAttribute("listOfEntities", entityList);
+        complexEntitiesInfo.getReferredEntities().clear();
         complexEntitiesInfo.addReferredEntity(e3Array_duplicate);
 
         response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
@@ -318,6 +330,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         init();
         entityList.clear();
         complexEntity.setAttribute("listOfEntities", entityList);
+        complexEntitiesInfo.getReferredEntities().clear();
 
         response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
