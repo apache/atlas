@@ -70,8 +70,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtils.COLUMN_TYPE;
@@ -915,6 +917,27 @@ public class AtlasEntityStoreV1Test {
             fail("DB entity creation should've succeeded");
         }
 
+    }
+
+    @Test
+    public void testCreateWithDuplicateGuids() throws Exception {
+        init();
+        AtlasEntityWithExtInfo tblEntity2 = TestUtilsV2.createTableEntityDuplicatesV2(dbEntity.getEntity());
+        EntityMutationResponse response   = entityStore.createOrUpdate(new AtlasEntityStream(tblEntity2), false);
+
+        List<AtlasEntityHeader> createdEntities = response.getCreatedEntities();
+        assertTrue(CollectionUtils.isNotEmpty(createdEntities));
+        assertEquals(createdEntities.size(), 2);
+
+        String tableGuid = createdEntities.get(0).getGuid();
+        AtlasEntityWithExtInfo tableEntity  = entityStore.getById(tableGuid);
+        assertEquals(tableEntity.getReferredEntities().size(), 1);
+
+        List<AtlasObjectId> columns = (List<AtlasObjectId>) tableEntity.getEntity().getAttribute("columns");
+        assertEquals(columns.size(), 1);
+
+        Set<AtlasObjectId> uniqueColumns = new HashSet<>(columns);
+        assertTrue(uniqueColumns.size() == 1);
     }
 
     private String randomStrWithReservedChars() {

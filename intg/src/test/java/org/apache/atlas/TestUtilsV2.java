@@ -1057,6 +1057,39 @@ public final class TestUtilsV2 {
         return ret;
     }
 
+    public static AtlasEntityWithExtInfo createTableEntityDuplicatesV2(AtlasEntity dbEntity) {
+        AtlasEntity tblEntity = new AtlasEntity(TABLE_TYPE);
+
+        tblEntity.setAttribute(NAME, RandomStringUtils.randomAlphanumeric(10));
+        tblEntity.setAttribute("description", "random table");
+        tblEntity.setAttribute("type", "type");
+        tblEntity.setAttribute("tableType", "MANAGED");
+        tblEntity.setAttribute("database", AtlasTypeUtil.getAtlasObjectId(dbEntity));
+
+        AtlasEntity col1 = createColumnEntity(tblEntity);
+        col1.setAttribute(NAME, "col1");
+
+        AtlasEntity col2 = createColumnEntity(tblEntity);
+        col2.setAttribute(NAME, "col1");
+
+        AtlasEntity col3 = createColumnEntity(tblEntity);
+        col3.setAttribute(NAME, "col1");
+
+        // all 3 columns have different guid but same typeName and unique attributes
+        tblEntity.setAttribute(COLUMNS_ATTR_NAME, Arrays.asList(AtlasTypeUtil.getAtlasObjectId(col1),
+                                                                AtlasTypeUtil.getAtlasObjectId(col2),
+                                                                AtlasTypeUtil.getAtlasObjectId(col3)));
+
+        AtlasEntityWithExtInfo ret = new AtlasEntityWithExtInfo(tblEntity);
+
+        ret.addReferredEntity(dbEntity);
+        ret.addReferredEntity(col1);
+        ret.addReferredEntity(col2);
+        ret.addReferredEntity(col3);
+
+        return ret;
+    }
+
     public static AtlasEntity createColumnEntity(AtlasEntity tableEntity) {
         return createColumnEntity(tableEntity, "col" + seq.addAndGet(1));
     }

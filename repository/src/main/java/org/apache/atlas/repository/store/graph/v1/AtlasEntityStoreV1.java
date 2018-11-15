@@ -612,10 +612,10 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         RequestContextV1            requestContext   = RequestContextV1.get();
 
         for (String guid : discoveryContext.getReferencedGuids()) {
-            AtlasVertex vertex = discoveryContext.getResolvedEntityVertex(guid);
             AtlasEntity entity = entityStream.getByGuid(guid);
 
             if (entity != null) {
+                AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
 
                 if (vertex != null) {
                     // entity would be null if guid is not in the stream but referenced by an entity in the stream
@@ -650,6 +650,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
                     discoveryContext.addResolvedGuid(guid, vertex);
 
+                    discoveryContext.addResolvedIdByUniqAttribs(getAtlasObjectId(entity), vertex);
+
                     String generatedGuid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
 
                     entity.setGuid(generatedGuid);
@@ -667,6 +669,31 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
         }
 
         return context;
+    }
+
+    private AtlasVertex getResolvedEntityVertex(EntityGraphDiscoveryContext context, AtlasEntity entity) throws AtlasBaseException {
+        AtlasVertex ret = context.getResolvedEntityVertex(entity.getGuid());
+
+        if (ret == null) {
+            ret = context.getResolvedEntityVertex(getAtlasObjectId(entity));
+
+            if (ret != null) {
+                context.addResolvedGuid(entity.getGuid(), ret);
+            }
+        }
+
+        return ret;
+    }
+
+    private AtlasObjectId getAtlasObjectId(AtlasEntity entity) {
+        AtlasObjectId ret = entityGraphMapper.toAtlasObjectId(entity);
+
+        if (ret != null && MapUtils.isNotEmpty(ret.getUniqueAttributes())) {
+            // if uniqueAttributes is not empty, reset guid to null.
+            ret.setGuid(null);
+        }
+
+        return ret;
     }
 
     private EntityMutationResponse deleteVertices(Collection<AtlasVertex> deletionCandidates) throws AtlasBaseException {

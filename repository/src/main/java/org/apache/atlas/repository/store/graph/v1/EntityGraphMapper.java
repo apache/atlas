@@ -949,7 +949,8 @@ public class EntityGraphMapper {
 
     private void setArrayElementsProperty(AtlasType elementType, boolean isSoftReference, AtlasVertex vertex, String vertexPropertyName, List<Object> values) {
         if (AtlasGraphUtilsV1.isReference(elementType) && !isSoftReference) {
-            vertex.setPropertyFromElementsIds(vertexPropertyName, (List) values);
+            // avoid storing duplicate edge ids in vertex property
+            vertex.setPropertyFromElementsIds(vertexPropertyName, getUniqueElementsList(values));
         }
         else {
             AtlasGraphUtilsV1.setEncodedProperty(vertex, vertexPropertyName, values);
@@ -1141,6 +1142,27 @@ public class EntityGraphMapper {
                     ret.add(elem);
                 }
             }
+        }
+
+        return ret;
+    }
+
+    public AtlasObjectId toAtlasObjectId(AtlasEntity entity) {
+        AtlasObjectId   ret        = null;
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (entityType != null) {
+            Map<String, Object> uniqueAttributes = new HashMap<>();
+
+            for (String attributeName : entityType.getUniqAttributes().keySet()) {
+                Object attrValue = entity.getAttribute(attributeName);
+
+                if (attrValue != null) {
+                    uniqueAttributes.put(attributeName, attrValue);
+                }
+            }
+
+            ret = new AtlasObjectId(entity.getGuid(), entity.getTypeName(), uniqueAttributes);
         }
 
         return ret;
