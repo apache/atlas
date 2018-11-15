@@ -742,10 +742,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext              requestContext   = RequestContext.get();
 
         for (String guid : discoveryContext.getReferencedGuids()) {
-            AtlasVertex vertex = discoveryContext.getResolvedEntityVertex(guid);
             AtlasEntity entity = entityStream.getByGuid(guid);
 
             if (entity != null) { // entity would be null if guid is not in the stream but referenced by an entity in the stream
+                AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
+
                 if (vertex != null) {
                     if (!isPartialUpdate) {
                         graphDiscoverer.validateAndNormalize(entity);
@@ -779,6 +780,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                     discoveryContext.addResolvedGuid(guid, vertex);
 
+                    discoveryContext.addResolvedIdByUniqAttribs(getAtlasObjectId(entity), vertex);
+
                     String generatedGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
 
                     entity.setGuid(generatedGuid);
@@ -796,6 +799,34 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         return context;
+    }
+
+    private AtlasVertex getResolvedEntityVertex(EntityGraphDiscoveryContext context, AtlasEntity entity) throws AtlasBaseException {
+        AtlasObjectId objectId = getAtlasObjectId(entity);
+        AtlasVertex   ret      = context.getResolvedEntityVertex(entity.getGuid());
+
+        if (ret != null) {
+            context.addResolvedIdByUniqAttribs(objectId, ret);
+        } else {
+            ret = context.getResolvedEntityVertex(objectId);
+
+            if (ret != null) {
+                context.addResolvedGuid(entity.getGuid(), ret);
+            }
+        }
+
+        return ret;
+    }
+
+    private AtlasObjectId getAtlasObjectId(AtlasEntity entity) {
+        AtlasObjectId ret = entityRetriever.toAtlasObjectId(entity);
+
+        if (ret != null && MapUtils.isNotEmpty(ret.getUniqueAttributes())) {
+            // if uniqueAttributes is not empty, reset guid to null.
+            ret.setGuid(null);
+        }
+
+        return ret;
     }
 
     private EntityMutationResponse deleteVertices(Collection<AtlasVertex> deletionCandidates) throws AtlasBaseException {
