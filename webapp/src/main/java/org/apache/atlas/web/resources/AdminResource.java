@@ -400,10 +400,8 @@ public class AdminResource {
                 LOG.info(excp.getMessage());
             } else {
                 LOG.error("importData(binary) failed", excp);
+                throw excp;
             }
-
-            throw excp;
-
         } catch (Exception excp) {
             LOG.error("importData(binary) failed", excp);
 
