@@ -101,13 +101,13 @@ def main():
        pf = file(atlas_pid_file, 'r')
        pid = pf.read().strip()
        pf.close()
-
-       if mc.exist_pid((int)(pid)):
-           if is_setup:
-               print "Cannot run setup when server is running."
-           mc.server_already_running(pid)
-       else:
-           mc.server_pid_not_running(pid)
+       if pid != "":
+           if mc.exist_pid((int)(pid)):
+               if is_setup:
+                   print "Cannot run setup when server is running."
+               mc.server_already_running(pid)
+           else:
+               mc.server_pid_not_running(pid)
 
     if is_hbase and mc.is_hbase_local(confdir):
         print "configured for local hbase."
