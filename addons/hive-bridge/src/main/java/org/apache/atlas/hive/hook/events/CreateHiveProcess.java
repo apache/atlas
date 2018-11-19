@@ -132,8 +132,9 @@ public class CreateHiveProcess extends BaseHiveEvent {
             return;
         }
 
-        final List<AtlasEntity> columnLineages     = new ArrayList<>();
-        int                     lineageInputsCount = 0;
+        final List<AtlasEntity> columnLineages      = new ArrayList<>();
+        int                     lineageInputsCount  = 0;
+        final Set<String>       processedOutputCols = new HashSet<>();
 
         for (Map.Entry<DependencyKey, Dependency> entry : lineageInfo.entrySet()) {
             String      outputColName = getQualifiedName(entry.getKey());
@@ -147,6 +148,14 @@ public class CreateHiveProcess extends BaseHiveEvent {
                 LOG.warn("column-lineage: non-existing output-column {}", outputColName);
 
                 continue;
+            }
+
+            if (processedOutputCols.contains(outputColName)) {
+                LOG.warn("column-lineage: duplicate for output-column {}", outputColName);
+
+                continue;
+            } else {
+                processedOutputCols.add(outputColName);
             }
 
             List<AtlasEntity> inputColumns = new ArrayList<>();
