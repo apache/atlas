@@ -184,6 +184,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         ret.setProperty(Constants.TYPENAME_PROPERTY_KEY, typeDef.getName());
         ret.setProperty(Constants.TYPEDESCRIPTION_PROPERTY_KEY,
                 StringUtils.isNotBlank(typeDef.getDescription()) ? typeDef.getDescription() : typeDef.getName());
+        ret.setProperty(Constants.TYPESERVICETYPE_PROPERTY_KEY, typeDef.getServiceType());
         ret.setProperty(Constants.TYPEVERSION_PROPERTY_KEY, typeDef.getTypeVersion());
         ret.setProperty(Constants.GUID_PROPERTY_KEY, typeDef.getGuid());
         ret.setProperty(Constants.CREATED_BY_KEY, getCurrentUser());
@@ -213,6 +214,10 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         updateVertexProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, typeDef.getDescription());
         updateVertexProperty(vertex, Constants.TYPEVERSION_PROPERTY_KEY, typeDef.getTypeVersion());
         updateVertexProperty(vertex, Constants.TYPEOPTIONS_PROPERTY_KEY, AtlasType.toJson(typeDef.getOptions()));
+
+        if (StringUtils.isNotEmpty(typeDef.getServiceType())) {
+            updateVertexProperty(vertex, Constants.TYPESERVICETYPE_PROPERTY_KEY, typeDef.getServiceType());
+        }
 
         markVertexUpdated(vertex);
     }
@@ -265,6 +270,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
     void vertexToTypeDef(AtlasVertex vertex, AtlasBaseTypeDef typeDef) {
         String name        = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
         String description = vertex.getProperty(Constants.TYPEDESCRIPTION_PROPERTY_KEY, String.class);
+        String serviceType = vertex.getProperty(Constants.TYPESERVICETYPE_PROPERTY_KEY, String.class);
         String typeVersion = vertex.getProperty(Constants.TYPEVERSION_PROPERTY_KEY, String.class);
         String guid        = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
         String createdBy   = vertex.getProperty(Constants.CREATED_BY_KEY, String.class);
@@ -287,6 +293,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
         typeDef.setName(name);
         typeDef.setDescription(description);
+        typeDef.setServiceType(serviceType);
         typeDef.setTypeVersion(typeVersion);
         typeDef.setGuid(guid);
         typeDef.setCreatedBy(createdBy);

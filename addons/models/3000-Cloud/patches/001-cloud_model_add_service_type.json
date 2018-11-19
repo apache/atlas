@@ -1,0 +1,81 @@
+{
+  "patches": [
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_tag",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_cloud_watch_metric",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_s3_bucket_lifeCycleRule",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_s3_access_policy",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_s3_object",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_s3_pseudo_dir",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_s3_bucket",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_s3_bucket_aws_s3_pseudo_dirs",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_s3_pseudo_dir_aws_objects",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_s3_object_avro_schema",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "aws_s3_pseudo_dir_avro_schema",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "aws"
+    }
+  ]
+}

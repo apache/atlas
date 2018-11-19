@@ -2,6 +2,7 @@
     "enumDefs": [
         {
             "name": "hive_principal_type",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "elementDefs": [
                 {
@@ -22,6 +23,7 @@
     "structDefs": [
         {
             "name": "hive_order",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -44,6 +46,7 @@
         },
         {
             "name": "hive_serde",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -80,6 +83,7 @@
             "superTypes": [
                 "Process"
             ],
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -170,6 +174,7 @@
             "superTypes": [
                 "DataSet"
             ],
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -306,6 +311,7 @@
             "superTypes": [
                 "Referenceable"
             ],
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -411,6 +417,7 @@
             "superTypes": [
                 "Asset"
             ],
+            "serviceType": "hive",
             "typeVersion": "1.1",
             "attributeDefs": [
                 {
@@ -453,6 +460,7 @@
             "superTypes": [
                 "DataSet"
             ],
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -494,6 +502,7 @@
             "superTypes" : [
                 "Process"
             ],
+            "serviceType": "hive",
             "typeVersion" : "1.0",
             "attributeDefs" : [
                 {
@@ -526,6 +535,7 @@
     "relationshipDefs": [
         {
             "name": "hive_table_db",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
@@ -545,6 +555,7 @@
         },
         {
             "name": "hive_table_columns",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
@@ -565,6 +576,7 @@
         },
         {
             "name": "hive_table_partitionkeys",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
@@ -585,6 +597,7 @@
         },
         {
             "name": "hive_table_storagedesc",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
@@ -605,6 +618,7 @@
         },
         {
             "name": "hive_process_column_lineage",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {

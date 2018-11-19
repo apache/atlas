@@ -272,6 +272,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createVertexIndex(management, TRAIT_NAMES_PROPERTY_KEY, String.class, false, SET, true, true);
             createVertexIndex(management, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class, false, LIST, true, true);
             createVertexIndex(management, TYPENAME_PROPERTY_KEY, String.class, true, SINGLE, true, false);
+            createVertexIndex(management, TYPESERVICETYPE_PROPERTY_KEY, String.class, false, SINGLE, true, false);
             createVertexIndex(management, VERTEX_TYPE_PROPERTY_KEY, String.class, false, SINGLE, true, true);
             createVertexIndex(management, CLASSIFICATION_ENTITY_GUID, String.class, false, SINGLE, true, false);
             createVertexIndex(management, VERTEX_ID_IN_IMPORT_KEY, Long.class, false, SINGLE, true, false);

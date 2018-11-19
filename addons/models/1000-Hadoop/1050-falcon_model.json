@@ -8,6 +8,7 @@
             "superTypes": [
                 "Process"
             ],
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "attributeDefs": []
         },
@@ -16,6 +17,7 @@
             "superTypes": [
                 "Infrastructure"
             ],
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -41,6 +43,7 @@
             "superTypes": [
                 "DataSet"
             ],
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -82,6 +85,7 @@
             "superTypes": [
                 "Process"
             ],
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -131,6 +135,7 @@
             "superTypes": [
                 "Process"
             ],
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -147,6 +152,7 @@
     "relationshipDefs": [
         {
             "name": "falcon_feed_cluster",
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
@@ -166,6 +172,7 @@
         },
         {
             "name": "falcon_cluster_process",
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
@@ -185,6 +192,7 @@
         },
         {
             "name": "falcon_cluster_feed_creation",
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {

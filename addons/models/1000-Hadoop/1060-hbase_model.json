@@ -8,6 +8,7 @@
             "superTypes": [
                 "Asset"
             ],
+            "serviceType": "hbase",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -50,6 +51,7 @@
             "superTypes": [
                 "DataSet"
             ],
+            "serviceType": "hbase",
             "typeVersion": "1.1",
             "attributeDefs": [
                 {
@@ -119,6 +121,7 @@
                     "isUnique": false
                 }
             ],
+            "serviceType": "hbase",
             "typeVersion": "1.0"
         },
         {
@@ -144,12 +147,14 @@
                     ]
                 }
             ],
+            "serviceType": "hbase",
             "typeVersion": "1.0"
         }
     ],
     "relationshipDefs": [
         {
             "name": "hbase_table_namespace",
+            "serviceType": "hbase",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
@@ -169,6 +174,7 @@
         },
         {
             "name": "hbase_table_column_families",
+            "serviceType": "hbase",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {
@@ -189,6 +195,7 @@
         },
         {
             "name": "hbase_column_family_columns",
+            "serviceType": "hbase",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
             "endDef1": {

@@ -6,6 +6,7 @@
         {
             "name": "Referenceable",
             "superTypes": [],
+            "serviceType": "atlas_core",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -21,6 +22,7 @@
         {
             "name": "__internal",
             "superTypes": [],
+            "serviceType": "atlas_core",
             "typeVersion": "1.0",
             "attributeDefs": []
         },
@@ -29,6 +31,7 @@
             "superTypes": [
                 "Referenceable"
             ],
+            "serviceType": "atlas_core",
             "typeVersion": "1.1",
             "attributeDefs": [
                 {
@@ -62,6 +65,7 @@
             "superTypes": [
                 "Asset"
             ],
+            "serviceType": "atlas_core",
             "typeVersion": "1.1",
             "attributeDefs": []
         },
@@ -71,6 +75,7 @@
             "superTypes": [
                 "Asset"
             ],
+            "serviceType": "atlas_core",
             "typeVersion": "1.1",
             "attributeDefs": []
         },
@@ -79,6 +84,7 @@
             "superTypes": [
                 "Asset"
             ],
+            "serviceType": "atlas_core",
             "typeVersion": "1.1",
             "attributeDefs": [
                 {
@@ -101,6 +107,7 @@
         },
         {
           "name": "AtlasServer",
+          "serviceType": "atlas_core",
           "typeVersion": "1.0",
           "superTypes": [
           ],
@@ -152,6 +159,7 @@
             "superTypes": [
                 "__internal"
             ],
+            "serviceType": "atlas_core",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -190,6 +198,7 @@
             "superTypes": [
                 "__internal"
             ],
+            "serviceType": "atlas_core",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -244,6 +253,7 @@
         },
         {
           "name": "__ExportImportAuditEntry",
+          "serviceType": "atlas_core",
           "typeVersion": "1.0",
           "superTypes": [
             "__internal"
@@ -319,6 +329,7 @@
     "relationshipDefs": [
         {
             "name": "dataset_process_inputs",
+            "serviceType": "atlas_core",
             "typeVersion": "1.0",
             "relationshipCategory": "AGGREGATION",
             "endDef1": {
@@ -338,6 +349,7 @@
         },
         {
           "name": "process_dataset_outputs",
+          "serviceType": "atlas_core",
           "typeVersion": "1.0",
           "relationshipCategory": "AGGREGATION",
           "endDef1": {
@@ -357,6 +369,7 @@
         },
         {
           "name": "__AtlasUserProfile_savedsearches",
+          "serviceType": "atlas_core",
           "typeVersion": "1.0",
           "relationshipCategory": "COMPOSITION",
           "endDef1": {
