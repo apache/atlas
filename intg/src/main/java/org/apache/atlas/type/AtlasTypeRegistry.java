@@ -36,8 +36,10 @@ import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -69,6 +71,8 @@ public class AtlasTypeRegistry {
     public Collection<String> getAllTypeNames() { return registryData.allTypes.getAllTypeNames(); }
 
     public Collection<AtlasType> getAllTypes() { return registryData.allTypes.getAllTypes(); }
+
+    public Set<String> getAllServiceTypes() { return registryData.allTypes.getAllServiceTypes(); }
 
     public boolean isRegisteredType(String typeName) {
         return registryData.allTypes.isKnownType(typeName);
@@ -916,21 +920,28 @@ public class AtlasTypeRegistry {
 class TypeCache {
     private final Map<String, AtlasType> typeGuidMap;
     private final Map<String, AtlasType> typeNameMap;
+    private final Set<String>            serviceTypes;
 
     public TypeCache() {
-        typeGuidMap = new ConcurrentHashMap<>();
-        typeNameMap = new ConcurrentHashMap<>();
+        typeGuidMap  = new ConcurrentHashMap<>();
+        typeNameMap  = new ConcurrentHashMap<>();
+        serviceTypes = new HashSet<>();
     }
 
     public TypeCache(TypeCache other) {
-        typeGuidMap = new ConcurrentHashMap<>(other.typeGuidMap);
-        typeNameMap = new ConcurrentHashMap<>(other.typeNameMap);
+        typeGuidMap  = new ConcurrentHashMap<>(other.typeGuidMap);
+        typeNameMap  = new ConcurrentHashMap<>(other.typeNameMap);
+        serviceTypes = new HashSet<>(other.serviceTypes);
     }
 
     public void addType(AtlasType type) {
         if (type != null) {
             if (StringUtils.isNotEmpty(type.getTypeName())) {
                 typeNameMap.put(type.getTypeName(), type);
+            }
+
+            if (StringUtils.isNotEmpty(type.getServiceType())) {
+                serviceTypes.add(type.getServiceType());
             }
         }
     }
@@ -943,6 +954,10 @@ class TypeCache {
 
             if (StringUtils.isNotEmpty(typeDef.getName())) {
                 typeNameMap.put(typeDef.getName(), type);
+            }
+
+            if (StringUtils.isNotEmpty(type.getServiceType())) {
+                serviceTypes.add(type.getServiceType());
             }
         }
     }
@@ -957,6 +972,10 @@ class TypeCache {
 
     public Collection<AtlasType> getAllTypes() {
         return Collections.unmodifiableCollection(typeNameMap.values());
+    }
+
+    public Set<String> getAllServiceTypes() {
+        return Collections.unmodifiableSet(serviceTypes);
     }
 
     public AtlasType getTypeByGuid(String guid) {

@@ -8,6 +8,7 @@
             "superTypes": [
                 "DataSet"
             ],
+            "serviceType": "kafka",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -178,6 +179,7 @@
             "superTypes": [
                 "DataSet"
             ],
+            "serviceType": "kafka",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -202,6 +204,7 @@
     "relationshipDefs": [
         {
             "name": "kafka_topic_avroSchema",
+            "serviceType": "kafka",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
             "endDef1": {

@@ -8,6 +8,7 @@
             "superTypes": [
                 "Process"
             ],
+            "serviceType": "storm",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -65,6 +66,7 @@
         {
             "name": "storm_node",
             "superTypes": [],
+            "serviceType": "storm",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -106,6 +108,7 @@
             "superTypes": [
                 "storm_node"
             ],
+            "serviceType": "storm",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -123,6 +126,7 @@
             "superTypes": [
                 "storm_node"
             ],
+            "serviceType": "storm",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -147,6 +151,7 @@
     "relationshipDefs": [
         {
             "name": "storm_topology_nodes",
+            "serviceType": "storm",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
             "endDef1": {

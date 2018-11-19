@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.SERVICE_TYPE_ATLAS_CORE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.COUNT_NOT_SET;
 
 /**
@@ -49,25 +50,12 @@ public class AtlasArrayType extends AtlasType {
     }
 
     public AtlasArrayType(AtlasType elementType, int minCount, int maxCount) {
-        super(AtlasBaseTypeDef.getArrayTypeName(elementType.getTypeName()), TypeCategory.ARRAY);
+        super(AtlasBaseTypeDef.getArrayTypeName(elementType.getTypeName()), TypeCategory.ARRAY, SERVICE_TYPE_ATLAS_CORE);
 
         this.elementTypeName = elementType.getTypeName();
         this.minCount        = minCount;
         this.maxCount        = maxCount;
         this.elementType     = elementType;
-    }
-
-    public AtlasArrayType(String elementTypeName) {
-        this(elementTypeName, COUNT_NOT_SET, COUNT_NOT_SET);
-    }
-
-    public AtlasArrayType(String elementTypeName, int minCount, int maxCount) {
-        super(AtlasBaseTypeDef.getArrayTypeName(elementTypeName), TypeCategory.ARRAY);
-
-        this.elementTypeName = elementTypeName;
-        this.minCount        = minCount;
-        this.maxCount        = maxCount;
-        this.elementType     = null;
     }
 
     public AtlasArrayType(String elementTypeName, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
@@ -76,7 +64,7 @@ public class AtlasArrayType extends AtlasType {
 
     public AtlasArrayType(String elementTypeName, int minCount, int maxCount, AtlasTypeRegistry typeRegistry)
         throws  AtlasBaseException {
-        super(AtlasBaseTypeDef.getArrayTypeName(elementTypeName), TypeCategory.ARRAY);
+        super(AtlasBaseTypeDef.getArrayTypeName(elementTypeName), TypeCategory.ARRAY, SERVICE_TYPE_ATLAS_CORE);
 
         this.elementTypeName = elementTypeName;
         this.minCount        = minCount;

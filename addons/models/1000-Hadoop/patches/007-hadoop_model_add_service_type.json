@@ -1,0 +1,382 @@
+{
+  "patches": [
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "file_action",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "file_system"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "fs_permissions",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "file_system"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "fs_path",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "file_system"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hdfs_path",
+      "applyToVersion":  "1.1",
+      "updateToVersion": "1.2",
+      "serviceType":     "file_system"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_principal_type",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_order",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_serde",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_process",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_table",
+      "applyToVersion":  "1.1",
+      "updateToVersion": "1.2",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_storagedesc",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_db",
+      "applyToVersion":  "1.1",
+      "updateToVersion": "1.2",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_column",
+      "applyToVersion":  "1.3",
+      "updateToVersion": "1.4",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_column_lineage",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_table_db",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_table_columns",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_table_partitionkeys",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_table_storagedesc",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hive_process_column_lineage",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hive"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "sqoop_process",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "sqoop"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "sqoop_dbdatastore",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "sqoop"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "falcon_feed_replication",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "falcon"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "falcon_cluster",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "falcon"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "falcon_feed",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "falcon"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "falcon_process",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "falcon"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "falcon_feed_creation",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "falcon"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "falcon_feed_cluster",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "falcon"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "falcon_cluster_process",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "falcon"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "falcon_cluster_feed_creation",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "falcon"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hbase_namespace",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hbase"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hbase_table",
+      "applyToVersion":  "1.3",
+      "updateToVersion": "1.4",
+      "serviceType":     "hbase"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hbase_column_family",
+      "applyToVersion":  "1.2",
+      "updateToVersion": "1.3",
+      "serviceType":     "hbase"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hbase_column",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hbase"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hbase_table_namespace",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hbase"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hbase_table_column_families",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hbase"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "hbase_column_family_columns",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "hbase"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_type",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_field",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_record",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_schema",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_primitive",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_fixed",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_enum",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_collection",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_schema_associatedEntities",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_record_fields",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "avro_field_types",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "avro"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "kafka_topic",
+      "applyToVersion":  "1.1",
+      "updateToVersion": "1.2",
+      "serviceType":     "kafka"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "jms_topic",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "kafka"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "kafka_topic_avroSchema",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "kafka"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "storm_topology",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "storm"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "storm_node",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "storm"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "storm_spout",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "storm"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "storm_bolt",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "storm"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "storm_topology_nodes",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "storm"
+    }
+  ]
+}

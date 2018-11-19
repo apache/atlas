@@ -89,7 +89,11 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     }
 
     protected AtlasStructDef(TypeCategory category, String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
-        super(category, name, description, typeVersion, options);
+        this(category, name, description, typeVersion, attributeDefs, null, options);
+    }
+
+    protected AtlasStructDef(TypeCategory category, String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, String serviceType, Map<String, String> options) {
+        super(category, name, description, typeVersion, serviceType, options);
 
         setAttributeDefs(attributeDefs);
     }

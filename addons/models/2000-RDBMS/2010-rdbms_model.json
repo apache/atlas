@@ -7,6 +7,7 @@
             "name": "rdbms_instance",
             "description": "Instance that the rdbms server is running on",
             "superTypes": ["DataSet", "Asset"],
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -92,6 +93,7 @@
             "name": "rdbms_db",
             "description": "a database (schema) in an rdbms",
             "superTypes": ["DataSet", "Asset"],
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -145,6 +147,7 @@
             "name": "rdbms_table",
             "description": "a table in an rdbms database (schema)",
             "superTypes": ["DataSet", "Asset"],
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -250,6 +253,7 @@
             "name": "rdbms_column",
             "description": "a column in an rdbms table",
             "superTypes": ["DataSet", "Asset"],
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -322,6 +326,7 @@
             "name": "rdbms_index",
             "description": "An index on an RDBMS table",
             "superTypes": ["DataSet", "Asset"],
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -378,6 +383,7 @@
             "name": "rdbms_foreign_key",
             "description": null,
             "superTypes": ["DataSet", "Asset"],
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -418,6 +424,7 @@
     "relationshipDefs": [
         {
             "name": "rdbms_instance_databases",
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "relationshipCategory": "AGGREGATION",
             "endDef1": {
@@ -438,6 +445,7 @@
         },
         {
             "name": "rdbms_db_tables",
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "relationshipCategory": "AGGREGATION",
             "endDef1": {
@@ -458,6 +466,7 @@
         },
         {
             "name": "rdbms_table_columns",
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "relationshipCategory": "AGGREGATION",
             "endDef1": {
@@ -478,6 +487,7 @@
         },
         {
             "name": "rdbms_table_indexes",
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "relationshipCategory": "AGGREGATION",
             "endDef1": {
@@ -498,6 +508,7 @@
         },
         {
             "name": "rdbms_index_columns",
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
             "endDef1": {
@@ -518,6 +529,7 @@
         },
         {
             "name": "rdbms_table_foreign_key",
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "relationshipCategory": "AGGREGATION",
             "endDef1": {
@@ -538,6 +550,7 @@
         },
         {
             "name": "rdbms_foreign_key_key_columns",
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
             "endDef1": {
@@ -557,6 +570,7 @@
         },
         {
             "name": "rdbms_foreign_key_table_references",
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
             "endDef1": {
@@ -576,6 +590,7 @@
         },
         {
             "name": "rdbms_foreign_key_column_references",
+            "serviceType": "rdbms",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
             "endDef1": {

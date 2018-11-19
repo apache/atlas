@@ -123,7 +123,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         ATLAS_TYPE_OBJECT_ID,
     };
 
-
+    public static final String     SERVICE_TYPE_ATLAS_CORE    = "atlas_core";
     public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
     @Deprecated
@@ -158,10 +158,11 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     private String  name;
     private String  description;
     private String  typeVersion;
+    private String  serviceType;
     private Map<String, String> options;
 
     protected AtlasBaseTypeDef(TypeCategory category, String name, String description, String typeVersion,
-                               Map<String, String> options) {
+                               String serviceType, Map<String, String> options) {
         super();
 
         this.category = category;
@@ -175,6 +176,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         setName(name);
         setDescription(description);
         setTypeVersion(typeVersion);
+        setServiceType(serviceType);
         setOptions(options);
     }
 
@@ -283,6 +285,14 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         this.typeVersion = typeVersion;
     }
 
+    public String getServiceType() {
+        return serviceType;
+    }
+
+    public void setServiceType(String serviceType) {
+        this.serviceType = serviceType;
+    }
+
     public Map<String, String> getOptions() {
         return options;
     }
@@ -311,6 +321,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", typeVersion='").append(typeVersion).append('\'');
+        sb.append(", serviceType='").append(serviceType).append('\'');
         sb.append(", options='").append(options).append('\'');
         sb.append('}');
 
@@ -333,8 +344,9 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
                 Objects.equals(version, that.version) &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(description, that.description) &&
-                Objects.equals(typeVersion, that.typeVersion);
-
+                Objects.equals(typeVersion, that.typeVersion) &&
+                Objects.equals(serviceType, that.serviceType) &&
+                Objects.equals(options, that.options);
     }
 
     @Override
@@ -349,6 +361,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         result = 31 * result + (name != null ? name.hashCode() : 0);
         result = 31 * result + (description != null ? description.hashCode() : 0);
         result = 31 * result + (typeVersion != null ? typeVersion.hashCode() : 0);
+        result = 31 * result + (serviceType != null ? serviceType.hashCode() : 0);
         result = 31 * result + (options != null ? options.hashCode() : 0);
         return result;
     }

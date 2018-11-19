@@ -308,6 +308,24 @@ public class AtlasTypeUtil {
         return headerList;
     }
 
+    public static AtlasTypesDef getTypesDef(AtlasBaseTypeDef typeDef) {
+        AtlasTypesDef ret = new AtlasTypesDef();
+
+        if (typeDef != null) {
+            if (typeDef.getClass().equals(AtlasEntityDef.class)) {
+                ret.getEntityDefs().add((AtlasEntityDef) typeDef);
+            } else if (typeDef.getClass().equals(AtlasClassificationDef.class)) {
+                ret.getClassificationDefs().add((AtlasClassificationDef) typeDef);
+            } else if (typeDef.getClass().equals(AtlasStructDef.class)) {
+                ret.getStructDefs().add((AtlasStructDef) typeDef);
+            } else if (typeDef.getClass().equals(AtlasEnumDef.class)) {
+                ret.getEnumDefs().add((AtlasEnumDef) typeDef);
+            }
+        }
+
+        return ret;
+    }
+
     public static Collection<AtlasObjectId> toObjectIds(Collection<AtlasEntity> entities) {
         List<AtlasObjectId> ret = new ArrayList<>();
 

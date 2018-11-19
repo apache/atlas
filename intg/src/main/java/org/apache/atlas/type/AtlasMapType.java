@@ -24,8 +24,9 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Array;
 import java.util.*;
+
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.SERVICE_TYPE_ATLAS_CORE;
 
 
 /**
@@ -40,15 +41,8 @@ public class AtlasMapType extends AtlasType {
     private AtlasType keyType;
     private AtlasType valueType;
 
-    public AtlasMapType(String keyTypeName, String valueTypeName) {
-        super(AtlasBaseTypeDef.getMapTypeName(keyTypeName, valueTypeName), TypeCategory.MAP);
-
-        this.keyTypeName   = keyTypeName;
-        this.valueTypeName = valueTypeName;
-    }
-
     public AtlasMapType(AtlasType keyType, AtlasType valueType) {
-        super(AtlasBaseTypeDef.getMapTypeName(keyType.getTypeName(), valueType.getTypeName()), TypeCategory.MAP);
+        super(AtlasBaseTypeDef.getMapTypeName(keyType.getTypeName(), valueType.getTypeName()), TypeCategory.MAP, SERVICE_TYPE_ATLAS_CORE);
 
         this.keyTypeName   = keyType.getTypeName();
         this.valueTypeName = valueType.getTypeName();
@@ -58,7 +52,7 @@ public class AtlasMapType extends AtlasType {
 
     public AtlasMapType(String keyTypeName, String valueTypeName, AtlasTypeRegistry typeRegistry)
         throws AtlasBaseException {
-        super(AtlasBaseTypeDef.getMapTypeName(keyTypeName, valueTypeName), TypeCategory.MAP);
+        super(AtlasBaseTypeDef.getMapTypeName(keyTypeName, valueTypeName), TypeCategory.MAP, SERVICE_TYPE_ATLAS_CORE);
 
         this.keyTypeName   = keyTypeName;
         this.valueTypeName = valueTypeName;

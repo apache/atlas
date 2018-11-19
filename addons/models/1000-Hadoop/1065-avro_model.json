@@ -9,6 +9,7 @@
             "superTypes": [
                 "DataSet"
             ],
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "attributeDefs": [
             ]
@@ -19,6 +20,7 @@
             "superTypes": [
                 "avro_type"
             ],
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -53,6 +55,7 @@
             "superTypes": [
                 "avro_type"
             ],
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -124,6 +127,7 @@
             "superTypes": [
                 "avro_record"
             ],
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -150,6 +154,7 @@
             "superTypes": [
                 "avro_type"
             ],
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "attributeDefs": [
             ]
@@ -160,6 +165,7 @@
             "superTypes": [
                 "avro_type"
             ],
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "attributeDefs": [
             ]
@@ -170,6 +176,7 @@
             "superTypes": [
                 "avro_type"
             ],
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -196,6 +203,7 @@
             "superTypes": [
                 "avro_type"
             ],
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -220,6 +228,7 @@
     "relationshipDefs": [
         {
             "name": "avro_schema_associatedEntities",
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
             "endDef1": {
@@ -239,6 +248,7 @@
         },
         {
             "name": "avro_record_fields",
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "relationshipCategory": "AGGREGATION",
             "endDef1": {
@@ -258,6 +268,7 @@
         },
         {
             "name": "avro_field_types",
+            "serviceType": "avro",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
             "endDef1": {

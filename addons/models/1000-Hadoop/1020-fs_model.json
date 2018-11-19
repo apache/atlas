@@ -3,6 +3,7 @@
         {
             "name": "file_action",
             "typeVersion": "1.0",
+            "serviceType": "file_system",
             "elementDefs": [
                 {
                     "ordinal": 0,
@@ -42,6 +43,7 @@
     "structDefs": [
         {
             "name": "fs_permissions",
+            "serviceType": "file_system",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -86,6 +88,7 @@
             "superTypes": [
                 "DataSet"
             ],
+            "serviceType": "file_system",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -160,6 +163,7 @@
             "superTypes": [
                 "fs_path"
             ],
+            "serviceType": "file_system",
             "typeVersion": "1.1",
             "attributeDefs": [
                 {

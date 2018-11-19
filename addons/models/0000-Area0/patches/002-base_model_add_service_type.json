@@ -1,0 +1,221 @@
+{
+  "patches": [
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "Referenceable",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "__internal",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "Asset",
+      "applyToVersion":  "1.1",
+      "updateToVersion": "1.2",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "DataSet",
+      "applyToVersion":  "1.1",
+      "updateToVersion": "1.2",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "Infrastructure",
+      "applyToVersion":  "1.1",
+      "updateToVersion": "1.2",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "Process",
+      "applyToVersion":  "1.1",
+      "updateToVersion": "1.2",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasServer",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "__AtlasUserProfile",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "__AtlasUserSavedSearch",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "__ExportImportAuditEntry",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "dataset_process_inputs",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "process_dataset_outputs",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "__AtlasUserProfile_savedsearches",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+	  "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryTermRelationshipStatus",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryTermAssignmentStatus",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossary",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryTerm",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryCategory",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossarySemanticAssignment",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryTermAnchor",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryTermCategorization",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryCategoryAnchor",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryCategoryHierarchyLink",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryRelatedTerm",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossarySynonym",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryAntonym",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryPreferredTerm",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryReplacementTerm",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryTranslation",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryIsARelationship",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    },
+    {
+      "action":          "SET_SERVICE_TYPE",
+      "typeName":        "AtlasGlossaryValidValue",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "serviceType":     "atlas_core"
+    }
+  ]
+}

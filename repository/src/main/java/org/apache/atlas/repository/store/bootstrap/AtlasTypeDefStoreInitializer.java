@@ -40,6 +40,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -404,8 +405,9 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
             PatchHandler[] patchHandlers = new PatchHandler[] {
                     new AddAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry),
+                    new UpdateAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(atlasTypeDefStore, atlasTypeRegistry),
-                    new UpdateAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry)
+                    new SetServiceTypePatchHandler(atlasTypeDefStore, atlasTypeRegistry)
             };
 
             Map<String, PatchHandler> patchHandlerRegistry = new HashMap<>();
@@ -471,6 +473,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         private Map<String, Object>     params;
         private List<AtlasAttributeDef> attributeDefs;
         private Map<String, String>     typeDefOptions;
+        private String                  serviceType;
 
         public String getAction() {
             return action;
@@ -526,6 +529,14 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
         public void setTypeDefOptions(Map<String, String> typeDefOptions) {
             this.typeDefOptions = typeDefOptions;
+        }
+
+        public String getServiceType() {
+            return serviceType;
+        }
+
+        public void setServiceType(String serviceType) {
+            this.serviceType = serviceType;
         }
     }
 
@@ -709,57 +720,43 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             }
 
             if (isPatchApplicable(patch, typeDef)) {
-                if (typeDef.getClass().equals(AtlasEntityDef.class)) {
-                    AtlasEntityDef updatedDef = new AtlasEntityDef((AtlasEntityDef)typeDef);
-
-                    if (updatedDef.getOptions() == null) {
-                        updatedDef.setOptions(patch.getTypeDefOptions());
-                    } else {
-                        updatedDef.getOptions().putAll(patch.getTypeDefOptions());
-                    }
-                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
-
-                    typeDefStore.updateEntityDefByName(typeName, updatedDef);
-                } else if (typeDef.getClass().equals(AtlasClassificationDef.class)) {
-                    AtlasClassificationDef updatedDef = new AtlasClassificationDef((AtlasClassificationDef)typeDef);
-
-                    if (updatedDef.getOptions() == null) {
-                        updatedDef.setOptions(patch.getTypeDefOptions());
-                    } else {
-                        updatedDef.getOptions().putAll(patch.getTypeDefOptions());
-                    }
-                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
-
-                    typeDefStore.updateClassificationDefByName(typeName, updatedDef);
-                } else if (typeDef.getClass().equals(AtlasStructDef.class)) {
-                    AtlasStructDef updatedDef = new AtlasStructDef((AtlasStructDef)typeDef);
-
-                    if (updatedDef.getOptions() == null) {
-                        updatedDef.setOptions(patch.getTypeDefOptions());
-                    } else {
-                        updatedDef.getOptions().putAll(patch.getTypeDefOptions());
-                    }
-                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
-
-                    typeDefStore.updateStructDefByName(typeName, updatedDef);
-                } else if (typeDef.getClass().equals(AtlasEnumDef.class)) {
-                    AtlasEnumDef updatedDef = new AtlasEnumDef((AtlasEnumDef)typeDef);
-
-                    if (updatedDef.getOptions() == null) {
-                        updatedDef.setOptions(patch.getTypeDefOptions());
-                    } else {
-                        updatedDef.getOptions().putAll(patch.getTypeDefOptions());
-                    }
-                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
-
-                    typeDefStore.updateEnumDefByName(typeName, updatedDef);
+                if (typeDef.getOptions() == null) {
+                    typeDef.setOptions(patch.getTypeDefOptions());
                 } else {
-                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE,
-                                                 patch.getAction(), typeDef.getClass().getSimpleName());
+                    typeDef.getOptions().putAll(patch.getTypeDefOptions());
                 }
+                typeDef.setTypeVersion(patch.getUpdateToVersion());
+
+                typeDefStore.updateTypesDef(AtlasTypeUtil.getTypesDef(typeDef));
             } else {
                 LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
                          patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
+            }
+        }
+    }
+
+    class SetServiceTypePatchHandler extends PatchHandler {
+        public SetServiceTypePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] { "SET_SERVICE_TYPE" });
+        }
+
+        @Override
+        public void applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String           typeName = patch.getTypeName();
+            AtlasBaseTypeDef typeDef  = typeRegistry.getTypeDefByName(typeName);
+
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+
+            if (isPatchApplicable(patch, typeDef)) {
+                typeDef.setServiceType(patch.getServiceType());
+                typeDef.setTypeVersion(patch.getUpdateToVersion());
+
+                typeDefStore.updateTypesDef(AtlasTypeUtil.getTypesDef(typeDef));
+            } else {
+                LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
+                        patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
             }
         }
     }

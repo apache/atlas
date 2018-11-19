@@ -84,7 +84,12 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
 
     public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
                         String defaultValue, Map<String, String> options) {
-        super(TypeCategory.ENUM, name, description, typeVersion, options);
+        this(name, description, typeVersion, elementDefs, defaultValue, null, options);
+    }
+
+    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
+                        String defaultValue, String serviceType, Map<String, String> options) {
+        super(TypeCategory.ENUM, name, description, typeVersion, serviceType, options);
 
         setElementDefs(elementDefs);
         setDefaultValue(defaultValue);
