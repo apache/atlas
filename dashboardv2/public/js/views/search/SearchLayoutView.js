@@ -89,8 +89,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns', 'searchTableFilters'));
+                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns', 'searchTableFilters', 'entityCountCollection'));
                 this.type = "basic";
+                this.entityCountObj = _.first(this.entityCountCollection.toJSON());
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
                     dsl: {
@@ -258,7 +259,7 @@ define(['require',
                         isTermEl = $el.data('id') == "termLOV",
                         isTypeEl = $el.data('id') == "typeLOV";
                     if (e.type == "change" && $el.select2('data')) {
-                        var value = $el.val(),
+                        var value = $($el).find(':selected').data('name'),
                             key = "tag",
                             filterType = 'tagFilters',
                             value = value && value.length ? value : null;
@@ -310,9 +311,9 @@ define(['require',
                     }
                 }
                 var that = this,
-                    value = this.ui.searchInput.val() || this.ui.typeLov.val();
+                    value = this.ui.searchInput.val() || $(this.ui.typeLov).find(':selected').data('name');
                 if (!this.dsl && !value) {
-                    value = this.ui.tagLov.val() || this.ui.termLov.val();
+                    value = $(this.ui.tagLov).find(':selected').data('name') || $(this.ui.termLov).find(':selected').data('name')
                 }
                 if (value && value.length) {
                     this.ui.searchBtn.removeAttr("disabled");
@@ -445,10 +446,12 @@ define(['require',
                 this.typeHeaders.fullCollection.each(function(model) {
                     var name = Utils.getName(model.toJSON(), 'name');
                     if (model.get('category') == 'ENTITY') {
-                        typeStr += '<option>' + (name) + '</option>';
+                        var entityCount = (that.entityCountObj.entity.entityActive[name] + (that.entityCountObj.entity.entityDeleted[name] ? that.entityCountObj.entity.entityDeleted[name] : 0));
+                        typeStr += '<option value="'+ (name) +'" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + entityCount + ")" : '') + '</option>';
                     }
                     if (model.get('category') == 'CLASSIFICATION') {
-                        tagStr += '<option>' + (name) + '</option>';
+                        var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
+                        tagStr += '<option value="'+ (name) +'" data-name="' + (name) + '">' + (name) + ' ' + (tagEntityCount ? "(" + tagEntityCount + ")" : '') + '</option>';
                     }
                 });
                 //to insert extra classification list
@@ -459,7 +462,11 @@ define(['require',
                 that.ui.tagLov.html(tagStr);
                 this.ui.typeLov.select2({
                     placeholder: "Select Type",
-                    allowClear: true
+                    allowClear: true,
+                    templateSelection: function(data, container) {
+                        $(data.element).attr('data-name', data.customValue);
+                        return data.text;
+                    }
                 });
                 this.ui.tagLov.select2({
                     placeholder: "Select Classification",
@@ -576,15 +583,18 @@ define(['require',
             },
             triggerSearch: function(value) {
                 var params = {
-                    searchType: this.type,
-                    dslChecked: this.ui.searchType.is(':checked'),
-                    tagFilters: null,
-                    entityFilters: null
-                }
-                params['type'] = this.ui.typeLov.select2('val') || null;
+                        searchType: this.type,
+                        dslChecked: this.ui.searchType.is(':checked'),
+                        tagFilters: null,
+                        entityFilters: null
+                    },
+                    typeLovValue = this.ui.typeLov.find(':selected').data('name'),
+                    tagLovValue = this.ui.tagLov.find(':selected').data('name'),
+                    termLovValue = this.ui.termLov.select2('val')
+                params['type'] = typeLovValue || null;
                 if (!this.dsl) {
-                    params['tag'] = this.ui.tagLov.select2('val') || null;
-                    params['term'] = this.ui.termLov.select2('val') || null;
+                    params['tag'] = tagLovValue || null;
+                    params['term'] = termLovValue || null;
                     var entityFilterObj = this.searchTableFilters['entityFilters'],
                         tagFilterObj = this.searchTableFilters['tagFilters'];
                     if (this.value.tag) {

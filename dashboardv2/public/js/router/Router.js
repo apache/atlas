@@ -42,7 +42,7 @@ define([
             '*actions': 'defaultAction'
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection'));
+            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'entityCountCollection'));
             this.showRegions();
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
@@ -57,7 +57,8 @@ define([
                 'typeHeaders': this.typeHeaders,
                 'enumDefCollection': this.enumDefCollection,
                 'classificationDefCollection': this.classificationDefCollection,
-                'glossaryCollection': this.glossaryCollection
+                'glossaryCollection': this.glossaryCollection,
+                'entityCountCollection': this.entityCountCollection
             }
             this.sharedObj = {
                 searchTableColumns: {},
