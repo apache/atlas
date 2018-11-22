@@ -43,6 +43,7 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
 
     private String guid;
     private String name;
+    private String serviceType = null;
     private TypeCategory category;
 
     public AtlasTypeDefHeader() {
@@ -55,8 +56,13 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
         this.category = category;
     }
 
+    public AtlasTypeDefHeader(String guid, String name, TypeCategory category, String serviceType) {
+        this(guid, name, category);
+        this.serviceType = serviceType;
+    }
+
     public AtlasTypeDefHeader(AtlasBaseTypeDef typeDef) {
-        this(typeDef.getGuid(), typeDef.getName(), typeDef.getCategory());
+        this(typeDef.getGuid(), typeDef.getName(), typeDef.getCategory(), typeDef.getServiceType());
     }
 
     public AtlasTypeDefHeader(AtlasTypeDefHeader other) {
@@ -65,10 +71,12 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
             setGuid(null);
             setName(null);
             setCategory(null);
+            setServiceType(null);
         } else {
             setGuid(other.getGuid());
             setName(other.getName());
             setCategory(other.getCategory());
+            setServiceType(other.getServiceType());
         }
     }
 
@@ -96,6 +104,13 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
         this.category = category;
     }
 
+    public String getServiceType() {
+        return serviceType;
+    }
+
+    public void setServiceType(String serviceType) {
+        this.serviceType = serviceType;
+    }
 
     @Override
     public String toString() {
@@ -110,12 +125,13 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
         AtlasTypeDefHeader that = (AtlasTypeDefHeader) o;
         return Objects.equals(guid, that.guid) &&
                 Objects.equals(name, that.name) &&
+                Objects.equals(serviceType, that.serviceType) &&
                 category == that.category;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(guid, name, category);
+        return Objects.hash(guid, name, category, serviceType);
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -127,6 +143,7 @@ public class AtlasTypeDefHeader implements java.io.Serializable {
         sb.append("guid='").append(guid).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", typeCategory='").append(category).append('\'');
+        sb.append(", serviceType='").append(serviceType).append('\'');
         sb.append('}');
 
         return sb;
