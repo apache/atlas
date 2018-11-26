@@ -189,7 +189,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
                 addColumn(put, COLUMN_TYPE, ENTITY_AUDIT_V2);
 
                 if (persistEntityDefinition) {
-                    addColumn(put, COLUMN_DEFINITION, event.getEntity());
+                    addColumn(put, COLUMN_DEFINITION, event.getEntityDefinitionString());
                 }
 
                 puts.add(put);
