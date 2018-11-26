@@ -117,7 +117,7 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
     BatchStatement batch = new BatchStatement();
     events.forEach(event -> batch.add(stmt.bind(event.getEntityId(), event.getTimestamp(),
         event.getAction().toString(), event.getUser(), event.getDetails(),
-        (persistEntityDefinition ? event.getEntity().toString() : null))));
+        (persistEntityDefinition ? event.getEntityDefinitionString() : null))));
     cassSession.execute(batch);
   }
 
