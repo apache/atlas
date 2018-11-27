@@ -448,7 +448,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                     // Create the proxy user if doAsUser exists
                     String doAsUser = supportTrustedProxy ? Servlets.getDoAsUser(httpRequest) : null;
 
-                    if (supportTrustedProxy && doAsUser != null) {
+                    if (supportTrustedProxy && doAsUser != null && !doAsUser.equals(httpRequest.getRemoteUser())) {
                         LOG.debug("doAsUser is {}", doAsUser);
 
                         UserGroupInformation requestUgi = (token != null) ? UserGroupInformation.createRemoteUser(token.getUserName()) : null;
