@@ -416,7 +416,7 @@ public class EntityGraphMapper {
                 AtlasEdge currentEdge;
 
                 // if relationshipGuid is assigned in AtlasRelatedObjectId use it to fetch existing AtlasEdge
-                if (StringUtils.isNotEmpty(relationshipGuid) && !context.isImport()) {
+                if (StringUtils.isNotEmpty(relationshipGuid) && !RequestContext.get().isImportInProgress()) {
                     currentEdge = graphHelper.getEdgeForGUID(relationshipGuid);
                 } else {
                     currentEdge = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel, edgeDirection);
@@ -611,7 +611,7 @@ public class EntityGraphMapper {
     }
 
     private void updateRelationshipGuidForImport(EntityMutationContext context, String inverseAttributeName, AtlasVertex inverseVertex, AtlasEdge edge) throws AtlasBaseException {
-        if (!context.isImport()) {
+        if (!RequestContext.get().isImportInProgress()) {
             return;
         }
 
@@ -795,7 +795,7 @@ public class EntityGraphMapper {
         }
 
         if (attributeVertex == null) {
-            if(context.isImport()) {
+            if(RequestContext.get().isImportInProgress()) {
                 return null;
             }
 
@@ -836,7 +836,7 @@ public class EntityGraphMapper {
                     ret = getOrCreateRelationship(fromVertex, toVertex, relationshipName, relationshipAttributes);
 
                     // for import use the relationship guid provided
-                    if (context.isImport()) {
+                    if (RequestContext.get().isImportInProgress()) {
                         String relationshipGuid = getRelationshipGuid(ctx.getValue());
 
                         if(!StringUtils.isEmpty(relationshipGuid)) {
@@ -1384,7 +1384,7 @@ public class EntityGraphMapper {
                 }
 
                 if (propagateTags == null) {
-                    if(context.isImport()) {
+                    if(RequestContext.get().isImportInProgress()) {
                         propagateTags = false;
                         classification.setPropagate(propagateTags);
                     } else {

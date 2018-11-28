@@ -111,7 +111,7 @@ public class AtlasAuthorizationUtils {
         boolean ret      = false;
         String  userName = getCurrentUserName();
 
-        if (StringUtils.isNotEmpty(userName)) {
+        if (StringUtils.isNotEmpty(userName) && !RequestContext.get().isImportInProgress()) {
             try {
                 AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
 
@@ -132,7 +132,7 @@ public class AtlasAuthorizationUtils {
         boolean ret      = false;
         String  userName = getCurrentUserName();
 
-        if (StringUtils.isNotEmpty(userName)) {
+        if (StringUtils.isNotEmpty(userName) && !RequestContext.get().isImportInProgress()) {
             try {
                 AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
 
@@ -153,7 +153,7 @@ public class AtlasAuthorizationUtils {
         boolean ret      = false;
         String  userName = getCurrentUserName();
 
-        if (StringUtils.isNotEmpty(userName)) {
+        if (StringUtils.isNotEmpty(userName) && !RequestContext.get().isImportInProgress()) {
             try {
                 AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
 

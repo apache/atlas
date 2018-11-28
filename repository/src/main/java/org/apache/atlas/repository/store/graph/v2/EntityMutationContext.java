@@ -87,10 +87,6 @@ public class EntityMutationContext {
 
     public AtlasVertex getVertex(String guid) { return entityVsVertex.get(guid); }
 
-    public boolean isImport() {
-        return (context != null) && context.getEntityStream() instanceof EntityImportStream;
-    }
-
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
