@@ -672,11 +672,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         try {
-            final boolean               isImport = entityStream instanceof EntityImportStream;
-            final EntityMutationContext context  = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
+            final EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
 
             // Check if authorized to create entities
-            if (!isImport && CollectionUtils.isNotEmpty(context.getCreatedEntities())) {
+            if (!RequestContext.get().isImportInProgress()) {
                 for (AtlasEntity entity : context.getCreatedEntities()) {
                     AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
                                                          "create entity: type=", entity.getTypeName());
@@ -710,7 +709,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
 
                 // Check if authorized to update entities
-                if (!isImport) {
+                if (!RequestContext.get().isImportInProgress()) {
                     for (AtlasEntity entity : context.getUpdatedEntities()) {
                         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity)),
                                                              "update entity: type=", entity.getTypeName());
@@ -723,7 +722,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             ret.setGuidAssignments(context.getGuidAssignments());
 
             // Notify the change listeners
-            entityChangeNotifier.onEntitiesMutated(ret, isImport);
+            entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
@@ -772,7 +771,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
 
                     //Create vertices which do not exist in the repository
-                    if ((entityStream instanceof EntityImportStream) && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
+                    if (RequestContext.get().isImportInProgress() && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
                         vertex = entityGraphMapper.createVertexWithGuid(entity, entity.getGuid());
                     } else {
                          vertex = entityGraphMapper.createVertex(entity);
@@ -792,7 +791,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
 
                 // during import, update the system attributes
-                if (entityStream instanceof EntityImportStream) {
+                if (RequestContext.get().isImportInProgress()) {
                     entityGraphMapper.updateSystemAttributes(vertex, entity);
                 }
             }

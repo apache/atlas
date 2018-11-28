@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -51,7 +52,7 @@ public class IDBasedEntityResolver implements EntityResolver {
             boolean isAssignedGuid = AtlasTypeUtil.isAssignedGuid(guid);
             AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV2.findByGuid(guid) : null;
 
-            if (vertex == null && !(entityStream instanceof EntityImportStream)) { // if not found in the store, look if the entity is present in the stream
+            if (vertex == null && !RequestContext.get().isImportInProgress()) { // if not found in the store, look if the entity is present in the stream
                 AtlasEntity entity = entityStream.getByGuid(guid);
 
                 if (entity != null) { // look for the entity in the store using unique-attributes
@@ -70,7 +71,7 @@ public class IDBasedEntityResolver implements EntityResolver {
             if (vertex != null) {
                 context.addResolvedGuid(guid, vertex);
             } else {
-                if (isAssignedGuid && !(entityStream instanceof EntityImportStream)) {
+                if (isAssignedGuid && !RequestContext.get().isImportInProgress()) {
                     throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
                 } else {
                     context.addLocalGuidReference(guid);

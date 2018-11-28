@@ -19,6 +19,7 @@ package org.apache.atlas.repository.impexp;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.entitytransform.BaseEntityHandler;
 import org.apache.atlas.entitytransform.TransformerContext;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -79,6 +80,8 @@ public class ImportService {
 
     public AtlasImportResult run(ZipSource source, AtlasImportRequest request, String userName,
                                  String hostName, String requestingIP) throws AtlasBaseException {
+        RequestContext.get().setImportInProgress(true);
+
         if (request == null) {
             request = new AtlasImportRequest();
         }

@@ -50,6 +50,7 @@ public class RequestContext {
     private DeleteType  deleteType   = DeleteType.DEFAULT;
     private int         maxAttempts  = 1;
     private int         attemptCount = 1;
+    private boolean     isImportInProgress = false;
 
 
     private RequestContext() {
@@ -145,6 +146,13 @@ public class RequestContext {
         this.attemptCount = attemptCount;
     }
 
+    public boolean isImportInProgress() {
+        return isImportInProgress;
+    }
+
+    public void setImportInProgress(boolean importInProgress) {
+        isImportInProgress = importInProgress;
+    }
 
     public void recordEntityUpdate(AtlasObjectId entity) {
         if (entity != null && entity.getGuid() != null) {
