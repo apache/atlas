@@ -32,6 +32,7 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -43,6 +44,7 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -174,6 +176,12 @@ public class ExportService {
             AtlasEnumDef enumDef = typeRegistry.getEnumDefByName(enumType);
 
             typesDef.getEnumDefs().add(enumDef);
+        }
+
+        for (String relationshipType : context.relationshipTypes) {
+            AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(relationshipType);
+
+            typesDef.getRelationshipDefs().add(relationshipDef);
         }
     }
 
@@ -611,6 +619,8 @@ public class ExportService {
             addStructType((AtlasStructType)type, context);
         } else if (type instanceof AtlasEnumType) {
             addEnumType((AtlasEnumType)type, context);
+        } else if (type instanceof AtlasRelationshipType) {
+            addRelationshipType((AtlasRelationshipType)type, context);
         }
     }
 
@@ -619,6 +629,7 @@ public class ExportService {
             context.entityTypes.add(entityType.getTypeName());
 
             addAttributeTypes(entityType, context);
+            addRelationshipTypes(entityType, context);
 
             if (CollectionUtils.isNotEmpty(entityType.getAllSuperTypes())) {
                 for (String superType : entityType.getAllSuperTypes()) {
@@ -656,9 +667,27 @@ public class ExportService {
         }
     }
 
+    private void addRelationshipType(AtlasRelationshipType relationshipType, ExportContext context) {
+        if (!context.relationshipTypes.contains(relationshipType.getTypeName())) {
+            context.relationshipTypes.add(relationshipType.getTypeName());
+
+            addAttributeTypes(relationshipType, context);
+            addEntityType(relationshipType.getEnd1Type(), context);
+            addEntityType(relationshipType.getEnd2Type(), context);
+        }
+    }
+
     private void addAttributeTypes(AtlasStructType structType, ExportContext context) {
         for (AtlasAttributeDef attributeDef : structType.getStructDef().getAttributeDefs()) {
             addType(attributeDef.getTypeName(), context);
+        }
+    }
+
+    private void addRelationshipTypes(AtlasEntityType entityType, ExportContext context) {
+        for (List<AtlasRelationshipType> relationshipTypes : entityType.getRelationshipAttributesType().values()) {
+            for (AtlasRelationshipType relationshipType : relationshipTypes) {
+                addRelationshipType(relationshipType, context);
+            }
         }
     }
 
@@ -724,6 +753,7 @@ public class ExportService {
         final Set<String>                     classificationTypes = new HashSet<>();
         final Set<String>                     structTypes         = new HashSet<>();
         final Set<String>                     enumTypes           = new HashSet<>();
+        final Set<String>                     relationshipTypes   = new HashSet<>();
         final AtlasExportResult               result;
         private final ZipSink                 sink;
 

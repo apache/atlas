@@ -28,12 +28,15 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 class ExportTypeProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ExportTypeProcessor.class);
@@ -106,6 +109,8 @@ class ExportTypeProcessor {
             addStructType((AtlasStructType)type, context);
         } else if (type instanceof AtlasEnumType) {
             addEnumType((AtlasEnumType)type, context);
+        } else if (type instanceof AtlasRelationshipType) {
+            addRelationshipType((AtlasRelationshipType)type, context);
         }
     }
 
@@ -114,6 +119,7 @@ class ExportTypeProcessor {
             context.entityTypes.add(entityType.getTypeName());
 
             addAttributeTypes(entityType, context);
+            addRelationshipTypes(entityType, context);
 
             if (CollectionUtils.isNotEmpty(entityType.getAllSuperTypes())) {
                 for (String superType : entityType.getAllSuperTypes()) {
@@ -151,9 +157,27 @@ class ExportTypeProcessor {
         }
     }
 
+    private void addRelationshipType(AtlasRelationshipType relationshipType, ExportService.ExportContext context) {
+        if (!context.relationshipTypes.contains(relationshipType.getTypeName())) {
+            context.relationshipTypes.add(relationshipType.getTypeName());
+
+            addAttributeTypes(relationshipType, context);
+            addEntityType(relationshipType.getEnd1Type(), context);
+            addEntityType(relationshipType.getEnd2Type(), context);
+        }
+    }
+
     private void addAttributeTypes(AtlasStructType structType, ExportService.ExportContext context) {
         for (AtlasStructDef.AtlasAttributeDef attributeDef : structType.getStructDef().getAttributeDefs()) {
             addType(attributeDef.getTypeName(), context);
+        }
+    }
+
+    private void addRelationshipTypes(AtlasEntityType entityType, ExportService.ExportContext context) {
+        for (List<AtlasRelationshipType> relationshipTypes : entityType.getRelationshipAttributesType().values()) {
+            for (AtlasRelationshipType relationshipType : relationshipTypes) {
+                addRelationshipType(relationshipType, context);
+            }
         }
     }
 }

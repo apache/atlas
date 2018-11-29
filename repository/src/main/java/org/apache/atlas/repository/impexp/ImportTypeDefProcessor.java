@@ -75,5 +75,6 @@ public class ImportTypeDefProcessor {
         result.incrementMeticsCounter("typedef:enum", typeDefinitionMap.getEnumDefs().size());
         result.incrementMeticsCounter("typedef:entitydef", typeDefinitionMap.getEntityDefs().size());
         result.incrementMeticsCounter("typedef:struct", typeDefinitionMap.getStructDefs().size());
+        result.incrementMeticsCounter("typedef:relationship", typeDefinitionMap.getRelationshipDefs().size());
     }
 }
