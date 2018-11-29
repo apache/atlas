@@ -53,6 +53,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class KafkaBridge {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaBridge.class);
@@ -170,7 +171,7 @@ public class KafkaBridge {
         if (StringUtils.isNotEmpty(topicToImport)) {
             List<String> topics_subset = new ArrayList<>();
             for(String topic : topics) {
-                if (topic.startsWith(topicToImport)) {
+                if (Pattern.compile(topicToImport).matcher(topic).matches()) {
                     topics_subset.add(topic);
                 }
             }
@@ -305,12 +306,12 @@ public class KafkaBridge {
 
     private static  void printUsage(){
         System.out.println("Usage 1: import-kafka.sh");
-        System.out.println("Usage 2: import-kafka.sh [-n <topic regex> OR --topic <topic regex >]");
+        System.out.println("Usage 2: import-kafka.sh [-t <topic regex> OR --topic <topic regex>]");
         System.out.println("Usage 3: import-kafka.sh [-f <filename>]" );
         System.out.println("   Format:");
-        System.out.println("        topic1");
-        System.out.println("        topic2");
-        System.out.println("        topic3");
+        System.out.println("        topic1 OR topic1 regex");
+        System.out.println("        topic2 OR topic2 regex");
+        System.out.println("        topic3 OR topic3 regex");
     }
 
 
