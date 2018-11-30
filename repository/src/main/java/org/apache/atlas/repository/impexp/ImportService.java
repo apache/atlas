@@ -80,8 +80,6 @@ public class ImportService {
 
     public AtlasImportResult run(ZipSource source, AtlasImportRequest request, String userName,
                                  String hostName, String requestingIP) throws AtlasBaseException {
-        RequestContext.get().setImportInProgress(true);
-
         if (request == null) {
             request = new AtlasImportRequest();
         }
@@ -90,6 +88,8 @@ public class ImportService {
 
         try {
             LOG.info("==> import(user={}, from={}, request={})", userName, requestingIP, request);
+
+            RequestContext.get().setImportInProgress(true);
 
             String transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMS_KEY) : null;
             setImportTransform(source, transforms);
@@ -110,6 +110,8 @@ public class ImportService {
 
             throw new AtlasBaseException(excp);
         } finally {
+            RequestContext.get().setImportInProgress(false);
+
             source.close();
             LOG.info("<== import(user={}, from={}): status={}", userName, requestingIP, result.getOperationStatus());
         }
