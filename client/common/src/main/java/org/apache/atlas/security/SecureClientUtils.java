@@ -80,9 +80,10 @@ public class SecureClientUtils {
                     (ugiToUse.getAuthenticationMethod() == UserGroupInformation.AuthenticationMethod.PROXY)
                     ? ugiToUse.getRealUser() : ugiToUse;
             LOG.info("Real User: {}, is from ticket cache? {}", actualUgi, actualUgi.isLoginTicketBased());
-            if (StringUtils.isEmpty(doAsUser)) {
-                doAsUser = actualUgi.getShortUserName();
+            if (StringUtils.isEmpty(doAsUser) || StringUtils.equals(doAsUser, actualUgi.getShortUserName())) {
+                doAsUser = null;
             }
+
             LOG.info("doAsUser: {}", doAsUser);
             final String finalDoAsUser = doAsUser;
             httpURLConnectionFactory = new HttpURLConnectionFactory() {
