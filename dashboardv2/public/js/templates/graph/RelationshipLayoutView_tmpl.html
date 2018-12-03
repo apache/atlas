@@ -20,14 +20,17 @@
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
     <div style="position: absolute;height:100%;width:100%;">
+        <div class="graph-button-group">
+            <div class="zoom-button-group">
+                <span type="button" id="zoom_in" class="btn-md lineageZoomButton" title="Zoom In"> <i class="fa fa-search-plus"></i></span>
+                <span type="button" id="zoom_out" class="btn-md lineageZoomButton" title="Zoom Out"> <i class="fa fa-search-minus"></i></span>
+            </div>
+        </div>
         <svg width="100%" height="100%" viewBox="0 0 854 330" enable-background="new 0 0 854 330" xml:space="preserve"></svg>
     </div>
-    <div class="zoomButtonGroup">
-        <span type="button" id="zoom_in" class="btn btn-action btn-md lineageZoomButton" title="Zoom In"> <i class="fa fa-search-plus"></i></span>
-        <span type="button" id="zoom_out" class="btn btn-action btn-md lineageZoomButton" title="Zoom Out"> <i class="fa fa-search-minus"></i></span>
-    </div>
     <div class="relationship-details">
-        <div data-id="close" class="close-details"><i class="fa fa-times"></i></div>
+        <span data-id="close" style="margin: 7px;position: absolute;right: 0" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
+        <!-- <div data-id="close" class="close-details"><i class="fa fa-times"></i></div> -->
         <h4 class="title"><span data-id="typeName"></span></h4>
         <div class="col-md-12">
             <input data-id="searchNode" class="form-control form-group" placeholder="Search Entities" />

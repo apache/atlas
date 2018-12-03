@@ -66,7 +66,8 @@ define(['require',
                 termList: '[data-id="termList"]',
                 propagatedTagList: '[data-id="propagatedTagList"]',
                 fullscreenPanel: "#fullscreen_panel",
-                tablist: '[data-id="tab-list"] li'
+                tablist: '[data-id="tab-list"] li',
+                entityIcon: '[data-id="entityIcon"]'
             },
             templateHelpers: function() {
                 return {
@@ -126,6 +127,7 @@ define(['require',
                 this.listenTo(this.collection, 'reset', function() {
                     this.entityObject = this.collection.first().toJSON();
                     var collectionJSON = this.entityObject.entity;
+                    this.activeEntityDef = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName });
 
                     if (collectionJSON && _.startsWith(collectionJSON.typeName, "AtlasGlossary")) {
                         this.$(".termBox").hide();
@@ -161,6 +163,15 @@ define(['require',
                                     titleName += '<button title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
                                 }
                                 this.ui.title.html(titleName);
+                                var entityData = _.extend({ serviceType: this.activeEntityDef && this.activeEntityDef.get('serviceType') }, collectionJSON);
+                                if (this.readOnly) {
+                                    this.ui.entityIcon.addClass('disabled');
+                                } else {
+                                    this.ui.entityIcon.removeClass('disabled');
+                                }
+                                this.ui.entityIcon.attr('title', _.escape(collectionJSON.typeName)).html('<img src="' + Utils.getEntityIconPath({ entityData: entityData }) + '"/>').find("img").on('error', function() {
+                                    this.src = Utils.getEntityIconPath({ entityData: entityData, errorUrl: this.src });
+                                });
                             } else {
                                 this.ui.title.hide();
                             }
@@ -194,7 +205,6 @@ define(['require',
                         }
                     }
                     this.hideLoader();
-                    this.activeEntityDef = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName });
                     var obj = {
                         entity: collectionJSON,
                         guid: this.id,
@@ -252,9 +262,13 @@ define(['require',
                         }
 
 
-                        var containsList = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
+                        var processCheck = false,
+                            containsList = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
                             superType = _.find(containsList, function(type) {
                                 if (type === "DataSet" || type === "Process") {
+                                    if (type === "Process") {
+                                        processCheck = true;
+                                    }
                                     return true;
                                 }
                             });
@@ -262,6 +276,7 @@ define(['require',
                         if (superType) {
                             this.$('.lineageGraph').show();
                             this.renderLineageLayoutView({
+                                processCheck: processCheck,
                                 guid: this.id,
                                 entityDefCollection: this.entityDefCollection,
                                 fetchCollection: this.fetchCollection.bind(this),

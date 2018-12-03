@@ -21,6 +21,7 @@
         fill: none;
         stroke-width: 1.5px;
     }
+
     .relationship-details {
         position: absolute;
         left: 0;
@@ -32,15 +33,19 @@
         transform: scaleX(0);
         width: 240px;
         transition: transform 0.3s ease-in;
+
         &.open {
             transform: scaleX(1);
         }
+
         .title {
             background: black;
             color: white;
-            padding: 10px;
+            padding: 10px 38px 10px 10px;
+            word-break: break-all;
             margin-top: 0;
         }
+
         .close-details {
             position: absolute;
             top: 0;
@@ -51,12 +56,14 @@
             cursor: pointer;
             font-size: 16px;
         }
+
         .entity-list {
             overflow: auto;
             list-style-type: decimal;
             list-style-position: outside;
             padding-left: 15px;
         }
+
         ul>li {
             word-wrap: break-word;
             margin-bottom: 5px;
@@ -66,6 +73,7 @@
                 a {
                     color: #BB5838 !important;
                 }
+
                 .deleteBtn {
                     padding: 2px 8px !important;
                     margin: 5px 5px !important;
