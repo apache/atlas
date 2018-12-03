@@ -36,5 +36,6 @@ define(['require'], function(require) {
         status: false,
         response: {}
     }
+    Globals.entityImgPath = "/img/entity-icon/"
     return Globals;
 });

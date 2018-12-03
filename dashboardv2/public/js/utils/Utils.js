@@ -76,6 +76,49 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     Utils.getBaseUrl = function(url) {
         return url.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, '');
     };
+    Utils.getEntityIconPath = function(options) {
+        var entityData = null,
+            serviceType = null,
+            status = null,
+            iconBasePath = Utils.getBaseUrl(window.location.pathname) + Globals.entityImgPath;
+        if (options) {
+            entityData = options.entityData;
+            serviceType = entityData && entityData.serviceType;
+            status = entityData && entityData.status;
+        }
+
+        if (entityData) {
+            if (options.errorUrl) {
+                var isErrorInDefaultServiceType = (serviceType && options.errorUrl && options.errorUrl.match("/" + serviceType + "/" + serviceType + ".png|/" + serviceType + "/disabled/" + serviceType + ".png") ? true : false);
+                if (serviceType && !isErrorInDefaultServiceType) {
+                    var imageName = serviceType + ".png";
+                    return iconBasePath + serviceType + (Enums.entityStateReadOnly[status] ? "/disabled/" + imageName : "/" + imageName);
+                } else {
+                    if (entityData.isProcess) {
+                        if (Enums.entityStateReadOnly[status]) {
+                            return iconBasePath + 'default/disabled/process.png';
+                        } else {
+                            return iconBasePath + 'default/process.png';
+                        }
+                    } else {
+                        if (Enums.entityStateReadOnly[status]) {
+                            return iconBasePath + 'default/disabled/table.png';
+                        } else {
+                            return iconBasePath + 'default/table.png';
+                        }
+                    }
+                }
+            } else {
+                var imageName = entityData.typeName + ".png";
+                if (serviceType) {
+                    return iconBasePath + serviceType + (Enums.entityStateReadOnly[status] ? "/disabled/" + imageName : "/" + imageName);
+                } else {
+                    return iconBasePath + (Enums.entityStateReadOnly[status] ? "default/disabled/" + imageName : "default/" + imageName);
+                }
+            }
+        }
+    }
+
     pnotify.prototype.options.styling = "fontawesome";
     var notify = function(options) {
         return new pnotify(_.extend({

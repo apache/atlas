@@ -229,23 +229,25 @@ require(['App',
     CommonViewFunction.userDataFetch({
         url: UrlLinks.sessionApiUrl(),
         callback: function(response) {
-            if (response && response.userName) {
-                Globals.userLogedIn.status = true;
-                Globals.userLogedIn.response = response;
-            }
-            if (response && response['atlas.entity.create.allowed'] !== undefined) {
-                Globals.entityCreate = response['atlas.entity.create.allowed'];
-            }
-            if (response && response['atlas.entity.update.allowed'] !== undefined) {
-                Globals.entityUpdate = response['atlas.entity.update.allowed'];
-            }
-            if (response && response['atlas.ui.editable.entity.types'] !== undefined) {
-                var entityTypeList = response['atlas.ui.editable.entity.types'].trim().split(",");
-                if (entityTypeList.length) {
-                    if (entityTypeList[0] === "*") {
-                        Globals.entityTypeConfList = [];
-                    } else if (entityTypeList.length > 0) {
-                        Globals.entityTypeConfList = entityTypeList;
+            if (response) {
+                if (response.userName) {
+                    Globals.userLogedIn.status = true;
+                    Globals.userLogedIn.response = response;
+                }
+                if (response['atlas.entity.create.allowed'] !== undefined) {
+                    Globals.entityCreate = response['atlas.entity.create.allowed'];
+                }
+                if (response['atlas.entity.update.allowed'] !== undefined) {
+                    Globals.entityUpdate = response['atlas.entity.update.allowed'];
+                }
+                if (response['atlas.ui.editable.entity.types'] !== undefined) {
+                    var entityTypeList = response['atlas.ui.editable.entity.types'].trim().split(",");
+                    if (entityTypeList.length) {
+                        if (entityTypeList[0] === "*") {
+                            Globals.entityTypeConfList = [];
+                        } else if (entityTypeList.length > 0) {
+                            Globals.entityTypeConfList = entityTypeList;
+                        }
                     }
                 }
             }
