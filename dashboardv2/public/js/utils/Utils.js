@@ -77,44 +77,51 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         return url.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, '');
     };
     Utils.getEntityIconPath = function(options) {
-        var entityData = null,
-            serviceType = null,
-            status = null,
+        var entityData = options && options.entityData,
+            serviceType,
+            status,
+            typeName,
             iconBasePath = Utils.getBaseUrl(window.location.pathname) + Globals.entityImgPath;
-        if (options) {
-            entityData = options.entityData;
+        if (entityData) {
+            typeName = entityData.typeName;
             serviceType = entityData && entityData.serviceType;
             status = entityData && entityData.status;
         }
 
-        if (entityData) {
-            if (options.errorUrl) {
-                var isErrorInDefaultServiceType = (serviceType && options.errorUrl && options.errorUrl.match("/" + serviceType + "/" + serviceType + ".png|/" + serviceType + "/disabled/" + serviceType + ".png") ? true : false);
-                if (serviceType && !isErrorInDefaultServiceType) {
-                    var imageName = serviceType + ".png";
-                    return iconBasePath + serviceType + (Enums.entityStateReadOnly[status] ? "/disabled/" + imageName : "/" + imageName);
+        function getImgPath(imageName) {
+            return iconBasePath + (Enums.entityStateReadOnly[status] ? "disabled/" + imageName : imageName);
+        }
+
+        function getDefaultImgPath() {
+            if (entityData.isProcess) {
+                if (Enums.entityStateReadOnly[status]) {
+                    return iconBasePath + 'disabled/process.png';
                 } else {
-                    if (entityData.isProcess) {
-                        if (Enums.entityStateReadOnly[status]) {
-                            return iconBasePath + 'default/disabled/process.png';
-                        } else {
-                            return iconBasePath + 'default/process.png';
-                        }
-                    } else {
-                        if (Enums.entityStateReadOnly[status]) {
-                            return iconBasePath + 'default/disabled/table.png';
-                        } else {
-                            return iconBasePath + 'default/table.png';
-                        }
-                    }
+                    return iconBasePath + 'process.png';
                 }
             } else {
-                var imageName = entityData.typeName + ".png";
-                if (serviceType) {
-                    return iconBasePath + serviceType + (Enums.entityStateReadOnly[status] ? "/disabled/" + imageName : "/" + imageName);
+                if (Enums.entityStateReadOnly[status]) {
+                    return iconBasePath + 'disabled/table.png';
                 } else {
-                    return iconBasePath + (Enums.entityStateReadOnly[status] ? "default/disabled/" + imageName : "default/" + imageName);
+                    return iconBasePath + 'table.png';
                 }
+            }
+        }
+
+        if (entityData) {
+            if (options.errorUrl) {
+                var isErrorInTypeName = (options.errorUrl && options.errorUrl.match("entity-icon/" + typeName + ".png|disabled/" + typeName + ".png") ? true : false);
+                if (serviceType && isErrorInTypeName) {
+                    var imageName = serviceType + ".png";
+                    return getImgPath(imageName);
+                } else {
+                    return getDefaultImgPath();
+                }
+            } else if (entityData.typeName) {
+                var imageName = entityData.typeName + ".png";
+                return getImgPath(imageName);
+            } else {
+                return getDefaultImgPath();
             }
         }
     }
