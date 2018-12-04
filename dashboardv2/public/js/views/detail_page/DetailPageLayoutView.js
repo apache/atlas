@@ -135,6 +135,18 @@ define(['require',
                     // MergerRefEntity.
                     Utils.findAndMergeRefEntity(collectionJSON.attributes, this.entityObject.referredEntities);
 
+                    // check if entity is process
+                    var isProcess = false,
+                        superTypes = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
+                        isLineageRender = _.find(superTypes, function(type) {
+                            if (type === "DataSet" || type === "Process") {
+                                if (type === "Process") {
+                                    isProcess = true;
+                                }
+                                return true;
+                            }
+                        });
+
                     if (collectionJSON && collectionJSON.guid) {
                         var tagGuid = collectionJSON.guid;
                         this.readOnly = Enums.entityStateReadOnly[collectionJSON.status];
@@ -163,7 +175,7 @@ define(['require',
                                     titleName += '<button title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
                                 }
                                 this.ui.title.html(titleName);
-                                var entityData = _.extend({ serviceType: this.activeEntityDef && this.activeEntityDef.get('serviceType') }, collectionJSON);
+                                var entityData = _.extend({ "serviceType": this.activeEntityDef && this.activeEntityDef.get('serviceType'), "isProcess": isProcess }, collectionJSON);
                                 if (this.readOnly) {
                                     this.ui.entityIcon.addClass('disabled');
                                 } else {
@@ -261,22 +273,10 @@ define(['require',
                             });
                         }
 
-
-                        var processCheck = false,
-                            containsList = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
-                            superType = _.find(containsList, function(type) {
-                                if (type === "DataSet" || type === "Process") {
-                                    if (type === "Process") {
-                                        processCheck = true;
-                                    }
-                                    return true;
-                                }
-                            });
-
-                        if (superType) {
+                        if (isLineageRender) {
                             this.$('.lineageGraph').show();
                             this.renderLineageLayoutView({
-                                processCheck: processCheck,
+                                processCheck: isProcess,
                                 guid: this.id,
                                 entityDefCollection: this.entityDefCollection,
                                 fetchCollection: this.fetchCollection.bind(this),
