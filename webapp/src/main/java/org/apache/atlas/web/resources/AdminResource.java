@@ -398,10 +398,12 @@ public class AdminResource {
         } catch (AtlasBaseException excp) {
             if (excp.getAtlasErrorCode().equals(AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP)) {
                 LOG.info(excp.getMessage());
+                return new AtlasImportResult();
             } else {
                 LOG.error("importData(binary) failed", excp);
                 throw excp;
             }
+
         } catch (Exception excp) {
             LOG.error("importData(binary) failed", excp);
 
