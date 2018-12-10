@@ -21,6 +21,7 @@ package org.apache.atlas.web.resources;
 
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
@@ -43,6 +44,7 @@ import static org.testng.Assert.assertTrue;
 
 public class AdminExportImportTestIT extends BaseResourceIT {
     private final String FILE_TO_IMPORT = "stocks-base.zip";
+    private final String FILE_TO_IMPORT_EMPTY = "empty-1.zip";
     private final String EXPORT_REQUEST_FILE = "export-incremental";
     private final String SOURCE_SERVER_NAME = "cl1";
 
@@ -60,6 +62,13 @@ public class AdminExportImportTestIT extends BaseResourceIT {
     public void importData() throws AtlasServiceException {
         performImport(FILE_TO_IMPORT);
         assertReplicationData("cl1");
+    }
+
+    @Test(dependsOnMethods = "isActive")
+    public void importEmptyData() throws AtlasServiceException {
+        AtlasImportResult result = performImportUsing(FILE_TO_IMPORT_EMPTY, new AtlasImportRequest());
+        assertNotNull(result);
+        assertEquals(AtlasExportResult.OperationStatus.FAIL.toString(), result.getOperationStatus().toString());
     }
 
     @Test(dependsOnMethods = "importData")
@@ -85,6 +94,14 @@ public class AdminExportImportTestIT extends BaseResourceIT {
 
     private void performImport(String fileToImport, AtlasImportRequest request) throws AtlasServiceException {
 
+        AtlasImportResult result = performImportUsing(fileToImport, request);
+        assertNotNull(result);
+        assertEquals(result.getOperationStatus(), AtlasImportResult.OperationStatus.SUCCESS);
+        assertNotNull(result.getMetrics());
+        assertEquals(result.getProcessedEntities().size(), 37);
+    }
+
+    private AtlasImportResult performImportUsing(String fileToImport, AtlasImportRequest request) throws AtlasServiceException {
         FileInputStream fileInputStream = null;
 
         try {
@@ -93,11 +110,7 @@ public class AdminExportImportTestIT extends BaseResourceIT {
             assertFalse(true, "Exception: " + e.getMessage());
         }
 
-        AtlasImportResult result = atlasClientV2.importData(request, fileInputStream);
-        assertNotNull(result);
-        assertEquals(result.getOperationStatus(), AtlasImportResult.OperationStatus.SUCCESS);
-        assertNotNull(result.getMetrics());
-        assertEquals(result.getProcessedEntities().size(), 37);
+        return atlasClientV2.importData(request, fileInputStream);
     }
 
     private void assertReplicationData(String serverName) throws AtlasServiceException {
