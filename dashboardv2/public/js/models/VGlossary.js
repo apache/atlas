@@ -106,7 +106,7 @@ define(['require',
                 contentType: 'application/json',
                 dataType: 'json'
             }, options);
-            return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
+            return this.constructor.nonCrudOperation.call(this, url, 'PUT', options);
         },
         removeTermFromCategory: function() {
 

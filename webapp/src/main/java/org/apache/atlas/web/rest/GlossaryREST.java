@@ -857,21 +857,43 @@ public class GlossaryREST {
     @DELETE
     @Path("/terms/{termGuid}/assignedEntities")
     public void removeTermAssignmentFromEntities(@PathParam("termGuid") String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
-        Servlets.validateQueryParamLength("termGuid", termGuid);
+        removeTermFromGlossary(termGuid, relatedObjectIds);
+    }
+
+
+    /**
+     * Remove the term assignment for the given list of entity headers
+     * @param termGuid Glossary term GUID
+     * @param relatedObjectIds List of related entity IDs from which the term has to be dissociated
+     * @throws AtlasBaseException
+     * @HTTP 204 If glossary term dissociation was successful
+     * @HTTP 400 If ANY of the entity header is invalid
+     * @HTTP 404 If glossary term guid in invalid
+     */
+    @PUT
+    @Path("/terms/{termGuid}/assignedEntities")
+    public void disassociateTermAssignmentFromEntities(@PathParam("termGuid") String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException {
+        removeTermFromGlossary(termGuid, relatedObjectIds);
+    }
+
+
+
+    private void removeTermFromGlossary(String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasBaseException{
+
+        Servlets.validateQueryParamLength("termGuid", termGuid) ;
 
         AtlasPerfTracer perf = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.removeTermAssignmentFromEntities(" + termGuid + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.removeTermFromGlossary(" + termGuid + ")");
             }
 
             glossaryService.removeTermFromEntities(termGuid, relatedObjectIds);
         } finally {
             AtlasPerfTracer.log(perf);
         }
+
     }
-
-
 
     /**
      * Get all related categories (parent and children)
