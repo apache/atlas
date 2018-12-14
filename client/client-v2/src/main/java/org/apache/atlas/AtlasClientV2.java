@@ -318,11 +318,11 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public void addClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(formatPathParameters(API_V2.ADD_CLASSIFICATIONS, guid), (Class<?>)null, classifications, (String[]) null);
+        callAPI(formatPathParameters(API_V2.ADD_CLASSIFICATIONS, guid), (Class<?>) null, classifications);
     }
 
     public void updateClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATIONS, guid), AtlasClassifications.class, classifications);
+        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATIONS, guid), (Class<?>) null, classifications);
     }
 
     public void deleteClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
