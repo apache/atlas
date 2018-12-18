@@ -19,8 +19,10 @@ package org.apache.atlas.notification;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1;
@@ -159,6 +161,8 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
     // send notification of entity change
     private void notifyOfEntityEvent(Collection<Referenceable> entityDefinitions,
                                      OperationType             operationType) throws AtlasException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
+
         List<EntityNotificationV1> messages = new ArrayList<>();
 
         for (Referenceable entityDefinition : entityDefinitions) {
@@ -186,6 +190,8 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
         if (!messages.isEmpty()) {
             notificationSender.send(messages);
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private List<String> getNotificationAttributes(String entityType) {

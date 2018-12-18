@@ -24,6 +24,7 @@ import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.AtlasEntityType;
@@ -65,6 +66,8 @@ public class EntityAuditListener implements EntityChangeListener {
 
     @Override
     public void onEntitiesAdded(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
         List<EntityAuditEvent> events = new ArrayList<>();
         for (Referenceable entity : entities) {
             EntityAuditEvent event = createEvent(entity, isImport ? EntityAuditAction.ENTITY_IMPORT_CREATE : EntityAuditAction.ENTITY_CREATE);
@@ -72,10 +75,14 @@ public class EntityAuditListener implements EntityChangeListener {
         }
 
         auditRepository.putEventsV1(events);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     @Override
     public void onEntitiesUpdated(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
         List<EntityAuditEvent> events = new ArrayList<>();
         for (Referenceable entity : entities) {
             EntityAuditEvent event = createEvent(entity, isImport ? EntityAuditAction.ENTITY_IMPORT_UPDATE : EntityAuditAction.ENTITY_UPDATE);
@@ -83,45 +90,61 @@ public class EntityAuditListener implements EntityChangeListener {
         }
 
         auditRepository.putEventsV1(events);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     @Override
     public void onTraitsAdded(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException {
         if (traits != null) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
             for (Struct trait : traits) {
                 EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_ADD,
                                                      "Added trait: " + AtlasType.toV1Json(trait));
 
                 auditRepository.putEventsV1(event);
             }
+
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
     @Override
     public void onTraitsDeleted(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException {
         if (traits != null) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
             for (Struct trait : traits) {
                 EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_DELETE, "Deleted trait: " + trait.getTypeName());
 
                 auditRepository.putEventsV1(event);
             }
+
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
     @Override
     public void onTraitsUpdated(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException {
         if (traits != null) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
             for (Struct trait : traits) {
                 EntityAuditEvent event = createEvent(entity, EntityAuditAction.TAG_UPDATE,
                                                      "Updated trait: " + AtlasType.toV1Json(trait));
 
                 auditRepository.putEventsV1(event);
             }
+
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
     @Override
     public void onEntitiesDeleted(Collection<Referenceable> entities, boolean isImport) throws AtlasException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
         List<EntityAuditEvent> events = new ArrayList<>();
         for (Referenceable entity : entities) {
             EntityAuditEvent event = createEvent(entity, isImport ? EntityAuditAction.ENTITY_IMPORT_DELETE : EntityAuditAction.ENTITY_DELETE, "Deleted entity");
@@ -129,10 +152,14 @@ public class EntityAuditListener implements EntityChangeListener {
         }
 
         auditRepository.putEventsV1(events);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     @Override
     public void onTermAdded(Collection<Referenceable> entities, AtlasGlossaryTerm term) throws AtlasException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
         List<EntityAuditEvent> events = new ArrayList<>();
 
         for (Referenceable entity : entities) {
@@ -140,10 +167,14 @@ public class EntityAuditListener implements EntityChangeListener {
         }
 
         auditRepository.putEventsV1(events);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     @Override
     public void onTermDeleted(Collection<Referenceable> entities, AtlasGlossaryTerm term) throws AtlasException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
         List<EntityAuditEvent> events = new ArrayList<>();
 
         for (Referenceable entity : entities) {
@@ -151,6 +182,8 @@ public class EntityAuditListener implements EntityChangeListener {
         }
 
         auditRepository.putEventsV1(events);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     public List<EntityAuditEvent> getAuditEvents(String guid) throws AtlasException{

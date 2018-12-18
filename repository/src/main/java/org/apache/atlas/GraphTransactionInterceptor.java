@@ -23,6 +23,7 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.NotFoundException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -69,6 +70,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         }
 
         boolean isSuccess = false;
+        MetricRecorder metric = null;
 
         try {
             try {
@@ -79,6 +81,8 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                         LOG.debug("Ignoring commit for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
                     }
                 } else {
+                    metric = RequestContext.get().startMetricRecord("graphCommit");
+
                     doCommitOrRollback(invokingClass, invokedMethodName);
                 }
 
@@ -97,6 +101,8 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                 throw t;
             }
         } finally {
+            RequestContext.get().endMetricRecord(metric);
+
             // Only outer txn can mark as closed
             if (!isInnerTxn) {
                 if (LOG.isDebugEnabled()) {

@@ -32,6 +32,7 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -118,6 +119,8 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
+
         List<EntityNotificationV2> messages = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
@@ -135,6 +138,8 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                 throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
             }
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private AtlasEntityHeader toNotificationHeader(AtlasEntity entity) {

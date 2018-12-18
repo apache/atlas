@@ -26,13 +26,13 @@ import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -79,6 +79,8 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onEntitiesAdded(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
         List<EntityAuditEventV2> events = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
@@ -88,10 +90,14 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         auditRepository.putEventsV2(events);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     @Override
     public void onEntitiesUpdated(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
         List<EntityAuditEventV2> events = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
@@ -101,10 +107,14 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         auditRepository.putEventsV2(events);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     @Override
     public void onEntitiesDeleted(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
         List<EntityAuditEventV2> events = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
@@ -114,11 +124,15 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         auditRepository.putEventsV2(events);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     @Override
     public void onClassificationsAdded(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
             List<EntityAuditEventV2> events = new ArrayList<>();
 
             for (AtlasClassification classification : classifications) {
@@ -130,12 +144,16 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             }
 
             auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
     @Override
     public void onClassificationsUpdated(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
             List<EntityAuditEventV2> events = new ArrayList<>();
             String                   guid   = entity.getGuid();
 
@@ -154,12 +172,16 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             }
 
             auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
     @Override
     public void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
             List<EntityAuditEventV2> events = new ArrayList<>();
 
             for (AtlasClassification classification : classifications) {
@@ -171,12 +193,16 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             }
 
             auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
     @Override
     public void onTermAdded(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException {
         if (term != null && CollectionUtils.isNotEmpty(entities)) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
             List<EntityAuditEventV2> events = new ArrayList<>();
 
             for (AtlasRelatedObjectId relatedObjectId : entities) {
@@ -188,12 +214,16 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             }
 
             auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
     @Override
     public void onTermDeleted(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException {
         if (term != null && CollectionUtils.isNotEmpty(entities)) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
             List<EntityAuditEventV2> events = new ArrayList<>();
 
             for (AtlasRelatedObjectId relatedObjectId : entities) {
@@ -205,6 +235,8 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             }
 
             auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 

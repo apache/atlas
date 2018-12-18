@@ -41,6 +41,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasEntityUtil;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -671,6 +672,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "createOrUpdate()");
         }
 
+        MetricRecorder metric = RequestContext.get().startMetricRecord("createOrUpdate");
+
         try {
             final EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
 
@@ -730,11 +733,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             return ret;
         } finally {
+            RequestContext.get().endMetricRecord(metric);
+
             AtlasPerfTracer.log(perf);
         }
     }
 
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
+
         EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV2(typeRegistry, entityStream);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
@@ -796,6 +803,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
         }
+
+        RequestContext.get().endMetricRecord(metric);
 
         return context;
     }
