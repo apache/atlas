@@ -166,8 +166,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     @Override
     public void start() throws AtlasException {
         if (consumerDisabled) {
-            LOG.info("Hook consumer stopped. No hook messages will be processed. " +
-                    "Set property '{}' to false to start consuming hook messages.", CONSUMER_DISABLED);
+            LOG.info("No hook messages will be processed. {} = {}", CONSUMER_DISABLED, consumerDisabled);
             return;
         }
 
@@ -207,6 +206,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public void stop() {
         //Allow for completion of outstanding work
         try {
+            if (consumerDisabled) {
+                return;
+            }
+
             stopConsumerThreads();
             if (executors != null) {
                 executors.shutdown();
@@ -242,6 +245,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
      */
     @Override
     public void instanceIsActive() {
+        if (consumerDisabled) {
+            return;
+        }
+
         LOG.info("Reacting to active state: initializing Kafka consumers");
         startConsumers(executors);
     }
@@ -254,6 +261,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
      */
     @Override
     public void instanceIsPassive() {
+        if (consumerDisabled) {
+            return;
+        }
+
         LOG.info("Reacting to passive state: shutting down Kafka consumers.");
         stop();
     }
