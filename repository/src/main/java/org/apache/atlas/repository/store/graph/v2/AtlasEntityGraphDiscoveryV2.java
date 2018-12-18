@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -35,6 +36,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,6 +129,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
 
 
     protected void discover() throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("walkEntityGraph");
+
         EntityStream entityStream = discoveryContext.getEntityStream();
 
         Set<String> walkedEntities = new HashSet<>();
@@ -162,9 +166,13 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 walkedEntities.add(entity.getGuid());
             }
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     protected void resolveReferences() throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("resolveReferences");
+
         EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(typeRegistry),
                                                                   new UniqAttrBasedEntityResolver(typeRegistry)
                                                                 };
@@ -172,6 +180,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         for (EntityResolver resolver : entityResolvers) {
             resolver.resolveEntityReferences(discoveryContext);
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private void visitReference(AtlasObjectIdType type, Object val) throws AtlasBaseException {

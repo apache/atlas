@@ -23,6 +23,8 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.store.DeleteType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +32,11 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 public class RequestContext {
-    private static final Logger LOG = LoggerFactory.getLogger(RequestContext.class);
+    private static final Logger METRICS = LoggerFactory.getLogger("METRICS");
 
     private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
     private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
+    private static final boolean                     isMetricsEnabled = METRICS.isDebugEnabled();
 
     private final long                                   requestTime         = System.currentTimeMillis();
     private final Map<String, AtlasObjectId>             updatedEntities     = new HashMap<>();
@@ -42,6 +45,7 @@ public class RequestContext {
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache  = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations   = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations = new HashMap<>();
+    private final AtlasPerfMetrics                       metrics             = isMetricsEnabled ? new AtlasPerfMetrics() : null;
     private       List<EntityGuidPair>                   entityGuidInRequest = null;
 
     private String      user;
@@ -94,6 +98,12 @@ public class RequestContext {
         this.entityExtInfoCache.clear();
         this.addedPropagations.clear();
         this.removedPropagations.clear();
+
+        if (metrics != null && !metrics.isEmpty()) {
+            METRICS.debug(metrics.toString());
+
+            metrics.clear();
+        }
 
         if (this.entityGuidInRequest != null) {
             this.entityGuidInRequest.clear();
@@ -271,6 +281,16 @@ public class RequestContext {
 
     public boolean isDeletedEntity(String guid) {
         return deletedEntities.containsKey(guid);
+    }
+
+
+
+    public MetricRecorder startMetricRecord(String name) { return metrics != null ? metrics.getMetricRecorder(name) : null; }
+
+    public void endMetricRecord(MetricRecorder recorder) {
+        if (metrics != null && recorder != null) {
+            metrics.recordMetric(recorder);
+        }
     }
 
     public void recordEntityGuidUpdate(AtlasEntity entity, String guidInRequest) {

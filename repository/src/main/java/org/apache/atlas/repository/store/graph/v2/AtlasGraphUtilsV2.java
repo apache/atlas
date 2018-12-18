@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.discovery.SearchProcessor;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -38,6 +39,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -268,6 +270,8 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static AtlasVertex findByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> attrValues) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("findByUniqueAttributes");
+
         AtlasVertex vertex = null;
 
         final Map<String, AtlasAttribute> uniqueAttributes = entityType.getUniqAttributes();
@@ -301,6 +305,8 @@ public class AtlasGraphUtilsV2 {
                 }
             }
         }
+
+        RequestContext.get().endMetricRecord(metric);
 
         return vertex;
     }
@@ -345,6 +351,8 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static AtlasVertex findByTypeAndPropertyName(String typeName, String propertyName, Object attrVal) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("findByTypeAndPropertyName");
+
         AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
                                                     .has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName)
                                                     .has(propertyName, attrVal)
@@ -354,10 +362,14 @@ public class AtlasGraphUtilsV2 {
 
         AtlasVertex vertex = results.hasNext() ? results.next() : null;
 
+        RequestContext.get().endMetricRecord(metric);
+
         return vertex;
     }
 
     public static AtlasVertex findBySuperTypeAndPropertyName(String typeName, String propertyName, Object attrVal) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("findBySuperTypeAndPropertyName");
+
         AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
                                                     .has(Constants.SUPER_TYPES_PROPERTY_KEY, typeName)
                                                     .has(propertyName, attrVal)
@@ -366,6 +378,8 @@ public class AtlasGraphUtilsV2 {
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
         AtlasVertex vertex = results.hasNext() ? results.next() : null;
+
+        RequestContext.get().endMetricRecord(metric);
 
         return vertex;
     }

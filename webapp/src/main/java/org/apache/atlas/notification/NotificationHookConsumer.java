@@ -88,6 +88,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private static final Logger LOG        = LoggerFactory.getLogger(NotificationHookConsumer.class);
     private static final Logger PERF_LOG   = AtlasPerfTracer.getPerfLogger(NotificationHookConsumer.class);
     private static final Logger FAILED_LOG = LoggerFactory.getLogger("FAILED");
+    private static final Logger LARGE_MESSAGES_LOG = LoggerFactory.getLogger("LARGE_MESSAGES");
 
     private static final int    SC_OK          = 200;
     private static final int    SC_BAD_REQUEST = 400;
@@ -121,6 +122,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final int                    maxWaitDuration;
     private final boolean                skipHiveColumnLineageHive20633;
     private final int                    skipHiveColumnLineageHive20633InputsThreshold;
+    private final int                    largeMessageProcessingTimeThresholdMs;
     private final boolean                consumerDisabled;
 
     private NotificationInterface notificationInterface;
@@ -153,6 +155,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         skipHiveColumnLineageHive20633                = applicationProperties.getBoolean(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false);
         skipHiveColumnLineageHive20633InputsThreshold = applicationProperties.getInt(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
         consumerDisabled 							  = applicationProperties.getBoolean(CONSUMER_DISABLED, false);
+        largeMessageProcessingTimeThresholdMs         = applicationProperties.getInt("atlas.notification.consumer.large.message.processing.time.threshold.ms", 60 * 1000);  //  60 sec by default
 
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
@@ -591,6 +594,15 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 commit(kafkaMsg);
             } finally {
                 AtlasPerfTracer.log(perf);
+
+                long msgProcessingTime = perf != null ? perf.getElapsedTime() : 0;
+
+                if (msgProcessingTime > largeMessageProcessingTimeThresholdMs) {
+                    String strMessage = AbstractNotification.getMessageJson(message);
+
+                    LOG.warn("msgProcessingTime={}, msgSize={}, topicOffset={}}", msgProcessingTime, strMessage.length(), kafkaMsg.getOffset());
+                    LARGE_MESSAGES_LOG.warn("{\"msgProcessingTime\":{},\"msgSize\":{},\"topicOffset\":{},\"data\":{}}", msgProcessingTime, strMessage.length(), kafkaMsg.getOffset(), strMessage);
+                }
 
                 if (auditLog != null) {
                     auditLog.setHttpStatus(isFailedMsg ? SC_BAD_REQUEST : SC_OK);

@@ -55,6 +55,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -175,6 +176,8 @@ public class EntityGraphMapper {
     }
 
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
+
         EntityMutationResponse resp = new EntityMutationResponse();
 
         Collection<AtlasEntity> createdEntities = context.getCreatedEntities();
@@ -237,6 +240,8 @@ public class EntityGraphMapper {
             }
         }
 
+        RequestContext.get().endMetricRecord(metric);
+
         return resp;
     }
 
@@ -284,6 +289,8 @@ public class EntityGraphMapper {
         }
 
         if (MapUtils.isNotEmpty(struct.getAttributes())) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributes");
+
             AtlasStructType structType = getStructType(struct.getTypeName());
 
             if (op.equals(CREATE)) {
@@ -308,6 +315,8 @@ public class EntityGraphMapper {
             }
 
             updateModificationMetadata(vertex);
+
+            RequestContext.get().endMetricRecord(metric);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -322,6 +331,8 @@ public class EntityGraphMapper {
         }
 
         if (MapUtils.isNotEmpty(entity.getRelationshipAttributes())) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes");
+
             AtlasEntityType entityType = getEntityType(entity.getTypeName());
 
             if (op.equals(CREATE)) {
@@ -343,6 +354,8 @@ public class EntityGraphMapper {
             }
 
             updateModificationMetadata(vertex);
+
+            RequestContext.get().endMetricRecord(metric);
         }
 
         if (LOG.isDebugEnabled()) {

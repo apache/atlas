@@ -29,13 +29,13 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -437,6 +437,8 @@ public class AtlasEntityChangeNotifier {
             LOG.warn("Unable to determine if FullText is disabled. Proceeding with FullText mapping");
         }
 
+        MetricRecorder metric = RequestContext.get().startMetricRecord("fullTextMapping");
+
         for (AtlasEntityHeader entityHeader : entityHeaders) {
             if(GraphHelper.isInternalType(entityHeader.getTypeName())) {
                 continue;
@@ -457,6 +459,8 @@ public class AtlasEntityChangeNotifier {
                 LOG.error("FullText mapping failed for Vertex[ guid = {} ]", guid, e);
             }
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private void updateFullTextMapping(String entityId, List<AtlasClassification> classifications) {
@@ -477,6 +481,8 @@ public class AtlasEntityChangeNotifier {
             return;
         }
 
+        MetricRecorder metric = RequestContext.get().startMetricRecord("fullTextMapping");
+
         try {
             String classificationFullText = fullTextMapperV2.getIndexTextForClassifications(entityId, classifications);
             String existingFullText       = AtlasGraphUtilsV2.getEncodedProperty(atlasVertex, ENTITY_TEXT_PROPERTY_KEY, String.class);
@@ -486,6 +492,8 @@ public class AtlasEntityChangeNotifier {
         } catch (AtlasBaseException e) {
             LOG.error("FullText mapping failed for Vertex[ guid = {} ]", entityId, e);
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private void doFullTextMapping(String guid) {
