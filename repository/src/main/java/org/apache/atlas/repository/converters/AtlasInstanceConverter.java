@@ -20,6 +20,7 @@ package org.apache.atlas.repository.converters;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.CreateUpdateEntitiesResult;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -99,17 +100,18 @@ public class AtlasInstanceConverter {
     }
 
     public ITypedReferenceableInstance getITypedReferenceable(AtlasEntity entity) throws AtlasBaseException {
-        try {
-            return metadataService.getEntityDefinition(entity.getGuid());
-        } catch (AtlasException e) {
-            LOG.error("Exception while getting a typed reference for the entity ", e);
-            throw toAtlasBaseException(e);
-        }
+        return getITypedReferenceable(entity.getGuid());
     }
 
     public ITypedReferenceableInstance getITypedReferenceable(String guid) throws AtlasBaseException {
         try {
-            return metadataService.getEntityDefinition(guid);
+            ITypedReferenceableInstance ret = RequestContext.get().getInstanceV1(guid);
+
+            if (ret == null) {
+                ret = metadataService.getEntityDefinition(guid);
+            }
+
+            return ret;
         } catch (AtlasException e) {
             LOG.error("Exception while getting a typed reference for the entity ", e);
             throw toAtlasBaseException(e);

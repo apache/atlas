@@ -20,8 +20,10 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.metrics.Metrics.MetricRecorder;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -186,6 +188,8 @@ public class AtlasEntityChangeNotifier {
     }
 
     private List<ITypedReferenceableInstance> toITypedReferenceable(List<AtlasEntityHeader> entityHeaders, EntityOperation operation) throws AtlasBaseException {
+        MetricRecorder metric = RequestContextV1.get().startMetricRecord("notification-getReferenceable");
+
         List<ITypedReferenceableInstance> ret = new ArrayList<>(entityHeaders.size());
 
         // delete notifications need only entity-guid. In case of hard-delete, getITypedReferenceable() call below will
@@ -199,6 +203,8 @@ public class AtlasEntityChangeNotifier {
                 ret.add(instanceConverter.getITypedReferenceable(entityHeader.getGuid()));
             }
         }
+
+        RequestContextV1.get().endMetricRecord(metric);
 
         return ret;
     }
@@ -242,6 +248,8 @@ public class AtlasEntityChangeNotifier {
             LOG.warn("Unable to determine if FullText is disabled. Proceeding with FullText mapping");
         }
 
+        MetricRecorder metric = RequestContextV1.get().startMetricRecord("fullTextMapping");
+
         for (AtlasEntityHeader atlasEntityHeader : atlasEntityHeaders) {
             String      guid        = atlasEntityHeader.getGuid();
             AtlasVertex atlasVertex = AtlasGraphUtilsV1.findByGuid(guid);
@@ -258,6 +266,8 @@ public class AtlasEntityChangeNotifier {
                 LOG.error("FullText mapping failed for Vertex[ guid = {} ]", guid, e);
             }
         }
+
+        RequestContextV1.get().endMetricRecord(metric);
     }
 
     private void updateFullTextMapping(String entityId, List<AtlasClassification> classifications) {

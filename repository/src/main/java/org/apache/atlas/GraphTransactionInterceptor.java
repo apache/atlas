@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.metrics.Metrics.MetricRecorder;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.typesystem.exception.NotFoundException;
 import org.slf4j.Logger;
@@ -54,11 +55,16 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
         boolean isSuccess = false;
+        MetricRecorder metric = null;
 
         try {
             try {
                 Object response = invocation.proceed();
+
+                metric = RequestContextV1.get().startMetricRecord("graphCommit");
+
                 graph.commit();
+
                 isSuccess = true;
 
                 if (LOG.isDebugEnabled()) {
@@ -76,6 +82,8 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                 throw t;
             }
         } finally {
+            RequestContextV1.get().endMetricRecord(metric);
+
             List<PostTransactionHook> trxHooks = postTransactionHooks.get();
 
             if (trxHooks != null) {

@@ -18,17 +18,100 @@
 
 package org.apache.atlas.metrics;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class Metrics {
-    public static class Counters {
-        private short invocations = 0;
-        private long totalTimeMSecs = 0;
+    private static final Logger METRICS = LoggerFactory.getLogger("METRICS");
 
-        @Override
-        public String toString() {
-            return "[count=" + invocations + ", totalTimeMSec=" + totalTimeMSecs + "]";
+    private final Map<String, Metric> metrics = new LinkedHashMap<>();
+
+
+    public MetricRecorder getMetricRecorder(String name) {
+        return METRICS.isDebugEnabled() ? new MetricRecorder(name) : null;
+    }
+
+    public void recordMetric(MetricRecorder recorder) {
+        if (recorder != null) {
+            final String name      = recorder.name;
+            final long   timeTaken = recorder.getElapsedTime();
+
+            Metric metric = metrics.get(name);
+
+            if (metric == null) {
+                metric = new Metric(name);
+
+                metrics.put(name, metric);
+            }
+
+            metric.invocations++;
+            metric.totalTimeMSecs += timeTaken;
+        }
+    }
+
+    public void clear() {
+        metrics.clear();
+    }
+
+    public boolean isEmpty() {
+        return metrics.isEmpty();
+    }
+
+    public Set<String> getMetricsNames() {
+        return metrics.keySet();
+    }
+
+    public Metric getMetric(String name) {
+        return metrics.get(name);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("{");
+
+        if (!metrics.isEmpty()) {
+            for (Metric metric : metrics.values()) {
+                sb.append("\"").append(metric.getName()).append("\":{\"count\":").append(metric.getInvocations()).append(",\"timeTaken\":").append(metric.getTotalTimeMSecs()).append("},");
+            }
+
+            sb.setLength(sb.length() - 1); // remove last ","
+        }
+
+        sb.append("}");
+
+        return sb.toString();
+    }
+
+    public class MetricRecorder {
+        private final String name;
+        private final long   startTimeMs = System.currentTimeMillis();
+
+        MetricRecorder(String name) {
+            this.name = name;
+        }
+
+        long getElapsedTime() {
+            return System.currentTimeMillis() - startTimeMs;
+        }
+    }
+
+    public static class Metric {
+        private final String name;
+        private       short  invocations    = 0;
+        private       long   totalTimeMSecs = 0;
+
+        public Metric(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
         }
 
         public short getInvocations() {
@@ -38,31 +121,5 @@ public class Metrics {
         public long getTotalTimeMSecs() {
             return totalTimeMSecs;
         }
-    }
-
-    Map<String, Counters> countersMap = new LinkedHashMap<>();
-
-    public void record(String name, long timeMsecs) {
-        Counters counter = countersMap.get(name);
-        if (counter == null) {
-            counter = new Counters();
-            countersMap.put(name, counter);
-        }
-
-        counter.invocations++;
-        counter.totalTimeMSecs += timeMsecs;
-    }
-
-    @Override
-    public String toString() {
-        return countersMap.toString();
-    }
-
-    public boolean isEmpty() {
-        return countersMap.isEmpty();
-    }
-
-    public Counters getCounters(String name) {
-        return countersMap.get(name);
     }
 }

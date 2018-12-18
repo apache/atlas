@@ -23,6 +23,7 @@ import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.metrics.Metrics.MetricRecorder;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -218,6 +219,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
 
+        MetricRecorder metric = RequestContextV1.get().startMetricRecord("createOrUpdate");
+
         // Create/Update entities
         EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
 
@@ -231,6 +234,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, entityStream instanceof EntityImportStream);
+
+        RequestContextV1.get().endMetricRecord(metric);
 
         return ret;
     }
@@ -606,6 +611,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     }
 
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
+        MetricRecorder metric = RequestContextV1.get().startMetricRecord("preCreateOrUpdate");
+
         EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV1(typeRegistry, entityStream);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
@@ -667,6 +674,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                 }
             }
         }
+
+        RequestContextV1.get().endMetricRecord(metric);
 
         return context;
     }

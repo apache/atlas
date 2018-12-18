@@ -106,6 +106,9 @@ public class KafkaNotification extends AbstractNotification implements Service {
         properties.put("enable.auto.commit", kafkaConf.getBoolean("enable.auto.commit", oldApiCommitEnableFlag));
         properties.put("session.timeout.ms", kafkaConf.getString("session.timeout.ms", "30000"));
 
+        // if no value is specified for max.poll.records, set to 1
+        properties.put("max.poll.records", kafkaConf.getInt("max.poll.records", 1));
+
         LOG.info("<== KafkaNotification()");
     }
 

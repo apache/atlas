@@ -20,7 +20,9 @@ package org.apache.atlas.notification;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.metrics.Metrics.MetricRecorder;
 import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.notification.entity.EntityNotificationImpl;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -30,7 +32,6 @@ import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.FieldMapping;
@@ -178,6 +179,8 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
                                      EntityNotification.OperationType operationType) throws AtlasException {
         List<EntityNotification> messages = new LinkedList<>();
 
+        MetricRecorder metric = RequestContextV1.get().startMetricRecord("entityNotification");
+
         for (IReferenceableInstance entityDefinition : entityDefinitions) {
             if(GraphHelper.isInternalType(entityDefinition.getTypeName())) {
                 continue;
@@ -207,6 +210,8 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
         if (!messages.isEmpty()) {
             notificationInterface.send(NotificationInterface.NotificationType.ENTITIES, messages);
         }
+
+        RequestContextV1.get().endMetricRecord(metric);
     }
 
     private List<String> getNotificationAttributes(String entityType) {

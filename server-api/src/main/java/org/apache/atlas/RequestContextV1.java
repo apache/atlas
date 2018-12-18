@@ -19,6 +19,7 @@
 package org.apache.atlas;
 
 import org.apache.atlas.metrics.Metrics;
+import org.apache.atlas.metrics.Metrics.MetricRecorder;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.store.DeleteType;
@@ -34,7 +35,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class RequestContextV1 {
-    private static final Logger LOG = LoggerFactory.getLogger(RequestContextV1.class);
+    private static final Logger METRICS = LoggerFactory.getLogger("METRICS");
 
     private static final ThreadLocal<RequestContextV1> CURRENT_CONTEXT = new ThreadLocal<>();
     private static final Set<RequestContextV1>         ACTIVE_REQUESTS = new HashSet<>();
@@ -91,6 +92,12 @@ public class RequestContextV1 {
         if (this.entityGuidInRequest != null) {
             this.entityGuidInRequest.clear();
         }
+ 
+        if (METRICS.isDebugEnabled() && !metrics.isEmpty()) {
+            METRICS.debug(metrics.toString());
+        }
+
+        metrics.clear();
     }
 
     public static int getActiveRequestsCount() {
@@ -181,10 +188,13 @@ public class RequestContextV1 {
         return deletedEntities.containsKey(guid);
     }
 
+    public MetricRecorder startMetricRecord(String name) { return metrics.getMetricRecorder(name); }
+
+    public void endMetricRecord(MetricRecorder recorder) { metrics.recordMetric(recorder); }
+
     public static Metrics getMetrics() {
         return get().metrics;
     }
-
 
     public void recordEntityGuidUpdate(AtlasEntity entity, String guidInRequest) {
         if (entityGuidInRequest == null) {

@@ -18,7 +18,9 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.metrics.Metrics.MetricRecorder;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -127,6 +129,8 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
 
 
     protected void discover() throws AtlasBaseException {
+        MetricRecorder metric = RequestContextV1.get().startMetricRecord("walkEntityGraph");
+
         EntityStream entityStream = discoveryContext.getEntityStream();
 
         Set<String> walkedEntities = new HashSet<>();
@@ -162,9 +166,13 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
                 walkedEntities.add(entity.getGuid());
             }
         }
+
+        RequestContextV1.get().endMetricRecord(metric);
     }
 
     protected void resolveReferences() throws AtlasBaseException {
+        MetricRecorder metric = RequestContextV1.get().startMetricRecord("resolveReferences");
+
         EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(typeRegistry),
                                                                   new UniqAttrBasedEntityResolver(typeRegistry)
                                                                 };
@@ -172,6 +180,8 @@ public class AtlasEntityGraphDiscoveryV1 implements EntityGraphDiscovery {
         for (EntityResolver resolver : entityResolvers) {
             resolver.resolveEntityReferences(discoveryContext);
         }
+
+        RequestContextV1.get().endMetricRecord(metric);
     }
 
     private void visitReference(AtlasObjectIdType type, Object val) throws AtlasBaseException {

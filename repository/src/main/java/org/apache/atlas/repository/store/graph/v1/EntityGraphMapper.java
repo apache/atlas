@@ -24,6 +24,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.metrics.Metrics.MetricRecorder;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -135,6 +136,8 @@ public class EntityGraphMapper {
     }
 
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications) throws AtlasBaseException {
+        MetricRecorder metric = RequestContextV1.get().startMetricRecord("mapAttributesAndClassifications");
+
         EntityMutationResponse resp = new EntityMutationResponse();
 
         Collection<AtlasEntity> createdEntities = context.getCreatedEntities();
@@ -188,6 +191,8 @@ public class EntityGraphMapper {
                 resp.addEntity(UPDATE, constructHeader(id));
             }
         }
+
+        RequestContextV1.get().endMetricRecord(metric);
 
         return resp;
     }
