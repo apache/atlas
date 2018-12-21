@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 define(['require',
     'backbone',
     'hbs!tmpl/search/SearchLayoutView_tmpl',
@@ -92,6 +91,7 @@ define(['require',
                 _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns', 'searchTableFilters', 'entityCountCollection'));
                 this.type = "basic";
                 this.entityCountObj = _.first(this.entityCountCollection.toJSON());
+                this.filterTypeSelected = [];
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
                     dsl: {
@@ -438,40 +438,68 @@ define(['require',
                 this.updateQueryObject(paramObj);
                 this.setValues(paramObj);
             },
-            renderTypeTagList: function() {
+            getFilterBox: function() {
+                var serviceStr = '',
+                    serviceArr = [],
+                    that = this;
+                this.typeHeaders.fullCollection.each(function(model) {
+                    var serviceType = model.toJSON().serviceType;
+                    if (serviceType) {
+                        serviceArr.push(serviceType);
+                    }
+                });
+                _.each(_.uniq(serviceArr), function(service) {
+                    serviceStr += '<li><div class="pretty p-switch p-fill"><input type="checkbox" class="pull-left" data-value="' + (service) + '" value="" ' + (_.contains(that.filterTypeSelected, service) ? "checked" : "") + '/><div class="state p-primary"><label>' + (service.toUpperCase()) + '</label></div></div></li>';
+                });
+                var templt = serviceStr + '<hr class="hr-filter"/><div class="text-right"><div class="divider"></div><button class="btn btn-action btn-sm filterDone">Done</button></div>';
+                return templt;
+            },
+            renderTypeTagList: function(options) {
                 var that = this;
+                var serviceTypeToBefiltered = (options && options.filterList);
+                var isTypeOnly = options && options.isTypeOnly;
                 this.ui.typeLov.empty();
                 var typeStr = '<option></option>',
                     tagStr = typeStr;
                 this.typeHeaders.fullCollection.each(function(model) {
                     var name = Utils.getName(model.toJSON(), 'name');
-                    if (model.get('category') == 'ENTITY') {
+                    if (model.get('category') == 'ENTITY' && (serviceTypeToBefiltered && serviceTypeToBefiltered.length ? _.contains(serviceTypeToBefiltered, model.get('serviceType')) : true)) {
                         var entityCount = (that.entityCountObj.entity.entityActive[name] + (that.entityCountObj.entity.entityDeleted[name] ? that.entityCountObj.entity.entityDeleted[name] : 0));
-                        typeStr += '<option value="'+ (name) +'" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + entityCount + ")" : '') + '</option>';
+                        typeStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + entityCount + ")" : '') + '</option>';
                     }
-                    if (model.get('category') == 'CLASSIFICATION') {
+                    if (isTypeOnly == undefined && model.get('category') == 'CLASSIFICATION') {
                         var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
-                        tagStr += '<option value="'+ (name) +'" data-name="' + (name) + '">' + (name) + ' ' + (tagEntityCount ? "(" + tagEntityCount + ")" : '') + '</option>';
+                        tagStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (tagEntityCount ? "(" + tagEntityCount + ")" : '') + '</option>';
                     }
                 });
-                //to insert extra classification list
-                _.each(Enums.addOnClassification, function(classificationName) {
-                    tagStr += '<option>' + classificationName + '</option>';
-                });
+                if (_.isUndefined(isTypeOnly)) {
+                    //to insert extra classification list
+                    _.each(Enums.addOnClassification, function(classificationName) {
+                        tagStr += '<option>' + classificationName + '</option>';
+                    });
+                    that.ui.tagLov.html(tagStr);
+                    this.ui.tagLov.select2({
+                        placeholder: "Select Classification",
+                        allowClear: true
+                    });
+                }
                 that.ui.typeLov.html(typeStr);
-                that.ui.tagLov.html(tagStr);
-                this.ui.typeLov.select2({
+                var typeLovSelect2 = this.ui.typeLov.select2({
                     placeholder: "Select Type",
+                    dropdownAdapter: $.fn.select2.amd.require("ServiceTypeFilterDropdownAdapter"),
                     allowClear: true,
-                    templateSelection: function(data, container) {
-                        $(data.element).attr('data-name', data.customValue);
-                        return data.text;
+                    getFilterBox: this.getFilterBox.bind(this),
+                    onFilterSubmit: function(options) {
+                        that.filterTypeSelected = options.filterVal;
+                        that.renderTypeTagList({ "filterList": options.filterVal, isTypeOnly: true })
                     }
                 });
-                this.ui.tagLov.select2({
-                    placeholder: "Select Classification",
-                    allowClear: true
+                typeLovSelect2.on("select2:close", function() {
+                    typeLovSelect2.trigger("hideFilter");
                 });
+                if (typeLovSelect2 && serviceTypeToBefiltered) {
+                    typeLovSelect2.select2('open').trigger("change", { 'manual': true });
+                }
             },
             renderTermList: function() {
                 var getTypeAheadData = function(data, params) {
@@ -669,6 +697,8 @@ define(['require',
                 }
             },
             clearSearchData: function() {
+                this.filterTypeSelected = [];
+                this.renderTypeTagList();
                 this.updateQueryObject();
                 this.ui.typeLov.val("").trigger("change");
                 this.ui.tagLov.val("").trigger("change");
