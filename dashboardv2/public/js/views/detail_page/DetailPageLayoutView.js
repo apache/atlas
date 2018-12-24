@@ -58,12 +58,12 @@ define(['require',
                 description: '[data-id="description"]',
                 editBox: '[data-id="editBox"]',
                 deleteTag: '[data-id="deleteTag"]',
-                backButton: "[data-id='backButton']",
                 addTag: '[data-id="addTag"]',
                 addTerm: '[data-id="addTerm"]',
                 tagList: '[data-id="tagList"]',
                 termList: '[data-id="termList"]',
-                fullscreenPanel: "#fullscreen_panel"
+                fullscreenPanel: "#fullscreen_panel",
+                entityIcon: '[data-id="entityIcon"]'
             },
             templateHelpers: function() {
                 return {
@@ -97,9 +97,6 @@ define(['require',
                 events["click " + this.ui.deleteTag] = 'onClickTagCross';
                 events["click " + this.ui.addTag] = 'onClickAddTagBtn';
                 events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
-                events['click ' + this.ui.backButton] = function() {
-                    Backbone.history.history.back();
-                };
                 return events;
             },
             /**
@@ -108,6 +105,7 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection'));
+                $('body').addClass("detail-page");
             },
             bindEvents: function() {
                 var that = this;
@@ -116,6 +114,19 @@ define(['require',
                     var collectionJSON = this.entityObject.entity;
                     // MergerRefEntity.
                     Utils.findAndMergeRefEntity(collectionJSON.attributes, this.entityObject.referredEntities);
+                    this.activeEntityDef = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName });
+
+                    // check if entity is process
+                    var isProcess = false,
+                        superTypes = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
+                        isLineageRender = _.find(superTypes, function(type) {
+                            if (type === "DataSet" || type === "Process") {
+                                if (type === "Process") {
+                                    isProcess = true;
+                                }
+                                return true;
+                            }
+                        });
 
                     if (collectionJSON && collectionJSON.guid) {
                         var tagGuid = collectionJSON.guid;
@@ -145,6 +156,15 @@ define(['require',
                                     titleName += '<button title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
                                 }
                                 this.ui.title.html(titleName);
+                                var entityData = _.extend({ "serviceType": this.activeEntityDef && this.activeEntityDef.get('serviceType'), "isProcess": isProcess }, collectionJSON);
+                                if (this.readOnly) {
+                                    this.ui.entityIcon.addClass('disabled');
+                                } else {
+                                    this.ui.entityIcon.removeClass('disabled');
+                                }
+                                this.ui.entityIcon.attr('title', _.escape(collectionJSON.typeName)).html('<img src="' + Utils.getEntityIconPath({ entityData: entityData }) + '"/>').find("img").on('error', function() {
+                                    this.src = Utils.getEntityIconPath({ entityData: entityData, errorUrl: this.src });
+                                });
                             } else {
                                 this.ui.title.hide();
                             }
@@ -175,7 +195,6 @@ define(['require',
                         }
                     }
                     this.hideLoader();
-                    this.activeEntityDef = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName });
                     var obj = {
                         entity: collectionJSON,
                         guid: this.id,
@@ -212,25 +231,25 @@ define(['require',
                         this.renderReplicationAuditTableLayoutView(obj);
                     }
 
-                    var processCheck = false,
-                        containsList = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
-                        superType = _.find(containsList, function(type) {
-                            if (type === "DataSet" || type === "Process") {
-                                if (type === "Process") {
-                                    processCheck = true;
-                                }
-                                return true;
+                    if (isLineageRender) {
+                        this.$('.lineageGraph').show();
+                        this.renderLineageLayoutView({
+                            processCheck: isProcess,
+                            guid: this.id,
+                            entityDefCollection: this.entityDefCollection,
+                            fetchCollection: this.fetchCollection.bind(this),
+                            actionCallBack: function() {
+                                that.$('#expand_collapse_panel').click();
                             }
                         });
-
-                    this.renderLineageLayoutView({
-                        processCheck: processCheck,
-                        guid: this.id,
-                        entityDefCollection: this.entityDefCollection,
-                        actionCallBack: function() {
-                            that.$('#expand_collapse_panel').click();
-                        }
-                    });
+                        this.$(".resizeGraph").resizable({
+                            handles: ' s',
+                            minHeight: 375,
+                            stop: function(event, ui) {
+                                ui.element.height(($(this).height()));
+                            },
+                        });
+                    }
 
                     // To render Schema check attribute "schemaElementsAttribute"
                     var schemaOptions = this.entityDefCollection.fullCollection.find({ name: collectionJSON.typeName }).get('options');
@@ -292,6 +311,11 @@ define(['require',
                     this.$('.nav.nav-tabs').find('.profileTab').addClass('active').siblings().removeClass('active');
                     this.$('.tab-content').find('#tab-profile').addClass('active').siblings().removeClass('active');
                     $("html, body").animate({ scrollTop: (this.$('.tab-content').offset().top + 1200) }, 1000);
+                }
+            },
+            onDestroy: function() {
+                if (!Utils.getUrlState.isDetailPage()) {
+                    $('body').removeClass("detail-page");
                 }
             },
             fetchCollection: function() {

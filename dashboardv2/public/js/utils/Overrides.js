@@ -26,6 +26,14 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
     var oldBackboneSync = Backbone.sync;
     Backbone.sync = function(method, model, options) {
         var that = this;
+        if (options.queryParam) {
+            var generateQueryParam = $.param(options.queryParam);
+            if (options.url.indexOf('?') !== -1) {
+                options.url = options.url + "&" + generateQueryParam;
+            } else {
+                options.url = options.url + "?" + generateQueryParam;
+            }
+        }
         return oldBackboneSync.apply(this, [method, model,
             _.extend(options, {
                 error: function(response) {
@@ -40,6 +48,7 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             })
         ]);
     }
+
     _.mixin({
         isEmptyArray: function(val) {
             if (val && _.isArray(val)) {
@@ -144,8 +153,24 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             var that = this;
             Backgrid.HeaderRow.__super__.render.apply(this, arguments);
             _.each(this.columns.models, function(modelValue) {
-                if (modelValue.get('width')) that.$el.find('.' + modelValue.get('name')).css('min-width', modelValue.get('width') + 'px')
-                if (modelValue.get('toolTip')) that.$el.find('.' + modelValue.get('name')).attr('title', modelValue.get('toolTip'))
+                var elAttr = modelValue.get('elAttr'),
+                    elAttrObj = null;
+                if (elAttr) {
+                    if (_.isFunction(elAttr)) {
+                        elAttrObj = elAttr(modelValue);
+                    } else if (_.isObject(elAttr)) {
+                        if (!_.isArray(elAttr)) {
+                            elAttrObj = [elAttr];
+                        } else {
+                            elAttrObj = elAttr;
+                        }
+                    }
+                    _.each(elAttrObj, function(val) {
+                        that.$el.find('.' + modelValue.get('name')).data(val);
+                    });
+                }
+                if (modelValue.get('width')) that.$el.find('.' + modelValue.get('name')).css('min-width', modelValue.get('width') + 'px');
+                if (modelValue.get('toolTip')) that.$el.find('.' + modelValue.get('name')).attr('title', modelValue.get('toolTip'));
             });
             return this;
         }

@@ -28,33 +28,41 @@
 
 .node {
     cursor: pointer;
+
     text {
         font-size: 10px;
         font-family: $font_1;
     }
+
     rect {
         stroke: $color_mountain_mist_approx;
         fill: $white;
         stroke-width: 1.5px;
     }
+
     .label {
         fill: $color_suva_gray_approx;
     }
+
     circle {
         -moz-transition: all 0.3s;
         -webkit-transition: all 0.3s;
         transition: all 0.3s;
         stroke-width: 1.5px;
+
         &.nodeImage {
             &.green:hover {
-                stroke: #8bc152;
+                stroke: #ffb203;
             }
+
             &.blue:hover {
                 stroke: #4b91e2;
             }
+
             &.currentNode {
                 stroke: #fb4200;
             }
+
             &:hover {
                 -moz-transform: scale(1.4);
                 -webkit-transform: scale(1.4);
@@ -62,20 +70,29 @@
             }
         }
     }
+
     &.active {
         circle {
             -moz-transform: scale(1.4);
             -webkit-transform: scale(1.4);
             transform: scale(1.4);
+
             &.nodeImage {
                 &.green {
-                    stroke: #8bc152;
+                    stroke: #ffb203;
                 }
+
                 &.blue {
                     stroke: #4b91e2;
                 }
             }
         }
+    }
+}
+
+.edgePath {
+    .path {
+        cursor: pointer;
     }
 }
 
@@ -96,14 +113,55 @@
     z-index: 999;
     max-width: 300px; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
     border-radius: 2px;
+
     .tip-inner-scroll {
         overflow: auto;
         max-height: 300px;
     }
+
+    /* Creates a small triangle extender for the tooltip */
+    &:after {
+        box-sizing: border-box;
+        display: inline;
+        font-size: 10px;
+        width: 100%;
+        line-height: 1;
+        color: rgba(0, 0, 0, 0.8);
+        position: absolute;
+    }
+
+    /* Nrthward tooltips */
     &.n:after {
-        margin: -1px 0 0;
+        content: "\25BC";
+        margin: -1px 0 0 0;
         top: 100%;
         left: 0;
+        text-align: center;
+    }
+
+    /* Eastward tooltips */
+    &.e:after {
+        content: "\25C0";
+        margin: -4px 0 0 0;
+        top: 50%;
+        left: -8px;
+    }
+
+    /* Southward tooltips */
+    &.s:after {
+        content: "\25B2";
+        margin: 0 0 1px 0;
+        top: -8px;
+        left: 0;
+        text-align: center;
+    }
+
+    /* Westward tooltips */
+    &.w:after {
+        content: "\25B6";
+        margin: -4px 0 0 -1px;
+        top: 50%;
+        left: 100%;
     }
 }
 
@@ -111,9 +169,11 @@ g.type-TK>rect {
     fill: $color_bright_turquoise_approx;
 }
 
-.hideProcessContainer {
-    position: absolute;
-    top: 12px;
+
+.graph-toolbar {
+    background-color: $white;
+    margin-bottom: 10px;
+    padding: 10px;
 }
 
 .legends {
@@ -136,9 +196,11 @@ g.type-TK>rect {
         transform: scaleX(0);
         width: 200px;
         transition: transform 0.3s ease-in;
+
         &.open {
             transform: scaleX(1);
         }
+
         .title {
             background: black;
             color: white;
@@ -146,12 +208,14 @@ g.type-TK>rect {
             padding-left: 17px;
             margin-top: 0;
             font-size: 14px;
+
             .navigation-font {
                 font-family: sans-serif;
                 padding: 0px 5px;
                 color: #fb4200;
             }
         }
+
         .close-details {
             position: absolute;
             top: 0;
@@ -162,12 +226,14 @@ g.type-TK>rect {
             cursor: pointer;
             font-size: 16px;
         }
+
         .propagation-list {
             overflow: auto;
             list-style-type: none;
             list-style-position: outside;
             padding-left: 30px;
         }
+
         .overlay {
             position: absolute;
             left: 0;
@@ -177,6 +243,7 @@ g.type-TK>rect {
             background: #d2d2d2b8;
             z-index: 99;
         }
+
         ul>li {
             word-wrap: break-word;
             margin-bottom: 5px;
@@ -191,4 +258,97 @@ g.type-TK>rect {
     border-radius: 5px;
     width: 100%;
     box-shadow: 1px 3px 3px 2px #bfbfbf;
+}
+
+.graph-button-group {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+
+    .zoom-button-group {
+        margin-top: 8px;
+        border: 1px solid;
+        border-radius: 5px;
+        background-color: white;
+
+        [type="button"] {
+            display: block;
+            padding: 2px 6px;
+            cursor: pointer;
+        }
+    }
+}
+
+.lineage-fltr-panel {
+    position: absolute;
+    border: 1px solid #ccc;
+    width: 250px;
+    max-height: 99%;
+    overflow: auto;
+    transition: all 0.3s ease;
+    right: -273px;
+    box-shadow: 9px -14px 26px 6px;
+    background-color: #f5f5f5;
+    //color: $white;
+    z-index: 999;
+
+    .header {
+        background: black;
+        color: white;
+        text-align: center;
+        margin-bottom: 15px;
+        position: absolute;
+        width: 100%;
+
+        >h4 {
+            padding: 0px 36px 0px 10px;
+            word-break: break-all;
+        }
+
+        .fltr-togler {
+            position: absolute;
+            right: 0px;
+            top: 0px;
+        }
+    }
+
+    .body {
+        padding: 10px;
+        margin-top: 39px;
+        width: 100%;
+        position: relative;
+        height: 200px;
+        overflow: auto;
+    }
+}
+
+.show-filter-panel {
+    right: 0px !important;
+}
+
+
+.btn-gray {
+    border: 1px solid #686868;
+    color: $dark_gray;
+    background: white;
+}
+
+.btn-gray:hover {
+    border: 1px solid #686868;
+    color: $dark_gray !important;
+    background-color: transparent !important;
+}
+
+
+span#zoom_in {
+    border-bottom: 1px solid #625555;
+}
+
+.depthContainer {
+
+    //display: inline-block;
+    //margin-top: 3px;
+    .inline {
+        display: inline-block;
+    }
 }

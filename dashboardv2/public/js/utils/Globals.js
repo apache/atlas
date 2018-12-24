@@ -35,6 +35,7 @@ define(['require'], function(require) {
     Globals.userLogedIn = {
         status: false,
         response: {}
-    }
+    };
+    Globals.entityImgPath = "/img/entity-icon/";
     return Globals;
 });

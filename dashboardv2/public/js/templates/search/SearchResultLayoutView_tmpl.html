@@ -37,14 +37,16 @@
                     </div>
                     <div class="inline" data-id="containerCheckBox" style="display: none;">
                         <label class="checkbox-inline btn" for="inputLabel">
-                            <input type="checkbox" data-id="checkSubClassification" data-value="excludeSC"/>
+                            <input type="checkbox" data-id="checkSubClassification" data-value="excludeSC" />
                             <b>Exclude sub-classification</b></label>
                     </div>
+                    {{#ifCond fromView '!==' "tag"}}
                     <div class="inline" data-id="containerCheckBox" style="display: none;">
                         <label class="checkbox-inline btn" for="inputLabel">
-                            <input type="checkbox" data-id="checkSubType"  data-value="excludeST"/>
+                            <input type="checkbox" data-id="checkSubType" data-value="excludeST" />
                             <b>Exclude sub-type</b></label>
                     </div>
+                    {{/ifCond}}
                     <div class="inline">
                         {{#if taxonomy}}
                         <a href="javascript:void(0)" class=" multiSelectTerm btn btn-action btn-sm inline" style="display:none" data-id="addTerm"><i class="fa fa-plus"></i> Assign Term</a> {{/if}}

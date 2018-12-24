@@ -26,8 +26,9 @@ define(['require',
     'd3-tip',
     'utils/Enums',
     'utils/UrlLinks',
+    'utils/Globals',
     'platform'
-], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip, Enums, UrlLinks, platform) {
+], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip, Enums, UrlLinks, Globals, platform) {
     'use strict';
 
     var LineageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -43,13 +44,20 @@ define(['require',
             /** ui selector cache */
             ui: {
                 graph: ".graph",
-                checkHideProcess: "[data-id='checkHideProcess']"
+                checkHideProcess: "[data-id='checkHideProcess']",
+                checkDeletedEntity: "[data-id='checkDeletedEntity']",
+                selectDepth: 'select[data-id="selectDepth"]',
+                fltrTogler: '[data-id="fltr-togler"]',
+                lineageFilterPanel: '.lineage-fltr-panel'
             },
 
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.checkHideProcess] = 'onCheckHideProcess';
+                events["click " + this.ui.checkHideProcess] = 'onCheckUnwantedEntity';
+                events["click " + this.ui.checkDeletedEntity] = 'onCheckUnwantedEntity';
+                events['change ' + this.ui.selectDepth] = 'onSelectDepthChange';
+                events["click " + this.ui.fltrTogler] = 'onClickFiltrTogler';
                 return events;
             },
 
@@ -65,6 +73,11 @@ define(['require',
                 this.apiGuid = {};
                 this.asyncFetchCounter = 0;
                 this.edgeCall;
+                this.filterObj = {
+                    isProcessHideCheck: false,
+                    isDeletedEntityHideCheck: false,
+                    depthCount: ''
+                };
             },
 
             initializeGraph: function() {
@@ -98,22 +111,47 @@ define(['require',
                     this.hideCheckForProcess();
                 }
                 this.initializeGraph();
+                this.ui.selectDepth.select2({
+                    data: _.sortBy([3, 6, 9, 12, 15, 18, 21]),
+                    tags: true,
+                    dropdownCssClass: "number-input",
+                    multiple: false
+                });
             },
             onShow: function() {
                 this.$('.fontLoader').show();
             },
-            onCheckHideProcess: function(e) {
+            onCheckUnwantedEntity: function(e) {
                 var data = $.extend(true, {}, this.lineageData);
                 this.fromToObj = {};
                 this.initializeGraph();
-                this.generateData(data.relations, data.guidEntityMap, e.target.checked);
+                if ($(e.target).data("id") === "checkHideProcess") {
+                    this.filterObj.isProcessHideCheck = e.target.checked;
+                } else {
+                    this.filterObj.isDeletedEntityHideCheck = e.target.checked;
+                }
+                this.generateData(data.relations, data.guidEntityMap);
+            },
+            onClickFiltrTogler: function() {
+                var lineageFilterPanel = this.ui.lineageFilterPanel;
+                $(lineageFilterPanel).toggleClass("show-filter-panel");
             },
 
-            fetchGraphData: function() {
-                var that = this;
+            onSelectDepthChange: function(e, options) {
+                this.initializeGraph();
+                this.filterObj.depthCount = e.currentTarget.value;
+                this.fetchGraphData({ queryParam: { 'depth': this.filterObj.depthCount } });
+            },
+
+            fetchGraphData: function(options) {
+                var that = this,
+                    queryParam = options && options.queryParam || {};
                 this.fromToObj = {};
+                this.$('.fontLoader').show();
+                this.$('svg>g').hide();
                 this.collection.getLineage(this.guid, {
                     skipDefaultError: true,
+                    queryParam: queryParam,
                     success: function(data) {
                         if (data.relations.length) {
                             that.lineageData = $.extend(true, {}, data)
@@ -126,11 +164,16 @@ define(['require',
                     cust_error: function(model, response) {
                         that.lineageData = [];
                         that.noLineage();
+                    },
+                    complete: function() {
+                        that.$('.fontLoader').hide();
+                        that.$('svg>g').show();
                     }
                 })
             },
             noLineage: function() {
                 this.$('.fontLoader').hide();
+                this.$('.depthContainer').hide();
                 //this.$('svg').height('100');
                 this.$('svg').html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No lineage data found</text>');
                 if (this.actionCallBack) {
@@ -140,12 +183,35 @@ define(['require',
             hideCheckForProcess: function() {
                 this.$('.hideProcessContainer').hide();
             },
-            generateData: function(relations, guidEntityMap, hideProcess) {
+            generateData: function(relations, guidEntityMap) {
                 var that = this;
 
                 function isProcess(typeName) {
                     var entityDef = that.entityDefCollection.fullCollection.find({ name: typeName });
-                    return _.contains(Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: that.entityDefCollection}), "Process")
+                    return _.contains(Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: that.entityDefCollection }), "Process")
+                }
+
+                function isDeleted(status) {
+                    return Enums.entityStateReadOnly[status];
+                }
+
+                function isNodeToBeUpdated(node) {
+                    if (that.filterObj.isProcessHideCheck) {
+                        return isProcess(node.typeName);
+                    } else if (that.filterObj.isDeletedEntityHideCheck) {
+                        return isDeleted(node.status);
+                    }
+                }
+
+                function getServiceType(typeName) {
+                    var serviceType = null;
+                    if (typeName) {
+                        var entityDef = that.entityDefCollection.fullCollection.find({ name: typeName });
+                        if (entityDef) {
+                            serviceType = entityDef.get("serviceType") || null;
+                        }
+                    }
+                    return serviceType;
                 }
 
                 function makeNodeObj(relationObj) {
@@ -157,10 +223,11 @@ define(['require',
                     obj['id'] = relationObj.guid;
                     obj['isLineage'] = true;
                     obj['queryText'] = relationObj.queryText;
+                    obj['serviceType'] = getServiceType(relationObj.typeName);
                     if (relationObj.status) {
                         obj['status'] = relationObj.status;
                     }
-                    if (hideProcess) {
+                    if (that.filterObj.isProcessHideCheck) {
                         obj['isProcess'] = relationObj.isProcess;
                     } else {
                         obj['isProcess'] = isProcess(relationObj.typeName);
@@ -169,14 +236,18 @@ define(['require',
                     return obj;
                 }
 
-                var newRelations = [];
-
-                if (hideProcess) {
+                var newRelations = [],
+                    finalRelations = relations,
+                    isHideFilterOn = this.filterObj.isProcessHideCheck || this.filterObj.isDeletedEntityHideCheck;
+                if (isHideFilterOn) {
                     _.each(relations, function(obj, index, relationArr) {
-                        var isFromEntityIdProcess = isProcess(guidEntityMap[obj.fromEntityId].typeName);
-                        var isToEntityProcess = isProcess(guidEntityMap[obj.toEntityId].typeName);
-                        if (isToEntityProcess) {
-                            guidEntityMap[obj.toEntityId]["isProcess"] = true;
+                        var toNodeToBeUpdated = isNodeToBeUpdated(guidEntityMap[obj.toEntityId]);
+                        var fromNodeToBeUpdated = isNodeToBeUpdated(guidEntityMap[obj.fromEntityId]);
+                        if (toNodeToBeUpdated) {
+                            if (that.filterObj.isProcessHideCheck) {
+                                //We have already checked entity is process or not inside isNodeToBeUpdated();
+                                guidEntityMap[obj.toEntityId]["isProcess"] = true;
+                            }
                             _.filter(relationArr, function(flrObj) {
                                 if (flrObj.fromEntityId === obj.toEntityId) {
                                     newRelations.push({
@@ -185,8 +256,12 @@ define(['require',
                                     });
                                 }
                             })
-                        } else if (isFromEntityIdProcess) {
-                            guidEntityMap[obj.fromEntityId]["isProcess"] = true;
+                        } else if (fromNodeToBeUpdated) {
+                            if (that.filterObj.isProcessHideCheck) {
+                                //We have already checked entity is process or not inside isNodeToBeUpdated();
+                                guidEntityMap[obj.fromEntityId]["isProcess"] = true;
+                            }
+
                             _.filter(relationArr, function(flrObj) {
                                 if (flrObj.toEntityId === obj.fromEntityId) {
                                     newRelations.push({
@@ -199,12 +274,8 @@ define(['require',
                             newRelations.push(obj);
                         }
                     });
+                    finalRelations = newRelations;
                 }
-
-
-                var finalRelations = hideProcess ? newRelations : relations;
-
-
 
                 _.each(finalRelations, function(obj, index) {
                     if (!that.fromToObj[obj.fromEntityId]) {
@@ -217,8 +288,8 @@ define(['require',
                     }
                     var styleObj = {
                         fill: 'none',
-                        stroke: '#8bc152',
-                        width: 2
+                        stroke: '#ffb203',
+                        width: 3
                     }
                     that.g.setEdge(obj.fromEntityId, obj.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + ";stroke-width:" + styleObj.width + "", 'styleObj': styleObj });
                 });
@@ -242,7 +313,7 @@ define(['require',
                             var styleObj = {
                                 fill: 'none',
                                 stroke: '#fb4200',
-                                width: 2
+                                width: 3
                             }
                             that.g.setEdge(node.fromEntityId, node.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + ";stroke-width:" + styleObj.width + "", 'styleObj': styleObj });
                             that.checkForLineageOrImpactFlag(relations, node.toEntityId);
@@ -259,7 +330,7 @@ define(['require',
                 }
             },
             setGraphZoomPositionCal: function(argument) {
-                var initialScale = 1.2,
+                var initialScale = 1.6,
                     svgEl = this.$('svg'),
                     scaleEl = this.$('svg').find('>g'),
                     translateValue = [(this.$('svg').width() - this.g.graph().width * initialScale) / 2, (this.$('svg').height() - this.g.graph().height * initialScale) / 2]
@@ -272,7 +343,7 @@ define(['require',
                     if (svgEl.hasClass('noScale')) {
                         if (!scaleEl.hasClass('scaleLinage')) {
                             scaleEl.addClass('scaleLinage');
-                            initialScale = 1.2;
+                            initialScale = 1.6;
                         } else {
                             scaleEl.removeClass('scaleLinage');
                             initialScale = 0;
@@ -308,19 +379,16 @@ define(['require',
                     var marker = parent.append("marker")
                         .attr("id", id)
                         .attr("viewBox", "0 0 10 10")
-                        .attr("refX", 9)
+                        .attr("refX", 8)
                         .attr("refY", 5)
                         .attr("markerUnits", "strokeWidth")
-                        .attr("markerWidth", 10)
-                        .attr("markerHeight", 8)
+                        .attr("markerWidth", 4)
+                        .attr("markerHeight", 4)
                         .attr("orient", "auto");
 
                     var path = marker.append("path")
                         .attr("d", "M 0 0 L 10 5 L 0 10 z")
-                        .style("stroke-width", 1)
-                        .style("stroke-dasharray", "1,0")
-                        .style("fill", edge.styleObj.stroke)
-                        .style("stroke", edge.styleObj.stroke);
+                        .style("fill", edge.styleObj.stroke);
                     dagreD3.util.applyStyle(path, edge[type + "Style"]);
                 };
                 render.shapes().img = function circle(parent, bbox, node) {
@@ -330,8 +398,8 @@ define(['require',
                     }
                     var shapeSvg = parent.append('circle')
                         .attr('fill', 'url(#img_' + node.id + ')')
-                        .attr('r', currentNode ? '15px' : '14px')
-                        .attr("class", "nodeImage " + (currentNode ? "currentNode" : (node.isProcess ? "blue" : "green")));
+                        .attr('r', '24px')
+                        .attr("class", "nodeImage " + (currentNode ? "currentNode" : (node.isProcess ? "process" : "node")));
 
                     parent.insert("defs")
                         .append("pattern")
@@ -344,33 +412,19 @@ define(['require',
                         .append('image')
                         .attr("xlink:href", function(d) {
                             if (node) {
-                                if (node.isProcess) {
-                                    if (Enums.entityStateReadOnly[node.status]) {
-                                        return UrlLinks.apiBaseUrl + '/img/icon-gear-delete.png';
-                                    } else if (node.id == that.guid) {
-                                        return UrlLinks.apiBaseUrl + '/img/icon-gear-active.png';
-                                    } else {
-                                        return UrlLinks.apiBaseUrl + '/img/icon-gear.png';
-                                    }
-                                } else {
-                                    if (Enums.entityStateReadOnly[node.status]) {
-                                        return UrlLinks.apiBaseUrl + '/img/icon-table-delete.png';
-                                    } else if (node.id == that.guid) {
-                                        return UrlLinks.apiBaseUrl + '/img/icon-table-active.png';
-                                    } else {
-                                        return UrlLinks.apiBaseUrl + '/img/icon-table.png';
-                                    }
-                                }
+                                return Utils.getEntityIconPath({ entityData: node });
                             }
                         })
-                        .attr("x", "2")
-                        .attr("y", "2")
-                        .attr("width", currentNode ? "26" : "24")
-                        .attr("height", currentNode ? "26" : "24")
+                        .attr("x", currentNode ? "3" : "6")
+                        .attr("y", currentNode ? "3" : "4")
+                        .attr("width", "40")
+                        .attr("height", "40")
+                        .on("error", function() {
+                            this.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', Utils.getEntityIconPath({ entityData: node, errorUrl: this.href.baseVal }));
+                        });
 
                     node.intersect = function(point) {
-                        //return dagreD3.intersect.circle(node, points, point);
-                        return dagreD3.intersect.circle(node, currentNode ? 16 : 13, point);
+                        return dagreD3.intersect.circle(node, currentNode ? 24 : 21, point);
                     };
                     return shapeSvg;
                 };
@@ -460,7 +514,7 @@ define(['require',
                     .on("wheel.zoom", null);
                 //change text postion 
                 svgGroup.selectAll("g.nodes g.label")
-                    .attr("transform", "translate(2,-30)");
+                    .attr("transform", "translate(2,-35)");
                 svgGroup.selectAll("g.nodes g.node")
                     .on('mouseenter', function(d) {
                         that.activeNode = true;

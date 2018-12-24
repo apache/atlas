@@ -33,27 +33,32 @@ header {
 .header-menu {
     .dropdown-menu>li>a {
         color: $color_ironside_gray_approx;
+
         &:hover {
             color: $color_jungle_green_approx;
         }
+
         i {
             padding-right: 3px;
         }
     }
+
     >a {
         display: inline-block;
         color: $color_ironside_gray_approx;
-        padding: 16px 14px;
+        padding: 15px 14px;
+
         &:hover {
             border-bottom: 2px solid $color_jungle_green_approx;
             padding: 14px 14px;
             color: $color_jungle_green_approx;
         }
+
         span {
             padding: 5px;
         }
+
         i {
-            margin-top: 7px;
             font-size: 18px;
         }
     }
@@ -69,6 +74,7 @@ header {
         font-size: 18px;
         font-style: italic;
     }
+
     .input-group-addon {
         font-size: 20px;
         color: $color_bombay_approx;
@@ -85,6 +91,7 @@ header {
 #sideNav-wrapper {
     color: $white;
     font-size: 16px !important;
+
     .well {
         background-color: $color_tuna_approx;
         border: 1px solid #666363;
@@ -94,15 +101,26 @@ header {
 }
 
 .page-title {
-    background-color: $white;
-    padding: 25px;
+    background-color: $color_white_lilac_approx;
+    padding: 10px 15px 0px 15px;
+
+    .title {
+        padding-top: 0;
+        margin-top: 0;
+    }
+
     h1 {
+        &.title {
+            word-break: break-all;
+        }
+
         // margin-top: 50px;
         margin-bottom: 10px;
         font-weight: 600;
         @include ellipsis();
         max-width: 91%;
         display: inline-block;
+
         small {
             position: relative;
             bottom: 5px;
@@ -115,6 +133,7 @@ header {
             text-transform: uppercase;
         }
     }
+
     .sub-title {
         margin-bottom: 40px;
     }
@@ -134,14 +153,19 @@ header {
 
 a {
     color: $color_jungle_green_approx;
+    cursor: pointer;
+
     &:focus {
         color: $color_puerto_rico_approx;
         text-decoration: none;
         outline: none;
+        cursor: pointer;
     }
+
     &:hover {
         color: $color_puerto_rico_approx;
         text-decoration: none;
+        cursor: pointer;
     }
 }
 
@@ -152,11 +176,13 @@ a {
 
 .blue-link {
     color: $color_havelock_blue_approx;
+
     &:focus {
         color: $color_havelock_blue_approx;
         text-decoration: none;
         outline: none;
     }
+
     &:hover {
         color: $color_havelock_blue_approx;
         text-decoration: underline;
@@ -184,16 +210,17 @@ hr[size="10"] {
     margin-bottom: 2px;
     background-color: $white;
     max-width: none;
+
     .table {
         width: auto;
     }
 }
 
-
 .table-quickMenu>tbody>tr>td {
     &.searchTerm {
         overflow: visible;
     }
+
     &.searchTag {}
 }
 
@@ -214,8 +241,7 @@ hr[size="10"] {
 }
 
 .gray-bg {
-    background-color: #f6f7fb;
-    padding-bottom: 4%;
+    background-color: $color_white_lilac_approx
 }
 
 
@@ -230,13 +256,16 @@ hr[size="10"] {
     padding: 25px 0;
     margin-top: 25px;
     border-top: 1px $color_mystic_approx solid;
+
     .comment {
         margin-bottom: 25px;
     }
+
     .author {
         color: $color_keppel_approx;
         margin-bottom: 0;
     }
+
     .date {
         color: $color_star_dust_approx;
     }
@@ -302,6 +331,10 @@ hr[size="10"] {
     margin-right: 0px !important;
 }
 
+.no-border {
+    border: none !important;
+}
+
 .position-relative {
     position: relative;
 }
@@ -317,9 +350,11 @@ hr[size="10"] {
 
 .readOnlyLink {
     @include ellipsis();
+
     .deleteBtn {
         padding: 0px 5px;
     }
+
     a {
         color: $delete_link !important;
     }
@@ -347,6 +382,7 @@ fieldset.fieldset-child-pd>div {
 .inline-content {
     >.inline {
         display: inline-block;
+
         &+.inline {
             margin-left: 5px;
         }
@@ -355,6 +391,7 @@ fieldset.fieldset-child-pd>div {
 
 .inline-content-fl {
     @extend .inline-content;
+
     >.inline {
         display: block;
         float: left;
@@ -363,8 +400,10 @@ fieldset.fieldset-child-pd>div {
 
 .inline-content-fr {
     @extend .inline-content-fl;
+
     >.inline {
         float: right;
+
         &+.inline {
             margin-right: 5px;
         }
@@ -372,6 +411,7 @@ fieldset.fieldset-child-pd>div {
 }
 
 .has-error {
+
     .select2-selection--single,
     .select2-selection--multiple {
         border-color: $color_apple_blossom_approx;
@@ -381,4 +421,21 @@ fieldset.fieldset-child-pd>div {
 .table-action-btn {
     position: absolute;
     right: 0px;
+}
+
+.entity-icon-box {
+    display: inline-block;
+    background: #cee0fa;
+    padding: 10px;
+    border-radius: 50%;
+    min-width: 76.25px;
+    min-height: 70px;
+
+    &.disabled {
+        background: #e3e3e3;
+    }
+
+    img {
+        height: 50px;
+    }
 }

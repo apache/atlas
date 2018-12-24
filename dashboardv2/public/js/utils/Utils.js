@@ -76,6 +76,57 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     Utils.getBaseUrl = function(url) {
         return url.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, '');
     };
+
+    Utils.getEntityIconPath = function(options) {
+        var entityData = options && options.entityData,
+            serviceType,
+            status,
+            typeName,
+            iconBasePath = Utils.getBaseUrl(window.location.pathname) + Globals.entityImgPath;
+        if (entityData) {
+            typeName = entityData.typeName;
+            serviceType = entityData && entityData.serviceType;
+            status = entityData && entityData.status;
+        }
+
+        function getImgPath(imageName) {
+            return iconBasePath + (Enums.entityStateReadOnly[status] ? "disabled/" + imageName : imageName);
+        }
+
+        function getDefaultImgPath() {
+            if (entityData.isProcess) {
+                if (Enums.entityStateReadOnly[status]) {
+                    return iconBasePath + 'disabled/process.png';
+                } else {
+                    return iconBasePath + 'process.png';
+                }
+            } else {
+                if (Enums.entityStateReadOnly[status]) {
+                    return iconBasePath + 'disabled/table.png';
+                } else {
+                    return iconBasePath + 'table.png';
+                }
+            }
+        }
+
+        if (entityData) {
+            if (options.errorUrl) {
+                var isErrorInTypeName = (options.errorUrl && options.errorUrl.match("entity-icon/" + typeName + ".png|disabled/" + typeName + ".png") ? true : false);
+                if (serviceType && isErrorInTypeName) {
+                    var imageName = serviceType + ".png";
+                    return getImgPath(imageName);
+                } else {
+                    return getDefaultImgPath();
+                }
+            } else if (entityData.typeName) {
+                var imageName = entityData.typeName + ".png";
+                return getImgPath(imageName);
+            } else {
+                return getDefaultImgPath();
+            }
+        }
+    }
+
     pnotify.prototype.options.styling = "fontawesome";
     var notify = function(options) {
         return new pnotify(_.extend({

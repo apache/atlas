@@ -135,7 +135,8 @@ module.exports = function(grunt) {
                     },
                     'query-builder.default.min.css': { 'jQuery-QueryBuilder/dist/css': 'jQueryQueryBuilder/css' },
                     'daterangepicker.css': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/css' },
-                    'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' }
+                    'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' },
+                    'pretty-checkbox.min.css': { 'pretty-checkbox/dist': 'pretty-checkbox/css' }
                 }
 
             },
@@ -158,7 +159,8 @@ module.exports = function(grunt) {
                         { 'd3-tip': 'd3/' },
                         { 'dagre-d3': 'dagre-d3' },
                         { 'platform': 'platform/' },
-                        { 'jQuery-QueryBuilder': 'jQueryQueryBuilder/' }
+                        { 'jQuery-QueryBuilder': 'jQueryQueryBuilder/' },
+                        { 'pretty-checkbox': 'pretty-checkbox' }
                     ],
                     'LICENSE.md': [{ 'backbone.babysitter': 'backbone-babysitter' },
                         { 'backbone.wreqr': 'backbone-wreqr' },
