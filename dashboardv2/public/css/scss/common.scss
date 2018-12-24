@@ -156,3 +156,9 @@ pre {
         font-family: monospace;
     }
 }
+
+#accordion {
+    .panel-default > .panel-heading{
+        cursor: pointer;
+    }
+}
