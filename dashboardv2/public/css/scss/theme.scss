@@ -112,9 +112,7 @@ header {
     h1 {
         &.title {
             word-break: break-all;
-        }
-
-        // margin-top: 50px;
+        } // margin-top: 50px;
         margin-bottom: 10px;
         font-weight: 600;
         @include ellipsis();
@@ -282,6 +280,29 @@ hr[size="10"] {
     right: 0;
     z-index: 999;
 }
+
+.panel.expand_collapse_panel-icon {
+    .panel-heading {
+        .panel-title {
+            display: inline-block;
+        }
+        i.ec-icon:before {
+            content: "\f078"
+        }
+        &.collapsed,
+        &[aria-expanded="false"] {
+            i.ec-icon:before {
+                content: "\f078"
+            }
+        }
+        &[aria-expanded="true"] {
+            i.ec-icon:before {
+                content: "\f077"
+            }
+        }
+    }
+}
+
 
 .no-padding {
     padding: 0px !important;

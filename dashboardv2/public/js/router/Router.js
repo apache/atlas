@@ -73,6 +73,13 @@ define([
         },
         bindCommonEvents: function() {
             var that = this;
+            $('body').on('click', 'a.show-stat', function() {
+                require([
+                    'views/common/Statistics',
+                ], function(AboutAtlas) {
+                    new AboutAtlas();
+                });
+            });
             $('body').on('click', 'li.aboutAtlas', function() {
                 require([
                     'views/common/AboutAtlas',
