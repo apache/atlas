@@ -185,6 +185,10 @@ g.type-TK>rect {
 }
 
 .lineage-box {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
     .lineage-edge-details {
         position: absolute;
         left: 0;
@@ -261,22 +265,10 @@ g.type-TK>rect {
 }
 
 .graph-button-group {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-
-    .zoom-button-group {
-        margin-top: 8px;
-        border: 1px solid;
-        border-radius: 5px;
-        background-color: white;
-
-        [type="button"] {
-            display: block;
-            padding: 2px 6px;
-            cursor: pointer;
-        }
+    &>div {
+        display: inline-block;
     }
+    .zoom-button-group {}
 }
 
 .lineage-fltr-panel {
@@ -287,9 +279,8 @@ g.type-TK>rect {
     overflow: auto;
     transition: all 0.3s ease;
     right: -273px;
-    box-shadow: 9px -14px 26px 6px;
+    box-shadow: 7px 1px 28px -3px;
     background-color: #f5f5f5;
-    //color: $white;
     z-index: 999;
 
     .header {
@@ -336,7 +327,7 @@ g.type-TK>rect {
 .btn-gray:hover {
     border: 1px solid #686868;
     color: $dark_gray !important;
-    background-color: transparent !important;
+    background-color: white !important;
 }
 
 
@@ -344,11 +335,40 @@ span#zoom_in {
     border-bottom: 1px solid #625555;
 }
 
-.depthContainer {
+.depth-container {
 
     //display: inline-block;
     //margin-top: 3px;
     .inline {
         display: inline-block;
+    }
+}
+
+.resizeGraph {
+    position: relative;
+    width: 100%;
+    height: 64vh;
+}
+
+.active.fullscreen-mode {
+    position: fixed;
+    height: 100% !important;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    right: 0;
+    padding: 0 !important;
+    z-index: 999;
+    overflow: hidden !important;
+    .resizeGraph {
+        position: fixed;
+        height: 100% !important;
+        .ui-resizable-handle {
+            display: none;
+        }
+    }
+    .lineage-box {
+        padding: 10px !important;
     }
 }

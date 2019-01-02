@@ -35,6 +35,7 @@ define(['require',
             _viewName: 'RelationshipLayoutView',
 
             template: RelationshipLayoutViewtmpl,
+            className: "resizeGraph",
 
             /** Layout sub regions */
             regions: {},
@@ -225,7 +226,7 @@ define(['require',
 
 
 
-                d3.selectAll(this.$('span.lineageZoomButton')).on('click', zoomClick);
+                d3.selectAll(this.$('.lineageZoomButton')).on('click', zoomClick);
 
                 var svg = d3.select(this.$("svg")[0])
                     .attr("viewBox", "0 0 " + width + " " + height)
