@@ -24,13 +24,15 @@ define(['require',
     'hbs!tmpl/common/TableLayout_tmpl',
     'utils/Messages',
     'utils/Utils',
+    'utils/Globals',
+    'utils/CommonViewFunction',
     'backgrid-filter',
     'backgrid-paginator',
     'backgrid-sizeable',
     'backgrid-orderable',
     'backgrid-select-all',
     'backgrid-columnmanager'
-], function(require, Backbone, FSTablelayoutTmpl, Messages, Utils) {
+], function(require, Backbone, FSTablelayoutTmpl, Messages, Utils, Globals, CommonViewFunction) {
     'use strict';
 
     var FSTableLayout = Backbone.Marionette.LayoutView.extend(
@@ -125,11 +127,15 @@ define(['require',
 
             includeAtlasPagination: false,
 
+            includeAtlasPageSize: false,
+
             includeFilter: false,
 
             includeHeaderSearch: false,
 
             includePageSize: false,
+
+            includeGotoPage: false,
 
             includeFooterRecords: true,
 
@@ -147,6 +153,7 @@ define(['require',
                 var events = {},
                     that = this;
                 events['change ' + this.ui.selectPageSize] = 'onPageSizeChange';
+                events['change ' + this.ui.showPage] = 'changePageLimit';
                 events["click " + this.ui.nextData] = "onClicknextData";
                 events["click " + this.ui.previousData] = "onClickpreviousData";
                 events["click " + this.ui.gotoPagebtn] = 'gotoPagebtn';
@@ -174,15 +181,9 @@ define(['require',
             initialize: function(options) {
                 this.limit = 25;
                 this.offset = 0;
-                _.extend(this, _.pick(options, 'collection', 'columns', 'includePagination', 'includeHeaderSearch', 'includeFilter', 'includePageSize',
-                    'includeFooterRecords', 'includeColumnManager', 'includeSizeAbleColumns', 'includeOrderAbleColumns', 'includeTableLoader', 'includeAtlasPagination', 'atlasPaginationOpts'));
-                _.extend(this, this.atlasPaginationOpts);
+                _.extend(this, _.omit(options, 'gridOpts', 'atlasPaginationOpts'));
+                _.extend(this, options.atlasPaginationOpts);
                 _.extend(this.gridOpts, options.gridOpts, { collection: this.collection, columns: this.columns });
-                _.extend(this.filterOpts, options.filterOpts);
-                _.extend(this.paginatorOpts, options.paginatorOpts);
-                _.extend(this.controlOpts, options.controlOpts);
-                _.extend(this.columnOpts, options.columnOpts);
-
                 this.bindEvents();
             },
 
@@ -197,6 +198,9 @@ define(['require',
 
                 this.listenTo(this.collection, 'reset', function(collection, options) {
                     this.$('div[data-id="r_tableSpinner"]').removeClass('show');
+                    this.ui.gotoPage.val('');
+                    this.ui.gotoPage.parent().removeClass('has-error');
+                    this.ui.gotoPagebtn.prop("disabled", true);
                     if (this.includePagination) {
                         this.renderPagination();
                     }
@@ -204,7 +208,7 @@ define(['require',
                         this.renderFooterRecords(this.collection.state);
                     }
                     if (this.includeAtlasPagination) {
-                        this.renderAtlasPagination(options);
+                        this.renderAtlasPagination(collection, options);
                     }
                 }, this);
 
@@ -261,14 +265,24 @@ define(['require',
                 if (this.includeColumnManager) {
                     this.renderColumnManager();
                 }
+                var pageSizeEl = null;
                 if (this.includePageSize) {
-                    this.ui.selectPageSize.select2({
+                    pageSizeEl = this.ui.selectPageSize;
+                } else if (this.includeAtlasPageSize) {
+                    pageSizeEl = this.ui.showPage;
+                }
+                if (pageSizeEl) {
+                    pageSizeEl.select2({
                         data: _.sortBy(_.union([25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500], [this.collection.state.pageSize])),
                         tags: true,
                         dropdownCssClass: "number-input",
                         multiple: false
                     });
-                    this.ui.selectPageSize.val(this.collection.state.pageSize).trigger('change', { "skipViewChange": true });
+                    var val = this.collection.state.pageSize;
+                    if (this.value && this.value.pageLimit) {
+                        val = this.limit;
+                    }
+                    pageSizeEl.val(val).trigger('change', { "skipViewChange": true });
                 }
 
             },
@@ -305,6 +319,7 @@ define(['require',
                     this.rPagination.show(new Backgrid.Extension.Paginator(options));
                 } else if (this.regions.rPagination) {
                     this.$('div[data-id="r_pagination"]').show(new Backgrid.Extension.Paginator(options));
+                    this.showHideGoToPage();
                 }
             },
 
@@ -392,6 +407,14 @@ define(['require',
                 }
             },
 
+            showHideGoToPage: function() {
+                if (this.collection.state.pageSize > this.collection.fullCollection.length) {
+                    this.ui.paginationDiv.hide();
+                } else {
+                    this.ui.paginationDiv.show();
+                }
+            },
+
             /**
              * show/hide filter of the grid
              */
@@ -423,6 +446,9 @@ define(['require',
              * ColumnManager for the table
              */
             renderColumnManager: function() {
+                if (!this.columns) {
+                    return;
+                }
                 var that = this,
                     $el = this.columnOpts.el || this.$("[data-id='control']"),
                     colManager = new Backgrid.Extension.ColumnManager(this.columns, this.columnOpts.opts),
@@ -446,7 +472,6 @@ define(['require',
                     that.collection.trigger("state-changed");
                 });
             },
-
             renderSizeAbleColumns: function() {
                 // Add sizeable columns
                 var that = this,
@@ -507,11 +532,17 @@ define(['require',
             onPageSizeChange: function(e, options) {
                 if (!options || !options.skipViewChange) {
                     var pagesize = $(e.currentTarget).val();
+                    if (pagesize == 0) {
+                        this.ui.selectPageSize.data('select2').$container.addClass('has-error');
+                        return;
+                    } else {
+                        this.ui.selectPageSize.data('select2').$container.removeClass('has-error');
+                    }
                     this.collection.state.pageSize = parseInt(pagesize, 10);
-
                     this.collection.state.currentPage = this.collection.state.firstPage;
+                    this.showHideGoToPage();
                     if (this.collection.mode == "client") {
-                        this.collection.reset(this.collection.toJSON());
+                        this.collection.fullCollection.reset(this.collection.fullCollection.toJSON());
                     } else {
                         this.collection.fetch({
                             sort: false,
@@ -521,6 +552,9 @@ define(['require',
                     }
                 }
             },
+            /**
+                atlasNextBtn
+            **/
             onClicknextData: function() {
                 this.offset = this.offset + this.limit;
                 _.extend(this.collection.queryParams, {
@@ -532,14 +566,15 @@ define(['require',
                         this.triggerUrl();
                     }
                 }
-                this.ui.gotoPage.val('');
-                this.ui.gotoPage.parent().removeClass('has-error');
                 if (this.fetchCollection) {
                     this.fetchCollection({
                         next: true
                     });
                 }
             },
+            /**
+                atlasPrevBtn
+            **/
             onClickpreviousData: function() {
                 this.offset = this.offset - this.limit;
                 if (this.offset <= -1) {
@@ -554,15 +589,15 @@ define(['require',
                         this.triggerUrl();
                     }
                 }
-                this.ui.gotoPage.val('');
-                this.ui.gotoPage.parent().removeClass('has-error');
                 if (this.fetchCollection) {
                     this.fetchCollection({
                         previous: true
                     });
                 }
             },
-            // TODO : Need to add pageLimit for atlasPagination
+            /**
+                atlasPageLimit
+            **/
             changePageLimit: function(e, obj) {
                 if (!obj || (obj && !obj.skipViewChange)) {
                     var limit = parseInt(this.ui.showPage.val());
@@ -581,35 +616,42 @@ define(['require',
                             this.triggerUrl();
                         }
                     }
-                    this.ui.gotoPage.val('');
-                    this.ui.gotoPage.parent().removeClass('has-error');
                     _.extend(this.collection.queryParams, { limit: this.limit, offset: this.offset });
                     this.fetchCollection();
                 }
             },
+            /**
+                atlasGotoBtn & Local Goto Btn
+            **/
             gotoPagebtn: function(e) {
                 var that = this;
                 var goToPage = parseInt(this.ui.gotoPage.val());
                 if (!(_.isNaN(goToPage) || goToPage <= -1)) {
-                    this.offset = (goToPage - 1) * this.limit;
-                    if (this.offset <= -1) {
-                        this.offset = 0;
-                    }
-                    _.extend(this.collection.queryParams, { limit: this.limit, offset: this.offset });
-                    if (this.offset == (this.pageFrom - 1)) {
-                        Utils.notifyInfo({
-                            content: Messages.search.onSamePage
+                    if (this.collection.mode == "client") {
+                        return this.collection.getPage((goToPage - 1), {
+                            reset: true
                         });
                     } else {
-                        if (this.value) {
-                            this.value.pageOffset = this.offset;
-                            if (this.triggerUrl) {
-                                this.triggerUrl();
-                            }
+                        this.offset = (goToPage - 1) * this.limit;
+                        if (this.offset <= -1) {
+                            this.offset = 0;
                         }
-                        // this.offset is updated in gotoPagebtn function so use next button calculation.
-                        if (this.fetchCollection) {
-                            this.fetchCollection({ 'next': true });
+                        _.extend(this.collection.queryParams, { limit: this.limit, offset: this.offset });
+                        if (this.offset == (this.pageFrom - 1)) {
+                            Utils.notifyInfo({
+                                content: Messages.search.onSamePage
+                            });
+                        } else {
+                            if (this.value) {
+                                this.value.pageOffset = this.offset;
+                                if (this.triggerUrl) {
+                                    this.triggerUrl();
+                                }
+                            }
+                            // this.offset is updated in gotoPagebtn function so use next button calculation.
+                            if (this.fetchCollection) {
+                                this.fetchCollection({ 'next': true });
+                            }
                         }
                     }
                 }

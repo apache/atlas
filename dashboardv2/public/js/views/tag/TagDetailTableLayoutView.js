@@ -86,6 +86,8 @@ define(['require',
                     includePagination: true,
                     includePageSize: false,
                     includeFooterRecords: true,
+                    includePageSize: true,
+                    includeGotoPage: true,
                     gridOpts: {
                         className: "table table-hover backgrid table-quickMenu",
                         emptyText: 'No records found!'

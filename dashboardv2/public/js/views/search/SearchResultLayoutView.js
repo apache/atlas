@@ -375,6 +375,9 @@ define(['require',
                         if (that.isDestroyed) {
                             return;
                         }
+                        that.ui.gotoPage.val('');
+                        that.ui.gotoPage.parent().removeClass('has-error');
+                        that.ui.gotoPagebtn.prop("disabled", true);
                         Globals.searchApiCallRef = undefined;
                         var isFirstPage = that.offset === 0,
                             dataLength = 0,
@@ -1006,8 +1009,6 @@ define(['require',
                     this.value.pageOffset = this.offset;
                     this.triggerUrl();
                 }
-                this.ui.gotoPage.val('');
-                this.ui.gotoPage.parent().removeClass('has-error');
                 this.fetchCollection(null, {
                     next: true
                 });
@@ -1024,8 +1025,6 @@ define(['require',
                     this.value.pageOffset = this.offset;
                     this.triggerUrl();
                 }
-                this.ui.gotoPage.val('');
-                this.ui.gotoPage.parent().removeClass('has-error');
                 this.fetchCollection(null, {
                     previous: true
                 });
@@ -1074,8 +1073,6 @@ define(['require',
                         this.value.pageOffset = this.offset;
                         this.triggerUrl();
                     }
-                    this.ui.gotoPage.val('');
-                    this.ui.gotoPage.parent().removeClass('has-error');
                     _.extend(this.searchCollection.queryParams, { limit: this.limit, offset: this.offset });
                     this.fetchCollection();
                 }

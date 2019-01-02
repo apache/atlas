@@ -45,7 +45,17 @@
     <div class="row clearfix banded pagination-box">
         <div class="col-sm-offset-4 col-sm-8">
             <div class="inline-content-fr">
-                <div data-id="r_pagination" class="inline"></div>
+                <div data-id="r_pagination" data-id="paginationDiv" class="inline"></div>
+                {{#if includeGotoPage}}
+                <div class="inline col-sm-4" data-id="paginationDiv" style="display:none">
+                    <div class="input-group" data-id="goToPageDiv">
+                        <input type="text" class="form-control number-input" data-id="gotoPage" placeholder="Goto Page" />
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button" data-id="gotoPagebtn" title="Goto Page" disabled="disabled">Go!</button>
+                        </span>
+                    </div>
+                </div>
+                {{/if}}
                 {{#if includePageSize}}
                 <div class="inline">
                     <div class="inline-content">
