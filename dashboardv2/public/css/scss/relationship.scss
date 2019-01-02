@@ -17,6 +17,10 @@
  */
 
 .relationship-box {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
     .relatioship-link {
         fill: none;
         stroke-width: 1.5px;

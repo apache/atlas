@@ -22,8 +22,7 @@
         <h1 class="title row">
             <div data-id="entityIcon" class="entity-icon-box"></div>
             <span data-id="title"></span>
-        </h1>
-        {{#if entityUpdate}}
+        </h1> {{#if entityUpdate}}
         <div data-id="editButtonContainer" class="pull-right"></div>
         {{/if}}
         <div class="form-group">
@@ -73,20 +72,16 @@
             </div>
         </div>
         <div id="tab-lineage" role="lineage" class="tab-pane animated fadeIn">
-            <div class="resizeGraph animated position-relative" align="center" style="height:64vh;">
-                <div id="r_lineageLayoutView">
-                    <div class="fontLoader-relative">
-                        <i class="fa fa-refresh fa-spin-custom"></i>
-                    </div>
+            <div id="r_lineageLayoutView" class="animated position-relative" align="center">
+                <div class="fontLoader-relative">
+                    <i class="fa fa-refresh fa-spin-custom"></i>
                 </div>
             </div>
         </div>
         <div id="tab-relationship" role="relationship" class="tab-pane animated fadeIn">
-            <div class="resizeGraph animated position-relative" align="center" style="height:64vh;">
-                <div id="r_relationshipLayoutView">
-                    <div class="fontLoader-relative">
-                        <i class="fa fa-refresh fa-spin-custom"></i>
-                    </div>
+            <div id="r_relationshipLayoutView" class="animated position-relative">
+                <div class="fontLoader-relative">
+                    <i class="fa fa-refresh fa-spin-custom"></i>
                 </div>
             </div>
         </div>

@@ -25,8 +25,7 @@ define(['require',
     'utils/Globals',
     'utils/Enums',
     'utils/Messages',
-    'utils/UrlLinks',
-    'jquery-ui'
+    'utils/UrlLinks'
 ], function(require, Backbone, DetailPageLayoutViewTmpl, ButtonsTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
     'use strict';
 
@@ -65,7 +64,6 @@ define(['require',
                 tagList: '[data-id="tagList"]',
                 termList: '[data-id="termList"]',
                 propagatedTagList: '[data-id="propagatedTagList"]',
-                fullscreenPanel: "#fullscreen_panel",
                 tablist: '[data-id="tab-list"] li',
                 entityIcon: '[data-id="entityIcon"]'
             },
@@ -280,16 +278,6 @@ define(['require',
                                 guid: this.id,
                                 entityDefCollection: this.entityDefCollection,
                                 fetchCollection: this.fetchCollection.bind(this),
-                                actionCallBack: function() {
-                                    that.$('#expand_collapse_panel').click();
-                                }
-                            });
-                            this.$(".resizeGraph").resizable({
-                                handles: ' s',
-                                minHeight: 375,
-                                stop: function(event, ui) {
-                                    ui.element.height(($(this).height()));
-                                },
                             });
                         } else if (this.value && this.value.tabActive == "lineage") {
                             Utils.setUrl({
