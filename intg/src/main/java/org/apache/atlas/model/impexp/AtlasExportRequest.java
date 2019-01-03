@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,31 +40,31 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasExportRequest implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public static final String OPTION_FETCH_TYPE                    = "fetchType";
-    public static final String OPTION_ATTR_MATCH_TYPE               = "matchType";
-    public static final String OPTION_SKIP_LINEAGE                  = "skipLineage";
-    public static final String OPTION_KEY_REPLICATED_TO             = "replicatedTo";
-    public static final String FETCH_TYPE_FULL                      = "full";
-    public static final String FETCH_TYPE_CONNECTED                 = "connected";
-    public static final String FETCH_TYPE_INCREMENTAL               = "incremental";
+    public static final String OPTION_FETCH_TYPE = "fetchType";
+    public static final String OPTION_ATTR_MATCH_TYPE = "matchType";
+    public static final String OPTION_SKIP_LINEAGE = "skipLineage";
+    public static final String OPTION_KEY_REPLICATED_TO = "replicatedTo";
+    public static final String FETCH_TYPE_FULL = "full";
+    public static final String FETCH_TYPE_CONNECTED = "connected";
+    public static final String FETCH_TYPE_INCREMENTAL = "incremental";
     public static final String FETCH_TYPE_INCREMENTAL_CHANGE_MARKER = "changeMarker";
-    public static final String MATCH_TYPE_STARTS_WITH               = "startsWith";
-    public static final String MATCH_TYPE_ENDS_WITH                 = "endsWith";
-    public static final String MATCH_TYPE_CONTAINS                  = "contains";
-    public static final String MATCH_TYPE_MATCHES                   = "matches";
-    public static final String MATCH_TYPE_FOR_TYPE                  = "forType";
+    public static final String MATCH_TYPE_STARTS_WITH = "startsWith";
+    public static final String MATCH_TYPE_ENDS_WITH = "endsWith";
+    public static final String MATCH_TYPE_CONTAINS = "contains";
+    public static final String MATCH_TYPE_MATCHES = "matches";
+    public static final String MATCH_TYPE_FOR_TYPE = "forType";
 
     private List<AtlasObjectId> itemsToExport = new ArrayList<>();
-    private Map<String, Object> options       = new HashMap<>();
+    private Map<String, Object> options = new HashMap<>();
 
     public List<AtlasObjectId> getItemsToExport() {
         return itemsToExport;
@@ -83,7 +83,7 @@ public class AtlasExportRequest implements Serializable {
     }
 
     public String getFetchTypeOptionValue() {
-        if(MapUtils.isEmpty(getOptions()) || !getOptions().containsKey(OPTION_FETCH_TYPE)) {
+        if (MapUtils.isEmpty(getOptions()) || !getOptions().containsKey(OPTION_FETCH_TYPE)) {
             return FETCH_TYPE_FULL;
         }
 
@@ -96,17 +96,17 @@ public class AtlasExportRequest implements Serializable {
     }
 
     public boolean getSkipLineageOptionValue() {
-        if(MapUtils.isEmpty(getOptions()) ||
+        if (MapUtils.isEmpty(getOptions()) ||
                 !getOptions().containsKey(AtlasExportRequest.OPTION_SKIP_LINEAGE)) {
             return false;
         }
 
         Object o = getOptions().get(AtlasExportRequest.OPTION_SKIP_LINEAGE);
-        if(o instanceof String) {
+        if (o instanceof String) {
             return Boolean.parseBoolean((String) o);
         }
 
-        if(o instanceof Boolean) {
+        if (o instanceof Boolean) {
             return (Boolean) o;
         }
 
@@ -142,7 +142,13 @@ public class AtlasExportRequest implements Serializable {
 
     @JsonIgnore
     public String getOptionKeyReplicatedTo() {
-        return isReplicationOptionSet() ? (String) options.get(OPTION_KEY_REPLICATED_TO) : StringUtils.EMPTY;
+        String replicateToServerName = isReplicationOptionSet() ? (String) options.get(OPTION_KEY_REPLICATED_TO) : StringUtils.EMPTY;
+
+        if (replicateToServerName == null) {
+            return StringUtils.EMPTY;
+        } else {
+            return replicateToServerName;
+        }
     }
 
     public StringBuilder toString(StringBuilder sb) {
