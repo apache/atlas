@@ -64,7 +64,11 @@ public class ImportTransforms {
                 getTransforms().put(subType, attribtueTransformMap);
             } else {
                 for (Map.Entry<String, List<ImportTransformer>> entry : attribtueTransformMap.entrySet()) {
-                    getTransforms().get(subType).get(entry.getKey()).addAll(entry.getValue());
+                    if((getTransforms().get(subType).containsKey(entry.getKey()))){
+                        getTransforms().get(subType).get(entry.getKey()).addAll(entry.getValue());
+                    } else {
+                        LOG.warn("Attribute {} does not exist for Type : {}", entry.getKey(), parentType);
+                    }
                 }
             }
         }
