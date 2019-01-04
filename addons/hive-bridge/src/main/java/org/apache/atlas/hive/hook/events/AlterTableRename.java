@@ -85,12 +85,15 @@ public class AlterTableRename extends BaseHiveEvent {
             return ret;
         }
 
-        AtlasEntityWithExtInfo oldTableEntity = toTableEntity(oldTable);
+        AtlasEntityWithExtInfo oldTableEntity     = toTableEntity(oldTable);
+        AtlasEntityWithExtInfo renamedTableEntity = toTableEntity(newTable);
+
+        if (oldTableEntity == null || renamedTableEntity == null) {
+            return ret;
+        }
 
         // first update with oldTable info, so that the table will be created if it is not present in Atlas
         ret.add(new EntityUpdateRequestV2(getUserName(), new AtlasEntitiesWithExtInfo(oldTableEntity)));
-
-        AtlasEntityWithExtInfo renamedTableEntity = toTableEntity(newTable);
 
         // update qualifiedName for all columns, partitionKeys, storageDesc
         String renamedTableQualifiedName = (String) renamedTableEntity.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME);

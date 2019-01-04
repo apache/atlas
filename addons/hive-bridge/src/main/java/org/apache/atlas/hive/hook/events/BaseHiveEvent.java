@@ -19,6 +19,7 @@
 package org.apache.atlas.hive.hook.events;
 
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
+import org.apache.atlas.hive.hook.HiveHook.PreprocessAction;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -284,7 +285,11 @@ public abstract class BaseHiveEvent {
 
         AtlasEntity entity = toTableEntity(table, ret);
 
-        ret.setEntity(entity);
+        if (entity != null) {
+            ret.setEntity(entity);
+        } else {
+            ret = null;
+        }
 
         return ret;
     }
@@ -292,7 +297,9 @@ public abstract class BaseHiveEvent {
     protected AtlasEntity toTableEntity(Table table, AtlasEntitiesWithExtInfo entities) throws Exception {
         AtlasEntity ret = toTableEntity(table, (AtlasEntityExtInfo) entities);
 
-        entities.addEntity(ret);
+        if (ret != null) {
+            entities.addEntity(ret);
+        }
 
         return ret;
     }
@@ -318,64 +325,76 @@ public abstract class BaseHiveEvent {
         AtlasEntity ret = context.getEntity(tblQualifiedName);
 
         if (ret == null) {
-            ret = new AtlasEntity(HIVE_TYPE_TABLE);
+            PreprocessAction action = context.getPreprocessActionForHiveTable(tblQualifiedName);
 
-            // if this table was sent in an earlier notification, set 'guid' to null - which will:
-            //  - result in this entity to be not included in 'referredEntities'
-            //  - cause Atlas server to resolve the entity by its qualifiedName
-            if (isKnownTable && !isAlterTableOperation()) {
-                ret.setGuid(null);
-            }
+            if (action == PreprocessAction.IGNORE) {
+                LOG.info("ignoring table {}", tblQualifiedName);
+            } else {
+                ret = new AtlasEntity(HIVE_TYPE_TABLE);
 
-            long createTime     = getTableCreateTime(table);
-            long lastAccessTime = table.getLastAccessTime() > 0 ? (table.getLastAccessTime() * MILLIS_CONVERT_FACTOR) : createTime;
-
-            ret.setAttribute(ATTRIBUTE_DB, dbId);
-            ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, tblQualifiedName);
-            ret.setAttribute(ATTRIBUTE_NAME, table.getTableName().toLowerCase());
-            ret.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
-            ret.setAttribute(ATTRIBUTE_CREATE_TIME, createTime);
-            ret.setAttribute(ATTRIBUTE_LAST_ACCESS_TIME, lastAccessTime);
-            ret.setAttribute(ATTRIBUTE_RETENTION, table.getRetention());
-            ret.setAttribute(ATTRIBUTE_PARAMETERS, table.getParameters());
-            ret.setAttribute(ATTRIBUTE_COMMENT, table.getParameters().get(ATTRIBUTE_COMMENT));
-            ret.setAttribute(ATTRIBUTE_TABLE_TYPE, table.getTableType().name());
-            ret.setAttribute(ATTRIBUTE_TEMPORARY, table.isTemporary());
-
-            if (table.getViewOriginalText() != null) {
-                ret.setAttribute(ATTRIBUTE_VIEW_ORIGINAL_TEXT, table.getViewOriginalText());
-            }
-
-            if (table.getViewExpandedText() != null) {
-                ret.setAttribute(ATTRIBUTE_VIEW_EXPANDED_TEXT, table.getViewExpandedText());
-            }
-
-            AtlasObjectId     tableId       = getObjectId(ret);
-            AtlasEntity       sd            = getStorageDescEntity(tableId, table);
-            List<AtlasEntity> partitionKeys = getColumnEntities(tableId, table, table.getPartitionKeys());
-            List<AtlasEntity> columns       = getColumnEntities(tableId, table, table.getCols());
-
-            if (entityExtInfo != null) {
-                entityExtInfo.addReferredEntity(sd);
-
-                if (partitionKeys != null) {
-                    for (AtlasEntity partitionKey : partitionKeys) {
-                        entityExtInfo.addReferredEntity(partitionKey);
-                    }
+                // if this table was sent in an earlier notification, set 'guid' to null - which will:
+                //  - result in this entity to be not included in 'referredEntities'
+                //  - cause Atlas server to resolve the entity by its qualifiedName
+                if (isKnownTable && !isAlterTableOperation()) {
+                    ret.setGuid(null);
                 }
 
-                if (columns != null) {
-                    for (AtlasEntity column : columns) {
-                        entityExtInfo.addReferredEntity(column);
-                    }
+                long createTime     = getTableCreateTime(table);
+                long lastAccessTime = table.getLastAccessTime() > 0 ? (table.getLastAccessTime() * MILLIS_CONVERT_FACTOR) : createTime;
+
+                ret.setAttribute(ATTRIBUTE_DB, dbId);
+                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, tblQualifiedName);
+                ret.setAttribute(ATTRIBUTE_NAME, table.getTableName().toLowerCase());
+                ret.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
+                ret.setAttribute(ATTRIBUTE_CREATE_TIME, createTime);
+                ret.setAttribute(ATTRIBUTE_LAST_ACCESS_TIME, lastAccessTime);
+                ret.setAttribute(ATTRIBUTE_RETENTION, table.getRetention());
+                ret.setAttribute(ATTRIBUTE_PARAMETERS, table.getParameters());
+                ret.setAttribute(ATTRIBUTE_COMMENT, table.getParameters().get(ATTRIBUTE_COMMENT));
+                ret.setAttribute(ATTRIBUTE_TABLE_TYPE, table.getTableType().name());
+                ret.setAttribute(ATTRIBUTE_TEMPORARY, table.isTemporary());
+
+                if (table.getViewOriginalText() != null) {
+                    ret.setAttribute(ATTRIBUTE_VIEW_ORIGINAL_TEXT, table.getViewOriginalText());
                 }
+
+                if (table.getViewExpandedText() != null) {
+                    ret.setAttribute(ATTRIBUTE_VIEW_EXPANDED_TEXT, table.getViewExpandedText());
+                }
+
+                boolean pruneTable = table.isTemporary() || action == PreprocessAction.PRUNE;
+
+                if (pruneTable) {
+                    LOG.info("ignoring details of table {}", tblQualifiedName);
+                } else {
+                    AtlasObjectId     tableId       = getObjectId(ret);
+                    AtlasEntity       sd            = getStorageDescEntity(tableId, table);
+                    List<AtlasEntity> partitionKeys = getColumnEntities(tableId, table, table.getPartitionKeys());
+                    List<AtlasEntity> columns       = getColumnEntities(tableId, table, table.getCols());
+
+                    if (entityExtInfo != null) {
+                        entityExtInfo.addReferredEntity(sd);
+
+                        if (partitionKeys != null) {
+                            for (AtlasEntity partitionKey : partitionKeys) {
+                                entityExtInfo.addReferredEntity(partitionKey);
+                            }
+                        }
+
+                        if (columns != null) {
+                            for (AtlasEntity column : columns) {
+                                entityExtInfo.addReferredEntity(column);
+                            }
+                        }
+                    }
+
+                    ret.setAttribute(ATTRIBUTE_STORAGEDESC, getObjectId(sd));
+                    ret.setAttribute(ATTRIBUTE_PARTITION_KEYS, getObjectIds(partitionKeys));
+                    ret.setAttribute(ATTRIBUTE_COLUMNS, getObjectIds(columns));
+                }
+
+                context.putEntity(tblQualifiedName, ret);
             }
-
-            ret.setAttribute(ATTRIBUTE_STORAGEDESC, getObjectId(sd));
-            ret.setAttribute(ATTRIBUTE_PARTITION_KEYS, getObjectIds(partitionKeys));
-            ret.setAttribute(ATTRIBUTE_COLUMNS, getObjectIds(columns));
-
-            context.putEntity(tblQualifiedName, ret);
         }
 
         return ret;

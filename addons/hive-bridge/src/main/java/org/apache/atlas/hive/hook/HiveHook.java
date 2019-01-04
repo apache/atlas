@@ -21,6 +21,8 @@ package org.apache.atlas.hive.hook;
 import org.apache.atlas.hive.hook.events.*;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.utils.LruCache;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
@@ -30,12 +32,15 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_QUALIFIED_NAME;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_DB;
@@ -44,6 +49,8 @@ import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_TABLE;
 
 public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final Logger LOG = LoggerFactory.getLogger(HiveHook.class);
+
+    public enum PreprocessAction { NONE, IGNORE, PRUNE }
 
     public static final String CONF_PREFIX                         = "atlas.hook.hive.";
     public static final String CONF_CLUSTER_NAME                   = "atlas.cluster.name";
@@ -54,6 +61,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String HOOK_NAME_CACHE_REBUID_INTERVAL_SEC = CONF_PREFIX + "name.cache.rebuild.interval.seconds";
     public static final String HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633                  = CONF_PREFIX + "skip.hive_column_lineage.hive-20633";
     public static final String HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD = CONF_PREFIX + "skip.hive_column_lineage.hive-20633.inputs.threshold";
+    public static final String HOOK_HIVE_TABLE_IGNORE_PATTERN                            = CONF_PREFIX + "hive_table.ignore.pattern";
+    public static final String HOOK_HIVE_TABLE_PRUNE_PATTERN                             = CONF_PREFIX + "hive_table.prune.pattern";
+    public static final String HOOK_HIVE_TABLE_CACHE_SIZE                                = CONF_PREFIX + "hive_table.cache.size";
 
     public static final String DEFAULT_CLUSTER_NAME = "primary";
 
@@ -66,8 +76,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final int     nameCacheTableMaxCount;
     private static final int     nameCacheRebuildIntervalSeconds;
 
-    private static final boolean skipHiveColumnLineageHive20633;
-    private static final int     skipHiveColumnLineageHive20633InputsThreshold;
+    private static final boolean                       skipHiveColumnLineageHive20633;
+    private static final int                           skipHiveColumnLineageHive20633InputsThreshold;
+    private static final List<Pattern>                 hiveTablesToIgnore = new ArrayList<>();
+    private static final List<Pattern>                 hiveTablesToPrune  = new ArrayList<>();
+    private static final Map<String, PreprocessAction> hiveTablesCache;
 
     private static HiveHookObjectNamesCache knownObjects = null;
 
@@ -84,6 +97,41 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         nameCacheRebuildIntervalSeconds = atlasProperties.getInt(HOOK_NAME_CACHE_REBUID_INTERVAL_SEC, 60 * 60); // 60 minutes default
         skipHiveColumnLineageHive20633                = atlasProperties.getBoolean(HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, true);
         skipHiveColumnLineageHive20633InputsThreshold = atlasProperties.getInt(HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
+
+        String[] patternHiveTablesToIgnore = atlasProperties.getStringArray(HOOK_HIVE_TABLE_IGNORE_PATTERN);
+        String[] patternHiveTablesToPrune  = atlasProperties.getStringArray(HOOK_HIVE_TABLE_PRUNE_PATTERN);
+
+        if (patternHiveTablesToIgnore != null) {
+            for (String pattern : patternHiveTablesToIgnore) {
+                try {
+                    hiveTablesToIgnore.add(Pattern.compile(pattern));
+
+                    LOG.info("{}={}", HOOK_HIVE_TABLE_IGNORE_PATTERN, pattern);
+                } catch (Throwable t) {
+                    LOG.warn("failed to compile pattern {}", pattern, t);
+                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", HOOK_HIVE_TABLE_IGNORE_PATTERN, pattern);
+                }
+            }
+        }
+
+        if (patternHiveTablesToPrune != null) {
+            for (String pattern : patternHiveTablesToPrune) {
+                try {
+                    hiveTablesToPrune.add(Pattern.compile(pattern));
+
+                    LOG.info("{}={}", HOOK_HIVE_TABLE_PRUNE_PATTERN, pattern);
+                } catch (Throwable t) {
+                    LOG.warn("failed to compile pattern {}", pattern, t);
+                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", HOOK_HIVE_TABLE_PRUNE_PATTERN, pattern);
+                }
+            }
+        }
+
+        if (!hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty()) {
+            hiveTablesCache = new LruCache<>(atlasProperties.getInt(HOOK_HIVE_TABLE_CACHE_SIZE, 10000), 0);
+        } else {
+            hiveTablesCache = Collections.emptyMap();
+        }
 
         knownObjects = nameCacheEnabled ? new HiveHookObjectNamesCache(nameCacheDatabaseMaxCount, nameCacheTableMaxCount, nameCacheRebuildIntervalSeconds) : null;
     }
@@ -204,6 +252,41 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return skipHiveColumnLineageHive20633InputsThreshold;
     }
 
+    public PreprocessAction getPreprocessActionForHiveTable(String qualifiedName) {
+        PreprocessAction ret = PreprocessAction.NONE;
+
+        if (qualifiedName != null && (CollectionUtils.isNotEmpty(hiveTablesToIgnore) || CollectionUtils.isNotEmpty(hiveTablesToPrune))) {
+            ret = hiveTablesCache.get(qualifiedName);
+
+            if (ret == null) {
+                if (isMatch(qualifiedName, hiveTablesToIgnore)) {
+                    ret = PreprocessAction.IGNORE;
+                } else if (isMatch(qualifiedName, hiveTablesToPrune)) {
+                    ret = PreprocessAction.PRUNE;
+                } else {
+                    ret = PreprocessAction.NONE;
+                }
+
+                hiveTablesCache.put(qualifiedName, ret);
+            }
+        }
+
+        return ret;
+    }
+
+    private boolean isMatch(String name, List<Pattern> patterns) {
+        boolean ret = false;
+
+        for (Pattern p : patterns) {
+            if (p.matcher(name).matches()) {
+                ret = true;
+
+                break;
+            }
+        }
+
+        return ret;
+    }
 
     public static class HiveHookObjectNamesCache {
         private final int         dbMaxCacheCount;
