@@ -81,28 +81,30 @@ public class CreateTable extends BaseHiveEvent {
         if (table != null) {
             AtlasEntity tblEntity = toTableEntity(table, ret);
 
-            if (isHBaseStore(table)) {
-                // This create lineage to HBase table in case of Hive on HBase
-                AtlasEntity hbaseTableEntity = toReferencedHBaseTable(table, ret);
+            if (tblEntity != null) {
+                if (isHBaseStore(table)) {
+                    // This create lineage to HBase table in case of Hive on HBase
+                    AtlasEntity hbaseTableEntity = toReferencedHBaseTable(table, ret);
 
-                if (hbaseTableEntity != null) {
-                    final AtlasEntity processEntity;
+                    if (hbaseTableEntity != null) {
+                        final AtlasEntity processEntity;
 
-                    if (TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
-                        processEntity = getHiveProcessEntity(Collections.singletonList(hbaseTableEntity), Collections.singletonList(tblEntity));
-                    } else {
-                        processEntity = getHiveProcessEntity(Collections.singletonList(tblEntity), Collections.singletonList(hbaseTableEntity));
+                        if (TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
+                            processEntity = getHiveProcessEntity(Collections.singletonList(hbaseTableEntity), Collections.singletonList(tblEntity));
+                        } else {
+                            processEntity = getHiveProcessEntity(Collections.singletonList(tblEntity), Collections.singletonList(hbaseTableEntity));
+                        }
+
+                        ret.addEntity(processEntity);
                     }
+                } else {
+                    if (TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
+                        AtlasEntity hdfsPathEntity = getPathEntity(table.getDataLocation(), ret);
+                        AtlasEntity processEntity  = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity), Collections.singletonList(tblEntity));
 
-                    ret.addEntity(processEntity);
-                }
-            } else {
-                if (TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
-                    AtlasEntity hdfsPathEntity = getPathEntity(table.getDataLocation(), ret);
-                    AtlasEntity processEntity  = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity), Collections.singletonList(tblEntity));
-
-                    ret.addEntity(processEntity);
-                    ret.addReferredEntity(hdfsPathEntity);
+                        ret.addEntity(processEntity);
+                        ret.addReferredEntity(hdfsPathEntity);
+                    }
                 }
             }
         }
