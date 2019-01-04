@@ -1221,8 +1221,8 @@ public class EntityGraphRetriever {
         AtlasVertex end1Vertex = edge.getOutVertex();
         AtlasVertex end2Vertex = edge.getInVertex();
 
-        relationship.setEnd1(new AtlasObjectId(getGuid(end1Vertex), getTypeName(end1Vertex)));
-        relationship.setEnd2(new AtlasObjectId(getGuid(end2Vertex), getTypeName(end2Vertex)));
+        relationship.setEnd1(new AtlasObjectId(getGuid(end1Vertex), getTypeName(end1Vertex), getEntityUniqueAttribute(end1Vertex)));
+        relationship.setEnd2(new AtlasObjectId(getGuid(end2Vertex), getTypeName(end2Vertex), getEntityUniqueAttribute(end2Vertex)));
 
         relationship.setLabel(edge.getLabel());
         relationship.setPropagateTags(getPropagateTags(edge));

@@ -31,8 +31,10 @@ import org.apache.atlas.model.instance.AtlasEntity;
 
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -110,6 +112,24 @@ public class AtlasEntityChangeNotifier {
         notifyListeners(deletedEntities, EntityOperation.DELETE, isImport);
 
         notifyPropagatedEntities();
+    }
+
+    public void notifyRelationshipMutation(AtlasRelationship relationship, EntityNotification.EntityNotificationV2.OperationType operationType) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(entityChangeListeners) || instanceConverter == null) {
+            return;
+        }
+
+        switch (operationType) {
+            case RELATIONSHIP_CREATE:
+                notifyRelationshipListeners(Collections.singletonList(relationship), EntityOperation.CREATE, false);
+                break;
+            case RELATIONSHIP_UPDATE:
+                notifyRelationshipListeners(Collections.singletonList(relationship), EntityOperation.UPDATE, false);
+                break;
+            case RELATIONSHIP_DELETE:
+                notifyRelationshipListeners(Collections.singletonList(relationship), EntityOperation.DELETE, false);
+                break;
+        }
     }
 
     public void onClassificationAddedToEntity(AtlasEntity entity, List<AtlasClassification> addedClassifications) throws AtlasBaseException {
@@ -284,6 +304,20 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    private void notifyRelationshipListeners(List<AtlasRelationship> relationships, EntityOperation operation, boolean isImport) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(relationships)) {
+            return;
+        }
+
+        if (isV2EntityNotificationEnabled) {
+            notifyV2RelationshipListeners(relationships, operation, isImport);
+            return;
+        }
+
+        LOG.warn("Relationships not supported by v1 notifications. {}", relationships);
+    }
+
+
     private void notifyV1Listeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation, boolean isImport) throws AtlasBaseException {
         List<Referenceable> typedRefInsts = toReferenceables(entityHeaders, operation);
 
@@ -315,12 +349,32 @@ public class AtlasEntityChangeNotifier {
                 case CREATE:
                     listener.onEntitiesAdded(entities, isImport);
                     break;
+
                 case UPDATE:
                 case PARTIAL_UPDATE:
                     listener.onEntitiesUpdated(entities, isImport);
                     break;
+
                 case DELETE:
                     listener.onEntitiesDeleted(entities, isImport);
+                    break;
+            }
+        }
+    }
+
+    private void notifyV2RelationshipListeners(List<AtlasRelationship> relationships, EntityOperation operation, boolean isImport) throws AtlasBaseException {
+
+        for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+            switch (operation) {
+                case CREATE:
+                    listener.onRelationshipsAdded(relationships, isImport);
+                    break;
+                case UPDATE:
+                case PARTIAL_UPDATE:
+                    listener.onRelationshipsUpdated(relationships, isImport);
+                    break;
+                case DELETE:
+                    listener.onRelationshipsDeleted(relationships, isImport);
                     break;
             }
         }

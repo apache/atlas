@@ -23,6 +23,7 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
 
 import java.util.List;
 
@@ -96,4 +97,28 @@ public interface EntityChangeListenerV2 {
      * @param entities list of entities to which the term is assigned
      */
     void onTermDeleted(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException;
+
+    /**
+     * This is upon adding new relationships to the repository.
+     *
+     * @param relationships the created relationships
+     * @param isImport
+     */
+    void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException;
+
+    /**
+     * This is upon updating an relationships.
+     *
+     * @param relationships the updated relationships
+     * @param isImport
+     */
+    void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException;
+
+    /**
+     * This is upon deleting relationships from the repository.
+     *
+     * @param relationships the deleted relationships
+     * @param isImport
+     */
+    void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException;
 }

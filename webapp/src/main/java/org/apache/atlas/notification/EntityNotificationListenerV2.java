@@ -26,6 +26,8 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -48,8 +50,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.CLASSIFICATION_ADD;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.CLASSIFICATION_DELETE;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.CLASSIFICATION_UPDATE;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.ENTITY_CREATE;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.ENTITY_DELETE;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.ENTITY_UPDATE;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_CREATE;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_DELETE;
+import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.RELATIONSHIP_UPDATE;
 import static org.apache.atlas.repository.graph.GraphHelper.isInternalType;
-import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.*;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.CREATE_TIME;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.DESCRIPTION;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.NAME;
@@ -120,7 +130,6 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
     private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
-
         List<EntityNotificationV2> messages = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
@@ -131,6 +140,27 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
             messages.add(new EntityNotificationV2(toNotificationHeader(entity), operationType, RequestContext.get().getRequestTime()));
         }
 
+        sendNotifications(operationType, messages);
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+    private void notifyRelationshipEvents(List<AtlasRelationship> relationships, OperationType operationType) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
+        List<EntityNotificationV2> messages = new ArrayList<>();
+
+        for (AtlasRelationship relationship : relationships) {
+            if (isInternalType(relationship.getTypeName())) {
+                continue;
+            }
+
+            messages.add(new EntityNotificationV2(toNotificationHeader(relationship), operationType, RequestContext.get().getRequestTime()));
+        }
+
+        sendNotifications(operationType, messages);
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+    private void sendNotifications(OperationType operationType, List<EntityNotificationV2> messages) throws AtlasBaseException {
         if (!messages.isEmpty()) {
             try {
                 notificationSender.send(messages);
@@ -138,8 +168,6 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                 throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
             }
         }
-
-        RequestContext.get().endMetricRecord(metric);
     }
 
     private AtlasEntityHeader toNotificationHeader(AtlasEntity entity) {
@@ -186,6 +214,10 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
+    }
+
+    private AtlasRelationshipHeader toNotificationHeader(AtlasRelationship relationship) {
+        return new AtlasRelationshipHeader(relationship);
     }
 
     private void setAttribute(AtlasEntityHeader entity, String attrName, Object attrValue) {
@@ -236,5 +268,20 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
+    }
+
+    @Override
+    public void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        notifyRelationshipEvents(relationships, RELATIONSHIP_CREATE);
+    }
+
+    @Override
+    public void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        notifyRelationshipEvents(relationships, RELATIONSHIP_UPDATE);
+    }
+
+    @Override
+    public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        notifyRelationshipEvents(relationships, RELATIONSHIP_DELETE);
     }
 }

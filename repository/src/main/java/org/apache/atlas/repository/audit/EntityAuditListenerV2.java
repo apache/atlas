@@ -27,6 +27,7 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -461,5 +462,26 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
+    }
+
+    @Override
+    public void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("New relationship(s) added to repository(" + relationships.size() + ")");
+        }
+    }
+
+    @Override
+    public void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Relationship(s) updated(" + relationships.size() + ")");
+        }
+    }
+
+    @Override
+    public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Relationship(s) deleted from repository(" + relationships.size() + ")");
+        }
     }
 }

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -100,15 +101,21 @@ public class EntityNotification implements Serializable {
 
         public enum OperationType {
             ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE,
-            CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE
+            CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE,
+            RELATIONSHIP_CREATE, RELATIONSHIP_UPDATE, RELATIONSHIP_DELETE
         }
 
         private AtlasEntityHeader entity;
+        private AtlasRelationshipHeader relationship;
         private OperationType     operationType;
         private long              eventTime;
 
         public EntityNotificationV2() {
-            this(null, null, System.currentTimeMillis());
+            super(ENTITY_NOTIFICATION_V2);
+
+            setEntity(null);
+            setOperationType(null);
+            setEventTime(System.currentTimeMillis());
         }
 
         public EntityNotificationV2(AtlasEntityHeader entity, OperationType operationType) {
@@ -123,12 +130,28 @@ public class EntityNotification implements Serializable {
             setEventTime(eventTime);
         }
 
+        public EntityNotificationV2(AtlasRelationshipHeader relationship, OperationType operationType, long eventTime) {
+            super(ENTITY_NOTIFICATION_V2);
+
+            setRelationship(relationship);
+            setOperationType(operationType);
+            setEventTime(eventTime);
+        }
+
         public AtlasEntityHeader getEntity() {
             return entity;
         }
 
         public void setEntity(AtlasEntityHeader entity) {
             this.entity = entity;
+        }
+
+        public AtlasRelationshipHeader getRelationship() {
+            return relationship;
+        }
+
+        public void setRelationship(AtlasRelationshipHeader relationship) {
+            this.relationship = relationship;
         }
 
         public OperationType getOperationType() {
