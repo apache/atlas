@@ -77,7 +77,8 @@ define(['require',
                     entityCreate: Globals.entityCreate,
                     searchType: this.searchType,
                     taxonomy: Globals.taxonomy,
-                    fromView: this.fromView
+                    fromView: this.fromView,
+                    isSearchTab: Utils.getUrlState.isSearchTab()
                 };
             },
             /** ui events hash */
