@@ -53,7 +53,8 @@
                 </div>
             </div>
             <div id="r_searchResultTableLayoutView">
-                <h1><b>{{searchType}}</b></h1> {{#if entityCreate}}
+                {{#if isSearchTab}}<h1><b>{{searchType}}</b></h1>{{/if}}
+                {{#if entityCreate}}
                 <div class="entityLink" style="display:none">
                     <p class="entityLink">Search Atlas for existing entities or
                         <a href="javascript:void(0)" data-id='createEntity'> create new entity </a>
