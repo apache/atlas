@@ -40,6 +40,10 @@ import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
+import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
+import org.apache.atlas.notification.preprocessor.PreprocessorContext;
+import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
+import org.apache.atlas.utils.LruCache;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
@@ -56,6 +60,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.atlas.web.filters.AuditFilter.AuditLog;
 import org.apache.atlas.web.service.ServiceState;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.common.TopicPartition;
@@ -70,13 +75,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 /**
  * Consumer of notifications from hooks e.g., hive hook etc.
@@ -109,21 +117,28 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     public static final String CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633                  = "atlas.notification.consumer.skip.hive_column_lineage.hive-20633";
     public static final String CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD = "atlas.notification.consumer.skip.hive_column_lineage.hive-20633.inputs.threshold";
+    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN                 = "atlas.notification.consumer.preprocess.hive_table.ignore.pattern";
+    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN                  = "atlas.notification.consumer.preprocess.hive_table.prune.pattern";
+    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_CACHE_SIZE                     = "atlas.notification.consumer.preprocess.hive_table.cache.size";
 
     public static final int SERVER_READY_WAIT_TIME_MS = 1000;
 
-    private final AtlasEntityStore       atlasEntityStore;
-    private final ServiceState           serviceState;
-    private final AtlasInstanceConverter instanceConverter;
-    private final AtlasTypeRegistry      typeRegistry;
-    private final int                    maxRetries;
-    private final int                    failedMsgCacheSize;
-    private final int                    minWaitDuration;
-    private final int                    maxWaitDuration;
-    private final boolean                skipHiveColumnLineageHive20633;
-    private final int                    skipHiveColumnLineageHive20633InputsThreshold;
-    private final int                    largeMessageProcessingTimeThresholdMs;
-    private final boolean                consumerDisabled;
+    private final AtlasEntityStore              atlasEntityStore;
+    private final ServiceState                  serviceState;
+    private final AtlasInstanceConverter        instanceConverter;
+    private final AtlasTypeRegistry             typeRegistry;
+    private final int                           maxRetries;
+    private final int                           failedMsgCacheSize;
+    private final int                           minWaitDuration;
+    private final int                           maxWaitDuration;
+    private final boolean                       skipHiveColumnLineageHive20633;
+    private final int                           skipHiveColumnLineageHive20633InputsThreshold;
+    private final int                           largeMessageProcessingTimeThresholdMs;
+    private final boolean                       consumerDisabled;
+    private final List<Pattern>                 hiveTablesToIgnore = new ArrayList<>();
+    private final List<Pattern>                 hiveTablesToPrune  = new ArrayList<>();
+    private final Map<String, PreprocessAction> hiveTablesCache;
+    private final boolean                       preprocessEnabled;
 
     private NotificationInterface notificationInterface;
     private ExecutorService       executors;
@@ -156,6 +171,43 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         skipHiveColumnLineageHive20633InputsThreshold = applicationProperties.getInt(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
         consumerDisabled 							  = applicationProperties.getBoolean(CONSUMER_DISABLED, false);
         largeMessageProcessingTimeThresholdMs         = applicationProperties.getInt("atlas.notification.consumer.large.message.processing.time.threshold.ms", 60 * 1000);  //  60 sec by default
+
+        String[] patternHiveTablesToIgnore = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN);
+        String[] patternHiveTablesToPrune  = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN);
+
+        if (patternHiveTablesToIgnore != null) {
+            for (String pattern : patternHiveTablesToIgnore) {
+                try {
+                    hiveTablesToIgnore.add(Pattern.compile(pattern));
+
+                    LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN, pattern);
+                } catch (Throwable t) {
+                    LOG.warn("failed to compile pattern {}", pattern, t);
+                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN, pattern);
+                }
+            }
+        }
+
+        if (patternHiveTablesToPrune != null) {
+            for (String pattern : patternHiveTablesToPrune) {
+                try {
+                    hiveTablesToPrune.add(Pattern.compile(pattern));
+
+                    LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN, pattern);
+                } catch (Throwable t) {
+                    LOG.warn("failed to compile pattern {}", pattern, t);
+                    LOG.warn("Ignoring invalid pattern in configuration {}: {}", CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN, pattern);
+                }
+            }
+        }
+
+        if (!hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty()) {
+            hiveTablesCache = new LruCache<>(applicationProperties.getInt(CONSUMER_PREPROCESS_HIVE_TABLE_CACHE_SIZE, 10000), 0);
+        } else {
+            hiveTablesCache = Collections.emptyMap();
+        }
+
+        preprocessEnabled = !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || skipHiveColumnLineageHive20633;
 
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
@@ -405,6 +457,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 }
 
                 preProcessNotificationMessage(kafkaMsg);
+
+                if (isEmptyMessage(kafkaMsg)) {
+                    commit(kafkaMsg);
+                    return;
+                }
 
                 // Used for intermediate conversions during create and update
                 for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
@@ -685,39 +742,85 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     }
 
     private void preProcessNotificationMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
-        skipHiveColumnLineage(kafkaMsg);
-    }
-
-    private void skipHiveColumnLineage(AtlasKafkaMessage<HookNotification> kafkaMessage) {
-        if (!skipHiveColumnLineageHive20633) {
+        if (!preprocessEnabled) {
             return;
         }
 
-        final HookNotification         message = kafkaMessage.getMessage();
-        final AtlasEntitiesWithExtInfo entities;
+        PreprocessorContext context = new PreprocessorContext(kafkaMsg, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache);
 
-        switch (message.getType()) {
-            case ENTITY_CREATE_V2:
-                entities = ((EntityCreateRequestV2) message).getEntities();
-            break;
-
-            case ENTITY_FULL_UPDATE_V2:
-                entities = ((EntityUpdateRequestV2) message).getEntities();
-                break;
-
-            default:
-                entities = null;
-            break;
+        if (!hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty()) {
+            ignoreOrPruneHiveTables(context);
         }
 
-        if (entities != null && entities.getEntities() != null) {
+        if (skipHiveColumnLineageHive20633) {
+            skipHiveColumnLineage(context);
+        }
+    }
+
+    private void ignoreOrPruneHiveTables(PreprocessorContext context) {
+        List<AtlasEntity> entities = context.getEntities();
+
+        if (entities != null) {
+            for (ListIterator<AtlasEntity> iter = entities.listIterator(); iter.hasNext(); ) {
+                AtlasEntity        entity       = iter.next();
+                EntityPreprocessor preprocessor = EntityPreprocessor.getPreprocessor(entity.getTypeName());
+
+                if (preprocessor != null) {
+                    preprocessor.preprocess(entity, context);
+
+                    if (context.isIgnoredEntity(entity.getGuid())) {
+                        iter.remove();
+                    }
+                }
+            }
+
+            Map<String, AtlasEntity> referredEntities = context.getReferredEntities();
+
+            if (referredEntities != null) {
+                for (Iterator<Map.Entry<String, AtlasEntity>> iter = referredEntities.entrySet().iterator(); iter.hasNext(); ) {
+                    AtlasEntity        entity       = iter.next().getValue();
+                    EntityPreprocessor preprocessor = EntityPreprocessor.getPreprocessor(entity.getTypeName());
+
+                    if (preprocessor != null) {
+                        preprocessor.preprocess(entity, context);
+
+                        if (context.isIgnoredEntity(entity.getGuid())) {
+                            iter.remove();
+                        }
+                    }
+                }
+
+                for (String guid : context.getReferredEntitiesToMove()) {
+                    AtlasEntity entity = referredEntities.remove(guid);
+
+                    if (entity != null) {
+                        entities.add(entity);
+
+                        LOG.info("moved referred entity: typeName={}, qualifiedName={}. topic-offset={}, partition={}", entity.getTypeName(), EntityPreprocessor.getQualifiedName(entity), context.getKafkaMessageOffset(), context.getKafkaPartition());
+                    }
+                }
+            }
+
+            int ignoredEntities = context.getIgnoredEntities().size();
+            int prunedEntities  = context.getPrunedEntities().size();
+
+            if (ignoredEntities > 0 || prunedEntities > 0) {
+                LOG.info("preprocess: ignored entities={}; pruned entities={}. topic-offset={}, partition={}", ignoredEntities, prunedEntities, context.getKafkaMessageOffset(), context.getKafkaPartition());
+            }
+        }
+    }
+
+    private void skipHiveColumnLineage(PreprocessorContext context) {
+        List<AtlasEntity> entities = context.getEntities();
+
+        if (entities != null) {
             int         lineageCount       = 0;
             int         lineageInputsCount = 0;
             int         numRemovedEntities = 0;
             Set<String> lineageQNames      = new HashSet<>();
 
             // find if all hive_column_lineage entities have same number of inputs, which is likely to be caused by HIVE-20633 that results in incorrect lineage in some cases
-            for (ListIterator<AtlasEntity> iter = entities.getEntities().listIterator(); iter.hasNext(); ) {
+            for (ListIterator<AtlasEntity> iter = entities.listIterator(); iter.hasNext(); ) {
                 AtlasEntity entity = iter.next();
 
                 if (StringUtils.equals(entity.getTypeName(), TYPE_HIVE_COLUMN_LINEAGE)) {
@@ -729,7 +832,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         if (lineageQNames.contains(qualifiedName)) {
                             iter.remove();
 
-                            LOG.warn("removed duplicate hive_column_lineage entity: qualifiedName={}. topic-offset={}, partition={}", qualifiedName, lineageInputsCount, kafkaMessage.getOffset(), kafkaMessage.getPartition());
+                            LOG.warn("removed duplicate hive_column_lineage entity: qualifiedName={}. topic-offset={}, partition={}", qualifiedName, lineageInputsCount, context.getKafkaMessageOffset(), context.getKafkaPartition());
 
                             numRemovedEntities++;
 
@@ -754,7 +857,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             float avgInputsCount = lineageCount > 0 ? (((float) lineageInputsCount) / lineageCount) : 0;
 
             if (avgInputsCount > skipHiveColumnLineageHive20633InputsThreshold) {
-                for (ListIterator<AtlasEntity> iter = entities.getEntities().listIterator(); iter.hasNext(); ) {
+                for (ListIterator<AtlasEntity> iter = entities.listIterator(); iter.hasNext(); ) {
                     AtlasEntity entity = iter.next();
 
                     if (StringUtils.equals(entity.getTypeName(), TYPE_HIVE_COLUMN_LINEAGE)) {
@@ -766,9 +869,36 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             }
 
             if (numRemovedEntities > 0) {
-                LOG.warn("removed {} hive_column_lineage entities. Average # of inputs={}, threshold={}, total # of inputs={}. topic-offset={}, partition={}", numRemovedEntities, avgInputsCount, skipHiveColumnLineageHive20633InputsThreshold, lineageInputsCount, kafkaMessage.getOffset(), kafkaMessage.getPartition());
+                LOG.warn("removed {} hive_column_lineage entities. Average # of inputs={}, threshold={}, total # of inputs={}. topic-offset={}, partition={}", numRemovedEntities, avgInputsCount, skipHiveColumnLineageHive20633InputsThreshold, lineageInputsCount, context.getKafkaMessageOffset(), context.getKafkaPartition());
             }
         }
+    }
+
+    private boolean isEmptyMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
+        final boolean          ret;
+        final HookNotification message = kafkaMsg.getMessage();
+
+        switch (message.getType()) {
+            case ENTITY_CREATE_V2: {
+                AtlasEntitiesWithExtInfo entities = ((EntityCreateRequestV2) message).getEntities();
+
+                ret = entities == null || CollectionUtils.isEmpty(entities.getEntities());
+            }
+            break;
+
+            case ENTITY_FULL_UPDATE_V2: {
+                AtlasEntitiesWithExtInfo entities = ((EntityUpdateRequestV2) message).getEntities();
+
+                ret = entities == null || CollectionUtils.isEmpty(entities.getEntities());
+            }
+            break;
+
+            default:
+                ret = false;
+                break;
+        }
+
+        return ret;
     }
 
     static class FailedCommitOffsetRecorder {
