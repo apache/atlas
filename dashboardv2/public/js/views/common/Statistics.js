@@ -69,7 +69,7 @@ define(['require',
                         var data = _.first(data.toJSON()),
                             no_records = '<tr class="empty text-center"><td colspan="2"><span>No records found!</span></td></tr>',
                             activeEntityTable = _.isEmpty(data.entity.entityActive) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityActive }),
-                            deleteEntityTable = _.isEmpty(data.entity.entityDelete) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityDelete });
+                            deleteEntityTable = _.isEmpty(data.entity.entityDeleted) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityDeleted });
                         that.ui.entityActive.html(activeEntityTable);
                         that.ui.entityDelete.html(deleteEntityTable);
                     }
