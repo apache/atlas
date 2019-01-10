@@ -204,6 +204,9 @@ define(['require',
                 var that = this;
 
                 function isProcess(typeName) {
+                    if (typeName == "Process") {
+                        return true;
+                    }
                     var entityDef = that.entityDefCollection.fullCollection.find({ name: typeName });
                     return _.contains(Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: that.entityDefCollection }), "Process")
                 }
