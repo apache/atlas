@@ -76,8 +76,8 @@ define([
             $('body').on('click', 'a.show-stat', function() {
                 require([
                     'views/common/Statistics',
-                ], function(AboutAtlas) {
-                    new AboutAtlas();
+                ], function(Statistics) {
+                    new Statistics();
                 });
             });
             $('body').on('click', 'li.aboutAtlas', function() {

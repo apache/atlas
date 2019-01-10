@@ -35,8 +35,10 @@ define(['require',
             regions: {},
             /** ui selector cache */
             ui: {
-                entityActive: "[data-id='entityActive']",
-                entityDelete: "[data-id='entityDelete']"
+                entityActive: "[data-id='entityActive'] tbody",
+                entityDelete: "[data-id='entityDelete'] tbody",
+                entityActiveHeader: "[data-id='entityActive'] .count",
+                entityDeletedHeader: "[data-id='entityDelete'] .count"
             },
             /** ui events hash */
             events: function() {},
@@ -51,7 +53,7 @@ define(['require',
                     content: this,
                     okCloses: true,
                     showFooter: true,
-                    allowCancel: false,
+                    allowCancel: false
                 }).open();
 
                 modal.on('closeModal', function() {
@@ -70,12 +72,23 @@ define(['require',
                             no_records = '<tr class="empty text-center"><td colspan="2"><span>No records found!</span></td></tr>',
                             activeEntityTable = _.isEmpty(data.entity.entityActive) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityActive }),
                             deleteEntityTable = _.isEmpty(data.entity.entityDeleted) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityDeleted });
+                        var totalActive = 0,
+                            totalDeleted = 0;
+                        if (data.entity && data.general.entityCount) {
+                            totalActive = data.general.entityCount;
+                        }
+                        if (data.entity && data.entity.entityDeleted) {
+                            _.each(data.entity.entityDeleted, function(val) {
+                                totalDeleted += val;
+                            });
+                        }
                         that.ui.entityActive.html(activeEntityTable);
                         that.ui.entityDelete.html(deleteEntityTable);
+                        that.ui.entityActiveHeader.html("&nbsp;(" + (totalActive - totalDeleted) + ")");
+                        that.ui.entityDeletedHeader.html("&nbsp;(" + totalDeleted + ")");
                     }
                 });
-            },
-
+            }
         });
     return StatisticsView;
 });
