@@ -626,6 +626,14 @@ define(['require',
             gotoPagebtn: function(e) {
                 var that = this;
                 var goToPage = parseInt(this.ui.gotoPage.val());
+                if (!_.isNaN(goToPage) && ((goToPage == 0) || (this.collection.state.totalPages < goToPage))) {
+                    Utils.notifyInfo({
+                        content: Messages.search.noRecordForPage + "page " + goToPage
+                    });
+                    this.ui.gotoPage.val('')
+                    that.ui.gotoPagebtn.attr('disabled', true);
+                    return;
+                }
                 if (!(_.isNaN(goToPage) || goToPage <= -1)) {
                     if (this.collection.mode == "client") {
                         return this.collection.getPage((goToPage - 1), {
