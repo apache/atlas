@@ -16,22 +16,16 @@
  * limitations under the License.
  */
 
-@import "__mixin.scss";
-@import "__variable.scss";
-@import "common.scss";
-@import "table.scss";
-@import "tab.scss";
-@import "form.scss";
-@import "nav.scss";
-@import "panel.scss";
-@import "loader.scss";
-@import "graph.scss";
-@import "relationship.scss";
-@import "old-style.scss";
-@import "theme.scss";
-@import "tag.scss";
-@import "search.scss";
-@import "profile-table.scss";
-@import "glossary.scss";
-@import "wizard.scss";
-@import "override.scss";
+.stat-table {
+
+    tbody,
+    thead {
+        >tr {
+
+            td:nth-child(2),
+            th:nth-child(2) {
+                text-align: right;
+            }
+        }
+    }
+}
