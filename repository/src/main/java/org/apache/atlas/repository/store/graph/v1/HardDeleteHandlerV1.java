@@ -40,7 +40,7 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
     @Override
     protected void _deleteVertex(AtlasVertex instanceVertex, boolean force) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> SoftDeleteHandlerV1._deleteVertex({}, {})", GraphHelper.string(instanceVertex), force);
+            LOG.debug("==> HardDeleteHandlerV1._deleteVertex({}, {})", GraphHelper.string(instanceVertex), force);
         }
 
         graphHelper.removeVertex(instanceVertex);
