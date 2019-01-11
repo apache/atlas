@@ -203,24 +203,31 @@ define(['require',
             generateData: function(relations, guidEntityMap) {
                 var that = this;
 
-                function isProcess(typeName) {
-                    if (typeName == "Process") {
+                function isProcess(node) {
+                    if (_.isUndefined(node) || node.typeName == "Process") {
                         return true;
                     }
-                    var entityDef = that.entityDefCollection.fullCollection.find({ name: typeName });
+                    var entityDef = that.entityDefCollection.fullCollection.find({ name: node.typeName });
                     return _.contains(Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: that.entityDefCollection }), "Process")
                 }
 
-                function isDeleted(status) {
-                    return Enums.entityStateReadOnly[status];
+                function isDeleted(node) {
+                    if (_.isUndefined(node)) {
+                        return
+                    }
+                    return Enums.entityStateReadOnly[node.status];
                 }
 
                 function isNodeToBeUpdated(node) {
-                    if (that.filterObj.isProcessHideCheck) {
-                        return isProcess(node.typeName);
-                    } else if (that.filterObj.isDeletedEntityHideCheck) {
-                        return isDeleted(node.status);
-                    }
+                    var isProcessHideCheck = that.filterObj.isProcessHideCheck,
+                        isDeletedEntityHideCheck = that.filterObj.isDeletedEntityHideCheck
+                    var returnObj = {
+                        isProcess: (isProcessHideCheck && isProcess(node)),
+                        isDeleted: (isDeletedEntityHideCheck && isDeleted(node))
+
+                    };
+                    returnObj["update"] = returnObj.isProcess || returnObj.isDeleted;
+                    return returnObj;
                 }
 
                 function getServiceType(typeName) {
@@ -250,7 +257,7 @@ define(['require',
                     if (that.filterObj.isProcessHideCheck) {
                         obj['isProcess'] = relationObj.isProcess;
                     } else {
-                        obj['isProcess'] = isProcess(relationObj.typeName);
+                        obj['isProcess'] = isProcess(relationObj);
                     }
 
                     return obj;
@@ -263,26 +270,32 @@ define(['require',
                     _.each(relations, function(obj, index, relationArr) {
                         var toNodeToBeUpdated = isNodeToBeUpdated(guidEntityMap[obj.toEntityId]);
                         var fromNodeToBeUpdated = isNodeToBeUpdated(guidEntityMap[obj.fromEntityId]);
-                        if (toNodeToBeUpdated) {
+                        if (toNodeToBeUpdated.update) {
                             if (that.filterObj.isProcessHideCheck) {
                                 //We have already checked entity is process or not inside isNodeToBeUpdated();
                                 guidEntityMap[obj.toEntityId]["isProcess"] = true;
                             }
                             _.filter(relationArr, function(flrObj) {
                                 if (flrObj.fromEntityId === obj.toEntityId) {
+                                    if (that.filterObj.isDeletedEntityHideCheck && isDeleted(guidEntityMap[flrObj.toEntityId])) {
+                                        return;
+                                    }
                                     newRelations.push({
                                         fromEntityId: obj.fromEntityId,
                                         toEntityId: flrObj.toEntityId
                                     });
                                 }
                             })
-                        } else if (fromNodeToBeUpdated) {
+                        } else if (fromNodeToBeUpdated.update) {
                             if (that.filterObj.isProcessHideCheck) {
                                 //We have already checked entity is process or not inside isNodeToBeUpdated();
                                 guidEntityMap[obj.fromEntityId]["isProcess"] = true;
                             }
 
                             _.filter(relationArr, function(flrObj) {
+                                if (that.filterObj.isDeletedEntityHideCheck && isDeleted(guidEntityMap[flrObj.fromEntityId])) {
+                                    return;
+                                }
                                 if (flrObj.toEntityId === obj.fromEntityId) {
                                     newRelations.push({
                                         fromEntityId: flrObj.fromEntityId,
@@ -313,6 +326,12 @@ define(['require',
                     }
                     that.g.setEdge(obj.fromEntityId, obj.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + ";stroke-width:" + styleObj.width + "", 'styleObj': styleObj });
                 });
+                //if no relations found
+                if (!finalRelations.length) {
+                    this.$('svg').html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No relations to display</text>');
+                } else {
+                    this.$('svg').html('<text></text>');
+                }
 
                 if (this.fromToObj[this.guid]) {
                     this.fromToObj[this.guid]['isLineage'] = false;
