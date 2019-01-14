@@ -3,8 +3,8 @@
     {
       "action": "UPDATE_TYPEDEF_OPTIONS",
       "typeName": "rdbms_column",
-      "applyToVersion": "1.0",
-      "updateToVersion": "1.1",
+      "applyToVersion": "1.1",
+      "updateToVersion": "1.2",
       "typeDefOptions": {
         "schemaAttributes": "[\"name\", \"description\", \"owner\", \"data_type\", \"comment\", \" isPrimaryKey\", \" isNullable\"]"
       }
@@ -12,8 +12,8 @@
     {
       "action": "UPDATE_TYPEDEF_OPTIONS",
       "typeName": "rdbms_table",
-      "applyToVersion": "1.0",
-      "updateToVersion": "1.1",
+      "applyToVersion": "1.1",
+      "updateToVersion": "1.2",
       "typeDefOptions": {
         "schemaElementsAttribute": "columns"
       }
