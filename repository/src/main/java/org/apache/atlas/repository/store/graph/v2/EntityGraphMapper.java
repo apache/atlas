@@ -705,6 +705,16 @@ public class EntityGraphMapper {
 
         AtlasGraphUtilsV2.setEncodedProperty(ctx.getReferringVertex(), ctx.getVertexProperty(), ret);
 
+        String uniqPropName = ctx.getAttribute() != null ? ctx.getAttribute().getVertexUniquePropertyName() : null;
+
+        if (uniqPropName != null) {
+            if (AtlasGraphUtilsV2.getState(ctx.getReferringVertex()) == DELETED) {
+                ctx.getReferringVertex().removeProperty(uniqPropName);
+            } else {
+                AtlasGraphUtilsV2.setEncodedProperty(ctx.getReferringVertex(), uniqPropName, ret);
+            }
+        }
+
         return ret;
     }
 
