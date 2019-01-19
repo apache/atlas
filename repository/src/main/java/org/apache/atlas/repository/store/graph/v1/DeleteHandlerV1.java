@@ -794,6 +794,12 @@ public abstract class DeleteHandlerV1 {
                             }
                         }
                      break;
+
+                    case PRIMITIVE:
+                        if (attributeInfo.getVertexUniquePropertyName() != null) {
+                            instanceVertex.removeProperty(attributeInfo.getVertexUniquePropertyName());
+                        }
+                    break;
                 }
             }
         }

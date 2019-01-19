@@ -72,6 +72,7 @@ public class AtlasGraphUtilsV2 {
     public static final String VERTEX_TYPE                 = "typeSystem";
 
     private static boolean USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = false;
+    private static boolean USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY            = false;
     private static String  INDEX_SEARCH_PREFIX;
 
     static {
@@ -79,6 +80,7 @@ public class AtlasGraphUtilsV2 {
             Configuration conf = ApplicationProperties.get();
 
             USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = conf.getBoolean("atlas.use.index.query.to.find.entity.by.unique.attributes", USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES);
+            USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY            = conf.getBoolean("atlas.unique.index.property.to.find.entity", USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY);
             INDEX_SEARCH_PREFIX                                 = conf.getString(INDEX_SEARCH_VERTEX_PREFIX_PROPERTY, INDEX_SEARCH_VERTEX_PREFIX_DEFAULT);
         } catch (Exception excp) {
             LOG.error("Error reading configuration", excp);
@@ -287,12 +289,22 @@ public class AtlasGraphUtilsV2 {
                 if (canUseIndexQuery(entityType, attribute.getName())) {
                     vertex = AtlasGraphUtilsV2.getAtlasVertexFromIndexQuery(entityType, attribute, attrValue);
                 } else {
-                    vertex = AtlasGraphUtilsV2.findByTypeAndPropertyName(entityType.getTypeName(), attribute.getVertexPropertyName(), attrValue);
+                    if (USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY && attribute.getVertexUniquePropertyName() != null) {
+                        vertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(entityType.getTypeName(), attribute.getVertexUniquePropertyName(), attrValue);
 
-                    // if no instance of given typeName is found, try to find an instance of type's sub-type
-                    if (vertex == null && !entityType.getAllSubTypes().isEmpty()) {
-                        vertex = AtlasGraphUtilsV2.findBySuperTypeAndPropertyName(entityType.getTypeName(), attribute.getVertexPropertyName(), attrValue);
+                        // if no instance of given typeName is found, try to find an instance of type's sub-type
+                        if (vertex == null && !entityType.getAllSubTypes().isEmpty()) {
+                            vertex = AtlasGraphUtilsV2.findBySuperTypeAndUniquePropertyName(entityType.getTypeName(), attribute.getVertexUniquePropertyName(), attrValue);
+                        }
+                    } else {
+                        vertex = AtlasGraphUtilsV2.findByTypeAndPropertyName(entityType.getTypeName(), attribute.getVertexPropertyName(), attrValue);
+
+                        // if no instance of given typeName is found, try to find an instance of type's sub-type
+                        if (vertex == null && !entityType.getAllSubTypes().isEmpty()) {
+                            vertex = AtlasGraphUtilsV2.findBySuperTypeAndPropertyName(entityType.getTypeName(), attribute.getVertexPropertyName(), attrValue);
+                        }
                     }
+
                 }
 
                 if (vertex != null) {
@@ -348,6 +360,38 @@ public class AtlasGraphUtilsV2 {
         }
 
         return hasInstanceVertex;
+    }
+
+    public static AtlasVertex findByTypeAndUniquePropertyName(String typeName, String propertyName, Object attrVal) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("findByTypeAndUniquePropertyName");
+
+        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
+                                                    .has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName)
+                                                    .has(propertyName, attrVal);
+
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+
+        AtlasVertex vertex = results.hasNext() ? results.next() : null;
+
+        RequestContext.get().endMetricRecord(metric);
+
+        return vertex;
+    }
+
+    public static AtlasVertex findBySuperTypeAndUniquePropertyName(String typeName, String propertyName, Object attrVal) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("findBySuperTypeAndUniquePropertyName");
+
+        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
+                                                    .has(Constants.SUPER_TYPES_PROPERTY_KEY, typeName)
+                                                    .has(propertyName, attrVal);
+
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+
+        AtlasVertex vertex = results.hasNext() ? results.next() : null;
+
+        RequestContext.get().endMetricRecord(metric);
+
+        return vertex;
     }
 
     public static AtlasVertex findByTypeAndPropertyName(String typeName, String propertyName, Object attrVal) {
