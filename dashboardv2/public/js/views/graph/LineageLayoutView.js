@@ -51,7 +51,9 @@ define(['require',
                 selectDepth: 'select[data-id="selectDepth"]',
                 fltrTogler: '[data-id="fltr-togler"]',
                 lineageFilterPanel: '.lineage-fltr-panel',
-                LineageFullscreenToggler: '[data-id="fullScreen-toggler"]'
+                LineageFullscreenToggler: '[data-id="fullScreen-toggler"]',
+                lineageDetailClose: '[data-id="close"]',
+                nodeEntityList: '[data-id="entityList"]'
             },
 
             /** ui events hash */
@@ -62,6 +64,9 @@ define(['require',
                 events['change ' + this.ui.selectDepth] = 'onSelectDepthChange';
                 events["click " + this.ui.fltrTogler] = 'onClickFiltrTogler';
                 events["click " + this.ui.LineageFullscreenToggler] = 'onClickLineageFullscreenToggler';
+                events["click " + this.ui.lineageDetailClose] = function() {
+                    this.toggleLineageInfomationSlider({ close: true });
+                };
                 return events;
             },
 
@@ -133,7 +138,7 @@ define(['require',
                 });
             },
             onClickLineageFullscreenToggler: function(e) {
-                var icon = $(e.target).find('i'),
+                var icon = $(e.currentTarget).find('i'),
                     panel = $(e.target).parents('.tab-pane').first();
                 icon.toggleClass('fa-expand fa-compress');
                 panel.toggleClass('fullscreen-mode');
@@ -153,7 +158,6 @@ define(['require',
                 var lineageFilterPanel = this.ui.lineageFilterPanel;
                 $(lineageFilterPanel).toggleClass("show-filter-panel");
             },
-
             onSelectDepthChange: function(e, options) {
                 this.initializeGraph();
                 this.filterObj.depthCount = e.currentTarget.value;
@@ -438,6 +442,7 @@ define(['require',
                     var shapeSvg = parent.append('circle')
                         .attr('fill', 'url(#img_' + node.id + ')')
                         .attr('r', '24px')
+                        .attr('data-stroke',node.id)
                         .attr("class", "nodeImage " + (currentNode ? "currentNode" : (node.isProcess ? "process" : "node")));
 
                     parent.insert("defs")
@@ -597,6 +602,19 @@ define(['require',
                                 tooltip.hide(d);
                             }
                         }, 400)
+                    }).on('click', function(d) {
+                        if (d3.event.defaultPrevented) return; // ignore drag
+                        that.toggleLineageInfomationSlider({ open: true, obj: d });
+                        svgGroup.selectAll('[data-stroke]').attr('stroke','none');
+                        svgGroup.selectAll('[data-stroke]').attr('stroke',function(c) {
+                            if (c == d) {
+                                return "#316132";
+                            } else {
+                                return 'none';
+                            }
+                        })
+                        that.updateRelationshipDetails({ obj: d });
+
                     });
                 svgGroup.selectAll("g.edgePath path.path").on('click', function(d) {
                     var data = { obj: _.find(that.lineageData.relations, { "fromEntityId": d.v, "toEntityId": d.w }) },
@@ -641,6 +659,61 @@ define(['require',
                         }, 1000);
                     });
                 }
+            },
+            toggleLineageInfomationSlider: function(options) {
+                if (options.open && !this.$('.lineage-details').hasClass("open")) {
+                    this.$('.lineage-details').addClass('open');
+                } else if (options.close && this.$('.lineage-details').hasClass("open")) {
+                    d3.selectAll('circle').attr("stroke", "none");
+                    this.$('.lineage-details').removeClass('open');
+                }
+            },
+            updateRelationshipDetails: function(options) {
+                var that = this;
+                var lineageData;
+                for (var x in that.lineageData.guidEntityMap) {
+                    if (x == options.obj) {
+                        lineageData = that.lineageData.guidEntityMap[x]
+                    }
+                }
+                var data = lineageData,
+                    typeName = data.typeName || options.obj.name,
+                    searchString = options.searchString,
+                    listString = "";
+                this.$("[data-id='typeName']").text(typeName);
+                var getElement = function(options) {
+                    var showCofig = [
+                        "meaningNames",
+                        "meanings",
+                        "classificationNames",
+                        {
+                            "attributes": [
+                                "description",
+                                "name",
+                                "qualifiedName"
+                            ]
+                        }
+                    ];
+                    var tbody = '';
+                    for (var x = 0; x < showCofig.length; x++) {
+                        if (typeof showCofig[x] === "object") {
+                            _.each(showCofig[x].attributes, function(element, index, list) {
+                                var dataToShow = data.attributes[element] ? data.attributes[element] : "N/A";
+                                tbody += '<tr><td class="html-cell renderable">' + element + '</td><td  class="html-cell renderable">' + dataToShow + '</td></tr>';
+                            })
+                        } else {
+                            var dataToShow = data[showCofig[x]] ? data[showCofig[x]] : "N/A";
+                            dataToShow = dataToShow && dataToShow.length > 0 ? dataToShow : "N/A";
+                            tbody += '<tr><td class="html-cell renderable">' + showCofig[x] + '</td><td class="html-cell renderable">' + dataToShow + '</td></tr>';
+                        }
+                    }
+                    var thead = '<thead><tr><th class="renderable">Type</th><th class="renderable">Details</th></thead>';
+                    var table = '<table style="word-wrap: break-word;" class="table table-hover ">' + thead + '<tbody>' + tbody + '</body></table>';
+                    return table;
+
+                }
+                listString += getElement(data);
+                this.ui.nodeEntityList.html(listString);
             }
         });
     return LineageLayoutView;
