@@ -189,6 +189,7 @@ g.type-TK>rect {
     height: 100%;
     width: 100%;
     overflow: hidden;
+
     .lineage-edge-details {
         position: absolute;
         left: 0;
@@ -268,10 +269,12 @@ g.type-TK>rect {
     &>div {
         display: inline-block;
     }
+
     .zoom-button-group {}
 }
 
-.lineage-fltr-panel {
+.lineage-fltr-panel,
+.lineage-search-panel {
     position: absolute;
     border: 1px solid #ccc;
     width: 250px;
@@ -296,7 +299,8 @@ g.type-TK>rect {
             word-break: break-all;
         }
 
-        .fltr-togler {
+        .fltr-togler,
+        .search-togler {
             position: absolute;
             right: 0px;
             top: 0px;
@@ -308,12 +312,105 @@ g.type-TK>rect {
         margin-top: 39px;
         width: 100%;
         position: relative;
-        height: 200px;
+        height: 150px;
         overflow: auto;
     }
 }
 
-.show-filter-panel {
+.lineage-details.node-details.open {
+    overflow: hidden !important;
+    min-height: 300px;
+
+    & span[data-id='close'] {
+        margin: 7px;
+        position: absolute;
+        right: 0;
+        z-index: 99;
+    }
+
+    & div[data-id="entityList"] {
+        position: relative;
+        overflow: auto;
+        max-height: 250px;
+        top: 40px;
+    }
+
+    & h4.title {
+        position: fixed;
+        width: 100%;
+    }
+
+    & table {
+        & tbody td {
+            word-wrap: break-word
+        }
+
+        table-layout: fixed;
+    }
+}
+
+.lineage-details {
+    position: absolute;
+    left: 0;
+    overflow: auto;
+    top: 0px;
+    max-height: 100%;
+    box-shadow: 4px 13px 14px -12px;
+    background: #e7e7e7;
+    transform: scaleX(0);
+    width: 35%;
+    transition: transform 0.3s ease-in;
+
+    &.open {
+        transform: scaleX(1);
+    }
+
+    .title {
+        background: black;
+        color: white;
+        padding: 10px 38px 10px 10px;
+        word-break: break-all;
+        margin-top: 0;
+    }
+
+    .close-details {
+        position: absolute;
+        top: 0;
+        color: white;
+        left: 0;
+        height: 21px;
+        width: 21px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .entity-list {
+        overflow: auto;
+        list-style-type: decimal;
+        list-style-position: outside;
+        padding-left: 15px;
+    }
+
+    ul>li {
+        word-wrap: break-word;
+        margin-bottom: 5px;
+        text-align: left;
+
+        &.deleted-relation {
+            a {
+                color: #BB5838 !important;
+            }
+
+            .deleteBtn {
+                padding: 2px 8px !important;
+                margin: 5px 5px !important;
+            }
+        }
+    }
+}
+
+.show-filter-panel,
+.show-search-panel {
     right: 0px !important;
 }
 
@@ -361,13 +458,16 @@ span#zoom_in {
     padding: 0 !important;
     z-index: 999;
     overflow: hidden !important;
+
     .resizeGraph {
         position: fixed;
         height: 100% !important;
+
         .ui-resizable-handle {
             display: none;
         }
     }
+
     .lineage-box {
         padding: 10px !important;
     }
