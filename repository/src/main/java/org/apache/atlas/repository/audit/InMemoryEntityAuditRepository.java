@@ -21,6 +21,7 @@ package org.apache.atlas.repository.audit;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,9 @@ import org.springframework.stereotype.Component;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -112,6 +115,20 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
         for (EntityAuditEventV2 event : subMap.values()) {
             if (events.size() < maxResults && event.getEntityId().equals(entityId)) {
                 events.add(event);
+            }
+        }
+
+        return events;
+    }
+
+    @Override
+    public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) throws AtlasBaseException {
+        Set<String> events = new HashSet<>();
+
+        for (EntityAuditEventV2 event : auditEventsV2.values()) {
+            long timestamp = event.getTimestamp();
+            if (timestamp > fromTimestamp && timestamp <= toTimestamp) {
+                events.add(event.getEntityId());
             }
         }
 

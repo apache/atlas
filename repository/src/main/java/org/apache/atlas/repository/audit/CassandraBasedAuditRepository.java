@@ -30,6 +30,7 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Singleton;
 
@@ -185,6 +187,11 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
       entityResults.add(event);
     }
     return entityResults;
+  }
+
+  @Override
+  public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) throws AtlasBaseException {
+    throw new NotImplementedException();
   }
 
   @Override

@@ -27,7 +27,9 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
@@ -72,6 +74,8 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
     // Relationships APIs
     private static final String RELATIONSHIPS_URI  = BASE_URI + "v2/relationship/";
+    private static final String BULK_HEADERS = "bulk/headers";
+    private static final String BULK_SET_CLASSIFICATIONS = "bulk/setClassifications";
 
     public AtlasClientV2(String[] baseUrl, String[] basicAuthUserNamePassword) {
         super(baseUrl, basicAuthUserNamePassword);
@@ -326,11 +330,24 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public void deleteClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(formatPathParameters(API_V2.GET_CLASSIFICATIONS, guid), AtlasClassifications.class, classifications);
+        for (AtlasClassification c : classifications) {
+            callAPI(formatPathParameters(API_V2.DELETE_CLASSIFICATION, guid, c.getTypeName()), AtlasClassifications.class, classifications);
+        }
     }
 
     public void deleteClassification(String guid, String classificationName) throws AtlasServiceException {
         callAPI(formatPathParameters(API_V2.DELETE_CLASSIFICATION, guid, classificationName), null, null);
+    }
+
+    public AtlasEntityHeaders getEntityHeaders(long tagUpdateStartTime) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add("tagUpdateStartTime", Long.toString(tagUpdateStartTime));
+
+        return callAPI(API_V2.GET_BULK_HEADERS, AtlasEntityHeaders.class, queryParams);
+    }
+
+    public String setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasServiceException {
+        return callAPI(API_V2.UPDATE_BULK_SET_CLASSIFICATIONS, String.class, entityHeaders);
     }
 
     /* Discovery calls */
@@ -480,6 +497,8 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 DELETE_RELATIONSHIP_BY_GUID = new API_V2(RELATIONSHIPS_URI + "guid/", HttpMethod.DELETE, Response.Status.NO_CONTENT);
         public static final API_V2 CREATE_RELATIONSHIP         = new API_V2(RELATIONSHIPS_URI , HttpMethod.POST, Response.Status.OK);
         public static final API_V2 UPDATE_RELATIONSHIP         = new API_V2(RELATIONSHIPS_URI , HttpMethod.PUT, Response.Status.OK);
+        public static final API_V2 GET_BULK_HEADERS = new API_V2(ENTITY_API + BULK_HEADERS, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 UPDATE_BULK_SET_CLASSIFICATIONS = new API_V2(ENTITY_API + AtlasClientV2.BULK_SET_CLASSIFICATIONS, HttpMethod.POST, Response.Status.OK);
 
         private API_V2(String path, String method, Response.Status status) {
             super(path, method, status);
