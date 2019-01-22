@@ -97,7 +97,7 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 @Component
-public final class EntityGraphRetriever {
+public class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
 
     private static final String TERM_RELATION_NAME = "AtlasGlossarySemanticAssignment";

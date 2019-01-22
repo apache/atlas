@@ -687,6 +687,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return ret;
     }
 
+    @Override
+    @GraphTransaction
+    public String setClassifications(AtlasEntityHeaders entityHeaders) {
+        ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, this);
+        return associator.setClassifications(entityHeaders.getGuidHeaderMap());
+    }
+
     private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");

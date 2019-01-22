@@ -20,12 +20,14 @@ package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Implementation that completely disables the audit repository.
@@ -63,6 +65,11 @@ public class NoopEntityAuditRepository implements EntityAuditRepository {
     @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, String startKey, short n) {
         return Collections.emptyList();
+    }
+
+    @Override
+    public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) throws AtlasBaseException {
+        return Collections.emptySet();
     }
 
     @Override

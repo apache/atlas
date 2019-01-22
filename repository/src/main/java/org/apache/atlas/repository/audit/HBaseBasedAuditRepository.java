@@ -50,7 +50,10 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.filter.BinaryPrefixComparator;
+import org.apache.hadoop.hbase.filter.CompareFilter;
 import org.apache.hadoop.hbase.filter.PageFilter;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.io.encoding.DataBlockEncoding;
 import org.apache.hadoop.hbase.regionserver.BloomType;
@@ -64,9 +67,10 @@ import javax.inject.Singleton;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_ADD;
 import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_DELETE;
@@ -542,6 +546,52 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             throw new AtlasException(e);
         } finally {
             close(admin);
+        }
+    }
+
+    @Override
+    public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) throws AtlasBaseException {
+        final String classificationUpdatesAction = "CLASSIFICATION_";
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Listing events for fromTimestamp {}, toTimestamp {}, action {}", fromTimestamp, toTimestamp);
+        }
+
+        Table table = null;
+        ResultScanner scanner = null;
+
+        try {
+            Set<String> guids = new HashSet<>();
+
+            table = connection.getTable(tableName);
+
+            byte[] filterValue = Bytes.toBytes(classificationUpdatesAction);
+            BinaryPrefixComparator binaryPrefixComparator = new BinaryPrefixComparator(filterValue);
+            SingleColumnValueFilter filter = new SingleColumnValueFilter(COLUMN_FAMILY, COLUMN_ACTION, CompareFilter.CompareOp.EQUAL, binaryPrefixComparator);
+            Scan scan = new Scan().setFilter(filter).setTimeRange(fromTimestamp, toTimestamp);
+
+            Result result;
+            scanner = table.getScanner(scan);
+            while ((result = scanner.next()) != null) {
+                EntityAuditEvent event = fromKey(result.getRow());
+
+                if (event == null) {
+                    continue;
+                }
+
+                guids.add(event.getEntityId());
+            }
+
+            return guids;
+        } catch (IOException e) {
+            throw new AtlasBaseException(e);
+        } finally {
+            try {
+                close(scanner);
+                close(table);
+            } catch (AtlasException e) {
+                throw new AtlasBaseException(e);
+            }
         }
     }
 

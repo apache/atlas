@@ -24,6 +24,7 @@ import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.exception.AtlasBaseException;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Interface for repository for storing entity audit events
@@ -77,6 +78,14 @@ public interface EntityAuditRepository {
      */
     List<EntityAuditEventV2> listEventsV2(String entityId, String startKey, short n) throws AtlasBaseException;
 
+    /***
+     * List events for given time range where classifications have been added, deleted or updated.
+     * @param fromTimestamp from timestamp
+     * @param toTimestamp to timestamp
+     * @return events that match the range
+     * @throws AtlasBaseException
+     */
+    Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) throws AtlasBaseException;
 
     /**
      * List events for the given entity id in decreasing order of timestamp, from the given timestamp. Returns n results
