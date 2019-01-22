@@ -310,7 +310,9 @@ public class ClassificationAssociator {
                 return list;
             }
 
-            return list.stream().filter(x -> x.getEntityGuid().equals(guid)).collect(Collectors.toList());
+            return list.stream().filter(x -> x != null &&
+                                    (StringUtils.isEmpty(guid) || StringUtils.isEmpty(x.getEntityGuid()))
+                                    || x.getEntityGuid().equals(guid)).collect(Collectors.toList());
         }
     }
 }

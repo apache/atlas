@@ -163,6 +163,7 @@ public class ClassificationAssociatorTest {
 
     @Test
     public void updaterTests() throws IOException {
+        updaterAssert("header-None", "col-entity-None");
         updaterAssert("header-PII", "col-entity-None", PROCESS_ADD + ":PII");
         updaterAssert("header-PII", "col-entity-PII", new String[]{PROCESS_UPDATE + ":PII"});
         updaterAssert("header-None", "col-entity-PII", new String[]{PROCESS_DELETE + ":PII"});
@@ -181,6 +182,10 @@ public class ClassificationAssociatorTest {
         updaterAssert("header-Tx-prop-T1", "col-entity-T1-prop-Tn",
                 PROCESS_DELETE + ":T1",
                             PROCESS_ADD + ":Tx");
+        updaterAssert("header-Tx-prop-T1-No-Guid", "col-entity-T1-prop-Tn-No-Guid",
+                PROCESS_DELETE + ":Tn",
+                             PROCESS_UPDATE + ":T1",
+                             PROCESS_ADD + ":Tx");
     }
 
 
