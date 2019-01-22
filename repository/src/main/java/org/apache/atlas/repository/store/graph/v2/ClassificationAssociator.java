@@ -171,7 +171,7 @@ public class ClassificationAssociator {
             operationListMap.put(op, results);
         }
 
-        private void addClassifications(String entityToBeChangedGuid, String typeName, String qualifiedName, List<AtlasClassification> list) {
+        private void addClassifications(String entityGuid, String typeName, String qualifiedName, List<AtlasClassification> list) {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
@@ -179,16 +179,16 @@ public class ClassificationAssociator {
             String status = STATUS_DONE;
             String classificationNames = getClassificationNames(list);
             try {
-                entitiesStore.addClassifications(entityToBeChangedGuid, list);
+                entitiesStore.addClassifications(entityGuid, list);
             } catch (AtlasBaseException e) {
                 status = STATUS_PARTIAL;
                 LOG.warn("{}:{}:{} -> {}: {}.", PROCESS_UPDATE, typeName, qualifiedName, classificationNames, status);
             }
 
-            summarize(PROCESS_ADD, entityToBeChangedGuid, typeName, qualifiedName, classificationNames, status);
+            summarize(PROCESS_ADD, entityGuid, typeName, qualifiedName, classificationNames, status);
         }
 
-        private void updateClassifications(String entityToBeChangedGuid, String typeName, String qualifiedName, List<AtlasClassification> list) {
+        private void updateClassifications(String entityGuid, String typeName, String qualifiedName, List<AtlasClassification> list) {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
@@ -197,16 +197,16 @@ public class ClassificationAssociator {
             String classificationNames = getClassificationNames(list);
 
             try {
-                entitiesStore.updateClassifications(entityToBeChangedGuid, list);
+                entitiesStore.updateClassifications(entityGuid, list);
             } catch (AtlasBaseException e) {
                 status = STATUS_PARTIAL;
                 LOG.warn("{}:{}:{} -> {}: {}.", PROCESS_UPDATE, typeName, qualifiedName, classificationNames, status);
             }
 
-            summarize(PROCESS_UPDATE, entityToBeChangedGuid, typeName, qualifiedName, classificationNames, status);
+            summarize(PROCESS_UPDATE, entityGuid, typeName, qualifiedName, classificationNames, status);
         }
 
-        private void deleteClassifications(String typeName, String entityGuid, String qualifiedName, List<AtlasClassification> list) {
+        private void deleteClassifications(String entityGuid, String typeName, String qualifiedName, List<AtlasClassification> list) {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
