@@ -82,9 +82,8 @@ import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassifica
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationName;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertices;
-import static org.apache.atlas.repository.graph.GraphHelper.getOutGoingEdgesByLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getTypeName;
 
@@ -117,8 +116,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         AtlasVertex end1Vertex = getVertexFromEndPoint(relationship.getEnd1());
         AtlasVertex end2Vertex = getVertexFromEndPoint(relationship.getEnd2());
-
-        validateRelationship(end1Vertex, end2Vertex, relationship.getTypeName(), relationship.getAttributes());
 
         AtlasEdge edge = createRelationship(end1Vertex, end2Vertex, relationship);
 
@@ -290,15 +287,20 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     @Override
     public AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException {
-        AtlasEdge ret = getRelationshipEdge(end1Vertex, end2Vertex, relationship.getTypeName());
+        AtlasEdge ret = getRelationship(end1Vertex, end2Vertex, relationship);
 
         if (ret == null) {
-            validateRelationship(end1Vertex, end2Vertex, relationship.getTypeName(), relationship.getAttributes());
-
-            ret = createRelationship(end1Vertex, end2Vertex, relationship);
+            ret = createRelationship(end1Vertex, end2Vertex, relationship, false);
         }
 
         return ret;
+    }
+
+    @Override
+    public AtlasEdge getRelationship(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) {
+        String relationshipLabel = getRelationshipEdgeLabel(fromVertex, toVertex, relationship.getTypeName());
+
+        return getRelationshipEdge(fromVertex, toVertex, relationshipLabel);
     }
 
     @Override
@@ -307,19 +309,15 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             LOG.debug("==> getOrCreate({})", relationship);
         }
 
-        validateRelationship(relationship);
-
         AtlasVertex       end1Vertex = getVertexFromEndPoint(relationship.getEnd1());
         AtlasVertex       end2Vertex = getVertexFromEndPoint(relationship.getEnd2());
         AtlasRelationship ret        = null;
 
         // check if relationship exists
-        AtlasEdge relationshipEdge = getRelationshipEdge(end1Vertex, end2Vertex, relationship.getTypeName());
+        AtlasEdge relationshipEdge = getRelationship(end1Vertex, end2Vertex, relationship);
 
         if (relationshipEdge == null) {
-            validateRelationship(relationship);
-
-            relationshipEdge = createRelationship(end1Vertex, end2Vertex, relationship);
+            relationshipEdge = createRelationship(end1Vertex, end2Vertex, relationship, false);
         }
 
         if (relationshipEdge != null){
@@ -333,15 +331,26 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         return ret;
     }
 
-    private AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException {
-        AtlasEdge ret = null;
+    @Override
+    public AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException {
+        return createRelationship(end1Vertex, end2Vertex, relationship, true);
+    }
+
+    public AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship, boolean existingRelationshipCheck) throws AtlasBaseException {
+        AtlasEdge ret;
 
         try {
-            ret = getRelationshipEdge(end1Vertex, end2Vertex, relationship.getTypeName());
+            validateRelationship(end1Vertex, end2Vertex, relationship.getTypeName(), relationship.getAttributes());
 
-            if (ret != null) {
-                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_EXISTS, relationship.getTypeName(),
-                                             AtlasGraphUtilsV2.getIdFromVertex(end1Vertex), AtlasGraphUtilsV2.getIdFromVertex(end2Vertex));
+            String relationshipLabel = getRelationshipEdgeLabel(end1Vertex, end2Vertex, relationship.getTypeName());
+
+            if (existingRelationshipCheck) {
+                ret = getRelationshipEdge(end1Vertex, end2Vertex, relationshipLabel);
+
+                if (ret != null) {
+                    throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_EXISTS, relationship.getTypeName(),
+                                                 AtlasGraphUtilsV2.getIdFromVertex(end1Vertex), AtlasGraphUtilsV2.getIdFromVertex(end2Vertex));
+                }
             }
 
             AtlasRelationshipType relationType = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
@@ -350,10 +359,41 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
                 AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
 
-                AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD, relationship.getTypeName(), end1Entity, end2Entity));
+                AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
+                                                                                        relationship.getTypeName(), end1Entity, end2Entity));
             }
 
-            ret = createRelationshipEdge(end1Vertex, end2Vertex, relationship);
+            if (existingRelationshipCheck) {
+                ret = graphHelper.getOrCreateEdge(end1Vertex, end2Vertex, relationshipLabel);
+
+            } else {
+                ret = graphHelper.addEdge(end1Vertex, end2Vertex, relationshipLabel);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Created relationship edge from [{}] --> [{}] using edge label: [{}]", getTypeName(end1Vertex), getTypeName(end2Vertex), relationshipLabel);
+                }
+            }
+
+            // map additional properties to relationship edge
+            if (ret != null) {
+                // Accept a valid (assigned) guid from the supplied relationship, or generate one.
+                String        relationshipGuid = relationship.getGuid();
+                PropagateTags tagPropagation   = getRelationshipTagPropagation(end1Vertex, end2Vertex, relationship);
+                final String  guid             = AtlasTypeUtil.isAssignedGuid(relationshipGuid) ? relationshipGuid : UUID.randomUUID().toString();
+
+                AtlasGraphUtilsV2.setEncodedProperty(ret, ENTITY_TYPE_PROPERTY_KEY, relationship.getTypeName());
+                AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIP_GUID_PROPERTY_KEY, guid);
+                AtlasGraphUtilsV2.setEncodedProperty(ret, HOME_ID_KEY, relationship.getHomeId());
+                AtlasGraphUtilsV2.setEncodedProperty(ret, VERSION_PROPERTY_KEY, getRelationshipVersion(relationship));
+                AtlasGraphUtilsV2.setEncodedProperty(ret, PROVENANCE_TYPE_KEY, relationship.getProvenanceType());
+                AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, tagPropagation.name());
+
+                // blocked propagated classifications
+                handleBlockedClassifications(ret, relationship.getBlockedPropagatedClassifications());
+
+                // propagate tags
+                deleteDelegate.getHandler().addTagPropagation(ret, tagPropagation);
+            }
 
             if (MapUtils.isNotEmpty(relationType.getAllAttributes())) {
                 for (AtlasAttribute attr : relationType.getAllAttributes().values()) {
@@ -692,10 +732,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         type.getNormalizedValue(relationship);
     }
 
-    public AtlasEdge getRelationshipEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String relationshipType) {
-        String              relationshipLabel = getRelationshipEdgeLabel(fromVertex, toVertex, relationshipType);
-        Iterator<AtlasEdge> edgesIterator     = getOutGoingEdgesByLabel(fromVertex, relationshipLabel);
-        AtlasEdge           ret               = null;
+    public AtlasEdge getRelationshipEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String relationshipLabel) {
+        AtlasEdge           ret           = null;
+        Iterator<AtlasEdge> edgesIterator = getIncomingEdgesByLabel(toVertex, relationshipLabel);
 
         while (edgesIterator != null && edgesIterator.hasNext()) {
             AtlasEdge edge = edgesIterator.next();
@@ -703,8 +742,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             if (edge != null) {
                 Status status = graphHelper.getStatus(edge);
 
-                if ((status == null || status == ACTIVE) &&
-                        StringUtils.equals(getIdFromVertex(edge.getInVertex()), getIdFromVertex(toVertex))) {
+                if ((status == null || status == ACTIVE) && edge.getOutVertex().equals(fromVertex)) {
                     ret = edge;
                     break;
                 }
@@ -729,38 +767,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(endPoint.getTypeName());
 
             ret = AtlasGraphUtilsV2.findByUniqueAttributes(entityType, endPoint.getUniqueAttributes());
-        }
-
-        return ret;
-    }
-
-    private AtlasEdge createRelationshipEdge(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) throws RepositoryException, AtlasBaseException {
-        String        relationshipLabel = getRelationshipEdgeLabel(fromVertex, toVertex, relationship.getTypeName());
-        PropagateTags tagPropagation    = getRelationshipTagPropagation(fromVertex, toVertex, relationship);
-        AtlasEdge     ret               = graphHelper.getOrCreateEdge(fromVertex, toVertex, relationshipLabel);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Created relationship edge from [{}] --> [{}] using edge label: [{}]", getTypeName(fromVertex), getTypeName(toVertex), relationshipLabel);
-        }
-
-        // map additional properties to relationship edge
-        if (ret != null) {
-            // Accept a valid (assigned) guid from the supplied relationship, or generate one.
-            String relationshipGuid = relationship.getGuid();
-            final String guid = AtlasTypeUtil.isAssignedGuid(relationshipGuid) ? relationshipGuid : UUID.randomUUID().toString();
-
-            AtlasGraphUtilsV2.setEncodedProperty(ret, ENTITY_TYPE_PROPERTY_KEY, relationship.getTypeName());
-            AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIP_GUID_PROPERTY_KEY, guid);
-            AtlasGraphUtilsV2.setEncodedProperty(ret, HOME_ID_KEY, relationship.getHomeId());
-            AtlasGraphUtilsV2.setEncodedProperty(ret, VERSION_PROPERTY_KEY, getRelationshipVersion(relationship));
-            AtlasGraphUtilsV2.setEncodedProperty(ret, PROVENANCE_TYPE_KEY, relationship.getProvenanceType());
-            AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, tagPropagation.name());
-
-            // blocked propagated classifications
-            handleBlockedClassifications(ret, relationship.getBlockedPropagatedClassifications());
-
-            // propagate tags
-            deleteDelegate.getHandler().addTagPropagation(ret, tagPropagation);
         }
 
         return ret;
