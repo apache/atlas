@@ -52,6 +52,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -71,6 +72,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -106,9 +108,6 @@ public final class EntityGraphRetriever {
     public static final String DESCRIPTION    = "description";
     public static final String OWNER          = "owner";
     public static final String CREATE_TIME    = "createTime";
-    private static final String SOFT_REFERENCE_FORMAT_SEPERATOR = ":";
-    private static final int SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME = 0;
-    private static final int SOFT_REFERENCE_FORMAT_INDEX_GUID = 1;
     public static final String QUALIFIED_NAME = "qualifiedName";
 
     private static final TypeReference<List<TimeBoundary>> TIME_BOUNDARIES_LIST_TYPE = new TypeReference<List<TimeBoundary>>() {};
@@ -704,21 +703,21 @@ public final class EntityGraphRetriever {
                 break;
             case OBJECT_ID_TYPE:
                 if(attribute.getAttributeDef().isSoftReferenced()) {
-                    ret = mapVertexToObjectIdForSoftRef(entityVertex, attribute.getVertexPropertyName());
+                    ret = mapVertexToObjectIdForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
                 } else {
                 	ret = mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute, edgeDirection, isMinExtInfo);
 				}
                 break;
             case ARRAY:
                 if(attribute.getAttributeDef().isSoftReferenced()) {
-                    ret = mapVertexToArrayForSoftRef(entityVertex, attribute.getVertexPropertyName());
+                    ret = mapVertexToArrayForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
                 } else {
                 	ret = mapVertexToArray(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo);
 				}
                 break;
             case MAP:
                 if(attribute.getAttributeDef().isSoftReferenced()) {
-                    ret = mapVertexToMapForSoftRef(entityVertex, attribute.getVertexPropertyName());
+                    ret = mapVertexToMapForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
                 } else {
                 	ret = mapVertexToMap(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo);
 				}
@@ -731,74 +730,78 @@ public final class EntityGraphRetriever {
         return ret;
     }
 
-    private Map<String, AtlasObjectId> mapVertexToMapForSoftRef(AtlasVertex entityVertex, String propertyName) {
-        Map map = entityVertex.getProperty(propertyName, Map.class);
-        if (MapUtils.isEmpty(map)) {
-            return null;
-        }
+    private Map<String, AtlasObjectId> mapVertexToMapForSoftRef(AtlasVertex entityVertex,  AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo) {
+        Map<String, AtlasObjectId> ret        = null;
+        Map                        softRefVal = entityVertex.getProperty(attribute.getVertexPropertyName(), Map.class);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Mapping map attribute {} for vertex {}", propertyName, entityVertex);
-        }
+        if (MapUtils.isNotEmpty(softRefVal)) {
+            ret = new HashMap<>();
 
-        Map ret = new HashMap();
-        for (Object mapKey : map.keySet()) {
-            String softRefRaw = (String) map.get(mapKey);
-            AtlasObjectId mapValue = getAtlasObjectIdFromSoftRefFormat(softRefRaw);
-            if (mapValue != null) {
-                ret.put(mapKey, mapValue);
+            for (Object mapKey : softRefVal.keySet()) {
+                AtlasObjectId objectId = getAtlasObjectIdFromSoftRefFormat(Objects.toString(softRefVal.get(mapKey)), attribute, entityExtInfo, isMinExtInfo);
+
+                if (objectId != null) {
+                    ret.put(Objects.toString(mapKey), objectId);
+                }
             }
         }
 
         return ret;
     }
 
-    private List<AtlasObjectId> mapVertexToArrayForSoftRef(AtlasVertex entityVertex, String propertyName) {
-        List rawValue = entityVertex.getListProperty(propertyName, List.class);
-        if (CollectionUtils.isEmpty(rawValue)) {
-            return null;
+    private List<AtlasObjectId> mapVertexToArrayForSoftRef(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo) {
+        List<AtlasObjectId> ret        = null;
+        List                softRefVal = entityVertex.getListProperty(attribute.getVertexPropertyName(), List.class);
+
+        if (CollectionUtils.isNotEmpty(softRefVal)) {
+            ret = new ArrayList<>();
+
+            for (Object o : softRefVal) {
+                AtlasObjectId objectId = getAtlasObjectIdFromSoftRefFormat(Objects.toString(o), attribute, entityExtInfo, isMinExtInfo);
+
+                if(objectId != null) {
+                    ret.add(objectId);
+                }
+            }
         }
 
-        List list = (List) rawValue;
-        List<AtlasObjectId> objectIds = new ArrayList<>();
-        for (Object o : list) {
-            if (!(o instanceof String)) {
-                continue;
-            }
-
-            AtlasObjectId objectId = getAtlasObjectIdFromSoftRefFormat((String) o);
-            if(objectId == null) {
-                continue;
-            }
-
-            objectIds.add(objectId);
-        }
-
-        return objectIds;
+        return ret;
     }
 
-    private AtlasObjectId mapVertexToObjectIdForSoftRef(AtlasVertex entityVertex, String vertexPropertyName) {
-        String rawValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, vertexPropertyName, String.class);
-        if(StringUtils.isEmpty(rawValue)) {
-            return null;
-        }
+    private AtlasObjectId mapVertexToObjectIdForSoftRef(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo) {
+        String softRefVal = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, attribute.getVertexPropertyName(), String.class);
 
-        return getAtlasObjectIdFromSoftRefFormat(rawValue);
+        return StringUtils.isNotEmpty(softRefVal) ? getAtlasObjectIdFromSoftRefFormat(softRefVal, attribute, entityExtInfo, isMinExtInfo) : null;
     }
 
-    private AtlasObjectId getAtlasObjectIdFromSoftRefFormat(String rawValue) {
-        if(StringUtils.isEmpty(rawValue)) {
-            return null;
+    private AtlasObjectId getAtlasObjectIdFromSoftRefFormat(String softRefVal, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo) {
+        AtlasObjectId ret = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+
+        if(ret != null) {
+            if (entityExtInfo != null && attribute.isOwnedRef()) {
+                try {
+                    AtlasVertex referenceVertex = getEntityVertex(ret.getGuid());
+
+                    if (referenceVertex != null) {
+                        final AtlasEntity entity;
+
+                        if (isMinExtInfo) {
+                            entity = mapVertexToAtlasEntityMin(referenceVertex, entityExtInfo);
+                        } else {
+                            entity = mapVertexToAtlasEntity(referenceVertex, entityExtInfo);
+                        }
+
+                        if (entity != null) {
+                            ret = toAtlasObjectId(entity);
+                        }
+                    }
+                } catch (AtlasBaseException excp) {
+                    LOG.info("failed to retrieve soft-referenced entity(typeName={}, guid={}); errorCode={}. Ignoring", ret.getTypeName(), ret.getGuid(), excp.getAtlasErrorCode());
+                }
+            }
         }
 
-        String[] objectIdParts = StringUtils.split(rawValue, SOFT_REFERENCE_FORMAT_SEPERATOR);
-        if(objectIdParts.length < 2) {
-            LOG.warn("Expecting value to be formatted for softRef. Instead found: {}", rawValue);
-            return null;
-        }
-
-        return new AtlasObjectId(objectIdParts[SOFT_REFERENCE_FORMAT_INDEX_GUID],
-                objectIdParts[SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME]);
+        return ret;
     }
 
     private Map<String, Object> mapVertexToMap(AtlasVertex entityVertex, AtlasEntityExtInfo entityExtInfo,
@@ -986,7 +989,7 @@ public final class EntityGraphRetriever {
                         ret = AtlasTypeUtil.getAtlasObjectId(entity);
                     }
                 } else {
-                    ret = new AtlasObjectId(getGuid(referenceVertex), getTypeName(referenceVertex));
+                    ret = toAtlasObjectId(referenceVertex);
                 }
             }
         }

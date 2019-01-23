@@ -54,6 +54,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdg
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -496,28 +497,27 @@ public class EntityGraphMapper {
         }
     }
 
-    private Object mapSoftRefValue(AttributeMutationContext ctx, EntityMutationContext context) {
-        if(ctx.getValue() != null && !(ctx.getValue() instanceof AtlasObjectId)) {
-            LOG.warn("mapSoftRefValue: Was expecting AtlasObjectId, but found: {}", ctx.getValue().getClass());
-            return null;
-        }
+    private String mapSoftRefValue(AttributeMutationContext ctx, EntityMutationContext context) {
+        String ret = null;
 
-        String softRefValue = null;
-        if(ctx.getValue() != null) {
+        if (ctx.getValue() instanceof AtlasObjectId) {
             AtlasObjectId objectId = (AtlasObjectId) ctx.getValue();
-            String resolvedGuid = AtlasTypeUtil.isUnAssignedGuid(objectId.getGuid())
-                    ? context.getGuidAssignments().get(objectId.getGuid())
-                    : objectId.getGuid();
+            String        typeName = objectId.getTypeName();
+            String        guid     = AtlasTypeUtil.isUnAssignedGuid(objectId.getGuid()) ? context.getGuidAssignments().get(objectId.getGuid()) : objectId.getGuid();
 
-            softRefValue = String.format(SOFT_REF_FORMAT, objectId.getTypeName(), resolvedGuid);
+            ret = AtlasEntityUtil.formatSoftRefValue(typeName, guid);
+        } else {
+            if (ctx.getValue() != null) {
+                LOG.warn("mapSoftRefValue: Was expecting AtlasObjectId, but found: {}", ctx.getValue().getClass());
+            }
         }
 
-        return softRefValue;
+        return ret;
     }
 
     private Object mapSoftRefValueWithUpdate(AttributeMutationContext ctx, EntityMutationContext context) {
+        String softRefValue = mapSoftRefValue(ctx, context);
 
-        String softRefValue = (String) mapSoftRefValue(ctx, context);
         AtlasGraphUtilsV2.setProperty(ctx.getReferringVertex(), ctx.getVertexProperty(), softRefValue);
 
         return softRefValue;

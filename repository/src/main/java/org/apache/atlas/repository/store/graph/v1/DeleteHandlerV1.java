@@ -45,6 +45,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -210,14 +211,23 @@ public abstract class DeleteHandlerV1 {
                 TypeCategory typeCategory = attrType.getTypeCategory();
 
                 if (typeCategory == OBJECT_ID_TYPE) {
-                    AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
+                    if (attributeInfo.getAttributeDef().isSoftReferenced()) {
+                        String        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), String.class);
+                        AtlasObjectId refObjId   = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+                        AtlasVertex   refVertex  = refObjId != null ? AtlasGraphUtilsV2.findByGuid(refObjId.getGuid()) : null;
 
-                    if (edge == null || getState(edge) == DELETED) {
-                        continue;
+                        if (refVertex != null) {
+                            vertices.push(refVertex);
+                        }
+                    } else {
+                        AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
+
+                        if (edge == null || getState(edge) == DELETED) {
+                            continue;
+                        }
+
+                        vertices.push(edge.getInVertex());
                     }
-
-                    vertices.push(edge.getInVertex());
-
                 } else if (typeCategory == ARRAY || typeCategory == MAP) {
                     TypeCategory elementType = null;
 
@@ -231,15 +241,46 @@ public abstract class DeleteHandlerV1 {
                         continue;
                     }
 
-                    List<AtlasEdge> edges = getCollectionElementsUsingRelationship(vertex, attributeInfo);
+                    if (attributeInfo.getAttributeDef().isSoftReferenced()) {
+                        if (typeCategory == ARRAY) {
+                            List                softRefVal = vertex.getListProperty(attributeInfo.getVertexPropertyName(), List.class);
+                            List<AtlasObjectId> refObjIds  = AtlasEntityUtil.parseSoftRefValue(softRefVal);
 
-                    if (CollectionUtils.isNotEmpty(edges)) {
-                        for (AtlasEdge edge : edges) {
-                            if (edge == null || getState(edge) == DELETED) {
-                                continue;
+                            if (CollectionUtils.isNotEmpty(refObjIds)) {
+                                for (AtlasObjectId refObjId : refObjIds) {
+                                    AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(refObjId.getGuid());
+
+                                    if (refVertex != null) {
+                                        vertices.push(refVertex);
+                                    }
+                                }
                             }
+                        } else if (typeCategory == MAP) {
+                            Map                        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), Map.class);
+                            Map<String, AtlasObjectId> refObjIds  = AtlasEntityUtil.parseSoftRefValue(softRefVal);
 
-                            vertices.push(edge.getInVertex());
+                            if (MapUtils.isNotEmpty(refObjIds)) {
+                                for (AtlasObjectId refObjId : refObjIds.values()) {
+                                    AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(refObjId.getGuid());
+
+                                    if (refVertex != null) {
+                                        vertices.push(refVertex);
+                                    }
+                                }
+                            }
+                        }
+
+                    } else {
+                        List<AtlasEdge> edges = getCollectionElementsUsingRelationship(vertex, attributeInfo);
+
+                        if (CollectionUtils.isNotEmpty(edges)) {
+                            for (AtlasEdge edge : edges) {
+                                if (edge == null || getState(edge) == DELETED) {
+                                    continue;
+                                }
+
+                                vertices.push(edge.getInVertex());
+                            }
                         }
                     }
                 }
