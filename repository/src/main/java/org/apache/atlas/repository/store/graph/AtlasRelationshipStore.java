@@ -59,6 +59,10 @@ public interface AtlasRelationshipStore {
 
     AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
 
+    AtlasEdge getRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship);
+
+    AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
+
     /**
      * Retrieve a relationship if it exists or creates a new relationship instance.
      * @param relationship relationship instance definition

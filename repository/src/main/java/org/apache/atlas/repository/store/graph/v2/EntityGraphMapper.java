@@ -819,7 +819,6 @@ public class EntityGraphMapper {
         AtlasType type          = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(entityVertex));
 
         AtlasRelationshipEdgeDirection edgeDirection = ctx.getAttribute().getRelationshipEdgeDirection();
-        String                         edgeLabel     = ctx.getAttribute().getRelationshipEdgeLabel();
 
         if (type instanceof AtlasEntityType) {
             AtlasEntityType entityType = (AtlasEntityType) type;
@@ -844,9 +843,16 @@ public class EntityGraphMapper {
                         fromVertex = entityVertex;
                         toVertex   = attributeVertex;
                     }
-                    boolean relationshipExists = isRelationshipExists(fromVertex, toVertex, edgeLabel);
 
                     ret = getOrCreateRelationship(fromVertex, toVertex, relationshipName, relationshipAttributes);
+
+                    boolean isCreated = GraphHelper.getCreatedTime(ret) == RequestContext.get().getRequestTime();
+
+                    if (isCreated) {
+                        // if relationship did not exist before and new relationship was created
+                        // record entity update on both relationship vertices
+                        recordEntityUpdate(attributeVertex);
+                    }
 
                     // for import use the relationship guid provided
                     if (RequestContext.get().isImportInProgress()) {
@@ -855,12 +861,6 @@ public class EntityGraphMapper {
                         if(!StringUtils.isEmpty(relationshipGuid)) {
                             AtlasGraphUtilsV2.setEncodedProperty(ret, RELATIONSHIP_GUID_PROPERTY_KEY, relationshipGuid);
                         }
-                    }
-
-                    // if relationship did not exist before and new relationship was created
-                    // record entity update on both relationship vertices
-                    if (!relationshipExists) {
-                        recordEntityUpdate(attributeVertex);
                     }
                 }
             } else {
@@ -1849,22 +1849,6 @@ public class EntityGraphMapper {
     private AtlasEdge getOrCreateRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, String relationshipName,
                                               Map<String, Object> relationshipAttributes) throws AtlasBaseException {
         return relationshipStore.getOrCreate(end1Vertex, end2Vertex, new AtlasRelationship(relationshipName, relationshipAttributes));
-    }
-
-    private boolean isRelationshipExists(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {
-        boolean             ret   = false;
-        Iterator<AtlasEdge> edges = graphHelper.getOutGoingEdgesByLabel(fromVertex, edgeLabel);
-
-        while (edges != null && edges.hasNext()) {
-            AtlasEdge   edge     = edges.next();
-            AtlasVertex inVertex = edge.getInVertex();
-
-            if (inVertex != null && StringUtils.equals(getIdFromVertex(inVertex), getIdFromVertex(toVertex))) {
-                ret = true;
-            }
-        }
-
-        return ret;
     }
 
     private void recordEntityUpdate(AtlasVertex vertex) throws AtlasBaseException {
