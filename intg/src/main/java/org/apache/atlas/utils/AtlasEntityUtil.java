@@ -19,23 +19,29 @@ package org.apache.atlas.utils;
 
 
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 
 public class AtlasEntityUtil {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityUtil.class);
+
+    private static final String SOFT_REFERENCE_FORMAT_SEPERATOR       = ":";
+    private static final String SOFT_REF_FORMAT                       = "%s" + SOFT_REFERENCE_FORMAT_SEPERATOR + "%s";
+    private static final int    SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME = 0;
+    private static final int    SOFT_REFERENCE_FORMAT_INDEX_GUID      = 1;
 
     public static boolean hasAnyAttributeUpdate(AtlasEntityType entityType, AtlasEntity currEntity, AtlasEntity newEntity) {
         if (LOG.isDebugEnabled()) {
@@ -64,6 +70,87 @@ public class AtlasEntityUtil {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== hasAnyAttributeUpdate(guid={}, typeName={}): ret={}", currEntity.getGuid(), currEntity.getTypeName(), ret);
+        }
+
+        return ret;
+    }
+
+
+    public static String formatSoftRefValue(String typeName, String guid) {
+        return String.format(SOFT_REF_FORMAT, typeName, guid);
+    }
+
+    public static String formatSoftRefValue(AtlasObjectId objectId) {
+        return formatSoftRefValue(objectId.getTypeName(), objectId.getGuid());
+    }
+
+    public static List<String> formatSoftRefValue(List<AtlasObjectId> objIds) {
+        List<String> ret = new ArrayList<>();
+
+        for (AtlasObjectId objId : objIds) {
+            ret.add(formatSoftRefValue(objId));
+        }
+
+        return ret;
+    }
+
+    public static Map<String, String> formatSoftRefValue(Map<String, AtlasObjectId> objIdMap) {
+        Map<String, String> ret = new HashMap<>();
+
+        for (Map.Entry<String, AtlasObjectId> entry : objIdMap.entrySet()) {
+            ret.put(entry.getKey(), formatSoftRefValue(entry.getValue()));
+        }
+
+        return ret;
+    }
+
+    public static AtlasObjectId parseSoftRefValue(String softRefValue) {
+        AtlasObjectId ret = null;
+
+        if (StringUtils.isNotEmpty(softRefValue)) {
+            String[] objectIdParts = StringUtils.split(softRefValue, SOFT_REFERENCE_FORMAT_SEPERATOR);
+
+            if(objectIdParts.length >= 2) {
+                ret = new AtlasObjectId(objectIdParts[SOFT_REFERENCE_FORMAT_INDEX_GUID], objectIdParts[SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME]);
+            } else {
+                LOG.warn("Invalid soft-ref value: {}", softRefValue);
+            }
+        }
+
+        return ret;
+    }
+
+    public static List<AtlasObjectId> parseSoftRefValue(List<String> softRefValue) {
+        List<AtlasObjectId> ret = null;
+
+        if (CollectionUtils.isNotEmpty(softRefValue)) {
+            ret = new ArrayList<>();
+
+            for (String elemValue : softRefValue) {
+                AtlasObjectId objId = parseSoftRefValue(elemValue);
+
+                if (objId != null) {
+                    ret.add(objId);
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public static Map<String, AtlasObjectId> parseSoftRefValue(Map<String, String> softRefValue) {
+        Map<String, AtlasObjectId> ret = null;
+
+        if (MapUtils.isNotEmpty(softRefValue)) {
+            ret = new HashMap<>();
+
+            for (Map.Entry<String, String> entry : softRefValue.entrySet()) {
+                AtlasObjectId objId = parseSoftRefValue(entry.getValue());
+
+                if (objId != null) {
+                    ret.put(entry.getKey(), objId);
+                }
+            }
         }
 
         return ret;
