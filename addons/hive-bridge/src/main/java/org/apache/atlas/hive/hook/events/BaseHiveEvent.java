@@ -42,6 +42,7 @@ import org.apache.hadoop.hive.ql.hooks.LineageInfo.DependencyKey;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
@@ -215,19 +216,31 @@ public abstract class BaseHiveEvent {
 
         switch (entity.getType()) {
             case DATABASE: {
-                Database db = getHive().getDatabase(entity.getDatabase().getName());
-
-                ret = toDbEntity(db);
+                if (!context.getIgnoreDummyDatabaseName().contains(entity.getDatabase().getName())) {
+                    Database db = getHive().getDatabase(entity.getDatabase().getName());
+                    ret = toDbEntity(db);
+                }
             }
             break;
 
             case TABLE:
             case PARTITION: {
-                Table table = getHive().getTable(entity.getTable().getDbName(), entity.getTable().getTableName());
 
-                ret = toTableEntity(table, entityExtInfo);
-            }
-            break;
+                    String  dbName    = entity.getTable().getDbName();
+                    String  tableName = entity.getTable().getTableName();
+                    boolean skipTable = StringUtils.isNotEmpty(context.getIgnoreValuesTmpTableNamePrefix()) && tableName.toLowerCase().startsWith(context.getIgnoreValuesTmpTableNamePrefix());
+
+                    if (!skipTable) {
+                        skipTable = context.getIgnoreDummyTableName().contains(tableName) && context.getIgnoreDummyDatabaseName().contains(dbName);
+                    }
+
+                    if (!skipTable) {
+                        Table table = getHive().getTable(dbName, tableName);
+
+                        ret = toTableEntity(table, entityExtInfo);
+                    }
+                }
+                break;
 
             case DFS_DIR: {
                 URI location = entity.getLocation();
@@ -239,7 +252,7 @@ public abstract class BaseHiveEvent {
             break;
 
             default:
-            break;
+                break;
         }
 
         return ret;
