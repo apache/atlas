@@ -40,6 +40,8 @@ import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasEntityUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -190,12 +192,23 @@ public abstract class DeleteHandlerV1 {
                 }
                 String edgeLabel = AtlasGraphUtilsV1.getAttributeEdgeLabel(entityType, attributeInfo.getName());
                 AtlasType attrType = attributeInfo.getAttributeType();
+
                 switch (attrType.getTypeCategory()) {
                 case OBJECT_ID_TYPE:
-                    AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
-                    if (edge != null && AtlasGraphUtilsV1.getState(edge) == AtlasEntity.Status.ACTIVE) {
-                        AtlasVertex compositeVertex = edge.getInVertex();
-                        vertices.push(compositeVertex);
+                    if (attributeInfo.getAttributeDef().isSoftReferenced()) {
+                        String        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), String.class);
+                        AtlasObjectId refObjId   = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+                        AtlasVertex   refVertex  = refObjId != null ? AtlasGraphUtilsV1.findByGuid(refObjId.getGuid()) : null;
+
+                        if (refVertex != null) {
+                            vertices.push(refVertex);
+                        }
+                    } else {
+                        AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
+                        if (edge != null && AtlasGraphUtilsV1.getState(edge) == AtlasEntity.Status.ACTIVE) {
+                            AtlasVertex compositeVertex = edge.getInVertex();
+                            vertices.push(compositeVertex);
+                        }
                     }
                     break;
                 case ARRAY:
@@ -203,13 +216,29 @@ public abstract class DeleteHandlerV1 {
                     if (arrType.getElementType().getTypeCategory() != TypeCategory.OBJECT_ID_TYPE) {
                         continue;
                     }
-                    Iterator<AtlasEdge> edges = graphHelper.getOutGoingEdgesByLabel(vertex, edgeLabel);
-                    if (edges != null) {
-                        while (edges.hasNext()) {
-                            edge = edges.next();
-                            if (edge != null && AtlasGraphUtilsV1.getState(edge) == AtlasEntity.Status.ACTIVE) {
-                                AtlasVertex compositeVertex = edge.getInVertex();
-                                vertices.push(compositeVertex);
+
+                    if (attributeInfo.getAttributeDef().isSoftReferenced()) {
+                        List                softRefVal = vertex.getListProperty(attributeInfo.getVertexPropertyName(), List.class);
+                        List<AtlasObjectId> refObjIds  = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+
+                        if (CollectionUtils.isNotEmpty(refObjIds)) {
+                            for (AtlasObjectId refObjId : refObjIds) {
+                                AtlasVertex refVertex = AtlasGraphUtilsV1.findByGuid(refObjId.getGuid());
+
+                                if (refVertex != null) {
+                                    vertices.push(refVertex);
+                                }
+                            }
+                        }
+                    } else {
+                        Iterator<AtlasEdge> edges = graphHelper.getOutGoingEdgesByLabel(vertex, edgeLabel);
+                        if (edges != null) {
+                            while (edges.hasNext()) {
+                                AtlasEdge edge = edges.next();
+                                if (edge != null && AtlasGraphUtilsV1.getState(edge) == AtlasEntity.Status.ACTIVE) {
+                                    AtlasVertex compositeVertex = edge.getInVertex();
+                                    vertices.push(compositeVertex);
+                                }
                             }
                         }
                     }
@@ -220,15 +249,31 @@ public abstract class DeleteHandlerV1 {
                     if (valueTypeCategory != TypeCategory.OBJECT_ID_TYPE) {
                         continue;
                     }
-                    String propertyName = AtlasGraphUtilsV1.getQualifiedAttributePropertyKey(entityType, attributeInfo.getName());
-                    List<String> keys = vertex.getProperty(propertyName, List.class);
-                    if (keys != null) {
-                        for (String key : keys) {
-                            String mapEdgeLabel = GraphHelper.getQualifiedNameForMapKey(edgeLabel, key);
-                            edge = graphHelper.getEdgeForLabel(vertex, mapEdgeLabel);
-                            if (edge != null && AtlasGraphUtilsV1.getState(edge) == AtlasEntity.Status.ACTIVE) {
-                                AtlasVertex compositeVertex = edge.getInVertex();
-                                vertices.push(compositeVertex);
+
+                    if (attributeInfo.getAttributeDef().isSoftReferenced()) {
+                        Map                        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), Map.class);
+                        Map<String, AtlasObjectId> refObjIds  = AtlasEntityUtil.parseSoftRefValue(softRefVal);
+
+                        if (MapUtils.isNotEmpty(refObjIds)) {
+                            for (AtlasObjectId refObjId : refObjIds.values()) {
+                                AtlasVertex refVertex = AtlasGraphUtilsV1.findByGuid(refObjId.getGuid());
+
+                                if (refVertex != null) {
+                                    vertices.push(refVertex);
+                                }
+                            }
+                        }
+                    } else {
+                        String propertyName = AtlasGraphUtilsV1.getQualifiedAttributePropertyKey(entityType, attributeInfo.getName());
+                        List<String> keys = vertex.getProperty(propertyName, List.class);
+                        if (keys != null) {
+                            for (String key : keys) {
+                                String mapEdgeLabel = GraphHelper.getQualifiedNameForMapKey(edgeLabel, key);
+                                AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, mapEdgeLabel);
+                                if (edge != null && AtlasGraphUtilsV1.getState(edge) == AtlasEntity.Status.ACTIVE) {
+                                    AtlasVertex compositeVertex = edge.getInVertex();
+                                    vertices.push(compositeVertex);
+                                }
                             }
                         }
                     }

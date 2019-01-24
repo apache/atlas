@@ -33,6 +33,7 @@ import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,7 +120,7 @@ public class AtlasServerService {
     private void updateAttribute(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo,
                                  String propertyName,
                                  AtlasObjectId objectId) {
-        String value = EntityGraphMapper.getSoftRefFormattedValue(objectId);
+        String value = AtlasEntityUtil.formatSoftRefValue(objectId);
         updateAttribute(entityWithExtInfo.getEntity(), propertyName, value);
         for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
             updateAttribute(e, propertyName, value);

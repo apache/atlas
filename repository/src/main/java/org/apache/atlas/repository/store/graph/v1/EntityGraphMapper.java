@@ -51,6 +51,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -73,7 +74,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.string;
 public class EntityGraphMapper {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphMapper.class);
 
-    private static final String SOFT_REF_FORMAT      = "%s:%s";
     private static final int    INDEXED_STR_SAFE_LEN = AtlasConfiguration.GRAPHSTORE_INDEXED_STRING_SAFE_LENGTH.getInt();
 
     private final GraphHelper             graphHelper = GraphHelper.getInstance();
@@ -353,25 +353,24 @@ public class EntityGraphMapper {
         }
     }
 
-    private Object mapSoftRefValue(AttributeMutationContext ctx, EntityMutationContext context) {
-        if(ctx.getValue() != null && !(ctx.getValue() instanceof AtlasObjectId)) {
-            LOG.warn("mapSoftRefValue: Was expecting AtlasObjectId, but found: {}", ctx.getValue().getClass());
-            return null;
-        }
+    private String mapSoftRefValue(AttributeMutationContext ctx, EntityMutationContext context) {
+        String ret = null;
 
-        String softRefValue = null;
-        if(ctx.getValue() != null) {
+        if (ctx.getValue() instanceof AtlasObjectId) {
             AtlasObjectId objectId = (AtlasObjectId) ctx.getValue();
-            String resolvedGuid = AtlasTypeUtil.isUnAssignedGuid(objectId.getGuid())
-                                    ? context.getGuidAssignments().get(objectId.getGuid())
-                                    : objectId.getGuid();
+            String        typeName = objectId.getTypeName();
+            String        guid     = AtlasTypeUtil.isUnAssignedGuid(objectId.getGuid()) ? context.getGuidAssignments().get(objectId.getGuid()) : objectId.getGuid();
 
-            softRefValue = String.format(SOFT_REF_FORMAT, objectId.getTypeName(), resolvedGuid);
+            ret = AtlasEntityUtil.formatSoftRefValue(typeName, guid);
+
+            AtlasGraphUtilsV1.setEncodedProperty(ctx.getReferringVertex(), ctx.getVertexProperty(), ret);
+        } else {
+            if (ctx.getValue() != null) {
+                LOG.warn("mapSoftRefValue: Was expecting AtlasObjectId, but found: {}", ctx.getValue().getClass());
+            }
         }
 
-        AtlasGraphUtilsV1.setEncodedProperty(ctx.getReferringVertex(), ctx.getVertexProperty(), softRefValue);
-
-        return softRefValue;
+        return ret;
     }
 
     private void addInverseReference(AttributeMutationContext ctx, AtlasAttribute inverseAttribute, AtlasEdge edge) throws AtlasBaseException {
@@ -1171,13 +1170,5 @@ public class EntityGraphMapper {
         }
 
         return ret;
-    }
-
-    public static String getSoftRefFormattedValue(AtlasObjectId objectId) {
-        return getSoftRefFormattedString(objectId.getTypeName(), objectId.getGuid());
-    }
-
-    private static String getSoftRefFormattedString(String typeName, String resolvedGuid) {
-        return String.format(SOFT_REF_FORMAT, typeName, resolvedGuid);
     }
 }
