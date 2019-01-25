@@ -315,14 +315,14 @@ public class AtlasClassificationType extends AtlasStructType {
     }
 
     @Override
-    public boolean areEqualValues(Object val1, Object val2) {
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
         for (AtlasClassificationType superType : superTypes) {
-            if (!superType.areEqualValues(val1, val2)) {
+            if (!superType.areEqualValues(val1, val2, guidAssignments)) {
                 return false;
             }
         }
 
-        return super.areEqualValues(val1, val2);
+        return super.areEqualValues(val1, val2, guidAssignments);
     }
 
     @Override

@@ -172,7 +172,7 @@ public class AtlasRelationshipType extends AtlasStructType {
     }
 
     @Override
-    public boolean areEqualValues(Object val1, Object val2) {
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
         final boolean ret;
 
         if (val1 == null) {
@@ -189,7 +189,7 @@ public class AtlasRelationshipType extends AtlasStructType {
 
                 if (rel2 == null) {
                     ret = false;
-                } else if (!super.areEqualValues(rel1, rel2)) {
+                } else if (!super.areEqualValues(rel1, rel2, guidAssignments)) {
                     ret = false;
                 } else {
                     ret = Objects.equals(rel1.getGuid(), rel2.getGuid()) &&

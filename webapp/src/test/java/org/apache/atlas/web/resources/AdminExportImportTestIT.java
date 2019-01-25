@@ -49,7 +49,7 @@ public class AdminExportImportTestIT extends BaseResourceIT {
     static final String IMPORT_TRANSFORM_CLEAR_ATTRS =
             "{ \"Asset\": { \"*\":[ \"clearAttrValue:replicatedTo,replicatedFrom\" ] } }";
     static final String IMPORT_TRANSFORM_SET_DELETED =
-            "{ \"Asset\": { \"*\":[ \"setDeleted\" ] } }";
+            "{ \"Referenceable\": { \"*\":[ \"setDeleted\" ] } }";
 
     @Test
     public void isActive() throws AtlasServiceException {
