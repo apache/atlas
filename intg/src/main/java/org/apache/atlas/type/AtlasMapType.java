@@ -119,7 +119,7 @@ public class AtlasMapType extends AtlasType {
     }
 
     @Override
-    public boolean areEqualValues(Object val1, Object val2) {
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
         boolean ret = true;
 
         if (val1 == null) {
@@ -143,7 +143,7 @@ public class AtlasMapType extends AtlasType {
                         ret = false;
                     } else {
                         for (Object key : map1.keySet()) {
-                            if (!valueType.areEqualValues(map1.get(key), map2.get(key))) {
+                            if (!valueType.areEqualValues(map1.get(key), map2.get(key), guidAssignments)) {
                                 ret = false;
 
                                 break;

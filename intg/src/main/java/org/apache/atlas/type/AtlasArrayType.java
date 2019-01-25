@@ -28,6 +28,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.SERVICE_TYPE_ATLAS_CORE;
@@ -149,7 +150,7 @@ public class AtlasArrayType extends AtlasType {
     }
 
     @Override
-    public boolean areEqualValues(Object val1, Object val2) {
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
         boolean ret = true;
 
         if (val1 == null) {
@@ -164,7 +165,7 @@ public class AtlasArrayType extends AtlasType {
                     ret = false;
                 } else {
                     for (int i = 0; i < len; i++) {
-                        if (!elementType.areEqualValues(Array.get(val1, i), Array.get(val2, i))) {
+                        if (!elementType.areEqualValues(Array.get(val1, i), Array.get(val2, i), guidAssignments)) {
                             ret = false;
 
                             break;
@@ -182,7 +183,7 @@ public class AtlasArrayType extends AtlasType {
                         boolean foundInSet2 = false;
 
                         for (Object elem2 : set2) {
-                            if (elementType.areEqualValues(elem1, elem2)) {
+                            if (elementType.areEqualValues(elem1, elem2, guidAssignments)) {
                                 foundInSet2 = true;
 
                                 break;
@@ -213,7 +214,7 @@ public class AtlasArrayType extends AtlasType {
                             ret = false;
                         } else {
                             for (int i = 0; i < len; i++) {
-                                if (!elementType.areEqualValues(list1.get(i), list2.get(i))) {
+                                if (!elementType.areEqualValues(list1.get(i), list2.get(i), guidAssignments)) {
                                     ret = false;
 
                                     break;

@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 
@@ -79,7 +80,7 @@ public abstract class AtlasType {
 
     public abstract boolean isValidValue(Object obj);
 
-    public boolean areEqualValues(Object val1, Object val2) {
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
         final boolean ret;
 
         if (val1 == null) {

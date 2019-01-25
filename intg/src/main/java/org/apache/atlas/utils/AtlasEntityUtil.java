@@ -43,38 +43,6 @@ public class AtlasEntityUtil {
     private static final int    SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME = 0;
     private static final int    SOFT_REFERENCE_FORMAT_INDEX_GUID      = 1;
 
-    public static boolean hasAnyAttributeUpdate(AtlasEntityType entityType, AtlasEntity currEntity, AtlasEntity newEntity) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> hasAnyAttributeUpdate(guid={}, typeName={})", currEntity.getGuid(), currEntity.getTypeName());
-        }
-
-        boolean ret = false;
-
-        for (AtlasAttribute attribute : entityType.getAllAttributes().values()) {
-            String    attrName  = attribute.getName();
-            AtlasType attrType  = attribute.getAttributeType();
-            Object    currValue = currEntity.getAttribute(attrName);
-            Object    newValue  = newEntity.getAttribute(attrName);
-
-            if (!attrType.areEqualValues(currEntity.getAttribute(attrName), newEntity.getAttribute(attrName))) {
-                ret = true;
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("hasAnyAttributeUpdate(guid={}, typeName={}): attribute '{}' is found updated - currentValue={}, newValue={}",
-                            currEntity.getGuid(), currEntity.getTypeName(), attrName, currValue, newValue);
-                }
-
-                break;
-            }
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== hasAnyAttributeUpdate(guid={}, typeName={}): ret={}", currEntity.getGuid(), currEntity.getTypeName(), ret);
-        }
-
-        return ret;
-    }
-
 
     public static String formatSoftRefValue(String typeName, String guid) {
         return String.format(SOFT_REF_FORMAT, typeName, guid);

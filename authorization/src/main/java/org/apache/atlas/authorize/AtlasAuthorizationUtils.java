@@ -22,6 +22,7 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,8 @@ public class AtlasAuthorizationUtils {
     }
 
     public static boolean isAccessAllowed(AtlasAdminAccessRequest request) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("isAccessAllowed");
+
         boolean ret      = false;
         String  userName = getCurrentUserName();
 
@@ -104,10 +107,14 @@ public class AtlasAuthorizationUtils {
             ret = true;
         }
 
+        RequestContext.get().endMetricRecord(metric);
+
         return ret;
     }
 
     public static boolean isAccessAllowed(AtlasEntityAccessRequest request) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("isAccessAllowed");
+
         boolean ret      = false;
         String  userName = getCurrentUserName();
 
@@ -124,11 +131,15 @@ public class AtlasAuthorizationUtils {
         } else {
             ret = true;
         }
+
+        RequestContext.get().endMetricRecord(metric);
 
         return ret;
     }
 
     public static boolean isAccessAllowed(AtlasTypeAccessRequest request) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("isAccessAllowed");
+
         boolean ret      = false;
         String  userName = getCurrentUserName();
 
@@ -145,11 +156,15 @@ public class AtlasAuthorizationUtils {
         } else {
             ret = true;
         }
+
+        RequestContext.get().endMetricRecord(metric);
 
         return ret;
     }
 
     public static boolean isAccessAllowed(AtlasRelationshipAccessRequest request) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("isAccessAllowed");
+
         boolean ret      = false;
         String  userName = getCurrentUserName();
 
@@ -166,6 +181,8 @@ public class AtlasAuthorizationUtils {
         } else {
             ret = true;
         }
+
+        RequestContext.get().endMetricRecord(metric);
 
         return ret;
     }

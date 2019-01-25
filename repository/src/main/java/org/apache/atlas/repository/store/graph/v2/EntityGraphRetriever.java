@@ -197,6 +197,18 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public Object getEntityAttribute(AtlasVertex entityVertex, AtlasAttribute attribute) {
+        Object ret = null;
+
+        try {
+            ret = getVertexAttribute(entityVertex, attribute);
+        } catch (AtlasBaseException excp) {
+            // ignore
+        }
+
+        return ret;
+    }
+
     public AtlasEntityHeader toAtlasEntityHeader(AtlasEntity entity) {
         AtlasEntityHeader ret        = null;
         String            typeName   = entity.getTypeName();

@@ -40,7 +40,6 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
@@ -694,23 +693,67 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             // for existing entities, skip update if incoming entity doesn't have any change
             if (CollectionUtils.isNotEmpty(context.getUpdatedEntities())) {
+                MetricRecorder checkForUnchangedEntities = RequestContext.get().startMetricRecord("checkForUnchangedEntities");
+
                 List<AtlasEntity> entitiesToSkipUpdate = null;
 
                 for (AtlasEntity entity : context.getUpdatedEntities()) {
-                    String          guid          = entity.getGuid();
-                    AtlasVertex     vertex        = context.getVertex(guid);
-                    AtlasEntity     entityInStore = entityRetriever.toAtlasEntity(vertex);
-                    AtlasEntityType entityType    = typeRegistry.getEntityTypeByName(entity.getTypeName());
+                    String          guid       = entity.getGuid();
+                    AtlasVertex     vertex     = context.getVertex(guid);
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+                    boolean         hasUpdates = false;
 
-                    if (!AtlasEntityUtil.hasAnyAttributeUpdate(entityType, entity, entityInStore)) {
-                        // if classifications are to be replaced as well, then skip updates only when no change in classifications as well
-                        if (!replaceClassifications || Objects.equals(entity.getClassifications(), entityInStore.getClassifications())) {
-                            if (entitiesToSkipUpdate == null) {
-                                entitiesToSkipUpdate = new ArrayList<>();
+                    if (MapUtils.isNotEmpty(entity.getRelationshipAttributes())) {
+                        hasUpdates = true; // if relationship attributes are provided, assume there is an update
+                    }
+
+                    if (!hasUpdates) {
+                        hasUpdates = entity.getStatus() == AtlasEntity.Status.DELETED; // entity status could be updated during import
+                    }
+
+                    if (!hasUpdates) {
+                        for (AtlasAttribute attribute : entityType.getAllAttributes().values()) {
+                            if (!entity.getAttributes().containsKey(attribute.getName())) {  // if value is not provided, current value will not be updated
+                                continue;
                             }
 
-                            entitiesToSkipUpdate.add(entity);
+                            Object newVal  = entity.getAttribute(attribute.getName());
+                            Object currVal = entityRetriever.getEntityAttribute(vertex, attribute);
+
+                            if (!attribute.getAttributeType().areEqualValues(currVal, newVal, context.getGuidAssignments())) {
+                                hasUpdates = true;
+
+                                if (LOG.isDebugEnabled()) {
+                                    LOG.debug("found attribute update: entity(guid={}, typeName={}), attrName={}, currValue={}, newValue={}", guid, entity.getTypeName(), attribute.getName(), currVal, newVal);
+                                }
+
+                                break;
+                            }
                         }
+                    }
+
+                    // if classifications are to be replaced, then skip updates only when no change in classifications
+                    if (!hasUpdates && replaceClassifications) {
+                        List<AtlasClassification> newVal  = entity.getClassifications();
+                        List<AtlasClassification> currVal = entityRetriever.getAllClassifications(vertex);
+
+                        if (!Objects.equals(currVal, newVal)) {
+                            hasUpdates = true;
+
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("found classifications update: entity(guid={}, typeName={}), currValue={}, newValue={}", guid, entity.getTypeName(), currVal, newVal);
+                            }
+                        }
+                    }
+
+                    if (!hasUpdates) {
+                        if (entitiesToSkipUpdate == null) {
+                            entitiesToSkipUpdate = new ArrayList<>();
+                        }
+
+                        LOG.info("skipping unchanged entity: {}", entity);
+
+                        entitiesToSkipUpdate.add(entity);
                     }
                 }
 
@@ -725,6 +768,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                                                              "update entity: type=", entity.getTypeName());
                     }
                 }
+
+                RequestContext.get().endMetricRecord(checkForUnchangedEntities);
             }
 
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications);
