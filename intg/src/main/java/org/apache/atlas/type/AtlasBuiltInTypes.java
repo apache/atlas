@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 
 
 /**
@@ -255,6 +256,7 @@ public class AtlasBuiltInTypes {
      */
     public static class AtlasFloatType extends AtlasType {
         private static final Float DEFAULT_VALUE = 0f;
+        private static final Float FLOAT_EPSILON = 0.00000001f;
 
         public AtlasFloatType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_FLOAT, TypeCategory.PRIMITIVE);
@@ -272,6 +274,33 @@ public class AtlasBuiltInTypes {
             }
 
             return getNormalizedValue(obj) != null;
+        }
+
+        @Override
+        public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+            final boolean ret;
+
+            if (val1 == null) {
+                ret = val2 == null;
+            } else if (val2 == null) {
+                ret = false;
+            } else {
+                Float floatVal1 = getNormalizedValue(val1);
+
+                if (floatVal1 == null) {
+                    ret = false;
+                } else {
+                    Float floatVal2 = getNormalizedValue(val2);
+
+                    if (floatVal2 == null) {
+                        ret = false;
+                    } else {
+                        ret = Math.abs(floatVal1 - floatVal2) < FLOAT_EPSILON;
+                    }
+                }
+            }
+
+            return ret;
         }
 
         @Override
@@ -303,7 +332,8 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of double type.
      */
     public static class AtlasDoubleType extends AtlasType {
-        private static final Double DEFAULT_VALUE = 0d;
+        private static final Double DEFAULT_VALUE  = 0d;
+        private static final Double DOUBLE_EPSILON = 0.00000001d;
 
         public AtlasDoubleType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE, TypeCategory.PRIMITIVE);
@@ -321,6 +351,33 @@ public class AtlasBuiltInTypes {
             }
 
             return getNormalizedValue(obj) != null;
+        }
+
+        @Override
+        public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+            final boolean ret;
+
+            if (val1 == null) {
+                ret = val2 == null;
+            } else if (val2 == null) {
+                ret = false;
+            } else {
+                Double doubleVal1 = getNormalizedValue(val1);
+
+                if (doubleVal1 == null) {
+                    ret = false;
+                } else {
+                    Double doubleVal2 = getNormalizedValue(val2);
+
+                    if (doubleVal2 == null) {
+                        ret = false;
+                    } else {
+                        ret = Math.abs(doubleVal1 - doubleVal2) < DOUBLE_EPSILON;
+                    }
+                }
+            }
+
+            return ret;
         }
 
         @Override
@@ -567,6 +624,48 @@ public class AtlasBuiltInTypes {
             }
 
             return getNormalizedValue(obj) != null;
+        }
+
+        @Override
+        public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+            boolean ret = true;
+
+            if (val1 == null) {
+                ret = val2 == null;
+            } else if (val2 == null) {
+                ret = false;
+            } else {
+                AtlasObjectId v1 = getNormalizedValue(val1);
+                AtlasObjectId v2 = getNormalizedValue(val2);
+
+                if (v1 == null || v2 == null) {
+                    ret = false;
+                } else {
+                    String guid1 = v1.getGuid();
+                    String guid2 = v2.getGuid();
+
+                    if (guidAssignments != null ) {
+                        if (guidAssignments.containsKey(guid1)) {
+                            guid1 = guidAssignments.get(guid1);
+                        }
+
+                        if (guidAssignments.containsKey(guid2)) {
+                            guid2 = guidAssignments.get(guid2);
+                        }
+                    }
+
+                    boolean isV1AssignedGuid = AtlasTypeUtil.isAssignedGuid(guid1);
+                    boolean isV2AssignedGuid = AtlasTypeUtil.isAssignedGuid(guid2);
+
+                    if (isV1AssignedGuid == isV2AssignedGuid) { // if both have assigned/unassigned guids, compare guids
+                        ret = Objects.equals(guid1, guid2);
+                    } else { // if one has assigned and other unassigned guid, compare typeName and unique-attribute
+                        ret = Objects.equals(v1.getTypeName(), v2.getTypeName()) && Objects.equals(v1.getUniqueAttributes(), v2.getUniqueAttributes());
+                    }
+                }
+            }
+
+            return ret;
         }
 
         @Override

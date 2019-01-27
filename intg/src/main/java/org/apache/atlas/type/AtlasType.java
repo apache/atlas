@@ -26,8 +26,8 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
 import java.util.List;
-
-
+import java.util.Map;
+import java.util.Objects;
 
 
 /**
@@ -71,6 +71,32 @@ public abstract class AtlasType {
     }
 
     public abstract boolean isValidValue(Object obj);
+
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+        final boolean ret;
+
+        if (val1 == null) {
+            ret = val2 == null;
+        } else if (val2 == null) {
+            ret = false;
+        } else {
+            Object normalizedVal1 = getNormalizedValue(val1);
+
+            if (normalizedVal1 == null) {
+                ret = false;
+            } else {
+                Object normalizedVal2 = getNormalizedValue(val2);
+
+                if (normalizedVal2 == null) {
+                    ret = false;
+                } else {
+                    ret = Objects.equals(normalizedVal1, normalizedVal2);
+                }
+            }
+        }
+
+        return ret;
+    }
 
     public abstract Object getNormalizedValue(Object obj);
 

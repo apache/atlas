@@ -146,6 +146,18 @@ public final class EntityGraphRetriever {
         return toAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
+    public Object getEntityAttribute(AtlasVertex entityVertex, AtlasAttribute attribute) {
+        Object ret = null;
+
+        try {
+            ret = getVertexAttribute(entityVertex, attribute);
+        } catch (AtlasBaseException excp) {
+            // ignore
+        }
+
+        return ret;
+    }
+
     public AtlasVertex getEntityVertex(String guid) throws AtlasBaseException {
         AtlasVertex ret = AtlasGraphUtilsV1.findByGuid(guid);
 

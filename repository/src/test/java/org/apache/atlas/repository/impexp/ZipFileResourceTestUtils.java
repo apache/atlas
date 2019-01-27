@@ -122,7 +122,7 @@ public class ZipFileResourceTestUtils {
                     entry.getKey().contains("Column") ||
                     entry.getKey().contains("StorageDesc")) continue;
 
-            assertTrue(metricsForCompare.containsKey(entry.getKey()), entry.getKey());
+            assertTrue(metricsForCompare.containsKey(entry.getKey()), "key '" + entry.getKey() + "' missing from import result: " + metricsForCompare.toString());
             assertEquals(entry.getValue(), metricsForCompare.get(entry.getKey()), entry.getKey());
         }
     }

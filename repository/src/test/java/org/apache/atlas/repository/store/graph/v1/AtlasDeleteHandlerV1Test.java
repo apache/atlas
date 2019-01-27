@@ -59,6 +59,7 @@ import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.springframework.util.CollectionUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -73,11 +74,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.TestUtils.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
+import static org.apache.atlas.TestUtils.COLUMN_TYPE;
+import static org.apache.atlas.TestUtils.DATABASE_TYPE;
+import static org.apache.atlas.TestUtils.NAME;
+import static org.apache.atlas.TestUtils.TABLE_TYPE;
+import static org.testng.Assert.*;
 
 public abstract class AtlasDeleteHandlerV1Test {
 
@@ -175,7 +177,7 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         //get entity by unique attribute should throw EntityNotFoundException
         try {
-            metadataService.getEntityDefinition(TestUtils.DATABASE_TYPE, "name", (String) response.getFirstEntityCreated().getAttribute("name"));
+            metadataService.getEntityDefinition(DATABASE_TYPE, "name", (String) response.getFirstEntityCreated().getAttribute("name"));
             fail("Expected EntityNotFoundException");
         } catch(EntityNotFoundException e) {
             //expected
@@ -188,7 +190,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         assertNotEquals(newCreationResponse.getFirstEntityCreated().getGuid(), response.getFirstEntityCreated().getGuid());
 
         //get by unique attribute should return the new entity
-        ITypedReferenceableInstance instance = metadataService.getEntityDefinitionReference(TestUtils.DATABASE_TYPE, "name", (String) dbEntity.getAttribute("name"));
+        ITypedReferenceableInstance instance = metadataService.getEntityDefinitionReference(DATABASE_TYPE, "name", (String) dbEntity.getAttribute("name"));
         assertEquals(instance.getId()._getId(), newCreationResponse.getFirstEntityCreated().getGuid());
     }
 
@@ -266,7 +268,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         final AtlasEntityHeader column3Created = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(COLUMN_TYPE, NAME, (String) columnEntity3.getAttribute(NAME));
 
         // Retrieve the table entities from the Repository, to get their guids and the composite column guids.
-        ITypedReferenceableInstance tableInstance = metadataService.getEntityDefinitionReference(TestUtils.TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
+        ITypedReferenceableInstance tableInstance = metadataService.getEntityDefinitionReference(TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
         List<IReferenceableInstance> columns = (List<IReferenceableInstance>) tableInstance.get(COLUMNS_ATTR_NAME);
 
         //Delete column
@@ -304,7 +306,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         assertEntityDeleted(colId);
 
         // Delete the table entities.  The deletion should cascade to their composite columns.
-        tableInstance = metadataService.getEntityDefinitionReference(TestUtils.TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
+        tableInstance = metadataService.getEntityDefinitionReference(TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
 
         init();
         EntityMutationResponse tblDeletionResponse = entityStore.deleteById(tableInstance.getId()._getId());
@@ -346,11 +348,17 @@ public abstract class AtlasDeleteHandlerV1Test {
         init();
 
         final EntityMutationResponse hrDeptCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(hrDept), false);
-        final AtlasEntityHeader deptCreated = getFirstCreatedOrUpdatedEntityByTyp(hrDeptCreationResponse, DEPARTMENT_TYPE);
+        final AtlasEntityHeader deptCreated = getFirstCreatedOrUpdatedEntityByTyp(hrDeptCreationResponse, TestUtilsV2.DEPARTMENT_TYPE);
         final AtlasEntityHeader maxEmployeeCreated = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.EMPLOYEE_TYPE, NAME, "Max");
         final AtlasEntityHeader johnEmployeeCreated = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.EMPLOYEE_TYPE, NAME, "John");
         final AtlasEntityHeader janeEmployeeCreated = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.MANAGER_TYPE, NAME, "Jane");
         final AtlasEntityHeader juliusEmployeeCreated = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.MANAGER_TYPE, NAME, "Julius");
+
+        assertNotNull(deptCreated, "entity not found in response: typeName=" + TestUtilsV2.DEPARTMENT_TYPE + "; response=" + hrDeptCreationResponse);
+        assertNotNull(maxEmployeeCreated, "entity not found in response: typeName=" + TestUtilsV2.EMPLOYEE_TYPE + ", name=Max" + "; response=" + hrDeptCreationResponse);
+        assertNotNull(johnEmployeeCreated, "entity not found in response: typeName=" + TestUtilsV2.EMPLOYEE_TYPE + ", name=John" + "; response=" + hrDeptCreationResponse);
+        assertNotNull(janeEmployeeCreated, "entity not found in response: typeName=" + TestUtilsV2.MANAGER_TYPE + ", name=Jane" + "; response=" + hrDeptCreationResponse);
+        assertNotNull(juliusEmployeeCreated, "entity not found in response: typeName=" + TestUtilsV2.MANAGER_TYPE + ", name=Julius" + "; response=" + hrDeptCreationResponse);
 
         ITypedReferenceableInstance max = metadataService.getEntityDefinition(maxEmployeeCreated.getGuid());
         String maxGuid = max.getId()._getId();
@@ -469,7 +477,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         init();
         final EntityMutationResponse hrDeptCreationResponse = entityStore.createOrUpdate(new AtlasEntityStream(hrDept), false);
 
-        final AtlasEntityHeader deptCreated = getFirstCreatedOrUpdatedEntityByTyp(hrDeptCreationResponse, DEPARTMENT_TYPE);
+        final AtlasEntityHeader deptCreated = getFirstCreatedOrUpdatedEntityByTyp(hrDeptCreationResponse, TestUtilsV2.DEPARTMENT_TYPE);
         final AtlasEntityHeader maxEmployee = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.EMPLOYEE_TYPE, NAME, "Max");
         final AtlasEntityHeader johnEmployee = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.EMPLOYEE_TYPE, NAME, "John");
         final AtlasEntityHeader janeEmployee = getCreatedOrUpdatedEntityByTypeAndAttribute(hrDeptCreationResponse, TestUtilsV2.MANAGER_TYPE, NAME, "Jane");
@@ -518,6 +526,11 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         final AtlasEntity.AtlasEntityWithExtInfo johnUpdated = entityStore.getById(johnEmployee.getGuid());
         assertJohnForTestDisconnectBidirectionalReferences(johnUpdated, janeEmployee.getGuid());
+
+        // cleanup - delete entities created by this test
+        entityStore.deleteById(juliusEmployee.getGuid());
+        entityStore.deleteById(johnEmployee.getGuid());
+        entityStore.deleteById(deptCreated.getGuid());
     }
 
     protected List<String> extractGuids(final List<AtlasEntityHeader> updatedEntities) {
@@ -857,7 +870,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         final AtlasEntityHeader column3Created = tblCreationResponse.getCreatedEntityByTypeNameAndAttribute(COLUMN_TYPE, NAME, (String) columnEntity3.getAttribute(NAME));
 
         // Retrieve the table entities from the Repository, to get their guids and the composite column guids.
-        ITypedReferenceableInstance tableInstance = metadataService.getEntityDefinitionReference(TestUtils.TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
+        ITypedReferenceableInstance tableInstance = metadataService.getEntityDefinitionReference(TABLE_TYPE, NAME, (String) tableEntity.getAttribute(NAME));
         List<IReferenceableInstance> columns = (List<IReferenceableInstance>) tableInstance.get(COLUMNS_ATTR_NAME);
 
         //Delete column
@@ -989,11 +1002,28 @@ public abstract class AtlasDeleteHandlerV1Test {
         }
     }
 
+    /*                                                  | (ownedRef)
+        ----------------------------------------------  |
+       |         MapValueReferencerContainer          | |
+       |----------------------------------------------| |   ----------------------------------
+       | requiredMap: map<string, MapValueReferencer> | -> |       MapValueReferencer         |
+        ----------------------------------------------     |----------------------------------|     -------------------
+                                                           | refToMapValue: CompositeMapValue | -> | CompositeMapValue |
+                                                            ----------------------------------     |-------------------|
+                                                                                                 ->| name: string      |
+                                                                                                |   -------------------
+                                                         -------------------------------------  |
+                                                        |           CompositeMapOwner         | |
+                                                        |-------------------------------------| |
+                                                        | name: string                        | |
+                                                        | map: map<string, CompositeMapValue> |-- (ownedRef)
+                                                         -------------------------------------
+     */
     @Test
     public void testLowerBoundsIgnoredWhenDeletingCompositeEntitesOwnedByMap() throws Exception {
         // Define MapValueReferencer type with required reference to CompositeMapValue.
         AtlasStructDef.AtlasAttributeDef[] mapValueAttributes = new AtlasStructDef.AtlasAttributeDef[]{
-            new AtlasStructDef.AtlasAttributeDef("refToMapValue", "CompositeMapValue",
+            new AtlasStructDef.AtlasAttributeDef("refToMapValue", compositeMapValueType.getTypeName(),
                 false,
                 AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, 1, 1,
                 false, false,
@@ -1020,6 +1050,7 @@ public abstract class AtlasDeleteHandlerV1Test {
                 Arrays.asList(mapContainerAttributes), Collections.<String>emptySet());
 
 
+
         AtlasTypesDef typesDef = AtlasTypeUtil.getTypesDef(ImmutableList.<AtlasEnumDef>of(),
             ImmutableList.<AtlasStructDef>of(),
             ImmutableList.<AtlasClassificationDef>of(),
@@ -1043,7 +1074,7 @@ public abstract class AtlasDeleteHandlerV1Test {
         Assert.assertNotNull(mapValueInstance);
         String mapValueGuid = mapValueInstance.getId()._getId();
 
-        // Create instance of MapValueReferencerContainer
+        // Create instance of MapValueReferencer
         init();
         AtlasEntity mapValueReferencer = new AtlasEntity(mapValueDef.getName());
         mapValueReferencer.setAttribute("refToMapValue", new AtlasObjectId(mapValueInstance.getId()._getId(), mapValueInstance.getTypeName()));
@@ -1052,8 +1083,10 @@ public abstract class AtlasDeleteHandlerV1Test {
 
         List<AtlasEntityHeader> createEntitiesResult = entityStore.createOrUpdate(new AtlasEntityStream(entities), false).getCreatedEntities();
         Assert.assertEquals(createEntitiesResult.size(), 1);
+        String mapValueReferencerGuid = createEntitiesResult.get(0).getGuid();
+        mapValueReferencer.setGuid(mapValueReferencerGuid);
 
-        // Create instance of MapValueReferencer, and update mapValueReferencerContainer
+        // Create instance of MapValueReferencerContainer, and add MapValueReferencer in its requiredMap attribute
         // to reference it.
         AtlasEntity mapValueReferenceContainer = new AtlasEntity(mapContainerDef.getName());
         entities = new AtlasEntity.AtlasEntitiesWithExtInfo();
@@ -1066,11 +1099,9 @@ public abstract class AtlasDeleteHandlerV1Test {
         EntityMutationResponse updateEntitiesResult = entityStore.createOrUpdate(new AtlasEntityStream(entities), false);
 
         String mapValueReferencerContainerGuid = updateEntitiesResult.getCreatedEntitiesByTypeName("MapValueReferencerContainer").get(0).getGuid();
-        String mapValueReferencerGuid = updateEntitiesResult.getUpdatedEntitiesByTypeName("MapValueReferencer").get(0).getGuid();
 
         Assert.assertEquals(updateEntitiesResult.getCreatedEntities().size(), 1);
-        Assert.assertEquals(updateEntitiesResult.getUpdatedEntities().size(), 1);
-        Assert.assertEquals(updateEntitiesResult.getUpdatedEntities().get(0).getGuid(), mapValueReferencerGuid);
+        Assert.assertTrue(CollectionUtils.isEmpty(updateEntitiesResult.getUpdatedEntities()));
 
 
         // Delete map owner and map referencer container.  A total of 4 entities should be deleted,

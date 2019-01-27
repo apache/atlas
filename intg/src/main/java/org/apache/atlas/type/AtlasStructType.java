@@ -228,6 +228,44 @@ public class AtlasStructType extends AtlasType {
     }
 
     @Override
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+        boolean ret = true;
+
+        if (val1 == null) {
+            ret = val2 == null;
+        } else if (val2 == null) {
+            ret = false;
+        } else {
+            AtlasStruct structVal1 = getStructFromValue(val1);
+
+            if (structVal1 == null) {
+                ret = false;
+            } else {
+                AtlasStruct structVal2 = getStructFromValue(val2);
+
+                if (structVal2 == null) {
+                    ret = false;
+                } else if (!StringUtils.equalsIgnoreCase(structVal1.getTypeName(), structVal2.getTypeName())) {
+                    ret = false;
+                } else {
+                    for (AtlasAttribute attribute : getAllAttributes().values()) {
+                        Object attrValue1 = structVal1.getAttribute(attribute.getName());
+                        Object attrValue2 = structVal2.getAttribute(attribute.getName());
+
+                        if (!attribute.getAttributeType().areEqualValues(attrValue1, attrValue2, guidAssignments)) {
+                            ret = false;
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
     public boolean isValidValueForUpdate(Object obj) {
         if (obj != null) {
             Map<String, Object> attributes;
@@ -600,6 +638,29 @@ public class AtlasStructType extends AtlasType {
 
         return Collections.unmodifiableMap(ret);
     }
+
+    private AtlasStruct getStructFromValue(Object val) {
+        final AtlasStruct ret;
+
+        if (val instanceof AtlasStruct) {
+            ret = (AtlasStruct) val;
+        } else if (val instanceof Map) {
+            ret = new AtlasStruct((Map) val);
+        } else if (val instanceof String) {
+            Map map = AtlasType.fromJson(val.toString(), Map.class);
+
+            if (map == null) {
+                ret = null;
+            } else {
+                ret = new AtlasStruct((Map) val);
+            }
+        } else {
+            ret = null;
+        }
+
+        return ret;
+    }
+
 
     public static class AtlasAttribute {
         private final AtlasStructType   definedInType;
