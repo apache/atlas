@@ -109,6 +109,10 @@ public class AtlasInstanceConverter {
 
             if (ret == null) {
                 ret = metadataService.getEntityDefinition(guid);
+
+                if (ret != null) {
+                    RequestContext.get().cache(ret);
+                }
             }
 
             return ret;

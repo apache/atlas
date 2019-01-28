@@ -75,6 +75,10 @@ public final class EntityGraphRetriever {
         this.typeRegistry = typeRegistry;
     }
 
+    public AtlasEntity toAtlasEntity(String guid, boolean includeReferences) throws AtlasBaseException {
+        return mapVertexToAtlasEntity(getEntityVertex(guid), null, false, includeReferences);
+    }
+
     public AtlasEntity toAtlasEntity(String guid) throws AtlasBaseException {
         return toAtlasEntity(getEntityVertex(guid));
     }
@@ -201,6 +205,10 @@ public final class EntityGraphRetriever {
     }
 
     private AtlasEntity mapVertexToAtlasEntity(AtlasVertex entityVertex, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo) throws AtlasBaseException {
+        return mapVertexToAtlasEntity(entityVertex, entityExtInfo, isMinExtInfo, true);
+    }
+
+    private AtlasEntity mapVertexToAtlasEntity(AtlasVertex entityVertex, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
         String      guid   = GraphHelper.getGuid(entityVertex);
         AtlasEntity entity = entityExtInfo != null ? entityExtInfo.getEntity(guid) : null;
 
@@ -217,7 +225,7 @@ public final class EntityGraphRetriever {
 
             mapSystemAttributes(entityVertex, entity);
 
-            mapAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo);
+            mapAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo, includeReferences);
 
             mapClassifications(entityVertex, entity);
         }
@@ -347,6 +355,10 @@ public final class EntityGraphRetriever {
     }
 
     private void mapAttributes(AtlasVertex entityVertex, AtlasStruct struct, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo) throws AtlasBaseException {
+        mapAttributes(entityVertex, struct, entityExtInfo, isMinExtInfo, true);
+    }
+
+    private void mapAttributes(AtlasVertex entityVertex, AtlasStruct struct, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
         AtlasType objType = typeRegistry.getType(struct.getTypeName());
 
         if (!(objType instanceof AtlasStructType)) {
@@ -356,7 +368,7 @@ public final class EntityGraphRetriever {
         AtlasStructType structType = (AtlasStructType) objType;
 
         for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
-            Object attrValue = mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo);
+            Object attrValue = mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo, includeReferences);
 
             struct.setAttribute(attribute.getName(), attrValue);
         }
@@ -445,6 +457,10 @@ public final class EntityGraphRetriever {
     }
 
     private Object mapVertexToAttribute(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo) throws AtlasBaseException {
+        return mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo, true);
+    }
+
+    private Object mapVertexToAttribute(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
         Object    ret              = null;
         AtlasType attrType         = attribute.getAttributeType();
         String    qualifiedName    = attribute.getQualifiedName();
@@ -466,24 +482,25 @@ public final class EntityGraphRetriever {
                 ret = mapVertexToStruct(entityVertex, edgeLabel, null, entityExtInfo, isMinExtInfo);
                 break;
             case OBJECT_ID_TYPE:
-                if(attribute.getAttributeDef().isSoftReferenced()) {
-                    ret = mapVertexToObjectIdForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
+                if (includeReferences) {
+                    ret = attribute.getAttributeDef().isSoftReferenced() ? mapVertexToObjectIdForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo) :
+                                                                           mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute, isMinExtInfo);
                 } else {
-                    ret = mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute, isMinExtInfo);
+                    ret = null;
                 }
                 break;
             case ARRAY:
                 if(attribute.getAttributeDef().isSoftReferenced()) {
                     ret = mapVertexToArrayForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
                 } else {
-                    ret = mapVertexToArray(entityVertex, (AtlasArrayType) attrType, qualifiedName, entityExtInfo, isOwnedAttribute, isMinExtInfo);
+                    ret = mapVertexToArray(entityVertex, (AtlasArrayType) attrType, qualifiedName, entityExtInfo, isOwnedAttribute, isMinExtInfo, includeReferences);
                 }
                 break;
             case MAP:
                 if(attribute.getAttributeDef().isSoftReferenced()) {
                     ret = mapVertexToMapForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
                 } else {
-                    ret = mapVertexToMap(entityVertex, (AtlasMapType) attrType, qualifiedName, entityExtInfo, isOwnedAttribute, isMinExtInfo);
+                    ret = mapVertexToMap(entityVertex, (AtlasMapType) attrType, qualifiedName, entityExtInfo, isOwnedAttribute, isMinExtInfo, includeReferences);
                 }
                 break;
             case CLASSIFICATION:
@@ -575,7 +592,7 @@ public final class EntityGraphRetriever {
     }
 
     private Map<String, Object> mapVertexToMap(AtlasVertex entityVertex, AtlasMapType atlasMapType, final String propertyName,
-                                               AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute, boolean isMinExtInfo) throws AtlasBaseException {
+                                               AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
         List<String> mapKeys = GraphHelper.getListProperty(entityVertex, propertyName);
 
         if (CollectionUtils.isEmpty(mapKeys)) {
@@ -594,7 +611,7 @@ public final class EntityGraphRetriever {
             final String edgeLabel       = EDGE_LABEL_PREFIX + keyPropertyName;
             final Object keyValue        = GraphHelper.getMapValueProperty(mapValueType, entityVertex, keyPropertyName);
 
-            Object mapValue = mapVertexToCollectionEntry(entityVertex, mapValueType, keyValue, edgeLabel, entityExtInfo, isOwnedAttribute, isMinExtInfo);
+            Object mapValue = mapVertexToCollectionEntry(entityVertex, mapValueType, keyValue, edgeLabel, entityExtInfo, isOwnedAttribute, isMinExtInfo, includeReferences);
             if (mapValue != null) {
                 ret.put(mapKey, mapValue);
             }
@@ -604,7 +621,7 @@ public final class EntityGraphRetriever {
     }
 
     private List<Object> mapVertexToArray(AtlasVertex entityVertex, AtlasArrayType arrayType, String propertyName,
-                                          AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute, boolean isMinExtInfo) throws AtlasBaseException {
+                                          AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
         AtlasType    arrayElementType = arrayType.getElementType();
         List<Object> arrayElements    = GraphHelper.getArrayElementsProperty(arrayElementType, entityVertex, propertyName);
 
@@ -621,7 +638,7 @@ public final class EntityGraphRetriever {
 
         for (Object element : arrayElements) {
             Object arrValue = mapVertexToCollectionEntry(entityVertex, arrayElementType, element,
-                                                         edgeLabel, entityExtInfo, isOwnedAttribute, isMinExtInfo);
+                                                         edgeLabel, entityExtInfo, isOwnedAttribute, isMinExtInfo, includeReferences);
 
             if (arrValue != null) {
                 arrValues.add(arrValue);
@@ -632,7 +649,7 @@ public final class EntityGraphRetriever {
     }
 
     private Object mapVertexToCollectionEntry(AtlasVertex entityVertex, AtlasType arrayElement, Object value, String edgeLabel,
-                                              AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute, boolean isMinExtInfo) throws AtlasBaseException {
+                                              AtlasEntityExtInfo entityExtInfo, boolean isOwnedAttribute, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
         Object ret = null;
 
         switch (arrayElement.getTypeCategory()) {
@@ -651,7 +668,7 @@ public final class EntityGraphRetriever {
                 break;
 
             case OBJECT_ID_TYPE:
-                ret = mapVertexToObjectId(entityVertex, edgeLabel, (AtlasEdge) value, entityExtInfo, isOwnedAttribute, isMinExtInfo);
+                ret = includeReferences ? mapVertexToObjectId(entityVertex, edgeLabel, (AtlasEdge) value, entityExtInfo, isOwnedAttribute, isMinExtInfo) : null;
                 break;
 
             default:
