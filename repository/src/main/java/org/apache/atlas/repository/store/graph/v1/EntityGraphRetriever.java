@@ -34,6 +34,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
@@ -489,19 +490,49 @@ public final class EntityGraphRetriever {
                     ret = null;
                 }
                 break;
-            case ARRAY:
-                if(attribute.getAttributeDef().isSoftReferenced()) {
-                    ret = mapVertexToArrayForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
+            case ARRAY: {
+                final boolean skipAttribute;
+
+                if (!includeReferences) {
+                    AtlasType elementType = ((AtlasArrayType) attrType).getElementType();
+
+                    skipAttribute = (elementType instanceof AtlasObjectIdType || elementType instanceof AtlasEntityType);
                 } else {
-                    ret = mapVertexToArray(entityVertex, (AtlasArrayType) attrType, qualifiedName, entityExtInfo, isOwnedAttribute, isMinExtInfo, includeReferences);
+                    skipAttribute = false;
                 }
+
+                if (skipAttribute) {
+                    ret = null;
+                } else {
+                    if (attribute.getAttributeDef().isSoftReferenced()) {
+                        ret = mapVertexToArrayForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
+                    } else {
+                        ret = mapVertexToArray(entityVertex, (AtlasArrayType) attrType, qualifiedName, entityExtInfo, isOwnedAttribute, isMinExtInfo, includeReferences);
+                    }
+                }
+            }
                 break;
-            case MAP:
-                if(attribute.getAttributeDef().isSoftReferenced()) {
-                    ret = mapVertexToMapForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
+            case MAP: {
+                final boolean skipAttribute;
+
+                if (!includeReferences) {
+                    AtlasType valueType = ((AtlasMapType) attrType).getValueType();
+
+                    skipAttribute = (valueType instanceof AtlasObjectIdType || valueType instanceof AtlasEntityType);
                 } else {
-                    ret = mapVertexToMap(entityVertex, (AtlasMapType) attrType, qualifiedName, entityExtInfo, isOwnedAttribute, isMinExtInfo, includeReferences);
+                    skipAttribute = false;
                 }
+
+                if (skipAttribute) {
+                    ret = null;
+                } else {
+                    if (attribute.getAttributeDef().isSoftReferenced()) {
+                        ret = mapVertexToMapForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
+                    } else {
+                        ret = mapVertexToMap(entityVertex, (AtlasMapType) attrType, qualifiedName, entityExtInfo, isOwnedAttribute, isMinExtInfo, includeReferences);
+                    }
+                }
+            }
                 break;
             case CLASSIFICATION:
                 // do nothing
