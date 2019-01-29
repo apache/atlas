@@ -275,7 +275,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                         entitiesToSkipUpdate = new ArrayList<>();
                     }
 
-                    LOG.info("skipping unchanged entity: {}", entity);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("skipping unchanged entity: {}", entity);
+                    }
 
                     entitiesToSkipUpdate.add(entity);
                 }
