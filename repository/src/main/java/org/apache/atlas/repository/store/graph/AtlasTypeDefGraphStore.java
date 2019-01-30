@@ -617,10 +617,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             typesDef.setEntityDefs(Collections.singletonList((AtlasEntityDef) baseTypeDef));
         } else if (baseTypeDef instanceof AtlasEnumDef) {
             typesDef.setEnumDefs(Collections.singletonList((AtlasEnumDef) baseTypeDef));
-        } else if (baseTypeDef instanceof AtlasStructDef) {
-            typesDef.setStructDefs(Collections.singletonList((AtlasStructDef) baseTypeDef));
         } else if (baseTypeDef instanceof AtlasRelationshipDef) {
             typesDef.setRelationshipDefs(Collections.singletonList((AtlasRelationshipDef) baseTypeDef));
+        } else if (baseTypeDef instanceof AtlasStructDef) {
+            typesDef.setStructDefs(Collections.singletonList((AtlasStructDef) baseTypeDef));
         }
 
         deleteTypesDef(typesDef);
