@@ -60,7 +60,7 @@ public class AdminExportImportTestIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "isActive")
     public void importData() throws AtlasServiceException {
-        performImport(FILE_TO_IMPORT);
+        performImport(FILE_TO_IMPORT, 37);
         assertReplicationData("cl1");
     }
 
@@ -84,21 +84,21 @@ public class AdminExportImportTestIT extends BaseResourceIT {
         assertTrue(zs.getCreationOrder().size() > EXPECTED_CREATION_ORDER_SIZE);
     }
 
-    private void performImport(String fileToImport) throws AtlasServiceException {
+    private void performImport(String fileToImport, int expectedProcessedEntitiesCount) throws AtlasServiceException {
         AtlasImportRequest request = new AtlasImportRequest();
         request.getOptions().put(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM, SOURCE_SERVER_NAME);
         request.getOptions().put(AtlasImportRequest.TRANSFORMS_KEY, IMPORT_TRANSFORM_CLEAR_ATTRS);
 
-        performImport(fileToImport, request);
+        performImport(fileToImport, request, expectedProcessedEntitiesCount);
     }
 
-    private void performImport(String fileToImport, AtlasImportRequest request) throws AtlasServiceException {
+    private void performImport(String fileToImport, AtlasImportRequest request, int expectedProcessedEntitiesCount) throws AtlasServiceException {
 
         AtlasImportResult result = performImportUsing(fileToImport, request);
         assertNotNull(result);
         assertEquals(result.getOperationStatus(), AtlasImportResult.OperationStatus.SUCCESS);
         assertNotNull(result.getMetrics());
-        assertEquals(result.getProcessedEntities().size(), 37);
+        assertEquals(result.getProcessedEntities().size(), expectedProcessedEntitiesCount, "processedEntities: expected=" + expectedProcessedEntitiesCount + ", found=" + result.getProcessedEntities().size() + ". result=" + result);
     }
 
     private AtlasImportResult performImportUsing(String fileToImport, AtlasImportRequest request) throws AtlasServiceException {
@@ -126,7 +126,7 @@ public class AdminExportImportTestIT extends BaseResourceIT {
         request.getOptions().put(AtlasImportRequest.TRANSFORMS_KEY, IMPORT_TRANSFORM_SET_DELETED);
 
         try {
-            performImport(FILE_TO_IMPORT, request);
+            performImport(FILE_TO_IMPORT, request, 32); // initial import has 5 entities already in deleted state, hence current import will have 32 processed-entities
         } catch (AtlasServiceException e) {
             throw new SkipException("performTeardown: failed! Subsequent tests results may be affected.");
         }

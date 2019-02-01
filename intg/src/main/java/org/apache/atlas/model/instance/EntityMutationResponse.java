@@ -216,31 +216,6 @@ public class EntityMutationResponse {
         }
     }
 
-    @JsonIgnore
-    public void addEntity(EntityOperation op, AtlasObjectId entity) {
-        if (mutatedEntities == null) {
-            mutatedEntities = new HashMap<>();
-        } else {
-            // if an entity is already included in CREATE, ignore subsequent UPDATE, PARTIAL_UPDATE
-            if (op == EntityOperation.UPDATE || op == EntityOperation.PARTIAL_UPDATE) {
-                if (entityHeaderExists(getCreatedEntities(), entity.getGuid())) {
-                    return;
-                }
-            }
-        }
-
-        List<AtlasEntityHeader> opEntities = mutatedEntities.get(op);
-
-        if (opEntities == null) {
-            opEntities = new ArrayList<>();
-            mutatedEntities.put(op, opEntities);
-        }
-
-        if (!entityHeaderExists(opEntities, entity.getGuid())) {
-            opEntities.add(new AtlasEntityHeader(entity.getTypeName(), entity.getGuid(), entity.getUniqueAttributes()));
-        }
-    }
-
     private boolean entityHeaderExists(List<AtlasEntityHeader> entityHeaders, String guid) {
         boolean ret = false;
 
