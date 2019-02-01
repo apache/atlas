@@ -21,7 +21,7 @@ package org.apache.atlas;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -39,8 +39,8 @@ public class RequestContext {
     private static final boolean                     isMetricsEnabled = METRICS.isDebugEnabled();
 
     private final long                                   requestTime         = System.currentTimeMillis();
-    private final Map<String, AtlasObjectId>             updatedEntities     = new HashMap<>();
-    private final Map<String, AtlasObjectId>             deletedEntities     = new HashMap<>();
+    private final Map<String, AtlasEntityHeader>         updatedEntities     = new HashMap<>();
+    private final Map<String, AtlasEntityHeader>         deletedEntities     = new HashMap<>();
     private final Map<String, AtlasEntity>               entityCache         = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache  = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations   = new HashMap<>();
@@ -164,13 +164,13 @@ public class RequestContext {
         isImportInProgress = importInProgress;
     }
 
-    public void recordEntityUpdate(AtlasObjectId entity) {
+    public void recordEntityUpdate(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null) {
             updatedEntities.put(entity.getGuid(), entity);
         }
     }
 
-    public void recordEntityDelete(AtlasObjectId entity) {
+    public void recordEntityDelete(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null) {
             deletedEntities.put(entity.getGuid(), entity);
         }
@@ -248,11 +248,11 @@ public class RequestContext {
     }
 
 
-    public Collection<AtlasObjectId> getUpdatedEntities() {
+    public Collection<AtlasEntityHeader> getUpdatedEntities() {
         return updatedEntities.values();
     }
 
-    public Collection<AtlasObjectId> getDeletedEntities() {
+    public Collection<AtlasEntityHeader> getDeletedEntities() {
         return deletedEntities.values();
     }
 

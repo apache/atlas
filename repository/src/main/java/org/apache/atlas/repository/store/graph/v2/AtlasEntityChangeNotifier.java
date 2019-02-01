@@ -54,6 +54,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -92,6 +93,8 @@ public class AtlasEntityChangeNotifier {
         if (CollectionUtils.isEmpty(entityChangeListeners) || instanceConverter == null) {
             return;
         }
+
+        pruneResponse(entityMutationResponse);
 
         List<AtlasEntityHeader> createdEntities          = entityMutationResponse.getCreatedEntities();
         List<AtlasEntityHeader> updatedEntities          = entityMutationResponse.getUpdatedEntities();
@@ -388,7 +391,6 @@ public class AtlasEntityChangeNotifier {
 
         if (CollectionUtils.isNotEmpty(entityHeaders)) {
             for (AtlasEntityHeader entityHeader : entityHeaders) {
-                String          entityGuid = entityHeader.getGuid();
                 String          typeName   = entityHeader.getTypeName();
                 AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(typeName);
 
@@ -408,10 +410,10 @@ public class AtlasEntityChangeNotifier {
 
                 // delete notifications don't need all attributes. Hence the special handling for delete operation
                 if (operation == EntityOperation.DELETE) {
-                    entity = new AtlasEntity(typeName, entityHeader.getAttributes());
-
-                    entity.setGuid(entityGuid);
+                    entity = new AtlasEntity(entityHeader);
                 } else {
+                    String entityGuid = entityHeader.getGuid();
+
                     entity = instanceConverter.getAndCacheEntity(entityGuid);
                 }
 
@@ -502,4 +504,81 @@ public class AtlasEntityChangeNotifier {
 
         doFullTextMapping(Collections.singletonList(entityHeader));
     }
+
+    private void pruneResponse(EntityMutationResponse resp) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> pruneResponse()");
+        }
+
+        List<AtlasEntityHeader> createdEntities        = resp.getCreatedEntities();
+        List<AtlasEntityHeader> updatedEntities        = resp.getUpdatedEntities();
+        List<AtlasEntityHeader> partialUpdatedEntities = resp.getPartialUpdatedEntities();
+        List<AtlasEntityHeader> deletedEntities        = resp.getDeletedEntities();
+
+        // remove entities with DELETED status from created & updated lists
+        purgeDeletedEntities(createdEntities);
+        purgeDeletedEntities(updatedEntities);
+        purgeDeletedEntities(partialUpdatedEntities);
+
+        // remove entities deleted in this mutation from created & updated lists
+        if (deletedEntities != null) {
+            for (AtlasEntityHeader entity : deletedEntities) {
+                purgeEntity(entity.getGuid(), createdEntities);
+                purgeEntity(entity.getGuid(), updatedEntities);
+                purgeEntity(entity.getGuid(), partialUpdatedEntities);
+            }
+        }
+
+        // remove entities created in this mutation from updated lists
+        if (createdEntities != null) {
+            for (AtlasEntityHeader entity : createdEntities) {
+                purgeEntity(entity.getGuid(),updatedEntities);
+                purgeEntity(entity.getGuid(), partialUpdatedEntities);
+            }
+        }
+
+        // remove entities updated in this mutation from partial-updated list
+        if (updatedEntities != null) {
+            for (AtlasEntityHeader entity : updatedEntities) {
+                purgeEntity(entity.getGuid(), partialUpdatedEntities);
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== pruneResponse()");
+        }
+    }
+
+    private void purgeDeletedEntities(List<AtlasEntityHeader> entities) {
+        if (entities != null) {
+            for (ListIterator<AtlasEntityHeader> iter = entities.listIterator(); iter.hasNext(); ) {
+                AtlasEntityHeader entity = iter.next();
+
+                if (entity.getStatus() == AtlasEntity.Status.DELETED) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("purgeDeletedEntities(guid={}, status={}): REMOVED", entity.getGuid(), entity.getStatus());
+                    }
+
+                    iter.remove();
+                }
+            }
+        }
+    }
+
+    private void purgeEntity(String guid, List<AtlasEntityHeader> entities) {
+        if (guid != null && entities != null) {
+            for (ListIterator<AtlasEntityHeader> iter = entities.listIterator(); iter.hasNext(); ) {
+                AtlasEntityHeader entity = iter.next();
+
+                if (org.apache.commons.lang.StringUtils.equals(guid, entity.getGuid())) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("purgeEntity(guid={}): REMOVED", entity.getGuid());
+                    }
+
+                    iter.remove();
+                }
+            }
+        }
+    }
+
 }

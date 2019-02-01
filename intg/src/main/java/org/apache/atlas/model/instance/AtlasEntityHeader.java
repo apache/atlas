@@ -104,6 +104,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     public AtlasEntityHeader(AtlasEntity entity) {
         super(entity.getTypeName(), entity.getAttributes());
         setGuid(entity.getGuid());
+        setStatus(entity.getStatus());
         setClassifications(entity.getClassifications());
 
         if (CollectionUtils.isNotEmpty(entity.getClassifications())) {

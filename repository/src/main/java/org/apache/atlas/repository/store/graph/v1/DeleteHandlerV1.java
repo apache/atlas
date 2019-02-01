@@ -26,6 +26,7 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
@@ -191,9 +192,9 @@ public abstract class DeleteHandlerV1 {
                 continue;
             }
 
-            AtlasObjectId   entity     = entityRetriever.toAtlasObjectId(vertex);
-            String          typeName   = entity.getTypeName();
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+            AtlasEntityHeader entity     = entityRetriever.toAtlasEntityHeader(vertex);
+            String            typeName   = entity.getTypeName();
+            AtlasEntityType   entityType = typeRegistry.getEntityTypeByName(typeName);
 
             if (entityType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
@@ -349,7 +350,7 @@ public abstract class DeleteHandlerV1 {
                         AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
                         AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFIED_BY_KEY, requestContext.getUser());
 
-                        requestContext.recordEntityUpdate(entityRetriever.toAtlasObjectId(referencedVertex));
+                        requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(referencedVertex));
                     }
                 }
             } else {
@@ -935,7 +936,7 @@ public abstract class DeleteHandlerV1 {
                 AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
                 AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFIED_BY_KEY, requestContext.getUser());
 
-                requestContext.recordEntityUpdate(entityRetriever.toAtlasObjectId(outVertex));
+                requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(outVertex));
             }
         }
     }

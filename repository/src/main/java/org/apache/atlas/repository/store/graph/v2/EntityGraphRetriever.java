@@ -209,46 +209,6 @@ public final class EntityGraphRetriever {
         return ret;
     }
 
-    public AtlasEntityHeader toAtlasEntityHeader(AtlasEntity entity) {
-        AtlasEntityHeader ret        = null;
-        String            typeName   = entity.getTypeName();
-        AtlasEntityType   entityType = typeRegistry.getEntityTypeByName(typeName);
-
-        if (entityType != null) {
-            Map<String, Object> uniqueAttributes = new HashMap<>();
-
-            for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                Object attrValue = entity.getAttribute(attribute.getName());
-
-                if (attrValue != null) {
-                    uniqueAttributes.put(attribute.getName(), attrValue);
-                }
-            }
-
-            ret = new AtlasEntityHeader(entity.getTypeName(), entity.getGuid(), uniqueAttributes);
-
-            if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
-                List<AtlasClassification> classifications     = new ArrayList<>(entity.getClassifications().size());
-                List<String>              classificationNames = new ArrayList<>(entity.getClassifications().size());
-
-                for (AtlasClassification classification : entity.getClassifications()) {
-                    classifications.add(classification);
-                    classificationNames.add(classification.getTypeName());
-                }
-
-                ret.setClassifications(classifications);
-                ret.setClassificationNames(classificationNames);
-            }
-
-            if (CollectionUtils.isNotEmpty(entity.getMeanings())) {
-                ret.setMeanings(entity.getMeanings());
-                ret.setMeaningNames(entity.getMeanings().stream().map(AtlasTermAssignmentHeader::getDisplayText).collect(Collectors.toList()));
-            }
-        }
-
-        return ret;
-    }
-
     public AtlasObjectId toAtlasObjectId(AtlasVertex entityVertex) throws AtlasBaseException {
         AtlasObjectId   ret        = null;
         String          typeName   = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);

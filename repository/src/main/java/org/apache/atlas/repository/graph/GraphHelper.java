@@ -28,6 +28,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
@@ -1378,15 +1379,15 @@ public final class GraphHelper {
      * Guid and AtlasVertex combo
      */
     public static class VertexInfo {
-        private final AtlasObjectId entity;
-        private final AtlasVertex   vertex;
+        private final AtlasEntityHeader entity;
+        private final AtlasVertex       vertex;
 
-        public VertexInfo(AtlasObjectId entity, AtlasVertex vertex) {
+        public VertexInfo(AtlasEntityHeader entity, AtlasVertex vertex) {
             this.entity = entity;
             this.vertex = vertex;
         }
 
-        public AtlasObjectId getEntity() { return entity; }
+        public AtlasEntityHeader getEntity() { return entity; }
         public AtlasVertex getVertex() {
             return vertex;
         }
