@@ -92,17 +92,44 @@
         </fileSet>
          <!-- for migration setup -->
         <fileSet>
-            <directory>../tools/atlas-migration-exporter</directory>
+            <directory>../tools/atlas-migration-exporter/src/main/resources</directory>
             <outputDirectory>tools/migration-exporter</outputDirectory>
             <includes>
                 <include>README</include>
                 <include>*.py</include>
                 <include>atlas-log4j.xml</include>
-                <include>atlas-migration-*.jar</include>
+                <include>migrationContext.xml</include>
             </includes>
             <fileMode>0755</fileMode>
             <directoryMode>0755</directoryMode>
         </fileSet>
+        <fileSet>
+            <directory>../tools/atlas-migration-exporter/target</directory>
+            <outputDirectory>tools/migration-exporter</outputDirectory>
+            <includes>
+                <include>atlas-migration-exporter-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+
+        <!-- for classification-updater -->
+        <fileSet>
+            <directory>../tools/classification-updater/src/main/resources</directory>
+            <outputDirectory>tools/classification-updater</outputDirectory>
+            <includes>
+                <include>*.sh</include>
+                <include>atlas-log4j.xml</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
+        </fileSet>
+        <fileSet>
+            <directory>../tools/classification-updater/target</directory>
+            <outputDirectory>tools/classification-updater</outputDirectory>
+            <includes>
+                <include>atlas-classification-updater-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+
 
         <fileSet>
             <directory>../</directory>

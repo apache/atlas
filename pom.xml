@@ -777,6 +777,7 @@
         <module>addons/hbase-bridge</module>
         <module>addons/hbase-testing-util</module>
         <module>addons/kafka-bridge</module>
+        <module>tools/classification-updater</module>
 
         <module>distro</module>
     </modules>
