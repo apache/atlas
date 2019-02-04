@@ -104,6 +104,26 @@
             <directoryMode>0755</directoryMode>
         </fileSet>
 
+        <!-- for classification-updater -->
+        <fileSet>
+            <directory>../tools/classification-updater/src/main/resources</directory>
+            <outputDirectory>tools/classification-updater</outputDirectory>
+            <includes>
+                <include>*.sh</include>
+                <include>atlas-log4j.xml</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
+        </fileSet>
+        <fileSet>
+            <directory>../tools/classification-updater/target</directory>
+            <outputDirectory>tools/classification-updater</outputDirectory>
+            <includes>
+                <include>atlas-classification-updater-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+
+
         <fileSet>
             <directory>../</directory>
             <outputDirectory>/</outputDirectory>
