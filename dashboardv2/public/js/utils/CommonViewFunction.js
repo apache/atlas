@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment'], function(require, Utils, Modal, Messages, Enums, moment) {
+define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Globals', 'utils/Enums', 'moment'], function(require, Utils, Modal, Messages, Globals, Enums, moment) {
     'use strict';
 
     var CommonViewFunction = {};
@@ -314,6 +314,18 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         }
         if (!Enums.entityStateReadOnly[obj.status]) {
             if (obj.guid) {
+                var newD = { "guid": obj.guid, "termLinks": obj.meanings };
+                Globals.termMeanings = Globals.termMeanings ? Globals.termMeanings : [];
+                if (Globals.termMeanings.length > 0) {
+                    for (var x in Globals.termMeanings) {
+                        if (Globals.termMeanings[x]['guid'] == obj.guid) {
+                            Globals.termMeanings[x].termLinks = obj.meanings;
+                        }
+                    }
+                }
+                if (newD.termLinks.length > 0 && Globals.termMeanings == 0) {
+                    Globals.termMeanings.push(newD);
+                }
                 addTerm += '<a href="javascript:void(0)" data-id="addTerm" class="btn btn-action btn-sm assignTag" data-guid="' + obj.guid + '" ><i class="fa fa-plus"></i></a>';
             } else {
                 addTerm += '<a href="javascript:void(0)" data-id="addTerm" class="btn btn-action btn-sm assignTag"><i style="right:0" class="fa fa-plus"></i></a>';
