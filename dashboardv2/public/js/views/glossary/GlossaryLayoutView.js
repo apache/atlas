@@ -248,6 +248,7 @@ define(['require',
             },
             generateData: function(opt) {
                 var that = this,
+                    selectedGuid = that.guid,
                     type = opt.type;
                 if (opt.type == this.viewType) {
                     this.query[opt.type].isNodeNotFoundAtLoad = true;
@@ -338,27 +339,38 @@ define(['require',
                         });
                     }
                     if (type == "term" && obj.terms) {
+                        var theTerm = _.find(Globals.termMeanings, function(obj, index) {
+                            if (obj.guid == selectedGuid) {
+                                return obj;
+                            }
+                        });
                         _.each(obj.terms, function(term) {
-                            var typeName = term.typeName || "GlossaryTerm",
-                                guid = term.termGuid,
-                                termObj = {
-                                    "text": term.displayText,
-                                    "type": typeName,
-                                    "gType": "term",
-                                    "guid": guid,
-                                    "id": guid,
-                                    "parent": obj,
-                                    "glossaryName": obj.name,
-                                    "glossaryId": obj.guid,
-                                    "model": term,
-                                    "icon": "fa fa-file-o"
-                                }
-                            termObj.state = getSelectedState({
-                                index: i,
-                                node: termObj,
-                                objGuid: guid
-                            })
-                            parent.children.push(termObj);
+                            var includedTerms = _.map(theTerm && theTerm.termLinks, function(obj, index) {
+                                return obj.termGuid || obj.guid;
+                            });
+                            if ((!includedTerms.includes(term.termGuid))) {
+                                var typeName = term.typeName || "GlossaryTerm",
+                                    guid = term.termGuid,
+                                    termObj = {
+                                        "text": term.displayText,
+                                        "type": typeName,
+                                        "gType": "term",
+                                        "guid": guid,
+                                        "id": guid,
+                                        "parent": obj,
+                                        "glossaryName": obj.name,
+                                        "glossaryId": obj.guid,
+                                        "model": term,
+                                        "icon": "fa fa-file-o"
+                                    }
+                                termObj.state = getSelectedState({
+                                    index: i,
+                                    node: termObj,
+                                    objGuid: guid
+                                })
+                                parent.children.push(termObj);
+
+                            }
                         });
                     }
                     return parent;
@@ -398,6 +410,7 @@ define(['require',
                 var $termTree = this.ui.termTree,
                     $categoryTree = this.ui.categoryTree,
                     that = this,
+                    this_guid = that.guid,
                     getTreeConfig = function(options) {
                         return {
                             "plugins": ["search", "themes", "core", "wholerow", "sort", "conditionalselect"],
