@@ -138,56 +138,67 @@ public final class GraphToTypedInstanceMapper {
         }
     }
 
-    private void mapVertexToAttribute(AtlasVertex instanceVertex, ITypedInstance typedInstance,
+    public Object mapVertexToAttribute(AtlasVertex instanceVertex, ITypedInstance typedInstance,
         AttributeInfo attributeInfo) throws AtlasException {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Mapping attributeInfo {}", attributeInfo.name);
         }
 
+        final Object    ret;
         final IDataType dataType = attributeInfo.dataType();
         final String vertexPropertyName = GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo);
         String relationshipLabel = GraphHelper.getEdgeLabel(typedInstance, attributeInfo);
 
         switch (dataType.getTypeCategory()) {
         case PRIMITIVE:
-            mapVertexToPrimitive(instanceVertex, typedInstance, attributeInfo);
+            ret = mapVertexToPrimitive(instanceVertex, typedInstance, attributeInfo);
             break;  // add only if vertex has this attribute
 
         case ENUM:
-            mapVertexToEnum(instanceVertex, typedInstance, attributeInfo);
+            ret = mapVertexToEnum(instanceVertex, typedInstance, attributeInfo);
             break;
 
         case ARRAY:
-            mapVertexToArrayInstance(instanceVertex, typedInstance, attributeInfo, vertexPropertyName);
+            ret = mapVertexToArrayInstance(instanceVertex, typedInstance, attributeInfo, vertexPropertyName);
             break;
 
         case MAP:
-            mapVertexToMapInstance(instanceVertex, typedInstance, attributeInfo, vertexPropertyName);
+            ret = mapVertexToMapInstance(instanceVertex, typedInstance, attributeInfo, vertexPropertyName);
             break;
 
         case STRUCT:
             ITypedStruct structInstance = mapVertexToStructInstance(instanceVertex,
                     (StructType) attributeInfo.dataType(), relationshipLabel, null);
+
+            ret = structInstance;
+
             typedInstance.set(attributeInfo.name, structInstance);
             break;
 
         case TRAIT:
+            ret = null;
             // do NOTHING - handled in class
             break;
 
         case CLASS:
             AtlasEdge nullEdge = null;
-            Object idOrInstance = mapVertexToClassReference(instanceVertex, attributeInfo, relationshipLabel,
-                attributeInfo.dataType(), nullEdge);
+            Object idOrInstance = mapVertexToClassReference(instanceVertex, attributeInfo, relationshipLabel, attributeInfo.dataType(), nullEdge);
+
+            ret = idOrInstance;
+
             if (idOrInstance != null) {
                 typedInstance.set(attributeInfo.name, idOrInstance);
             }
             break;
 
         default:
+            ret = null;
+
             break;
         }
+
+        return  ret;
     }
 
     private Object mapVertexToClassReference(AtlasVertex instanceVertex, AttributeInfo attributeInfo,
@@ -237,41 +248,45 @@ public final class GraphToTypedInstanceMapper {
     }
 
     @SuppressWarnings("unchecked")
-    private void mapVertexToArrayInstance(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance,
+    private List mapVertexToArrayInstance(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance,
             AttributeInfo attributeInfo, String propertyName) throws AtlasException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("mapping vertex {} to array {}", instanceVertex, attributeInfo.name);
         }
 
+        final ArrayList           ret;
         final DataTypes.ArrayType arrayType = (DataTypes.ArrayType) attributeInfo.dataType();
         final IDataType elementType = arrayType.getElemType();
 
         List<Object> list = GraphHelper.getArrayElementsProperty(elementType, instanceVertex, propertyName);
 
-        if (list == null || list.size() == 0) {
-            return;
-        }
+        if (list != null && list.size() > 0) {
+            ret = new ArrayList();
 
-        ArrayList values = new ArrayList();
-        if(!attributeInfo.isSoftRef) {
-            String edgeLabel = GraphHelper.EDGE_LABEL_PREFIX + propertyName;
-            for (Object aList : list) {
-                values.add(mapVertexToCollectionEntry(instanceVertex, attributeInfo, elementType, aList,
-                        edgeLabel));
+            if (!attributeInfo.isSoftRef) {
+                String edgeLabel = GraphHelper.EDGE_LABEL_PREFIX + propertyName;
+                for (Object aList : list) {
+                    ret.add(mapVertexToCollectionEntry(instanceVertex, attributeInfo, elementType, aList,
+                            edgeLabel));
+                }
+            } else {
+                for (Object o : list) {
+                    if (o == null) {
+                        continue;
+                    }
+
+                    ret.add(o);
+                }
+            }
+
+            if (ret.size() > 0) {
+                typedInstance.set(attributeInfo.name, ret);
             }
         } else {
-            for (Object o : list) {
-                if(o == null) {
-                    continue;
-                }
-
-                values.add(o);
-            }
+            ret = null;
         }
 
-        if (values.size() > 0) {
-            typedInstance.set(attributeInfo.name, values);
-        }
+        return ret == null || ret.size() == 0 ? null : ret;
     }
 
     private Object mapVertexToCollectionEntry(AtlasVertex instanceVertex, AttributeInfo attributeInfo,
@@ -301,33 +316,39 @@ public final class GraphToTypedInstanceMapper {
     }
 
     @SuppressWarnings("unchecked")
-    private void mapVertexToMapInstance(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance,
+    private Map<String, Object> mapVertexToMapInstance(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance,
             AttributeInfo attributeInfo, final String propertyName) throws AtlasException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("mapping vertex {} to array {}", instanceVertex, attributeInfo.name);
         }
 
-        List<String> keys = GraphHelper.getListProperty(instanceVertex, propertyName);
-        if (keys == null || keys.size() == 0) {
-            return;
-        }
-        DataTypes.MapType mapType = (DataTypes.MapType) attributeInfo.dataType();
-        final IDataType valueType = mapType.getValueType();
+        final Map<String,Object> ret;
+        List<String>             keys = GraphHelper.getListProperty(instanceVertex, propertyName);
 
-        HashMap<String,Object> values = new HashMap<>();
-        for (String key : keys) {
-            final String keyPropertyName = propertyName + "." + key;
-            final String edgeLabel = GraphHelper.EDGE_LABEL_PREFIX + keyPropertyName;
-            final Object keyValue = GraphHelper.getMapValueProperty(valueType, instanceVertex, keyPropertyName);
-            Object mapValue = mapVertexToCollectionEntry(instanceVertex, attributeInfo, valueType, keyValue, edgeLabel);
-            if (mapValue != null) {
-                values.put(key, mapValue);
+        if (keys != null && keys.size() > 0) {
+            ret = new HashMap<>();
+
+            DataTypes.MapType mapType = (DataTypes.MapType) attributeInfo.dataType();
+            final IDataType valueType = mapType.getValueType();
+
+            for (String key : keys) {
+                final String keyPropertyName = propertyName + "." + key;
+                final String edgeLabel = GraphHelper.EDGE_LABEL_PREFIX + keyPropertyName;
+                final Object keyValue = GraphHelper.getMapValueProperty(valueType, instanceVertex, keyPropertyName);
+                Object mapValue = mapVertexToCollectionEntry(instanceVertex, attributeInfo, valueType, keyValue, edgeLabel);
+                if (mapValue != null) {
+                    ret.put(key, mapValue);
+                }
             }
+
+            if (!ret.isEmpty()) {
+                typedInstance.set(attributeInfo.name, ret);
+            }
+        } else {
+            ret = null;
         }
 
-        if (!values.isEmpty()) {
-            typedInstance.set(attributeInfo.name, values);
-        }
+        return ret == null || ret.size() == 0 ? null : ret;
     }
 
     private  ITypedStruct mapVertexToStructInstance(AtlasVertex instanceVertex, StructType structType,
@@ -387,52 +408,108 @@ public final class GraphToTypedInstanceMapper {
         }
     }
 
-    public static void mapVertexToPrimitive(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance,
+    public static Object mapVertexToPrimitive(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance,
             AttributeInfo attributeInfo) throws AtlasException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Adding primitive {} from vertex {}", attributeInfo, instanceVertex);
         }
 
+        final Object ret;
+
         final String vertexPropertyName = GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo);
-        if (AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Object.class) == null) {
-            return;
+
+        if (AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Object.class) != null) {
+            if (attributeInfo.dataType() == DataTypes.STRING_TYPE) {
+                String attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, String.class);
+
+                typedInstance.setString(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else if (attributeInfo.dataType() == DataTypes.SHORT_TYPE) {
+                Short attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Short.class);
+
+                typedInstance.setShort(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else if (attributeInfo.dataType() == DataTypes.INT_TYPE) {
+                Integer attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Integer.class);
+
+                typedInstance.setInt(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else if (attributeInfo.dataType() == DataTypes.BIGINTEGER_TYPE) {
+                BigInteger attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, BigInteger.class);
+
+                typedInstance.setBigInt(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else if (attributeInfo.dataType() == DataTypes.BOOLEAN_TYPE) {
+                Boolean attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Boolean.class);
+
+                typedInstance.setBoolean(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else if (attributeInfo.dataType() == DataTypes.BYTE_TYPE) {
+                Byte attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Byte.class);
+
+                typedInstance.setByte(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else if (attributeInfo.dataType() == DataTypes.LONG_TYPE) {
+                Long attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Long.class);
+
+                typedInstance.setLong(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else if (attributeInfo.dataType() == DataTypes.FLOAT_TYPE) {
+                Float attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Float.class);
+
+                typedInstance.setFloat(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else if (attributeInfo.dataType() == DataTypes.DOUBLE_TYPE) {
+                Double attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Double.class);
+
+                typedInstance.setDouble(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
+                BigDecimal attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, BigDecimal.class);
+
+                typedInstance.setBigDecimal(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else if (attributeInfo.dataType() == DataTypes.DATE_TYPE) {
+                final Long dateVal   = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Long.class);
+                Date       attrValue = new Date(dateVal);
+
+                typedInstance.setDate(attributeInfo.name, attrValue);
+
+                ret = attrValue;
+            } else {
+                ret = null;
+            }
+        } else {
+            ret = null;
         }
 
-        if (attributeInfo.dataType() == DataTypes.STRING_TYPE) {
-            typedInstance.setString(attributeInfo.name, AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, String.class));
-        } else if (attributeInfo.dataType() == DataTypes.SHORT_TYPE) {
-            typedInstance.setShort(attributeInfo.name, AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Short.class));
-        } else if (attributeInfo.dataType() == DataTypes.INT_TYPE) {
-            typedInstance.setInt(attributeInfo.name, AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Integer.class));
-        } else if (attributeInfo.dataType() == DataTypes.BIGINTEGER_TYPE) {
-            typedInstance.setBigInt(attributeInfo.name, AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, BigInteger.class));
-        } else if (attributeInfo.dataType() == DataTypes.BOOLEAN_TYPE) {
-            typedInstance.setBoolean(attributeInfo.name, AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Boolean.class));
-        } else if (attributeInfo.dataType() == DataTypes.BYTE_TYPE) {
-            typedInstance.setByte(attributeInfo.name, AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Byte.class));
-        } else if (attributeInfo.dataType() == DataTypes.LONG_TYPE) {
-            typedInstance.setLong(attributeInfo.name, AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Long.class));
-        } else if (attributeInfo.dataType() == DataTypes.FLOAT_TYPE) {
-            typedInstance.setFloat(attributeInfo.name, AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Float.class));
-        } else if (attributeInfo.dataType() == DataTypes.DOUBLE_TYPE) {
-            typedInstance.setDouble(attributeInfo.name, AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Double.class));
-        } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
-            typedInstance
-            .setBigDecimal(attributeInfo.name, AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, BigDecimal.class));
-        } else if (attributeInfo.dataType() == DataTypes.DATE_TYPE) {
-            final Long dateVal = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Long.class);
-            typedInstance.setDate(attributeInfo.name, new Date(dateVal));
-        }
+        return ret;
     }
 
-    public static void mapVertexToEnum(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance, AttributeInfo attributeInfo) throws AtlasException {
+    public static Object mapVertexToEnum(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance, AttributeInfo attributeInfo) throws AtlasException {
         final String vertexPropertyName = GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo);
         final Object propertyValue      = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName);
-        if (propertyValue == null) {
-            return;
+        final Object ret;
+
+        if (propertyValue != null) {
+            ret = attributeInfo.dataType().convert(propertyValue, Multiplicity.REQUIRED);
+
+            typedInstance.set(attributeInfo.name, ret);
+        } else {
+            ret = null;
         }
 
-        typedInstance.set(attributeInfo.name, attributeInfo.dataType().convert(propertyValue, Multiplicity.REQUIRED));
+        return ret;
     }
 
 

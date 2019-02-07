@@ -22,7 +22,9 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -74,6 +76,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.UUID;
 
+
 /**
  * Utility class for graph operations.
  */
@@ -89,13 +92,17 @@ public final class GraphHelper {
 
     private static volatile GraphHelper INSTANCE;
 
-    private AtlasGraph graph;
+    private final AtlasGraph                 graph;
+    private final GraphToTypedInstanceMapper graphToInstanceMapper;
+
     private static int maxRetries;
     public static long retrySleepTimeMillis;
 
     @VisibleForTesting
     GraphHelper(AtlasGraph graph) {
-        this.graph = graph;
+        this.graph                 = graph;
+        this.graphToInstanceMapper = new GraphToTypedInstanceMapper(graph);
+
         try {
             maxRetries = ApplicationProperties.get().getInt(RETRY_COUNT, 3);
             retrySleepTimeMillis = ApplicationProperties.get().getLong(RETRY_DELAY, 1000);
@@ -730,24 +737,22 @@ public final class GraphHelper {
      * Guid and AtlasVertex combo
      */
     public static class VertexInfo {
-        private String guid;
-        private AtlasVertex vertex;
-        private String typeName;
+        private final AtlasEntityHeader entity;
+        private final AtlasVertex       vertex;
 
-        public VertexInfo(String guid, AtlasVertex vertex, String typeName) {
-            this.guid = guid;
+        public VertexInfo(AtlasEntityHeader entity, AtlasVertex vertex) {
+            this.entity = entity;
             this.vertex = vertex;
-            this.typeName = typeName;
         }
 
         public String getGuid() {
-            return guid;
+            return entity.getGuid();
         }
         public AtlasVertex getVertex() {
             return vertex;
         }
         public String getTypeName() {
-            return typeName;
+            return entity.getTypeName();
         }
 
         @Override
@@ -755,14 +760,13 @@ public final class GraphHelper {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             VertexInfo that = (VertexInfo) o;
-            return Objects.equals(guid, that.guid) &&
-                    Objects.equals(vertex, that.vertex) &&
-                    Objects.equals(typeName, that.typeName);
+            return Objects.equals(entity, that.entity) &&
+                    Objects.equals(vertex, that.vertex);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(guid, vertex, typeName);
+            return Objects.hash(entity, vertex);
         }
     }
 
@@ -779,16 +783,20 @@ public final class GraphHelper {
         Stack<AtlasVertex> vertices = new Stack<>();
         vertices.push(entityVertex);
         while (vertices.size() > 0) {
-            AtlasVertex vertex = vertices.pop();
-            String typeName = GraphHelper.getTypeName(vertex);
-            String guid = GraphHelper.getGuid(vertex);
-            Id.EntityState state = GraphHelper.getState(vertex);
-            if (state == Id.EntityState.DELETED) {
+            AtlasVertex        vertex   = vertices.pop();
+            AtlasEntityHeader  entity   = toAtlasEntityHeader(vertex);
+            String             typeName = entity.getTypeName();
+            AtlasEntity.Status state    = entity.getStatus();
+
+            if (state == Status.DELETED) {
                 //If the reference vertex is marked for deletion, skip it
                 continue;
             }
-            result.add(new VertexInfo(guid, vertex, typeName));
+
+            result.add(new VertexInfo(entity, vertex));
+
             ClassType classType = typeSystem.getDataType(ClassType.class, typeName);
+
             for (AttributeInfo attributeInfo : classType.fieldMapping().fields.values()) {
                 if (!attributeInfo.isComposite) {
                     continue;
@@ -1065,5 +1073,36 @@ public final class GraphHelper {
         }
 
         return condition.toString();
+    }
+
+    private AtlasEntityHeader toAtlasEntityHeader(AtlasVertex vertex) {
+        AtlasEntityHeader ret = new AtlasEntityHeader();
+
+        ret.setGuid(GraphHelper.getGuid(vertex));
+        ret.setTypeName(GraphHelper.getTypeName(vertex));
+        ret.setStatus(GraphHelper.getStatus(vertex));
+
+        try {
+            ClassType      classType = typeSystem.getDataType(ClassType.class, ret.getTypeName());
+            ITypedInstance entity    = classType.createInstance();
+
+            for (AttributeInfo attributeInfo : classType.fieldMapping().fields.values()) {
+                if (attributeInfo.isUnique || "clusterName".equals(attributeInfo.name)) {
+                    try {
+                        Object attrValue = graphToInstanceMapper.mapVertexToAttribute(vertex, entity, attributeInfo);
+
+                        if (attrValue != null) {
+                            ret.setAttribute(attributeInfo.name, attrValue);
+                        }
+                    } catch (AtlasException excp) {
+                        LOG.error("Failed to get uniqueAttribute value: entityGuid={}, attrName={}", ret.getGuid(), attributeInfo.name, excp);
+                    }
+                }
+            }
+        } catch (AtlasException excp) {
+            LOG.error("Failed to create instance of type {}", ret.getTypeName(), excp);
+        }
+
+        return ret;
     }
 }

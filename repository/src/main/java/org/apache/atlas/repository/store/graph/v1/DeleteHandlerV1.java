@@ -25,6 +25,7 @@ import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
@@ -115,21 +116,11 @@ public abstract class DeleteHandlerV1 {
             // Record all deletion candidate GUIDs in RequestContext
             // and gather deletion candidate vertices.
             for (GraphHelper.VertexInfo vertexInfo : compositeVertices) {
-                AtlasEntityType     entityType = typeRegistry.getEntityTypeByName(vertexInfo.getTypeName());
-                AtlasEntity         entity     = entityGraphRetriever.toAtlasEntity(vertexInfo.getVertex());
-                Map<String, Object> attributes = null;
+                AtlasEntityType     entityType   = typeRegistry.getEntityTypeByName(vertexInfo.getTypeName());
+                AtlasEntity         entity       = entityGraphRetriever.toAtlasEntity(vertexInfo.getVertex());
+                AtlasEntityHeader   entityHeader = new AtlasEntityHeader(entity);
 
-                if (entityType != null && MapUtils.isNotEmpty(entityType.getUniqAttributes())) {
-                    attributes = new HashMap<>();
-
-                    for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                        Object attrVal = entity.getAttribute(attribute.getName());
-
-                        if (attrVal != null) {
-                            attributes.put(attribute.getName(), attrVal);
-                        }
-                    }
-
+                if (entityType != null) {
                     // include clusterName attribute as well, if it is defined in the entity-type
                     AtlasAttribute attrClusterName = entityType.getAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE);
 
@@ -137,13 +128,13 @@ public abstract class DeleteHandlerV1 {
                         Object clusterName = entity.getAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE);
 
                         if (clusterName != null) {
-                            attributes.put(attrClusterName.getName(), clusterName);
+                            entityHeader.setAttribute(attrClusterName.getName(), clusterName);
                         }
                     }
                 }
 
                 requestContext.cache(entity);
-                requestContext.recordEntityDelete(new AtlasObjectId(vertexInfo.getGuid(), vertexInfo.getTypeName(), attributes));
+                requestContext.recordEntityDelete(entityHeader);
                 deletionCandidateVertices.add(vertexInfo.getVertex());
             }
         }
@@ -176,11 +167,11 @@ public abstract class DeleteHandlerV1 {
                 continue;
             }
 
-            String typeName = GraphHelper.getTypeName(vertex);
-            String guid = GraphHelper.getGuid(vertex);
+            AtlasEntityHeader entity     = entityGraphRetriever.toAtlasEntityHeader(vertex);
+            String            typeName   = entity.getTypeName();
+            AtlasEntityType   entityType = typeRegistry.getEntityTypeByName(typeName);
 
-            result.add(new GraphHelper.VertexInfo(guid, vertex, typeName));
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+            result.add(new GraphHelper.VertexInfo(entity, vertex));
 
             if (entityType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
@@ -297,7 +288,11 @@ public abstract class DeleteHandlerV1 {
      */
     public boolean deleteEdgeReference(AtlasEdge edge, TypeCategory typeCategory, boolean isOwned,
         boolean forceDeleteStructTrait) throws AtlasBaseException {
-        LOG.debug("Deleting {}", string(edge));
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting {}", string(edge));
+        }
+
         boolean forceDelete =
             (typeCategory == TypeCategory.STRUCT || typeCategory == TypeCategory.CLASSIFICATION) && forceDeleteStructTrait;
 
@@ -366,7 +361,10 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     protected void deleteTypeVertex(AtlasVertex instanceVertex, boolean force) throws AtlasBaseException {
-        LOG.debug("Deleting {}", string(instanceVertex));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting {}", string(instanceVertex));
+        }
+
         String typeName = GraphHelper.getTypeName(instanceVertex);
 
 
@@ -377,7 +375,10 @@ public abstract class DeleteHandlerV1 {
             boolean         isEntityType = (parentType instanceof AtlasEntityType);
 
             for (AtlasStructType.AtlasAttribute attributeInfo : structType.getAllAttributes().values()) {
-                LOG.debug("Deleting attribute {} for {}", attributeInfo.getName(), string(instanceVertex));
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Deleting attribute {} for {}", attributeInfo.getName(), string(instanceVertex));
+                }
+
                 boolean isOwned = isEntityType && attributeInfo.isOwnedRef();
 
                 AtlasType attrType = attributeInfo.getAttributeType();
@@ -448,7 +449,11 @@ public abstract class DeleteHandlerV1 {
      */
     private void deleteAllTraits(AtlasVertex instanceVertex) throws AtlasBaseException {
         List<String> traitNames = GraphHelper.getTraitNames(instanceVertex);
-        LOG.debug("Deleting traits {} for {}", traitNames, string(instanceVertex));
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting traits {} for {}", traitNames, string(instanceVertex));
+        }
+
         String typeName = GraphHelper.getTypeName(instanceVertex);
 
         for (String traitNameToBeDeleted : traitNames) {
@@ -478,15 +483,17 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     protected void deleteEdgeBetweenVertices(AtlasVertex outVertex, AtlasVertex inVertex, AtlasAttribute attribute) throws AtlasBaseException {
-        LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex),
-            attribute.getName());
-        String typeName = GraphHelper.getTypeName(outVertex);
-        String outId = GraphHelper.getGuid(outVertex);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex),
+                    attribute.getName());
+        }
 
-        AtlasObjectId objId = new AtlasObjectId(outId, typeName);
-        AtlasEntity.Status state = AtlasGraphUtilsV1.getState(outVertex);
+        AtlasEntityHeader  entity   = entityGraphRetriever.toAtlasEntityHeader(outVertex);
+        String             typeName = entity.getTypeName();
+        String             outId    = entity.getGuid();
+        AtlasEntity.Status state    = entity.getStatus();
 
-        if (state == AtlasEntity.Status.DELETED || (outId != null && RequestContextV1.get().isDeletedEntity(objId.getGuid()))) {
+        if (state == AtlasEntity.Status.DELETED || (outId != null && RequestContextV1.get().isDeletedEntity(outId))) {
             //If the reference vertex is marked for deletion, skip updating the reference
             return;
         }
@@ -610,13 +617,15 @@ public abstract class DeleteHandlerV1 {
             AtlasGraphUtilsV1.setEncodedProperty(outVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                 requestContext.getRequestTime());
             AtlasGraphUtilsV1.setEncodedProperty(outVertex, Constants.MODIFIED_BY_KEY, requestContext.getUser());
-            requestContext.recordEntityUpdate(new AtlasObjectId(outId, typeName));
+            requestContext.recordEntityUpdate(entity);
         }
     }
 
     protected void deleteVertex(AtlasVertex instanceVertex, boolean force) throws AtlasBaseException {
         //Update external references(incoming edges) to this vertex
-        LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
+        }
 
         for (AtlasEdge edge : (Iterable<AtlasEdge>) instanceVertex.getEdges(AtlasEdgeDirection.IN)) {
             AtlasEntity.Status edgeState = AtlasGraphUtilsV1.getState(edge);

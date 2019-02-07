@@ -18,6 +18,7 @@
 package org.apache.atlas.model.instance;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,6 +32,7 @@ import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.commons.collections.CollectionUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
@@ -78,11 +80,27 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     public AtlasEntityHeader(String typeName, String guid,  Map<String, Object> attributes) {
         super(typeName, attributes);
+
         setGuid(guid);
         setClassificationNames(null);
         setClassifications(null);
     }
 
+    public AtlasEntityHeader(AtlasEntity entity) {
+        super(entity.getTypeName(), entity.getAttributes());
+
+        setGuid(entity.getGuid());
+        setStatus(entity.getStatus());
+        setClassifications(entity.getClassifications());
+
+        if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
+            this.classificationNames = new ArrayList<>(entity.getClassifications().size());
+
+            for (AtlasClassification classification : entity.getClassifications()) {
+                this.classificationNames.add(classification.getTypeName());
+            }
+        }
+    }
 
     public AtlasEntityHeader(AtlasEntityHeader other) {
         super(other);

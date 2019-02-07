@@ -155,9 +155,9 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                 TypeSystem.IdType idType = TypeSystem.getInstance().getIdType();
 
                 if (dataType.getName().equals(idType.getName())) {
-                    structInstance.set(idType.typeNameAttrName(), AtlasGraphUtilsV1.getProperty(structVertex, typeAttributeName(), String.class));
-                    structInstance.set(idType.idAttrName(), AtlasGraphUtilsV1.getProperty(structVertex, idAttributeName(), String.class));
-                    String stateValue = AtlasGraphUtilsV1.getProperty(structVertex, stateAttributeName(), String.class);
+                    structInstance.set(idType.typeNameAttrName(), AtlasGraphUtilsV1.getEncodedProperty(structVertex, typeAttributeName(), String.class));
+                    structInstance.set(idType.idAttrName(), AtlasGraphUtilsV1.getEncodedProperty(structVertex, idAttributeName(), String.class));
+                    String stateValue = AtlasGraphUtilsV1.getEncodedProperty(structVertex, stateAttributeName(), String.class);
                     if (stateValue != null) {
                         structInstance.set(idType.stateAttrName(), stateValue);
                     }

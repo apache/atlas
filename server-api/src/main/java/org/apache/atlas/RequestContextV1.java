@@ -21,7 +21,7 @@ package org.apache.atlas;
 import org.apache.atlas.metrics.Metrics;
 import org.apache.atlas.metrics.Metrics.MetricRecorder;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.store.DeleteType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,12 +40,12 @@ public class RequestContextV1 {
     private static final ThreadLocal<RequestContextV1> CURRENT_CONTEXT = new ThreadLocal<>();
     private static final Set<RequestContextV1>         ACTIVE_REQUESTS = new HashSet<>();
 
-    private final long                       requestTime     = System.currentTimeMillis();
-    private final Map<String, AtlasObjectId> updatedEntities = new HashMap<>();
-    private final Map<String, AtlasObjectId> deletedEntities = new HashMap<>();
-    private final Map<String, AtlasEntity>   entityCacheV2   = new HashMap<>();
-    private final Metrics                    metrics         = new Metrics();
-    private       List<EntityGuidPair>       entityGuidInRequest = null;
+    private final long                           requestTime         = System.currentTimeMillis();
+    private final Map<String, AtlasEntityHeader> updatedEntities     = new HashMap<>();
+    private final Map<String, AtlasEntityHeader> deletedEntities     = new HashMap<>();
+    private final Map<String, AtlasEntity>       entityCacheV2       = new HashMap<>();
+    private final Metrics                        metrics             = new Metrics();
+    private       List<EntityGuidPair>           entityGuidInRequest = null;
 
     private String     user;
     private DeleteType deleteType = DeleteType.DEFAULT;
@@ -135,13 +135,13 @@ public class RequestContextV1 {
 
     public void setDeleteType(DeleteType deleteType) { this.deleteType = (deleteType == null) ? DeleteType.DEFAULT : deleteType; }
 
-    public void recordEntityUpdate(AtlasObjectId entity) {
+    public void recordEntityUpdate(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null) {
             updatedEntities.put(entity.getGuid(), entity);
         }
     }
 
-    public void recordEntityDelete(AtlasObjectId entity) {
+    public void recordEntityDelete(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null) {
             deletedEntities.put(entity.getGuid(), entity);
         }
@@ -157,11 +157,11 @@ public class RequestContextV1 {
         }
     }
 
-    public Collection<AtlasObjectId> getUpdatedEntities() {
+    public Collection<AtlasEntityHeader> getUpdatedEntities() {
         return updatedEntities.values();
     }
 
-    public Collection<AtlasObjectId> getDeletedEntities() {
+    public Collection<AtlasEntityHeader> getDeletedEntities() {
         return deletedEntities.values();
     }
 

@@ -25,6 +25,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.metrics.Metrics.MetricRecorder;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
@@ -51,6 +52,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 
 
@@ -78,6 +80,8 @@ public class AtlasEntityChangeNotifier {
         if (CollectionUtils.isEmpty(entityChangeListeners) || instanceConverter == null) {
             return;
         }
+
+        pruneResponse(entityMutationResponse);
 
         List<AtlasEntityHeader> createdEntities          = entityMutationResponse.getCreatedEntities();
         List<AtlasEntityHeader> updatedEntities          = entityMutationResponse.getUpdatedEntities();
@@ -334,6 +338,82 @@ public class AtlasEntityChangeNotifier {
             LOG.warn("failed to create ITypedReferenceableInstance for type {}", entity.getTypeName(), excp);
 
             throw AtlasInstanceConverter.toAtlasBaseException(excp);
+        }
+    }
+
+    private void pruneResponse(EntityMutationResponse resp) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> pruneResponse()");
+        }
+
+        List<AtlasEntityHeader> createdEntities        = resp.getCreatedEntities();
+        List<AtlasEntityHeader> updatedEntities        = resp.getUpdatedEntities();
+        List<AtlasEntityHeader> partialUpdatedEntities = resp.getPartialUpdatedEntities();
+        List<AtlasEntityHeader> deletedEntities        = resp.getDeletedEntities();
+
+        // remove entities with DELETED status from created & updated lists
+        purgeDeletedEntities(createdEntities);
+        purgeDeletedEntities(updatedEntities);
+        purgeDeletedEntities(partialUpdatedEntities);
+
+        // remove entities deleted in this mutation from created & updated lists
+        if (deletedEntities != null) {
+            for (AtlasEntityHeader entity : deletedEntities) {
+                purgeEntity(entity.getGuid(), createdEntities);
+                purgeEntity(entity.getGuid(), updatedEntities);
+                purgeEntity(entity.getGuid(), partialUpdatedEntities);
+            }
+        }
+
+        // remove entities created in this mutation from updated lists
+        if (createdEntities != null) {
+            for (AtlasEntityHeader entity : createdEntities) {
+                purgeEntity(entity.getGuid(),updatedEntities);
+                purgeEntity(entity.getGuid(), partialUpdatedEntities);
+            }
+        }
+
+        // remove entities updated in this mutation from partial-updated list
+        if (updatedEntities != null) {
+            for (AtlasEntityHeader entity : updatedEntities) {
+                purgeEntity(entity.getGuid(), partialUpdatedEntities);
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== pruneResponse()");
+        }
+    }
+
+    private void purgeDeletedEntities(List<AtlasEntityHeader> entities) {
+        if (entities != null) {
+            for (ListIterator<AtlasEntityHeader> iter = entities.listIterator(); iter.hasNext(); ) {
+                AtlasEntityHeader entity = iter.next();
+
+                if (entity.getStatus() == AtlasEntity.Status.DELETED) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("purgeDeletedEntities(guid={}, status={}): REMOVED", entity.getGuid(), entity.getStatus());
+                    }
+
+                    iter.remove();
+                }
+            }
+        }
+    }
+
+    private void purgeEntity(String guid, List<AtlasEntityHeader> entities) {
+        if (guid != null && entities != null) {
+            for (ListIterator<AtlasEntityHeader> iter = entities.listIterator(); iter.hasNext(); ) {
+                AtlasEntityHeader entity = iter.next();
+
+                if (org.apache.commons.lang.StringUtils.equals(guid, entity.getGuid())) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("purgeEntity(guid={}): REMOVED", entity.getGuid());
+                    }
+
+                    iter.remove();
+                }
+            }
         }
     }
 }

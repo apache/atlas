@@ -99,6 +99,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         init();
     }
 
+    public AtlasEntity(AtlasEntityHeader header) {
+        super(header.getTypeName(), header.getAttributes());
+
+        setGuid(header.getGuid());
+        setStatus(header.getStatus());
+        setClassifications(header.getClassifications());
+    }
+
     public AtlasEntity(AtlasEntity other) {
         super(other);
 
