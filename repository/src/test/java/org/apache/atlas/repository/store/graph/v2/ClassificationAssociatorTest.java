@@ -19,18 +19,25 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.elasticsearch.common.util.CollectionUtils;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -161,6 +168,26 @@ public class ClassificationAssociatorTest {
         assertSummaryElement(summaryArray[0], "Entity", STATUS_SKIPPED, "");
     }
 
+
+    @Test
+    public void updaterEntityWithUniqueName() throws IOException, AtlasBaseException {
+        AtlasEntityDef ed = getAtlasEntityDefFromFile("col-entity-def-unique-name");
+
+        AtlasEntityHeaders entityHeaderMap = getEntityHeaderMapFromFile("header-PII-no-qualifiedName");
+        AtlasEntityStore entitiesStore = mock(AtlasEntityStore.class);
+        AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
+        AtlasTypeRegistry.AtlasTransientTypeRegistry ttr = typeRegistry.lockTypeRegistryForUpdate();
+        ttr.addTypes(CollectionUtils.newSingletonArrayList(ed));
+
+        ClassificationAssociatorUpdaterForSpy updater = new ClassificationAssociatorUpdaterForSpy(ttr, entitiesStore, "col-entity-PII");
+        String summary = updater.setClassifications(entityHeaderMap.getGuidHeaderMap());
+
+        TypeReference<String[]> typeReference = new TypeReference<String[]>() {};
+        String[] summaryArray = AtlasJson.fromJson(summary, typeReference);
+        assertEquals(summaryArray.length, 1);
+        assertSummaryElement(summaryArray[0], "Update", STATUS_DONE, "PII");
+    }
+
     @Test
     public void updaterTests() throws IOException {
         updaterAssert("header-None", "col-entity-None");
@@ -226,6 +253,9 @@ public class ClassificationAssociatorTest {
 
     private AtlasEntityHeaders getEntityHeaderMapFromFile(String filename) throws IOException {
         return TestResourceFileUtils.readObjectFromJson(TEST_FILES_SUBDIR, filename, AtlasEntityHeaders.class);
+    }
+    private AtlasEntityDef getAtlasEntityDefFromFile(String filename) throws IOException {
+        return TestResourceFileUtils.readObjectFromJson(TEST_FILES_SUBDIR, filename, AtlasEntityDef.class);
     }
 
     private void updaterAssert(String incoming, String entity, String... opNamePair) throws IOException {

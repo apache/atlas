@@ -65,13 +65,26 @@ public class ClassificationAssociator {
 
             Map<String, AtlasEntityHeader> guidEntityHeaderMap = new HashMap<>();
             for (String guid : guids) {
-                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+                AtlasEntityHeader entityHeader = getEntityHeaderByGuid(guid);
+                if (entityHeader == null) {
+                    continue;
+                }
 
                 guidEntityHeaderMap.put(guid, entityHeader);
             }
 
             guids.clear();
             return new AtlasEntityHeaders(guidEntityHeaderMap);
+        }
+
+        private AtlasEntityHeader getEntityHeaderByGuid(String guid) {
+            try {
+                return entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+            } catch (AtlasBaseException e) {
+                LOG.error("Error fetching entity: {}", guid, e);
+            }
+
+            return null;
         }
 
         private long incrementTimestamp(long t) {
@@ -95,6 +108,7 @@ public class ClassificationAssociator {
         private final AtlasEntityStore entitiesStore;
         private final EntityGraphRetriever entityRetriever;
         private StringBuilder actionSummary = new StringBuilder();
+        private Map<String, String> typeNameUniqueAttributeNameMap = new HashMap<>();
 
         public Updater(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
             this.typeRegistry = typeRegistry;
@@ -105,6 +119,7 @@ public class ClassificationAssociator {
         public String setClassifications(Map<String, AtlasEntityHeader> map) {
             for (AtlasEntityHeader incomingEntityHeader : map.values()) {
                 String typeName = incomingEntityHeader.getTypeName();
+
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
                 if (entityType == null) {
                     LOG.warn("Entity type: {}: Not found: {}!", typeName, STATUS_SKIPPED);
@@ -112,7 +127,11 @@ public class ClassificationAssociator {
                     continue;
                 }
 
-                String qualifiedName = getQualifiedName(incomingEntityHeader);
+                String qualifiedName = getUniqueAttributeName(entityType, incomingEntityHeader);
+                if (StringUtils.isEmpty(qualifiedName)) {
+                    qualifiedName = "<no unique name>";
+                }
+
                 AtlasEntityHeader entityToBeChanged = getByUniqueAttributes(entityType, qualifiedName, incomingEntityHeader.getAttributes());
                 if (entityToBeChanged == null) {
                     summarizeFormat("Entity:%s:%s:[Not found]:%s", entityType.getTypeName(), qualifiedName, STATUS_SKIPPED);
@@ -246,8 +265,21 @@ public class ClassificationAssociator {
             return list.stream().map(AtlasClassification::getTypeName).collect(Collectors.joining(", "));
         }
 
-        private String getQualifiedName(AtlasEntityHeader entityHeader) {
-            return (String) entityHeader.getAttribute(ATTR_NAME_QUALIFIED_NAME);
+        private String getUniqueAttributeName(AtlasEntityType entityType, AtlasEntityHeader entityHeader) {
+            String uniqueAttrName = ATTR_NAME_QUALIFIED_NAME;
+            if (!entityHeader.getAttributes().containsKey(uniqueAttrName)) {
+                uniqueAttrName = getUniqueAttributeName(entityType);
+            }
+
+            return uniqueAttrName;
+        }
+
+        private String getUniqueAttributeName(AtlasEntityType entityType) {
+            return entityType.getUniqAttributes()
+                    .entrySet()
+                    .stream()
+                    .findFirst()
+                    .get().getKey();
         }
 
         private void summarize(String... s) {
