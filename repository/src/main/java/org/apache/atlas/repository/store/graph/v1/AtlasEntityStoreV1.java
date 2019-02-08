@@ -242,8 +242,8 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                         }
 
                         Object currVal = entityRetriever.getEntityAttribute(vertex, attribute);
-
                         Object newVal  = entity.getAttribute(attribute.getName());
+
                         if (!attribute.getAttributeType().areEqualValues(currVal, newVal, context.getGuidAssignments())) {
                             hasUpdates = true;
 

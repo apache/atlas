@@ -45,6 +45,14 @@ public class StructTypeDefinition {
         }
         this.attributeDefinitions = attributeDefinitions;
         this.typeVersion = typeVersion;
+
+        if (this.attributeDefinitions != null) {
+            for (AttributeDefinition attrDef : this.attributeDefinitions) {
+                if (attrDef != null) {
+                    attrDef.setDefinedInTypeName(typeName);
+                }
+            }
+        }
     }
 
     public StructTypeDefinition(String typeName, AttributeDefinition[] attributeDefinitions) {
@@ -63,6 +71,10 @@ public class StructTypeDefinition {
         this.typeDescription = typeDescription;
         this.typeVersion = typeVersion;
         this.attributeDefinitions = ParamChecker.notNullElements(attributeDefinitions, "Attribute definitions");
+
+        for (AttributeDefinition attrDef : this.attributeDefinitions) {
+            attrDef.setDefinedInTypeName(typeName);
+        }
     }
 
 

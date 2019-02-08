@@ -121,10 +121,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     public String getFieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) throws AtlasException {
-        if (aInfo.name.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX)) {
-            return aInfo.name;
-        }
-        return AtlasGraphUtilsV1.encodePropertyKey(GraphHelper.getQualifiedFieldName(dataType, aInfo.name));
+        return aInfo.encodedVertexPropertyName;
     }
 
     public String getFieldNameInVertex(IDataType<?> dataType, String attrName) throws AtlasException {

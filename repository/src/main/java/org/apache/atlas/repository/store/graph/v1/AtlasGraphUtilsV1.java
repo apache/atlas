@@ -174,8 +174,6 @@ public class AtlasGraphUtilsV1 {
             LOG.debug("==> setProperty({}, {}, {})", toString(element), propertyName, value);
         }
 
-        propertyName = encodePropertyKey(propertyName);
-
         Object existingValue = element.getProperty(propertyName, Object.class);
 
         if (value == null || (value instanceof Collection && ((Collection)value).isEmpty())) {
@@ -200,16 +198,6 @@ public class AtlasGraphUtilsV1 {
                 }
             }
         }
-    }
-
-    public static <T extends AtlasVertex> Object getProperty(T vertex, String propertyName) {
-        String encodePropertyName = encodePropertyKey(propertyName);
-
-        if(AtlasGraphProvider.getGraphInstance().isMultiProperty(encodePropertyName)) {
-            return vertex.getPropertyValues(encodePropertyName, String.class);
-        }
-
-        return vertex.getProperty(encodePropertyName, Object.class);
     }
 
     public static <T extends AtlasElement, O> O getProperty(T element, String propertyName, Class<O> returnType) {

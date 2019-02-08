@@ -416,71 +416,71 @@ public final class GraphToTypedInstanceMapper {
 
         final Object ret;
 
-        final String vertexPropertyName = GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo);
+        final String vertexPropertyName = attributeInfo.encodedVertexPropertyName;
 
-        if (AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Object.class) != null) {
+        if (AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, Object.class) != null) {
             if (attributeInfo.dataType() == DataTypes.STRING_TYPE) {
-                String attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, String.class);
+                String attrValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, String.class);
 
                 typedInstance.setString(attributeInfo.name, attrValue);
 
                 ret = attrValue;
             } else if (attributeInfo.dataType() == DataTypes.SHORT_TYPE) {
-                Short attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Short.class);
+                Short attrValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, Short.class);
 
                 typedInstance.setShort(attributeInfo.name, attrValue);
 
                 ret = attrValue;
             } else if (attributeInfo.dataType() == DataTypes.INT_TYPE) {
-                Integer attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Integer.class);
+                Integer attrValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, Integer.class);
 
                 typedInstance.setInt(attributeInfo.name, attrValue);
 
                 ret = attrValue;
             } else if (attributeInfo.dataType() == DataTypes.BIGINTEGER_TYPE) {
-                BigInteger attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, BigInteger.class);
+                BigInteger attrValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, BigInteger.class);
 
                 typedInstance.setBigInt(attributeInfo.name, attrValue);
 
                 ret = attrValue;
             } else if (attributeInfo.dataType() == DataTypes.BOOLEAN_TYPE) {
-                Boolean attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Boolean.class);
+                Boolean attrValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, Boolean.class);
 
                 typedInstance.setBoolean(attributeInfo.name, attrValue);
 
                 ret = attrValue;
             } else if (attributeInfo.dataType() == DataTypes.BYTE_TYPE) {
-                Byte attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Byte.class);
+                Byte attrValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, Byte.class);
 
                 typedInstance.setByte(attributeInfo.name, attrValue);
 
                 ret = attrValue;
             } else if (attributeInfo.dataType() == DataTypes.LONG_TYPE) {
-                Long attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Long.class);
+                Long attrValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, Long.class);
 
                 typedInstance.setLong(attributeInfo.name, attrValue);
 
                 ret = attrValue;
             } else if (attributeInfo.dataType() == DataTypes.FLOAT_TYPE) {
-                Float attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Float.class);
+                Float attrValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, Float.class);
 
                 typedInstance.setFloat(attributeInfo.name, attrValue);
 
                 ret = attrValue;
             } else if (attributeInfo.dataType() == DataTypes.DOUBLE_TYPE) {
-                Double attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Double.class);
+                Double attrValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, Double.class);
 
                 typedInstance.setDouble(attributeInfo.name, attrValue);
 
                 ret = attrValue;
             } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
-                BigDecimal attrValue = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, BigDecimal.class);
+                BigDecimal attrValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, BigDecimal.class);
 
                 typedInstance.setBigDecimal(attributeInfo.name, attrValue);
 
                 ret = attrValue;
             } else if (attributeInfo.dataType() == DataTypes.DATE_TYPE) {
-                final Long dateVal   = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName, Long.class);
+                final Long dateVal   = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, vertexPropertyName, Long.class);
                 Date       attrValue = new Date(dateVal);
 
                 typedInstance.setDate(attributeInfo.name, attrValue);
@@ -497,8 +497,7 @@ public final class GraphToTypedInstanceMapper {
     }
 
     public static Object mapVertexToEnum(AtlasVertex<?,?> instanceVertex, ITypedInstance typedInstance, AttributeInfo attributeInfo) throws AtlasException {
-        final String vertexPropertyName = GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo);
-        final Object propertyValue      = AtlasGraphUtilsV1.getProperty(instanceVertex, vertexPropertyName);
+        final Object propertyValue = AtlasGraphUtilsV1.getEncodedProperty(instanceVertex, attributeInfo.encodedVertexPropertyName);
         final Object ret;
 
         if (propertyValue != null) {

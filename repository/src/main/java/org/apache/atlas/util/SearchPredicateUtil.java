@@ -680,7 +680,7 @@ public class SearchPredicateUtil {
                 if (Collection.class.isAssignableFrom(attrClass)) {
                     attrValue = vertex.getPropertyValues(attrName, attrClass);
                 } else {
-                    attrValue = AtlasGraphUtilsV1.getProperty(vertex, attrName, attrClass);
+                    attrValue = AtlasGraphUtilsV1.getEncodedProperty(vertex, attrName, attrClass);
                 }
 
                 ret = (isNullValid || attrValue != null) && compareValue(attrValue);

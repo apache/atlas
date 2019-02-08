@@ -19,6 +19,8 @@
 package org.apache.atlas.typesystem.types;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -42,6 +44,7 @@ public class AttributeInfo {
      */
     public final String reverseAttributeName;
     public final boolean isSoftRef;
+    public final String encodedVertexPropertyName;
     private IDataType dataType;
 
     public AttributeInfo(TypeSystem t, AttributeDefinition def, Map<String, IDataType> tempTypes) throws AtlasException {
@@ -55,6 +58,12 @@ public class AttributeInfo {
         this.isIndexable = def.isIndexable;
         this.reverseAttributeName = def.reverseAttributeName;
         this.isSoftRef = def.isSoftRef;
+
+        if (name.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX)) {
+            this.encodedVertexPropertyName = name;
+        } else {
+            this.encodedVertexPropertyName = AtlasStructType.AtlasAttribute.encodePropertyKey(def.getQualifiedName());
+        }
     }
 
     public IDataType dataType() {

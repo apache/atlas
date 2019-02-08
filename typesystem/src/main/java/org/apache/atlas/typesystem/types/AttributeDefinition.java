@@ -31,6 +31,7 @@ public final class AttributeDefinition {
     public final boolean isComposite;
     public final boolean isUnique;
     public final boolean isIndexable;
+    private      String  qualifiedName;
 
     /**
      * If this is a reference attribute, then the name of the attribute on the Class
@@ -54,6 +55,14 @@ public final class AttributeDefinition {
         this.isUnique = isUnique;
         this.isIndexable = isIndexable;
         this.reverseAttributeName = ParamChecker.notEmptyIfNotNull(reverseAttributeName, "Reverse attribute name");
+    }
+
+    public void setDefinedInTypeName(String definedInTypeName) {
+        this.qualifiedName = name.contains(".") ? name : String.format("%s.%s", definedInTypeName, name);
+    }
+
+    public String getQualifiedName() {
+        return qualifiedName;
     }
 
     @Override

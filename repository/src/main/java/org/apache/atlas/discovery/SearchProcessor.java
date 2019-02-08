@@ -523,7 +523,7 @@ public abstract class SearchProcessor {
                     break;
             }
 
-            ret = predicate.generatePredicate(attribute.getQualifiedName(), attrValue, attrClass);
+            ret = predicate.generatePredicate(attribute.getVertexPropertyName(), attrValue, attrClass);
         }
 
         return ret;

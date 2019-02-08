@@ -357,7 +357,7 @@ public class AtlasTypeUtil {
     }
 
     public static boolean isValidGuid(String guid) {
-        return isAssignedGuid(guid) || isUnAssignedGuid(guid);
+        return guid != null && (isUnAssignedGuid(guid) || isAssignedGuid(guid));
     }
 
     public static boolean isAssignedGuid(String guid) {
@@ -377,7 +377,7 @@ public class AtlasTypeUtil {
     }
 
     public static boolean isValid(AtlasObjectId objId) {
-        if (isAssignedGuid(objId) || isUnAssignedGuid(objId)) {
+        if (isUnAssignedGuid(objId) || isAssignedGuid(objId)) {
             return true;
         } else if (StringUtils.isNotEmpty(objId.getTypeName()) && MapUtils.isNotEmpty(objId.getUniqueAttributes())) {
             return true;
