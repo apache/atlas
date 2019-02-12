@@ -325,7 +325,7 @@ public class BulkFetchAndUpdate {
                     try {
                         classificationDef.setGuid(null);
                         String json = AtlasType.toJson(classificationDef);
-                        fileWriter.write(json);
+                        fileWriter.write(json + "\n");
                     } catch (Exception e) {
                         LOG.error("Error writing classifications: {}", e);
                         displayCrLf("Error writing classifications.");
@@ -534,6 +534,10 @@ public class BulkFetchAndUpdate {
                 LOG.error("{} skipped!", name, e);
                 displayCrLf(" [Skipped]", name);
                 updateClassification(classificationDef);
+                displayCrLf(" [Done!]");
+            } catch (Exception ex) {
+                LOG.error("{} skipped!", name, ex);
+                displayCrLf(" [Skipped]", name);
             }
         }
 
@@ -546,6 +550,9 @@ public class BulkFetchAndUpdate {
                 displayCrLf(" [Done]");
             } catch (AtlasServiceException e) {
                 LOG.error("{} skipped!", name, e);
+                displayCrLf(" [Skipped]", name);
+            } catch (Exception ex) {
+                LOG.error("{} skipped!", name, ex);
                 displayCrLf(" [Skipped]", name);
             }
         }
