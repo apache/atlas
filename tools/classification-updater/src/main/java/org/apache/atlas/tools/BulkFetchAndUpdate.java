@@ -386,12 +386,8 @@ public class BulkFetchAndUpdate {
                     continue;
                 }
 
-                header.setGuid(null);
-                if (header.getClassifications().size() == 0) {
-                    continue;
-                }
-
                 String key = String.format("%s:%s", header.getTypeName(), uniqueName);
+                header.setGuid(null);
                 boolean keyFound = uniqueNameEntityHeaderMap.containsKey(key);
                 if (!keyFound) {
                     uniqueNameEntityHeaderMap.put(key, header);
