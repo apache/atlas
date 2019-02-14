@@ -487,6 +487,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         requestContext.setMaxAttempts(maxRetries);
 
                         requestContext.setUser(messageUser, null);
+                        requestContext.setInNotificationProcessing(true);
 
                         switch (message.getType()) {
                             case ENTITY_CREATE: {
