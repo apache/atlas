@@ -124,7 +124,7 @@ public class MetricsServiceTest {
 
     @Test
     public void testGetMetrics() {
-        AtlasMetrics metrics = metricsService.getMetrics(true);
+        AtlasMetrics metrics = metricsService.getMetrics();
 
         assertNotNull(metrics);
 
