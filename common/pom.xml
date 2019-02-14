@@ -40,6 +40,11 @@
             <artifactId>javax.inject</artifactId>
         </dependency>
 
+		<dependency>
+		    <groupId>javax.annotation</groupId>
+		    <artifactId>javax.annotation-api</artifactId>
+		</dependency>
+			
         <dependency>
             <groupId>commons-configuration</groupId>
             <artifactId>commons-configuration</artifactId>
@@ -102,6 +107,7 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
         </dependency>
+
     </dependencies>
 
     <build>
