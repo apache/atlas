@@ -59,108 +59,95 @@ public class MetricsService {
     protected static final String METRIC_TAG_COUNT         = TAG + "Count";
     protected static final String METRIC_ENTITIES_PER_TAG  = TAG + "Entities";
 
-    public static final String METRIC_QUERY_CACHE_TTL                = "atlas.metric.query.cache.ttlInSecs";
-    public static final String METRIC_QUERY_GREMLIN_TYPES_BATCH_SIZE = "atlas.metric.query.gremlin.typesBatchSize";
-    public static final int    DEFAULT_CACHE_TTL_IN_SECS             = 900;
     public static final String METRIC_COLLECTION_TIME                = "collectionTime";
 
     private final AtlasGraph        atlasGraph;
     private final AtlasTypeRegistry typeRegistry;
-    private final int               cacheTTLInSecs;
     private final String            indexSearchPrefix = AtlasGraphUtilsV2.getIndexSearchPrefix();
 
-    private AtlasMetrics cachedMetrics       = null;
-    private long         cacheExpirationTime = 0;
-
     @Inject
-    public MetricsService(final Configuration configuration, final AtlasGraph graph, final AtlasTypeRegistry typeRegistry) {
-        this.atlasGraph = graph;
-        this.cacheTTLInSecs = configuration != null ? configuration.getInt(METRIC_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS) : DEFAULT_CACHE_TTL_IN_SECS;
+    public MetricsService(final AtlasGraph graph, final AtlasTypeRegistry typeRegistry) {
+        this.atlasGraph   = graph;
         this.typeRegistry = typeRegistry;
 
     }
 
     @SuppressWarnings("unchecked")
-    public AtlasMetrics getMetrics(boolean ignoreCache) {
-        if (ignoreCache || !isCacheValid()) {
-            AtlasMetrics metrics = new AtlasMetrics();
+    public AtlasMetrics getMetrics() {
+        AtlasMetrics metrics = new AtlasMetrics();
 
-            metrics.addMetric(GENERAL, METRIC_TYPE_COUNT, getAllTypesCount());
-            metrics.addMetric(GENERAL, METRIC_TAG_COUNT, getAllTagsCount());
+        metrics.addMetric(GENERAL, METRIC_TYPE_COUNT, getAllTypesCount());
+        metrics.addMetric(GENERAL, METRIC_TAG_COUNT, getAllTagsCount());
 
-            Map<String, Long> activeCountMap  = new HashMap<>();
-            Map<String, Long> deletedCountMap = new HashMap<>();
+        Map<String, Long> activeCountMap  = new HashMap<>();
+        Map<String, Long> deletedCountMap = new HashMap<>();
 
-            // metrics for classifications
-            Collection<String> classificationDefNames = typeRegistry.getAllClassificationDefNames();
+        // metrics for classifications
+        Collection<String> classificationDefNames = typeRegistry.getAllClassificationDefNames();
 
-            if (classificationDefNames != null) {
-                for (String classificationDefName : classificationDefNames) {
-                    activeCountMap.put(classificationDefName, getTypeCount(classificationDefName, ACTIVE));
-                }
+        if (classificationDefNames != null) {
+            for (String classificationDefName : classificationDefNames) {
+                activeCountMap.put(classificationDefName, getTypeCount(classificationDefName, ACTIVE));
             }
-
-            // metrics for entities
-            Collection<String> entityDefNames = typeRegistry.getAllEntityDefNames();
-
-            if (entityDefNames != null) {
-                for (String entityDefName : entityDefNames) {
-                    activeCountMap.put(entityDefName, getTypeCount(entityDefName, ACTIVE));
-                    deletedCountMap.put(entityDefName, getTypeCount(entityDefName, DELETED));
-                }
-            }
-
-            Map<String, Long> activeEntityCount  = new HashMap<>();
-            Map<String, Long> deletedEntityCount = new HashMap<>();
-            long              unusedTypeCount    = 0;
-            long              totalEntities      = 0;
-
-            for (String entityDefName : typeRegistry.getAllEntityDefNames()) {
-                Long activeCount  = activeCountMap.get(entityDefName);
-                Long deletedCount = deletedCountMap.get(entityDefName);
-
-                if (activeCount > 0) {
-                    activeEntityCount.put(entityDefName, activeCount);
-                    totalEntities += activeCount.longValue();
-                }
-
-                if (deletedCount > 0) {
-                    deletedEntityCount.put(entityDefName, deletedCount);
-                    totalEntities += deletedCount.longValue();
-                }
-
-                if (activeCount == 0 && deletedCount == 0) {
-                    unusedTypeCount++;
-                }
-            }
-
-            metrics.addMetric(GENERAL, METRIC_TYPE_UNUSED_COUNT, unusedTypeCount);
-            metrics.addMetric(GENERAL, METRIC_ENTITY_COUNT, totalEntities);
-            metrics.addMetric(ENTITY, METRIC_ENTITY_ACTIVE, activeEntityCount);
-            metrics.addMetric(ENTITY, METRIC_ENTITY_DELETED, deletedEntityCount);
-
-            Map<String, Long> taggedEntityCount = new HashMap<>();
-
-            for (String classificationName : typeRegistry.getAllClassificationDefNames()) {
-                Long count = activeCountMap.get(classificationName);
-
-                if (count > 0) {
-                    taggedEntityCount.put(classificationName, count);
-                }
-            }
-
-            metrics.addMetric(TAG, METRIC_ENTITIES_PER_TAG, taggedEntityCount);
-
-            // Miscellaneous metrics
-            long collectionTime = System.currentTimeMillis();
-
-            metrics.addMetric(GENERAL, METRIC_COLLECTION_TIME, collectionTime);
-
-            this.cachedMetrics       = metrics;
-            this.cacheExpirationTime = (collectionTime + cacheTTLInSecs * 1000);
         }
 
-        return cachedMetrics;
+        // metrics for entities
+        Collection<String> entityDefNames = typeRegistry.getAllEntityDefNames();
+
+        if (entityDefNames != null) {
+            for (String entityDefName : entityDefNames) {
+                activeCountMap.put(entityDefName, getTypeCount(entityDefName, ACTIVE));
+                deletedCountMap.put(entityDefName, getTypeCount(entityDefName, DELETED));
+            }
+        }
+
+        Map<String, Long> activeEntityCount  = new HashMap<>();
+        Map<String, Long> deletedEntityCount = new HashMap<>();
+        long              unusedTypeCount    = 0;
+        long              totalEntities      = 0;
+
+        for (String entityDefName : typeRegistry.getAllEntityDefNames()) {
+            Long activeCount  = activeCountMap.get(entityDefName);
+            Long deletedCount = deletedCountMap.get(entityDefName);
+
+            if (activeCount > 0) {
+                activeEntityCount.put(entityDefName, activeCount);
+                totalEntities += activeCount.longValue();
+            }
+
+            if (deletedCount > 0) {
+                deletedEntityCount.put(entityDefName, deletedCount);
+                totalEntities += deletedCount.longValue();
+            }
+
+            if (activeCount == 0 && deletedCount == 0) {
+                unusedTypeCount++;
+            }
+        }
+
+        metrics.addMetric(GENERAL, METRIC_TYPE_UNUSED_COUNT, unusedTypeCount);
+        metrics.addMetric(GENERAL, METRIC_ENTITY_COUNT, totalEntities);
+        metrics.addMetric(ENTITY, METRIC_ENTITY_ACTIVE, activeEntityCount);
+        metrics.addMetric(ENTITY, METRIC_ENTITY_DELETED, deletedEntityCount);
+
+        Map<String, Long> taggedEntityCount = new HashMap<>();
+
+        for (String classificationName : typeRegistry.getAllClassificationDefNames()) {
+            Long count = activeCountMap.get(classificationName);
+
+            if (count > 0) {
+                taggedEntityCount.put(classificationName, count);
+            }
+        }
+
+        metrics.addMetric(TAG, METRIC_ENTITIES_PER_TAG, taggedEntityCount);
+
+        // Miscellaneous metrics
+        long collectionTime = System.currentTimeMillis();
+
+        metrics.addMetric(GENERAL, METRIC_COLLECTION_TIME, collectionTime);
+
+        return metrics;
     }
 
     private Long getTypeCount(String typeName, Status status) {
@@ -182,17 +169,5 @@ public class MetricsService {
         Collection<String> allTagNames = typeRegistry.getAllClassificationDefNames();
 
         return CollectionUtils.isNotEmpty(allTagNames) ? allTagNames.size() : 0;
-    }
-
-    private boolean isCacheValid() {
-        boolean valid = cachedMetrics != null && System.currentTimeMillis() < cacheExpirationTime;
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("cachedMetrics: {}", cachedMetrics != null);
-            LOG.debug("cacheExpirationTime: {}", cacheExpirationTime);
-            LOG.debug("valid: {}", valid);
-        }
-
-        return valid;
     }
 }

@@ -319,12 +319,12 @@ public class AdminResource {
     @GET
     @Path("metrics")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasMetrics getMetrics(@QueryParam("ignoreCache") boolean ignoreCache) {
+    public AtlasMetrics getMetrics() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.getMetrics()");
         }
 
-        AtlasMetrics metrics = metricsService.getMetrics(ignoreCache);
+        AtlasMetrics metrics = metricsService.getMetrics();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getMetrics()");
