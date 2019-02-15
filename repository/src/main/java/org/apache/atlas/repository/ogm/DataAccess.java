@@ -50,9 +50,9 @@ public class DataAccess {
         DataTransferObject<T> dto = (DataTransferObject<T>)dtoRegistry.get(obj.getClass());
 
         AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
-        EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
-
-        if (hasError(entityMutationResponse)) {
+        try {
+            entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
+        } catch (AtlasBaseException e) {
             throw new AtlasBaseException(AtlasErrorCode.DATA_ACCESS_SAVE_FAILED, obj.toString());
         }
     }
@@ -97,13 +97,5 @@ public class DataAccess {
         if (object != null) {
             deleteUsingGuid(object.getGuid());
         }
-    }
-
-    private boolean hasError(EntityMutationResponse er) {
-        return (er == null ||
-                !((er.getCreatedEntities() != null && er.getCreatedEntities().size() > 0)
-                        || (er.getUpdatedEntities() != null && er.getUpdatedEntities().size() > 0)
-                )
-        );
     }
 }
