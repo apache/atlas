@@ -25,8 +25,10 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -120,9 +123,9 @@ public class AtlasRelationshipType extends AtlasStructType {
             relationshipLabel = getLegacyEdgeLabel(end2Type, endDef2.getName());
         }
 
-        addRelationshipAttributeToEndType(endDef1, end1Type, end2Type.getTypeName(), typeRegistry, relationshipLabel);
+        addRelationshipAttributeToEndType(endDef1, end1Type, end2Type.getTypeName(), typeRegistry, relationshipLabel, relationshipDef.getRelationshipCategory());
 
-        addRelationshipAttributeToEndType(endDef2, end2Type, end1Type.getTypeName(), typeRegistry, relationshipLabel);
+        addRelationshipAttributeToEndType(endDef2, end2Type, end1Type.getTypeName(), typeRegistry, relationshipLabel, relationshipDef.getRelationshipCategory());
 
         // add relationship edge direction information
         addRelationshipEdgeDirection();
@@ -293,7 +296,7 @@ public class AtlasRelationshipType extends AtlasStructType {
     }
 
     private void addRelationshipAttributeToEndType(AtlasRelationshipEndDef endDef, AtlasEntityType entityType, String attrTypeName,
-                                                   AtlasTypeRegistry typeRegistry, String relationshipLabel) throws AtlasBaseException {
+                                                   AtlasTypeRegistry typeRegistry, String relationshipLabel, RelationshipCategory relationshipCategory) throws AtlasBaseException {
 
         String attrName = (endDef != null) ? endDef.getName() : null;
 
@@ -310,12 +313,29 @@ public class AtlasRelationshipType extends AtlasStructType {
         }
 
         if (attribute == null) { //attr doesn't exist in type - is a new relationship attribute
+            Cardinality        cardinality = endDef.getCardinality();
+            boolean            isOptional  = true;
+            AtlasConstraintDef constraint  = null;
 
-            if (endDef.getCardinality() == Cardinality.SET) {
+            if (cardinality == Cardinality.SET) {
                 attrTypeName = AtlasBaseTypeDef.getArrayTypeName(attrTypeName);
             }
 
-            attribute = new AtlasAttribute(entityType, new AtlasAttributeDef(attrName, attrTypeName),
+            if (relationshipCategory == RelationshipCategory.COMPOSITION) {
+                if (endDef.getIsContainer()) {
+                    constraint = new AtlasConstraintDef(CONSTRAINT_TYPE_OWNED_REF);
+                } else {
+                    isOptional = false;
+                }
+            }
+
+            AtlasAttributeDef attributeDef = new AtlasAttributeDef(attrName, attrTypeName, isOptional, cardinality);
+
+            if (constraint != null) {
+                attributeDef.addConstraint(constraint);
+            }
+
+            attribute = new AtlasAttribute(entityType, attributeDef,
                                            typeRegistry.getType(attrTypeName), relationshipLabel);
 
         } else {

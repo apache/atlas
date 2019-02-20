@@ -20,6 +20,7 @@ package org.apache.atlas.repository.ogm.glossary;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -218,6 +219,7 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         ret.setAttribute("examples", obj.getExamples());
         ret.setAttribute("abbreviation", obj.getAbbreviation());
         ret.setAttribute("usage", obj.getUsage());
+        ret.setAttribute("anchor", new AtlasObjectId(obj.getAnchor().getGlossaryGuid()));
 
         if (CollectionUtils.isNotEmpty(obj.getClassifications())) {
             if (LOG.isDebugEnabled()) {

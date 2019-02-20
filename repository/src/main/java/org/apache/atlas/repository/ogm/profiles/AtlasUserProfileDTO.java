@@ -32,15 +32,16 @@ import java.util.*;
 
 @Component
 public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserProfile> {
-    private final String PROPERTY_USER_NAME      = "name";
-    private final String PROPERTY_FULL_NAME      = "fullName";
-    private final String PROPERTY_SAVED_SEARCHES = "savedSearches";
+    public  static final String ENTITY_TYPE_NAME        = "__AtlasUserProfile";
+    public  static final String PROPERTY_USER_NAME      = "name";
+    private static final String PROPERTY_FULL_NAME      = "fullName";
+    private static final String PROPERTY_SAVED_SEARCHES = "savedSearches";
 
     private final AtlasSavedSearchDTO savedSearchDTO;
 
     @Inject
     public AtlasUserProfileDTO(AtlasTypeRegistry typeRegistry, AtlasSavedSearchDTO savedSearchDTO) {
-        super(typeRegistry, AtlasUserProfile.class, "__AtlasUserProfile");
+        super(typeRegistry, AtlasUserProfile.class, ENTITY_TYPE_NAME);
 
         this.savedSearchDTO = savedSearchDTO;
     }

@@ -21,6 +21,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.repository.ogm.AbstractDataTransferObject;
 import org.apache.atlas.type.AtlasType;
@@ -29,22 +30,25 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 
 @Component
 public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSavedSearch> {
+    private static final String ENTITY_TYPE_NAME           = "__AtlasUserSavedSearch";
     private static final String PROPERTY_NAME              = "name";
     private static final String PROPERTY_OWNER_NAME        = "ownerName";
     private static final String PROPERTY_SEARCH_PARAMETERS = "searchParameters";
     private static final String PROPERTY_UNIQUE_NAME       = "uniqueName";
     private static final String PROPERTY_SEARCH_TYPE       = "searchType";
-    private static final String PROPERTY_UI_PARAMETERS       = "uiParameters";
+    private static final String PROPERTY_UI_PARAMETERS     = "uiParameters";
+    private static final String PROPERTY_USER_PROFILE      = "userProfile";
 
     @Inject
     public AtlasSavedSearchDTO(AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, AtlasUserSavedSearch.class, "__AtlasUserSavedSearch");
+        super(typeRegistry, AtlasUserSavedSearch.class, ENTITY_TYPE_NAME);
     }
 
     @Override
@@ -76,10 +80,14 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
     public AtlasEntity toEntity(AtlasUserSavedSearch obj) throws AtlasBaseException {
         AtlasEntity entity = getDefaultAtlasEntity(obj);
 
+        AtlasObjectId userProfileId = new AtlasObjectId(AtlasUserProfileDTO.ENTITY_TYPE_NAME,
+                                                        Collections.singletonMap(AtlasUserProfileDTO.PROPERTY_USER_NAME, obj.getOwnerName()));
+
         entity.setAttribute(PROPERTY_NAME, obj.getName());
         entity.setAttribute(PROPERTY_OWNER_NAME, obj.getOwnerName());
         entity.setAttribute(PROPERTY_SEARCH_TYPE, obj.getSearchType());
         entity.setAttribute(PROPERTY_UNIQUE_NAME, getUniqueValue(obj));
+        entity.setAttribute(PROPERTY_USER_PROFILE, userProfileId);
 
         if (obj.getSearchParameters() != null) {
             entity.setAttribute(PROPERTY_SEARCH_PARAMETERS, AtlasType.toJson(obj.getSearchParameters()));
