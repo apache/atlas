@@ -68,6 +68,7 @@ public class AtlasEntityType extends AtlasStructType {
     private Set<String>                              typeAndAllSuperTypes       = Collections.emptySet();
     private Map<String, AtlasAttribute>              relationshipAttributes     = Collections.emptyMap();
     private Map<String, List<AtlasRelationshipType>> relationshipAttributesType = Collections.emptyMap();
+    private List<AtlasAttribute>                     ownedRefAttributes         = Collections.emptyList();
     private String                                   typeAndAllSubTypesQryStr   = "";
     private boolean                                  isInternalType             = false;
     private Map<String, AtlasAttribute>              headerAttributes           = Collections.emptyMap();
@@ -207,12 +208,27 @@ public class AtlasEntityType extends AtlasStructType {
             }
         }
 
-        subTypes = Collections.unmodifiableSet(subTypes);
-        allSubTypes = Collections.unmodifiableSet(allSubTypes);
-        typeAndAllSubTypes = Collections.unmodifiableSet(typeAndAllSubTypes);
-        typeAndAllSubTypesQryStr = ""; // will be computed on next access
-        relationshipAttributes = Collections.unmodifiableMap(relationshipAttributes);
+        ownedRefAttributes = new ArrayList<>();
+
+        for (AtlasAttribute attribute : allAttributes.values()) {
+            if (attribute.isOwnedRef()) {
+                ownedRefAttributes.add(attribute);
+            }
+        }
+
+        for (AtlasAttribute attribute : relationshipAttributes.values()) {
+            if (attribute.isOwnedRef()) {
+                ownedRefAttributes.add(attribute);
+            }
+        }
+
+        subTypes                   = Collections.unmodifiableSet(subTypes);
+        allSubTypes                = Collections.unmodifiableSet(allSubTypes);
+        typeAndAllSubTypes         = Collections.unmodifiableSet(typeAndAllSubTypes);
+        typeAndAllSubTypesQryStr   = ""; // will be computed on next access
+        relationshipAttributes     = Collections.unmodifiableMap(relationshipAttributes);
         relationshipAttributesType = Collections.unmodifiableMap(relationshipAttributesType);
+        ownedRefAttributes         = Collections.unmodifiableList(ownedRefAttributes);
 
         entityDef.setSubTypes(subTypes);
     }
@@ -271,6 +287,10 @@ public class AtlasEntityType extends AtlasStructType {
 
     public Map<String, AtlasAttribute> getRelationshipAttributes() {
         return relationshipAttributes;
+    }
+
+    public List<AtlasAttribute> getOwnedRefAttributes() {
+        return ownedRefAttributes;
     }
 
     public AtlasAttribute getRelationshipAttribute(String attributeName) {
@@ -752,6 +772,18 @@ public class AtlasEntityType extends AtlasStructType {
                         AtlasType dataType      = attribute.getAttributeType();
                         Object    value         = entityObj.getAttribute(attributeName);
                         String    fieldName     = objName + "." + attributeName;
+
+                        if (!attribute.getAttributeDef().getIsOptional()) {
+                            // if required attribute is null, check if attribute value specified in relationship
+                            if (value == null) {
+                                value = entityObj.getRelationshipAttribute(attributeName);
+                            }
+
+                            if (value == null) {
+                                ret = false;
+                                messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
+                            }
+                        }
 
                         if (isValidRelationshipType(dataType) && value != null) {
                             ret = dataType.validateValue(value, fieldName, messages) && ret;
