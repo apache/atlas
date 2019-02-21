@@ -734,15 +734,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
                     boolean         hasUpdates = false;
 
-                    if (MapUtils.isNotEmpty(entity.getRelationshipAttributes())) {
-                        hasUpdates = true; // if relationship attributes are provided, assume there is an update
-                    }
-
                     if (!hasUpdates) {
                         hasUpdates = entity.getStatus() == AtlasEntity.Status.DELETED; // entity status could be updated during import
                     }
 
-                    if (!hasUpdates) {
+                    if (!hasUpdates && MapUtils.isNotEmpty(entity.getAttributes())) { // check for attribute value change
                         for (AtlasAttribute attribute : entityType.getAllAttributes().values()) {
                             if (!entity.getAttributes().containsKey(attribute.getName())) {  // if value is not provided, current value will not be updated
                                 continue;
@@ -756,6 +752,27 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                                 if (LOG.isDebugEnabled()) {
                                     LOG.debug("found attribute update: entity(guid={}, typeName={}), attrName={}, currValue={}, newValue={}", guid, entity.getTypeName(), attribute.getName(), currVal, newVal);
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!hasUpdates && MapUtils.isNotEmpty(entity.getRelationshipAttributes())) { // check of relationsship-attribute value change
+                        for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
+                            if (!entity.getRelationshipAttributes().containsKey(attribute.getName())) {  // if value is not provided, current value will not be updated
+                                continue;
+                            }
+
+                            Object newVal  = entity.getRelationshipAttribute(attribute.getName());
+                            Object currVal = entityRetriever.getEntityAttribute(vertex, attribute);
+
+                            if (!attribute.getAttributeType().areEqualValues(currVal, newVal, context.getGuidAssignments())) {
+                                hasUpdates = true;
+
+                                if (LOG.isDebugEnabled()) {
+                                    LOG.debug("found relationship attribute update: entity(guid={}, typeName={}), attrName={}, currValue={}, newValue={}", guid, entity.getTypeName(), attribute.getName(), currVal, newVal);
                                 }
 
                                 break;
@@ -782,7 +799,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                             entitiesToSkipUpdate = new ArrayList<>();
                         }
 
-                        LOG.info("skipping unchanged entity: {}", entity);
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("skipping unchanged entity: {}", entity);
+                        }
 
                         entitiesToSkipUpdate.add(entity);
                     }

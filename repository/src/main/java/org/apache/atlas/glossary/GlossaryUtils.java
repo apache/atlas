@@ -88,13 +88,7 @@ public abstract class GlossaryUtils {
 
 
     protected void createRelationship(AtlasRelationship relationship) throws AtlasBaseException {
-        try {
-            relationshipStore.create(relationship);
-        } catch (AtlasBaseException e) {
-            if (!e.getAtlasErrorCode().equals(AtlasErrorCode.RELATIONSHIP_ALREADY_EXISTS)) {
-                throw e;
-            }
-        }
+        relationshipStore.getOrCreate(relationship);
     }
 
     protected void updateRelationshipAttributes(AtlasRelationship relationship, AtlasRelatedTermHeader relatedTermHeader) {

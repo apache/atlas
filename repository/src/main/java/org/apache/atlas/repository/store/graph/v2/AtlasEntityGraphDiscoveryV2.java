@@ -331,12 +331,15 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
 
     private void visitRelationships(AtlasEntityType entityType, AtlasEntity entity, List<String> visitedAttributes) throws AtlasBaseException {
         for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
-            AtlasType attrType = attribute.getAttributeType();
             String attrName = attribute.getName();
-            Object attrVal = entity.getRelationshipAttribute(attrName);
 
+            // if attribute is not in 'relationshipAttributes', try 'attributes'
             if (entity.hasRelationshipAttribute(attrName)) {
-                visitAttribute(attrType, attrVal);
+                visitAttribute(attribute.getAttributeType(), entity.getRelationshipAttribute(attrName));
+
+                visitedAttributes.add(attrName);
+            } else if (entity.hasAttribute(attrName)) {
+                visitAttribute(attribute.getAttributeType(), entity.getAttribute(attrName));
 
                 visitedAttributes.add(attrName);
             }

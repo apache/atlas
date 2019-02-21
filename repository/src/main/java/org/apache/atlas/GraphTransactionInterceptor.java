@@ -23,6 +23,7 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.NotFoundException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,7 @@ import javax.ws.rs.core.Response;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,6 +49,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final ThreadLocal<List<PostTransactionHook>> postTransactionHooks       = new ThreadLocal<>();
     private static final ThreadLocal<Boolean>                   isTxnOpen                  = ThreadLocal.withInitial(() -> Boolean.FALSE);
     private static final ThreadLocal<Boolean>                   innerFailure               = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private static final ThreadLocal<Map<String, AtlasVertex>>  guidVertexCache            = ThreadLocal.withInitial(() -> new HashMap<>());
 
     private final AtlasGraph graph;
 
@@ -112,6 +115,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                 // Reset the boolean flags
                 isTxnOpen.set(Boolean.FALSE);
                 innerFailure.set(Boolean.FALSE);
+                guidVertexCache.get().clear();
 
                 List<PostTransactionHook> trxHooks = postTransactionHooks.get();
 
@@ -170,6 +174,24 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
 
     public static void lockObjectAndReleasePostCommit(final List<String> guids) {
         OBJECT_UPDATE_SYNCHRONIZER.lockObject(guids);
+    }
+
+    public static void addToVertexCache(String guid, AtlasVertex vertex) {
+        Map<String, AtlasVertex> cache = guidVertexCache.get();
+
+        cache.put(guid, vertex);
+    }
+
+    public static void removeFromVertexCache(String guid) {
+        Map<String, AtlasVertex> cache = guidVertexCache.get();
+
+        cache.remove(guid);
+    }
+
+    public static AtlasVertex getVertexFromCache(String guid) {
+        Map<String, AtlasVertex> cache = guidVertexCache.get();
+
+        return cache.get(guid);
     }
 
     boolean logException(Throwable t) {

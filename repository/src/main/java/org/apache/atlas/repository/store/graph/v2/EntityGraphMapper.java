@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
@@ -135,6 +136,8 @@ public class EntityGraphMapper {
         AtlasGraphUtilsV2.setEncodedProperty(ret, GUID_PROPERTY_KEY, guid);
         AtlasGraphUtilsV2.setEncodedProperty(ret, VERSION_PROPERTY_KEY, getEntityVersion(entity));
 
+        GraphTransactionInterceptor.addToVertexCache(guid, ret);
+
         return ret;
     }
 
@@ -186,11 +189,11 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
-                compactAttributes(createdEntity);
+                compactAttributes(createdEntity, entityType);
 
-                mapRelationshipAttributes(createdEntity, vertex, CREATE, context);
+                mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
-                mapAttributes(createdEntity, vertex, CREATE, context);
+                mapAttributes(createdEntity, entityType, vertex, CREATE, context);
 
                 resp.addEntity(CREATE, constructHeader(createdEntity, entityType, vertex));
                 addClassifications(context, guid, createdEntity.getClassifications());
@@ -203,11 +206,11 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
-                compactAttributes(updatedEntity);
+                compactAttributes(updatedEntity, entityType);
 
-                mapRelationshipAttributes(updatedEntity, vertex, UPDATE, context);
+                mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
 
-                mapAttributes(updatedEntity, vertex, UPDATE, context);
+                mapAttributes(updatedEntity, entityType, vertex, UPDATE, context);
 
                 if (isPartialUpdate) {
                     resp.addEntity(PARTIAL_UPDATE, constructHeader(updatedEntity, entityType, vertex));
@@ -283,16 +286,17 @@ public class EntityGraphMapper {
         return ret;
     }
 
-
     private void mapAttributes(AtlasStruct struct, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
+        mapAttributes(struct, getStructType(struct.getTypeName()), vertex, op, context);
+    }
+
+    private void mapAttributes(AtlasStruct struct, AtlasStructType structType, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> mapAttributes({}, {})", op, struct.getTypeName());
         }
 
         if (MapUtils.isNotEmpty(struct.getAttributes())) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributes");
-
-            AtlasStructType structType = getStructType(struct.getTypeName());
 
             if (op.equals(CREATE)) {
                 for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
@@ -325,7 +329,7 @@ public class EntityGraphMapper {
         }
     }
 
-    private void mapRelationshipAttributes(AtlasEntity entity, AtlasVertex vertex, EntityOperation op,
+    private void mapRelationshipAttributes(AtlasEntity entity, AtlasEntityType entityType, AtlasVertex vertex, EntityOperation op,
                                            EntityMutationContext context) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> mapRelationshipAttributes({}, {})", op, entity.getTypeName());
@@ -333,8 +337,6 @@ public class EntityGraphMapper {
 
         if (MapUtils.isNotEmpty(entity.getRelationshipAttributes())) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes");
-
-            AtlasEntityType entityType = getEntityType(entity.getTypeName());
 
             if (op.equals(CREATE)) {
                 for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
@@ -439,7 +441,7 @@ public class EntityGraphMapper {
                 AtlasEdge newEdge = null;
 
                 if (ctx.getValue() != null) {
-                    AtlasEntityType instanceType = getInstanceType(ctx.getValue());
+                    AtlasEntityType instanceType = getInstanceType(ctx.getValue(), context);
                     AtlasEdge       edge         = currentEdge != null ? currentEdge : null;
 
                     ctx.setElementType(instanceType);
@@ -1090,7 +1092,7 @@ public class EntityGraphMapper {
             return mapStructValue(ctx, context);
 
         case OBJECT_ID_TYPE:
-            AtlasEntityType instanceType = getInstanceType(ctx.getValue());
+            AtlasEntityType instanceType = getInstanceType(ctx.getValue(), context);
             ctx.setElementType(instanceType);
             if (ctx.getAttributeDef().isSoftReferenced()) {
                 return mapSoftRefValue(ctx, context);
@@ -1163,23 +1165,50 @@ public class EntityGraphMapper {
         return null;
     }
 
-    private AtlasEntityType getInstanceType(Object val) throws AtlasBaseException {
+    private AtlasEntityType getInstanceType(Object val, EntityMutationContext context) throws AtlasBaseException {
         AtlasEntityType ret = null;
 
         if (val != null) {
             String typeName = null;
+            String guid     = null;
 
             if (val instanceof AtlasObjectId) {
-                typeName = ((AtlasObjectId)val).getTypeName();
+                AtlasObjectId objId = (AtlasObjectId) val;
+
+                typeName = objId.getTypeName();
+                guid     = objId.getGuid();
             } else if (val instanceof Map) {
-                Object typeNameVal = ((Map)val).get(AtlasObjectId.KEY_TYPENAME);
+                Map map = (Map) val;
+
+                Object typeNameVal = map.get(AtlasObjectId.KEY_TYPENAME);
+                Object guidVal     = map.get(AtlasObjectId.KEY_GUID);
 
                 if (typeNameVal != null) {
                     typeName = typeNameVal.toString();
                 }
+
+                if (guidVal != null) {
+                    guid = guidVal.toString();
+                }
             }
 
-            ret = typeName != null ? typeRegistry.getEntityTypeByName(typeName) : null;
+            if (typeName == null) {
+                if (guid != null) {
+                    ret = context.getType(guid);
+
+                    if (ret == null) {
+                        AtlasVertex vertex = context.getDiscoveryContext().getResolvedEntityVertex(guid);
+
+                        if (vertex != null) {
+                            typeName = AtlasGraphUtilsV2.getTypeName(vertex);
+                        }
+                    }
+                }
+            }
+
+            if (ret == null && typeName != null) {
+                ret = typeRegistry.getEntityTypeByName(typeName);
+            }
 
             if (ret == null) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, val.toString());
@@ -1868,15 +1897,28 @@ public class EntityGraphMapper {
         }
     }
 
-    private static void compactAttributes(AtlasEntity entity) {
+    // move/remove relationship-attributes present in 'attributes'
+    private static void compactAttributes(AtlasEntity entity, AtlasEntityType entityType) {
         if (entity != null) {
-            Map<String, Object> relationshipAttributes = entity.getRelationshipAttributes();
-            Map<String, Object> attributes = entity.getAttributes();
+            for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
+                String attrName = attribute.getName();
 
-            if (MapUtils.isNotEmpty(relationshipAttributes) && MapUtils.isNotEmpty(attributes)) {
-                for (String attrName : relationshipAttributes.keySet()) {
-                    if (attributes.containsKey(attrName)) {
-                        entity.removeAttribute(attrName);
+                if (entity.hasAttribute(attrName)) {
+                    Object attrValue = entity.getAttribute(attrName);
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("relationship attribute {}.{} is present in entity, removing it", entityType.getTypeName(), attrName);
+                    }
+
+                    entity.removeAttribute(attrName);
+
+                    if (attrValue != null) { // relationship attribute is present in 'attributes'
+                        // if the attribute doesn't exist in relationshipAttributes, add it
+                        Object relationshipAttrValue = entity.getRelationshipAttribute(attrName);
+
+                        if (relationshipAttrValue == null) {
+                            entity.setRelationshipAttribute(attrName, attrValue);
+                        }
                     }
                 }
             }
