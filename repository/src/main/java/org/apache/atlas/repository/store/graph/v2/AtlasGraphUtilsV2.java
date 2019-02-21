@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.discovery.SearchProcessor;
@@ -324,14 +325,22 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static AtlasVertex findByGuid(String guid) {
-        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
-                                                  .has(Constants.GUID_PROPERTY_KEY, guid);
+        AtlasVertex ret = GraphTransactionInterceptor.getVertexFromCache(guid);
 
-        Iterator<AtlasVertex> results = query.vertices().iterator();
+        if (ret == null) {
+            AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
+                    .has(Constants.GUID_PROPERTY_KEY, guid);
 
-        AtlasVertex vertex = results.hasNext() ? results.next() : null;
+            Iterator<AtlasVertex> results = query.vertices().iterator();
 
-        return vertex;
+            ret = results.hasNext() ? results.next() : null;
+
+            if (ret != null) {
+                GraphTransactionInterceptor.addToVertexCache(guid, ret);
+            }
+        }
+
+        return ret;
     }
 
     public static String getTypeNameFromGuid(String guid) {

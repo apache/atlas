@@ -709,10 +709,10 @@ public class AtlasEntityType extends AtlasStructType {
                 String            attributeName = attribute.getName();
                 AtlasAttributeDef attributeDef  = attribute.getAttributeDef();
 
-                if (((AtlasEntity) obj).hasRelationshipAttribute(attributeName)) {
-                    Object attributeValue = getNormalizedValue(entityObj.getAttribute(attributeName), attributeDef);
+                if (entityObj.hasRelationshipAttribute(attributeName)) {
+                    Object attributeValue = getNormalizedValue(entityObj.getRelationshipAttribute(attributeName), attributeDef);
 
-                    obj.setAttribute(attributeName, attributeValue);
+                    entityObj.setRelationshipAttribute(attributeName, attributeValue);
                 }
             }
         }
