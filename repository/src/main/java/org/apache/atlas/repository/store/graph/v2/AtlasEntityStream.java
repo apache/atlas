@@ -30,27 +30,27 @@ public class AtlasEntityStream implements EntityStream {
 
 
     public AtlasEntityStream(AtlasEntity entity) {
-        this(new AtlasEntitiesWithExtInfo(entity));
+        this(new AtlasEntitiesWithExtInfo(entity), null);
     }
 
     public AtlasEntityStream(AtlasEntityWithExtInfo entityWithExtInfo) {
-        this(new AtlasEntitiesWithExtInfo(entityWithExtInfo));
+        this(new AtlasEntitiesWithExtInfo(entityWithExtInfo), null);
     }
 
     public AtlasEntityStream(AtlasEntitiesWithExtInfo entitiesWithExtInfo) {
-        this.entitiesWithExtInfo = entitiesWithExtInfo;
-        this.iterator            = this.entitiesWithExtInfo.getEntities().iterator();
-        this.entityStream        = null;
+        this(entitiesWithExtInfo, null);
     }
 
     public AtlasEntityStream(AtlasEntity entity, EntityStream entityStream) {
-        this.entitiesWithExtInfo = new AtlasEntitiesWithExtInfo(entity);
-        this.iterator            = this.entitiesWithExtInfo.getEntities().iterator();
-        this.entityStream        = entityStream;
+        this(new AtlasEntitiesWithExtInfo(entity), entityStream);
     }
 
     public AtlasEntityStream(AtlasEntityWithExtInfo entityWithExtInfo, EntityStream entityStream) {
-        this.entitiesWithExtInfo = new AtlasEntitiesWithExtInfo(entityWithExtInfo);
+        this(new AtlasEntitiesWithExtInfo(entityWithExtInfo), entityStream);
+    }
+
+    public AtlasEntityStream(AtlasEntitiesWithExtInfo entitiesWithExtInfo, EntityStream entityStream) {
+        this.entitiesWithExtInfo = entitiesWithExtInfo;
         this.iterator            = this.entitiesWithExtInfo.getEntities().iterator();
         this.entityStream        = entityStream;
     }
