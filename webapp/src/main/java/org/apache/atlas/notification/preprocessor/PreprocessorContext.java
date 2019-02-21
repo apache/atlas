@@ -173,6 +173,35 @@ public class PreprocessorContext {
         collectGuids(obj, prunedEntities);
     }
 
+    public void moveRegisteredReferredEntities() {
+        List<AtlasEntity>        entities         = getEntities();
+        Map<String, AtlasEntity> referredEntities = getReferredEntities();
+
+        if (entities != null && referredEntities != null && !referredEntitiesToMove.isEmpty()) {
+            AtlasEntity firstEntity = entities.isEmpty() ? null : entities.get(0);
+
+            for (String guid : referredEntitiesToMove) {
+                AtlasEntity entity = referredEntities.remove(guid);
+
+                if (entity != null) {
+                    entities.add(entity);
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("moved referred entity: typeName={}, qualifiedName={}. topic-offset={}, partition={}", entity.getTypeName(), EntityPreprocessor.getQualifiedName(entity), kafkaMessage.getOffset(), kafkaMessage.getPartition());
+                    }
+                }
+            }
+
+            if (firstEntity != null) {
+                LOG.info("moved {} referred-entities to end of entities-list (firstEntity:typeName={}, qualifiedName={}). topic-offset={}, partition={}", referredEntitiesToMove.size(), firstEntity.getTypeName(), EntityPreprocessor.getQualifiedName(firstEntity), kafkaMessage.getOffset(), kafkaMessage.getPartition());
+            } else {
+                LOG.info("moved {} referred-entities to entities-list. topic-offset={}, partition={}", referredEntitiesToMove.size(), kafkaMessage.getOffset(), kafkaMessage.getPartition());
+            }
+
+            referredEntitiesToMove.clear();
+        }
+    }
+
     public String getGuid(Object obj) {
         Object ret = null;
 
