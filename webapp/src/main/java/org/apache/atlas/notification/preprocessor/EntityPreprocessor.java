@@ -32,25 +32,38 @@ public abstract class EntityPreprocessor {
     public static final String TYPE_HIVE_PROCESS        = "hive_process";
     public static final String TYPE_HIVE_STORAGEDESC    = "hive_storagedesc";
     public static final String TYPE_HIVE_TABLE          = "hive_table";
+    public static final String TYPE_RDBMS_INSTANCE      = "rdbms_instance";
+    public static final String TYPE_RDBMS_DB            = "rdbms_db";
+    public static final String TYPE_RDBMS_TABLE         = "rdbms_table";
+    public static final String TYPE_RDBMS_COLUMN        = "rdbms_column";
+    public static final String TYPE_RDBMS_INDEX         = "rdbms_index";
+    public static final String TYPE_RDBMS_FOREIGN_KEY   = "rdbms_foreign_key";
 
     public static final String ATTRIBUTE_COLUMNS        = "columns";
     public static final String ATTRIBUTE_INPUTS         = "inputs";
     public static final String ATTRIBUTE_OUTPUTS        = "outputs";
     public static final String ATTRIBUTE_PARTITION_KEYS = "partitionKeys";
     public static final String ATTRIBUTE_QUALIFIED_NAME = "qualifiedName";
+    public static final String ATTRIBUTE_NAME           = "name";
     public static final String ATTRIBUTE_SD             = "sd";
+    public static final String ATTRIBUTE_DB             = "db";
+    public static final String ATTRIBUTE_DATABASES      = "databases";
+    public static final String ATTRIBUTE_TABLES         = "tables";
+    public static final String ATTRIBUTE_INDEXES        = "indexes";
+    public static final String ATTRIBUTE_FOREIGN_KEYS   = "foreign_keys";
 
     public static final char   QNAME_SEP_CLUSTER_NAME = '@';
     public static final char   QNAME_SEP_ENTITY_NAME  = '.';
     public static final String QNAME_SD_SUFFIX        = "_storage";
 
-    private static final Map<String, EntityPreprocessor> PREPROCESSOR_MAP = new HashMap<>();
+    private static final Map<String, EntityPreprocessor> HIVE_PREPROCESSOR_MAP  = new HashMap<>();
+    private static final Map<String, EntityPreprocessor> RDBMS_PREPROCESSOR_MAP = new HashMap<>();
 
     private final String typeName;
 
 
     static {
-        EntityPreprocessor[] preprocessors = new EntityPreprocessor[] {
+        EntityPreprocessor[] hivePreprocessors = new EntityPreprocessor[] {
                                                                     new HivePreprocessor.HiveTablePreprocessor(),
                                                                     new HivePreprocessor.HiveColumnPreprocessor(),
                                                                     new HivePreprocessor.HiveProcessPreprocessor(),
@@ -58,8 +71,18 @@ public abstract class EntityPreprocessor {
                                                                     new HivePreprocessor.HiveStorageDescPreprocessor()
         };
 
-        for (EntityPreprocessor preprocessor : preprocessors) {
-            PREPROCESSOR_MAP.put(preprocessor.getTypeName(), preprocessor);
+        EntityPreprocessor[] rdbmsPreprocessors = new EntityPreprocessor[] {
+                                                                    new RdbmsPreprocessor.RdbmsInstancePreprocessor(),
+                                                                    new RdbmsPreprocessor.RdbmsDbPreprocessor(),
+                                                                    new RdbmsPreprocessor.RdbmsTablePreprocessor()
+       };
+
+        for (EntityPreprocessor preprocessor : hivePreprocessors) {
+            HIVE_PREPROCESSOR_MAP.put(preprocessor.getTypeName(), preprocessor);
+        }
+
+        for (EntityPreprocessor preprocessor : rdbmsPreprocessors) {
+            RDBMS_PREPROCESSOR_MAP.put(preprocessor.getTypeName(), preprocessor);
         }
     }
 
@@ -74,8 +97,12 @@ public abstract class EntityPreprocessor {
     public abstract void preprocess(AtlasEntity entity, PreprocessorContext context);
 
 
-    public static EntityPreprocessor getPreprocessor(String typeName) {
-        return typeName != null ? PREPROCESSOR_MAP.get(typeName) : null;
+    public static EntityPreprocessor getHivePreprocessor(String typeName) {
+        return typeName != null ? HIVE_PREPROCESSOR_MAP.get(typeName) : null;
+    }
+
+    public static EntityPreprocessor getRdbmsPreprocessor(String typeName) {
+        return typeName != null ? RDBMS_PREPROCESSOR_MAP.get(typeName) : null;
     }
 
     public static String getQualifiedName(AtlasEntity entity) {
