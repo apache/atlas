@@ -123,6 +123,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN                 = "atlas.notification.consumer.preprocess.hive_table.ignore.pattern";
     public static final String CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN                  = "atlas.notification.consumer.preprocess.hive_table.prune.pattern";
     public static final String CONSUMER_PREPROCESS_HIVE_TABLE_CACHE_SIZE                     = "atlas.notification.consumer.preprocess.hive_table.cache.size";
+    public static final String CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS         = "atlas.notification.consumer.preprocess.rdbms_types.remove.ownedref.attrs";
 
     public static final int SERVER_READY_WAIT_TIME_MS = 1000;
 
@@ -142,6 +143,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final List<Pattern>                 hiveTablesToIgnore = new ArrayList<>();
     private final List<Pattern>                 hiveTablesToPrune  = new ArrayList<>();
     private final Map<String, PreprocessAction> hiveTablesCache;
+    private final boolean                       rdbmsTypesRemoveOwnedRefAttrs;
     private final boolean                       preprocessEnabled;
 
     private NotificationInterface notificationInterface;
@@ -212,7 +214,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             hiveTablesCache = Collections.emptyMap();
         }
 
-        preprocessEnabled = !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || skipHiveColumnLineageHive20633;
+        rdbmsTypesRemoveOwnedRefAttrs = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, true);
+        preprocessEnabled             = !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || skipHiveColumnLineageHive20633 || rdbmsTypesRemoveOwnedRefAttrs;
 
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
@@ -778,7 +781,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             return;
         }
 
-        PreprocessorContext context = new PreprocessorContext(kafkaMsg, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache);
+        PreprocessorContext context = new PreprocessorContext(kafkaMsg, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache, rdbmsTypesRemoveOwnedRefAttrs);
 
         if (!hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty()) {
             ignoreOrPruneHiveTables(context);
@@ -788,7 +791,26 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             skipHiveColumnLineage(context);
         }
 
+        if (rdbmsTypesRemoveOwnedRefAttrs) {
+            rdbmsTypeRemoveOwnedRefAttrs(context);
+        }
+
         context.moveRegisteredReferredEntities();
+    }
+
+    private void rdbmsTypeRemoveOwnedRefAttrs(PreprocessorContext context) {
+        List<AtlasEntity> entities = context.getEntities();
+
+        if (entities != null) {
+            for (ListIterator<AtlasEntity> iter = entities.listIterator(); iter.hasNext(); ) {
+                AtlasEntity        entity       = iter.next();
+                EntityPreprocessor preprocessor = EntityPreprocessor.getRdbmsPreprocessor(entity.getTypeName());
+
+                if (preprocessor != null) {
+                    preprocessor.preprocess(entity, context);
+                }
+            }
+        }
     }
 
     private void ignoreOrPruneHiveTables(PreprocessorContext context) {
@@ -797,7 +819,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         if (entities != null) {
             for (ListIterator<AtlasEntity> iter = entities.listIterator(); iter.hasNext(); ) {
                 AtlasEntity        entity       = iter.next();
-                EntityPreprocessor preprocessor = EntityPreprocessor.getPreprocessor(entity.getTypeName());
+                EntityPreprocessor preprocessor = EntityPreprocessor.getHivePreprocessor(entity.getTypeName());
 
                 if (preprocessor != null) {
                     preprocessor.preprocess(entity, context);
@@ -813,7 +835,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             if (referredEntities != null) {
                 for (Iterator<Map.Entry<String, AtlasEntity>> iter = referredEntities.entrySet().iterator(); iter.hasNext(); ) {
                     AtlasEntity        entity       = iter.next().getValue();
-                    EntityPreprocessor preprocessor = EntityPreprocessor.getPreprocessor(entity.getTypeName());
+                    EntityPreprocessor preprocessor = EntityPreprocessor.getHivePreprocessor(entity.getTypeName());
 
                     if (preprocessor != null) {
                         preprocessor.preprocess(entity, context);

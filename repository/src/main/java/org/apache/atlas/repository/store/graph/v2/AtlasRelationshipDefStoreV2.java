@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
@@ -425,9 +426,13 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
         RelationshipCategory newRelationshipCategory      = newRelationshipDef.getRelationshipCategory();
 
         if ( !existingRelationshipCategory.equals(newRelationshipCategory)){
-            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_CATEGORY_UPDATE,
-                    newRelationshipDef.getName(),newRelationshipCategory.name(),
-                    existingRelationshipCategory.name() );
+            if (!RequestContext.get().isInTypePatching()) {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_CATEGORY_UPDATE,
+                        newRelationshipDef.getName(), newRelationshipCategory.name(),
+                        existingRelationshipCategory.name());
+            } else {
+                LOG.warn("RELATIONSHIP UPDATE: relationship category from {} to {} for {}", existingRelationshipCategory.name(), newRelationshipCategory.name(), newRelationshipDef.getName());
+            }
         }
 
         AtlasRelationshipEndDef existingEnd1 = existingRelationshipDef.getEndDef1();

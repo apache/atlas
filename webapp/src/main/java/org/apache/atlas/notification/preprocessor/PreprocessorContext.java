@@ -44,15 +44,17 @@ public class PreprocessorContext {
     private final List<Pattern>                       hiveTablesToIgnore;
     private final List<Pattern>                       hiveTablesToPrune;
     private final Map<String, PreprocessAction>       hiveTablesCache;
+    private final boolean                             rdbmsTypesRemoveOwnedRefAttrs;
     private final Set<String>                         ignoredEntities        = new HashSet<>();
     private final Set<String>                         prunedEntities         = new HashSet<>();
     private final Set<String>                         referredEntitiesToMove = new HashSet<>();
 
-    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache) {
-        this.kafkaMessage       = kafkaMessage;
-        this.hiveTablesToIgnore = hiveTablesToIgnore;
-        this.hiveTablesToPrune  = hiveTablesToPrune;
-        this.hiveTablesCache    = hiveTablesCache;
+    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, boolean rdbmsTypesRemoveOwnedRefAttrs) {
+        this.kafkaMessage                  = kafkaMessage;
+        this.hiveTablesToIgnore            = hiveTablesToIgnore;
+        this.hiveTablesToPrune             = hiveTablesToPrune;
+        this.hiveTablesCache               = hiveTablesCache;
+        this.rdbmsTypesRemoveOwnedRefAttrs = rdbmsTypesRemoveOwnedRefAttrs;
 
         final HookNotification  message = kafkaMessage.getMessage();
 
@@ -83,6 +85,8 @@ public class PreprocessorContext {
         return kafkaMessage.getPartition();
     }
 
+    public boolean getRdbmsTypesRemoveOwnedRefAttrs() { return rdbmsTypesRemoveOwnedRefAttrs; }
+
     public List<AtlasEntity> getEntities() {
         return entitiesWithExtInfo != null ? entitiesWithExtInfo.getEntities() : null;
     }
@@ -93,6 +97,12 @@ public class PreprocessorContext {
 
     public AtlasEntity getEntity(String guid) {
         return entitiesWithExtInfo != null && guid != null ? entitiesWithExtInfo.getEntity(guid) : null;
+    }
+
+    public AtlasEntity removeReferredEntity(String guid) {
+        Map<String, AtlasEntity> referredEntities = getReferredEntities();
+
+        return referredEntities != null && guid != null ? referredEntities.remove(guid) : null;
     }
 
     public Set<String> getIgnoredEntities() { return ignoredEntities; }
@@ -165,12 +175,28 @@ public class PreprocessorContext {
         }
     }
 
+    public void addToReferredEntitiesToMove(Collection<String> guids) {
+        if (guids != null) {
+            for (String guid : guids) {
+                addToReferredEntitiesToMove(guid);
+            }
+        }
+    }
+
     public void addToIgnoredEntities(Object obj) {
         collectGuids(obj, ignoredEntities);
     }
 
     public void addToPrunedEntities(Object obj) {
         collectGuids(obj, prunedEntities);
+    }
+
+    public void removeRefAttributeAndRegisterToMove(AtlasEntity entity, String attrName) {
+        Set<String> guidsToMove = new HashSet<>();
+
+        collectGuids(entity.removeAttribute(attrName), guidsToMove);
+
+        addToReferredEntitiesToMove(guidsToMove);
     }
 
     public void moveRegisteredReferredEntities() {
@@ -202,6 +228,22 @@ public class PreprocessorContext {
         }
     }
 
+    public String getTypeName(Object obj) {
+        Object ret = null;
+
+        if (obj instanceof AtlasObjectId) {
+            ret = ((AtlasObjectId) obj).getTypeName();
+        } else if (obj instanceof Map) {
+            ret = ((Map) obj).get(AtlasObjectId.KEY_TYPENAME);
+        } else if (obj instanceof AtlasEntity) {
+            ret = ((AtlasEntity) obj).getTypeName();
+        } else if (obj instanceof AtlasEntity.AtlasEntityWithExtInfo) {
+            ret = ((AtlasEntity.AtlasEntityWithExtInfo) obj).getEntity().getTypeName();
+        }
+
+        return ret != null ? ret.toString() : null;
+    }
+
     public String getGuid(Object obj) {
         Object ret = null;
 
@@ -218,22 +260,7 @@ public class PreprocessorContext {
         return ret != null ? ret.toString() : null;
     }
 
-
-    private boolean isMatch(String name, List<Pattern> patterns) {
-        boolean ret = false;
-
-        for (Pattern p : patterns) {
-            if (p.matcher(name).matches()) {
-                ret = true;
-
-                break;
-            }
-        }
-
-        return ret;
-    }
-
-    private void collectGuids(Object obj, Set<String> guids) {
+    public void collectGuids(Object obj, Set<String> guids) {
         if (obj != null) {
             if (obj instanceof Collection) {
                 Collection objList = (Collection) obj;
@@ -247,11 +274,26 @@ public class PreprocessorContext {
         }
     }
 
-    private void collectGuid(Object obj, Set<String> guids) {
+    public void collectGuid(Object obj, Set<String> guids) {
         String guid = getGuid(obj);
 
         if (guid != null) {
             guids.add(guid);
         }
+    }
+
+
+    private boolean isMatch(String name, List<Pattern> patterns) {
+        boolean ret = false;
+
+        for (Pattern p : patterns) {
+            if (p.matcher(name).matches()) {
+                ret = true;
+
+                break;
+            }
+        }
+
+        return ret;
     }
 }

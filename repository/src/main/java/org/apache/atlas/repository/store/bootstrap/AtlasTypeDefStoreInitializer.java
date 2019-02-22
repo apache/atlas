@@ -35,6 +35,7 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
@@ -77,8 +78,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @Service
 public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefStoreInitializer.class);
-    public static final String PATCHES_FOLDER_NAME = "patches";
-    public static final String RELATIONSHIP_LABEL  = "relationshipLabel";
+    public static final String PATCHES_FOLDER_NAME   = "patches";
+    public static final String RELATIONSHIP_LABEL    = "relationshipLabel";
+    public static final String RELATIONSHIP_CATEGORY = "relationshipCategory";
 
     private final AtlasTypeDefStore atlasTypeDefStore;
     private final AtlasTypeRegistry atlasTypeRegistry;
@@ -730,13 +732,19 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     AtlasEntityType         end1Type        = typeRegistry.getEntityTypeByName(end1Def.getType());
                     AtlasEntityType         end2Type        = typeRegistry.getEntityTypeByName(end2Def.getType());
 
-                    String newRelationshipLabel = null;
+                    String               newRelationshipLabel    = null;
+                    RelationshipCategory newRelationshipCategory = null;
 
                     if (patch.getParams() != null) {
-                        Object val = patch.getParams().get(RELATIONSHIP_LABEL);
+                        Object relLabel    = patch.getParams().get(RELATIONSHIP_LABEL);
+                        Object relCategory = patch.getParams().get(RELATIONSHIP_CATEGORY);
 
-                        if (val != null) {
-                            newRelationshipLabel = val.toString();
+                        if (relLabel != null) {
+                            newRelationshipLabel = relLabel.toString();
+                        }
+
+                        if (relCategory != null) {
+                            newRelationshipCategory = RelationshipCategory.valueOf(relCategory.toString());
                         }
                     }
 
@@ -763,6 +771,11 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     AtlasEntityDef       updatedEntityDef2 = new AtlasEntityDef(end2Type.getEntityDef());
 
                     updatedDef.setRelationshipLabel(newRelationshipLabel);
+
+                    if (newRelationshipCategory != null) {
+                        updatedDef.setRelationshipCategory(newRelationshipCategory);
+                    }
+
                     updatedDef.getEndDef1().setIsLegacyAttribute(false);
                     updatedDef.getEndDef2().setIsLegacyAttribute(false);
                     updatedDef.setTypeVersion(patch.getUpdateToVersion());

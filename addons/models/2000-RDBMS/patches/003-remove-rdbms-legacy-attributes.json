@@ -1,0 +1,90 @@
+{
+  "patches": [
+    {
+      "action":          "REMOVE_LEGACY_ATTRIBUTES",
+      "typeName":        "rdbms_instance_databases",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "relationshipLabel":    "__rdbms_instance.databases",
+        "relationshipCategory": "COMPOSITION"
+      }
+    },
+    {
+      "action":          "REMOVE_LEGACY_ATTRIBUTES",
+      "typeName":        "rdbms_db_tables",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "relationshipLabel":    "__rdbms_db.tables",
+        "relationshipCategory": "COMPOSITION"
+      }
+    },
+    {
+      "action":          "REMOVE_LEGACY_ATTRIBUTES",
+      "typeName":        "rdbms_table_columns",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "relationshipLabel":    "__rdbms_table.columns",
+        "relationshipCategory": "COMPOSITION"
+      }
+    },
+    {
+      "action":          "REMOVE_LEGACY_ATTRIBUTES",
+      "typeName":        "rdbms_table_indexes",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "relationshipLabel":    "__rdbms_table.indexes",
+        "relationshipCategory": "COMPOSITION"
+      }
+    },
+    {
+      "action":          "REMOVE_LEGACY_ATTRIBUTES",
+      "typeName":        "rdbms_table_foreign_key",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "relationshipLabel":    "__rdbms_table.foreign_keys",
+        "relationshipCategory": "COMPOSITION"
+      }
+    },
+    {
+      "action":          "REMOVE_LEGACY_ATTRIBUTES",
+      "typeName":        "rdbms_index_columns",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "relationshipLabel": "__rdbms_index.columns"
+      }
+    },
+    {
+      "action":          "REMOVE_LEGACY_ATTRIBUTES",
+      "typeName":        "rdbms_foreign_key_key_columns",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "relationshipLabel": "__rdbms_foreign_key.key_columns"
+      }
+    },
+    {
+      "action":          "REMOVE_LEGACY_ATTRIBUTES",
+      "typeName":        "rdbms_foreign_key_table_references",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "relationshipLabel": "__rdbms_foreign_key.references_table"
+      }
+    },
+    {
+      "action":          "REMOVE_LEGACY_ATTRIBUTES",
+      "typeName":        "rdbms_foreign_key_column_references",
+      "applyToVersion":  "1.0",
+      "updateToVersion": "1.1",
+      "params": {
+        "relationshipLabel": "__rdbms_foreign_key.references_columns"
+      }
+    }
+  ]
+}
