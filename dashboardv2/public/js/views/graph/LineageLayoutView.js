@@ -51,11 +51,20 @@ define(['require',
                 selectDepth: 'select[data-id="selectDepth"]',
                 fltrTogler: '[data-id="fltr-togler"]',
                 lineageFilterPanel: '.lineage-fltr-panel',
-                LineageFullscreenToggler: '[data-id="fullScreen-toggler"]',
+                lineageFullscreenToggler: '[data-id="fullScreen-toggler"]',
+                searchTogler: '[data-id="search-togler"]',
+                lineageSearchPanel: '.lineage-search-panel',
+                lineageTypeSearch: '[data-id="typeSearch"]',
                 lineageDetailClose: '[data-id="close"]',
+                searchNode: '[data-id="searchNode"]',
                 nodeEntityList: '[data-id="entityList"]'
             },
-
+            templateHelpers: function() {
+                return {
+                    width: "100%",
+                    height: "100%"
+                };
+            },
             /** ui events hash */
             events: function() {
                 var events = {};
@@ -63,7 +72,8 @@ define(['require',
                 events["click " + this.ui.checkDeletedEntity] = 'onCheckUnwantedEntity';
                 events['change ' + this.ui.selectDepth] = 'onSelectDepthChange';
                 events["click " + this.ui.fltrTogler] = 'onClickFiltrTogler';
-                events["click " + this.ui.LineageFullscreenToggler] = 'onClickLineageFullscreenToggler';
+                events["click " + this.ui.lineageFullscreenToggler] = 'onClickLineageFullscreenToggler';
+                events["click " + this.ui.searchTogler] = 'onClickSearchTogler';
                 events["click " + this.ui.lineageDetailClose] = function() {
                     this.toggleLineageInfomationSlider({ close: true });
                 };
@@ -87,6 +97,9 @@ define(['require',
                     isDeletedEntityHideCheck: false,
                     depthCount: ''
                 };
+                this.searchNodeObj = {
+                    selectedNode: ''
+                }
             },
 
             initializeGraph: function() {
@@ -156,7 +169,20 @@ define(['require',
             },
             onClickFiltrTogler: function() {
                 var lineageFilterPanel = this.ui.lineageFilterPanel;
+                var lineageSearchPanel = this.ui.lineageSearchPanel;
                 $(lineageFilterPanel).toggleClass("show-filter-panel");
+                if (lineageSearchPanel.hasClass('show-search-panel')) {
+                    $(this.ui.lineageSearchPanel).toggleClass("show-search-panel")
+                }
+            },
+            onClickSearchTogler: function() {
+                var lineageSearchPanel = this.ui.lineageSearchPanel;
+                var lineageFilterPanel = this.ui.lineageFilterPanel;
+                $(lineageSearchPanel).toggleClass("show-search-panel");
+                if (lineageFilterPanel.hasClass('show-filter-panel')) {
+                    $(this.ui.lineageFilterPanel).toggleClass("show-filter-panel");
+
+                }
             },
             onSelectDepthChange: function(e, options) {
                 this.initializeGraph();
@@ -344,6 +370,10 @@ define(['require',
                 if (this.asyncFetchCounter == 0) {
                     this.createGraph();
                 }
+                if (this.lineageData) {
+                    this.renderLineageTypeSearch();
+                    this.lineageTypeSearch()
+                }
             },
             checkForLineageOrImpactFlag: function(relations, guid) {
                 var that = this,
@@ -372,37 +402,46 @@ define(['require',
                     this.$('.lineage-edge-details').removeClass('open');
                 }
             },
-            setGraphZoomPositionCal: function(argument) {
-                var initialScale = 1.6,
-                    svgEl = this.$('svg'),
-                    scaleEl = this.$('svg').find('>g'),
-                    translateValue = [(this.$('svg').width() - this.g.graph().width * initialScale) / 2, (this.$('svg').height() - this.g.graph().height * initialScale) / 2]
-                if (_.keys(this.g._nodes).length > 15) {
-                    initialScale = 0;
-                    this.$('svg').addClass('noScale');
-                }
-                if (svgEl.parents('.panel.panel-fullscreen').length) {
-                    translateValue = [20, 20];
-                    if (svgEl.hasClass('noScale')) {
-                        if (!scaleEl.hasClass('scaleLinage')) {
-                            scaleEl.addClass('scaleLinage');
-                            initialScale = 1.6;
-                        } else {
-                            scaleEl.removeClass('scaleLinage');
-                            initialScale = 0;
-                        }
-                    }
-                } else {
-                    scaleEl.removeClass('scaleLinage');
-                }
-                this.zoom.translate(translateValue)
-                    .scale(initialScale);
+            centerNode: function(nodeID) {
+                var zoom = function() {
+                        svgGroup.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+                    },
+                    matrix = this.$('svg').find("g.nodes").find('>g#' + nodeID).attr('transform').replace(/[^0-9\-.,]/g, '').split(','),
+                    x = matrix[0],
+                    y = matrix[1],
+                    viewerWidth = this.$('svg').width(),
+                    viewerHeight = this.$('svg').height(),
+                    gBBox = d3.select('g').node().getBBox(),
+                    zoomListener = d3.behavior.zoom().scaleExtent([0.01, 50]).on("zoom", zoom),
+                    scale = 1.2,
+                    xa = -((x * scale) - (viewerWidth / 2)),
+                    ya = -((y * scale) - (viewerHeight / 2));
+
+                this.zoom.translate([xa, ya]);
+                d3.select('g').transition()
+                    .duration(350)
+                    .attr("transform", "translate(" + xa + "," + ya + ")scale(" + scale + ")");
+                zoomListener.scale(scale);
+                zoomListener.translate([xa, ya]);
+                this.zoom.scale(scale);
             },
             zoomed: function(that) {
                 this.$('svg').find('>g').attr("transform",
                     "translate(" + this.zoom.translate() + ")" +
                     "scale(" + this.zoom.scale() + ")"
                 );
+            },
+            interpolateZoom: function(translate, scale, that, zoom) {
+                return d3.transition().duration(350).tween("zoom", function() {
+                    var iTranslate = d3.interpolate(zoom.translate(), translate),
+                        iScale = d3.interpolate(zoom.scale(), scale);
+                    return function(t) {
+                        zoom
+                            .scale(iScale(t))
+                            .translate(iTranslate(t));
+                        that.zoomed();
+                    };
+                });
             },
             createGraph: function() {
                 var that = this,
@@ -442,7 +481,7 @@ define(['require',
                     var shapeSvg = parent.append('circle')
                         .attr('fill', 'url(#img_' + node.id + ')')
                         .attr('r', '24px')
-                        .attr('data-stroke',node.id)
+                        .attr('data-stroke', node.id)
                         .attr("class", "nodeImage " + (currentNode ? "currentNode" : (node.isProcess ? "process" : "node")));
 
                     parent.insert("defs")
@@ -481,31 +520,16 @@ define(['require',
                     .attr("enable-background", "new 0 0 " + width + " " + height),
                     svgGroup = svg.append("g");
                 var zoom = this.zoom = d3.behavior.zoom()
-                    .scaleExtent([0.5, 6])
+                    .center([width / 2, height / 2])
+                    .scaleExtent([0.01, 50])
                     .on("zoom", that.zoomed.bind(this));
-
-
-                function interpolateZoom(translate, scale) {
-                    var self = this;
-                    return d3.transition().duration(350).tween("zoom", function() {
-                        var iTranslate = d3.interpolate(zoom.translate(), translate),
-                            iScale = d3.interpolate(zoom.scale(), scale);
-                        return function(t) {
-                            zoom
-                                .scale(iScale(t))
-                                .translate(iTranslate(t));
-                            that.zoomed();
-                        };
-                    });
-                }
 
                 function zoomClick() {
                     var clicked = d3.event.target,
                         direction = 1,
-                        factor = 0.2,
+                        factor = 0.5,
                         target_zoom = 1,
-                        center = [that.g.graph().width / 2, that.g.graph().height / 2],
-                        extent = zoom.scaleExtent(),
+                        center = [width / 2, height / 2],
                         translate = zoom.translate(),
                         translate0 = [],
                         l = [],
@@ -515,10 +539,6 @@ define(['require',
                     direction = (this.id === 'zoom_in') ? 1 : -1;
                     target_zoom = zoom.scale() * (1 + factor * direction);
 
-                    if (target_zoom < extent[0] || target_zoom > extent[1]) {
-                        return false;
-                    }
-
                     translate0 = [(center[0] - view.x) / view.k, (center[1] - view.y) / view.k];
                     view.k = target_zoom;
                     l = [translate0[0] * view.k + view.x, translate0[1] * view.k + view.y];
@@ -526,7 +546,7 @@ define(['require',
                     view.x += center[0] - l[0];
                     view.y += center[1] - l[1];
 
-                    interpolateZoom([view.x, view.y], view.k);
+                    that.interpolateZoom([view.x, view.y], view.k, that, zoom);
                 }
                 d3.selectAll(this.$('.lineageZoomButton')).on('click', zoomClick);
                 var tooltip = d3Tip()
@@ -555,7 +575,7 @@ define(['require',
                 }
                 render(svgGroup, this.g);
                 svg.on("dblclick.zoom", null)
-                    .on("wheel.zoom", null);
+                // .on("wheel.zoom", null);
                 //change text postion 
                 svgGroup.selectAll("g.nodes g.label")
                     .attr("transform", "translate(2,-35)");
@@ -605,8 +625,8 @@ define(['require',
                     }).on('click', function(d) {
                         if (d3.event.defaultPrevented) return; // ignore drag
                         that.toggleLineageInfomationSlider({ open: true, obj: d });
-                        svgGroup.selectAll('[data-stroke]').attr('stroke','none');
-                        svgGroup.selectAll('[data-stroke]').attr('stroke',function(c) {
+                        svgGroup.selectAll('[data-stroke]').attr('stroke', 'none');
+                        svgGroup.selectAll('[data-stroke]').attr('stroke', function(c) {
                             if (c == d) {
                                 return "#316132";
                             } else {
@@ -639,7 +659,7 @@ define(['require',
                 });
 
                 // Center the graph
-                this.setGraphZoomPositionCal();
+                this.centerNode(that.guid);
                 zoom.event(svg);
                 //svg.attr('height', this.g.graph().height * initialScale + 40);
                 if (platform.name === "IE") {
@@ -658,6 +678,60 @@ define(['require',
                             }
                         }, 1000);
                     });
+                }
+            },
+            renderLineageTypeSearch: function() {
+                var that = this;
+                var lineageData = $.extend(true, {}, this.lineageData);
+                var data = [];
+
+                var typeStr = '<option></option>';
+                if (!_.isEmpty(lineageData)) {
+                    _.each(lineageData.guidEntityMap, function(obj, index) {
+                        typeStr += '<option value="' + obj.guid + '">' + obj.attributes.name + '</option>';
+                    });
+                }
+                that.ui.lineageTypeSearch.html(typeStr);
+            },
+            lineageTypeSearch: function() {
+                var that = this;
+                that.ui.lineageTypeSearch.select2({
+                    closeOnSelect: true,
+                    placeholder: 'Select Node'
+                }).on('change.select2', function(e) {
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    d3.selectAll(".serach-rect").remove();
+                    var selectedNode = $('[data-id="typeSearch"]').val();
+                    that.searchNodeObj.selectedNode = $('[data-id="typeSearch"]').val();
+                    that.centerNode(selectedNode);
+
+                    that.svg.selectAll('.nodes g.label').attr('stroke', function(c, d) {
+                        if (c == selectedNode) {
+                            return "#316132";
+                        } else {
+                            return 'none';
+                        }
+                    });
+                    // Using jquery for selector because d3 select is not working for few process entities.
+                    d3.select($(".node#" + selectedNode)[0]).insert("rect", "circle")
+                        .attr("class", "serach-rect")
+                        .attr("x", -50)
+                        .attr("y", -27.5)
+                        .attr("width", 100)
+                        .attr("height", 55);
+                    d3.selectAll(".nodes circle").classed("wobble", function(d, i, nodes) {
+                        if (d == selectedNode) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    });
+
+                });
+                if (that.searchNodeObj.selectedNode) {
+                    that.ui.lineageTypeSearch.val(that.searchNodeObj.selectedNode);
+                    that.ui.lineageTypeSearch.trigger("change.select2");
                 }
             },
             toggleLineageInfomationSlider: function(options) {

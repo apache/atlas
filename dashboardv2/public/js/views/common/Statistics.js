@@ -70,8 +70,8 @@ define(['require',
                     success: function(data) {
                         var data = _.first(data.toJSON()),
                             no_records = '<tr class="empty text-center"><td colspan="2"><span>No records found!</span></td></tr>',
-                            activeEntityTable = _.isEmpty(data.entity.entityActive) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityActive }),
-                            deleteEntityTable = _.isEmpty(data.entity.entityDeleted) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityDeleted });
+                            activeEntityTable = _.isEmpty(data.entity.entityActive) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityActive, numberFormat: _.numberFormatWithComa }),
+                            deleteEntityTable = _.isEmpty(data.entity.entityDeleted) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityDeleted, numberFormat: _.numberFormatWithComa });
                         var totalActive = 0,
                             totalDeleted = 0;
                         if (data.entity && data.general.entityCount) {
@@ -84,8 +84,8 @@ define(['require',
                         }
                         that.ui.entityActive.html(activeEntityTable);
                         that.ui.entityDelete.html(deleteEntityTable);
-                        that.ui.entityActiveHeader.html("&nbsp;(" + (totalActive - totalDeleted) + ")");
-                        that.ui.entityDeletedHeader.html("&nbsp;(" + totalDeleted + ")");
+                        that.ui.entityActiveHeader.html("&nbsp;(" + _.numberFormatWithComa((totalActive - totalDeleted)) + ")");
+                        that.ui.entityDeletedHeader.html("&nbsp;(" + _.numberFormatWithComa(totalDeleted) + ")");
                     }
                 });
             }
