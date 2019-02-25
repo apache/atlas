@@ -76,9 +76,21 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             valueObject = options.valueObject,
             extractJSON = options.extractJSON,
             isTable = _.isUndefined(options.isTable) ? true : options.isTable,
-            attributeDefs = options.attributeDefs;
+            attributeDefs = options.attributeDefs,
+            numberFormat = options.numberFormat;
 
         var table = "",
+            getValue = function(val) {
+                if (val && numberFormat) {
+                    if (_.isNumber(val)) {
+                        return numberFormat(val);
+                    } else if (!_.isNaN(parseInt(val))) {
+                        return numberFormat(val);
+                    }
+                } else {
+                    return val;
+                }
+            },
             fetchInputOutputValue = function(id, defEntity) {
                 var that = this;
                 scope.entityModel.getEntityHeader(id, {
@@ -95,7 +107,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                             id = data.guid;
                         }
                         if (value.length > 0) {
-                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + value + '</a>');
+                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + getValue(value) + '</a>');
                         } else {
                             scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + _.escape(id) + '</a>');
                         }
@@ -137,7 +149,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                     if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
                         var tempVarfor$check = inputOutputField.toString();
                         if (tempVarfor$check.indexOf("$") == -1) {
-                            valueOfArray.push('<span class="json-string">' + _.escape(inputOutputField) + '</span>');
+                            valueOfArray.push('<span class="json-string">' + getValue(_.escape(inputOutputField)) + '</span>');
                         }
                     } else if (_.isObject(inputOutputField) && !id) {
                         var attributesList = inputOutputField;
@@ -233,7 +245,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 val = _.escape(keyValue);
             }
             if (isTable) {
-                var htmlTag = '<div class="scroll-y">' + val + '</div>';
+                var htmlTag = '<div class="scroll-y">' + getValue(val) + '</div>';
                 if (_.isObject(valueObject[key])) {
                     var matchedLinkString = val.match(/href|value-loader\w*/g),
                         matchedJson = val.match(/json-value|json-string\w*/g),

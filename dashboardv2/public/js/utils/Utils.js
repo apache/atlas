@@ -763,14 +763,5 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             this.attr(attributeName, firstString);
         }
     }
-
-    $('body').on('click', 'pre.code-block .expand-collapse-button', function(e) {
-        var $el = $(this).parents('.code-block');
-        if ($el.hasClass('shrink')) {
-            $el.removeClass('shrink');
-        } else {
-            $el.addClass('shrink');
-        }
-    });
     return Utils;
 });

@@ -38,6 +38,12 @@
         stroke: $color_mountain_mist_approx;
         fill: $white;
         stroke-width: 1.5px;
+
+        &.serach-rect {
+            stroke: $color_keppel_approx;
+            fill: transparent;
+            stroke-width: 2.5px
+        }
     }
 
     .label {
@@ -276,6 +282,7 @@ g.type-TK>rect {
 .lineage-fltr-panel,
 .lineage-search-panel {
     position: absolute;
+    top: 45px;
     border: 1px solid #ccc;
     width: 250px;
     max-height: 99%;
@@ -445,6 +452,11 @@ span#zoom_in {
     position: relative;
     width: 100%;
     height: 64vh;
+    overflow: hidden !important;
+
+    &.auto-height {
+        height: auto !important;
+    }
 }
 
 .active.fullscreen-mode {
@@ -471,4 +483,22 @@ span#zoom_in {
     .lineage-box {
         padding: 10px !important;
     }
+}
+
+@keyframes zoominoutsinglefeatured {
+    0% {
+        transform: scale(1, 1);
+    }
+
+    50% {
+        transform: scale(1.2, 1.2);
+    }
+
+    100% {
+        transform: scale(1, 1);
+    }
+}
+
+.wobble {
+    animation: zoominoutsinglefeatured 1s 5;
 }

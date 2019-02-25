@@ -46,9 +46,30 @@
             </div>
         </div>
     </div>
+    <div class="lineage-search-panel">
+        <div class="header clearfix">
+            <h4>Search</h4>
+            <span data-id="search-togler" style="margin: 7px" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
+        </div>
+        <div class="body">
+            <div class="col-sm-12 no-padding">
+                <div class="srchType clearfix">
+                    <label class="srchTitle">Search Lineage Entity: </label>
+                    <div class="">
+                        <div class="col-sm-12 no-padding temFilter">
+                            <select data-id="typeSearch"></select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="graph-button-group pull-right">
         <div>
             <button type="button" data-id="fltr-togler" class="btn btn-action btn-gray btn-sm"><i class="fa fa-filter"></i></button>
+        </div>
+        <div>
+            <button type="button" data-id="search-togler" class="btn btn-action btn-gray btn-sm"><i class="fa fa-search"></i></button>
         </div>
         <div>
             <button type="button" data-id="fullScreen-toggler" class="btn btn-action btn-gray btn-sm fullscreen_lineage"><i class="fa fa-expand"></i></button>
@@ -61,12 +82,14 @@
     <div class="fontLoader">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
+    <canvas width="960" height="500" style="display:none; position: absolute;"></canvas>
     <div class="legends pull-left" style="height: 25px; padding: 2px;">
         <span style="margin-right: 8px; color:#fb4200;"><i class="fa fa-circle-o fa-fw" aria-hidden="true"></i>Current Entity</span>
         <span style="margin-right: 8px; color:#df9b00;"><i class="fa fa-long-arrow-right fa-fw" aria-hidden="true"></i>Lineage</span>
         <span style="margin-right: 8px; color:#fb4200;"><i class="fa fa-long-arrow-right fa-fw" aria-hidden="true"></i>Impact</span>
     </div>
-    <svg width="100%" height="calc(100% - 28px)" viewBox="0 0 854 330" enable-background="new 0 0 854 330" xml:space="preserve"></svg>
+    <!-- <svg width="100%" height="calc(100% - 28px)" preserveAspectRatio="xMidYMid meet" viewBox="0 0 854 330" enable-background="new 0 0 854 330" xml:space="preserve"></svg> -->
+    <svg width="{{width}}" height="{{height}}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"></svg>
     <div class="lineage-details node-details">
         <span data-id="close" style="margin: 7px;position: absolute;right: 0" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
         <h4 class="title"><span data-id="typeName"></span></h4>

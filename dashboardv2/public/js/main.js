@@ -189,6 +189,7 @@ require.config({
 
 require(['App',
     'router/Router',
+    'utils/Helper',
     'utils/CommonViewFunction',
     'utils/Globals',
     'utils/UrlLinks',
@@ -198,7 +199,7 @@ require(['App',
     'bootstrap',
     'd3',
     'select2'
-], function(App, Router, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList) {
+], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList) {
     var that = this;
     this.asyncFetchCounter = 6;
     this.entityDefCollection = new VEntityList();
