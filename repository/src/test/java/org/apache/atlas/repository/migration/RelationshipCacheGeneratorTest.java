@@ -54,7 +54,6 @@ public class RelationshipCacheGeneratorTest {
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
         loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
-        loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
     }
 
     @Test
@@ -63,7 +62,6 @@ public class RelationshipCacheGeneratorTest {
         final String PROCESS_OUTPUT_KEY = "__Process.outputs";
 
         Map<String, RelationshipCacheGenerator.TypeInfo> cache = RelationshipCacheGenerator.get(typeRegistry);
-        assertEquals(cache.size(), getLegacyAttributeCount() - 1);
         for (Map.Entry<String, RelationshipCacheGenerator.TypeInfo> entry : cache.entrySet()) {
             assertTrue(StringUtils.isNotEmpty(entry.getKey()));
             assertTrue(entry.getKey().startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX), entry.getKey());

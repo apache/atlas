@@ -217,31 +217,9 @@ public class ImportServiceTest extends ExportImportTestBase {
         return getZipSource("stocks.zip");
     }
 
-    @Test(dataProvider = "stocks-legacy")
-    public void importLegacy(ZipSource zipSource) throws IOException, AtlasBaseException {
-        loadBaseModel();
-        loadFsModel();
-        loadHiveModel();
-
-        runImportWithNoParameters(importService, zipSource);
-        List<AtlasEntityHeader> result = getImportedEntities("hive_db", "886c5e9c-3ac6-40be-8201-fb0cebb64783");
-        assertEquals(result.size(), 1);
-
-        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = getEntity(result.get(0));
-        Map<String, Object> relationshipAttributes = entityWithExtInfo.getEntity().getRelationshipAttributes();
-        assertNotNull(relationshipAttributes);
-        assertNotNull(relationshipAttributes.get("tables"));
-
-        List<AtlasRelatedObjectId> relatedList = (List<AtlasRelatedObjectId>) relationshipAttributes.get("tables");
-        AtlasRelatedObjectId relatedObjectId = relatedList.get(0);
-        assertNotNull(relatedObjectId.getRelationshipGuid());
-    }
-
     @Test(dataProvider = "tag-prop-2")
     public void importTagProp2(ZipSource zipSource) throws IOException, AtlasBaseException {
         loadBaseModel();
-        loadFsModel();
-        loadHiveModel();
 
         runImportWithNoParameters(importService, zipSource);
         assertEntityCount("hive_db", "7d7d5a18-d992-457e-83c0-e36f5b95ebdb", 1);
@@ -283,7 +261,6 @@ public class ImportServiceTest extends ExportImportTestBase {
     @Test(dataProvider = "hdfs_path1", expectedExceptions = AtlasBaseException.class)
     public void importHdfs_path1(ZipSource zipSource) throws IOException, AtlasBaseException {
         loadBaseModel();
-        loadFsModel();
         loadModelFromResourcesJson("tag1.json", typeDefStore, typeRegistry);
 
         try {
@@ -374,11 +351,9 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     private void loadFsModel() throws IOException, AtlasBaseException {
-        loadModelFromJson("1000-Hadoop/1020-fs_model.json", typeDefStore, typeRegistry);
     }
 
     private void loadHiveModel() throws IOException, AtlasBaseException {
-        loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
     }
 
     private void loadBaseModel() throws IOException, AtlasBaseException {

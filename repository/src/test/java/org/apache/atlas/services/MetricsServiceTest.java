@@ -131,8 +131,8 @@ public class MetricsServiceTest {
         // general metrics
         assertEquals(metrics.getNumericMetric(GENERAL, METRIC_ENTITY_COUNT).intValue(), 43);
         assertEquals(metrics.getNumericMetric(GENERAL, METRIC_TAG_COUNT).intValue(), 1);
-        assertEquals(metrics.getNumericMetric(GENERAL, METRIC_TYPE_UNUSED_COUNT).intValue(), 10);
-        assertEquals(metrics.getNumericMetric(GENERAL, METRIC_TYPE_COUNT).intValue(), 44);
+        assertEquals(metrics.getNumericMetric(GENERAL, METRIC_TYPE_UNUSED_COUNT).intValue(), 8);
+        assertEquals(metrics.getNumericMetric(GENERAL, METRIC_TYPE_COUNT).intValue(), 35);
 
         // tag metrics
         Map tagMetricsActual           = (Map) metrics.getMetric(TAG, METRIC_ENTITIES_PER_TAG);
@@ -153,12 +153,7 @@ public class MetricsServiceTest {
         try {
             loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
             loadModelFromJson("0000-Area0/patches/001-base_model_replication_attributes.json", typeDefStore, typeRegistry);
-            loadModelFromJson("1000-Hadoop/1020-fs_model.json", typeDefStore, typeRegistry);
-            loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
-            loadModelFromJson("1000-Hadoop/patches/001-hive_column_add_position.json", typeDefStore, typeRegistry);
-            loadModelFromJson("1000-Hadoop/patches/002-hive_column_table_add_options.json", typeDefStore, typeRegistry);
-            loadModelFromJson("1000-Hadoop/patches/003-hive_column_update_table_remove_constraint.json", typeDefStore, typeRegistry);
-
+            
             runImportWithNoParameters(importService, getZipSource(IMPORT_FILE));
         } catch (AtlasBaseException | IOException e) {
             throw new SkipException("Model loading failed!");

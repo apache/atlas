@@ -85,20 +85,6 @@ public abstract class BasicTestSetup {
         if (!baseLoaded) {
             loadBaseModels();
         }
-
-        try {
-            loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
-        } catch (IOException | AtlasBaseException e) {
-            fail("Hive model setup is required for test to run");
-        }
-
-        AtlasEntity.AtlasEntitiesWithExtInfo hiveTestEntities = hiveTestEntities();
-
-        try {
-            entityStore.createOrUpdate(new AtlasEntityStream(hiveTestEntities), false);
-        } catch (AtlasBaseException e) {
-            fail("Hive instance setup is needed for test to run");
-        }
     }
 
     protected void loadEmployeeDataset() {

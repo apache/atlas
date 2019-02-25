@@ -78,8 +78,6 @@ public class MigrationBaseAsserts {
 
     protected void loadTypesFromJson() throws IOException, AtlasBaseException {
         loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
-        loadModelFromJson("1000-Hadoop/1020-fs_model.json", typeDefStore, typeRegistry);
-        loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
     }
 
     protected void runFileImporter(String directoryToImport) throws IOException, AtlasBaseException {

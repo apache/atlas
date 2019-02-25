@@ -56,30 +56,12 @@ public class TypesWithCollectionsFinderTest extends MigrationBaseAsserts {
     public void fetchAll() {
         Map<String, Map<String, List<String>>> typeAttrMap = TypesWithCollectionsFinder.getVertexPropertiesForCollectionAttributes(typeRegistry);
 
-        assertEquals(typeAttrMap.size(), 17);
+        assertEquals(typeAttrMap.size(), 8);
 
         assertProperties(typeAttrMap, "__AtlasUserProfile", "ARRAY", "__AtlasUserProfile.savedSearches");
 
         assertProperties(typeAttrMap, "Process", "ARRAY", "Process.inputs");
         assertProperties(typeAttrMap, "Process", "ARRAY", "Process.outputs");
-
-        assertProperties(typeAttrMap, "hdfs_path", "MAP_PRIMITIVE", "hdfs_path.extendedAttributes");
-
-        assertProperties(typeAttrMap, "hive_column_lineage", "ARRAY", "Process.inputs");
-        assertProperties(typeAttrMap, "hive_column_lineage", "ARRAY", "Process.outputs");
-
-        assertProperties(typeAttrMap, "hive_db", "MAP_PRIMITIVE", "hive_db.parameters");
-
-        assertProperties(typeAttrMap, "hive_process", "ARRAY", "Process.inputs");
-        assertProperties(typeAttrMap, "hive_process", "ARRAY", "Process.outputs");
-
-        assertProperties(typeAttrMap, "hive_storagedesc", "ARRAY", "hive_storagedesc.sortCols");
-
-        assertProperties(typeAttrMap, "hive_serde", "MAP_PRIMITIVE", "hive_serde.parameters");
-
-        assertProperties(typeAttrMap, "hive_table", "ARRAY", "hive_table.partitionKeys");
-        assertProperties(typeAttrMap, "hive_table", "ARRAY", "hive_table.columns");
-        assertProperties(typeAttrMap, "hive_table", "MAP_PRIMITIVE", "hive_table.parameters");
 
         assertProperties(typeAttrMap, "tag_with_map_of_map", "MAP_PRIMITIVE", "tag_with_map_of_map.tag_with_map_of_map");
     }

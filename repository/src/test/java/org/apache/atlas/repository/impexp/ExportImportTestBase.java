@@ -49,7 +49,6 @@ public class ExportImportTestBase {
 
     protected void basicSetup(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         loadBaseModel(typeDefStore, typeRegistry);
-        loadHiveModel(typeDefStore, typeRegistry);
     }
 
     protected int createEntities(AtlasEntityStoreV2 entityStore, String subDir, String entityFileNames[]) {

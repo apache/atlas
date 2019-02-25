@@ -588,12 +588,6 @@ public class ClassificationPropagationTest {
     private void loadModelFilesAndImportTestData() {
         try {
             loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
-            loadModelFromJson("1000-Hadoop/1020-fs_model.json", typeDefStore, typeRegistry);
-            loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
-
-            loadModelFromJson("1000-Hadoop/patches/001-hive_column_add_position.json", typeDefStore, typeRegistry);
-            loadModelFromJson("1000-Hadoop/patches/002-hive_column_table_add_options.json", typeDefStore, typeRegistry);
-            loadModelFromJson("1000-Hadoop/patches/003-hive_column_update_table_remove_constraint.json", typeDefStore, typeRegistry);
 
             loadSampleClassificationDefs();
 

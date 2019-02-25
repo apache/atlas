@@ -196,37 +196,6 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "basicProvider")
     private Object[][] basicQueries() {
         return new Object[][]{
-                {"from hive_db", 3},
-                {"hive_db", 3},
-                {"hive_db as d select d", 3},
-                {"hive_db where hive_db.name=\"Reporting\"", 1},
-                {"hive_db where hive_db.name=\"Reporting\" select name, owner", 1},
-                {"hive_db has name", 3},
-                {"from hive_table", 10},
-                {"hive_table", 10},
-                {"hive_table isa Dimension", 5},
-                {"hive_column where hive_column isa PII", 4},
-                {"hive_column where hive_column isa PII select hive_column.qualifiedName", 4},
-                {"hive_column select hive_column.qualifiedName", 17},
-                {"hive_column select qualifiedName", 17},
-                {"hive_column where hive_column.name=\"customer_id\"", 2},
-                {"from hive_table select hive_table.qualifiedName", 10},
-                {"hive_db where (name = \"Reporting\")", 1},
-                {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1", 1},
-                {"hive_db where hive_db is JdbcAccess", 0},
-                {"hive_db where hive_db has name", 3},
-                {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1", 1},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1", 1},
-                {"hive_table where (name = \"sales_fact\" and db.name = \"Sales\") select name, createTime", 1},
-                {"Dimension", 9},
-                {"JdbcAccess", 2},
-                {"ETL", 10},
-                {"Metric", 8},
-                {"PII", 4},
-                {"`Log Data`", 4},
-                {"DataSet where name='sales_fact'", 1},
-                {"Asset where name='sales_fact'", 1}
         };
     }
 
@@ -239,11 +208,6 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "systemAttributesProvider")
     private Object[][] systemAttributesQueries() {
         return new Object[][]{
-                {"hive_db has __state", 3},
-                {"hive_db where hive_db has __state", 3},
-                {"hive_db as d where d.__state = 'ACTIVE'", 3},
-                {"hive_db select __guid", 3},
-                {"hive_db where __state = 'ACTIVE' select name, __guid, __state", 3},
         };
     }
 
@@ -260,12 +224,6 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "limitProvider")
     private Object[][] limitQueries() {
         return new Object[][]{
-                {"hive_column", 17, 40, 0},
-                {"hive_column limit 10", 10, 50, 0},
-                {"hive_column select hive_column.qualifiedName limit 10", 10, 5, 0},
-                {"hive_column select hive_column.qualifiedName limit 40 offset 10", 7, 40, 0},
-                {"hive_db where name = 'Reporting' limit 10 offset 0", 1, 40, 0},
-                {"hive_table where db.name = 'Reporting' limit 10", 4, 1, 0},
         };
     }
 
@@ -278,88 +236,6 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "syntaxProvider")
     private Object[][] syntaxQueries() {
         return new Object[][]{
-                {"hive_column  limit 10 ", 10},
-                {"hive_column select hive_column.qualifiedName limit 10 ", 10},
-                {"from hive_db", 3},
-                {"from hive_db limit 2", 2},
-                {"from hive_db limit 2 offset 0", 2},
-                {"from hive_db limit 2 offset 1", 2},
-                {"from hive_db limit 3 offset 1", 2},
-                {"hive_db", 3},
-                {"hive_db where hive_db.name=\"Reporting\"", 1},
-                {"hive_db where hive_db.name=\"Reporting\" or hive_db.name=\"Sales\" or hive_db.name=\"Logging\" limit 1 offset 1", 1},
-                {"hive_db where hive_db.name=\"Reporting\" or hive_db.name=\"Sales\" or hive_db.name=\"Logging\" limit 1 offset 2", 1},
-                {"hive_db where hive_db.name=\"Reporting\" or hive_db.name=\"Sales\" or hive_db.name=\"Logging\" limit 2 offset 1", 2},
-                {"hive_db where hive_db.name=\"Reporting\" limit 10 ", 1},
-                {"hive_db where hive_db.name=\"Reporting\" select name, owner", 1},
-                {"hive_db has name", 3},
-                {"hive_db has name limit 2 offset 0", 2},
-                {"hive_db has name limit 2 offset 1", 2},
-                {"hive_db has name limit 10 offset 1", 2},
-                {"hive_db has name limit 10 offset 0", 3},
-
-                {"from hive_table", 10},
-                {"from hive_table limit 5", 5},
-                {"from hive_table limit 5 offset 5", 5},
-
-                {"hive_table", 10},
-                {"hive_table limit 5", 5},
-                {"hive_table limit 5 offset 5", 5},
-
-                {"hive_table isa Dimension", 5},
-                {"hive_table isa Dimension limit 2", 2},
-                {"hive_table isa Dimension limit 2 offset 0", 2},
-                {"hive_table isa Dimension limit 2 offset 1", 2},
-                {"hive_table isa Dimension limit 3 offset 1", 3},
-                {"hive_table where db.name='Sales' and db.clusterName='cl1'", 4},
-
-                {"hive_column where hive_column isa PII", 4},
-                {"hive_column where hive_column isa PII limit 5", 4},
-                {"hive_column where hive_column isa PII limit 5 offset 1", 3},
-                {"hive_column where hive_column isa PII limit 5 offset 5", 0},
-
-                {"hive_column select hive_column.qualifiedName", 17},
-                {"hive_column select hive_column.qualifiedName limit 5", 5},
-                {"hive_column select hive_column.qualifiedName limit 5 offset 36", 0},
-
-                {"hive_column select qualifiedName", 17},
-                {"hive_column select qualifiedName limit 5", 5},
-                {"hive_column select qualifiedName limit 5 offset 36 ", 0},
-
-                {"hive_column where hive_column.name=\"customer_id\"", 2},
-                {"hive_column where hive_column.name=\"customer_id\" limit 2", 2},
-                {"hive_column where hive_column.name=\"customer_id\" limit 2 offset 1", 1},
-                {"hive_column where hive_column.name=\"customer_id\" limit 10 offset 3", 0},
-
-                {"from hive_table select hive_table.name", 10},
-                {"from hive_table select hive_table.name limit 5", 5},
-                {"from hive_table select hive_table.name limit 5 offset 5", 5},
-
-                {"hive_db where (name = \"Reporting\")", 1},
-                {"hive_db where (name = \"Reporting\") limit 10", 1},
-                {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1", 1},
-                {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1 limit 10", 1},
-                {"hive_db where hive_db is JdbcAccess", 0}, //Not supposed to work
-                {"hive_db where hive_db has name", 3},
-                {"hive_db where hive_db has name limit 5", 3},
-                {"hive_db where hive_db has name limit 2 offset 0", 2},
-                {"hive_db where hive_db has name limit 2 offset 1", 2},
-
-                {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0},
-
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1", 1},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10", 1},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10 offset 0", 1},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 limit 10 offset 5", 0},
-
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1", 1},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 10 offset 0", 1},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 10 offset 1", 0},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 10", 1},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 limit 0 offset 1", 0},
-                {"hive_db as d where owner = ['John ETL', 'Jane BI']", 2},
-                {"hive_db as d where owner = ['John ETL', 'Jane BI'] limit 10", 2},
-                {"hive_db as d where owner = ['John ETL', 'Jane BI'] limit 10 offset 1", 1},
         };
     }
 
@@ -373,74 +249,6 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "orderByProvider")
     private Object[][] orderByQueries() {
         return new Object[][]{
-                {"from hive_db as h orderby h.owner limit 3", 3, "owner", true},
-                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName ", 17, "c.qualifiedName", true},
-                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "c.qualifiedName", true},
-                {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "c.qualifiedName", false},
-
-                {"from hive_db orderby hive_db.owner limit 3", 3, "owner", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 17, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "hive_column.qualifiedName", false},
-
-                {"from hive_db orderby owner limit 3", 3, "owner", true},
-                {"hive_column select hive_column.qualifiedName orderby qualifiedName ", 17, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby qualifiedName limit 5", 5, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby qualifiedName desc limit 5", 5, "hive_column.qualifiedName", false},
-
-                {"from hive_db orderby hive_db.owner limit 3", 3, "owner", true},
-                {"hive_db where hive_db.name=\"Reporting\" orderby owner", 1, "owner", true},
-
-                {"hive_db where hive_db.name=\"Reporting\" orderby hive_db.owner limit 10 ", 1, "owner", true},
-                {"hive_db where hive_db.name=\"Reporting\" select name, owner orderby hive_db.name ", 1, "name", true},
-                {"hive_db has name orderby hive_db.owner limit 10 offset 0", 3, "owner", true},
-
-                {"from hive_table select hive_table.owner orderby hive_table.owner", 10, "hive_table.owner", true},
-                {"from hive_table select hive_table.owner orderby hive_table.owner limit 8", 8, "hive_table.owner", true},
-
-                {"hive_table orderby hive_table.name", 10, "name", true},
-
-                {"hive_table orderby hive_table.owner", 10, "owner", true},
-                {"hive_table orderby hive_table.owner limit 8", 8, "owner", true},
-                {"hive_table orderby hive_table.owner limit 8 offset 0", 8, "owner", true},
-                {"hive_table orderby hive_table.owner desc limit 8 offset 0", 8, "owner", false},
-
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName ", 17, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "hive_column.qualifiedName", true},
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName desc limit 5", 5, "hive_column.qualifiedName", false},
-
-                {"hive_column select hive_column.qualifiedName orderby hive_column.qualifiedName limit 5 offset 2", 5, "hive_column.qualifiedName", true},
-
-                {"hive_column select qualifiedName orderby hive_column.qualifiedName", 17, "qualifiedName", true},
-                {"hive_column select qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
-                {"hive_column select qualifiedName orderby hive_column.qualifiedName desc", 17, "qualifiedName", false},
-
-                {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name", 2, "name", true},
-                {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name limit 2", 2, "name", true},
-                {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name limit 2 offset 1", 1, "name", true},
-
-                {"from hive_table select owner orderby hive_table.owner",10, "owner", true},
-                {"from hive_table select owner orderby hive_table.owner limit 5", 5, "owner", true},
-                {"from hive_table select owner orderby hive_table.owner desc limit 5", 5, "owner", false},
-                {"from hive_table select owner orderby hive_table.owner limit 5 offset 5", 5, "owner", true},
-
-                {"hive_db where (name = \"Reporting\") orderby hive_db.name", 1, "name", true},
-                {"hive_db where (name = \"Reporting\") orderby hive_db.name limit 10", 1, "name", true},
-                {"hive_db where hive_db has name orderby hive_db.owner", 3, "owner", true},
-                {"hive_db where hive_db has name orderby hive_db.owner limit 5", 3, "owner", true},
-                {"hive_db where hive_db has name orderby hive_db.owner limit 2 offset 0", 2, "owner", true},
-                {"hive_db where hive_db has name orderby hive_db.owner limit 2 offset 1", 2, "owner", true},
-
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime ", 1, "_col_1", true},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 ", 1, "_col_1", true},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 0", 1, "_col_1", true},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 5", 0, "_col_1", true},
-
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name ", 1, "_col_0", true},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 0", 1, "_col_0", true},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 1", 0, "_col_0", true},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10", 1, "_col_0", true},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 0 offset 1", 0, "_col_0", true},
         };
     }
 
@@ -454,13 +262,6 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "likeQueriesProvider")
     private Object[][] likeQueries() {
         return new Object[][]{
-                {"hive_table where name like \"sa?es*\"", 3},
-                {"hive_db where name like \"R*\"", 1},
-                {"hive_db where hive_db.name like \"R???rt?*\" or hive_db.name like \"S?l?s\" or hive_db.name like\"Log*\"", 3},
-                {"hive_db where hive_db.name like \"R???rt?*\" and hive_db.name like \"S?l?s\" and hive_db.name like\"Log*\"", 0},
-                {"hive_table where name like 'sales*' and db.name like 'Sa?es'", 1},
-                {"hive_table where db.name like \"Sa*\"", 4},
-                {"hive_table where db.name like \"Sa*\" and name like \"*dim\"", 3},
         };
     }
 
@@ -474,94 +275,6 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "minMaxCountProvider")
     private Object[][] minMaxCountQueries() {
         return new Object[][]{
-                {"from hive_db groupby (owner) select count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("count()")
-                                .withExpectedValues(1)
-                                .withExpectedValues(1)
-                                .withExpectedValues(1) },
-                { "from hive_db groupby (owner) select owner, name orderby owner",
-                        new FieldValueValidator()
-                                .withFieldNames("owner", "name")
-                                .withExpectedValues("Jane BI", "Reporting")
-                                .withExpectedValues("John ETL", "Sales")
-                                .withExpectedValues("Tim ETL", "Logging") },
-                { "from hive_db groupby (owner) select Asset.owner, Asset.name, count()",
-                        new FieldValueValidator()
-                                .withFieldNames("Asset.owner", "Asset.name", "count()")
-                                .withExpectedValues("Jane BI", "Reporting", 1)
-                                .withExpectedValues("Tim ETL", "Logging", 1)
-                                .withExpectedValues("John ETL", "Sales", 1) },
-                { "from hive_db groupby (owner) select count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("count()").
-                                withExpectedValues(1).
-                                withExpectedValues(1).
-                                withExpectedValues(1) },
-                { "from hive_db groupby (owner) select Asset.owner, count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("Asset.owner", "count()")
-                                .withExpectedValues("Jane BI", 1)
-                                .withExpectedValues("Tim ETL", 1)
-                                .withExpectedValues("John ETL", 1) },
-                { "from hive_db groupby (owner) select count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("count()")
-                                .withExpectedValues(1)
-                                .withExpectedValues(1)
-                                .withExpectedValues(1) },
-
-                { "from hive_db groupby (owner) select Asset.owner, count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("Asset.owner", "count()")
-                                .withExpectedValues("Jane BI", 1)
-                                .withExpectedValues("Tim ETL", 1)
-                                .withExpectedValues("John ETL", 1) },
-
-                { "from hive_db groupby (owner) select Asset.owner, max(Asset.name) ",
-                        new FieldValueValidator()
-                                .withFieldNames("Asset.owner", "max(Asset.name)")
-                                .withExpectedValues("Tim ETL", "Logging")
-                                .withExpectedValues("Jane BI", "Reporting")
-                                .withExpectedValues("John ETL", "Sales") },
-
-                { "from hive_db groupby (owner) select max(Asset.name) ",
-                        new FieldValueValidator()
-                                .withFieldNames("max(Asset.name)")
-                                .withExpectedValues("Logging")
-                                .withExpectedValues("Reporting")
-                                .withExpectedValues("Sales") },
-
-                { "from hive_db groupby (owner) select owner, Asset.name, min(Asset.name)  ",
-                        new FieldValueValidator()
-                                .withFieldNames("owner", "Asset.name", "min(Asset.name)")
-                                .withExpectedValues("Tim ETL", "Logging", "Logging")
-                                .withExpectedValues("Jane BI", "Reporting", "Reporting")
-                                .withExpectedValues("John ETL", "Sales", "Sales") },
-
-                { "from hive_db groupby (owner) select owner, min(Asset.name)  ",
-                        new FieldValueValidator()
-                                .withFieldNames("owner", "min(Asset.name)")
-                                .withExpectedValues("Tim ETL", "Logging")
-                                .withExpectedValues("Jane BI", "Reporting")
-                                .withExpectedValues("John ETL", "Sales") },
-
-                { "from hive_db groupby (owner) select min(name)  ",
-                        new FieldValueValidator()
-                                .withFieldNames("min(name)")
-                                .withExpectedValues("Reporting")
-                                .withExpectedValues("Logging")
-                                .withExpectedValues("Sales") },
-                { "from hive_db groupby (owner) select min('name') ",
-                        new FieldValueValidator()
-                                .withFieldNames("min('name')")
-                                .withExpectedValues("name")
-                                .withExpectedValues("name")
-                                .withExpectedValues("name") },
-                { "from hive_db select count() ",
-                        new FieldValueValidator()
-                                .withFieldNames("count()")
-                                .withExpectedValues(3) },
                 { "from Person select count() as 'count', max(Person.age) as 'max', min(Person.age) as 'min'",
                         new FieldValueValidator()
                                 .withFieldNames("'count'", "'max'", "'min'")
@@ -596,29 +309,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"`isa`"}, // Tag doesn't exist in the test data
                 {"PIII"},  // same as above
                 {"DBBB as d select d"}, // same as above
-                {"hive_db has db"}, // same as above
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12\" ) select name as _col_0, createTime as _col_1 orderby name limit 0 offset 1"},
-                {"hive_table as t, sd, hive_column as c where t.name=\"sales_fact\" select c.name as colName, c.dataType as colType"},
-                {"hive_table isa hive_db"}, // isa should be a trait/classification
-                {"hive_table isa FooTag"},  // FooTag doesn't exist
-                {"hive_table groupby(db.name)"}, // GroupBy on referred attribute is not supported
-                {"hive_table orderby(db.name)"}, // OrderBy on referred attribute is not supported
-                {"hive_table select db, columns"}, // Can't select multiple referred attributes/entity
-                {"hive_table select min(db.name), columns"}, // Can't do aggregation on referred attribute
-                {"hive_table select db.name, columns"}, // Can't select more than one referred attribute
-                {"hive_table select owner, columns"}, // Can't select a mix of immediate attribute and referred entity
-                {"hive_table select owner, db.name"}, // Same as above
-                {"hive_order"} // From src should be an Entity or Classification
         };
-    }
-
-    @Test
-    public void testQuery() {
-        try {
-            discoveryService.searchUsingDslQuery("hive_table select db", DEFAULT_LIMIT, 0);
-        } catch (AtlasBaseException e) {
-            fail("Should've been a success");
-        }
     }
 
     @Test(dataProvider = "errorQueriesProvider", expectedExceptions = { AtlasBaseException.class })

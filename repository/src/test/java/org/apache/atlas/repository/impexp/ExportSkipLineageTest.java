@@ -71,7 +71,6 @@ public class ExportSkipLineageTest extends ExportImportTestBase {
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
         loadBaseModel(typeDefStore, typeRegistry);
-        loadHiveModel(typeDefStore, typeRegistry);
 
         entityStore = new AtlasEntityStoreV2(deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
         createEntities(entityStore, ENTITIES_SUB_DIR, new String[]{"db", "table-columns", "table-view", "table-table-lineage"});
