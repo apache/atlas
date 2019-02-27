@@ -93,10 +93,15 @@ public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserPro
         AtlasEntity            entity            = toEntity(obj);
         AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntityWithExtInfo(entity);
 
+        AtlasObjectId userProfileId = new AtlasObjectId(entity.getGuid(), AtlasUserProfileDTO.ENTITY_TYPE_NAME,
+                                                        Collections.singletonMap(AtlasUserProfileDTO.PROPERTY_USER_NAME, obj.getName()));
+
         List<AtlasObjectId> objectIds = new ArrayList<>();
 
         for (AtlasUserSavedSearch ss : obj.getSavedSearches()) {
             AtlasEntity ssEntity = savedSearchDTO.toEntity(ss);
+
+            ssEntity.setAttribute(AtlasSavedSearchDTO.PROPERTY_USER_PROFILE, userProfileId);
 
             entityWithExtInfo.addReferredEntity(ssEntity);
 

@@ -44,7 +44,7 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
     private static final String PROPERTY_UNIQUE_NAME       = "uniqueName";
     private static final String PROPERTY_SEARCH_TYPE       = "searchType";
     private static final String PROPERTY_UI_PARAMETERS     = "uiParameters";
-    private static final String PROPERTY_USER_PROFILE      = "userProfile";
+    public  static final String PROPERTY_USER_PROFILE      = "userProfile";
 
     @Inject
     public AtlasSavedSearchDTO(AtlasTypeRegistry typeRegistry) {
