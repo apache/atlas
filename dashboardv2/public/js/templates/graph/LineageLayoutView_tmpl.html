@@ -16,10 +16,10 @@
 -->
 <!-- <div class="graph-toolbar clearfix"></div> -->
 <div class="white-bg no-padding lineage-box">
-    <div class="lineage-fltr-panel">
+    <div class="box-panel filter-box">
         <div class="header clearfix">
             <h4>Filters</h4>
-            <span data-id="fltr-togler" style="margin: 7px" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
+            <span data-id="box-close" style="margin: 7px" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
         </div>
         <div class="body">
             <div class="hideProcessContainer form-group text-left col-sm-12">
@@ -46,10 +46,10 @@
             </div>
         </div>
     </div>
-    <div class="lineage-search-panel">
+    <div class="box-panel search-box">
         <div class="header clearfix">
             <h4>Search</h4>
-            <span data-id="search-togler" style="margin: 7px" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
+            <span data-id="box-close" style="margin: 7px" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
         </div>
         <div class="body">
             <div class="col-sm-12 no-padding">
@@ -64,12 +64,39 @@
             </div>
         </div>
     </div>
+    <div class="box-panel setting-box">
+        <div class="header clearfix">
+            <h4>Settings</h4>
+            <span data-id="box-close" style="margin: 7px" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
+        </div>
+        <div class="body">
+            <div class="showOnlyHoverPath form-group text-left col-sm-12">
+                <div class="pretty p-switch p-fill">
+                    <input type="checkbox" checked class="pull-left" data-id="showOnlyHoverPath" value="" />
+                    <div class="state p-primary">
+                        <label>On hover show current path</label>
+                    </div>
+                </div>
+            </div>
+            <div class="showTooltip form-group text-left col-sm-12">
+                <div class="pretty p-switch p-fill">
+                    <input type="checkbox" class="pull-left" data-id="showTooltip" value="" />
+                    <div class="state p-primary">
+                        <label>Show node details on hover</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="graph-button-group pull-right">
         <div>
-            <button type="button" data-id="fltr-togler" class="btn btn-action btn-gray btn-sm"><i class="fa fa-filter"></i></button>
+            <button type="button" data-id="setting-toggler" class="btn btn-action btn-gray btn-sm"><i class="fa fa-gear"></i></button>
         </div>
         <div>
-            <button type="button" data-id="search-togler" class="btn btn-action btn-gray btn-sm"><i class="fa fa-search"></i></button>
+            <button type="button" data-id="filter-toggler" class="btn btn-action btn-gray btn-sm"><i class="fa fa-filter"></i></button>
+        </div>
+        <div>
+            <button type="button" data-id="search-toggler" class="btn btn-action btn-gray btn-sm"><i class="fa fa-search"></i></button>
         </div>
         <div>
             <button type="button" data-id="fullScreen-toggler" class="btn btn-action btn-gray btn-sm fullscreen_lineage"><i class="fa fa-expand"></i></button>
