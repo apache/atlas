@@ -49,15 +49,20 @@ define(['require',
                 checkHideProcess: "[data-id='checkHideProcess']",
                 checkDeletedEntity: "[data-id='checkDeletedEntity']",
                 selectDepth: 'select[data-id="selectDepth"]',
-                fltrTogler: '[data-id="fltr-togler"]',
-                lineageFilterPanel: '.lineage-fltr-panel',
+                filterToggler: '[data-id="filter-toggler"]',
+                settingToggler: '[data-id="setting-toggler"]',
+                searchToggler: '[data-id="search-toggler"]',
+                boxClose: '[data-id="box-close"]',
                 lineageFullscreenToggler: '[data-id="fullScreen-toggler"]',
-                searchTogler: '[data-id="search-togler"]',
-                lineageSearchPanel: '.lineage-search-panel',
+                filterBox: '.filter-box',
+                searchBox: '.search-box',
+                settingBox: '.setting-box',
                 lineageTypeSearch: '[data-id="typeSearch"]',
                 lineageDetailClose: '[data-id="close"]',
                 searchNode: '[data-id="searchNode"]',
-                nodeEntityList: '[data-id="entityList"]'
+                nodeEntityList: '[data-id="entityList"]',
+                showOnlyHoverPath: '[data-id="showOnlyHoverPath"]',
+                showTooltip: '[data-id="showTooltip"]'
             },
             templateHelpers: function() {
                 return {
@@ -71,9 +76,11 @@ define(['require',
                 events["click " + this.ui.checkHideProcess] = 'onCheckUnwantedEntity';
                 events["click " + this.ui.checkDeletedEntity] = 'onCheckUnwantedEntity';
                 events['change ' + this.ui.selectDepth] = 'onSelectDepthChange';
-                events["click " + this.ui.fltrTogler] = 'onClickFiltrTogler';
+                events["click " + this.ui.filterToggler] = 'onClickFilterToggler';
+                events["click " + this.ui.boxClose] = 'toggleBoxPanel';
+                events["click " + this.ui.settingToggler] = 'onClickSettingToggler';
                 events["click " + this.ui.lineageFullscreenToggler] = 'onClickLineageFullscreenToggler';
-                events["click " + this.ui.searchTogler] = 'onClickSearchTogler';
+                events["click " + this.ui.searchToggler] = 'onClickSearchToggler';
                 events["click " + this.ui.lineageDetailClose] = function() {
                     this.toggleLineageInfomationSlider({ close: true });
                 };
@@ -119,7 +126,6 @@ define(['require',
                         return {};
                     });
             },
-
             onRender: function() {
                 var that = this;
                 this.fetchGraphData();
@@ -158,31 +164,29 @@ define(['require',
             },
             onCheckUnwantedEntity: function(e) {
                 var data = $.extend(true, {}, this.lineageData);
-                this.fromToObj = {};
+                //this.fromToNodeData = {};
                 this.initializeGraph();
                 if ($(e.target).data("id") === "checkHideProcess") {
                     this.filterObj.isProcessHideCheck = e.target.checked;
                 } else {
                     this.filterObj.isDeletedEntityHideCheck = e.target.checked;
                 }
-                this.generateData(data.relations, data.guidEntityMap);
+                this.generateData({ "relationshipMap": this.relationshipMap, "guidEntityMap": this.guidEntityMap });
             },
-            onClickFiltrTogler: function() {
-                var lineageFilterPanel = this.ui.lineageFilterPanel;
-                var lineageSearchPanel = this.ui.lineageSearchPanel;
-                $(lineageFilterPanel).toggleClass("show-filter-panel");
-                if (lineageSearchPanel.hasClass('show-search-panel')) {
-                    $(this.ui.lineageSearchPanel).toggleClass("show-search-panel")
+            toggleBoxPanel: function(el) {
+                this.$el.find('.show-box-panel').removeClass('show-box-panel');
+                if (el && el.addClass) {
+                    el.addClass('show-box-panel');
                 }
             },
-            onClickSearchTogler: function() {
-                var lineageSearchPanel = this.ui.lineageSearchPanel;
-                var lineageFilterPanel = this.ui.lineageFilterPanel;
-                $(lineageSearchPanel).toggleClass("show-search-panel");
-                if (lineageFilterPanel.hasClass('show-filter-panel')) {
-                    $(this.ui.lineageFilterPanel).toggleClass("show-filter-panel");
-
-                }
+            onClickFilterToggler: function() {
+                this.toggleBoxPanel(this.ui.filterBox);
+            },
+            onClickSettingToggler: function() {
+                this.toggleBoxPanel(this.ui.settingBox);
+            },
+            onClickSearchToggler: function() {
+                this.toggleBoxPanel(this.ui.searchBox);
             },
             onSelectDepthChange: function(e, options) {
                 this.initializeGraph();
@@ -193,7 +197,7 @@ define(['require',
             fetchGraphData: function(options) {
                 var that = this,
                     queryParam = options && options.queryParam || {};
-                this.fromToObj = {};
+                this.fromToNodeData = {};
                 this.$('.fontLoader').show();
                 this.$('svg>g').hide();
                 this.collection.getLineage(this.guid, {
@@ -201,8 +205,13 @@ define(['require',
                     queryParam: queryParam,
                     success: function(data) {
                         if (data.relations.length) {
-                            that.lineageData = $.extend(true, {}, data)
-                            that.generateData(data.relations, data.guidEntityMap);
+                            that.lineageData = $.extend(true, {}, data);
+                            that.relationshipMap = that.crateLineageRelationshipHashMap(data);
+                            that.guidEntityMap = $.extend(true, {}, data.guidEntityMap);
+                            if (that.lineageData) {
+                                that.renderLineageTypeSearch();
+                            }
+                            that.generateData({ "relationshipMap": that.relationshipMap, "guidEntityMap": that.guidEntityMap });
                         } else {
                             that.noLineage();
                             that.hideCheckForProcess();
@@ -221,7 +230,6 @@ define(['require',
             noLineage: function() {
                 this.$('.fontLoader').hide();
                 this.$('.depth-container').hide();
-                //this.$('svg').height('100');
                 this.$('svg').html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No lineage data found</text>');
                 if (this.actionCallBack) {
                     this.actionCallBack();
@@ -230,168 +238,227 @@ define(['require',
             hideCheckForProcess: function() {
                 this.$('.hideProcessContainer').hide();
             },
-            generateData: function(relations, guidEntityMap) {
-                var that = this;
-
-                function isProcess(node) {
-                    if (_.isUndefined(node) || node.typeName == "Process") {
-                        return true;
-                    }
-                    var entityDef = that.entityDefCollection.fullCollection.find({ name: node.typeName });
-                    return _.contains(Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: that.entityDefCollection }), "Process")
+            isProcess: function(node) {
+                var typeName = node.typeName,
+                    superTypes = node.superTypes,
+                    entityDef = node.entityDef;
+                if (typeName == "Process") {
+                    return true;
                 }
-
-                function isDeleted(node) {
-                    if (_.isUndefined(node)) {
-                        return
-                    }
-                    return Enums.entityStateReadOnly[node.status];
+                return _.contains(superTypes, "Process");
+            },
+            isDeleted: function(node) {
+                if (_.isUndefined(node)) {
+                    return
                 }
+                return Enums.entityStateReadOnly[node.status];
+            },
+            isNodeToBeUpdated: function(node) {
+                var isProcessHideCheck = this.filterObj.isProcessHideCheck,
+                    isDeletedEntityHideCheck = this.filterObj.isDeletedEntityHideCheck
+                var returnObj = {
+                    isProcess: (isProcessHideCheck && node.isProcess),
+                    isDeleted: (isDeletedEntityHideCheck && node.isDeleted)
 
-                function isNodeToBeUpdated(node) {
-                    var isProcessHideCheck = that.filterObj.isProcessHideCheck,
-                        isDeletedEntityHideCheck = that.filterObj.isDeletedEntityHideCheck
-                    var returnObj = {
-                        isProcess: (isProcessHideCheck && isProcess(node)),
-                        isDeleted: (isDeletedEntityHideCheck && isDeleted(node))
-
-                    };
-                    returnObj["update"] = returnObj.isProcess || returnObj.isDeleted;
-                    return returnObj;
+                };
+                returnObj["update"] = returnObj.isProcess || returnObj.isDeleted;
+                return returnObj;
+            },
+            getNestedSuperTypes: function(options) {
+                var entityDef = options.entityDef;
+                return Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: this.entityDefCollection })
+            },
+            getEntityDef: function(typeName) {
+                var entityDef = null;
+                if (typeName) {
+                    entityDef = this.entityDefCollection.fullCollection.find({ name: typeName });
                 }
-
-                function getServiceType(typeName) {
-                    var serviceType = null;
-                    if (typeName) {
-                        var entityDef = that.entityDefCollection.fullCollection.find({ name: typeName });
-                        if (entityDef) {
-                            serviceType = entityDef.get("serviceType") || null;
-                        }
-                    }
-                    return serviceType;
+                return entityDef;
+            },
+            getServiceType: function(options) {
+                if (!options) {
+                    return;
                 }
-
-                function makeNodeObj(relationObj) {
-                    var obj = {};
-                    obj['shape'] = "img";
-                    obj['typeName'] = relationObj.typeName
-                    obj['label'] = relationObj.displayText.trunc(18);
-                    obj['toolTipLabel'] = relationObj.displayText;
-                    obj['id'] = relationObj.guid;
-                    obj['isLineage'] = true;
-                    obj['queryText'] = relationObj.queryText;
-                    obj['serviceType'] = getServiceType(relationObj.typeName);
-                    if (relationObj.status) {
-                        obj['status'] = relationObj.status;
+                var typeName = options.typeName,
+                    entityDef = options.entityDef,
+                    serviceType = null;
+                if (typeName) {
+                    if (entityDef) {
+                        serviceType = entityDef.get("serviceType") || null;
                     }
-                    if (that.filterObj.isProcessHideCheck) {
-                        obj['isProcess'] = relationObj.isProcess;
+                }
+                return serviceType;
+            },
+            crateLineageRelationshipHashMap: function(data) {
+                var that = this,
+                    relations = data && data.relations,
+                    guidEntityMap = data && data.guidEntityMap,
+                    makeNodeData = function(relationObj) {
+                        var obj = $.extend(true, {
+                            shape: "img",
+                            label: relationObj.displayText.trunc(18),
+                            toolTipLabel: relationObj.displayText,
+                            id: relationObj.guid,
+                            isLineage: true,
+                            entityDef: this.getEntityDef(relationObj.typeName)
+                        }, relationObj);
+                        obj["serviceType"] = this.getServiceType({ typeName: relationObj.typeName, entityDef: obj.entityDef });
+                        obj["superTypes"] = this.getNestedSuperTypes({ entityDef: obj.entityDef });
+                        obj['isProcess'] = this.isProcess(obj);
+                        obj['isDeleted'] = this.isDeleted(obj);
+                        return obj;
+                    }.bind(this),
+                    newHashMap = {};
+                _.each(relations, function(obj) {
+                    if (!that.fromToNodeData[obj.fromEntityId]) {
+                        that.fromToNodeData[obj.fromEntityId] = makeNodeData(guidEntityMap[obj.fromEntityId]);
+                    }
+                    if (!that.fromToNodeData[obj.toEntityId]) {
+                        that.fromToNodeData[obj.toEntityId] = makeNodeData(guidEntityMap[obj.toEntityId]);
+                    }
+                    if (newHashMap[obj.fromEntityId]) {
+                        newHashMap[obj.fromEntityId].push(obj.toEntityId);
                     } else {
-                        obj['isProcess'] = isProcess(relationObj);
+                        newHashMap[obj.fromEntityId] = [obj.toEntityId];
                     }
-
-                    return obj;
-                }
-
-                var newRelations = [],
-                    finalRelations = relations,
-                    isHideFilterOn = this.filterObj.isProcessHideCheck || this.filterObj.isDeletedEntityHideCheck;
-                if (isHideFilterOn) {
-                    _.each(relations, function(obj, index, relationArr) {
-                        var toNodeToBeUpdated = isNodeToBeUpdated(guidEntityMap[obj.toEntityId]);
-                        var fromNodeToBeUpdated = isNodeToBeUpdated(guidEntityMap[obj.fromEntityId]);
-                        if (toNodeToBeUpdated.update) {
-                            if (that.filterObj.isProcessHideCheck) {
-                                //We have already checked entity is process or not inside isNodeToBeUpdated();
-                                guidEntityMap[obj.toEntityId]["isProcess"] = true;
-                            }
-                            _.filter(relationArr, function(flrObj) {
-                                if (flrObj.fromEntityId === obj.toEntityId) {
-                                    if (that.filterObj.isDeletedEntityHideCheck && isDeleted(guidEntityMap[flrObj.toEntityId])) {
-                                        return;
-                                    }
-                                    newRelations.push({
-                                        fromEntityId: obj.fromEntityId,
-                                        toEntityId: flrObj.toEntityId
-                                    });
-                                }
-                            })
-                        } else if (fromNodeToBeUpdated.update) {
-                            if (that.filterObj.isProcessHideCheck) {
-                                //We have already checked entity is process or not inside isNodeToBeUpdated();
-                                guidEntityMap[obj.fromEntityId]["isProcess"] = true;
-                            }
-
-                            _.filter(relationArr, function(flrObj) {
-                                if (that.filterObj.isDeletedEntityHideCheck && isDeleted(guidEntityMap[flrObj.fromEntityId])) {
-                                    return;
-                                }
-                                if (flrObj.toEntityId === obj.fromEntityId) {
-                                    newRelations.push({
-                                        fromEntityId: flrObj.fromEntityId,
-                                        toEntityId: obj.toEntityId
-                                    });
-                                }
-                            })
-                        } else {
-                            newRelations.push(obj);
-                        }
-                    });
-                    finalRelations = newRelations;
-                }
-
-                _.each(finalRelations, function(obj, index) {
-                    if (!that.fromToObj[obj.fromEntityId]) {
-                        that.fromToObj[obj.fromEntityId] = makeNodeObj(guidEntityMap[obj.fromEntityId]);
-                        that.g.setNode(obj.fromEntityId, that.fromToObj[obj.fromEntityId]);
-                    }
-                    if (!that.fromToObj[obj.toEntityId]) {
-                        that.fromToObj[obj.toEntityId] = makeNodeObj(guidEntityMap[obj.toEntityId]);
-                        that.g.setNode(obj.toEntityId, that.fromToObj[obj.toEntityId]);
-                    }
-                    var styleObj = {
+                });
+                return newHashMap;
+            },
+            generateData: function(options) {
+                var that = this,
+                    relationshipMap = options && $.extend(true, {}, options.relationshipMap) || {},
+                    guidEntityMap = options && options.guidEntityMap || {},
+                    styleObj = {
                         fill: 'none',
                         stroke: '#ffb203',
                         width: 3
-                    }
-                    that.g.setEdge(obj.fromEntityId, obj.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + ";stroke-width:" + styleObj.width + "", 'styleObj': styleObj });
-                });
-                //if no relations found
-                if (!finalRelations.length) {
-                    this.$('svg').html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No relations to display</text>');
-                } else {
-                    this.$('svg').html('<text></text>');
+                    },
+                    getStyleObjStr = function(styleObj) {
+                        return 'fill:' + styleObj.fill + ';stroke:' + styleObj.stroke + ';stroke-width:' + styleObj.width;
+                    },
+                    filterRelationshipMap = relationshipMap,
+                    isHideFilterOn = this.filterObj.isProcessHideCheck || this.filterObj.isDeletedEntityHideCheck,
+                    getNewToNodeRelationship = function(toNodeGuid) {
+                        if (toNodeGuid && relationshipMap[toNodeGuid]) {
+                            var newRelationship = [];
+                            _.each(relationshipMap[toNodeGuid], function(guid) {
+                                var nodeToBeUpdated = that.isNodeToBeUpdated(that.fromToNodeData[guid]);
+                                if (nodeToBeUpdated.update) {
+                                    var newRelation = getNewToNodeRelationship(guid);
+                                    if (newRelation) {
+                                        newRelationship = newRelationship.concat(newRelation);
+                                    }
+                                } else {
+                                    newRelationship.push(guid);
+                                }
+                            });
+                            return newRelationship;
+                        } else {
+                            return null;
+                        }
+                    },
+                    getToNodeRelation = function(toNodes, fromNodeToBeUpdated) {
+                        var toNodeRelationship = [];
+                        _.each(toNodes, function(toNodeGuid) {
+                            var toNodeToBeUpdated = that.isNodeToBeUpdated(that.fromToNodeData[toNodeGuid]);
+                            if (toNodeToBeUpdated.update) {
+                                // To node need to updated
+                                if (pendingFromRelationship[toNodeGuid]) {
+                                    toNodeRelationship = toNodeRelationship.concat(pendingFromRelationship[toNodeGuid]);
+                                } else {
+                                    var newToNodeRelationship = getNewToNodeRelationship(toNodeGuid);
+                                    if (newToNodeRelationship) {
+                                        toNodeRelationship = toNodeRelationship.concat(newToNodeRelationship);
+                                    }
+                                }
+                            } else {
+                                //when bothe node not to be updated.
+                                toNodeRelationship.push(toNodeGuid);
+                            }
+                        });
+                        return toNodeRelationship;
+                    },
+                    pendingFromRelationship = {};
+                if (isHideFilterOn) {
+                    filterRelationshipMap = {};
+                    _.each(relationshipMap, function(toNodes, fromNodeGuid) {
+                        var fromNodeToBeUpdated = that.isNodeToBeUpdated(that.fromToNodeData[fromNodeGuid]),
+                            toNodeList = getToNodeRelation(toNodes, fromNodeToBeUpdated);
+                        if (fromNodeToBeUpdated.update) {
+                            if (pendingFromRelationship[fromNodeGuid]) {
+                                pendingFromRelationship[fromNodeGuid] = pendingFromRelationship[fromNodeGuid].concat(toNodeList);
+                            } else {
+                                pendingFromRelationship[fromNodeGuid] = toNodeList;
+                            }
+                        } else {
+                            if (filterRelationshipMap[fromNodeGuid]) {
+                                filterRelationshipMap[fromNodeGuid] = filterRelationshipMap[fromNodeGuid].concat(toNodeList);
+                            } else {
+                                filterRelationshipMap[fromNodeGuid] = toNodeList;
+                            }
+                        }
+                    })
                 }
 
-                if (this.fromToObj[this.guid]) {
-                    this.fromToObj[this.guid]['isLineage'] = false;
-                    this.checkForLineageOrImpactFlag(finalRelations, this.guid);
+                _.each(filterRelationshipMap, function(toNodesList, fromNodeGuid) {
+                    if (!that.g._nodes[fromNodeGuid]) {
+                        that.g.setNode(fromNodeGuid, that.fromToNodeData[fromNodeGuid]);
+                    }
+                    _.each(toNodesList, function(toNodeGuid) {
+                        if (!that.g._nodes[toNodeGuid]) {
+                            that.g.setNode(toNodeGuid, that.fromToNodeData[toNodeGuid]);
+                        }
+                        that.g.setEdge(fromNodeGuid, toNodeGuid, {
+                            "arrowhead": 'arrowPoint',
+                            "lineInterpolate": 'basis',
+                            "style": getStyleObjStr(styleObj),
+                            'styleObj': styleObj
+                        });
+                    })
+                })
+
+                //if no relations found
+                if (_.isEmpty(filterRelationshipMap)) {
+                    this.$('svg').html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No relations to display</text>');
+                }
+
+                if (this.fromToNodeData[this.guid]) {
+                    this.fromToNodeData[this.guid]['isLineage'] = false;
+                    this.findImpactNodeAndUpdateData({ "relationshipMap": filterRelationshipMap, "guid": this.guid, "getStyleObjStr": getStyleObjStr });
                 }
                 if (this.asyncFetchCounter == 0) {
                     this.createGraph();
                 }
-                if (this.lineageData) {
-                    this.renderLineageTypeSearch();
-                    this.lineageTypeSearch()
-                }
             },
-            checkForLineageOrImpactFlag: function(relations, guid) {
+            findImpactNodeAndUpdateData: function(options) {
                 var that = this,
-                    nodeFound = _.where(relations, { 'fromEntityId': guid });
-                if (nodeFound.length) {
-                    _.each(nodeFound, function(node) {
-                        if (!node["traversed"]) {
-                            node["traversed"] = true;
-                            that.fromToObj[node.toEntityId]['isLineage'] = false;
+                    relationshipMap = options.relationshipMap,
+                    fromNodeGuid = options.guid,
+                    getStyleObjStr = options.getStyleObjStr,
+                    toNodeList = relationshipMap[fromNodeGuid];
+                if (toNodeList && toNodeList.length) {
+                    if (!relationshipMap[fromNodeGuid]["traversed"]) {
+                        relationshipMap[fromNodeGuid]["traversed"] = true;
+                        _.each(toNodeList, function(toNodeGuid) {
+                            that.fromToNodeData[toNodeGuid]['isLineage'] = false;
                             var styleObj = {
                                 fill: 'none',
                                 stroke: '#fb4200',
                                 width: 3
                             }
-                            that.g.setEdge(node.fromEntityId, node.toEntityId, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis', "style": "fill:" + styleObj.fill + ";stroke:" + styleObj.stroke + ";stroke-width:" + styleObj.width + "", 'styleObj': styleObj });
-                            that.checkForLineageOrImpactFlag(relations, node.toEntityId);
-                        }
-                    });
+                            that.g.setEdge(fromNodeGuid, toNodeGuid, {
+                                "arrowhead": 'arrowPoint',
+                                "lineInterpolate": 'basis',
+                                "style": getStyleObjStr(styleObj),
+                                'styleObj': styleObj
+                            });
+                            that.findImpactNodeAndUpdateData({
+                                "relationshipMap": relationshipMap,
+                                "guid": toNodeGuid,
+                                "getStyleObjStr": getStyleObjStr
+                            });
+                        });
+                    }
                 }
             },
             toggleInformationSlider: function(options) {
@@ -404,12 +471,22 @@ define(['require',
             },
             centerNode: function(nodeID) {
                 var zoom = function() {
-                        svgGroup.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-                    },
-                    matrix = this.$('svg').find("g.nodes").find('>g#' + nodeID).attr('transform').replace(/[^0-9\-.,]/g, '').split(','),
-                    x = matrix[0],
-                    y = matrix[1],
-                    viewerWidth = this.$('svg').width(),
+                    svgGroup.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+                };
+                var selectedNode = this.$('svg').find("g.nodes").find('>g#' + nodeID);
+
+                if (selectedNode.length > 0) {
+                    selectedNode = selectedNode;
+                    var matrix = selectedNode.attr('transform').replace(/[^0-9\-.,]/g, '').split(','),
+                        x = matrix[0],
+                        y = matrix[1];
+                } else {
+                    selectedNode = this.$('svg').find("g.nodes").find('g').eq(1);
+                    var x = this.g.graph().width / 2,
+                        y = this.g.graph().height / 2;
+
+                }
+                var viewerWidth = this.$('svg').width(),
                     viewerHeight = this.$('svg').height(),
                     gBBox = d3.select('g').node().getBBox(),
                     zoomListener = d3.behavior.zoom().scaleExtent([0.01, 50]).on("zoom", zoom),
@@ -577,8 +654,39 @@ define(['require',
                 svg.on("dblclick.zoom", null)
                 // .on("wheel.zoom", null);
                 //change text postion 
+
+                function isConnected(a, b, o) {
+                    //console.log(a, b, o);
+                    if (a === o || (b && b.length && b.indexOf(o) != -1)) {
+                        return true;
+                    }
+                }
+
+                function fade(opacity, d, nodesToHighlight) {
+                    var node = svg.selectAll('.node');
+                    var path = svg.selectAll('.edgePath');
+                    node.classed("hover-active", function(selectedNode, i, nodes) {
+                        if (isConnected(d, nodesToHighlight, selectedNode)) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    });
+                    path.classed('hover-active-node', function(c) {
+                        var _thisOpacity = c.v === d || c.w === d ? 1 : 0;
+                        if (_thisOpacity) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+
+                    });
+
+                }
+                //Highlight on click
                 svgGroup.selectAll("g.nodes g.label")
                     .attr("transform", "translate(2,-35)");
+                var waitForDoubleClick = null;
                 svgGroup.selectAll("g.nodes g.node")
                     .on('mouseenter', function(d) {
                         that.activeNode = true;
@@ -604,38 +712,68 @@ define(['require',
                         } else if ((currentELWidth.top) < 400) {
                             direction = ((currentELWidth.left) < 50) ? 'se' : 's';
                         }
-                        tooltip.direction(direction).show(d)
+                        if (that.ui.showTooltip.prop('checked')) {
+                            tooltip.direction(direction).show(d);
+                        }
+
+                        if (!that.ui.showOnlyHoverPath.prop('checked')) {
+                            return;
+                        }
+                        that.$('svg').addClass('hover');
+                        var nextNode = that.g.successors(d),
+                            previousNode = that.g.predecessors(d),
+                            nodesToHighlight = nextNode.concat(previousNode);
+                        fade(0.3, d, nodesToHighlight);
                     })
-                    .on('dblclick', function(d) {
-                        tooltip.hide(d);
-                        Utils.setUrl({
-                            url: '#!/detailPage/' + d + '?tabActive=lineage',
-                            mergeBrowserUrl: false,
-                            trigger: true
-                        });
-                    }).on('mouseleave', function(d) {
+                    .on('mouseleave', function(d) {
                         that.activeNode = false;
                         var nodeEL = this;
                         setTimeout(function(argument) {
                             if (!(that.activeTip || that.activeNode)) {
                                 $(nodeEL).removeClass('active');
-                                tooltip.hide(d);
+                                if (that.ui.showTooltip.prop('checked')) {
+                                    tooltip.hide(d);
+                                }
                             }
-                        }, 400)
-                    }).on('click', function(d) {
+                        }, 400);
+                        if (!that.ui.showOnlyHoverPath.prop('checked')) {
+                            return;
+                        }
+                        that.$('svg').removeClass('hover');
+                        fade(1, d);
+                    })
+                    .on('click', function(d) {
                         if (d3.event.defaultPrevented) return; // ignore drag
-                        that.toggleLineageInfomationSlider({ open: true, obj: d });
-                        svgGroup.selectAll('[data-stroke]').attr('stroke', 'none');
-                        svgGroup.selectAll('[data-stroke]').attr('stroke', function(c) {
-                            if (c == d) {
-                                return "#316132";
-                            } else {
-                                return 'none';
-                            }
-                        })
-                        that.updateRelationshipDetails({ obj: d });
+                        d3.event.preventDefault();
 
+                        if (waitForDoubleClick != null) {
+                            clearTimeout(waitForDoubleClick)
+                            waitForDoubleClick = null;
+                            tooltip.hide(d);
+                            Utils.setUrl({
+                                url: '#!/detailPage/' + d + '?tabActive=lineage',
+                                mergeBrowserUrl: false,
+                                trigger: true
+                            });
+                        } else {
+                            var currentEvent = d3.event
+                            waitForDoubleClick = setTimeout(function() {
+                                tooltip.hide(d);
+                                that.toggleLineageInfomationSlider({ open: true, obj: d });
+                                svgGroup.selectAll('[data-stroke]').attr('stroke', 'none');
+                                svgGroup.selectAll('[data-stroke]').attr('stroke', function(c) {
+                                    if (c == d) {
+                                        return "#316132";
+                                    } else {
+                                        return 'none';
+                                    }
+                                })
+                                that.updateRelationshipDetails({ obj: d });
+                                waitForDoubleClick = null;
+                            }, 150)
+                        }
                     });
+
                 svgGroup.selectAll("g.edgePath path.path").on('click', function(d) {
                     var data = { obj: _.find(that.lineageData.relations, { "fromEntityId": d.v, "toEntityId": d.w }) },
                         relationshipId = data.obj.relationshipId;
@@ -692,8 +830,9 @@ define(['require',
                     });
                 }
                 that.ui.lineageTypeSearch.html(typeStr);
+                this.initilizelineageTypeSearch()
             },
-            lineageTypeSearch: function() {
+            initilizelineageTypeSearch: function() {
                 var that = this;
                 that.ui.lineageTypeSearch.select2({
                     closeOnSelect: true,

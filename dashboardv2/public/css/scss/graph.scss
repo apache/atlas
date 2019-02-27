@@ -34,6 +34,8 @@
         font-family: $font_1;
     }
 
+    transition: opacity 0.3s linear;
+
     rect {
         stroke: $color_mountain_mist_approx;
         fill: $white;
@@ -279,8 +281,7 @@ g.type-TK>rect {
     .zoom-button-group {}
 }
 
-.lineage-fltr-panel,
-.lineage-search-panel {
+.box-panel {
     position: absolute;
     top: 45px;
     border: 1px solid #ccc;
@@ -417,7 +418,8 @@ g.type-TK>rect {
 }
 
 .show-filter-panel,
-.show-search-panel {
+.show-search-panel,
+.show-box-panel {
     right: 0px !important;
 }
 
@@ -501,4 +503,20 @@ span#zoom_in {
 
 .wobble {
     animation: zoominoutsinglefeatured 1s 5;
+}
+
+.hover {
+
+    g.node {
+        opacity: 0.1 !important;
+    }
+
+    g.edgePath {
+        opacity: 0 !important;
+    }
+
+    g.node.hover-active,
+    g.edgePath.hover-active-node {
+        opacity: 1 !important;
+    }
 }
