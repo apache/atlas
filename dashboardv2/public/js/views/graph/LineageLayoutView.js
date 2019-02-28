@@ -22,6 +22,7 @@ define(['require',
     'collection/VLineageList',
     'models/VEntity',
     'utils/Utils',
+    'views/graph/LineageUtils',
     'dagreD3',
     'd3-tip',
     'utils/Enums',
@@ -29,7 +30,7 @@ define(['require',
     'utils/Globals',
     'platform',
     'jquery-ui'
-], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip, Enums, UrlLinks, Globals, platform) {
+], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, LineageUtils, dagreD3, d3Tip, Enums, UrlLinks, Globals, platform) {
     'use strict';
 
     var LineageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -469,39 +470,7 @@ define(['require',
                     this.$('.lineage-edge-details').removeClass('open');
                 }
             },
-            centerNode: function(nodeID) {
-                var zoom = function() {
-                    svgGroup.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-                };
-                var selectedNode = this.$('svg').find("g.nodes").find('>g#' + nodeID);
 
-                if (selectedNode.length > 0) {
-                    selectedNode = selectedNode;
-                    var matrix = selectedNode.attr('transform').replace(/[^0-9\-.,]/g, '').split(','),
-                        x = matrix[0],
-                        y = matrix[1];
-                } else {
-                    selectedNode = this.$('svg').find("g.nodes").find('g').eq(1);
-                    var x = this.g.graph().width / 2,
-                        y = this.g.graph().height / 2;
-
-                }
-                var viewerWidth = this.$('svg').width(),
-                    viewerHeight = this.$('svg').height(),
-                    gBBox = d3.select('g').node().getBBox(),
-                    zoomListener = d3.behavior.zoom().scaleExtent([0.01, 50]).on("zoom", zoom),
-                    scale = 1.2,
-                    xa = -((x * scale) - (viewerWidth / 2)),
-                    ya = -((y * scale) - (viewerHeight / 2));
-
-                this.zoom.translate([xa, ya]);
-                d3.select('g').transition()
-                    .duration(350)
-                    .attr("transform", "translate(" + xa + "," + ya + ")scale(" + scale + ")");
-                zoomListener.scale(scale);
-                zoomListener.translate([xa, ya]);
-                this.zoom.scale(scale);
-            },
             zoomed: function(that) {
                 this.$('svg').find('>g').attr("transform",
                     "translate(" + this.zoom.translate() + ")" +
@@ -654,36 +623,6 @@ define(['require',
                 svg.on("dblclick.zoom", null)
                 // .on("wheel.zoom", null);
                 //change text postion 
-
-                function isConnected(a, b, o) {
-                    //console.log(a, b, o);
-                    if (a === o || (b && b.length && b.indexOf(o) != -1)) {
-                        return true;
-                    }
-                }
-
-                function fade(opacity, d, nodesToHighlight) {
-                    var node = svg.selectAll('.node');
-                    var path = svg.selectAll('.edgePath');
-                    node.classed("hover-active", function(selectedNode, i, nodes) {
-                        if (isConnected(d, nodesToHighlight, selectedNode)) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    });
-                    path.classed('hover-active-node', function(c) {
-                        var _thisOpacity = c.v === d || c.w === d ? 1 : 0;
-                        if (_thisOpacity) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-
-                    });
-
-                }
-                //Highlight on click
                 svgGroup.selectAll("g.nodes g.label")
                     .attr("transform", "translate(2,-35)");
                 var waitForDoubleClick = null;
@@ -723,7 +662,12 @@ define(['require',
                         var nextNode = that.g.successors(d),
                             previousNode = that.g.predecessors(d),
                             nodesToHighlight = nextNode.concat(previousNode);
-                        fade(0.3, d, nodesToHighlight);
+                        LineageUtils.onHoverFade({
+                            opacity: 0.3,
+                            selectedNode: d,
+                            highlight: nodesToHighlight,
+                            svg: that.svg
+                        }).init();
                     })
                     .on('mouseleave', function(d) {
                         that.activeNode = false;
@@ -735,12 +679,16 @@ define(['require',
                                     tooltip.hide(d);
                                 }
                             }
-                        }, 400);
+                        }, 150);
                         if (!that.ui.showOnlyHoverPath.prop('checked')) {
                             return;
                         }
                         that.$('svg').removeClass('hover');
-                        fade(1, d);
+                        LineageUtils.onHoverFade({
+                            opacity: 1,
+                            selectedNode: d,
+                            svg: that.svg
+                        }).init();
                     })
                     .on('click', function(d) {
                         if (d3.event.defaultPrevented) return; // ignore drag
@@ -797,7 +745,17 @@ define(['require',
                 });
 
                 // Center the graph
-                this.centerNode(that.guid);
+                LineageUtils.centerNode({
+                    guid: that.guid,
+                    svg: that.$('svg'),
+                    g: this.g,
+                    afterCenterZoomed: function(options) {
+                        var newScale = options.newScale,
+                            newTranslate = options.newTranslate;
+                        that.zoom.scale(newScale);
+                        that.zoom.translate(newTranslate);
+                    }
+                }).init();
                 zoom.event(svg);
                 //svg.attr('height', this.g.graph().height * initialScale + 40);
                 if (platform.name === "IE") {
@@ -817,6 +775,11 @@ define(['require',
                         }, 1000);
                     });
                 }
+                LineageUtils.DragNode({
+                    svg: this.svg,
+                    g: this.g,
+                    guid: this.guid
+                }).init();
             },
             renderLineageTypeSearch: function() {
                 var that = this;
@@ -842,9 +805,18 @@ define(['require',
                     e.stopImmediatePropagation();
                     d3.selectAll(".serach-rect").remove();
                     var selectedNode = $('[data-id="typeSearch"]').val();
-                    that.searchNodeObj.selectedNode = $('[data-id="typeSearch"]').val();
-                    that.centerNode(selectedNode);
-
+                    that.searchNodeObj.selectedNode = selectedNode;
+                    LineageUtils.centerNode({
+                        guid: selectedNode,
+                        svg: $(that.svg[0]),
+                        g: that.g,
+                        afterCenterZoomed: function(options) {
+                            var newScale = options.newScale,
+                                newTranslate = options.newTranslate;
+                            that.zoom.scale(newScale);
+                            that.zoom.translate(newTranslate);
+                        }
+                    }).init();
                     that.svg.selectAll('.nodes g.label').attr('stroke', function(c, d) {
                         if (c == selectedNode) {
                             return "#316132";
