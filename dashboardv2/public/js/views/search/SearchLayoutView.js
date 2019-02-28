@@ -253,13 +253,15 @@ define(['require',
                 });
             },
             checkForButtonVisiblity: function(e, options) {
+                var that = this;
                 if (this.type == "basic" && e && e.currentTarget) {
                     var $el = $(e.currentTarget),
                         isTagEl = $el.data('id') == "tagLOV",
                         isTermEl = $el.data('id') == "termLOV",
-                        isTypeEl = $el.data('id') == "typeLOV";
-                    if (e.type == "change" && $el.select2('data')) {
-                        var value = $($el).find(':selected').data('name'),
+                        isTypeEl = $el.data('id') == "typeLOV",
+                        select2Data = $el.select2('data');
+                    if (e.type == "change" && select2Data) {
+                        var value = (_.isEmpty(select2Data) ? select2Data : _.first(select2Data).id),
                             key = "tag",
                             filterType = 'tagFilters',
                             value = value && value.length ? value : null;
@@ -310,10 +312,11 @@ define(['require',
                         }
                     }
                 }
-                var that = this,
-                    value = this.ui.searchInput.val() || $(this.ui.typeLov).find(':selected').data('name');
-                if (!this.dsl && !value) {
-                    value = $(this.ui.tagLov).find(':selected').data('name') || $(this.ui.termLov).find(':selected').data('name')
+
+                var value = this.ui.searchInput.val() || _.first($(this.ui.typeLov).select2('data')).id;
+                if (!this.dsl && _.isEmpty(value)) {
+                    var termData = _.first($(this.ui.termLov).select2('data'));
+                    value = _.first($(this.ui.tagLov).select2('data')).id || (termData ? termData.id : "");
                 }
                 if (value && value.length) {
                     this.ui.searchBtn.removeAttr("disabled");
