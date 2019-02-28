@@ -22,11 +22,12 @@ define(['require',
     'collection/VLineageList',
     'models/VEntity',
     'utils/Utils',
+    'utils/CommonViewFunction',
     'd3-tip',
     'utils/Enums',
     'utils/UrlLinks',
     'platform'
-], function(require, Backbone, RelationshipLayoutViewtmpl, VLineageList, VEntity, Utils, d3Tip, Enums, UrlLinks, platform) {
+], function(require, Backbone, RelationshipLayoutViewtmpl, VLineageList, VEntity, Utils, CommonViewFunction, d3Tip, Enums, UrlLinks, platform) {
     'use strict';
 
     var RelationshipLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -36,14 +37,19 @@ define(['require',
 
             template: RelationshipLayoutViewtmpl,
             className: "resizeGraph",
-
             /** Layout sub regions */
             regions: {},
 
             /** ui selector cache */
             ui: {
                 relationshipDetailClose: '[data-id="close"]',
-                searchNode: '[data-id="searchNode"]'
+                searchNode: '[data-id="searchNode"]',
+                relationshipViewToggle: 'input[name="relationshipViewToggle"]',
+                relationshipDetailTable: "[data-id='relationshipDetailTable']",
+                relationshipSVG: "[data-id='relationshipSVG']",
+                relationshipDetailValue: "[data-id='relationshipDetailValue']",
+                zoomControl: "[data-id='zoomControl']",
+                boxClose: '[data-id="box-close"]'
             },
 
             /** ui events hash */
@@ -53,6 +59,10 @@ define(['require',
                     this.toggleInformationSlider({ close: true });
                 };
                 events["keyup " + this.ui.searchNode] = 'searchNode';
+                events["click " + this.ui.boxClose] = 'toggleBoxPanel';
+                events["change " + this.ui.relationshipViewToggle] = function(e) {
+                    this.relationshipViewToggle(e.currentTarget.checked)
+                };
                 return events;
             },
 
@@ -61,7 +71,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'entityName', 'guid', 'actionCallBack'));
+                _.extend(this, _.pick(options, 'entity', 'entityName', 'guid', 'actionCallBack', 'attributeDefs'));
                 this.graphData = this.createData(this.entity);
             },
             createData: function(entity) {
@@ -85,14 +95,13 @@ define(['require',
                 }
                 return { nodes: nodes, links: links };
             },
-            onRender: function() {
-
-            },
+            onRender: function() {},
             onShow: function(argument) {
                 if (this.graphData && _.isEmpty(this.graphData.links)) {
                     this.noRelationship();
                 } else {
                     this.createGraph(this.graphData);
+                    this.createTable();
                 }
             },
             noRelationship: function() {
@@ -105,6 +114,16 @@ define(['require',
                     d3.selectAll('circle').attr("stroke", "none");
                     this.$('.relationship-details').removeClass('open');
                 }
+            },
+            toggleBoxPanel: function(options) {
+                var el = options && options.el,
+                    nodeDetailToggler = options && options.nodeDetailToggler,
+                    currentTarget = options.currentTarget;
+                this.$el.find('.show-box-panel').removeClass('show-box-panel');
+                if (el && el.addClass) {
+                    el.addClass('show-box-panel');
+                }
+                this.$('circle.node-detail-highlight').removeClass("node-detail-highlight");
             },
             searchNode: function(e) {
                 var $el = $(e.currentTarget);
@@ -307,16 +326,9 @@ define(['require',
                     })
                     .on('click', function(d) {
                         if (d3.event.defaultPrevented) return; // ignore drag
-                        that.toggleInformationSlider({ open: true, obj: d });
+                        that.toggleBoxPanel({ el: that.$('.relationship-node-details') });
                         that.ui.searchNode.data({ obj: d });
-                        d3.selectAll('circle').attr("stroke", "none");
-                        d3.select('circle[typename="' + d.name + '"]').attr("stroke", function(d) {
-                            if (d && d.value && d.value.guid == that.guid) {
-                                return "#316132";
-                            } else {
-                                return activeEntityColor;
-                            }
-                        });
+                        $(this).find('circle').addClass("node-detail-highlight");
                         that.updateRelationshipDetails({ obj: d });
 
                     }).call(force.drag);
@@ -443,8 +455,26 @@ define(['require',
                 function dragstart(d) {
                     d3.select(this).classed("fixed", d.fixed = true);
                 }
-            }
+            },
+            createTable: function() {
+                this.entityModel = new VEntity({});
+                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.relationshipAttributes, attributeDefs: this.attributeDefs });
+                this.ui.relationshipDetailValue.html(table);
+            },
+            relationshipViewToggle: function(checked) {
+                if (checked) {
+                    this.ui.relationshipDetailTable.show();
+                    this.ui.relationshipSVG.hide();
+                    this.ui.zoomControl.hide();
+                    this.$el.addClass('auto-height');
+                } else {
+                    this.ui.relationshipDetailTable.hide();
+                    this.ui.relationshipSVG.show();
+                    this.ui.zoomControl.show();
+                    this.$el.removeClass('auto-height');
+                }
 
+            }
         });
     return RelationshipLayoutView;
 });

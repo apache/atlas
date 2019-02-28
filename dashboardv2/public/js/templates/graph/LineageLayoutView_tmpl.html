@@ -19,7 +19,7 @@
     <div class="box-panel filter-box">
         <div class="header clearfix">
             <h4>Filters</h4>
-            <span data-id="box-close" style="margin: 7px" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
+            <span data-id="box-close" class="btn btn-sm btn-close"><i class="fa fa-close"></i></span>
         </div>
         <div class="body">
             <div class="hideProcessContainer form-group text-left col-sm-12">
@@ -49,7 +49,7 @@
     <div class="box-panel search-box">
         <div class="header clearfix">
             <h4>Search</h4>
-            <span data-id="box-close" style="margin: 7px" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
+            <span data-id="box-close" class="btn btn-sm btn-close"><i class="fa fa-close"></i></span>
         </div>
         <div class="body">
             <div class="col-sm-12 no-padding">
@@ -67,7 +67,7 @@
     <div class="box-panel setting-box">
         <div class="header clearfix">
             <h4>Settings</h4>
-            <span data-id="box-close" style="margin: 7px" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
+            <span data-id="box-close" class="btn btn-sm btn-close"><i class="fa fa-close"></i></span>
         </div>
         <div class="body">
             <div class="showOnlyHoverPath form-group text-left col-sm-12">
@@ -106,6 +106,24 @@
             <button type="button" id="zoom_out" class="btn btn-action btn-gray btn-sm lineageZoomButton" title="Zoom Out" data-id="refreshBtn"> <i class="fa fa-search-minus"></i></button>
         </div>
     </div>
+    <div class="box-panel size-lg node-details slide-from-left lineage-node-detail">
+        <div class="header clearfix">
+            <h4><span data-id="typeName"></span></h4>
+            <span data-id="box-close" class="btn btn-sm btn-close lineage-node-detail-close"><i class="fa fa-close"></i></span>
+            <span data-id="box-close" class="btn btn-sm btn-close lineage-node-detail-close"><i class="fa fa-close"></i></span>
+        </div>
+        <div class="body">
+            <table class='table table-quickMenu'>
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody data-id="nodeDetailTable"></tbody>
+            </table>
+        </div>
+    </div>
     <div class="fontLoader">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
@@ -117,10 +135,4 @@
     </div>
     <!-- <svg width="100%" height="calc(100% - 28px)" preserveAspectRatio="xMidYMid meet" viewBox="0 0 854 330" enable-background="new 0 0 854 330" xml:space="preserve"></svg> -->
     <svg width="{{width}}" height="{{height}}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"></svg>
-    <div class="lineage-details node-details">
-        <span data-id="close" style="margin: 7px;position: absolute;right: 0" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
-        <h4 class="title"><span data-id="typeName"></span></h4>
-        <div class="col-md-12" data-id="entityList">
-        </div>
-    </div>
 </div>

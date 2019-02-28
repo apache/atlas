@@ -27,64 +27,10 @@
         fill: none;
         stroke-width: 1.5px;
     }
+}
 
-    .relationship-details {
-        position: absolute;
-        left: 0;
-        overflow: auto;
-        top: 0px;
-        max-height: 100%;
-        box-shadow: 4px 13px 14px -12px;
-        background: #e7e7e7;
-        transform: scaleX(0);
-        width: 240px;
-        transition: transform 0.3s ease-in;
-
-        &.open {
-            transform: scaleX(1);
-        }
-
-        .title {
-            background: black;
-            color: white;
-            padding: 10px 38px 10px 10px;
-            word-break: break-all;
-            margin-top: 0;
-        }
-
-        .close-details {
-            position: absolute;
-            top: 0;
-            color: white;
-            left: 0;
-            height: 21px;
-            width: 21px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .entity-list {
-            overflow: auto;
-            list-style-type: decimal;
-            list-style-position: outside;
-            padding-left: 15px;
-        }
-
-        ul>li {
-            word-wrap: break-word;
-            margin-bottom: 5px;
-            text-align: left;
-
-            &.deleted-relation {
-                a {
-                    color: #BB5838 !important;
-                }
-
-                .deleteBtn {
-                    padding: 2px 8px !important;
-                    margin: 5px 5px !important;
-                }
-            }
-        }
+.relationship-node-details {
+    &.box-panel {
+        top: 0;
     }
 }
