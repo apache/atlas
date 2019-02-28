@@ -15,24 +15,55 @@
  * limitations under the License.
 -->
 <!-- <div class="graph-toolbar clearfix"></div> -->
-<div class="white-bg no-padding relationship-box">
+<div class="graph-button-group form-group clearfix">
+    <div class="btn-group pull-left">
+        <span class="pull-left">Graph</span>
+        <label class="switch pull-left">
+            <input type="checkbox" class="switch-input" name="relationshipViewToggle" value="text">
+            <span class="switch-slider"></span>
+        </label>
+        <span class="pull-left">Table</span>
+    </div>
+    <div class="btn-group pull-right" data-id="zoomControl">
+        <button type="button" id="zoom_in" class="btn btn-action btn-gray btn-sm lineageZoomButton" title="Zoom In" data-id="refreshBtn"> <i class="fa fa-search-plus"></i></button>
+        <button type="button" id="zoom_out" class="btn btn-action btn-gray btn-sm lineageZoomButton" title="Zoom Out" data-id="refreshBtn"> <i class="fa fa-search-minus"></i></button>
+    </div>
+</div>
+<div class="white-bg no-padding relationship-box" data-id='relationshipSVG'>
     <div class="fontLoader">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <div class="graph-button-group pull-right">
-        <div class="btn-group">
-            <button type="button" id="zoom_in" class="btn btn-action btn-gray btn-sm lineageZoomButton" title="Zoom In" data-id="refreshBtn"> <i class="fa fa-search-plus"></i></button>
-            <button type="button" id="zoom_out" class="btn btn-action btn-gray btn-sm lineageZoomButton" title="Zoom Out" data-id="refreshBtn"> <i class="fa fa-search-minus"></i></button>
+    <svg width="100%" height="100%" viewBox="0 0 854 330" enable-background="new 0 0 854 330" xml:space="preserve"></svg>
+     <div class="box-panel size-lg slide-from-left relationship-node-details">
+        <div class="header clearfix">
+            <h4><span data-id="typeName"></span></h4>
+            <span data-id="box-close" class="btn btn-sm btn-close"><i class="fa fa-close"></i></span>
+        </div>
+        <div class="body">
+            <div class="col-md-12">
+            <input data-id="searchNode" class="form-control form-group" placeholder="Search Entities" />
+            <ul data-id="entityList" class="entity-list"></ul>
+        </div>
         </div>
     </div>
-    <svg width="100%" height="100%" viewBox="0 0 854 330" enable-background="new 0 0 854 330" xml:space="preserve"></svg>
-    <div class="relationship-details">
+    <!-- <div class="relationship-details">
         <span data-id="close" style="margin: 7px;position: absolute;right: 0" class="btn btn-action btn-sm fltr-togler"><i class="fa fa-close"></i></span>
-        <!-- <div data-id="close" class="close-details"><i class="fa fa-times"></i></div> -->
         <h4 class="title"><span data-id="typeName"></span></h4>
         <div class="col-md-12">
             <input data-id="searchNode" class="form-control form-group" placeholder="Search Entities" />
             <ul data-id="entityList" class="entity-list"></ul>
         </div>
-    </div>
+    </div> -->
+</div>
+<div>
+    <table class="table table-quickMenu" data-id="relationshipDetailTable" style="display: none;">
+        <thead>
+            <tr>
+                <th>Key</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody data-id="relationshipDetailValue">
+        </tbody>
+    </table>
 </div>
