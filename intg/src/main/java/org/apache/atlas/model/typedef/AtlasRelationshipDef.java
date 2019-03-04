@@ -19,6 +19,7 @@ package org.apache.atlas.model.typedef;
 
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -116,6 +117,7 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
     };
 
     private RelationshipCategory    relationshipCategory;
+    private String                  relationshipLabel;
     private PropagateTags           propagateTags;
     private AtlasRelationshipEndDef endDef1;
     private AtlasRelationshipEndDef endDef2;
@@ -193,9 +195,22 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         super(TypeCategory.RELATIONSHIP, name, description, typeVersion, attributeDefs, null);
 
         setRelationshipCategory(relationshipCategory);
+        setRelationshipLabel(getDefaultRelationshipLabel());
         setPropagateTags(propagatetags);
         setEndDef1(endDef1);
         setEndDef2(endDef2);
+    }
+
+    public AtlasRelationshipDef(AtlasRelationshipDef other) throws AtlasBaseException {
+        super(other);
+
+        if (other != null) {
+            setRelationshipCategory(other.getRelationshipCategory());
+            setRelationshipLabel(other.getRelationshipLabel());
+            setPropagateTags(other.getPropagateTags());
+            setEndDef1(other.getEndDef1());
+            setEndDef2(other.getEndDef2());
+        }
     }
 
     public void setRelationshipCategory(RelationshipCategory relationshipCategory) {
@@ -204,6 +219,14 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
 
     public RelationshipCategory getRelationshipCategory() {
         return this.relationshipCategory;
+    }
+
+    public void setRelationshipLabel(String relationshipLabel) {
+        this.relationshipLabel = relationshipLabel;
+    }
+
+    public String getRelationshipLabel() {
+        return relationshipLabel != null ? relationshipLabel : ("r:" + super.getName());
     }
 
     public void setPropagateTags(PropagateTags propagateTags) {
@@ -230,18 +253,13 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         return this.endDef2;
     }
 
-    public String getRelationshipLabel() { return "r:" + super.getName(); }
+    @JsonIgnore
+    private String getDefaultRelationshipLabel() {
+        String name = super.getName();
 
-    public AtlasRelationshipDef(AtlasRelationshipDef other) throws AtlasBaseException {
-        super(other);
-
-        if (other != null) {
-            setRelationshipCategory(other.getRelationshipCategory());
-            setPropagateTags(other.getPropagateTags());
-            setEndDef1(other.getEndDef1());
-            setEndDef2(other.getEndDef2());
-        }
+        return name != null ? ("r:" + name) : null;
     }
+
     @Override
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -252,6 +270,8 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         super.toString(sb);
         sb.append(',');
         sb.append(this.relationshipCategory);
+        sb.append(',');
+        sb.append(this.relationshipLabel);
         sb.append(',');
         sb.append(this.propagateTags);
         sb.append(',');
@@ -284,6 +304,8 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         AtlasRelationshipDef that = (AtlasRelationshipDef) o;
         if (!Objects.equals(relationshipCategory, that.getRelationshipCategory()))
             return false;
+        if (!Objects.equals(relationshipLabel, that.getRelationshipLabel()))
+            return false;
         if (!Objects.equals(propagateTags, that.getPropagateTags()))
             return false;
         if (!Objects.equals(endDef1, that.getEndDef1()))
@@ -293,7 +315,7 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), relationshipCategory, propagateTags, endDef1, endDef2);
+        return Objects.hash(super.hashCode(), relationshipCategory, relationshipLabel, propagateTags, endDef1, endDef2);
     }
 
     @Override

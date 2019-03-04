@@ -56,6 +56,7 @@ public class RequestContext {
     private int         attemptCount = 1;
     private boolean     isImportInProgress = false;
     private boolean     isInNotificationProcessing = false;
+    private boolean     isInTypePatching           = false;
 
 
     private RequestContext() {
@@ -171,6 +172,14 @@ public class RequestContext {
 
     public void setInNotificationProcessing(boolean inNotificationProcessing) {
         isInNotificationProcessing = inNotificationProcessing;
+    }
+
+    public boolean isInTypePatching() {
+        return isInTypePatching;
+    }
+
+    public void setInTypePatching(boolean inTypePatching) {
+        isInTypePatching = inTypePatching;
     }
 
 

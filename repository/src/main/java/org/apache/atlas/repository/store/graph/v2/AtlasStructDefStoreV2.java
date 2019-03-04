@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -385,11 +386,33 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
         // delete attributes that are not present in updated structDef
         if (CollectionUtils.isNotEmpty(currAttrNames)) {
+            List<String> removedAttributes = null;
+
             for (String currAttrName : currAttrNames) {
                 if (!attrNames.contains(currAttrName)) {
-                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_DELETION_NOT_SUPPORTED,
-                            structDef.getName(), currAttrName);
+                    if (RequestContext.get().isInTypePatching()) {
+                        String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, currAttrName);
+
+                        AtlasGraphUtilsV2.setProperty(vertex, propertyKey, null);
+
+                        if (removedAttributes == null) {
+                            removedAttributes = new ArrayList<>();
+                        }
+
+                        removedAttributes.add(currAttrName);
+
+                        LOG.warn("REMOVED ATTRIBUTE: {}.{}", structDef.getName(), currAttrName);
+                    } else {
+                        throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_DELETION_NOT_SUPPORTED,
+                                structDef.getName(), currAttrName);
+                    }
                 }
+            }
+
+            if (removedAttributes != null) {
+                currAttrNames.removeAll(removedAttributes);
+
+                vertex.setListProperty(encodedStructDefPropertyKey, currAttrNames);
             }
         }
 
