@@ -43,6 +43,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * RelationshipDef store in v1 format.
@@ -432,7 +433,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
         AtlasRelationshipEndDef existingEnd1 = existingRelationshipDef.getEndDef1();
         AtlasRelationshipEndDef newEnd1      = newRelationshipDef.getEndDef1();
 
-        if ( !newEnd1.equals(existingEnd1) ) {
+        if ( !isValidUpdate(existingEnd1, newEnd1) ) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END1_UPDATE,
                                          newRelationshipDef.getName(), newEnd1.toString(), existingEnd1.toString());
         }
@@ -440,7 +441,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
         AtlasRelationshipEndDef existingEnd2 = existingRelationshipDef.getEndDef2();
         AtlasRelationshipEndDef newEnd2      = newRelationshipDef.getEndDef2();
 
-        if ( !newEnd2.equals(existingEnd2) ) {
+        if ( !isValidUpdate(existingEnd2, newEnd2) ) {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END2_UPDATE,
                                          newRelationshipDef.getName(), newEnd2.toString(), existingEnd2.toString());
         }
@@ -503,6 +504,14 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
         }
 
         return ret;
+    }
+
+    private static boolean isValidUpdate(AtlasRelationshipEndDef currentDef, AtlasRelationshipEndDef updatedDef) {
+        // permit updates to description and isLegacyAttribute (ref type-patch REMOVE_LEGACY_ATTRIBUTES)
+        return Objects.equals(currentDef.getType(), updatedDef.getType()) &&
+                Objects.equals(currentDef.getName(), updatedDef.getName()) &&
+                Objects.equals(currentDef.getIsContainer(), updatedDef.getIsContainer()) &&
+                Objects.equals(currentDef.getCardinality(), updatedDef.getCardinality());
     }
 
 }

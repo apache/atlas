@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizerFactory;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
@@ -34,10 +35,13 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
@@ -59,6 +63,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +78,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefStoreInitializer.class);
     public static final String PATCHES_FOLDER_NAME = "patches";
+    public static final String RELATIONSHIP_LABEL  = "relationshipLabel";
 
     private final AtlasTypeDefStore atlasTypeDefStore;
     private final AtlasTypeRegistry atlasTypeRegistry;
@@ -406,6 +412,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             PatchHandler[] patchHandlers = new PatchHandler[] {
                     new AddAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry),
                     new UpdateAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry),
+                    new RemoveLegacyAttributesPatchHandler(atlasTypeDefStore, atlasTypeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(atlasTypeDefStore, atlasTypeRegistry),
                     new SetServiceTypePatchHandler(atlasTypeDefStore, atlasTypeRegistry)
             };
@@ -697,6 +704,88 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 }
 
                 structDef.addAttribute(attributeToUpdate);
+            }
+        }
+    }
+
+    class RemoveLegacyAttributesPatchHandler extends PatchHandler {
+        public RemoveLegacyAttributesPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] { "REMOVE_LEGACY_ATTRIBUTES" });
+        }
+
+        @Override
+        public void applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String           typeName = patch.getTypeName();
+            AtlasBaseTypeDef typeDef  = typeRegistry.getTypeDefByName(typeName);
+
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+
+            if (isPatchApplicable(patch, typeDef)) {
+                if (typeDef.getClass().equals(AtlasRelationshipDef.class)) {
+                    AtlasRelationshipDef    relationshipDef = (AtlasRelationshipDef) typeDef;
+                    AtlasRelationshipEndDef end1Def         = relationshipDef.getEndDef1();
+                    AtlasRelationshipEndDef end2Def         = relationshipDef.getEndDef2();
+                    AtlasEntityType         end1Type        = typeRegistry.getEntityTypeByName(end1Def.getType());
+                    AtlasEntityType         end2Type        = typeRegistry.getEntityTypeByName(end2Def.getType());
+
+                    String newRelationshipLabel = null;
+
+                    if (patch.getParams() != null) {
+                        Object val = patch.getParams().get(RELATIONSHIP_LABEL);
+
+                        if (val != null) {
+                            newRelationshipLabel = val.toString();
+                        }
+                    }
+
+                    if (StringUtils.isEmpty(newRelationshipLabel)) {
+                        if (end1Def.getIsLegacyAttribute()) {
+                            if (!end2Def.getIsLegacyAttribute()) {
+                                AtlasAttribute legacyAttribute = end1Type.getAttribute(end1Def.getName());
+
+                                newRelationshipLabel = "__" + legacyAttribute.getQualifiedName();
+                            } else { // if both ends are legacy attributes, RELATIONSHIP_LABEL should be specified in the patch
+                                throw new AtlasBaseException(AtlasErrorCode.PATCH_MISSING_RELATIONSHIP_LABEL, patch.getAction(), typeName);
+                            }
+                        } else if (end2Def.getIsLegacyAttribute()) {
+                            AtlasAttribute legacyAttribute = end2Type.getAttribute(end2Def.getName());
+
+                            newRelationshipLabel = "__" + legacyAttribute.getQualifiedName();
+                        } else {
+                            newRelationshipLabel = relationshipDef.getRelationshipLabel();
+                        }
+                    }
+
+                    AtlasRelationshipDef updatedDef        = new AtlasRelationshipDef(relationshipDef);
+                    AtlasEntityDef       updatedEntityDef1 = new AtlasEntityDef(end1Type.getEntityDef());
+                    AtlasEntityDef       updatedEntityDef2 = new AtlasEntityDef(end2Type.getEntityDef());
+
+                    updatedDef.setRelationshipLabel(newRelationshipLabel);
+                    updatedDef.getEndDef1().setIsLegacyAttribute(false);
+                    updatedDef.getEndDef2().setIsLegacyAttribute(false);
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    updatedEntityDef1.removeAttribute(end1Def.getName());
+                    updatedEntityDef2.removeAttribute(end2Def.getName());
+
+                    AtlasTypesDef typesDef = new AtlasTypesDef();
+
+                    typesDef.setEntityDefs(Arrays.asList(updatedEntityDef1, updatedEntityDef2));
+                    typesDef.setRelationshipDefs(Collections.singletonList(updatedDef));
+
+                    try {
+                        RequestContext.get().setInTypePatching(true); // to allow removal of attributes
+
+                        typeDefStore.updateTypesDef(typesDef);
+                    } finally {
+                        RequestContext.get().setInTypePatching(false);
+                    }
+                }
+            } else {
+                LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
+                         patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
             }
         }
     }
