@@ -271,12 +271,13 @@ define(['require',
             },
             getNestedSuperTypes: function(options) {
                 var entityDef = options.entityDef;
-                return Utils.getNestedSuperTypes({ data: entityDef.toJSON(), collection: this.entityDefCollection })
+                return Utils.getNestedSuperTypes({ data: entityDef, collection: this.entityDefCollection })
             },
             getEntityDef: function(typeName) {
                 var entityDef = null;
                 if (typeName) {
                     entityDef = this.entityDefCollection.fullCollection.find({ name: typeName });
+                    entityDef = entityDef ? entityDef.toJSON() : entityDef;
                 }
                 return entityDef;
             },
@@ -289,7 +290,7 @@ define(['require',
                     serviceType = null;
                 if (typeName) {
                     if (entityDef) {
-                        serviceType = entityDef.get("serviceType") || null;
+                        serviceType = entityDef.serviceType || null;
                     }
                 }
                 return serviceType;
@@ -836,11 +837,39 @@ define(['require',
             },
             updateRelationshipDetails: function(options) {
                 var that = this,
-                    data = that.guidEntityMap[options.guid],
-                    typeName = data.typeName || options.guid;
+                    guid = options.guid,
+                    initialData = that.guidEntityMap[guid],
+                    typeName = initialData.typeName || guid,
+                    attributeDefs = that.g._nodes[guid] && that.g._nodes[guid].entityDef ? that.g._nodes[guid].entityDef.attributeDefs : null;
                 this.$("[data-id='typeName']").text(typeName);
                 this.entityModel = new VEntity({});
-                this.ui.nodeDetailTable.html(CommonViewFunction.propertyTable({ scope: this, valueObject: data, attributeDefs: that.attributeDefs }));
+                var config = {
+                    guid: 'guid',
+                    typeName: 'typeName',
+                    name: 'name',
+                    qualifiedName: 'qualifiedName',
+                    owner: 'owner',
+                    createTime: 'createTime',
+                    status: 'status',
+                    classificationNames: 'classifications',
+                    meanings: 'term'
+                };
+                var data = {};
+                _.each(config, function(valKey, key) {
+                    var val = initialData[key];
+                    if (_.isUndefined(val) && initialData.attributes[key]) {
+                        val = initialData.attributes[key];
+                    }
+                    if (val) {
+                        data[valKey] = val;
+                    }
+                });
+                this.ui.nodeDetailTable.html(CommonViewFunction.propertyTable({
+                    "scope": this,
+                    "valueObject": data,
+                    "attributeDefs": attributeDefs,
+                    "sortBy": false
+                }));
             }
         });
     return LineageLayoutView;

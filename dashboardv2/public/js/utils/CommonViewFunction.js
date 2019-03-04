@@ -73,6 +73,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
     };
     CommonViewFunction.propertyTable = function(options) {
         var scope = options.scope,
+            sortBy = options.sortBy,
             valueObject = options.valueObject,
             extractJSON = options.extractJSON,
             isTable = _.isUndefined(options.isTable) ? true : options.isTable,
@@ -215,7 +216,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
                 return subLink;
             }
-        _.sortBy(_.keys(valueObject)).map(function(key) {
+        var valueObjectKeysList = _.keys(valueObject);
+        if (_.isUndefined(sortBy) || sortBy == true) {
+            valueObjectKeysList = _.sortBy(valueObjectKeysList);
+        }
+        valueObjectKeysList.map(function(key) {
+
             key = _.escape(key);
             if (key == "profileData") {
                 return;
