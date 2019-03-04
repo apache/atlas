@@ -412,3 +412,11 @@ span#zoom_in {
         opacity: 1 !important;
     }
 }
+
+.lineage-node-detail {
+    .table-quickMenu {
+        td {
+            word-break: break-all;
+        }
+    }
+}
