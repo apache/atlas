@@ -450,13 +450,17 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
     public static void setVertexPropertiesFromRelationshipDef(AtlasRelationshipDef relationshipDef, AtlasVertex vertex) {
         vertex.setProperty(Constants.RELATIONSHIPTYPE_END1_KEY, AtlasType.toJson(relationshipDef.getEndDef1()));
         vertex.setProperty(Constants.RELATIONSHIPTYPE_END2_KEY, AtlasType.toJson(relationshipDef.getEndDef2()));
+
         // default the relationship category to association if it has not been specified.
         String relationshipCategory = RelationshipCategory.ASSOCIATION.name();
         if (relationshipDef.getRelationshipCategory()!=null) {
             relationshipCategory =relationshipDef.getRelationshipCategory().name();
         }
+
         // Update RelationshipCategory
         vertex.setProperty(Constants.RELATIONSHIPTYPE_CATEGORY_KEY, relationshipCategory);
+
+        vertex.setProperty(Constants.RELATIONSHIPTYPE_LABEL_KEY, relationshipDef.getRelationshipLabel());
 
         if (relationshipDef.getPropagateTags() == null) {
             vertex.setProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, AtlasRelationshipDef.PropagateTags.NONE.name());
@@ -472,8 +476,9 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
             String name         = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
             String description  = vertex.getProperty(Constants.TYPEDESCRIPTION_PROPERTY_KEY, String.class);
             String version      = vertex.getProperty(Constants.TYPEVERSION_PROPERTY_KEY, String.class);
-            String end1Str = vertex.getProperty(Constants.RELATIONSHIPTYPE_END1_KEY, String.class);
-            String end2Str = vertex.getProperty(Constants.RELATIONSHIPTYPE_END2_KEY, String.class);
+            String label        = vertex.getProperty(Constants.RELATIONSHIPTYPE_LABEL_KEY, String.class);
+            String end1Str      = vertex.getProperty(Constants.RELATIONSHIPTYPE_END1_KEY, String.class);
+            String end2Str      = vertex.getProperty(Constants.RELATIONSHIPTYPE_END2_KEY, String.class);
             String relationStr  = vertex.getProperty(Constants.RELATIONSHIPTYPE_CATEGORY_KEY, String.class);
             String propagateStr = vertex.getProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.class);
 
@@ -498,6 +503,8 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
             }
 
             ret = new AtlasRelationshipDef(name, description, version, relationshipCategory,  propagateTags, endDef1, endDef2);
+
+            ret.setRelationshipLabel(label);
 
             // add in the attributes
             AtlasStructDefStoreV2.toStructDef(vertex, ret, typeDefStore);
