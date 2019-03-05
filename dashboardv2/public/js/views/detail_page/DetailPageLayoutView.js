@@ -247,7 +247,7 @@ define(['require',
                         if (schemaOptions && schemaOptions.hasOwnProperty('schemaElementsAttribute') && schemaOptions.schemaElementsAttribute !== "") {
                             this.$('.schemaTable').show();
                             this.renderSchemaLayoutView(_.extend({}, obj, {
-                                attribute: collectionJSON.attributes[schemaOptions.schemaElementsAttribute]
+                                attribute: collectionJSON.attributes[schemaOptions.schemaElementsAttribute] || collectionJSON.relationshipAttributes[schemaOptions.schemaElementsAttribute]
                             }));
                         } else if (this.value && this.value.tabActive == "schema") {
                             Utils.setUrl({

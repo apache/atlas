@@ -153,9 +153,9 @@ define(['require',
                                 if (that.pervOld.length === 0) {
                                     options.previous.attr('disabled', true);
                                 }
-                                that.renderTableLayoutView();
                             }
                         }
+                        that.renderTableLayoutView();
                         that.$('.fontLoader').hide();
                         that.$('.tableOverlay').hide();
                         that.$('.auditTable').show(); // Only for first time table show because we never hide after first render.
