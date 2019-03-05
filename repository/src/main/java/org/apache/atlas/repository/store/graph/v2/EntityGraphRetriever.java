@@ -100,8 +100,8 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 public class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
 
-    private static final String TERM_RELATION_NAME = "AtlasGlossarySemanticAssignment";
     private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "AtlasGlossaryTerm.name";
+    public  static final String TERM_RELATION_NAME              = "AtlasGlossarySemanticAssignment";
 
     public static final String NAME           = "name";
     public static final String DISPLAY_NAME   = "displayName";
@@ -655,7 +655,7 @@ public class EntityGraphRetriever {
     private Object mapVertexToAttribute(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo) throws AtlasBaseException {
         Object    ret                = null;
         AtlasType attrType           = attribute.getAttributeType();
-        String    edgeLabel          = EDGE_LABEL_PREFIX + attribute.getQualifiedName();
+        String    edgeLabel          = attribute.getRelationshipEdgeLabel();
         boolean   isOwnedAttribute   = attribute.isOwnedRef();
         AtlasRelationshipEdgeDirection edgeDirection = attribute.getRelationshipEdgeDirection();
 
@@ -997,30 +997,32 @@ public class EntityGraphRetriever {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, entity.getTypeName());
         }
 
-        for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
-            Object attrValue = mapVertexToRelationshipAttribute(entityVertex, entityType, attribute);
+        for (String attributeName : entityType.getRelationshipAttributes().keySet()) {
+            Object attrValue = mapVertexToRelationshipAttribute(entityVertex, entityType, attributeName);
 
-            entity.setRelationshipAttribute(attribute.getName(), attrValue);
+            entity.setRelationshipAttribute(attributeName, attrValue);
         }
     }
 
-    private Object mapVertexToRelationshipAttribute(AtlasVertex entityVertex, AtlasEntityType entityType, AtlasAttribute attribute) throws AtlasBaseException {
-        Object               ret             = null;
-        AtlasRelationshipDef relationshipDef = graphHelper.getRelationshipDef(entityVertex, entityType, attribute.getName());
+    private Object mapVertexToRelationshipAttribute(AtlasVertex entityVertex, AtlasEntityType entityType, String attributeName) throws AtlasBaseException {
+        Object                ret                  = null;
+        String                relationshipTypeName = graphHelper.getRelationshipTypeName(entityVertex, entityType, attributeName);
+        AtlasRelationshipType relationshipType     = relationshipTypeName != null ? typeRegistry.getRelationshipTypeByName(relationshipTypeName) : null;
 
-        if (relationshipDef == null) {
+        if (relationshipType == null) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID, "relationshipDef is null");
         }
 
+        AtlasRelationshipDef    relationshipDef = relationshipType.getRelationshipDef();
         AtlasRelationshipEndDef endDef1         = relationshipDef.getEndDef1();
         AtlasRelationshipEndDef endDef2         = relationshipDef.getEndDef2();
         AtlasEntityType         endDef1Type     = typeRegistry.getEntityTypeByName(endDef1.getType());
         AtlasEntityType         endDef2Type     = typeRegistry.getEntityTypeByName(endDef2.getType());
         AtlasRelationshipEndDef attributeEndDef = null;
 
-        if (endDef1Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef1.getName(), attribute.getName())) {
+        if (endDef1Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef1.getName(), attributeName)) {
             attributeEndDef = endDef1;
-        } else if (endDef2Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef2.getName(), attribute.getName())) {
+        } else if (endDef2Type.isTypeOrSuperTypeOf(entityType.getTypeName()) && StringUtils.equals(endDef2.getName(), attributeName)) {
             attributeEndDef = endDef2;
         }
 
@@ -1030,12 +1032,12 @@ public class EntityGraphRetriever {
 
         switch (attributeEndDef.getCardinality()) {
             case SINGLE:
-                ret = mapRelatedVertexToObjectId(entityVertex, attribute);
+                ret = mapRelatedVertexToObjectId(entityVertex, entityType.getRelationshipAttribute(attributeName, relationshipTypeName));
                 break;
 
             case LIST:
             case SET:
-                ret = mapRelationshipArrayAttribute(entityVertex, attribute);
+                ret = mapRelationshipArrayAttribute(entityVertex, entityType.getRelationshipAttribute(attributeName, relationshipTypeName));
                 break;
         }
 

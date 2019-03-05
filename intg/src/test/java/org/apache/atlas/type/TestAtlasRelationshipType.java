@@ -140,7 +140,7 @@ public class TestAtlasRelationshipType {
 
     @Test(dependsOnMethods = "createTypesAndRelationships")
     public void testRelationshipAttributes() throws Exception {
-        Map<String, AtlasAttribute> employeeRelationAttrs = getRelationAttrsForType(EMPLOYEE_TYPE);
+        Map<String, Map<String, AtlasAttribute>> employeeRelationAttrs = getRelationAttrsForType(EMPLOYEE_TYPE);
 
         Assert.assertNotNull(employeeRelationAttrs);
         Assert.assertEquals(employeeRelationAttrs.size(), 2);
@@ -148,28 +148,28 @@ public class TestAtlasRelationshipType {
         Assert.assertTrue(employeeRelationAttrs.containsKey("department"));
         Assert.assertTrue(employeeRelationAttrs.containsKey("address"));
 
-        AtlasAttribute deptAttr = employeeRelationAttrs.get("department");
+        AtlasAttribute deptAttr = employeeRelationAttrs.get("department").values().iterator().next();
         Assert.assertEquals(deptAttr.getTypeName(), DEPARTMENT_TYPE);
 
-        AtlasAttribute addrAttr = employeeRelationAttrs.get("address");
+        AtlasAttribute addrAttr = employeeRelationAttrs.get("address").values().iterator().next();
         Assert.assertEquals(addrAttr.getTypeName(), ADDRESS_TYPE);
 
-        Map<String, AtlasAttribute> deptRelationAttrs = getRelationAttrsForType(DEPARTMENT_TYPE);
+        Map<String, Map<String, AtlasAttribute>> deptRelationAttrs = getRelationAttrsForType(DEPARTMENT_TYPE);
 
         Assert.assertNotNull(deptRelationAttrs);
         Assert.assertEquals(deptRelationAttrs.size(), 1);
         Assert.assertTrue(deptRelationAttrs.containsKey("employees"));
 
-        AtlasAttribute employeesAttr = deptRelationAttrs.get("employees");
+        AtlasAttribute employeesAttr = deptRelationAttrs.get("employees").values().iterator().next();
         Assert.assertEquals(employeesAttr.getTypeName(),AtlasBaseTypeDef.getArrayTypeName(EMPLOYEE_TYPE));
 
-        Map<String, AtlasAttribute> addressRelationAttrs = getRelationAttrsForType(ADDRESS_TYPE);
+        Map<String, Map<String, AtlasAttribute>> addressRelationAttrs = getRelationAttrsForType(ADDRESS_TYPE);
 
         Assert.assertNotNull(addressRelationAttrs);
         Assert.assertEquals(addressRelationAttrs.size(), 1);
         Assert.assertTrue(addressRelationAttrs.containsKey("employees"));
 
-        AtlasAttribute employeesAttr1 = addressRelationAttrs.get("employees");
+        AtlasAttribute employeesAttr1 = addressRelationAttrs.get("employees").values().iterator().next();
         Assert.assertEquals(employeesAttr1.getTypeName(),AtlasBaseTypeDef.getArrayTypeName(EMPLOYEE_TYPE));
     }
 
@@ -182,8 +182,8 @@ public class TestAtlasRelationshipType {
 
         createType(employeePhoneRelationDef);
 
-        Map<String, AtlasAttribute> employeeRelationshipAttrs = getRelationAttrsForType(EMPLOYEE_TYPE);
-        Map<String, AtlasAttribute> employeeAttrs             = getAttrsForType(EMPLOYEE_TYPE);
+        Map<String, Map<String, AtlasAttribute>> employeeRelationshipAttrs = getRelationAttrsForType(EMPLOYEE_TYPE);
+        Map<String, AtlasAttribute>              employeeAttrs             = getAttrsForType(EMPLOYEE_TYPE);
 
         // validate if phone_no exists in both relationAttributes and attributes
         Assert.assertTrue(employeeRelationshipAttrs.containsKey("phone_no"));
@@ -245,7 +245,7 @@ public class TestAtlasRelationshipType {
         return typeName + " description";
     }
 
-    private Map<String, AtlasAttribute> getRelationAttrsForType(String typeName) {
+    private Map<String, Map<String, AtlasAttribute>> getRelationAttrsForType(String typeName) {
         return typeRegistry.getEntityTypeByName(typeName).getRelationshipAttributes();
     }
 

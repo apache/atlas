@@ -81,7 +81,6 @@ import static org.apache.atlas.model.TypeCategory.MAP;
 import static org.apache.atlas.model.TypeCategory.OBJECT_ID_TYPE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.*;
 
 @Component
@@ -539,7 +538,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         if (attribute != null) {
             if (isRelationshipAttribute(attribute)) {
-                relation = EDGE_LABEL_PREFIX + attribute.getQualifiedName();
+                relation = attribute.getRelationshipEdgeLabel();
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_ATTRIBUTE, relation, attribute.getTypeName());
             }

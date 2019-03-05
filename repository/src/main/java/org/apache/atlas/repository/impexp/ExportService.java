@@ -620,7 +620,7 @@ public class ExportService {
         } else if (type instanceof AtlasEnumType) {
             addEnumType((AtlasEnumType)type, context);
         } else if (type instanceof AtlasRelationshipType) {
-            addRelationshipType((AtlasRelationshipType)type, context);
+            addRelationshipType(type.getTypeName(), context);
         }
     }
 
@@ -667,13 +667,17 @@ public class ExportService {
         }
     }
 
-    private void addRelationshipType(AtlasRelationshipType relationshipType, ExportContext context) {
-        if (!context.relationshipTypes.contains(relationshipType.getTypeName())) {
-            context.relationshipTypes.add(relationshipType.getTypeName());
+    private void addRelationshipType(String relationshipTypeName, ExportContext context) {
+        if (!context.relationshipTypes.contains(relationshipTypeName)) {
+            AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
 
-            addAttributeTypes(relationshipType, context);
-            addEntityType(relationshipType.getEnd1Type(), context);
-            addEntityType(relationshipType.getEnd2Type(), context);
+            if (relationshipType != null) {
+                context.relationshipTypes.add(relationshipTypeName);
+
+                addAttributeTypes(relationshipType, context);
+                addEntityType(relationshipType.getEnd1Type(), context);
+                addEntityType(relationshipType.getEnd2Type(), context);
+            }
         }
     }
 
@@ -684,8 +688,8 @@ public class ExportService {
     }
 
     private void addRelationshipTypes(AtlasEntityType entityType, ExportContext context) {
-        for (List<AtlasRelationshipType> relationshipTypes : entityType.getRelationshipAttributesType().values()) {
-            for (AtlasRelationshipType relationshipType : relationshipTypes) {
+        for (Map.Entry<String, Map<String, AtlasAttribute>> entry : entityType.getRelationshipAttributes().entrySet()) {
+            for (String relationshipType : entry.getValue().keySet()) {
                 addRelationshipType(relationshipType, context);
             }
         }

@@ -123,9 +123,9 @@ public class AtlasRelationshipType extends AtlasStructType {
             relationshipLabel = getLegacyEdgeLabel(end2Type, endDef2.getName());
         }
 
-        addRelationshipAttributeToEndType(endDef1, end1Type, end2Type.getTypeName(), typeRegistry, relationshipLabel, relationshipDef.getRelationshipCategory());
+        addRelationshipAttributeToEndType(endDef1, end1Type, end2Type.getTypeName(), typeRegistry, relationshipLabel);
 
-        addRelationshipAttributeToEndType(endDef2, end2Type, end1Type.getTypeName(), typeRegistry, relationshipLabel, relationshipDef.getRelationshipCategory());
+        addRelationshipAttributeToEndType(endDef2, end2Type, end1Type.getTypeName(), typeRegistry, relationshipLabel);
 
         // add relationship edge direction information
         addRelationshipEdgeDirection();
@@ -138,12 +138,12 @@ public class AtlasRelationshipType extends AtlasStructType {
         if (StringUtils.equals(endDef1.getType(), endDef2.getType()) &&
                 StringUtils.equals(endDef1.getName(), endDef2.getName())) {
 
-            AtlasAttribute endAttribute = end1Type.getRelationshipAttribute(endDef1.getName());
+            AtlasAttribute endAttribute = end1Type.getRelationshipAttribute(endDef1.getName(), relationshipDef.getName());
 
             endAttribute.setRelationshipEdgeDirection(BOTH);
         } else {
-            AtlasAttribute end1Attribute = end1Type.getRelationshipAttribute(endDef1.getName());
-            AtlasAttribute end2Attribute = end2Type.getRelationshipAttribute(endDef2.getName());
+            AtlasAttribute end1Attribute = end1Type.getRelationshipAttribute(endDef1.getName(), relationshipDef.getName());
+            AtlasAttribute end2Attribute = end2Type.getRelationshipAttribute(endDef2.getName(), relationshipDef.getName());
 
             //default relationship edge direction is end1 (out) -> end2 (in)
             AtlasRelationshipEdgeDirection end1Direction = OUT;
@@ -296,7 +296,7 @@ public class AtlasRelationshipType extends AtlasStructType {
     }
 
     private void addRelationshipAttributeToEndType(AtlasRelationshipEndDef endDef, AtlasEntityType entityType, String attrTypeName,
-                                                   AtlasTypeRegistry typeRegistry, String relationshipLabel, RelationshipCategory relationshipCategory) throws AtlasBaseException {
+                                                   AtlasTypeRegistry typeRegistry, String relationshipLabel) throws AtlasBaseException {
 
         String attrName = (endDef != null) ? endDef.getName() : null;
 
@@ -321,7 +321,7 @@ public class AtlasRelationshipType extends AtlasStructType {
                 attrTypeName = AtlasBaseTypeDef.getArrayTypeName(attrTypeName);
             }
 
-            if (relationshipCategory == RelationshipCategory.COMPOSITION) {
+            if (relationshipDef.getRelationshipCategory() == RelationshipCategory.COMPOSITION) {
                 if (endDef.getIsContainer()) {
                     constraint = new AtlasConstraintDef(CONSTRAINT_TYPE_OWNED_REF);
                 } else {
@@ -344,9 +344,7 @@ public class AtlasRelationshipType extends AtlasStructType {
             attribute.setRelationshipEdgeLabel(relationshipLabel);
         }
 
-        entityType.addRelationshipAttribute(attrName, attribute);
-
-        entityType.addRelationshipAttributeType(attrName, this);
+        entityType.addRelationshipAttribute(attrName, attribute, this);
     }
 
     private String getLegacyEdgeLabel(AtlasEntityType entityType, String attributeName) {

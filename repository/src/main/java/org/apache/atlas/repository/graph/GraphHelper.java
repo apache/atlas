@@ -31,7 +31,6 @@ import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasArrayType;
@@ -51,7 +50,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.util.AttributeValueMap;
@@ -1058,7 +1056,7 @@ public final class GraphHelper {
     }
 
     public static String getEdgeLabel(AtlasAttribute aInfo) throws AtlasException {
-        return GraphHelper.EDGE_LABEL_PREFIX + aInfo.getQualifiedName();
+        return aInfo.getRelationshipEdgeLabel();
     }
 
     public static Id getIdFromVertex(String dataTypeName, AtlasVertex vertex) {
@@ -1774,40 +1772,27 @@ public final class GraphHelper {
      * resolve by comparing all incoming edges typename with relationDefs name returned for an attribute
      * to pick the right relationshipDef name
      */
-    public String getRelationshipDefName(AtlasVertex entityVertex, AtlasEntityType entityType, String attributeName) {
-        AtlasRelationshipDef relationshipDef = getRelationshipDef(entityVertex, entityType, attributeName);
+    public String getRelationshipTypeName(AtlasVertex entityVertex, AtlasEntityType entityType, String attributeName) {
+        String             ret               = null;
+        Collection<String> relationshipTypes = entityType.getAttributeRelationshipTypes(attributeName);
 
-        return (relationshipDef != null) ? relationshipDef.getName() : null;
-    }
-
-    public AtlasRelationshipDef getRelationshipDef(AtlasVertex entityVertex, AtlasEntityType entityType, String attributeName) {
-        List<AtlasRelationshipType> relationshipTypes = entityType.getRelationshipAttributeType(attributeName);
-        AtlasRelationshipDef        ret               = null;
-
-        if (relationshipTypes.size() > 1) {
+        if (CollectionUtils.isNotEmpty(relationshipTypes)) {
             Iterator<AtlasEdge> iter = entityVertex.getEdges(AtlasEdgeDirection.IN).iterator();
 
             while (iter.hasNext() && ret == null) {
                 String edgeTypeName = AtlasGraphUtilsV2.getTypeName(iter.next());
 
-                for (AtlasRelationshipType relationType : relationshipTypes) {
-                    AtlasRelationshipDef relationshipDef = relationType.getRelationshipDef();
+                if (relationshipTypes.contains(edgeTypeName)) {
+                    ret = edgeTypeName;
 
-                    if (StringUtils.equals(edgeTypeName, relationshipDef.getName())) {
-                        ret = relationshipDef;
-
-                        break;
-                    }
+                    break;
                 }
             }
 
             if (ret == null) {
-                ret = relationshipTypes.get(0).getRelationshipDef();
+                //relationshipTypes will have at least one relationshipDef
+                ret = relationshipTypes.iterator().next();
             }
-
-        } else {
-            //relationshipTypes will have at least one relationshipDef
-            ret = relationshipTypes.get(0).getRelationshipDef();
         }
 
         return ret;

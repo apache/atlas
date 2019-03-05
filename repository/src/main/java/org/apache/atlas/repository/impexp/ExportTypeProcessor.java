@@ -36,7 +36,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.Map;
 
 class ExportTypeProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ExportTypeProcessor.class);
@@ -110,7 +110,7 @@ class ExportTypeProcessor {
         } else if (type instanceof AtlasEnumType) {
             addEnumType((AtlasEnumType)type, context);
         } else if (type instanceof AtlasRelationshipType) {
-            addRelationshipType((AtlasRelationshipType)type, context);
+            addRelationshipType(type.getTypeName(), context);
         }
     }
 
@@ -157,13 +157,17 @@ class ExportTypeProcessor {
         }
     }
 
-    private void addRelationshipType(AtlasRelationshipType relationshipType, ExportService.ExportContext context) {
-        if (!context.relationshipTypes.contains(relationshipType.getTypeName())) {
-            context.relationshipTypes.add(relationshipType.getTypeName());
+    private void addRelationshipType(String relationshipTypeName, ExportService.ExportContext context) {
+        if (!context.relationshipTypes.contains(relationshipTypeName)) {
+            AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
 
-            addAttributeTypes(relationshipType, context);
-            addEntityType(relationshipType.getEnd1Type(), context);
-            addEntityType(relationshipType.getEnd2Type(), context);
+            if (relationshipType != null) {
+                context.relationshipTypes.add(relationshipTypeName);
+
+                addAttributeTypes(relationshipType, context);
+                addEntityType(relationshipType.getEnd1Type(), context);
+                addEntityType(relationshipType.getEnd2Type(), context);
+            }
         }
     }
 
@@ -174,8 +178,8 @@ class ExportTypeProcessor {
     }
 
     private void addRelationshipTypes(AtlasEntityType entityType, ExportService.ExportContext context) {
-        for (List<AtlasRelationshipType> relationshipTypes : entityType.getRelationshipAttributesType().values()) {
-            for (AtlasRelationshipType relationshipType : relationshipTypes) {
+        for (Map.Entry<String, Map<String, AtlasStructType.AtlasAttribute>> entry : entityType.getRelationshipAttributes().entrySet()) {
+            for (String relationshipType : entry.getValue().keySet()) {
                 addRelationshipType(relationshipType, context);
             }
         }

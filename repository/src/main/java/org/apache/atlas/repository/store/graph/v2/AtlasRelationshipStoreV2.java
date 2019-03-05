@@ -810,12 +810,11 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (fromVertexTypes.contains(endDef1.getType()) && toVertexTypes.contains(endDef2.getType())) {
             String attributeName = endDef1.getName();
 
-            attribute = relationshipType.getEnd1Type().getRelationshipAttribute(attributeName);
-
+            attribute = relationshipType.getEnd1Type().getRelationshipAttribute(attributeName, relationshipTypeName);
         } else if (fromVertexTypes.contains(endDef2.getType()) && toVertexTypes.contains(endDef1.getType())) {
             String attributeName = endDef2.getName();
 
-            attribute = relationshipType.getEnd2Type().getRelationshipAttribute(attributeName);
+            attribute = relationshipType.getEnd2Type().getRelationshipAttribute(attributeName, relationshipTypeName);
         }
 
         if (attribute != null) {
