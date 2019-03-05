@@ -89,7 +89,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                         return numberFormat(val);
                     }
                 } else {
-                    return val;
+                    return val || "N/A";
                 }
             },
             fetchInputOutputValue = function(id, defEntity) {
@@ -252,16 +252,16 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             }
             if (isTable) {
                 var htmlTag = '<div class="scroll-y">' + getValue(val) + '</div>';
-                if (_.isObject(valueObject[key])) {
+                if (_.isObject(valueObject[key]) && !_.isEmpty(valueObject[key])) {
                     var matchedLinkString = val.match(/href|value-loader\w*/g),
                         matchedJson = val.match(/json-value|json-string\w*/g),
-                        isMatchLinkStringIsSingle = matchedLinkString && matchedLinkString.length == 1,
+                        isMatchLinkStringIsSingle = matchedLinkString && matchedLinkString.length <= 5,
                         isMatchJSONStringIsSingle = matchedJson && matchedJson.length == 1,
                         expandCollapseButton = "";
                     if ((matchedJson && !isMatchJSONStringIsSingle) || (matchedLinkString && !isMatchLinkStringIsSingle)) {
-                        var expandCollapseButton = '<button class="expand-collapse-button"><i class="fa"></i></button>'
+                        expandCollapseButton = '<button class="expand-collapse-button"><i class="fa"></i></button>';
+                        htmlTag = '<pre class="shrink code-block ' + (isMatchJSONStringIsSingle ? 'fixed-height' : '') + '">' + expandCollapseButton + '<code>' + val + '</code></pre>';
                     }
-                    var htmlTag = '<pre class="shrink code-block ' + (isMatchJSONStringIsSingle ? 'fixed-height' : '') + '">' + expandCollapseButton + '<code>' + val + '</code></pre>';
                 }
                 table += '<tr><td>' + _.escape(key) + '</td><td>' + htmlTag + '</td></tr>';
             } else {
