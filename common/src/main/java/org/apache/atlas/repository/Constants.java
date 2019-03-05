@@ -70,6 +70,7 @@ public final class Constants {
     public static final String RELATIONSHIPTYPE_END1_KEY                               = "endDef1";
     public static final String RELATIONSHIPTYPE_END2_KEY                               = "endDef2";
     public static final String RELATIONSHIPTYPE_CATEGORY_KEY                           = "relationshipCategory";
+    public static final String RELATIONSHIPTYPE_LABEL_KEY                              = "relationshipLabel";
     public static final String RELATIONSHIPTYPE_TAG_PROPAGATION_KEY                    = encodePropertyKey("tagPropagation");
     public static final String RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY = encodePropertyKey("blockedPropagatedClassifications");
 
