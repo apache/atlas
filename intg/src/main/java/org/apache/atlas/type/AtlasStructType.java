@@ -852,7 +852,7 @@ public class AtlasStructType extends AtlasType {
         }
 
         private String getRelationshipEdgeLabel(String relationshipLabel) {
-            return (relationshipLabel == null) ? getEdgeLabel(vertexPropertyName) : relationshipLabel;
+            return (relationshipLabel == null) ? getEdgeLabel(qualifiedName) : relationshipLabel;
         }
 
         private static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {

@@ -41,6 +41,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
@@ -760,13 +761,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
 
                     if (!hasUpdates && MapUtils.isNotEmpty(entity.getRelationshipAttributes())) { // check of relationsship-attribute value change
-                        for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
-                            if (!entity.getRelationshipAttributes().containsKey(attribute.getName())) {  // if value is not provided, current value will not be updated
+                        for (String attributeName : entityType.getRelationshipAttributes().keySet()) {
+                            if (!entity.getRelationshipAttributes().containsKey(attributeName)) {  // if value is not provided, current value will not be updated
                                 continue;
                             }
 
-                            Object newVal  = entity.getRelationshipAttribute(attribute.getName());
-                            Object currVal = entityRetriever.getEntityAttribute(vertex, attribute);
+                            Object         newVal           = entity.getRelationshipAttribute(attributeName);
+                            String         relationshipType = AtlasEntityUtil.getRelationshipType(newVal);
+                            AtlasAttribute attribute        = entityType.getRelationshipAttribute(attributeName, relationshipType);
+                            Object         currVal          = entityRetriever.getEntityAttribute(vertex, attribute);
 
                             if (!attribute.getAttributeType().areEqualValues(currVal, newVal, context.getGuidAssignments())) {
                                 hasUpdates = true;

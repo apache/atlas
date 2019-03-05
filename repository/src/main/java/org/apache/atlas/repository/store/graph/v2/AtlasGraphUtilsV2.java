@@ -126,10 +126,6 @@ public class AtlasGraphUtilsV2 {
         return GraphHelper.EDGE_LABEL_PREFIX + property;
     }
 
-    public static String getAttributeEdgeLabel(AtlasStructType fromType, String attributeName) throws AtlasBaseException {
-        return getEdgeLabel(getQualifiedAttributePropertyKey(fromType, attributeName));
-    }
-
     public static String getQualifiedAttributePropertyKey(AtlasStructType fromType, String attributeName) throws AtlasBaseException {
         switch (fromType.getTypeCategory()) {
          case ENTITY:

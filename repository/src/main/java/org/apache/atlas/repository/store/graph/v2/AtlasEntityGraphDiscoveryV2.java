@@ -36,6 +36,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -330,16 +331,23 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     }
 
     private void visitRelationships(AtlasEntityType entityType, AtlasEntity entity, List<String> visitedAttributes) throws AtlasBaseException {
-        for (AtlasAttribute attribute : entityType.getRelationshipAttributes().values()) {
-            String attrName = attribute.getName();
+        for (String attrName : entityType.getRelationshipAttributes().keySet()) {
 
             // if attribute is not in 'relationshipAttributes', try 'attributes'
             if (entity.hasRelationshipAttribute(attrName)) {
-                visitAttribute(attribute.getAttributeType(), entity.getRelationshipAttribute(attrName));
+                Object         attrVal          = entity.getRelationshipAttribute(attrName);
+                String         relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
+                AtlasAttribute attribute        = entityType.getRelationshipAttribute(attrName, relationshipType);
+
+                visitAttribute(attribute.getAttributeType(), attrVal);
 
                 visitedAttributes.add(attrName);
             } else if (entity.hasAttribute(attrName)) {
-                visitAttribute(attribute.getAttributeType(), entity.getAttribute(attrName));
+                Object         attrVal          = entity.getAttribute(attrName);
+                String         relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
+                AtlasAttribute attribute        = entityType.getRelationshipAttribute(attrName, relationshipType);
+
+                visitAttribute(attribute.getAttributeType(), attrVal);
 
                 visitedAttributes.add(attrName);
             }
