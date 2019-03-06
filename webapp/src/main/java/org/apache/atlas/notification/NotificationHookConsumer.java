@@ -792,7 +792,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             return;
         }
 
-        PreprocessorContext context = new PreprocessorContext(kafkaMsg, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache);
+        PreprocessorContext context = new PreprocessorContext(kafkaMsg, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache, rdbmsTypesRemoveOwnedRefAttrs);
 
         if (!hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty()) {
             ignoreOrPruneHiveTables(context);

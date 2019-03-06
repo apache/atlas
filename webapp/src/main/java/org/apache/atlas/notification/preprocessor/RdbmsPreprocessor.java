@@ -103,35 +103,35 @@ public class RdbmsPreprocessor {
 
         @Override
         public void preprocess(AtlasEntity entity, PreprocessorContext context) {
-            clearRefAttributes(entity, context);
+            if (context.getRdbmsTypesRemoveOwnedRefAttrs()) {
+                clearRefAttributesAndMove(entity, context);
 
-            Map<String, AtlasEntity> referredEntities = context.getReferredEntities();
+                Map<String, AtlasEntity> referredEntities = context.getReferredEntities();
 
-            if (MapUtils.isNotEmpty(referredEntities)) {
-                for (AtlasEntity referredEntity : referredEntities.values()) {
-                    if (entityTypesToMove.contains(referredEntity.getTypeName())) {
-                        clearRefAttributes(referredEntity, context);
-
-                        context.addToReferredEntitiesToMove(referredEntity.getGuid());
+                if (MapUtils.isNotEmpty(referredEntities)) {
+                    for (AtlasEntity referredEntity : referredEntities.values()) {
+                        if (entityTypesToMove.contains(referredEntity.getTypeName())) {
+                            clearRefAttributesAndMove(referredEntity, context);
+                        }
                     }
                 }
             }
         }
 
-        private void clearRefAttributes(AtlasEntity entity, PreprocessorContext context) {
+        private void clearRefAttributesAndMove(AtlasEntity entity, PreprocessorContext context) {
             switch (entity.getTypeName()) {
                 case TYPE_RDBMS_INSTANCE:
-                    entity.removeAttribute(ATTRIBUTE_DATABASES);
+                    context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_DATABASES);
                 break;
 
                 case TYPE_RDBMS_DB:
-                    entity.removeAttribute(ATTRIBUTE_TABLES);
+                    context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_TABLES);
                 break;
 
                 case TYPE_RDBMS_TABLE:
-                    entity.removeAttribute(ATTRIBUTE_COLUMNS);
-                    entity.removeAttribute(ATTRIBUTE_INDEXES);
-                    entity.removeAttribute(ATTRIBUTE_FOREIGN_KEYS);
+                    context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_COLUMNS);
+                    context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_INDEXES);
+                    context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_FOREIGN_KEYS);
                 break;
             }
         }

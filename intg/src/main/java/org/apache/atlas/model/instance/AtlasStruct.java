@@ -147,12 +147,10 @@ public class AtlasStruct implements Serializable {
         }
     }
 
-    public void removeAttribute(String name) {
+    public Object removeAttribute(String name) {
         Map<String, Object> a = this.attributes;
 
-        if (a != null && a.containsKey(name)) {
-            a.remove(name);
-        }
+        return a != null ? a.remove(name) : null;
     }
 
     public StringBuilder toString(StringBuilder sb) {
