@@ -18,14 +18,26 @@
 package org.apache.atlas.notification.preprocessor;
 
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class HivePreprocessor {
+    private static final Logger LOG = LoggerFactory.getLogger(HivePreprocessor.class);
+
+    private static final String RELATIONSHIP_TYPE_HIVE_TABLE_COLUMNS        = "hive_table_columns";
+    private static final String RELATIONSHIP_TYPE_HIVE_TABLE_PARTITION_KEYS = "hive_table_partitionKeys";
+
     static class HiveTablePreprocessor extends EntityPreprocessor {
         public HiveTablePreprocessor() {
             super(TYPE_HIVE_TABLE);
@@ -54,8 +66,63 @@ public class HivePreprocessor {
                     entity.setAttribute(ATTRIBUTE_SD, null);
                     entity.setAttribute(ATTRIBUTE_COLUMNS, null);
                     entity.setAttribute(ATTRIBUTE_PARTITION_KEYS, null);
+                } else if (context.getHiveTypesRemoveOwnedRefAttrs()) {
+                    context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_SD);
+
+                    removeColumnsAttributeAndRegisterToMove(entity, ATTRIBUTE_COLUMNS, RELATIONSHIP_TYPE_HIVE_TABLE_COLUMNS, context);
+                    removeColumnsAttributeAndRegisterToMove(entity, ATTRIBUTE_PARTITION_KEYS, RELATIONSHIP_TYPE_HIVE_TABLE_PARTITION_KEYS, context);
                 }
             }
+        }
+
+        private void removeColumnsAttributeAndRegisterToMove(AtlasEntity entity, String attrName, String relationshipType, PreprocessorContext context) {
+            Object attrVal = entity.getAttribute(attrName);
+
+            if (attrVal != null) {
+                Set<String> guids = new HashSet<>();
+
+                context.collectGuids(attrVal, guids);
+
+                for (String guid : guids) {
+                    AtlasEntity colEntity = context.getEntity(guid);
+
+                    if (colEntity != null) {
+                        Object attrTable = null;
+
+                        if (colEntity.hasRelationshipAttribute(ATTRIBUTE_TABLE)) {
+                            attrTable = colEntity.getRelationshipAttribute(ATTRIBUTE_TABLE);
+                        } else if (colEntity.hasAttribute(ATTRIBUTE_TABLE)) {
+                            attrTable = colEntity.getAttribute(ATTRIBUTE_TABLE);
+                        }
+
+                        attrTable = setRelationshipType(attrTable, relationshipType);
+
+                        if (attrTable != null) {
+                            colEntity.setRelationshipAttribute(ATTRIBUTE_TABLE, attrTable);
+                        }
+
+                        context.addToReferredEntitiesToMove(guid);
+                    }
+                }
+            }
+        }
+
+        private AtlasRelatedObjectId setRelationshipType(Object attr, String relationshipType) {
+            AtlasRelatedObjectId ret = null;
+
+            if (attr instanceof AtlasRelatedObjectId) {
+                ret = (AtlasRelatedObjectId) attr;
+            } else if (attr instanceof AtlasObjectId) {
+                ret = new AtlasRelatedObjectId((AtlasObjectId) attr);
+            } else if (attr instanceof Map) {
+                ret = new AtlasRelatedObjectId((Map) attr);
+            }
+
+            if (ret != null) {
+                ret.setRelationshipType(relationshipType);
+            }
+
+            return ret;
         }
     }
 

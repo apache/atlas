@@ -78,7 +78,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -86,6 +85,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+
 
 /**
  * Consumer of notifications from hooks e.g., hive hook etc.
@@ -123,6 +123,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN                 = "atlas.notification.consumer.preprocess.hive_table.ignore.pattern";
     public static final String CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN                  = "atlas.notification.consumer.preprocess.hive_table.prune.pattern";
     public static final String CONSUMER_PREPROCESS_HIVE_TABLE_CACHE_SIZE                     = "atlas.notification.consumer.preprocess.hive_table.cache.size";
+    public static final String CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS          = "atlas.notification.consumer.preprocess.hive_types.remove.ownedref.attrs";
     public static final String CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS         = "atlas.notification.consumer.preprocess.rdbms_types.remove.ownedref.attrs";
 
     public static final int SERVER_READY_WAIT_TIME_MS = 1000;
@@ -143,6 +144,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final List<Pattern>                 hiveTablesToIgnore = new ArrayList<>();
     private final List<Pattern>                 hiveTablesToPrune  = new ArrayList<>();
     private final Map<String, PreprocessAction> hiveTablesCache;
+    private final boolean                       hiveTypesRemoveOwnedRefAttrs;
     private final boolean                       rdbmsTypesRemoveOwnedRefAttrs;
     private final boolean                       preprocessEnabled;
 
@@ -172,7 +174,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         consumerRetryInterval = applicationProperties.getInt(CONSUMER_RETRY_INTERVAL, 500);
         minWaitDuration       = applicationProperties.getInt(CONSUMER_MIN_RETRY_INTERVAL, consumerRetryInterval); // 500 ms  by default
         maxWaitDuration       = applicationProperties.getInt(CONSUMER_MAX_RETRY_INTERVAL, minWaitDuration * 60);  //  30 sec by default
-        commitBatchSize       = applicationProperties.getInt(CONSUMER_COMMIT_BATCH_SIZE, 50);
+        commitBatchSize       = applicationProperties.getInt(CONSUMER_COMMIT_BATCH_SIZE, 0);
 
         skipHiveColumnLineageHive20633                = applicationProperties.getBoolean(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false);
         skipHiveColumnLineageHive20633InputsThreshold = applicationProperties.getInt(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
@@ -214,11 +216,16 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             hiveTablesCache = Collections.emptyMap();
         }
 
-        rdbmsTypesRemoveOwnedRefAttrs = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, true);
-        preprocessEnabled             = !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || skipHiveColumnLineageHive20633 || rdbmsTypesRemoveOwnedRefAttrs;
+        hiveTypesRemoveOwnedRefAttrs  = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, false);
+        rdbmsTypesRemoveOwnedRefAttrs = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, false);
+        preprocessEnabled             = !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || skipHiveColumnLineageHive20633 || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs;
 
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
+        LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, hiveTypesRemoveOwnedRefAttrs);
+        LOG.info("{}={}", CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, rdbmsTypesRemoveOwnedRefAttrs);
+        LOG.info("{}={}", CONSUMER_COMMIT_BATCH_SIZE, commitBatchSize);
+        LOG.info("{}={}", CONSUMER_DISABLED, consumerDisabled);
     }
 
     @Override
@@ -694,7 +701,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             List<AtlasEntity> entitiesList = entities.getEntities();
             AtlasEntityStream entityStream = new AtlasEntityStream(entities);
 
-            if (entitiesList.size() <= commitBatchSize) {
+            if (commitBatchSize <= 0 || entitiesList.size() <= commitBatchSize) {
                 atlasEntityStore.createOrUpdate(entityStream, isPartialUpdate);
             } else {
                 for (int fromIdx = 0; fromIdx < entitiesList.size(); fromIdx += commitBatchSize) {
@@ -792,10 +799,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             return;
         }
 
-        PreprocessorContext context = new PreprocessorContext(kafkaMsg, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache, rdbmsTypesRemoveOwnedRefAttrs);
+        PreprocessorContext context = new PreprocessorContext(kafkaMsg, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache, hiveTypesRemoveOwnedRefAttrs, rdbmsTypesRemoveOwnedRefAttrs);
 
-        if (!hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty()) {
-            ignoreOrPruneHiveTables(context);
+        if (!hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || hiveTypesRemoveOwnedRefAttrs) {
+            preprocessHiveTypes(context);
         }
 
         if (skipHiveColumnLineageHive20633) {
@@ -813,8 +820,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         List<AtlasEntity> entities = context.getEntities();
 
         if (entities != null) {
-            for (ListIterator<AtlasEntity> iter = entities.listIterator(); iter.hasNext(); ) {
-                AtlasEntity        entity       = iter.next();
+            for (int i = 0; i < entities.size(); i++) {
+                AtlasEntity        entity       = entities.get(i);
                 EntityPreprocessor preprocessor = EntityPreprocessor.getRdbmsPreprocessor(entity.getTypeName());
 
                 if (preprocessor != null) {
@@ -824,19 +831,19 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
     }
 
-    private void ignoreOrPruneHiveTables(PreprocessorContext context) {
+    private void preprocessHiveTypes(PreprocessorContext context) {
         List<AtlasEntity> entities = context.getEntities();
 
         if (entities != null) {
-            for (ListIterator<AtlasEntity> iter = entities.listIterator(); iter.hasNext(); ) {
-                AtlasEntity        entity       = iter.next();
+            for (int i = 0; i < entities.size(); i++) {
+                AtlasEntity        entity       = entities.get(i);
                 EntityPreprocessor preprocessor = EntityPreprocessor.getHivePreprocessor(entity.getTypeName());
 
                 if (preprocessor != null) {
                     preprocessor.preprocess(entity, context);
 
                     if (context.isIgnoredEntity(entity.getGuid())) {
-                        iter.remove();
+                        entities.remove(i--);
                     }
                 }
             }
@@ -877,8 +884,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             Set<String> lineageQNames      = new HashSet<>();
 
             // find if all hive_column_lineage entities have same number of inputs, which is likely to be caused by HIVE-20633 that results in incorrect lineage in some cases
-            for (ListIterator<AtlasEntity> iter = entities.listIterator(); iter.hasNext(); ) {
-                AtlasEntity entity = iter.next();
+            for (int i = 0; i < entities.size(); i++) {
+                AtlasEntity entity = entities.get(i);
 
                 if (StringUtils.equals(entity.getTypeName(), TYPE_HIVE_COLUMN_LINEAGE)) {
                     final Object qName = entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
@@ -887,7 +894,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         final String qualifiedName = qName.toString();
 
                         if (lineageQNames.contains(qualifiedName)) {
-                            iter.remove();
+                            entities.remove(i--);
 
                             LOG.warn("removed duplicate hive_column_lineage entity: qualifiedName={}. topic-offset={}, partition={}", qualifiedName, lineageInputsCount, context.getKafkaMessageOffset(), context.getKafkaPartition());
 
@@ -914,11 +921,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             float avgInputsCount = lineageCount > 0 ? (((float) lineageInputsCount) / lineageCount) : 0;
 
             if (avgInputsCount > skipHiveColumnLineageHive20633InputsThreshold) {
-                for (ListIterator<AtlasEntity> iter = entities.listIterator(); iter.hasNext(); ) {
-                    AtlasEntity entity = iter.next();
+                for (int i = 0; i < entities.size(); i++) {
+                    AtlasEntity entity = entities.get(i);
 
                     if (StringUtils.equals(entity.getTypeName(), TYPE_HIVE_COLUMN_LINEAGE)) {
-                        iter.remove();
+                        entities.remove(i--);
 
                         numRemovedEntities++;
                     }

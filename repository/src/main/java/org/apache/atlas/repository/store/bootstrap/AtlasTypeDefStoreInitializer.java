@@ -78,9 +78,10 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @Service
 public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefStoreInitializer.class);
-    public static final String PATCHES_FOLDER_NAME   = "patches";
-    public static final String RELATIONSHIP_LABEL    = "relationshipLabel";
-    public static final String RELATIONSHIP_CATEGORY = "relationshipCategory";
+    public static final String PATCHES_FOLDER_NAME    = "patches";
+    public static final String RELATIONSHIP_LABEL     = "relationshipLabel";
+    public static final String RELATIONSHIP_CATEGORY  = "relationshipCategory";
+    public static final String RELATIONSHIP_SWAP_ENDS = "swapEnds";
 
     private final AtlasTypeDefStore atlasTypeDefStore;
     private final AtlasTypeRegistry atlasTypeRegistry;
@@ -414,7 +415,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             PatchHandler[] patchHandlers = new PatchHandler[] {
                     new AddAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry),
                     new UpdateAttributePatchHandler(atlasTypeDefStore, atlasTypeRegistry),
-                    new RemoveLegacyAttributesPatchHandler(atlasTypeDefStore, atlasTypeRegistry),
+                    new RemoveLegacyRefAttributesPatchHandler(atlasTypeDefStore, atlasTypeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(atlasTypeDefStore, atlasTypeRegistry),
                     new SetServiceTypePatchHandler(atlasTypeDefStore, atlasTypeRegistry)
             };
@@ -710,9 +711,9 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
     }
 
-    class RemoveLegacyAttributesPatchHandler extends PatchHandler {
-        public RemoveLegacyAttributesPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
-            super(typeDefStore, typeRegistry, new String[] { "REMOVE_LEGACY_ATTRIBUTES" });
+    class RemoveLegacyRefAttributesPatchHandler extends PatchHandler {
+        public RemoveLegacyRefAttributesPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] { "REMOVE_LEGACY_REF_ATTRIBUTES" });
         }
 
         @Override
@@ -734,10 +735,12 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
                     String               newRelationshipLabel    = null;
                     RelationshipCategory newRelationshipCategory = null;
+                    boolean              swapEnds                = false;
 
                     if (patch.getParams() != null) {
                         Object relLabel    = patch.getParams().get(RELATIONSHIP_LABEL);
                         Object relCategory = patch.getParams().get(RELATIONSHIP_CATEGORY);
+                        Object relSwapEnds = patch.getParams().get(RELATIONSHIP_SWAP_ENDS);
 
                         if (relLabel != null) {
                             newRelationshipLabel = relLabel.toString();
@@ -745,6 +748,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
                         if (relCategory != null) {
                             newRelationshipCategory = RelationshipCategory.valueOf(relCategory.toString());
+                        }
+
+                        if (relSwapEnds != null) {
+                            swapEnds = Boolean.valueOf(relSwapEnds.toString());
                         }
                     }
 
@@ -766,9 +773,19 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         }
                     }
 
-                    AtlasRelationshipDef updatedDef        = new AtlasRelationshipDef(relationshipDef);
-                    AtlasEntityDef       updatedEntityDef1 = new AtlasEntityDef(end1Type.getEntityDef());
-                    AtlasEntityDef       updatedEntityDef2 = new AtlasEntityDef(end2Type.getEntityDef());
+                    AtlasRelationshipDef updatedDef = new AtlasRelationshipDef(relationshipDef);
+
+                    if (swapEnds) {
+                        AtlasRelationshipEndDef tmp = updatedDef.getEndDef1();
+
+                        updatedDef.setEndDef1(updatedDef.getEndDef2());
+                        updatedDef.setEndDef2(tmp);
+                    }
+
+                    end1Def  = updatedDef.getEndDef1();
+                    end2Def  = updatedDef.getEndDef2();
+                    end1Type = typeRegistry.getEntityTypeByName(end1Def.getType());
+                    end2Type = typeRegistry.getEntityTypeByName(end2Def.getType());
 
                     updatedDef.setRelationshipLabel(newRelationshipLabel);
 
@@ -776,9 +793,12 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         updatedDef.setRelationshipCategory(newRelationshipCategory);
                     }
 
-                    updatedDef.getEndDef1().setIsLegacyAttribute(false);
-                    updatedDef.getEndDef2().setIsLegacyAttribute(false);
+                    end1Def.setIsLegacyAttribute(false);
+                    end2Def.setIsLegacyAttribute(false);
                     updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    AtlasEntityDef updatedEntityDef1 = new AtlasEntityDef(end1Type.getEntityDef());
+                    AtlasEntityDef updatedEntityDef2 = new AtlasEntityDef(end2Type.getEntityDef());
 
                     updatedEntityDef1.removeAttribute(end1Def.getName());
                     updatedEntityDef2.removeAttribute(end2Def.getName());

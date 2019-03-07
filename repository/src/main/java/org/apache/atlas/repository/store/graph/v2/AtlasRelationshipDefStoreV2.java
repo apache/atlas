@@ -436,19 +436,25 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
         }
 
         AtlasRelationshipEndDef existingEnd1 = existingRelationshipDef.getEndDef1();
+        AtlasRelationshipEndDef existingEnd2 = existingRelationshipDef.getEndDef2();
         AtlasRelationshipEndDef newEnd1      = newRelationshipDef.getEndDef1();
+        AtlasRelationshipEndDef newEnd2      = newRelationshipDef.getEndDef2();
+        boolean                 endsSwaped   = false;
 
         if ( !isValidUpdate(existingEnd1, newEnd1) ) {
-            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END1_UPDATE,
-                                         newRelationshipDef.getName(), newEnd1.toString(), existingEnd1.toString());
+            if (RequestContext.get().isInTypePatching() && isValidUpdate(existingEnd1, newEnd2)) { // allow swap of ends during type-patch
+                endsSwaped = true;
+            } else {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END1_UPDATE,
+                                             newRelationshipDef.getName(), newEnd1.toString(), existingEnd1.toString());
+            }
         }
 
-        AtlasRelationshipEndDef existingEnd2 = existingRelationshipDef.getEndDef2();
-        AtlasRelationshipEndDef newEnd2      = newRelationshipDef.getEndDef2();
+        AtlasRelationshipEndDef newEndToCompareWith = endsSwaped ? newEnd1 : newEnd2;
 
-        if ( !isValidUpdate(existingEnd2, newEnd2) ) {
+        if ( !isValidUpdate(existingEnd2, newEndToCompareWith) ) {
                 throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END2_UPDATE,
-                                         newRelationshipDef.getName(), newEnd2.toString(), existingEnd2.toString());
+                                             newRelationshipDef.getName(), newEndToCompareWith.toString(), existingEnd2.toString());
         }
     }
 
@@ -520,7 +526,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
     }
 
     private static boolean isValidUpdate(AtlasRelationshipEndDef currentDef, AtlasRelationshipEndDef updatedDef) {
-        // permit updates to description and isLegacyAttribute (ref type-patch REMOVE_LEGACY_ATTRIBUTES)
+        // permit updates to description and isLegacyAttribute (ref type-patch REMOVE_LEGACY_REF_ATTRIBUTES)
         return Objects.equals(currentDef.getType(), updatedDef.getType()) &&
                 Objects.equals(currentDef.getName(), updatedDef.getName()) &&
                 Objects.equals(currentDef.getIsContainer(), updatedDef.getIsContainer()) &&
