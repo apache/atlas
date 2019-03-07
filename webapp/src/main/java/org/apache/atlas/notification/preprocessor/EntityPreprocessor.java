@@ -48,6 +48,8 @@ public abstract class EntityPreprocessor {
     public static final String ATTRIBUTE_SD             = "sd";
     public static final String ATTRIBUTE_DB             = "db";
     public static final String ATTRIBUTE_DATABASES      = "databases";
+    public static final String ATTRIBUTE_QUERY          = "query";
+    public static final String ATTRIBUTE_TABLE          = "table";
     public static final String ATTRIBUTE_TABLES         = "tables";
     public static final String ATTRIBUTE_INDEXES        = "indexes";
     public static final String ATTRIBUTE_FOREIGN_KEYS   = "foreign_keys";
