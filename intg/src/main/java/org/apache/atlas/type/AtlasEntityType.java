@@ -182,8 +182,7 @@ public class AtlasEntityType extends AtlasStructType {
 
             // validate if RelationshipDefs is defined for all entityDefs
             if (attributeEntityType != null && !hasRelationshipAttribute(attributeName)) {
-                LOG.warn("No RelationshipDef defined between {} and {} on attribute: {}.{}", getTypeName(),
-                         attributeEntityType.getTypeName(), getTypeName(), attributeName);
+                typeRegistry.reportMissingRelationshipDef(getTypeName(), attributeEntityType.getTypeName(), attributeName);
             }
         }
 

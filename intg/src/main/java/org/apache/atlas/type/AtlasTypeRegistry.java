@@ -56,16 +56,20 @@ public class AtlasTypeRegistry {
 
     protected       RegistryData                   registryData;
     private   final TypeRegistryUpdateSynchronizer updateSynchronizer;
+    private   final Set<String>                    missingRelationshipDefs;
+
 
     public AtlasTypeRegistry() {
-        registryData       = new RegistryData();
-        updateSynchronizer = new TypeRegistryUpdateSynchronizer(this);
+        registryData            = new RegistryData();
+        updateSynchronizer      = new TypeRegistryUpdateSynchronizer(this);
+        missingRelationshipDefs = new HashSet<>();
     }
 
     // used only by AtlasTransientTypeRegistry
     protected AtlasTypeRegistry(AtlasTypeRegistry other) {
-        registryData       = new RegistryData();
-        updateSynchronizer = other.updateSynchronizer;
+        registryData            = new RegistryData();
+        updateSynchronizer      = other.updateSynchronizer;
+        missingRelationshipDefs = other.missingRelationshipDefs;
     }
 
     public Collection<String> getAllTypeNames() { return registryData.allTypes.getAllTypeNames(); }
@@ -224,6 +228,14 @@ public class AtlasTypeRegistry {
         updateSynchronizer.releaseTypeRegistryForUpdate(transientTypeRegistry, commitUpdates);
     }
 
+    public void reportMissingRelationshipDef(String atlasEntityType1, String atlasEntityType2, String attributeName) {
+        String key = atlasEntityType1 + "->" + atlasEntityType2 + ":" + attributeName;
+        if(!missingRelationshipDefs.contains(key)) {
+            LOG.warn("No RelationshipDef defined between {} and {} on attribute: {}.{}",
+                atlasEntityType1, atlasEntityType2, atlasEntityType1, attributeName);
+            missingRelationshipDefs.add(key);
+        }
+    }
 
     static class RegistryData {
         final TypeCache                                                       allTypes;
