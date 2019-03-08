@@ -1587,10 +1587,6 @@ public final class GraphHelper {
     public static Map<String, Object> getPrimitiveMap(AtlasVertex instanceVertex, String propertyName) {
         Map<String, Object> ret = instanceVertex.getProperty(AtlasGraphUtilsV2.encodePropertyKey(propertyName), Map.class);
 
-        if (ret == null) {
-            ret = new HashMap<>();
-        }
-
         return ret;
     }
 

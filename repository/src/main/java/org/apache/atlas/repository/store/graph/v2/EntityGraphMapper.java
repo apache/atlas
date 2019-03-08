@@ -947,52 +947,63 @@ public class EntityGraphMapper {
         boolean             isReference = isReference(mapType.getValueType());
         boolean             isSoftReference = ctx.getAttribute().getAttributeDef().isSoftReferenced();
 
-        if (MapUtils.isNotEmpty(newVal)) {
-            String propertyName = ctx.getVertexProperty();
+        boolean isNewValNull = newVal == null;
 
-            if (isReference) {
-                for (Map.Entry<Object, Object> entry : newVal.entrySet()) {
-                    String    key          = entry.getKey().toString();
-                    AtlasEdge existingEdge = isSoftReference ? null : getEdgeIfExists(mapType, currentMap, key);
+        if (isNewValNull) {
+            newVal = new HashMap<>();
+        }
 
-                    AttributeMutationContext mapCtx =  new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), attribute, entry.getValue(),
-                                                                                     propertyName, mapType.getValueType(), existingEdge);
-                    // Add/Update/Remove property value
-                    Object newEntry = mapCollectionElementsToVertex(mapCtx, context);
+        String propertyName = ctx.getVertexProperty();
 
-                    if (!isSoftReference && newEntry instanceof AtlasEdge) {
-                        AtlasEdge edge = (AtlasEdge) newEntry;
+        if (isReference) {
+            for (Map.Entry<Object, Object> entry : newVal.entrySet()) {
+                String    key          = entry.getKey().toString();
+                AtlasEdge existingEdge = isSoftReference ? null : getEdgeIfExists(mapType, currentMap, key);
 
-                        edge.setProperty(ATTRIBUTE_KEY_PROPERTY_KEY, key);
+                AttributeMutationContext mapCtx =  new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), attribute, entry.getValue(),
+                                                                                 propertyName, mapType.getValueType(), existingEdge);
+                // Add/Update/Remove property value
+                Object newEntry = mapCollectionElementsToVertex(mapCtx, context);
 
-                        // If value type indicates this attribute is a reference, and the attribute has an inverse reference attribute,
-                        // update the inverse reference value.
-                        AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
+                if (!isSoftReference && newEntry instanceof AtlasEdge) {
+                    AtlasEdge edge = (AtlasEdge) newEntry;
 
-                        if (inverseRefAttribute != null) {
-                            addInverseReference(context, inverseRefAttribute, edge, getRelationshipAttributes(ctx.getValue()));
-                        }
+                    edge.setProperty(ATTRIBUTE_KEY_PROPERTY_KEY, key);
 
-                        updateInConsistentOwnedMapVertices(ctx, mapType, newEntry);
+                    // If value type indicates this attribute is a reference, and the attribute has an inverse reference attribute,
+                    // update the inverse reference value.
+                    AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
 
-                        newMap.put(key, newEntry);
+                    if (inverseRefAttribute != null) {
+                        addInverseReference(context, inverseRefAttribute, edge, getRelationshipAttributes(ctx.getValue()));
                     }
 
-                    if (isSoftReference) {
-                        newMap.put(key, newEntry);
-                    }
+                    updateInConsistentOwnedMapVertices(ctx, mapType, newEntry);
+
+                    newMap.put(key, newEntry);
                 }
 
-                Map<String, Object> finalMap = removeUnusedMapEntries(attribute, ctx.getReferringVertex(), currentMap, newMap);
-                newMap.putAll(finalMap);
-            } else {
-                // primitive type map
-                ctx.getReferringVertex().setProperty(propertyName, new HashMap<>(newVal));
-
-                newVal.forEach((key, value) -> newMap.put(key.toString(), value));
+                if (isSoftReference) {
+                    newMap.put(key, newEntry);
+                }
             }
 
-            if (isSoftReference) {
+            Map<String, Object> finalMap = removeUnusedMapEntries(attribute, ctx.getReferringVertex(), currentMap, newMap);
+            newMap.putAll(finalMap);
+        } else {
+            // primitive type map
+            if (isNewValNull) {
+                ctx.getReferringVertex().setProperty(propertyName, null);
+            } else {
+                ctx.getReferringVertex().setProperty(propertyName, new HashMap<>(newVal));
+            }
+            newVal.forEach((key, value) -> newMap.put(key.toString(), value));
+        }
+
+        if (isSoftReference) {
+            if (isNewValNull) {
+                ctx.getReferringVertex().setProperty(propertyName,null);
+            } else {
                 ctx.getReferringVertex().setProperty(propertyName, new HashMap<>(newMap));
             }
         }
@@ -1019,6 +1030,7 @@ public class EntityGraphMapper {
         Cardinality    cardinality         = attribute.getAttributeDef().getCardinality();
         List<Object>   newElementsCreated  = new ArrayList<>();
         List<Object>   currentElements;
+        boolean isNewElementsNull          = newElements == null;
 
         if (isReference && !isSoftReference) {
             currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute);
@@ -1026,28 +1038,30 @@ public class EntityGraphMapper {
             currentElements = (List) getArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty());
         }
 
-        if (CollectionUtils.isNotEmpty(newElements)) {
-            if (cardinality == SET) {
-                newElements = (List) newElements.stream().distinct().collect(Collectors.toList());
+        if (isNewElementsNull) {
+            newElements = new ArrayList();
+        }
+
+        if (cardinality == SET) {
+            newElements = (List) newElements.stream().distinct().collect(Collectors.toList());
+        }
+
+        for (int index = 0; index < newElements.size(); index++) {
+            AtlasEdge               existingEdge = (isSoftReference) ? null : getEdgeAt(currentElements, index, elementType);
+            AttributeMutationContext arrCtx      = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index),
+                                                                                 ctx.getVertexProperty(), elementType, existingEdge);
+
+            Object newEntry = mapCollectionElementsToVertex(arrCtx, context);
+
+            if (isReference && newEntry != null && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
+                // Update the inverse reference value.
+                AtlasEdge newEdge = (AtlasEdge) newEntry;
+
+                addInverseReference(context, inverseRefAttribute, newEdge, getRelationshipAttributes(ctx.getValue()));
             }
 
-            for (int index = 0; index < newElements.size(); index++) {
-                AtlasEdge               existingEdge = (isSoftReference) ? null : getEdgeAt(currentElements, index, elementType);
-                AttributeMutationContext arrCtx      = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index),
-                                                                                     ctx.getVertexProperty(), elementType, existingEdge);
-
-                Object newEntry = mapCollectionElementsToVertex(arrCtx, context);
-
-                if (isReference && newEntry != null && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
-                    // Update the inverse reference value.
-                    AtlasEdge newEdge = (AtlasEdge) newEntry;
-
-                    addInverseReference(context, inverseRefAttribute, newEdge, getRelationshipAttributes(ctx.getValue()));
-                }
-
-                if(newEntry != null) {
-                    newElementsCreated.add(newEntry);
-                }
+            if(newEntry != null) {
+                newElementsCreated.add(newEntry);
             }
         }
 
@@ -1065,8 +1079,11 @@ public class EntityGraphMapper {
             }
         }
 
-        // for dereference on way out
-        setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), newElementsCreated);
+        if (isNewElementsNull) {
+            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), null);
+        } else {
+            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), newElementsCreated);
+        }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== mapArrayValue({})", ctx);

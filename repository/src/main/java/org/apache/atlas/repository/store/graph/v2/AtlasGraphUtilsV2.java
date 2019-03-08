@@ -228,12 +228,11 @@ public class AtlasGraphUtilsV2 {
 
         Object existingValue = element.getProperty(propertyName, Object.class);
 
-        if (value == null || (value instanceof Collection && ((Collection)value).isEmpty())) {
+        if (value == null) {
             if (existingValue != null) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Removing property {} from {}", propertyName, toString(element));
                 }
-
                 element.removeProperty(propertyName);
             }
         } else {
@@ -242,7 +241,7 @@ public class AtlasGraphUtilsV2 {
                     LOG.debug("Setting property {} in {}", propertyName, toString(element));
                 }
 
-                if ( value instanceof Date) {
+                if (value instanceof Date) {
                     Long encodedValue = ((Date) value).getTime();
                     element.setProperty(propertyName, encodedValue);
                 } else {

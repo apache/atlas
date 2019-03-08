@@ -38,6 +38,7 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -48,6 +49,7 @@ import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE;
 import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_MAP;
 import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR;
 import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR_DELETE;
+import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_WITH_SIMPLE_ATTR;
 import static org.apache.atlas.TestUtilsV2.NAME;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
@@ -66,7 +68,8 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
 
         // create typeDefs
         AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineTypeWithComplexCollectionAttributes(),
-                                                              TestUtilsV2.defineTypeWithMapAttributes() };
+                                                              TestUtilsV2.defineTypeWithMapAttributes(),
+                                                              TestUtilsV2.defineSimpleAttrType()};
         createTypesDef(testTypesDefs);
 
         // create entity
@@ -193,6 +196,51 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         attrEntity.setAttribute("mapAttr3", map3);
         attrEntity.setAttribute("mapAttr4", map4);
         attrEntity.setAttribute("mapAttr5", map5);
+    }
+
+    @Test
+    public void testArrayAttribute() throws Exception {
+        init();
+
+        AtlasEntityWithExtInfo simpleEntity  = TestUtilsV2.createSimpleAttrTypeEntity();
+        EntityMutationResponse response      = entityStore.createOrUpdate(new AtlasEntityStream(simpleEntity), false);
+        AtlasEntityHeader simpleEntityHeader = response.getFirstCreatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        AtlasEntity createdSimpleEntity      = getEntityFromStore(simpleEntityHeader);
+
+        validateEntity(simpleEntity, createdSimpleEntity);
+
+        createdSimpleEntity.setAttribute("stringAtrr", null);
+        createdSimpleEntity.setAttribute("mapOfStrings", Collections.emptyMap());
+        createdSimpleEntity.setAttribute("arrayOfStrings", Collections.emptyList());
+        EntityMutationResponse responseUpdated      = entityStore.createOrUpdate(new AtlasEntityStream(createdSimpleEntity), false);
+        AtlasEntityHeader simpleEntityUpdatedHeader = responseUpdated.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        AtlasEntity updatedSimpleEntity             = getEntityFromStore(simpleEntityUpdatedHeader);
+
+        assertNull(updatedSimpleEntity.getAttribute("stringAtrr"));
+        assertEquals(updatedSimpleEntity.getAttribute("mapOfStrings"), Collections.emptyMap());
+        assertEquals(updatedSimpleEntity.getAttribute("arrayOfStrings"), Collections.emptyList());
+
+        updatedSimpleEntity.setAttribute("stringAtrr", "");
+        updatedSimpleEntity.setAttribute("mapOfStrings", null);
+        updatedSimpleEntity.setAttribute("arrayOfStrings", null);
+        EntityMutationResponse responseUpdatedAgain      = entityStore.createOrUpdate(new AtlasEntityStream(updatedSimpleEntity), false);
+        AtlasEntityHeader simpleEntityUpdatedAgainHeader = responseUpdatedAgain.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        AtlasEntity updatedAgainSimpleEntity             = getEntityFromStore(simpleEntityUpdatedAgainHeader);
+
+        assertEquals(updatedAgainSimpleEntity.getAttribute("stringAtrr"), "");
+        assertNull(updatedAgainSimpleEntity.getAttribute("arrayOfStrings"));
+        assertNull(updatedAgainSimpleEntity.getAttribute("mapOfStrings"));
+
+        updatedAgainSimpleEntity.setAttribute("stringAtrr", "Dummy String Test 3");
+        updatedAgainSimpleEntity.setAttribute("mapOfStrings", Collections.singletonMap("key1", "val1"));
+        updatedAgainSimpleEntity.setAttribute("arrayOfStrings", Arrays.asList("DummyTest3", "DummyTest4"));
+        EntityMutationResponse updateRes   = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), false);
+        AtlasEntityHeader updateHeader = updateRes.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        AtlasEntity updateEntity = getEntityFromStore(updateHeader);
+
+        assertEquals(updateEntity.getAttribute("stringAtrr"), "Dummy String Test 3");
+        assertEquals(updateEntity.getAttribute("arrayOfStrings"), Arrays.asList("DummyTest3", "DummyTest4"));
+        assertEquals(updateEntity.getAttribute("mapOfStrings"), Collections.singletonMap("key1", "val1"));
     }
 
     @Test(dependsOnMethods = "testCreateComplexAttributeEntity")
