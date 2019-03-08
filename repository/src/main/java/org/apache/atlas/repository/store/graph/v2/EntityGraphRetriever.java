@@ -725,6 +725,10 @@ public class EntityGraphRetriever {
         List<AtlasObjectId> ret        = null;
         List                softRefVal = entityVertex.getListProperty(attribute.getVertexPropertyName(), List.class);
 
+        if (CollectionUtils.isEmpty(softRefVal)) {
+            return softRefVal;
+        }
+
         if (CollectionUtils.isNotEmpty(softRefVal)) {
             ret = new ArrayList<>();
 
@@ -822,7 +826,7 @@ public class EntityGraphRetriever {
         List<Object>   arrayElements    = getArrayElementsProperty(arrayElementType, entityVertex, attribute);
 
         if (CollectionUtils.isEmpty(arrayElements)) {
-            return null;
+            return arrayElements;
         }
 
         if (LOG.isDebugEnabled()) {

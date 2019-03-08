@@ -207,12 +207,15 @@ public class AtlasGraphUtilsV2 {
         Object existingValue = element.getProperty(propertyName, Object.class);
 
         if (value == null || (value instanceof Collection && ((Collection)value).isEmpty())) {
-            if (existingValue != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Removing property {} from {}", propertyName, toString(element));
+            if (value == null) {
+                if (existingValue != null) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Removing property {} from {}", propertyName, toString(element));
+                    }
+                    element.removeProperty(propertyName);
                 }
-
-                element.removeProperty(propertyName);
+            } else {
+                element.setProperty(propertyName, value);
             }
         } else {
             if (!value.equals(existingValue)) {

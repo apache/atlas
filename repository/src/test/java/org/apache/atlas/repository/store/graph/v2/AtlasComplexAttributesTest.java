@@ -38,6 +38,7 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -48,10 +49,13 @@ import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE;
 import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_MAP;
 import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR;
 import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR_DELETE;
+import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_WITH_NESTED_COLLECTION_ATTR;
 import static org.apache.atlas.TestUtilsV2.NAME;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertEquals;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
@@ -59,6 +63,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
     private AtlasEntityWithExtInfo complexCollectionAttrEntity;
     private AtlasEntityWithExtInfo complexCollectionAttrEntityForDelete;
     private AtlasEntityWithExtInfo mapAttributesEntity;
+    private AtlasEntityWithExtInfo nestedCollectionAttrEntity;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -66,13 +71,15 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
 
         // create typeDefs
         AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineTypeWithComplexCollectionAttributes(),
-                                                              TestUtilsV2.defineTypeWithMapAttributes() };
+                                                              TestUtilsV2.defineTypeWithMapAttributes(),
+                                                              TestUtilsV2.defineTypeWithNestedCollectionAttributes()};
         createTypesDef(testTypesDefs);
 
         // create entity
         complexCollectionAttrEntity          = TestUtilsV2.createComplexCollectionAttrEntity();
         complexCollectionAttrEntityForDelete = TestUtilsV2.createComplexCollectionAttrEntity();
         mapAttributesEntity                  = TestUtilsV2.createMapAttrEntity();
+        nestedCollectionAttrEntity           = TestUtilsV2.createNestedCollectionAttrEntity();
     }
 
     @Test
@@ -193,6 +200,39 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         attrEntity.setAttribute("mapAttr3", map3);
         attrEntity.setAttribute("mapAttr4", map4);
         attrEntity.setAttribute("mapAttr5", map5);
+    }
+
+    @Test
+    public void testEmptyArrayAttribute() throws Exception {
+        init();
+        AtlasEntity nestedEntity = nestedCollectionAttrEntity.getEntity();
+
+        // set the attribute - arrayOfArrayOfStrings of the nestedEntity to
+        // an empty list. Expected behavior is that retrieved entity will
+        // have the value of this field as an empty list instead of null.
+        nestedEntity.setAttribute("arrayOfArrayOfStrings", Collections.emptyList());
+        AtlasEntitiesWithExtInfo nestedEntitiesInfo = new AtlasEntitiesWithExtInfo(nestedEntity);
+
+        EntityMutationResponse response       = entityStore.createOrUpdate(new AtlasEntityStream(nestedEntitiesInfo), false);
+        AtlasEntityHeader updatedNestedEntity = response.getFirstCreatedEntityByTypeName(ENTITY_TYPE_WITH_NESTED_COLLECTION_ATTR);
+        validateEntity(nestedEntitiesInfo, getEntityFromStore(updatedNestedEntity));
+    }
+
+    @Test(dependsOnMethods = "testCreateComplexAttributeEntity")
+    public void testNullArrayAttribute() throws Exception {
+        init();
+
+        // set the attribute - listOfStructs of the complexEntity to null.
+        // Expected behavior is that the retrieved entity will
+        // not have the attribute of listOfStructs.
+        AtlasEntity complexEntity = getEntityFromStore(complexCollectionAttrEntity.getEntity().getGuid());
+        assertTrue(complexEntity.getAttributes().containsKey("listOfStructs"));
+
+        complexEntity.setAttribute("listOfStructs", null);
+        AtlasEntitiesWithExtInfo complexEntityInfo = new AtlasEntitiesWithExtInfo(complexEntity);
+        EntityMutationResponse responseUpdated     = entityStore.createOrUpdate(new AtlasEntityStream(complexEntityInfo), false);
+        AtlasEntityHeader updatedComplexEntity     = responseUpdated.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
+        assertFalse(updatedComplexEntity.getAttributes().containsKey("listOfStructs"));
     }
 
     @Test(dependsOnMethods = "testCreateComplexAttributeEntity")
