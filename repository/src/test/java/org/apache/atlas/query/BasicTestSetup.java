@@ -162,6 +162,9 @@ public abstract class BasicTestSetup {
                                                        column("weekDay", "int", "week Day"));
         entities.addAll(timeDimColumns);
 
+        sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
+        entities.add(sd);
+
         AtlasEntity timeDim = table("time_dim", "time dimension table", salesDB, sd, "John Doe", "External", timeDimColumns,
                                     "Dimension");
         entities.add(timeDim);
@@ -170,13 +173,22 @@ public abstract class BasicTestSetup {
                 database("Reporting", "reporting database", "Jane BI", "hdfs://host:8000/apps/warehouse/reporting");
         entities.add(reportingDB);
 
+        sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
+        entities.add(sd);
+
         AtlasEntity salesFactDaily =
                 table("sales_fact_daily_mv", "sales fact daily materialized view", reportingDB, sd, "Joe BI", "Managed",
                       salesFactColumns, "Metric");
         entities.add(salesFactDaily);
 
+        sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
+        entities.add(sd);
+
         AtlasEntity circularLineageTable1 = table("table1", "", reportingDB, sd, "Vimal", "Managed", salesFactColumns, "Metric");
         entities.add(circularLineageTable1);
+
+        sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
+        entities.add(sd);
 
         AtlasEntity circularLineageTable2 = table("table2", "", reportingDB, sd, "Vimal 2", "Managed", salesFactColumns, "Metric");
         entities.add(circularLineageTable2);
@@ -196,6 +208,9 @@ public abstract class BasicTestSetup {
         AtlasEntity logDB = database("Logging", "logging database", "Tim ETL", "hdfs://host:8000/apps/warehouse/logging");
         entities.add(logDB);
 
+        sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
+        entities.add(sd);
+
         AtlasEntity loggingFactDaily =
                 table("log_fact_daily_mv", "log fact daily materialized view", logDB, sd, "Tim ETL", "Managed",
                       logFactColumns, "Log Data");
@@ -206,6 +221,9 @@ public abstract class BasicTestSetup {
                         column("product_name", "string", "product name"),
                         column("brand_name", "int", "brand name"));
         entities.addAll(productDimColumns);
+
+        sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
+        entities.add(sd);
 
         AtlasEntity productDim =
                 table("product_dim", "product dimension table", salesDB, sd, "John Doe 2", "Managed", productDimColumns,
@@ -221,6 +239,9 @@ public abstract class BasicTestSetup {
                 column("address", "string", "customer address", "PII"));
         entities.addAll(customerDimColumns);
 
+        sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
+        entities.add(sd);
+
         AtlasEntity customerDim =
                 table("customer_dim", "customer dimension table", salesDB, sd, "fetl", "External", customerDimColumns,
                       "Dimension");
@@ -228,6 +249,9 @@ public abstract class BasicTestSetup {
 
         AtlasEntity customerDimView = view("customer_dim_view", reportingDB, ImmutableList.of(customerDim), "Dimension", "JdbcAccess");
         entities.add(customerDimView);
+
+        sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
+        entities.add(sd);
 
         AtlasEntity salesFactMonthly =
                 table("sales_fact_monthly_mv", "sales fact monthly materialized view", reportingDB, sd, "Jane BI",
@@ -237,6 +261,9 @@ public abstract class BasicTestSetup {
         AtlasEntity loadSalesMonthly = loadProcess("loadSalesMonthly", "hive query for monthly summary", "John ETL", ImmutableList.of(salesFactDaily),
                                          ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
         entities.add(loadSalesMonthly);
+
+        sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
+        entities.add(sd);
 
         AtlasEntity loggingFactMonthly =
                 table("logging_fact_monthly_mv", "logging fact monthly materialized view", logDB, sd, "Tim ETL 2",
@@ -339,8 +366,13 @@ public abstract class BasicTestSetup {
 
         sd.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name + "@" + clusterName + "_storage");
 
+        AtlasObjectId tableId = getAtlasObjectId(table);
+
+        sd.setAttribute("table", tableId);
+
         for (AtlasEntity column : columns) {
             column.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name + "." + column.getAttribute(AtlasClient.NAME).toString() + "@" + clusterName);
+            column.setAttribute("table", tableId);
         }
 
         return table;

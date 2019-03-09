@@ -195,7 +195,7 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         super(TypeCategory.RELATIONSHIP, name, description, typeVersion, attributeDefs, null);
 
         setRelationshipCategory(relationshipCategory);
-        setRelationshipLabel(getDefaultRelationshipLabel());
+        setRelationshipLabel(null);
         setPropagateTags(propagatetags);
         setEndDef1(endDef1);
         setEndDef2(endDef2);
@@ -226,7 +226,7 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
     }
 
     public String getRelationshipLabel() {
-        return relationshipLabel != null ? relationshipLabel : ("r:" + super.getName());
+        return relationshipLabel;
     }
 
     public void setPropagateTags(PropagateTags propagateTags) {
@@ -251,13 +251,6 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
 
     public AtlasRelationshipEndDef getEndDef2() {
         return this.endDef2;
-    }
-
-    @JsonIgnore
-    private String getDefaultRelationshipLabel() {
-        String name = super.getName();
-
-        return name != null ? ("r:" + name) : null;
     }
 
     @Override

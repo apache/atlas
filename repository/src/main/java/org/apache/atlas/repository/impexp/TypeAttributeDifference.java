@@ -27,7 +27,9 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,7 +119,11 @@ public class TypeAttributeDifference {
                                                          AtlasStructDef.AtlasAttributeDef incoming) throws AtlasBaseException {
         AtlasStructDef.AtlasAttributeDef existingAttribute = existing.getAttribute(incoming.getName());
         if (existingAttribute == null) {
-            difference.add(incoming);
+            AtlasRelationshipType relationshipType = AtlasTypeUtil.findRelationshipWithLegacyRelationshipEnd(existing.getName(), incoming.getName(), typeRegistry);
+
+            if (relationshipType == null) {
+                difference.add(incoming);
+            }
         } else {
             if (!existingAttribute.getTypeName().equals(incoming.getTypeName())) {
                 LOG.error("Attribute definition difference found: {}, {}", existingAttribute, incoming);

@@ -798,7 +798,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         AtlasRelationshipType   relationshipType   = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
-        String                  ret                = relationshipType.getRelationshipDef().getRelationshipLabel();
+        String                  ret                = relationshipType.getRelationshipLabel();
         AtlasRelationshipEndDef endDef1            = relationshipType.getRelationshipDef().getEndDef1();
         AtlasRelationshipEndDef endDef2            = relationshipType.getRelationshipDef().getEndDef2();
         Set<String>             fromVertexTypes    = getTypeAndAllSuperTypes(AtlasGraphUtilsV2.getTypeName(fromVertex));

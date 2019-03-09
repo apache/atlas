@@ -50,6 +50,7 @@ public class AtlasRelationshipType extends AtlasStructType {
 
     private final AtlasRelationshipDef relationshipDef;
     private final boolean              hasLegacyAttributeEnd;
+    private       String               relationshipLabel;
     private       AtlasEntityType      end1Type;
     private       AtlasEntityType      end2Type;
 
@@ -73,6 +74,10 @@ public class AtlasRelationshipType extends AtlasStructType {
 
     public boolean hasLegacyAttributeEnd() {
         return this.hasLegacyAttributeEnd;
+    }
+
+    public String getRelationshipLabel() {
+        return this.relationshipLabel;
     }
 
     @Override
@@ -110,18 +115,22 @@ public class AtlasRelationshipType extends AtlasStructType {
 
         AtlasRelationshipEndDef endDef1           = relationshipDef.getEndDef1();
         AtlasRelationshipEndDef endDef2           = relationshipDef.getEndDef2();
-        String                  relationshipLabel = null;
+        String                  relationshipLabel = relationshipDef.getRelationshipLabel();
 
-        // if legacyLabel is not specified at both ends, use relationshipDef name as relationship label.
-        // if legacyLabel is specified in any one end, use it as the relationship label for both ends (legacy case).
-        // if legacyLabel is specified at both ends use the respective end's legacyLabel as relationship label (legacy case).
-        if (!endDef1.getIsLegacyAttribute() && !endDef2.getIsLegacyAttribute()) {
-            relationshipLabel = relationshipDef.getRelationshipLabel();
-        } else if (endDef1.getIsLegacyAttribute() && !endDef2.getIsLegacyAttribute()) {
-            relationshipLabel = getLegacyEdgeLabel(end1Type, endDef1.getName());
-        } else if (!endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
-            relationshipLabel = getLegacyEdgeLabel(end2Type, endDef2.getName());
+        if (relationshipLabel == null) {
+            // if legacyLabel is not specified at both ends, use relationshipDef name as relationship label.
+            // if legacyLabel is specified in any one end, use it as the relationship label for both ends (legacy case).
+            // if legacyLabel is specified at both ends use the respective end's legacyLabel as relationship label (legacy case).
+            if (!endDef1.getIsLegacyAttribute() && !endDef2.getIsLegacyAttribute()) {
+                relationshipLabel = "r:" + getTypeName();
+            } else if (endDef1.getIsLegacyAttribute() && !endDef2.getIsLegacyAttribute()) {
+                relationshipLabel = getLegacyEdgeLabel(end1Type, endDef1.getName());
+            } else if (!endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
+                relationshipLabel = getLegacyEdgeLabel(end2Type, endDef2.getName());
+            }
         }
+
+        this.relationshipLabel = relationshipLabel;
 
         addRelationshipAttributeToEndType(endDef1, end1Type, end2Type.getTypeName(), typeRegistry, relationshipLabel);
 

@@ -998,8 +998,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         List<Referenceable> refs = (List<Referenceable>) hiveTableInstance.get("columns");
         Assert.assertEquals(refs.size(), 2);
 
-        Assert.assertTrue(refs.get(0).getValuesMap().equals(values1));
-        Assert.assertTrue(refs.get(1).getValuesMap().equals(values2));
+        Assert.assertEquals(refs.get(0).getValuesMap(), values1);
+        Assert.assertEquals(refs.get(1).getValuesMap(), values2);
     }
 
     @Test

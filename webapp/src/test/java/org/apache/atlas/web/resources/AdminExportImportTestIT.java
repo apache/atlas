@@ -81,7 +81,7 @@ public class AdminExportImportTestIT extends BaseResourceIT {
 
         ZipSource zs = new ZipSource(exportedStream);
         assertNotNull(zs.getExportResult());
-        assertTrue(zs.getCreationOrder().size() > EXPECTED_CREATION_ORDER_SIZE);
+        assertTrue(zs.getCreationOrder().size() > EXPECTED_CREATION_ORDER_SIZE, "expected creationOrderSize > " + EXPECTED_CREATION_ORDER_SIZE + ", but found " + zs.getCreationOrder().size());
     }
 
     private void performImport(String fileToImport, int expectedProcessedEntitiesCount) throws AtlasServiceException {
