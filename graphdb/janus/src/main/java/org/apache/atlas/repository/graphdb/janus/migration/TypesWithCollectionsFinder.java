@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.graphdb.janus.migration;
 
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
@@ -72,6 +73,15 @@ public class TypesWithCollectionsFinder {
                 addIfCollectionAttribute(attr, collectionProperties);
             }
 
+            if (type instanceof AtlasEntityType) {
+                AtlasEntityType entityType = (AtlasEntityType) type;
+
+                for (Map<String, AtlasAttribute> attrs : entityType.getRelationshipAttributes().values()) {
+                    for (AtlasAttribute attr : attrs.values()) {
+                        addIfCollectionAttribute(attr, collectionProperties);
+                    }
+                }
+            }
             return collectionProperties;
         } catch (Exception e) {
             LOG.error("addVertexPropertiesForCollectionAttributes", e);

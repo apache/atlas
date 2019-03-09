@@ -103,7 +103,7 @@ class RegistryBasedLookup implements Lookup {
             return true;
         }
 
-        AtlasType at = et.getAttributeType(attributeName);
+        AtlasType at = getAttributeType(et, attributeName);
         if(at == null) {
             return false;
         }
@@ -135,14 +135,17 @@ class RegistryBasedLookup implements Lookup {
             return "";
         }
 
-        AtlasStructType.AtlasAttribute attr = et.getAttribute(attributeName);
+        AtlasStructType.AtlasAttribute attr = getAttribute(et, attributeName);
+
         return (attr != null) ? attr.getRelationshipEdgeLabel() : "";
     }
 
     @Override
     public boolean hasAttribute(GremlinQueryComposer.Context context, String typeName) {
-        return (context.getActiveEntityType() != null) &&
-                (isSystemAttribute(typeName) || context.getActiveEntityType().getAttribute(typeName) != null);
+        AtlasEntityType entityType = context.getActiveEntityType();
+
+        return (entityType != null) &&
+                (isSystemAttribute(typeName) || entityType.hasAttribute(typeName) || entityType.hasRelationshipAttribute(typeName));
     }
 
     @Override
@@ -197,7 +200,7 @@ class RegistryBasedLookup implements Lookup {
             return "";
         }
 
-        AtlasStructType.AtlasAttribute attr = et.getAttribute(item);
+        AtlasStructType.AtlasAttribute attr = getAttribute(et, item);
         if(attr == null) {
             return null;
         }
@@ -213,7 +216,7 @@ class RegistryBasedLookup implements Lookup {
                 return getCollectionElementType(mapType.getValueType());
         }
 
-        return context.getActiveEntityType().getAttribute(item).getTypeName();
+        return getAttribute(context.getActiveEntityType(), item).getTypeName();
     }
 
     private String getCollectionElementType(AtlasType elemType) {
@@ -231,7 +234,7 @@ class RegistryBasedLookup implements Lookup {
             return false;
         }
 
-        AtlasType attr = et.getAttributeType(attributeName);
+        AtlasType attr = getAttributeType(et, attributeName);
         return attr != null && attr.getTypeName().equals(AtlasBaseTypeDef.ATLAS_TYPE_DATE);
     }
 
@@ -242,12 +245,32 @@ class RegistryBasedLookup implements Lookup {
             return false;
         }
 
-        AtlasType attr = et.getAttributeType(attrName);
+        AtlasType attr = getAttributeType(et, attrName);
         boolean ret = attr != null && NUMERIC_ATTRIBUTES.containsKey(attr.getTypeName());
         if(ret) {
             context.setNumericTypeFormatter(NUMERIC_ATTRIBUTES.get(attr.getTypeName()));
         }
 
         return ret;
+    }
+
+    private AtlasStructType.AtlasAttribute getAttribute(AtlasEntityType entityType, String attrName) {
+        AtlasStructType.AtlasAttribute ret = null;
+
+        if (entityType != null) {
+            ret = entityType.getAttribute(attrName);
+
+            if (ret == null) {
+                ret = entityType.getRelationshipAttribute(attrName, null);
+            }
+        }
+
+        return ret;
+    }
+
+    private AtlasType getAttributeType(AtlasEntityType entityType, String attrName) {
+        AtlasStructType.AtlasAttribute attribute = getAttribute(entityType, attrName);
+
+        return attribute != null ? attribute.getAttributeType() : null;
     }
 }

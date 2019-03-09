@@ -189,8 +189,6 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
-                compactAttributes(createdEntity, entityType);
-
                 mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
                 mapAttributes(createdEntity, entityType, vertex, CREATE, context);
@@ -205,8 +203,6 @@ public class EntityGraphMapper {
                 String          guid       = updatedEntity.getGuid();
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
-
-                compactAttributes(updatedEntity, entityType);
 
                 mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
 
@@ -1898,33 +1894,6 @@ public class EntityGraphMapper {
             updateModificationMetadata(vertex);
 
             req.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex));
-        }
-    }
-
-    // move/remove relationship-attributes present in 'attributes'
-    private static void compactAttributes(AtlasEntity entity, AtlasEntityType entityType) {
-        if (entity != null) {
-            for (String attrName : entityType.getRelationshipAttributes().keySet()) {
-
-                if (entity.hasAttribute(attrName)) {
-                    Object attrValue = entity.getAttribute(attrName);
-
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("relationship attribute {}.{} is present in entity, removing it", entityType.getTypeName(), attrName);
-                    }
-
-                    entity.removeAttribute(attrName);
-
-                    if (attrValue != null) { // relationship attribute is present in 'attributes'
-                        // if the attribute doesn't exist in relationshipAttributes, add it
-                        Object relationshipAttrValue = entity.getRelationshipAttribute(attrName);
-
-                        if (relationshipAttrValue == null) {
-                            entity.setRelationshipAttribute(attrName, attrValue);
-                        }
-                    }
-                }
-            }
         }
     }
 

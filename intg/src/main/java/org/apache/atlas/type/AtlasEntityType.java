@@ -34,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -335,7 +334,7 @@ public class AtlasEntityType extends AtlasStructType {
         attributes.put(relationshipType.getTypeName(), attribute);
     }
 
-    public Collection<String> getAttributeRelationshipTypes(String attributeName) {
+    public Set<String> getAttributeRelationshipTypes(String attributeName) {
         Map<String, AtlasAttribute> attributes = relationshipAttributes.get(attributeName);
 
         return attributes != null ? attributes.keySet() : null;
@@ -351,6 +350,10 @@ public class AtlasEntityType extends AtlasStructType {
 
     public String getTypeQryStr() {
         return typeQryStr;
+    }
+
+    public boolean hasAttribute(String attributeName) {
+        return allAttributes.containsKey(attributeName);
     }
 
     public boolean hasRelationshipAttribute(String attributeName) {

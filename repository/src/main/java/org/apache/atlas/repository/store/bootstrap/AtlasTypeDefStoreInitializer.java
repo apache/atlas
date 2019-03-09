@@ -793,8 +793,6 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         updatedDef.setRelationshipCategory(newRelationshipCategory);
                     }
 
-                    end1Def.setIsLegacyAttribute(false);
-                    end2Def.setIsLegacyAttribute(false);
                     updatedDef.setTypeVersion(patch.getUpdateToVersion());
 
                     AtlasEntityDef updatedEntityDef1 = new AtlasEntityDef(end1Type.getEntityDef());

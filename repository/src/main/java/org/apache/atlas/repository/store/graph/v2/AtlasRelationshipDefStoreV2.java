@@ -470,9 +470,11 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
 
         // Update RelationshipCategory
         vertex.setProperty(Constants.RELATIONSHIPTYPE_CATEGORY_KEY, relationshipCategory);
-        vertex.setProperty(Constants.RELATIONSHIPTYPE_LABEL_KEY, relationshipDef.getRelationshipLabel());
-
-        vertex.setProperty(Constants.RELATIONSHIPTYPE_LABEL_KEY, relationshipDef.getRelationshipLabel());
+        if (relationshipDef.getRelationshipLabel() == null) {
+            vertex.removeProperty(Constants.RELATIONSHIPTYPE_LABEL_KEY);
+        } else {
+            vertex.setProperty(Constants.RELATIONSHIPTYPE_LABEL_KEY, relationshipDef.getRelationshipLabel());
+        }
 
         if (relationshipDef.getPropagateTags() == null) {
             vertex.setProperty(Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, AtlasRelationshipDef.PropagateTags.NONE.name());

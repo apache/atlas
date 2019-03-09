@@ -41,7 +41,8 @@ import java.util.Map;
 public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasStructFormatConverter.class);
 
-    public static final String ATTRIBUTES_PROPERTY_KEY = "attributes";
+    public static final String ATTRIBUTES_PROPERTY_KEY              = "attributes";
+    public static final String RELATIONSHIP_ATTRIBUTES_PROPERTY_KEY = "relationshipAttributes";
 
     public AtlasStructFormatConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
         this(registry, typeRegistry, TypeCategory.STRUCT);
@@ -136,8 +137,14 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
                 AtlasAttribute attr = structType.getAttribute(attrName);
 
                 if (attr == null) {
-                    LOG.warn("ignored unknown attribute {}.{}", structType.getTypeName(), attrName);
-                    continue;
+                    if (isEntityType) {
+                        attr = ((AtlasEntityType) structType).getRelationshipAttribute(attrName, null);
+                    }
+
+                    if (attr == null) {
+                        LOG.warn("ignored unknown attribute {}.{}", structType.getTypeName(), attrName);
+                        continue;
+                    }
                 }
 
                 AtlasType            attrType      = attr.getAttributeType();
@@ -240,7 +247,8 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     protected Map<String, Object> fromV1ToV2(AtlasStructType structType, Map attributes, ConverterContext context) throws AtlasBaseException {
-        Map<String, Object> ret = null;
+        Map<String, Object> ret        = null;
+        AtlasEntityType     entityType = (structType instanceof AtlasEntityType) ? ((AtlasEntityType) structType) : null;
 
         if (MapUtils.isNotEmpty(attributes)) {
             ret = new HashMap<>();
@@ -251,8 +259,14 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
                 AtlasAttribute attr     = structType.getAttribute(attrName);
 
                 if (attr == null) {
-                    LOG.warn("ignored unknown attribute {}.{}", structType.getTypeName(), attrName);
-                    continue;
+                    if (entityType != null) {
+                        attr = entityType.getRelationshipAttribute(attrName, null);
+                    }
+
+                    if (attr == null) {
+                        LOG.warn("ignored unknown attribute {}.{}", structType.getTypeName(), attrName);
+                        continue;
+                    }
                 }
 
                 AtlasType            attrType      = attr.getAttributeType();

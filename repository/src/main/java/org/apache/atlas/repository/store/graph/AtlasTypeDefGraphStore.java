@@ -77,6 +77,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     protected abstract AtlasDefStore<AtlasRelationshipDef> getRelationshipDefStore(AtlasTypeRegistry typeRegistry);
 
+    public AtlasTypeRegistry getTypeRegistry() { return typeRegistry; }
+
     @Override
     public void init() throws AtlasBaseException {
         LOG.info("==> AtlasTypeDefGraphStore.init()");

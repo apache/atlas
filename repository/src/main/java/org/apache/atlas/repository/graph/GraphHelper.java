@@ -1773,25 +1773,29 @@ public final class GraphHelper {
      * to pick the right relationshipDef name
      */
     public String getRelationshipTypeName(AtlasVertex entityVertex, AtlasEntityType entityType, String attributeName) {
-        String             ret               = null;
-        Collection<String> relationshipTypes = entityType.getAttributeRelationshipTypes(attributeName);
+        String      ret               = null;
+        Set<String> relationshipTypes = entityType.getAttributeRelationshipTypes(attributeName);
 
         if (CollectionUtils.isNotEmpty(relationshipTypes)) {
-            Iterator<AtlasEdge> iter = entityVertex.getEdges(AtlasEdgeDirection.IN).iterator();
-
-            while (iter.hasNext() && ret == null) {
-                String edgeTypeName = AtlasGraphUtilsV2.getTypeName(iter.next());
-
-                if (relationshipTypes.contains(edgeTypeName)) {
-                    ret = edgeTypeName;
-
-                    break;
-                }
-            }
-
-            if (ret == null) {
-                //relationshipTypes will have at least one relationshipDef
+            if (relationshipTypes.size() == 1) {
                 ret = relationshipTypes.iterator().next();
+            } else {
+                Iterator<AtlasEdge> iter = entityVertex.getEdges(AtlasEdgeDirection.IN).iterator();
+
+                while (iter.hasNext() && ret == null) {
+                    String edgeTypeName = AtlasGraphUtilsV2.getTypeName(iter.next());
+
+                    if (relationshipTypes.contains(edgeTypeName)) {
+                        ret = edgeTypeName;
+
+                        break;
+                    }
+                }
+
+                if (ret == null) {
+                    //relationshipTypes will have at least one relationshipDef
+                    ret = relationshipTypes.iterator().next();
+                }
             }
         }
 

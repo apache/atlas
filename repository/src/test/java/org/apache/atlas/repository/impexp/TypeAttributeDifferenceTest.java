@@ -21,6 +21,11 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -31,9 +36,18 @@ import java.util.List;
 public class TypeAttributeDifferenceTest {
     private TypeAttributeDifference typeAttributeDifference;
 
+    @Mock
+    AtlasTypeDefStore typeDefStore;
+
+    @Mock
+    AtlasTypeRegistry typeRegistry;
+
+
     @BeforeClass
     public void setup() {
-        typeAttributeDifference = new TypeAttributeDifference(null, null);
+        MockitoAnnotations.initMocks(this);
+
+        typeAttributeDifference = new TypeAttributeDifference(typeDefStore, typeRegistry);
     }
 
     private List<AtlasEnumDef.AtlasEnumElementDef> getEnumElementDefs(int startIndex, String... names) {

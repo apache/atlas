@@ -141,6 +141,24 @@ public class AtlasTypeUtil {
 
     }
 
+    public static AtlasRelationshipType findRelationshipWithLegacyRelationshipEnd(String entityTypeName, String attributeName, AtlasTypeRegistry typeRegistry) {
+        AtlasRelationshipType ret = null;
+
+        for (AtlasRelationshipDef relationshipDef : typeRegistry.getAllRelationshipDefs()) {
+            AtlasRelationshipEndDef end1Def = relationshipDef.getEndDef1();
+            AtlasRelationshipEndDef end2Def = relationshipDef.getEndDef2();
+
+            if ((end1Def.getIsLegacyAttribute() && StringUtils.equals(end1Def.getType(), entityTypeName) && StringUtils.equals(end1Def.getName(), attributeName)) ||
+                (end2Def.getIsLegacyAttribute() && StringUtils.equals(end2Def.getType(), entityTypeName) && StringUtils.equals(end2Def.getName(), attributeName))) {
+                ret = typeRegistry.getRelationshipTypeByName(relationshipDef.getName());
+
+                break;
+            }
+        }
+
+        return ret;
+    }
+
     public static AtlasAttributeDef createOptionalAttrDef(String name, AtlasType dataType) {
         return new AtlasAttributeDef(name, dataType.getTypeName(), true,
             Cardinality.SINGLE, 0, 1,

@@ -148,7 +148,10 @@
             "description": "a table in an rdbms database (schema)",
             "superTypes": ["DataSet"],
             "serviceType": "rdbms",
-            "typeVersion": "1.1",
+            "typeVersion": "1.2",
+            "typeDefOptions": {
+              "schemaElementsAttribute": "columns"
+            },
             "attributeDefs": [
                 {
                     "name": "db",
@@ -254,7 +257,10 @@
             "description": "a column in an rdbms table",
             "superTypes": ["DataSet"],
             "serviceType": "rdbms",
-            "typeVersion": "1.1",
+            "typeVersion": "1.2",
+            "typeDefOptions": {
+              "schemaAttributes": "[\"name\", \"description\", \"owner\", \"data_type\", \"comment\", \" isPrimaryKey\", \" isNullable\"]"
+            },
             "attributeDefs": [
                 {
                     "name": "data_type",
