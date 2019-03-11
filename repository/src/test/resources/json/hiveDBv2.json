@@ -52,5 +52,58 @@
       "isUnique": false,
       "isIndexable": false
     }]
-  }]
+  },
+    {
+      "name": "cluster",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "attr1",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "host",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "attr2",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "includeInNotification": true,
+          "isUnique": false
+        }
+      ]
+    }],
+  "relationshipDefs": [
+    {
+      "name": "cluster_hosts_relationship",
+      "relationshipLabel": "cluster_hosts_relationship_label",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags": "NONE",
+      "endDef1": {
+        "type": "cluster",
+        "name": "host_list",
+        "isContainer": true,
+        "cardinality": "SET"
+      },
+      "endDef2": {
+        "type": "host",
+        "name": "cluster",
+        "isContainer": false,
+        "cardinality": "SINGLE"
+      }
+    }
+  ]
 }

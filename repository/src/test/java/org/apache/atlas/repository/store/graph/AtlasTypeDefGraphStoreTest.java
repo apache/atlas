@@ -332,9 +332,15 @@ public class AtlasTypeDefGraphStoreTest {
         try {
             final String HIVEDB_v2_JSON = "hiveDBv2";
             final String hiveDB2 = "hive_db_v2";
+            final String relationshipDefName = "cluster_hosts_relationship";
+            final String hostEntityDef = "host";
+            final String clusterEntityDef = "cluster";
             AtlasTypesDef typesDef = TestResourceFileUtils.readObjectFromJson(".", HIVEDB_v2_JSON, AtlasTypesDef.class);
             typeDefStore.createTypesDef(typesDef);
             typeDefStore.deleteTypeByName(hiveDB2);
+            typeDefStore.deleteTypeByName(relationshipDefName);
+            typeDefStore.deleteTypeByName(hostEntityDef);
+            typeDefStore.deleteTypeByName(clusterEntityDef);
         } catch (AtlasBaseException e) {
             fail("Deletion should've succeeded");
         }
