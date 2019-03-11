@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
@@ -701,19 +702,23 @@ public class AtlasStructType extends AtlasType {
         private final String                   vertexPropertyName;
         private final String                   vertexUniquePropertyName;
         private final boolean                  isOwnedRef;
+        private final boolean                  isObjectRef;
         private final String                   inverseRefAttributeName;
         private AtlasAttribute                 inverseRefAttribute;
+        private String                         relationshipName;
         private String                         relationshipEdgeLabel;
         private AtlasRelationshipEdgeDirection relationshipEdgeDirection;
 
-        public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType, String relationshipLabel) {
+        public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType, String relationshipName, String relationshipLabel) {
             this.definedInType            = definedInType;
             this.attributeDef             = attrDef;
             this.attributeType            = attributeType.getTypeForAttribute();
             this.qualifiedName            = getQualifiedAttributeName(definedInType.getStructDef(), attributeDef.getName());
             this.vertexPropertyName       = encodePropertyKey(this.qualifiedName);
             this.vertexUniquePropertyName = attrDef.getIsUnique() ? encodePropertyKey(getQualifiedAttributeName(definedInType.getStructDef(), UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + attributeDef.getName())) : null;
+            this.relationshipName         = relationshipName;
             this.relationshipEdgeLabel    = getRelationshipEdgeLabel(relationshipLabel);
+
             boolean isOwnedRef            = false;
             String  inverseRefAttribute   = null;
 
@@ -736,10 +741,32 @@ public class AtlasStructType extends AtlasType {
             this.isOwnedRef                = isOwnedRef;
             this.inverseRefAttributeName   = inverseRefAttribute;
             this.relationshipEdgeDirection = AtlasRelationshipEdgeDirection.OUT;
+
+            switch (attributeType.getTypeCategory()) {
+                case OBJECT_ID_TYPE:
+                    isObjectRef = true;
+                break;
+
+                case MAP:
+                    AtlasMapType mapType = (AtlasMapType) attributeType;
+
+                    isObjectRef = mapType.getValueType().getTypeCategory() == OBJECT_ID_TYPE;
+                break;
+
+                case ARRAY:
+                    AtlasArrayType arrayType = (AtlasArrayType) attributeType;
+
+                    isObjectRef = arrayType.getElementType().getTypeCategory() == OBJECT_ID_TYPE;
+                break;
+
+                default:
+                    isObjectRef = false;
+                break;
+            }
         }
 
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType) {
-            this(definedInType, attrDef, attributeType, null);
+            this(definedInType, attrDef, attributeType, null, null);
         }
 
         public AtlasStructType getDefinedInType() { return definedInType; }
@@ -766,11 +793,17 @@ public class AtlasStructType extends AtlasType {
 
         public boolean isOwnedRef() { return isOwnedRef; }
 
+        public boolean isObjectRef() { return isObjectRef; }
+
         public String getInverseRefAttributeName() { return inverseRefAttributeName; }
 
         public AtlasAttribute getInverseRefAttribute() { return inverseRefAttribute; }
 
         public void setInverseRefAttribute(AtlasAttribute inverseAttr) { inverseRefAttribute = inverseAttr; }
+
+        public String getRelationshipName() { return relationshipName; }
+
+        public void setRelationshipName(String relationshipName) { this.relationshipName = relationshipName; }
 
         public String getRelationshipEdgeLabel() { return relationshipEdgeLabel; }
 

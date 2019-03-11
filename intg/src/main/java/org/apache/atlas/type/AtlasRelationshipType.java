@@ -159,7 +159,9 @@ public class AtlasRelationshipType extends AtlasStructType {
             AtlasRelationshipEdgeDirection end2Direction = IN;
 
             if (endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
-                end2Direction = OUT;
+                if (relationshipDef.getRelationshipLabel() == null) { // only if label hasn't been overridden
+                    end2Direction = OUT;
+                }
             } else if (!endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
                 end1Direction = IN;
                 end2Direction = OUT;
@@ -345,11 +347,12 @@ public class AtlasRelationshipType extends AtlasStructType {
             }
 
             attribute = new AtlasAttribute(entityType, attributeDef,
-                                           typeRegistry.getType(attrTypeName), relationshipLabel);
+                                           typeRegistry.getType(attrTypeName), getTypeName(), relationshipLabel);
 
         } else {
             // attribute already exists (legacy attribute which is also a relationship attribute)
             // add relationshipLabel information to existing attribute
+            attribute.setRelationshipName(getTypeName());
             attribute.setRelationshipEdgeLabel(relationshipLabel);
         }
 

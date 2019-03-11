@@ -20,6 +20,7 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -672,19 +673,25 @@ public class AtlasBuiltInTypes {
 
         @Override
         public AtlasObjectId getNormalizedValue(Object obj) {
+            AtlasObjectId ret = null;
+
             if (obj != null) {
                 if (obj instanceof AtlasObjectId) {
-                    return (AtlasObjectId) obj;
+                    ret = (AtlasObjectId) obj;
                 } else if (obj instanceof Map) {
                     Map map = (Map) obj;
 
                     if (isValidMap(map)) {
-                        return new AtlasObjectId(map);
+                        if (map.containsKey(AtlasRelatedObjectId.KEY_RELATIONSHIP_TYPE)) {
+                            ret = new AtlasRelatedObjectId(map);
+                        } else {
+                            ret = new AtlasObjectId(map);
+                        }
                     }
                 }
             }
 
-            return null;
+            return ret;
         }
 
         private boolean isValidMap(Map map) {

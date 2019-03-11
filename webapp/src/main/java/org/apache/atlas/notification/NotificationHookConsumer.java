@@ -35,6 +35,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
@@ -56,12 +57,14 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.atlas.web.filters.AuditFilter.AuditLog;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.kafka.common.TopicPartition;
@@ -75,6 +78,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -85,6 +89,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+
+import static org.apache.atlas.model.instance.AtlasObjectId.*;
+import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
 
 
 /**
@@ -174,7 +181,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         consumerRetryInterval = applicationProperties.getInt(CONSUMER_RETRY_INTERVAL, 500);
         minWaitDuration       = applicationProperties.getInt(CONSUMER_MIN_RETRY_INTERVAL, consumerRetryInterval); // 500 ms  by default
         maxWaitDuration       = applicationProperties.getInt(CONSUMER_MAX_RETRY_INTERVAL, minWaitDuration * 60);  //  30 sec by default
-        commitBatchSize       = applicationProperties.getInt(CONSUMER_COMMIT_BATCH_SIZE, 0);
+        commitBatchSize       = applicationProperties.getInt(CONSUMER_COMMIT_BATCH_SIZE, 50);
 
         skipHiveColumnLineageHive20633                = applicationProperties.getBoolean(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false);
         skipHiveColumnLineageHive20633InputsThreshold = applicationProperties.getInt(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
@@ -216,8 +223,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             hiveTablesCache = Collections.emptyMap();
         }
 
-        hiveTypesRemoveOwnedRefAttrs  = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, false);
-        rdbmsTypesRemoveOwnedRefAttrs = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, false);
+        hiveTypesRemoveOwnedRefAttrs  = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, true);
+        rdbmsTypesRemoveOwnedRefAttrs = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, true);
         preprocessEnabled             = !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || skipHiveColumnLineageHive20633 || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs;
 
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
@@ -693,6 +700,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             if (commitBatchSize <= 0 || entitiesList.size() <= commitBatchSize) {
                 atlasEntityStore.createOrUpdate(entityStream, isPartialUpdate);
             } else {
+                Map<String, String> guidAssignments = new HashMap<>();
+
                 for (int fromIdx = 0; fromIdx < entitiesList.size(); fromIdx += commitBatchSize) {
                     int toIndex = fromIdx + commitBatchSize;
 
@@ -700,10 +709,16 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         toIndex = entitiesList.size();
                     }
 
-                    AtlasEntitiesWithExtInfo batch       = new AtlasEntitiesWithExtInfo(new ArrayList<>(entitiesList.subList(fromIdx, toIndex)));
+                    List<AtlasEntity> entitiesBatch = new ArrayList<>(entitiesList.subList(fromIdx, toIndex));
+
+                    updateProcessedEntityReferences(entitiesBatch, guidAssignments);
+
+                    AtlasEntitiesWithExtInfo batch       = new AtlasEntitiesWithExtInfo(entitiesBatch);
                     AtlasEntityStream        batchStream = new AtlasEntityStream(batch, entityStream);
 
-                    atlasEntityStore.createOrUpdate(batchStream, isPartialUpdate);
+                    EntityMutationResponse response = atlasEntityStore.createOrUpdate(batchStream, isPartialUpdate);
+
+                    recordProcessedEntities(response, guidAssignments);
 
                     RequestContext.get().resetEntityGuidUpdates();
 
@@ -790,7 +805,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         PreprocessorContext context = new PreprocessorContext(kafkaMsg, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache, hiveTypesRemoveOwnedRefAttrs, rdbmsTypesRemoveOwnedRefAttrs);
 
-        if (!hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || hiveTypesRemoveOwnedRefAttrs) {
+        if (context.isHivePreprocessEnabled()) {
             preprocessHiveTypes(context);
         }
 
@@ -803,6 +818,29 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         context.moveRegisteredReferredEntities();
+
+        if (context.isHivePreprocessEnabled() && CollectionUtils.isNotEmpty(context.getEntities())) {
+            // move hive_process and hive_column_lineage entities to end of the list
+            List<AtlasEntity> entities = context.getEntities();
+            int               count    = entities.size();
+
+            for (int i = 0; i < count; i++) {
+                AtlasEntity entity = entities.get(i);
+
+                switch (entity.getTypeName()) {
+                    case TYPE_HIVE_PROCESS:
+                    case TYPE_HIVE_COLUMN_LINEAGE:
+                        entities.remove(i--);
+                        entities.add(entity);
+                        count--;
+                    break;
+                }
+            }
+
+            if (entities.size() - count > 0) {
+                LOG.info("moved {} hive_process/hive_column_lineage entities to end of list (listSize={})", entities.size() - count, entities.size());
+            }
+        }
     }
 
     private void rdbmsTypeRemoveOwnedRefAttrs(PreprocessorContext context) {
@@ -885,7 +923,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         if (lineageQNames.contains(qualifiedName)) {
                             entities.remove(i--);
 
-                            LOG.warn("removed duplicate hive_column_lineage entity: qualifiedName={}. topic-offset={}, partition={}", qualifiedName, lineageInputsCount, context.getKafkaMessageOffset(), context.getKafkaPartition());
+                            LOG.warn("removed duplicate hive_column_lineage entity: qualifiedName={}. topic-offset={}, partition={}", qualifiedName, context.getKafkaMessageOffset(), context.getKafkaPartition());
 
                             numRemovedEntities++;
 
@@ -952,6 +990,107 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         return ret;
+    }
+
+    private void recordProcessedEntities(EntityMutationResponse mutationResponse, Map<String, String> guidAssignments) {
+        if (mutationResponse != null && MapUtils.isNotEmpty(mutationResponse.getGuidAssignments())) {
+            guidAssignments.putAll(mutationResponse.getGuidAssignments());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("recordProcessedEntities: added {} guidAssignments. updatedSize={}", mutationResponse.getGuidAssignments().size(), guidAssignments.size());
+            }
+        }
+    }
+
+    private void updateProcessedEntityReferences(List<AtlasEntity> entities, Map<String, String> guidAssignments) {
+        if (CollectionUtils.isNotEmpty(entities) && MapUtils.isNotEmpty(guidAssignments)) {
+            for (AtlasEntity entity : entities) {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+                if (entityType == null) {
+                    continue;
+                }
+
+                if (MapUtils.isNotEmpty(entity.getAttributes())) {
+                    for (Map.Entry<String, Object> entry : entity.getAttributes().entrySet()) {
+                        String         attrName  = entry.getKey();
+                        Object         attrValue = entry.getValue();
+
+                        if (attrValue == null) {
+                            continue;
+                        }
+
+                        AtlasAttribute attribute = entityType.getAttribute(attrName);
+
+                        if (attribute == null) { // look for a relationship attribute with the same name
+                            attribute = entityType.getRelationshipAttribute(attrName, null);
+                        }
+
+                        if (attribute != null && attribute.isObjectRef()) {
+                            updateProcessedEntityReferences(attrValue, guidAssignments);
+                        }
+                    }
+                }
+
+                if (MapUtils.isNotEmpty(entity.getRelationshipAttributes())) {
+                    for (Map.Entry<String, Object> entry : entity.getRelationshipAttributes().entrySet()) {
+                        Object attrValue = entry.getValue();
+
+                        if (attrValue != null) {
+                            updateProcessedEntityReferences(attrValue, guidAssignments);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void updateProcessedEntityReferences(Object objVal, Map<String, String> guidAssignments) {
+        if (objVal instanceof AtlasObjectId) {
+            updateProcessedEntityReferences((AtlasObjectId) objVal, guidAssignments);
+        } else if (objVal instanceof Collection) {
+            updateProcessedEntityReferences((Collection) objVal, guidAssignments);
+        } else if (objVal instanceof Map) {
+            updateProcessedEntityReferences((Map) objVal, guidAssignments);
+        }
+    }
+
+    private void updateProcessedEntityReferences(AtlasObjectId objId, Map<String, String> guidAssignments) {
+        String guid = objId.getGuid();
+
+        if (guid != null && guidAssignments.containsKey(guid)) {
+            String assignedGuid = guidAssignments.get(guid);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}(guid={}) is already processed; updating its reference to use assigned-guid={}", objId.getTypeName(), guid, assignedGuid);
+            }
+
+            objId.setGuid(assignedGuid);
+            objId.setTypeName(null);
+            objId.setUniqueAttributes(null);
+        }
+    }
+
+    private void updateProcessedEntityReferences(Map objId, Map<String, String> guidAssignments) {
+        Object guid = objId.get(KEY_GUID);
+
+        if (guid != null && guidAssignments.containsKey(guid)) {
+            String assignedGuid = guidAssignments.get(guid);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}(guid={}) is already processed; updating its reference to use assigned-guid={}", objId.get(KEY_TYPENAME), guid, assignedGuid);
+            }
+
+            objId.put(KEY_GUID, assignedGuid);
+            objId.remove(KEY_TYPENAME);
+            objId.remove(KEY_UNIQUE_ATTRIBUTES);
+        }
+    }
+
+    private void updateProcessedEntityReferences(Collection objIds, Map<String, String> guidAssignments) {
+        for (Object objId : objIds) {
+            updateProcessedEntityReferences(objId, guidAssignments);
+        }
     }
 
     static class FailedCommitOffsetRecorder {

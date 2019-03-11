@@ -36,7 +36,7 @@ public class HivePreprocessor {
     private static final Logger LOG = LoggerFactory.getLogger(HivePreprocessor.class);
 
     private static final String RELATIONSHIP_TYPE_HIVE_TABLE_COLUMNS        = "hive_table_columns";
-    private static final String RELATIONSHIP_TYPE_HIVE_TABLE_PARTITION_KEYS = "hive_table_partitionKeys";
+    private static final String RELATIONSHIP_TYPE_HIVE_TABLE_PARTITION_KEYS = "hive_table_partitionkeys";
 
     static class HiveTablePreprocessor extends EntityPreprocessor {
         public HiveTablePreprocessor() {
@@ -76,7 +76,7 @@ public class HivePreprocessor {
         }
 
         private void removeColumnsAttributeAndRegisterToMove(AtlasEntity entity, String attrName, String relationshipType, PreprocessorContext context) {
-            Object attrVal = entity.getAttribute(attrName);
+            Object attrVal = entity.removeAttribute(attrName);
 
             if (attrVal != null) {
                 Set<String> guids = new HashSet<>();
