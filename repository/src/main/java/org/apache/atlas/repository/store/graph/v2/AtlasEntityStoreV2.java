@@ -323,7 +323,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasAttribute    attr       = entityType.getAttribute(attrName);
 
         if (attr == null) {
-            attr = entityType.getRelationshipAttribute(attrName, null);
+            attr = entityType.getRelationshipAttribute(attrName, AtlasEntityUtil.getRelationshipType(attrValue));
 
             if (attr == null) {
                 throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, entity.getTypeName());

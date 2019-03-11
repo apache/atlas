@@ -537,7 +537,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         AtlasAttribute attribute = entityType.getAttribute(relation);
 
         if (attribute != null) {
-            if (isRelationshipAttribute(attribute)) {
+            if (attribute.isObjectRef()) {
                 relation = attribute.getRelationshipEdgeLabel();
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_ATTRIBUTE, relation, attribute.getTypeName());
@@ -788,23 +788,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         return "";
-    }
-
-    private boolean isRelationshipAttribute(AtlasAttribute attribute) throws AtlasBaseException {
-        boolean   ret      = true;
-        AtlasType attrType = attribute.getAttributeType();
-
-        if (attrType.getTypeCategory() == ARRAY) {
-            attrType = ((AtlasArrayType) attrType).getElementType();
-        } else if (attrType.getTypeCategory() == MAP) {
-            attrType = ((AtlasMapType) attrType).getValueType();
-        }
-
-        if (attrType.getTypeCategory() != OBJECT_ID_TYPE) {
-            ret = false;
-        }
-
-        return ret;
     }
 
     private Set<String> getEntityStates() {

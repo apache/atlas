@@ -508,7 +508,7 @@
             "serviceType": "hive",
             "typeVersion": "1.2",
             "relationshipCategory": "COMPOSITION",
-            "relationshipLabel": "__hive_table.partitionkeys",
+            "relationshipLabel": "__hive_table.partitionKeys",
             "endDef1": {
                 "type": "hive_table",
                 "name": "partitionKeys",

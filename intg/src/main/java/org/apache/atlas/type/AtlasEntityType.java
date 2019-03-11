@@ -799,7 +799,7 @@ public class AtlasEntityType extends AtlasStructType {
                 AtlasEntity entityObj = (AtlasEntity) obj;
 
                 for (String attributeName : relationshipAttributes.keySet()) {
-                    Object         value            = entityObj.getAttribute(attributeName);
+                    Object         value            = entityObj.getRelationshipAttribute(attributeName);
                     String         relationshipType = AtlasEntityUtil.getRelationshipType(value);
                     AtlasAttribute attribute        = getRelationshipAttribute(attributeName, relationshipType);
 
@@ -824,7 +824,7 @@ public class AtlasEntityType extends AtlasStructType {
                     }
                 }
             } else if (obj instanceof Map) {
-                Map attributes = AtlasTypeUtil.toStructAttributes((Map) obj);
+                Map attributes = AtlasTypeUtil.toRelationshipAttributes((Map) obj);
 
                 for (String attributeName : relationshipAttributes.keySet()) {
                     Object         value            = attributes.get(attributeName);

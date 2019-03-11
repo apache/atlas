@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,10 +127,38 @@ public class AtlasEntityUtil {
 
         if (val instanceof AtlasRelatedObjectId) {
             ret = ((AtlasRelatedObjectId) val).getRelationshipType();
-        } else if (val instanceof Map) {
-            Object relTypeName = ((Map) val).get(AtlasRelatedObjectId.KEY_RELATIONSHIP_TYPE);
+        } else if (val instanceof Collection) {
+            String elemRelationshipType = null;
 
-            ret = relTypeName != null ? relTypeName.toString() : null;
+            for (Object elem : (Collection) val) {
+                elemRelationshipType = getRelationshipType(elem);
+
+                if (elemRelationshipType != null) {
+                    break;
+                }
+            }
+
+            ret = elemRelationshipType;
+        } else if (val instanceof Map) {
+            Map mapValue = (Map) val;
+
+            if (mapValue.containsKey(AtlasRelatedObjectId.KEY_RELATIONSHIP_TYPE)) {
+                Object relTypeName = ((Map) val).get(AtlasRelatedObjectId.KEY_RELATIONSHIP_TYPE);
+
+                ret = relTypeName != null ? relTypeName.toString() : null;
+            } else {
+                String entryRelationshipType = null;
+
+                for (Object entryVal : mapValue.values()) {
+                    entryRelationshipType = getRelationshipType(entryVal);
+
+                    if (entryRelationshipType != null) {
+                        break;
+                    }
+                }
+
+                ret = entryRelationshipType;
+            }
         } else {
             ret = null;
         }

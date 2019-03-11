@@ -23,6 +23,7 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -134,11 +135,12 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
 
             // Only process the requested/set attributes
             for (String attrName : attributes.keySet()) {
-                AtlasAttribute attr = structType.getAttribute(attrName);
+                Object         v2Value = attributes.get(attrName);
+                AtlasAttribute attr    = structType.getAttribute(attrName);
 
                 if (attr == null) {
                     if (isEntityType) {
-                        attr = ((AtlasEntityType) structType).getRelationshipAttribute(attrName, null);
+                        attr = ((AtlasEntityType) structType).getRelationshipAttribute(attrName, AtlasEntityUtil.getRelationshipType(v2Value));
                     }
 
                     if (attr == null) {
@@ -149,7 +151,6 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
 
                 AtlasType            attrType      = attr.getAttributeType();
                 AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
-                Object               v2Value       = attributes.get(attr.getName());
 
                 if (v2Value != null && isEntityType && attr.isOwnedRef()) {
                     if (LOG.isDebugEnabled()) {
@@ -256,6 +257,7 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
             // Only process the requested/set attributes
             for (Object attribKey : attributes.keySet()) {
                 String         attrName = attribKey.toString();
+                Object         v1Value  = attributes.get(attrName);
                 AtlasAttribute attr     = structType.getAttribute(attrName);
 
                 if (attr == null) {
@@ -271,7 +273,6 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
 
                 AtlasType            attrType      = attr.getAttributeType();
                 AtlasFormatConverter attrConverter = converterRegistry.getConverter(attrType.getTypeCategory());
-                Object               v1Value       = attributes.get(attrName);
 
                 if (attrConverter.isValidValueV1(v1Value, attrType)) {
                     Object v2Value = attrConverter.fromV1ToV2(v1Value, attrType, context);
