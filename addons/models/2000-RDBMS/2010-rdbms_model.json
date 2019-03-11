@@ -149,7 +149,7 @@
             "superTypes": ["DataSet"],
             "serviceType": "rdbms",
             "typeVersion": "1.2",
-            "typeDefOptions": {
+            "options": {
               "schemaElementsAttribute": "columns"
             },
             "attributeDefs": [
@@ -258,7 +258,7 @@
             "superTypes": ["DataSet"],
             "serviceType": "rdbms",
             "typeVersion": "1.2",
-            "typeDefOptions": {
+            "options": {
               "schemaAttributes": "[\"name\", \"description\", \"owner\", \"data_type\", \"comment\", \" isPrimaryKey\", \" isNullable\"]"
             },
             "attributeDefs": [
