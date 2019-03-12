@@ -415,8 +415,10 @@ span#zoom_in {
 
 .lineage-node-detail {
     .table-quickMenu {
-        td {
-            word-break: break-all;
+        td:nth-child(1n) {
+            width: 150px;
         }
+
+        word-break: break-all;
     }
 }
