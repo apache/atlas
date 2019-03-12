@@ -214,7 +214,7 @@ define(['require',
             generateCategoryData: function(options) {
                 return _.map(options.data, function(obj) {
                     return {
-                        "text": obj.displayText,
+                        "text": _.escape(obj.displayText),
                         "icon": "fa fa-files-o",
                         "guid": obj.categoryGuid,
                         "id": obj.categoryGuid,
@@ -295,7 +295,7 @@ define(['require',
                 return this.glossaryCollection.fullCollection.map(function(model, i) {
                     var obj = model.toJSON(),
                         parent = {
-                            "text": obj.name,
+                            "text": _.escape(obj.name),
                             "icon": "fa fa-folder-o",
                             "guid": obj.guid,
                             "id": obj.guid,
@@ -318,7 +318,7 @@ define(['require',
                             var typeName = category.typeName || "GlossaryCategory",
                                 guid = category.categoryGuid,
                                 categoryObj = {
-                                    "text": category.displayText,
+                                    "text": _.escape(category.displayText),
                                     "type": typeName,
                                     "gType": "category",
                                     "guid": guid,
@@ -352,7 +352,7 @@ define(['require',
                                 var typeName = term.typeName || "GlossaryTerm",
                                     guid = term.termGuid,
                                     termObj = {
-                                        "text": term.displayText,
+                                        "text": _.escape(term.displayText),
                                         "type": typeName,
                                         "gType": "term",
                                         "guid": guid,
