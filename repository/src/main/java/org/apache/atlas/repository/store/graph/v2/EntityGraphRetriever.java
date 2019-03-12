@@ -65,6 +65,7 @@ import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -1044,8 +1045,36 @@ public class EntityGraphRetriever {
             entity.setRelationshipAttribute(attributeName, ret);
 
             if (attributeEndDef.getIsLegacyAttribute() && !entity.hasAttribute(attributeName)) {
-                entity.setAttribute(attributeName, ret);
+                entity.setAttribute(attributeName, toAtlasObjectId(ret));
             }
+        }
+
+        return ret;
+    }
+
+    private Object toAtlasObjectId(Object obj) {
+        final Object ret;
+
+        if (obj instanceof AtlasObjectId) {
+            ret = new AtlasObjectId((AtlasObjectId) obj);
+        } else if (obj instanceof Collection) {
+            List list = new ArrayList();
+
+            for (Object elem : (Collection) obj) {
+                list.add(toAtlasObjectId(elem));
+            }
+
+            ret = list;
+        } else if (obj instanceof Map) {
+            Map map = new HashMap();
+
+            for (Object key : ((Map) obj).keySet()) {
+                map.put(key, toAtlasObjectId(((Map) obj).get(key)));
+            }
+
+            ret = map;
+        } else {
+            ret = obj;
         }
 
         return ret;
