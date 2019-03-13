@@ -218,6 +218,9 @@ Apache License.  For details, see 3party-licenses/janusgraph-LICENSE
 This product bundles pnotify, which is available under
 Apache License.  For details, see 3party-licenses/pnotify-LICENSE
 
+This product bundles hppc, which is available under
+Apache License.  For details, see 3party-licenses/pnotify-LICENSE
+
 This product bundles mock(for python tests) 1.0.1, which is available under
 BSD License.  For details, see 3party-licenses/mock-LICENSE
 

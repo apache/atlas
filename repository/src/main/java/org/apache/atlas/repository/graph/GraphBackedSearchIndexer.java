@@ -296,6 +296,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             LOG.info("Index creation for global keys complete.");
         } catch (Throwable t) {
+            LOG.error("GraphBackedSearchIndexer.initialize() failed", t);
+
             rollback(management);
             throw new RepositoryException(t);
         }

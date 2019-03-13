@@ -77,7 +77,7 @@ import org.apache.hadoop.security.authorize.AuthorizationException;
 
 /**
  * This enforces authentication as part of the filter before processing the request.
- * todo: Subclass of {@link org.apache.hadoop.security.authentication.server.AuthenticationFilter}.
+ * todo: Subclass of {@link AuthenticationFilter}.
  */
 
 @Component
@@ -371,7 +371,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
      * This method is copied from hadoop auth lib, code added for error handling and fallback to other auth methods
      *
      * If the request has a valid authentication token it allows the request to continue to the target resource,
-     * otherwise it triggers an authentication sequence using the configured {@link org.apache.hadoop.security.authentication.server.AuthenticationHandler}.
+     * otherwise it triggers an authentication sequence using the configured {@link AuthenticationHandler}.
      *
      * @param request     the request object.
      * @param response    the response object.

@@ -48,8 +48,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  *
  * Helps write individual graph elements to TinkerPop JSON format known as
  * GraphSON.
- *
- * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public final class AtlasGraphSONUtility {
 

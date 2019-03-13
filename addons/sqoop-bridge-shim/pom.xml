@@ -30,10 +30,6 @@
     <name>Apache Atlas Sqoop Bridge Shim</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
-    </properties>
-
     <dependencies>
         <!-- Logging -->
         <dependency>

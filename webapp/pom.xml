@@ -134,12 +134,22 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-janusgraph-hbase2</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -156,6 +166,10 @@
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -436,6 +450,18 @@
             <artifactId>jna</artifactId>
             <version>4.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs-client</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+
+        <!-- AWS library -->
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-aws</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -461,9 +487,7 @@
                         </manifest>
                     </archive>
                     <packagingExcludes>
-                        <!-- HBase jars should be excluded because an uber jar with shaded dependencies is created.
-                        But mvn 3.3.x includes them for some reason. So, excluding them explicitly here -->
-                        WEB-INF/lib/hbase*.jar,WEB-INF/lib/junit*.jar,${packages.to.exclude}
+                        WEB-INF/lib/junit*.jar,${packages.to.exclude}
                     </packagingExcludes>
                 </configuration>
             </plugin>
@@ -600,10 +624,10 @@
                     </httpConnector>
                     <war>${project.build.directory}/atlas-webapp-${project.version}.war</war>
                     <daemon>true</daemon>
-                    <webAppSourceDirectory>webapp/src/test/webapp</webAppSourceDirectory>
+                    <webAppSourceDirectory>${project.basedir}/src/main/webapp</webAppSourceDirectory>
                     <webApp>
                         <contextPath>/</contextPath>
-                        <descriptor>${project.basedir}/src/test/webapp/WEB-INF/web.xml</descriptor>
+                        <descriptor>${project.basedir}/src/main/webapp/WEB-INF/web.xml</descriptor>
                         <extraClasspath>${project.build.testOutputDirectory}</extraClasspath>
                     </webApp>
                     <useTestScope>true</useTestScope>

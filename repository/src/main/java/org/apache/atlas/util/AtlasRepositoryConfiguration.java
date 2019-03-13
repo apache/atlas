@@ -25,7 +25,7 @@ import org.apache.atlas.repository.graphdb.GraphDatabase;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,19 +40,20 @@ public class AtlasRepositoryConfiguration {
 
     private static Logger LOG = LoggerFactory.getLogger(AtlasRepositoryConfiguration.class);
 
-    public static final int DEFAULT_COMPILED_QUERY_CACHE_EVICTION_WARNING_THROTTLE = 0;
-    public static final int DEFAULT_COMPILED_QUERY_CACHE_CAPACITY = 1000;
+    public  static final int     DEFAULT_COMPILED_QUERY_CACHE_EVICTION_WARNING_THROTTLE = 0;
+    public  static final int     DEFAULT_COMPILED_QUERY_CACHE_CAPACITY                  = 1000;
+    public  static final String  TYPE_CACHE_IMPLEMENTATION_PROPERTY                     = "atlas.TypeCache.impl";
+    public  static final String  AUDIT_EXCLUDED_OPERATIONS                              = "atlas.audit.excludes";
+    public  static final String  SEPARATOR                                              = ":";
 
-    public static final String TYPE_CACHE_IMPLEMENTATION_PROPERTY = "atlas.TypeCache.impl";
-    public static final String AUDIT_EXCLUDED_OPERATIONS = "atlas.audit.excludes";
-    private static List<String> skippedOperations = null;
-    public static final String SEPARATOR = ":";
-
-    private static final String  CONFIG_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS  = "atlas.server.type.update.lock.max.wait.time.seconds";
     private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = Integer.valueOf(15);
-    private static Integer typeUpdateLockMaxWaitTimeInSeconds = null;
+    private static final String  CONFIG_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS  = "atlas.server.type.update.lock.max.wait.time.seconds";
+    private static final String  ENABLE_FULLTEXT_SEARCH_PROPERTY                   = "atlas.search.fulltext.enable";
+    private static final String  JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS         = "org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase";
+    private static final String  DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS       = JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS;
 
-    private static final String ENABLE_FULLTEXT_SEARCH_PROPERTY = "atlas.search.fulltext.enable";
+    private static Integer       typeUpdateLockMaxWaitTimeInSeconds = null;
+    private static List<String>  skippedOperations                  = null;
     private static final String ENTITY_NOTIFICATION_VERSION_PROPERTY = "atlas.notification.entity.version";
 
     /**
@@ -136,15 +137,20 @@ public class AtlasRepositoryConfiguration {
         }
     }
 
-    private static final String GRAPH_DATABASE_IMPLEMENTATION_PROPERTY = "atlas.graphdb.backend";
-    private static final String DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS = "org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase";
-
     @SuppressWarnings("unchecked")
     public static Class<? extends GraphDatabase> getGraphDatabaseImpl() {
         try {
-            Configuration config = ApplicationProperties.get();
-            return ApplicationProperties.getClass(config,
-                    GRAPH_DATABASE_IMPLEMENTATION_PROPERTY, DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS, GraphDatabase.class);
+            final Class<? extends GraphDatabase> ret;
+            Configuration                        config            = ApplicationProperties.get();
+            String                               graphDatabaseImpl = config.getString(ApplicationProperties.GRAPHDB_BACKEND_CONF);
+
+            if (StringUtils.equals(graphDatabaseImpl, ApplicationProperties.GRAPHBD_BACKEND_JANUS)) {
+                ret = ApplicationProperties.getClass(JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS, GraphDatabase.class);
+            } else {
+                ret = ApplicationProperties.getClass(graphDatabaseImpl, GraphDatabase.class);
+            }
+
+            return ret;
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }

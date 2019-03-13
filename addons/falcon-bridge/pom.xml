@@ -30,10 +30,6 @@
     <name>Apache Atlas Falcon Bridge</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <falcon.version>0.8</falcon.version>
-    </properties>
-
     <dependencies>
         <!-- Logging -->
         <dependency>

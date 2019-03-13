@@ -44,6 +44,19 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
     public static final String  APPLICATION_PROPERTIES     = "atlas-application.properties";
 
+    public static final String  GRAPHDB_BACKEND_CONF       = "atlas.graphdb.backend";
+    public static final String  STORAGE_BACKEND_CONF       = "atlas.graph.storage.backend";
+    public static final String  INDEX_BACKEND_CONF         = "atlas.graph.index.search.backend";
+    public static final String  INDEX_MAP_NAME_CONF        = "atlas.graph.index.search.map-name";
+    public static final String  SOLR_WAIT_SEARCHER_CONF    = "atlas.graph.index.search.solr.wait-searcher";
+    public static final String  GRAPHBD_BACKEND_JANUS      = "janus";
+    public static final String  STORAGE_BACKEND_HBASE      = "hbase";
+    public static final String  STORAGE_BACKEND_HBASE2     = "hbase2";
+    public static final String  INDEX_BACKEND_SOLR         = "solr";
+    public static final String  DEFAULT_GRAPHDB_BACKEND    = GRAPHBD_BACKEND_JANUS;
+    public static final boolean DEFAULT_SOLR_WAIT_SEARCHER = true;
+    public static final boolean DEFAULT_INDEX_MAP_NAME     = false;
+
     public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
     public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");
     public static final SimpleEntry<String, String> DB_CACHE_SIZE_CONF          = new SimpleEntry<>("atlas.graph.cache.db-cache-size", "0.5");
@@ -248,6 +261,64 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     }
 
     private void setDefaults() {
+        String graphDbBackend = getString(GRAPHDB_BACKEND_CONF);
+
+        if (StringUtils.isEmpty(graphDbBackend)) {
+            graphDbBackend = DEFAULT_GRAPHDB_BACKEND;
+
+            clearPropertyDirect(GRAPHDB_BACKEND_CONF);
+            addPropertyDirect(GRAPHDB_BACKEND_CONF, graphDbBackend);
+            LOG.info("No graphdb backend specified. Will use '" + graphDbBackend + "'");
+
+            // The below default values for storage backend, index backend and solr-wait-searcher
+            // should be removed once ambari change to handle them is committed.
+            clearPropertyDirect(STORAGE_BACKEND_CONF);
+            addPropertyDirect(STORAGE_BACKEND_CONF, STORAGE_BACKEND_HBASE2);
+            LOG.info("Using storage backend '" + STORAGE_BACKEND_HBASE2 + "'");
+
+            clearPropertyDirect(INDEX_BACKEND_CONF);
+            addPropertyDirect(INDEX_BACKEND_CONF, INDEX_BACKEND_SOLR);
+            LOG.info("Using index backend '" + INDEX_BACKEND_SOLR + "'");
+
+            clearPropertyDirect(SOLR_WAIT_SEARCHER_CONF);
+            addPropertyDirect(SOLR_WAIT_SEARCHER_CONF, DEFAULT_SOLR_WAIT_SEARCHER);
+            LOG.info("Setting solr-wait-searcher property '" + DEFAULT_SOLR_WAIT_SEARCHER + "'");
+
+            clearPropertyDirect(INDEX_MAP_NAME_CONF);
+            addPropertyDirect(INDEX_MAP_NAME_CONF, DEFAULT_INDEX_MAP_NAME);
+            LOG.info("Setting index.search.map-name property '" + DEFAULT_INDEX_MAP_NAME + "'");
+        }
+
+        String storageBackend = getString(STORAGE_BACKEND_CONF);
+
+        if (StringUtils.isEmpty(storageBackend)) {
+            if (graphDbBackend.contains(GRAPHBD_BACKEND_JANUS)) {
+                storageBackend = STORAGE_BACKEND_HBASE2;
+            }
+
+            if (StringUtils.isNotEmpty(storageBackend)) {
+                clearPropertyDirect(STORAGE_BACKEND_CONF);
+                addPropertyDirect(STORAGE_BACKEND_CONF, storageBackend);
+
+                LOG.info("No storage backend specified. Will use '" + storageBackend + "'");
+            }
+        }
+
+        String indexBackend = getString(INDEX_BACKEND_CONF);
+
+        if (StringUtils.isEmpty(indexBackend)) {
+            if (graphDbBackend.contains(GRAPHBD_BACKEND_JANUS)) {
+                indexBackend = INDEX_BACKEND_SOLR;
+            }
+
+            if (StringUtils.isNotEmpty(indexBackend)) {
+                clearPropertyDirect(INDEX_BACKEND_CONF);
+                addPropertyDirect(INDEX_BACKEND_CONF, indexBackend);
+
+                LOG.info("No index backend specified. Will use '" + indexBackend + "'");
+            }
+        }
+
         setDbCacheConfDefaults();
     }
 

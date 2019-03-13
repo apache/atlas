@@ -32,7 +32,7 @@ import static org.testng.Assert.assertEquals;
 public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
     private Base64 enc = new Base64();
 
-    @Test(enabled = true)
+    @Test(enabled = false)
     public void testSimpleLoginForValidUser() throws Exception {
         URL url = new URL("http://localhost:31000/api/atlas/admin/session");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -61,7 +61,7 @@ public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
 
 
 
-    @Test(enabled = true)
+    @Test(enabled = false)
     public void testSimpleLoginWithInvalidCrendentials() throws Exception {
 
         URL url = new URL("http://localhost:31000/api/atlas/admin/session");

@@ -71,7 +71,7 @@ def main():
     mc.expandWebApp(atlas_home)
 
     p = os.pathsep
-    atlas_classpath = os.path.join(os.getcwd(), ".", "*") + p \
+    atlas_classpath = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".", "*") + p \
 	                   + confdir + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \

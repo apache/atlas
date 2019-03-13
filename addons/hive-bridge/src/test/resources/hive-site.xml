@@ -48,7 +48,7 @@
 
     <property>
         <name>javax.jdo.option.ConnectionURL</name>
-        <value>jdbc:derby:${project.basedir}/target/metastore_db;create=true</value>
+        <value>jdbc:derby:;databaseName=${project.basedir}/target/metastore_db;create=true</value>
     </property>
 
     <property>
@@ -70,4 +70,25 @@
         <name>hive.zookeeper.quorum</name>
         <value>localhost:19026</value>
     </property>
+
+    <property>
+        <name>hive.metastore.schema.verification</name>
+        <value>false</value>
+    </property>
+
+    <property>
+        <name>hive.metastore.disallow.incompatible.col.type.changes</name>
+        <value>false</value>
+    </property>
+
+    <property>
+        <name>datanucleus.schema.autoCreateAll</name>
+        <value>true</value>
+    </property>
+
+    <property>
+        <name>hive.exec.scratchdir</name>
+        <value>${project.basedir}/target/scratchdir</value>
+    </property>
+
 </configuration>

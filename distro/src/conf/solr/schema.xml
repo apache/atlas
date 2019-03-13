@@ -519,6 +519,7 @@
    -->
     <fieldType name="currency" class="solr.CurrencyField" precisionStep="8" defaultCurrency="USD" currencyConfig="currency.xml" />
 
+    <!--Titan specific-->
     <fieldType name="uuid"
                class="solr.UUIDField"
                indexed="true" />

@@ -189,6 +189,21 @@
             <directoryMode>0755</directoryMode>
         </fileSet>
 
+        <!-- for migration setup -->
+        <fileSet>
+            <directory>../tools/atlas-migration-exporter</directory>
+            <outputDirectory>tools/migration-exporter</outputDirectory>
+            <includes>
+                <include>README</include>
+                <include>*.py</include>
+                <include>atlas-log4j.xml</include>
+                <include>atlas-migration-*.jar</include>
+                <include>migrationContext.xml</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
+        </fileSet>
+
         <fileSet>
             <directory>../addons/kakfa-bridge/target/dependency/bridge</directory>
             <outputDirectory>bridge</outputDirectory>

@@ -57,6 +57,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.text.ParseException;
 import java.util.*;
 
@@ -196,14 +197,12 @@ public class HiveHookIT extends HiveITBase {
     }
 
     private Set<ReadEntity> getInputs(String inputName, Entity.Type entityType) throws HiveException {
-        final ReadEntity entity = new ReadEntity();
+        final ReadEntity entity;
 
         if (Entity.Type.DFS_DIR.equals(entityType)) {
-            entity.setName(lower(new Path(inputName).toString()));
-            entity.setTyp(Entity.Type.DFS_DIR);
+            entity = new TestReadEntity(lower(new Path(inputName).toString()), entityType);
         } else {
-            entity.setName(getQualifiedTblName(inputName));
-            entity.setTyp(entityType);
+            entity = new TestReadEntity(getQualifiedTblName(inputName), entityType);
         }
 
         if (entityType == Entity.Type.TABLE) {
@@ -214,14 +213,12 @@ public class HiveHookIT extends HiveITBase {
     }
 
     private Set<WriteEntity> getOutputs(String inputName, Entity.Type entityType) throws HiveException {
-        final WriteEntity entity = new WriteEntity();
+        final WriteEntity entity;
 
         if (Entity.Type.DFS_DIR.equals(entityType) || Entity.Type.LOCAL_DIR.equals(entityType)) {
-            entity.setName(lower(new Path(inputName).toString()));
-            entity.setTyp(entityType);
+            entity = new TestWriteEntity(lower(new Path(inputName).toString()), entityType);
         } else {
-            entity.setName(getQualifiedTblName(inputName));
-            entity.setTyp(entityType);
+            entity = new TestWriteEntity(getQualifiedTblName(inputName), entityType);
         }
 
         if (entityType == Entity.Type.TABLE) {
@@ -591,8 +588,8 @@ public class HiveHookIT extends HiveITBase {
     @Test
     public void testInsertIntoLocalDir() throws Exception {
         String tableName       = createTable();
-        File   randomLocalPath = File.createTempFile("hiverandom", ".tmp");
-        String query           = "insert overwrite LOCAL DIRECTORY '" + randomLocalPath.getAbsolutePath() + "' select id, name from " + tableName;
+        String randomLocalPath = mkdir("hiverandom.tmp");
+        String query           = "insert overwrite LOCAL DIRECTORY '" + randomLocalPath + "' select id, name from " + tableName;
 
         runCommand(query);
 
@@ -715,7 +712,6 @@ public class HiveHookIT extends HiveITBase {
         Set<ReadEntity> inputs = getInputs(tableName, Entity.Type.TABLE);
         Set<WriteEntity> outputs = getOutputs(insertTableName, Entity.Type.TABLE);
 
-        outputs.iterator().next().setName(getQualifiedTblName(insertTableName + HiveMetaStoreBridge.TEMP_TABLE_PREFIX + SessionState.get().getSessionId()));
         outputs.iterator().next().setWriteType(WriteEntity.WriteType.INSERT);
 
         validateProcess(constructEvent(query,  HiveOperation.QUERY, inputs, outputs));
@@ -1536,19 +1532,13 @@ public class HiveHookIT extends HiveITBase {
     }
 
     private WriteEntity getPartitionOutput() {
-        WriteEntity partEntity = new WriteEntity();
-
-        partEntity.setName(PART_FILE);
-        partEntity.setTyp(Entity.Type.PARTITION);
+        TestWriteEntity partEntity = new TestWriteEntity(PART_FILE, Entity.Type.PARTITION);
 
         return partEntity;
     }
 
     private ReadEntity getPartitionInput() {
-        ReadEntity partEntity = new ReadEntity();
-
-        partEntity.setName(PART_FILE);
-        partEntity.setTyp(Entity.Type.PARTITION);
+        ReadEntity partEntity = new TestReadEntity(PART_FILE, Entity.Type.PARTITION);
 
         return partEntity;
     }
@@ -2055,5 +2045,39 @@ public class HiveHookIT extends HiveITBase {
         runCommand("create " + (isExternal ? " EXTERNAL " : "") + (isTemporary ? "TEMPORARY " : "") + "table " + tableName + "(id int, name string) comment 'table comment' " + (isPartitioned ? " partitioned by(dt string)" : "") + location);
 
         return tableName;
+    }
+
+    // ReadEntity class doesn't offer a constructor that takes (name, type). A hack to get the tests going!
+    private static class TestReadEntity extends ReadEntity {
+        private final String      name;
+        private final Entity.Type type;
+
+        public TestReadEntity(String name, Entity.Type type) {
+            this.name = name;
+            this.type = type;
+        }
+
+        @Override
+        public String getName() { return name; }
+
+        @Override
+        public Entity.Type getType() { return type; }
+    }
+
+    // WriteEntity class doesn't offer a constructor that takes (name, type). A hack to get the tests going!
+    private static class TestWriteEntity extends WriteEntity {
+        private final String      name;
+        private final Entity.Type type;
+
+        public TestWriteEntity(String name, Entity.Type type) {
+            this.name = name;
+            this.type = type;
+        }
+
+        @Override
+        public String getName() { return name; }
+
+        @Override
+        public Entity.Type getType() { return type; }
     }
 }

@@ -17,9 +17,6 @@
  */
 package org.apache.atlas.repository.graphdb.janus.graphson;
 
-/**
- * @author Stephen Mallette (http://stephen.genoprime.com)
- */
 public final class AtlasGraphSONTokens {
 
     private AtlasGraphSONTokens() {}

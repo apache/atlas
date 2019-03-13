@@ -32,7 +32,7 @@ LIB = "lib"
 CONF = "conf"
 LOG = "logs"
 WEBAPP = "server" + os.sep + "webapp"
-CONFIG_SETS_CONF = "server" + os.sep + "solr" + os.sep + "configsets" + os.sep + "basic_configs" + os.sep + "conf"
+CONFIG_SETS_CONF = "server" + os.sep + "solr" + os.sep + "configsets" + os.sep + "_default" + os.sep + "conf"
 DATA = "data"
 ATLAS_CONF = "ATLAS_CONF"
 ATLAS_LOG = "ATLAS_LOG_DIR"
@@ -63,7 +63,7 @@ ENV_KEYS = ["JAVA_HOME", ATLAS_OPTS, ATLAS_SERVER_OPTS, ATLAS_SERVER_HEAP, ATLAS
 IS_WINDOWS = platform.system() == "Windows"
 ON_POSIX = 'posix' in sys.builtin_module_names
 CONF_FILE="atlas-application.properties"
-HBASE_STORAGE_CONF_ENTRY="atlas.graph.storage.backend\s*=\s*hbase"
+STORAGE_BACKEND_CONF="atlas.graph.storage.backend"
 HBASE_STORAGE_LOCAL_CONF_ENTRY="atlas.graph.storage.hostname\s*=\s*localhost"
 SOLR_INDEX_CONF_ENTRY="atlas.graph.index.search.backend\s*=\s*solr"
 SOLR_INDEX_LOCAL_CONF_ENTRY="atlas.graph.index.search.solr.zookeeper-url\s*=\s*localhost"
@@ -405,15 +405,18 @@ def wait_for_shutdown(pid, msg, wait):
     sys.stdout.write('\n')
 
 def is_hbase(confdir):
-    confdir = os.path.join(confdir, CONF_FILE)
-    return grep(confdir, HBASE_STORAGE_CONF_ENTRY) is not None
+    confFile = os.path.join(confdir, CONF_FILE)
+    storageBackEnd = getConfig(confFile, STORAGE_BACKEND_CONF)
+    if storageBackEnd is not None:
+        storageBackEnd = storageBackEnd.strip()
+    return storageBackEnd is None or storageBackEnd == '' or storageBackEnd == 'hbase' or storageBackEnd == 'hbase2'
 
 def is_hbase_local(confdir):
     if os.environ.get(MANAGE_LOCAL_HBASE, "False").lower() == 'false':
         return False
 
-    confdir = os.path.join(confdir, CONF_FILE)
-    return grep(confdir, HBASE_STORAGE_CONF_ENTRY) is not None and grep(confdir, HBASE_STORAGE_LOCAL_CONF_ENTRY) is not None
+    confFile = os.path.join(confdir, CONF_FILE)
+    return is_hbase(confdir) and grep(confFile, HBASE_STORAGE_LOCAL_CONF_ENTRY) is not None
 
 def run_hbase_action(dir, action, hbase_conf_dir = None, logdir = None, wait=True):
     if IS_WINDOWS:
@@ -649,14 +652,14 @@ def configure_cassandra(dir):
 
 def server_already_running(pid):
     print "Atlas server is already running under process %s" % pid
-    sys.exit()  
-    
+    sys.exit()
+
 def server_pid_not_running(pid):
     print "The Server is no longer running with pid %s" %pid
 
 def grep(file, value):
     for line in open(file).readlines():
-        if re.match(value, line):	
+        if re.match(value, line):
            return line
     return None
 

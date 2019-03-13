@@ -22,21 +22,13 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
-import org.apache.atlas.model.audit.EntityAuditEventV2;
-import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
-import org.apache.atlas.repository.converters.AtlasInstanceConverter;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -62,25 +54,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_ADD;
-import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_DELETE;
-import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TAG_UPDATE;
-import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_ADD;
-import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_DELETE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.ENTITY_AUDIT_V1;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditType.ENTITY_AUDIT_V2;
-import static org.apache.atlas.repository.audit.EntityAuditListener.getV2AuditPrefix;
 
 /**
  * HBase based repository for entity audit events
@@ -102,22 +87,45 @@ import static org.apache.atlas.repository.audit.EntityAuditListener.getV2AuditPr
 public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseBasedAuditRepository.class);
 
-    public static final String CONFIG_TABLE_NAME  = CONFIG_PREFIX + ".hbase.tablename";
+    public static final String CONFIG_PREFIX = "atlas.audit";
+    public static final String CONFIG_TABLE_NAME = CONFIG_PREFIX + ".hbase.tablename";
     public static final String DEFAULT_TABLE_NAME = "ATLAS_ENTITY_AUDIT_EVENTS";
-    public static final byte[] COLUMN_FAMILY      = Bytes.toBytes("dt");
-    public static final byte[] COLUMN_ACTION      = Bytes.toBytes("a");
-    public static final byte[] COLUMN_DETAIL      = Bytes.toBytes("d");
-    public static final byte[] COLUMN_USER        = Bytes.toBytes("u");
-    public static final byte[] COLUMN_DEFINITION  = Bytes.toBytes("f");
-    public static final byte[] COLUMN_TYPE        = Bytes.toBytes("t");
+    public static final String CONFIG_PERSIST_ENTITY_DEFINITION = CONFIG_PREFIX + ".persistEntityDefinition";
 
+    public static final byte[] COLUMN_FAMILY = Bytes.toBytes("dt");
+    public static final byte[] COLUMN_ACTION = Bytes.toBytes("a");
+    public static final byte[] COLUMN_DETAIL = Bytes.toBytes("d");
+    public static final byte[] COLUMN_USER = Bytes.toBytes("u");
+    public static final byte[] COLUMN_DEFINITION = Bytes.toBytes("f");
+
+    private static final String  AUDIT_REPOSITORY_MAX_SIZE_PROPERTY = "atlas.hbase.client.keyvalue.maxsize";
+    private static final String  AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY   = "atlas.audit.hbase.entity";
+    private static final String  FIELD_SEPARATOR = ":";
+    private static final long    ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE = 1024 * 1024;
+    private static Configuration APPLICATION_PROPERTIES = null;
+
+    private static boolean       persistEntityDefinition;
+
+    private Map<String, List<String>> auditExcludedAttributesCache = new HashMap<>();
+
+    static {
+        try {
+            persistEntityDefinition = ApplicationProperties.get().getBoolean(CONFIG_PERSIST_ENTITY_DEFINITION, false);
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+    }
     private TableName tableName;
     private Connection connection;
-    private final AtlasInstanceConverter instanceConverter;
 
-    @Inject
-    public HBaseBasedAuditRepository(AtlasInstanceConverter instanceConverter) {
-        this.instanceConverter = instanceConverter;
+    /**
+     * Add events to the event repository
+     * @param events events to be added
+     * @throws AtlasException
+     */
+    @Override
+    public void putEventsV1(EntityAuditEvent... events) throws AtlasException {
+        putEventsV1(Arrays.asList(events));
     }
 
     /**
@@ -149,8 +157,6 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
                 addColumn(put, COLUMN_ACTION, event.getAction());
                 addColumn(put, COLUMN_USER, event.getUser());
                 addColumn(put, COLUMN_DETAIL, event.getDetails());
-                addColumn(put, COLUMN_TYPE, ENTITY_AUDIT_V1);
-
                 if (persistEntityDefinition) {
                     addColumn(put, COLUMN_DEFINITION, event.getEntityDefinitionString());
                 }
@@ -164,6 +170,11 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         } finally {
             close(table);
         }
+    }
+
+    @Override
+    public void putEventsV2(EntityAuditEventV2... events) throws AtlasBaseException {
+        putEventsV2(Arrays.asList(events));
     }
 
     @Override
@@ -190,7 +201,6 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
                 addColumn(put, COLUMN_ACTION, event.getAction());
                 addColumn(put, COLUMN_USER, event.getUser());
                 addColumn(put, COLUMN_DETAIL, event.getDetails());
-                addColumn(put, COLUMN_TYPE, ENTITY_AUDIT_V2);
 
                 if (persistEntityDefinition) {
                     addColumn(put, COLUMN_DEFINITION, event.getEntityDefinitionString());
@@ -260,11 +270,14 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
                 event.setUser(getResultString(result, COLUMN_USER));
                 event.setAction(EntityAuditActionV2.fromString(getResultString(result, COLUMN_ACTION)));
-                event.setDetails(getEntityDetails(result));
-                event.setType(getAuditType(result));
+                event.setDetails(getResultString(result, COLUMN_DETAIL));
 
                 if (persistEntityDefinition) {
-                    event.setEntityDefinition(getEntityDefinition(result));
+                    String colDef = getResultString(result, COLUMN_DEFINITION);
+
+                    if (colDef != null) {
+                        event.setEntityDefinition(colDef);
+                    }
                 }
 
                 events.add(event);
@@ -287,92 +300,16 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         }
     }
 
-    private String getEntityDefinition(Result result) throws AtlasBaseException {
-        String ret = getResultString(result, COLUMN_DEFINITION);
+    @Override
+    public List<Object> listEvents(String entityId, String startKey, short maxResults) throws AtlasBaseException {
+        List ret = listEventsV2(entityId, startKey, maxResults);
 
-        if (getAuditType(result) != ENTITY_AUDIT_V2) {
-            Referenceable referenceable = AtlasType.fromV1Json(ret, Referenceable.class);
-            AtlasEntity   entity        = toAtlasEntity(referenceable);
-
-            ret = AtlasType.toJson(entity);
-        }
-
-        return ret;
-    }
-
-    private String getEntityDetails(Result result) throws AtlasBaseException {
-        String ret;
-
-        if (getAuditType(result) == ENTITY_AUDIT_V2) {
-            ret = getResultString(result, COLUMN_DETAIL);
-        } else {
-            // convert v1 audit detail to v2
-            ret = getV2Details(result);
-        }
-
-        return ret;
-    }
-
-    private EntityAuditType getAuditType(Result result) {
-        String          typeString = getResultString(result, COLUMN_TYPE);
-        EntityAuditType ret        = (typeString != null) ? EntityAuditType.valueOf(typeString) : ENTITY_AUDIT_V1;
-
-        return ret;
-    }
-
-    private String  getV2Details(Result result) throws AtlasBaseException {
-        String ret                 = null;
-        String v1DetailsWithPrefix = getResultString(result, COLUMN_DETAIL);
-
-        if (StringUtils.isNotEmpty(v1DetailsWithPrefix)) {
-            EntityAuditAction v1AuditAction = EntityAuditAction.fromString(getResultString(result, COLUMN_ACTION));
-
-            if (v1AuditAction == TERM_ADD || v1AuditAction == TERM_DELETE) {
-                // for terms audit v1 and v2 structure is same
-                ret = v1DetailsWithPrefix;
-            } else {
-                String            v1AuditPrefix = EntityAuditListener.getV1AuditPrefix(v1AuditAction);
-                String[]          split         = v1DetailsWithPrefix.split(v1AuditPrefix);
-
-                if (ArrayUtils.isNotEmpty(split) && split.length == 2) {
-                    String        v1AuditDetails = split[1];
-                    Referenceable referenceable  = AtlasType.fromV1Json(v1AuditDetails, Referenceable.class);
-                    String        v2Json         = (referenceable != null) ? toV2Json(referenceable, v1AuditAction) : v1AuditDetails;
-
-                    if (v2Json != null) {
-                        ret = getV2AuditPrefix(v1AuditAction) + v2Json;
-                    }
-                } else {
-                    ret = v1DetailsWithPrefix;
-                }
+        try {
+            if (CollectionUtils.isEmpty(ret)) {
+                ret = listEventsV1(entityId, startKey, maxResults);
             }
-        }
-
-        return ret;
-    }
-
-    private String toV2Json(Referenceable referenceable, EntityAuditAction action) throws AtlasBaseException {
-        String ret;
-
-        if (action == TAG_ADD || action == TAG_UPDATE || action == TAG_DELETE) {
-            AtlasClassification classification = instanceConverter.toAtlasClassification(referenceable);
-
-            ret = AtlasType.toJson(classification);
-        } else {
-            AtlasEntity entity = toAtlasEntity(referenceable);
-
-            ret = AtlasType.toJson(entity);
-        }
-
-        return ret;
-    }
-
-    private AtlasEntity toAtlasEntity(Referenceable referenceable) throws AtlasBaseException {
-        AtlasEntity              ret                 = null;
-        AtlasEntitiesWithExtInfo entitiesWithExtInfo = instanceConverter.toAtlasEntity(referenceable);
-
-        if (entitiesWithExtInfo != null && CollectionUtils.isNotEmpty(entitiesWithExtInfo.getEntities())) {
-            ret = entitiesWithExtInfo.getEntities().get(0);
+        } catch (AtlasException e) {
+            throw new AtlasBaseException(e);
         }
 
         return ret;
@@ -382,6 +319,13 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         if (columnValue != null && !columnValue.toString().isEmpty()) {
             put.addColumn(COLUMN_FAMILY, columnName, Bytes.toBytes(columnValue.toString()));
         }
+    }
+
+    private byte[] getKey(String id, Long ts) {
+        assert id != null : "entity id can't be null";
+        assert ts != null : "timestamp can't be null";
+        String keyStr = id + FIELD_SEPARATOR + ts;
+        return Bytes.toBytes(keyStr);
     }
 
     /**
@@ -411,9 +355,9 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
              * small is set to true to optimise RPC calls as the scanner is created per request
              */
             Scan scan = new Scan().setReversed(true).setFilter(new PageFilter(n))
-                                  .setStopRow(Bytes.toBytes(entityId))
-                                  .setCaching(n)
-                                  .setSmall(true);
+                    .setStopRow(Bytes.toBytes(entityId))
+                    .setCaching(n)
+                    .setSmall(true);
             if (StringUtils.isEmpty(startKey)) {
                 //Set start row to entity id + max long value
                 byte[] entityBytes = getKey(entityId, Long.MAX_VALUE, Integer.MAX_VALUE);
@@ -457,6 +401,42 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             close(scanner);
             close(table);
         }
+    }
+
+    @Override
+    public long repositoryMaxSize() {
+        long ret;
+        initApplicationProperties();
+
+        if (APPLICATION_PROPERTIES == null) {
+            ret = ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE;
+        } else {
+            ret = APPLICATION_PROPERTIES.getLong(AUDIT_REPOSITORY_MAX_SIZE_PROPERTY, ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE);
+        }
+
+        return ret;
+    }
+
+    @Override
+    public List<String> getAuditExcludeAttributes(String entityType) {
+        List<String> ret = null;
+
+        initApplicationProperties();
+
+        if (auditExcludedAttributesCache.containsKey(entityType)) {
+            ret = auditExcludedAttributesCache.get(entityType);
+        } else if (APPLICATION_PROPERTIES != null) {
+            String[] excludeAttributes = APPLICATION_PROPERTIES.getStringArray(AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY + "." +
+                    entityType + "." +  "attributes.exclude");
+
+            if (excludeAttributes != null) {
+                ret = Arrays.asList(excludeAttributes);
+            }
+
+            auditExcludedAttributesCache.put(entityType, ret);
+        }
+
+        return ret;
     }
 
     private String getResultString(Result result, byte[] columnName) {
@@ -603,7 +583,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     @VisibleForTesting
     void startInternal(Configuration atlasConf,
-                                 org.apache.hadoop.conf.Configuration hbaseConf) throws AtlasException {
+                       org.apache.hadoop.conf.Configuration hbaseConf) throws AtlasException {
 
         String tableNameStr = atlasConf.getString(CONFIG_TABLE_NAME, DEFAULT_TABLE_NAME);
         tableName = TableName.valueOf(tableNameStr);
@@ -636,4 +616,13 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         createTableIfNotExists();
     }
 
+    @Override
+    public void instanceIsPassive() {
+        LOG.info("Reacting to passive: No action for now.");
+    }
+
+    @Override
+    public int getHandlerOrder() {
+        return HandlerOrder.AUDIT_REPOSITORY.getOrder();
+    }
 }

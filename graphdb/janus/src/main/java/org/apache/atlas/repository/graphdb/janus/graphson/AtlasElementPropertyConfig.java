@@ -24,8 +24,6 @@ import java.util.Set;
 
 /**
  * Configure how the GraphSON utility treats edge and vertex properties.
- *
- * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public class AtlasElementPropertyConfig {
 

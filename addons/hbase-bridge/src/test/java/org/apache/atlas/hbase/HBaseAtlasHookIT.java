@@ -44,9 +44,11 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
+import static org.testng.AssertJUnit.assertFalse;
 
 
 public class HBaseAtlasHookIT {
@@ -76,6 +78,12 @@ public class HBaseAtlasHookIT {
     }
 
     @Test
+    public void testGetMetaTableRows() throws Exception {
+        List<byte[]> results = utility.getMetaTableRows();
+        assertFalse("results should have some entries and is empty.", results.isEmpty());
+    }
+
+    @Test (enabled = false)
     public void testCreateNamesapce() throws Exception {
         final Configuration conf = HBaseConfiguration.create();
 
@@ -103,7 +111,7 @@ public class HBaseAtlasHookIT {
         }
     }
 
-    @Test
+    @Test (enabled = false)
     public void testCreateTable() throws Exception {
         final Configuration conf = HBaseConfiguration.create();
 
@@ -194,8 +202,7 @@ public class HBaseAtlasHookIT {
         utility.getConfiguration().set("hbase.regionserver.info.port", String.valueOf(getFreePort()));
         utility.getConfiguration().set("zookeeper.znode.parent", "/hbase-unsecure");
         utility.getConfiguration().set("hbase.table.sanity.checks", "false");
-        utility.getConfiguration().set("hbase.coprocessor.master.classes",
-                                       "org.apache.atlas.hbase.hook.HBaseAtlasCoprocessor");
+        utility.getConfiguration().set("hbase.coprocessor.master.classes", "org.apache.atlas.hbase.hook.HBaseAtlasCoprocessor");
 
         utility.startMiniCluster();
     }
@@ -252,7 +259,7 @@ public class HBaseAtlasHookIT {
 
     protected String assertEntityIsRegistered(final String typeName, final String property, final String value,
                                               final HBaseAtlasHookIT.AssertPredicate assertPredicate) throws Exception {
-        waitFor(80000, new HBaseAtlasHookIT.Predicate() {
+        waitFor(30000, new HBaseAtlasHookIT.Predicate() {
             @Override
             public void evaluate() throws Exception {
                 AtlasEntityWithExtInfo entity = atlasClient.getEntityByAttribute(typeName, Collections.singletonMap(property, value));

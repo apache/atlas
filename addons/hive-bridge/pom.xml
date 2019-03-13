@@ -30,11 +30,6 @@
     <name>Apache Atlas Hive Bridge</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <hive.version>1.2.1</hive.version>
-        <calcite.version>0.9.2-incubating</calcite.version>
-    </properties>
-
     <dependencies>
         <!-- Logging -->
         <dependency>
@@ -57,6 +52,10 @@
                     <groupId>org.mortbay.jetty</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
             </exclusions>
 
         </dependency>
@@ -66,6 +65,12 @@
             <artifactId>hive-exec</artifactId>
             <version>${hive.version}</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -76,7 +81,15 @@
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.ws.rs</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -135,6 +148,10 @@
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -265,11 +282,6 @@
                                             <version>${jersey.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scala-library</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>com.fasterxml.jackson.core</groupId>
                                             <artifactId>jackson-databind</artifactId>
                                             <version>${jackson.version}</version>
@@ -387,7 +399,7 @@
                         </systemProperty>
                         <systemProperty>
                             <name>log4j.configuration</name>
-                            <value>file:///${project.build.directory}/test-classes/atlas-log4j.xml</value>
+                            <value>file:///${project.build.directory}/../../../distro/src/conf/atlas-log4j.xml</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.graphdb.backend</name>
@@ -401,7 +413,22 @@
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>
                     <stopWait>${jetty-maven-plugin.stopWait}</stopWait>
+                    <daemon>${debug.jetty.daemon}</daemon>
+                    <testClassesDirectory>${project.build.testOutputDirectory}</testClassesDirectory>
+                    <useTestClasspath>true</useTestClasspath>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-core</artifactId>
+                        <version>2.8</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-api</artifactId>
+                        <version>2.8</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>start-jetty</id>
@@ -409,9 +436,6 @@
                         <goals>
                             <goal>deploy-war</goal>
                         </goals>
-                        <configuration>
-                            <daemon>true</daemon>
-                        </configuration>
                     </execution>
                     <execution>
                         <id>stop-jetty</id>

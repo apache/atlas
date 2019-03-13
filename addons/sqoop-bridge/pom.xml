@@ -30,12 +30,6 @@
     <name>Apache Atlas Sqoop Bridge</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <!-- maps to 1.4.7-SNAPSHOT version of apache sqoop -->
-        <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
-        <hive.version>1.2.1</hive.version>
-    </properties>
-
     <dependencies>
         <!-- Logging -->
         <dependency>
@@ -77,6 +71,10 @@
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.ws.rs</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
                 <exclusion>

@@ -19,8 +19,6 @@ package org.apache.atlas.repository.graphdb.janus.graphson;
 
 /**
  * Modes of operation of the GraphSONUtility.
- *
- * @author Stephen Mallette
  */
 public enum AtlasGraphSONMode {
     /**

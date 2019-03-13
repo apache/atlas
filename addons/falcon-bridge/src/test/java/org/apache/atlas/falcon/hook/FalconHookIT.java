@@ -109,7 +109,7 @@ public class FalconHookIT {
                 break;
 
             case PROCESS:
-                ((org.apache.falcon.entity.v0.process.Process) entity).setName(name);
+                ((Process) entity).setName(name);
                 break;
         }
         return (T)entity;

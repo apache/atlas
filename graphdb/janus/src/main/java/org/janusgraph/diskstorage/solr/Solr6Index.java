@@ -17,8 +17,35 @@
  */
 package org.janusgraph.diskstorage.solr;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
+import static org.janusgraph.diskstorage.solr.SolrIndex.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.UncheckedIOException;
+import java.lang.reflect.Constructor;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.TimeZone;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
@@ -96,49 +123,8 @@ import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.UncheckedIOException;
-import java.lang.reflect.Constructor;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.TimeZone;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import static org.janusgraph.diskstorage.solr.SolrIndex.DYNAMIC_FIELDS;
-import static org.janusgraph.diskstorage.solr.SolrIndex.HTTP_ALLOW_COMPRESSION;
-import static org.janusgraph.diskstorage.solr.SolrIndex.HTTP_CONNECTION_TIMEOUT;
-import static org.janusgraph.diskstorage.solr.SolrIndex.HTTP_GLOBAL_MAX_CONNECTIONS;
-import static org.janusgraph.diskstorage.solr.SolrIndex.HTTP_MAX_CONNECTIONS_PER_HOST;
-import static org.janusgraph.diskstorage.solr.SolrIndex.HTTP_URLS;
-import static org.janusgraph.diskstorage.solr.SolrIndex.KERBEROS_ENABLED;
-import static org.janusgraph.diskstorage.solr.SolrIndex.KEY_FIELD_NAMES;
-import static org.janusgraph.diskstorage.solr.SolrIndex.MAX_SHARDS_PER_NODE;
-import static org.janusgraph.diskstorage.solr.SolrIndex.NUM_SHARDS;
-import static org.janusgraph.diskstorage.solr.SolrIndex.REPLICATION_FACTOR;
-import static org.janusgraph.diskstorage.solr.SolrIndex.SOLR_DEFAULT_CONFIG;
-import static org.janusgraph.diskstorage.solr.SolrIndex.SOLR_MODE;
-import static org.janusgraph.diskstorage.solr.SolrIndex.SOLR_NS;
-import static org.janusgraph.diskstorage.solr.SolrIndex.TTL_FIELD;
-import static org.janusgraph.diskstorage.solr.SolrIndex.WAIT_SEARCHER;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
+import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 
 /**
  * NOTE: Copied from JanusGraph for supporting Kerberos and adding support for multiple zookeeper clients. Do not change
@@ -193,6 +179,9 @@ public class Solr6Index implements IndexProvider {
     private final boolean kerberosEnabled;
 
     public Solr6Index(final Configuration config) throws BackendException {
+        // Add Kerberos-enabled SolrHttpClientBuilder
+        HttpClientUtil.setHttpClientBuilder(new Krb5HttpClientBuilder().getBuilder());
+
         Preconditions.checkArgument(config!=null);
         configuration = config;
         mode = Mode.parse(config.get(SOLR_MODE));

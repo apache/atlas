@@ -130,7 +130,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
         }
     }
 
-    @Test
+    @Test (enabled = false)
     public void testUnsecuredClient() throws Exception {
         try {
             dgiClient.listTypes();

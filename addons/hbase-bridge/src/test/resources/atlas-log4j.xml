@@ -32,8 +32,6 @@
         <param name="Append" value="true"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %-5p - [%t:%x] ~ %m (%C{1}:%L)%n"/>
-            <param name="maxFileSize" value="100MB" />
-            <param name="maxBackupIndex" value="20" />
         </layout>
     </appender>
 
@@ -42,8 +40,6 @@
         <param name="Append" value="true"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %x %m%n"/>
-            <param name="maxFileSize" value="100MB" />
-            <param name="maxBackupIndex" value="20" />
         </layout>
     </appender>
 
@@ -52,7 +48,14 @@
         <param name="Append" value="true"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %x %m%n"/>
-            <param name="maxFileSize" value="100MB" />
+        </layout>
+    </appender>
+
+    <appender name="HBASE" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="${atlas.log.dir}/hbase.log"/>
+        <param name="Append" value="true"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d %x %m%n"/>
         </layout>
     </appender>
 
@@ -61,8 +64,6 @@
         <param name="Append" value="true"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %m"/>
-            <param name="maxFileSize" value="100MB" />
-            <param name="maxBackupIndex" value="20" />
         </layout>
     </appender>
 
@@ -86,6 +87,11 @@
     <logger name="org.apache.atlas" additivity="false">
         <level value="info"/>
         <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="org.apache.hadoop" additivity="false">
+        <level value="debug"/>
+        <appender-ref ref="HBASE"/>
     </logger>
 
     <logger name="org.janusgraph" additivity="false">
