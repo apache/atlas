@@ -1,6 +1,8 @@
 {
   "patches": [
     {
+      "id":              "TYPEDEF_PATCH_1000_096",
+      "description":     "Remove legacy reference attribute 'db' from hive_table",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "hive_table_db",
       "applyToVersion":  "1.1",
@@ -10,6 +12,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_1000_097",
+      "description":     "Remove legacy reference attribute 'columns' from hive_table",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "hive_table_columns",
       "applyToVersion":  "1.1",
@@ -19,6 +23,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_1000_098",
+      "description":     "Remove legacy reference attribute 'partitionkeys' from hive_table",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "hive_table_partitionkeys",
       "applyToVersion":  "1.1",
@@ -28,6 +34,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_1000_099",
+      "description":     "Remove legacy reference attribute 'sd' from hive_table",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "hive_table_storagedesc",
       "applyToVersion":  "1.1",
@@ -37,6 +45,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_1000_100",
+      "description":     "Remove legacy reference attribute 'query' from hive_column_lineage",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "hive_process_column_lineage",
       "applyToVersion":  "1.1",

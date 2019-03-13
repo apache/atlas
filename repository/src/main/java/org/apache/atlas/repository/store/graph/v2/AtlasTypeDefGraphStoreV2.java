@@ -534,7 +534,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         vertex.setProperty(Constants.VERSION_PROPERTY_KEY, newVersion);
     }
 
-    private String getCurrentUser() {
+    public static String getCurrentUser() {
         String ret = RequestContext.getCurrentUser();
 
         if (StringUtils.isBlank(ret)) {

@@ -1,6 +1,8 @@
 {
   "patches": [
     {
+      "id": "TYPEDEF_PATCH_0000_001",
+      "description": "Add 'replicatedFrom' and 'replicatedTo' attributes to Referenceable",
       "action": "ADD_ATTRIBUTE",
       "typeName": "Referenceable",
       "applyToVersion": "1.0",

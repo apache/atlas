@@ -1,6 +1,8 @@
 {
   "patches": [
     {
+      "id": "TYPEDEF_PATCH_1000_039",
+      "description": "Add attributes to hbase_table",
       "action": "ADD_ATTRIBUTE",
       "typeName": "hbase_table",
       "applyToVersion": "1.2",
@@ -59,6 +61,8 @@
       ]
     },
     {
+      "id": "TYPEDEF_PATCH_1000_040",
+      "description": "Add attributes to hbase_column_family",
       "action": "ADD_ATTRIBUTE",
       "typeName": "hbase_column_family",
       "applyToVersion": "1.1",

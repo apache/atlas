@@ -332,6 +332,8 @@ public class AtlasTypeUtil {
         if (typeDef != null) {
             if (typeDef.getClass().equals(AtlasEntityDef.class)) {
                 ret.getEntityDefs().add((AtlasEntityDef) typeDef);
+            } else if (typeDef.getClass().equals(AtlasRelationshipDef.class)) {
+                ret.getRelationshipDefs().add((AtlasRelationshipDef) typeDef);
             } else if (typeDef.getClass().equals(AtlasClassificationDef.class)) {
                 ret.getClassificationDefs().add((AtlasClassificationDef) typeDef);
             } else if (typeDef.getClass().equals(AtlasStructDef.class)) {

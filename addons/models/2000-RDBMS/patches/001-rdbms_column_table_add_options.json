@@ -1,6 +1,8 @@
 {
   "patches": [
     {
+      "id": "TYPEDEF_PATCH_2000_101",
+      "description": "Add 'schemaAttributes' typeDefOptions to rdbms_column",
       "action": "UPDATE_TYPEDEF_OPTIONS",
       "typeName": "rdbms_column",
       "applyToVersion": "1.1",
@@ -10,6 +12,8 @@
       }
     },
     {
+      "id": "TYPEDEF_PATCH_2000_102",
+      "description": "Add 'schemaElementsAttribute' typeDefOptions to rdbms_table",
       "action": "UPDATE_TYPEDEF_OPTIONS",
       "typeName": "rdbms_table",
       "applyToVersion": "1.1",

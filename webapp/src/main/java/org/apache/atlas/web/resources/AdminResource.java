@@ -28,7 +28,6 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
@@ -39,6 +38,7 @@ import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.repository.impexp.AtlasServerService;
 import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.impexp.ExportService;
@@ -47,6 +47,7 @@ import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.impexp.ZipSource;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -553,6 +554,23 @@ public class AdminResource {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    @GET
+    @Path("patches")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasPatches getAtlasPatches() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.getAtlasPatches()");
+        }
+
+        AtlasPatches ret = AtlasGraphUtilsV2.getPatches();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.getAtlasPatches()");
+        }
+
+        return ret;
     }
 
     private String getEditableEntityTypes(Configuration config) {

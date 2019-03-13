@@ -1,6 +1,8 @@
 {
   "patches": [
     {
+      "id":              "TYPEDEF_PATCH_2000_118",
+      "description":     "Remove legacy reference attribute 'databases' from rdbms_instance",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "rdbms_instance_databases",
       "applyToVersion":  "1.1",
@@ -11,6 +13,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_2000_119",
+      "description":     "Remove legacy reference attribute 'tables' from rdbms_db",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "rdbms_db_tables",
       "applyToVersion":  "1.1",
@@ -21,6 +25,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_2000_120",
+      "description":     "Remove legacy reference attribute 'columns' from rdbms_table",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "rdbms_table_columns",
       "applyToVersion":  "1.1",
@@ -31,6 +37,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_2000_121",
+      "description":     "Remove legacy reference attribute 'indexes' from rdbms_table",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "rdbms_table_indexes",
       "applyToVersion":  "1.1",
@@ -41,6 +49,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_2000_122",
+      "description":     "Remove legacy reference attribute 'foreign_keys' from rdbms_table",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "rdbms_table_foreign_key",
       "applyToVersion":  "1.1",
@@ -51,6 +61,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_2000_123",
+      "description":     "Remove legacy reference attribute 'columns' from rdbms_index",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "rdbms_index_columns",
       "applyToVersion":  "1.1",
@@ -60,6 +72,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_2000_124",
+      "description":     "Remove legacy reference attribute 'key_columns' from rdbms_foreign_key",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "rdbms_foreign_key_key_columns",
       "applyToVersion":  "1.1",
@@ -69,6 +83,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_2000_125",
+      "description":     "Remove legacy reference attribute 'references_table' from rdbms_foreign_key",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "rdbms_foreign_key_table_references",
       "applyToVersion":  "1.1",
@@ -78,6 +94,8 @@
       }
     },
     {
+      "id":              "TYPEDEF_PATCH_2000_126",
+      "description":     "Remove legacy reference attribute 'references_columns' from rdbms_foreign_key",
       "action":          "REMOVE_LEGACY_REF_ATTRIBUTES",
       "typeName":        "rdbms_foreign_key_column_references",
       "applyToVersion":  "1.1",

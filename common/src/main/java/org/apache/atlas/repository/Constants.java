@@ -86,6 +86,15 @@ public final class Constants {
     public static final String MODIFIED_BY_KEY      = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modifiedBy");
 
     /**
+     * Patch vertices property keys.
+     */
+    public static final String PATCH_ID_PROPERTY_KEY          = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.id");
+    public static final String PATCH_DESCRIPTION_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.description");
+    public static final String PATCH_TYPE_PROPERTY_KEY        = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.type");
+    public static final String PATCH_ACTION_PROPERTY_KEY      = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.action");
+    public static final String PATCH_STATE_PROPERTY_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "patch.state");
+
+    /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
      * repository. The homeId will be set to a String that identifies the other repository. The specific format
      * of repository identifiers is domain dependent. Where it is set by Open Metadata Repository Services it will

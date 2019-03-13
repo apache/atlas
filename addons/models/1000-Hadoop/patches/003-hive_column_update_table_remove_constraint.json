@@ -1,6 +1,8 @@
 {
   "patches": [
     {
+      "id": "TYPEDEF_PATCH_1000_036",
+      "description": "Update 'table' attribute in hive_column",
       "action": "UPDATE_ATTRIBUTE",
       "typeName": "hive_column",
       "applyToVersion": "1.2",

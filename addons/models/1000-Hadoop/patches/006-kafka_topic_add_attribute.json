@@ -1,6 +1,8 @@
 {
   "patches": [
     {
+      "id": "TYPEDEF_PATCH_1000_041",
+      "description": "Add 'partitionCount' attribute to kafka_topic",
       "action": "ADD_ATTRIBUTE",
       "typeName": "kafka_topic",
       "applyToVersion": "1.0",
