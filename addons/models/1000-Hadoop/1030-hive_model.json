@@ -464,7 +464,7 @@
             "name": "hive_table_db",
             "serviceType": "hive",
             "typeVersion": "1.2",
-            "relationshipCategory": "COMPOSITION",
+            "relationshipCategory": "AGGREGATION",
             "relationshipLabel": "__hive_table.db",
             "endDef1": {
                 "type": "hive_table",
