@@ -205,13 +205,17 @@ public class HivePreprocessor {
                 Object inputs  = entity.getAttribute(ATTRIBUTE_INPUTS);
                 Object outputs = entity.getAttribute(ATTRIBUTE_OUTPUTS);
 
+                int inputsCount  = (inputs instanceof Collection) ? ((Collection) inputs).size() : 0;
+                int outputsCount = (outputs instanceof Collection) ? ((Collection) outputs).size() : 0;
+
                 removeIgnoredObjectIds(inputs, context);
                 removeIgnoredObjectIds(outputs, context);
 
                 boolean isInputsEmpty  = isEmpty(inputs);
                 boolean isOutputsEmpty = isEmpty(outputs);
 
-                if (isInputsEmpty || isOutputsEmpty) {
+                // if inputs/outputs became empty due to removal of ignored entities, ignore the process entity as well
+                if ((inputsCount > 0 && isInputsEmpty) || (outputsCount > 0 && isOutputsEmpty)) {
                     context.addToIgnoredEntities(entity);
 
                     // since the process entity is ignored, entities referenced by inputs/outputs of this process entity
