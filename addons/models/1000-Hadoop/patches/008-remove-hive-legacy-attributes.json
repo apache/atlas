@@ -6,7 +6,8 @@
       "applyToVersion":  "1.1",
       "updateToVersion": "1.2",
       "params": {
-        "relationshipLabel": "__hive_table.db"
+        "relationshipLabel": "__hive_table.db",
+        "relationshipCategory": "AGGREGATION"
       }
     },
     {
