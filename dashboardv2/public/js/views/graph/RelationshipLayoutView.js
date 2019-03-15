@@ -95,7 +95,9 @@ define(['require',
                 }
                 return { nodes: nodes, links: links };
             },
-            onRender: function() {},
+            onRender: function() {
+                this.$el.addClass('auto-height');
+            },
             onShow: function(argument) {
                 if (this.graphData && _.isEmpty(this.graphData.links)) {
                     this.noRelationship();
@@ -458,18 +460,17 @@ define(['require',
             },
             createTable: function() {
                 this.entityModel = new VEntity({});
-                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.relationshipAttributes, attributeDefs: this.attributeDefs });
+                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.relationshipAttributes, attributeDefs: this.attributeDefs, numberFormat: _.numberFormatWithComa });
                 this.ui.relationshipDetailValue.html(table);
             },
             relationshipViewToggle: function(checked) {
+                this.ui.relationshipDetailTable.toggleClass('visible invisible');
+                this.ui.relationshipSVG.toggleClass('visible invisible');
+
                 if (checked) {
-                    this.ui.relationshipDetailTable.show();
-                    this.ui.relationshipSVG.hide();
                     this.ui.zoomControl.hide();
                     this.$el.addClass('auto-height');
                 } else {
-                    this.ui.relationshipDetailTable.hide();
-                    this.ui.relationshipSVG.show();
                     this.ui.zoomControl.show();
                     this.$el.removeClass('auto-height');
                 }

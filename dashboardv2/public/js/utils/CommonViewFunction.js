@@ -227,6 +227,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 return;
             }
             var keyValue = valueObject[key];
+            var count = _.isArray(keyValue) ? (keyValue.length) : 0;
             var defEntity = _.find(attributeDefs, { name: key });
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();
@@ -263,7 +264,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                         htmlTag = '<pre class="shrink code-block ' + (isMatchJSONStringIsSingle ? 'fixed-height' : '') + '">' + expandCollapseButton + '<code>' + val + '</code></pre>';
                     }
                 }
-                table += '<tr><td>' + _.escape(key) + '</td><td>' + htmlTag + '</td></tr>';
+                var textToDisplay = count > 0 ? ' (' + getValue(count) + ')' : '';
+                table += '<tr><td>' + _.escape(key) + textToDisplay + '</td><td>' + htmlTag + '</td></tr>';
             } else {
                 table += '<div>' + val + '</div>';
             }
