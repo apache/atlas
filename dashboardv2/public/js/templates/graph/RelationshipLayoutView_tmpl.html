@@ -19,7 +19,7 @@
     <div class="btn-group pull-left">
         <span class="pull-left">Graph</span>
         <label class="switch pull-left">
-            <input type="checkbox" class="switch-input" name="relationshipViewToggle" value="text">
+            <input type="checkbox" checked class="switch-input" name="relationshipViewToggle" value="text">
             <span class="switch-slider"></span>
         </label>
         <span class="pull-left">Table</span>
@@ -29,21 +29,21 @@
         <button type="button" id="zoom_out" class="btn btn-action btn-gray btn-sm lineageZoomButton" title="Zoom Out" data-id="refreshBtn"> <i class="fa fa-search-minus"></i></button>
     </div>
 </div>
-<div class="white-bg no-padding relationship-box" data-id='relationshipSVG'>
+<div class="white-bg no-padding relationship-box invisible" data-id='relationshipSVG'>
     <div class="fontLoader">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
     <svg width="100%" height="100%" viewBox="0 0 854 330" enable-background="new 0 0 854 330" xml:space="preserve"></svg>
-     <div class="box-panel size-lg slide-from-left relationship-node-details">
+    <div class="box-panel size-lg slide-from-left relationship-node-details">
         <div class="header clearfix">
             <h4><span data-id="typeName"></span></h4>
             <span data-id="box-close" class="btn btn-sm btn-close"><i class="fa fa-close"></i></span>
         </div>
         <div class="body">
             <div class="col-md-12">
-            <input data-id="searchNode" class="form-control form-group" placeholder="Search Entities" />
-            <ul data-id="entityList" class="entity-list"></ul>
-        </div>
+                <input data-id="searchNode" class="form-control form-group" placeholder="Search Entities" />
+                <ul data-id="entityList" class="entity-list"></ul>
+            </div>
         </div>
     </div>
     <!-- <div class="relationship-details">
@@ -56,7 +56,7 @@
     </div> -->
 </div>
 <div>
-    <table class="table table-quickMenu" data-id="relationshipDetailTable" style="display: none;">
+    <table class="table table-quickMenu" data-id="relationshipDetailTable">
         <thead>
             <tr>
                 <th>Key</th>
