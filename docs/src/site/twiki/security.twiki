@@ -198,7 +198,7 @@ See [[https://cwiki.apache.org/confluence/display/RANGER/How+to+configure+Solr+C
    * Upload the configuration to Zookeeper.
 
 <verbatim>
-   $SOLR_INSTALL_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd upconfig  -zkhost $ZK_HOST:2181/solr -confname basic_configs -confdir $SOLR_INSTALL_HOME/server/solr/configsets/basic_configs/conf
+   $SOLR_INSTALL_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd upconfig  -zkhost $ZK_HOST:2181/solr -confname basic_configs -confdir $SOLR_INSTALL_HOME/server/solr/configsets/_default/conf
 </verbatim>
 
 
