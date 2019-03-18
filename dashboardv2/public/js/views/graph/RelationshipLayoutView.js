@@ -460,7 +460,7 @@ define(['require',
             },
             createTable: function() {
                 this.entityModel = new VEntity({});
-                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.relationshipAttributes, attributeDefs: this.attributeDefs, numberFormat: _.numberFormatWithComa });
+                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.relationshipAttributes, attributeDefs: this.attributeDefs });
                 this.ui.relationshipDetailValue.html(table);
             },
             relationshipViewToggle: function(checked) {

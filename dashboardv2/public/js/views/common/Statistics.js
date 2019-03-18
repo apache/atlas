@@ -70,8 +70,8 @@ define(['require',
                     success: function(data) {
                         var data = _.first(data.toJSON()),
                             no_records = '<tr class="empty text-center"><td colspan="2"><span>No records found!</span></td></tr>',
-                            activeEntityTable = _.isEmpty(data.entity.entityActive) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityActive, numberFormat: _.numberFormatWithComa }),
-                            deleteEntityTable = _.isEmpty(data.entity.entityDeleted) ? no_records : CommonViewFunction.propertyTable({ scope: that, valueObject: data.entity.entityDeleted, numberFormat: _.numberFormatWithComa });
+                            activeEntityTable = _.isEmpty(data.entity.entityActive) ? no_records : that.getTable({ valueObject: data.entity.entityActive }),
+                            deleteEntityTable = _.isEmpty(data.entity.entityDeleted) ? no_records : that.getTable({ valueObject: data.entity.entityDeleted });
                         var totalActive = 0,
                             totalDeleted = 0;
                         if (data.entity && data.general.entityCount) {
@@ -88,6 +88,9 @@ define(['require',
                         that.ui.entityDeletedHeader.html("&nbsp;(" + _.numberFormatWithComa(totalDeleted) + ")");
                     }
                 });
+            },
+            getTable: function(obj) {
+                return CommonViewFunction.propertyTable(_.extend({ scope: this, formatIntVal: true }, obj))
             }
         });
     return StatisticsView;
