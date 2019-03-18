@@ -65,7 +65,7 @@
             <item name="License" href="license.html" />
             <item name="Downloads" href="Downloads.html" />
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
-            <item name="Git" href="https://git-wip-us.apache.org/repos/asf/atlas.git" />
+            <item name="Git" href="https://gitbox.apache.org/repos/asf/atlas.git" />
             <item name="Jira" href="https://issues.apache.org/jira/browse/ATLAS" />
             <item name="Review Board" href="https://reviews.apache.org/groups/atlas/?sort=-time_added" />
         </menu>
