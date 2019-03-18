@@ -78,18 +78,20 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             extractJSON = options.extractJSON,
             isTable = _.isUndefined(options.isTable) ? true : options.isTable,
             attributeDefs = options.attributeDefs,
-            numberFormat = options.numberFormat;
+            formatIntVal = options.formatIntVal,
+            showListCount = options.showListCount || true,
+            numberFormat = options.numberFormat || _.numberFormatWithComa;
 
         var table = "",
             getValue = function(val) {
-                if (val && numberFormat) {
-                    if (_.isNumber(val)) {
+                if (val) {
+                    if ((_.isNumber(val) || !_.isNaN(parseInt(val))) && formatIntVal) {
                         return numberFormat(val);
-                    } else if (!_.isNaN(parseInt(val))) {
-                        return numberFormat(val);
+                    } else {
+                        return val;
                     }
                 } else {
-                    return val || "N/A";
+                    return "N/A";
                 }
             },
             fetchInputOutputValue = function(id, defEntity) {
@@ -226,8 +228,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             if (key == "profileData") {
                 return;
             }
-            var keyValue = valueObject[key];
-            var count = _.isArray(keyValue) ? (keyValue.length) : 0;
+            var keyValue = valueObject[key],
+                listCount = showListCount && _.isArray(keyValue) && keyValue.length > 0 ? ' (' + numberFormat(keyValue.length) + ')' : "";
             var defEntity = _.find(attributeDefs, { name: key });
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();
@@ -264,8 +266,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                         htmlTag = '<pre class="shrink code-block ' + (isMatchJSONStringIsSingle ? 'fixed-height' : '') + '">' + expandCollapseButton + '<code>' + val + '</code></pre>';
                     }
                 }
-                var textToDisplay = count > 0 ? ' (' + getValue(count) + ')' : '';
-                table += '<tr><td>' + _.escape(key) + textToDisplay + '</td><td>' + htmlTag + '</td></tr>';
+                table += '<tr><td>' + (_.escape(key) + listCount) + '</td><td>' + htmlTag + '</td></tr>';
             } else {
                 table += '<div>' + val + '</div>';
             }
