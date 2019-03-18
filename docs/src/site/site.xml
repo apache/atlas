@@ -64,7 +64,7 @@
             <item name="About" href="index.html"/>
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
             <item name="News" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
-            <item name="Git" href="https://git-wip-us.apache.org/repos/asf/atlas.git" />
+            <item name="Git" href="https://gitbox.apache.org/repos/asf/atlas.git" />
             <item name="Jira" href="https://issues.apache.org/jira/browse/ATLAS" />
             <item name="Powered by" href="https://cwiki.apache.org/confluence/display/ATLAS/PoweredBy" />
             <item name="Blog" href="http://blogs.apache.org/atlas/" />

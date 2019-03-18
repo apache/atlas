@@ -3,7 +3,7 @@
 ---+++ Building Atlas
 
 <verbatim>
-git clone https://git-wip-us.apache.org/repos/asf/atlas.git atlas
+git clone https://gitbox.apache.org/repos/asf/atlas.git atlas
 cd atlas
 git checkout branch-0.8
 export MAVEN_OPTS="-Xms2g -Xmx2g"
