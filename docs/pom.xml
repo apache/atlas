@@ -47,7 +47,7 @@
                     <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
                     <webAccessUrl>https://github.com/apache/atlas.git</webAccessUrl>
                     <anonymousConnection>scm:git://git.apache.org/atlas.git</anonymousConnection>
-                    <developerConnection>scm:https://git-wip-us.apache.org/repos/asf/atlas.git</developerConnection>
+                    <developerConnection>scm:https://gitbox.apache.org/repos/asf/atlas.git</developerConnection>
                 </configuration>
                 <reportSets>
                     <reportSet>
