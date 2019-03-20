@@ -484,23 +484,31 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static AtlasPatches getPatches() {
-        List<AtlasPatch>                 patches    = new ArrayList<>();
-        String                           indexQuery = getIndexSearchPrefix() + "\"" + PATCH_ID_PROPERTY_KEY + "\" : (*)";
-        Iterator<Result<Object, Object>> results    = AtlasGraphProvider.getGraphInstance().indexQuery(VERTEX_INDEX, indexQuery).vertices();
+        List<AtlasPatch>                 ret            = new ArrayList<>();
+        String                           idxQueryString = getIndexSearchPrefix() + "\"" + PATCH_ID_PROPERTY_KEY + "\" : (*)";
+        AtlasIndexQuery                  idxQuery       = AtlasGraphProvider.getGraphInstance().indexQuery(VERTEX_INDEX, idxQueryString);
+        Iterator<Result<Object, Object>> results;
 
-        while (results != null && results.hasNext()) {
-            AtlasVertex patchVertex = results.next().getVertex();
-            AtlasPatch  patch       = toAtlasPatch(patchVertex);
+        try {
+            results = idxQuery.vertices();
 
-            patches.add(patch);
+            while (results != null && results.hasNext()) {
+                AtlasVertex patchVertex = results.next().getVertex();
+                AtlasPatch  patch       = toAtlasPatch(patchVertex);
+
+                ret.add(patch);
+            }
+
+            // Sort the patches based on patch id
+            if (CollectionUtils.isNotEmpty(ret)) {
+                Collections.sort(ret, (p1, p2) -> p1.getId().compareTo(p2.getId()));
+            }
+        } catch (Throwable t) {
+            // first time idx query is fired, returns no field exists in solr exception
+            LOG.warn("getPatches() returned empty result!");
         }
 
-        // Sort the patches based on patch id
-        if (CollectionUtils.isNotEmpty(patches)) {
-            Collections.sort(patches, (p1, p2) -> p1.getId().compareTo(p2.getId()));
-        }
-
-        return new AtlasPatches(patches);
+        return new AtlasPatches(ret);
     }
 
     private static AtlasPatch toAtlasPatch(AtlasVertex vertex) {
