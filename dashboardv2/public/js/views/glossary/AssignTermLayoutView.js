@@ -59,7 +59,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'glossaryCollection', 'guid', 'callback', 'hideLoader', 'isCategoryView', 'categoryData', 'isTermView', 'termData', 'isAttributeRelationView', 'selectedTermAttribute'));
+                _.extend(this, _.pick(options, 'glossaryCollection', 'guid', 'callback', 'hideLoader', 'isCategoryView', 'categoryData', 'isTermView', 'termData', 'isAttributeRelationView', 'selectedTermAttribute', 'associatedTerms'));
                 var that = this;
                 this.options = options;
                 if (!this.isCategoryView && !this.isTermView && !this.isAttributeRelationView) {
@@ -207,7 +207,8 @@ define(['require',
                         "isAssignCategoryView": that.isTermView,
                         "isAssignEntityView": that.isEntityView,
                         "isAssignAttributeRelationView": that.isAttributeRelationView,
-                        "glossary": that.glossary
+                        "glossary": that.glossary,
+                        "associatedTerms": that.associatedTerms
                     }, that.options)));
                 });
             },
