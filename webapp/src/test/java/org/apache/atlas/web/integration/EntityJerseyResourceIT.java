@@ -35,6 +35,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -998,8 +999,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         List<Referenceable> refs = (List<Referenceable>) hiveTableInstance.get("columns");
         Assert.assertEquals(refs.size(), 2);
 
-        Assert.assertEquals(refs.get(0).getValuesMap(), values1);
-        Assert.assertEquals(refs.get(1).getValuesMap(), values2);
+        Referenceable col3 = getReferenceable(refs, "col3");
+        Referenceable col4 = getReferenceable(refs, "col4");
+
+        Assert.assertEquals(col3.getValuesMap(), values1);
+        Assert.assertEquals(col4.getValuesMap(), values2);
     }
 
     @Test
@@ -1117,4 +1121,19 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
+    private Referenceable getReferenceable(List<Referenceable> refs, String name) {
+        Referenceable ret = null;
+
+        for (Referenceable ref : refs) {
+            Map<String, Object> values     = ref.getValuesMap();
+            String              entityName = (String) values.get("name");
+
+            if (StringUtils.equalsIgnoreCase(name, entityName)) {
+                ret = ref;
+                break;
+            }
+        }
+
+        return ret;
+    }
 }
