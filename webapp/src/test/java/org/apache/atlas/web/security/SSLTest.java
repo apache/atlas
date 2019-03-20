@@ -68,7 +68,7 @@ public class SSLTest extends BaseSSLAndKerberosTest {
         }
     }
 
-    @BeforeClass
+    //@BeforeClass
     public void setUp() throws Exception {
         jksPath = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
         providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + jksPath.toUri();
@@ -95,7 +95,7 @@ public class SSLTest extends BaseSSLAndKerberosTest {
         secureEmbeddedServer.getServer().start();
     }
 
-    @AfterClass
+    //@AfterClass
     public void tearDown() throws Exception {
         if (secureEmbeddedServer != null) {
             secureEmbeddedServer.getServer().stop();
@@ -142,7 +142,7 @@ public class SSLTest extends BaseSSLAndKerberosTest {
         }
     }
 
-    @Test
+    //@Test
     public void testService() throws Exception {
         atlasClient.listTypes();
    }

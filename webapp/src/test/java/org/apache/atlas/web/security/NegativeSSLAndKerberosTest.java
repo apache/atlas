@@ -47,7 +47,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
     private String originalConf;
     private AtlasClient dgiClient;
 
-    @BeforeClass
+    //@BeforeClass
     public void setUp() throws Exception {
         jksPath = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
         providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + jksPath.toUri();
@@ -115,7 +115,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
         secureEmbeddedServer.getServer().start();
     }
 
-    @AfterClass
+    //@AfterClass
     public void tearDown() throws Exception {
         if (secureEmbeddedServer != null) {
             secureEmbeddedServer.getServer().stop();
@@ -130,7 +130,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
         }
     }
 
-    @Test (enabled = false)
+    @Test(enabled = false)
     public void testUnsecuredClient() throws Exception {
         try {
             dgiClient.listTypes();

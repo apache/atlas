@@ -29,7 +29,7 @@ import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
+import org.junit.Ignore;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -59,7 +59,7 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
     private String originalConf;
     private String originalHomeDir;
 
-    @BeforeClass
+    //@BeforeClass
     public void setUp() throws Exception {
         jksPath = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
         providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + jksPath.toUri();
@@ -103,7 +103,6 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
                 + "/users-credentials");
         configuration.setProperty("atlas.auth.policy.file",persistDir
                 + "/policy-store.txt" );
-
         TestUtils.writeConfiguration(configuration, persistDir + File.separator +
           "atlas-application.properties");
 
@@ -140,7 +139,7 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
         secureEmbeddedServer.getServer().start();
     }
 
-    @AfterClass
+    //@AfterClass
     public void tearDown() throws Exception {
         if (secureEmbeddedServer != null) {
             secureEmbeddedServer.getServer().stop();
@@ -181,7 +180,7 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
         return lc.getSubject();
     }
 
-    @Test
+    @Test(enabled = false)
     public void testService() throws Exception {
         dgiCLient.listTypes();
     }
