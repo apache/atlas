@@ -320,8 +320,10 @@ define(['require',
                             });
                         }
                     }
+
                     var view = new AssignTermLayoutView({
                         categoryData: that.data,
+                        associatedTerms: that.data && that.data.terms && that.data.terms.length > 0 ? that.data.terms : [],
                         isCategoryView: that.isCategoryView,
                         callback: function() {
                             that.getData();

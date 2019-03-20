@@ -88,7 +88,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'value', 'glossaryCollection', 'glossary', 'isAssignTermView', 'isAssignCategoryView', 'isAssignEntityView', 'isAssignAttributeRelationView'));
+                _.extend(this, _.pick(options, 'associatedTerms', 'guid', 'value', 'glossaryCollection', 'glossary', 'isAssignTermView', 'isAssignCategoryView', 'isAssignEntityView', 'isAssignAttributeRelationView'));
                 this.viewType = "term";
                 this.isAssignView = this.isAssignTermView || this.isAssignCategoryView || this.isAssignEntityView || this.isAssignAttributeRelationView;
                 this.bindEvents();
@@ -249,7 +249,9 @@ define(['require',
             generateData: function(opt) {
                 var that = this,
                     selectedGuid = that.guid,
+                    associatedTerms = that.associatedTerms,
                     type = opt.type;
+
                 if (opt.type == this.viewType) {
                     this.query[opt.type].isNodeNotFoundAtLoad = true;
                 }
@@ -339,38 +341,39 @@ define(['require',
                         });
                     }
                     if (type == "term" && obj.terms) {
-                        var theTerm = _.find(Globals.termMeanings, function(obj, index) {
-                            if (obj.guid == selectedGuid) {
-                                return obj;
-                            }
-                        });
                         _.each(obj.terms, function(term) {
-                            var includedTerms = _.map(theTerm && theTerm.termLinks, function(obj, index) {
-                                return obj.termGuid || obj.guid;
-                            });
-                            if ((!includedTerms.includes(term.termGuid))) {
-                                var typeName = term.typeName || "GlossaryTerm",
-                                    guid = term.termGuid,
-                                    termObj = {
-                                        "text": _.escape(term.displayText),
-                                        "type": typeName,
-                                        "gType": "term",
-                                        "guid": guid,
-                                        "id": guid,
-                                        "parent": obj,
-                                        "glossaryName": obj.name,
-                                        "glossaryId": obj.guid,
-                                        "model": term,
-                                        "icon": "fa fa-file-o"
+                            if (associatedTerms) {
+                                var associatedTermFound = _.find(associatedTerms, function(obj, index) {
+                                    if ((obj.termGuid ? obj.termGuid : obj.guid) == term.termGuid) {
+                                        return obj;
                                     }
-                                termObj.state = getSelectedState({
-                                    index: i,
-                                    node: termObj,
-                                    objGuid: guid
-                                })
-                                parent.children.push(termObj);
-
+                                });
+                                if (associatedTermFound) {
+                                    return;
+                                }
                             }
+
+                            var typeName = term.typeName || "GlossaryTerm",
+                                guid = term.termGuid,
+                                termObj = {
+                                    "text": _.escape(term.displayText),
+                                    "type": typeName,
+                                    "gType": "term",
+                                    "guid": guid,
+                                    "id": guid,
+                                    "parent": obj,
+                                    "glossaryName": obj.name,
+                                    "glossaryId": obj.guid,
+                                    "model": term,
+                                    "icon": "fa fa-file-o"
+                                }
+                            termObj.state = getSelectedState({
+                                index: i,
+                                node: termObj,
+                                objGuid: guid
+                            })
+                            parent.children.push(termObj);
+
                         });
                     }
                     return parent;

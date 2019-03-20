@@ -198,7 +198,7 @@ define(['require',
                             this.generateTag([]);
                         }
                         if (collectionJSON.relationshipAttributes && collectionJSON.relationshipAttributes.meanings) {
-                            this.generateTerm(collectionJSON.relationshipAttributes.meanings, collectionJSON);
+                            this.generateTerm(collectionJSON.relationshipAttributes.meanings);
                         }
                         if (Globals.entityTypeConfList && _.isEmptyArray(Globals.entityTypeConfList)) {
                             this.ui.editButtonContainer.html(ButtonsTmpl({ btn_edit: true }));
@@ -403,21 +403,9 @@ define(['require',
                 this.ui.propagatedTagList.html(propagatedTagListData);
 
             },
-            generateTerm: function(data, obj) {
+            generateTerm: function(data) {
                 var that = this,
                     termData = "";
-                var newD = { "guid": obj.guid, "termLinks": obj.relationshipAttributes.meanings };
-                Globals.termMeanings = Globals.termMeanings ? Globals.termMeanings : [];
-                if (Globals.termMeanings.length > 0) {
-                    for (var x in Globals.termMeanings) {
-                        if (Globals.termMeanings[x]['guid'] == obj.guid) {
-                            Globals.termMeanings[x].termLinks = obj.relationshipAttributes.meanings;
-                        }
-                    }
-                }
-                if (newD.termLinks.length > 0 && Globals.termMeanings == 0) {
-                    Globals.termMeanings.push(newD);
-                }
                 _.each(data, function(val) {
                     if (val.relationshipStatus == "ACTIVE") {
                         termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.displayText + ' data-id="termClick"><span>' + val.displayText + '</span><i class="fa fa-close" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
@@ -458,13 +446,18 @@ define(['require',
                 });
             },
             onClickAddTermBtn: function(e) {
-                var that = this;
+                var that = this,
+                    entityGuid = that.id,
+                    associatedTerms = this.collection.first().get('entity').relationshipAttributes.meanings;
+
+
                 require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
                     var view = new AssignTermLayoutView({
                         guid: that.id,
                         callback: function() {
                             that.fetchCollection();
                         },
+                        associatedTerms: associatedTerms,
                         showLoader: that.showLoader.bind(that),
                         hideLoader: that.hideLoader.bind(that),
                         glossaryCollection: that.glossaryCollection

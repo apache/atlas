@@ -944,10 +944,12 @@ define(['require',
             },
             onClickAddTermBtn: function(e) {
                 var that = this,
-                    entityGuid = $(e.currentTarget).data("guid");
+                    entityGuid = $(e.currentTarget).data("guid"),
+                    associatedTerms = this.searchCollection.find({ guid: entityGuid }).get('meanings');
                 require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
                     var view = new AssignTermLayoutView({
                         guid: entityGuid,
+                        associatedTerms: associatedTerms,
                         callback: function() {
                             that.fetchCollection();
                         },
