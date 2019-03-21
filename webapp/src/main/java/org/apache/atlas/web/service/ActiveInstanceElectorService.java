@@ -23,7 +23,7 @@ import org.apache.atlas.ha.AtlasServerIdSelector;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.service.Service;
-import org.apache.atlas.util.StatisticsUtil;
+import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
@@ -55,18 +55,17 @@ import java.util.Set;
 @Component
 @Order(1)
 public class ActiveInstanceElectorService implements Service, LeaderLatchListener {
-
     private static final Logger LOG = LoggerFactory.getLogger(ActiveInstanceElectorService.class);
 
-    private final Configuration configuration;
-    private final ServiceState serviceState;
-    private final ActiveInstanceState activeInstanceState;
-    private final StatisticsUtil statisticsUtil;
-    private Set<ActiveStateChangeHandler> activeStateChangeHandlerProviders;
-    private List<ActiveStateChangeHandler> activeStateChangeHandlers;
-    private CuratorFactory curatorFactory;
-    private LeaderLatch leaderLatch;
-    private String serverId;
+    private final Configuration                  configuration;
+    private final ServiceState                   serviceState;
+    private final ActiveInstanceState            activeInstanceState;
+    private final AtlasMetricsUtil               metricsUtil;
+    private       Set<ActiveStateChangeHandler>  activeStateChangeHandlerProviders;
+    private       List<ActiveStateChangeHandler> activeStateChangeHandlers;
+    private       CuratorFactory                 curatorFactory;
+    private       LeaderLatch                    leaderLatch;
+    private       String                         serverId;
 
     /**
      * Create a new instance of {@link ActiveInstanceElectorService}
@@ -78,14 +77,14 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     ActiveInstanceElectorService(Configuration configuration,
                                  Set<ActiveStateChangeHandler> activeStateChangeHandlerProviders,
                                  CuratorFactory curatorFactory, ActiveInstanceState activeInstanceState,
-                                 ServiceState serviceState, StatisticsUtil statisticsUtil) {
-        this.configuration = configuration;
+                                 ServiceState serviceState, AtlasMetricsUtil metricsUtil) {
+        this.configuration                     = configuration;
         this.activeStateChangeHandlerProviders = activeStateChangeHandlerProviders;
-        this.activeStateChangeHandlers = new ArrayList<>();
-        this.curatorFactory = curatorFactory;
-        this.activeInstanceState = activeInstanceState;
-        this.serviceState = serviceState;
-        this.statisticsUtil = statisticsUtil;
+        this.activeStateChangeHandlers         = new ArrayList<>();
+        this.curatorFactory                    = curatorFactory;
+        this.activeInstanceState               = activeInstanceState;
+        this.serviceState                      = serviceState;
+        this.metricsUtil                       = metricsUtil;
     }
 
     /**
@@ -96,9 +95,9 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
      */
     @Override
     public void start() throws AtlasException {
-        statisticsUtil.setServerStartTime();
+        metricsUtil.onServerStart();
         if (!HAConfiguration.isHAEnabled(configuration)) {
-            statisticsUtil.setServerActiveTime();
+            metricsUtil.onServerActivation();
             LOG.info("HA is not enabled, no need to start leader election service");
             return;
         }
@@ -156,7 +155,7 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
             }
             activeInstanceState.update(serverId);
             serviceState.setActive();
-            statisticsUtil.setServerActiveTime();
+            metricsUtil.onServerActivation();
         } catch (Exception e) {
             LOG.error("Got exception while activating", e);
             notLeader();

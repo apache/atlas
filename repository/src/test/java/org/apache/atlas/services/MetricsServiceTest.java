@@ -28,6 +28,8 @@ import org.apache.atlas.repository.impexp.ZipSource;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.AtlasMetricsCounter;
+import org.apache.atlas.util.AtlasMetricsUtil;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -37,10 +39,15 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
+import static org.apache.atlas.model.metrics.AtlasMetrics.*;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
 import static org.apache.atlas.services.MetricsService.ENTITY;
@@ -53,11 +60,11 @@ import static org.apache.atlas.services.MetricsService.METRIC_TAG_COUNT;
 import static org.apache.atlas.services.MetricsService.METRIC_TYPE_COUNT;
 import static org.apache.atlas.services.MetricsService.METRIC_TYPE_UNUSED_COUNT;
 import static org.apache.atlas.services.MetricsService.TAG;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.*;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class MetricsServiceTest {
+
     public static final String IMPORT_FILE = "metrics-entities-data.zip";
 
     @Inject
@@ -71,6 +78,14 @@ public class MetricsServiceTest {
 
     @Inject
     private MetricsService metricsService;
+
+    @Inject
+    private AtlasMetricsUtil metricsUtil;
+
+    TestClock clock = new TestClock(Clock.systemUTC(), ZoneOffset.UTC);
+
+    long msgOffset = 0;
+
 
     private final Map<String, Long> activeEntityMetricsExpected = new HashMap<String, Long>() {{
         put("hive_storagedesc", 5L);
@@ -93,6 +108,17 @@ public class MetricsServiceTest {
 
     private final Map<String, Long> tagMetricsExpected = new HashMap<String, Long>() {{
         put("PII", 1L);
+    }};
+
+    private final Map<String, Object> metricExpected = new HashMap<String, Object>() {{
+        put(STAT_NOTIFY_COUNT_CURR_HOUR, 11L);
+        put(STAT_NOTIFY_FAILED_COUNT_CURR_HOUR, 1L);
+        put(STAT_NOTIFY_COUNT_PREV_HOUR, 11L);
+        put(STAT_NOTIFY_FAILED_COUNT_PREV_HOUR, 1L);
+        put(STAT_NOTIFY_COUNT_CURR_DAY, 33L);
+        put(STAT_NOTIFY_FAILED_COUNT_CURR_DAY, 3L);
+        put(STAT_NOTIFY_COUNT_PREV_DAY, 11L);
+        put(STAT_NOTIFY_FAILED_COUNT_PREV_DAY, 1L);
     }};
 
     @BeforeClass
@@ -148,6 +174,24 @@ public class MetricsServiceTest {
         assertEquals(deletedEntityMetricsActual, deletedEntityMetricsExpected);
     }
 
+    @Test
+    public void testNotificationMetrics() {
+        Instant now           = Clock.systemUTC().instant();
+        Instant dayStartTime  = AtlasMetricsCounter.getDayStartTime(now);
+        Instant dayEndTime    = AtlasMetricsCounter.getNextDayStartTime(now);
+        Instant hourStartTime = dayEndTime.minusSeconds(60 * 60);
+
+        prepareNotificationData(dayStartTime, hourStartTime);
+
+        clock.setInstant(dayEndTime.minusSeconds(1));
+
+        Map<String, Object> notificationMetricMap = metricsUtil.getStats();
+
+        clock.setInstant(null);
+
+        verifyNotificationMetric(metricExpected, notificationMetricMap);
+    }
+
 
     private void loadModelFilesAndImportTestData() {
         try {
@@ -165,8 +209,75 @@ public class MetricsServiceTest {
         }
     }
 
+    private void prepareNotificationData(Instant dayStartTime, Instant hourStartTime) {
+        Instant prevDayStartTime = AtlasMetricsCounter.getDayStartTime(dayStartTime.minusSeconds(1));
+
+        msgOffset = 0;
+
+        clock.setInstant(prevDayStartTime);
+        metricsUtil.init(clock);
+        clock.setInstant(null);
+
+        processMessage(prevDayStartTime.plusSeconds(3)); // yesterday
+        processMessage(dayStartTime.plusSeconds(3));     // today
+        processMessage(hourStartTime.minusSeconds(3));   // past hour
+        processMessage(hourStartTime.plusSeconds(3));    // this hour
+    }
+
+    private void processMessage(Instant instant) {
+        clock.setInstant(instant);
+
+        metricsUtil.onNotificationProcessingComplete(++msgOffset, new AtlasMetricsUtil.NotificationStat(true, 1));
+
+        for (int i = 0; i < 10; i++) {
+            metricsUtil.onNotificationProcessingComplete(msgOffset++, new AtlasMetricsUtil.NotificationStat(false, 1));
+        }
+
+        clock.setInstant(null);
+    }
+
+    private void verifyNotificationMetric(Map<String, Object> metricExpected, Map<String, Object> notificationMetrics) {
+        assertNotNull(notificationMetrics);
+        assertNotEquals(notificationMetrics.size(), 0);
+        assertTrue(notificationMetrics.size() >= metricExpected.size());
+
+        for (Map.Entry<String, Object> entry : metricExpected.entrySet()) {
+            assertEquals(notificationMetrics.get(entry.getKey()), entry.getValue(), entry.getKey());
+        }
+    }
+
     public static ZipSource getZipSource(String fileName) throws IOException, AtlasBaseException {
         FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream(fileName);
         return new ZipSource(fs);
+    }
+
+    private static class TestClock extends Clock {
+        private final Clock   baseClock;
+        private final ZoneId  zone;
+        private       Instant instant = null;
+
+        public TestClock(Clock baseClock, ZoneId zone) {
+            this.baseClock = baseClock;
+            this.zone      = zone;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
+
+        @Override
+        public TestClock withZone(ZoneId zone) {
+            return new TestClock(baseClock, zone);
+        }
+
+        @Override
+        public Instant instant() {
+            return instant != null ? instant : baseClock.instant();
+        }
+
+        public void setInstant(Instant instant) {
+            this.instant = instant;
+        }
     }
 }
