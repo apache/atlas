@@ -52,7 +52,6 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 
 import java.io.File;
@@ -60,7 +59,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +70,7 @@ import java.util.SortedSet;
 import static org.apache.atlas.hive.bridge.HiveMetaStoreBridge.HDFS_PATH;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class HiveITBase {
@@ -288,8 +288,18 @@ public class HiveITBase {
             String testPathNormed = lower(path.toString());
             String hdfsPathId     = assertHDFSPathIsRegistered(testPathNormed);
 
-            Assert.assertEquals(hdfsPathIds.get(0).getGuid(), hdfsPathId);
+            assertHDFSPathIdsContain(hdfsPathIds, hdfsPathId);
         }
+    }
+
+    private void assertHDFSPathIdsContain(List<AtlasObjectId> hdfsPathObjectIds, String hdfsPathId) {
+        Set<String> hdfsPathGuids = new HashSet<>();
+
+        for (AtlasObjectId hdfsPathObjectId : hdfsPathObjectIds) {
+            hdfsPathGuids.add(hdfsPathObjectId.getGuid());
+        }
+
+        assertTrue(hdfsPathGuids.contains(hdfsPathId));
     }
 
     protected String assertHDFSPathIsRegistered(String path) throws Exception {
