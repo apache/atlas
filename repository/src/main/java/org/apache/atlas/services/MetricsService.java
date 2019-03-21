@@ -18,15 +18,13 @@
 package org.apache.atlas.services;
 
 import org.apache.atlas.annotation.AtlasService;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.util.StatisticsUtil;
+import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +51,8 @@ public class MetricsService {
     public static final String GENERAL = "general";
 
     // Query names
+    protected static final String METRIC_COLLECTION_TIME   = "collectionTime";
+    protected static final String METRIC_STATS             = "stats";
     protected static final String METRIC_TYPE_COUNT        = TYPE + "Count";
     protected static final String METRIC_TYPE_UNUSED_COUNT = TYPE + "UnusedCount";
     protected static final String METRIC_ENTITY_COUNT      = ENTITY + "Count";
@@ -61,114 +61,90 @@ public class MetricsService {
     protected static final String METRIC_TAG_COUNT         = TAG + "Count";
     protected static final String METRIC_ENTITIES_PER_TAG  = TAG + "Entities";
 
-    public static final String METRIC_COLLECTION_TIME                = "collectionTime";
-
     private final AtlasGraph        atlasGraph;
     private final AtlasTypeRegistry typeRegistry;
-    private final StatisticsUtil    statisticsUtil;
+    private final AtlasMetricsUtil  metricsUtil;
     private final String            indexSearchPrefix = AtlasGraphUtilsV2.getIndexSearchPrefix();
 
     @Inject
-    public MetricsService(final AtlasGraph graph, final AtlasTypeRegistry typeRegistry, StatisticsUtil statisticsUtil) {
+    public MetricsService(final AtlasGraph graph, final AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil) {
         this.atlasGraph   = graph;
         this.typeRegistry = typeRegistry;
-        this.statisticsUtil = statisticsUtil;
+        this.metricsUtil  = metricsUtil;
     }
 
     @SuppressWarnings("unchecked")
     public AtlasMetrics getMetrics() {
-        AtlasMetrics metrics = new AtlasMetrics();
-
-        metrics.addMetric(GENERAL, METRIC_TYPE_COUNT, getAllTypesCount());
-        metrics.addMetric(GENERAL, METRIC_TAG_COUNT, getAllTagsCount());
-
-        Map<String, Long> activeCountMap  = new HashMap<>();
-        Map<String, Long> deletedCountMap = new HashMap<>();
-
-        // metrics for classifications
+        Collection<String> entityDefNames         = typeRegistry.getAllEntityDefNames();
         Collection<String> classificationDefNames = typeRegistry.getAllClassificationDefNames();
-
-        if (classificationDefNames != null) {
-            for (String classificationDefName : classificationDefNames) {
-                activeCountMap.put(classificationDefName, getTypeCount(classificationDefName, ACTIVE));
-            }
-        }
-
-        // metrics for entities
-        Collection<String> entityDefNames = typeRegistry.getAllEntityDefNames();
+        Map<String, Long>  activeEntityCount      = new HashMap<>();
+        Map<String, Long>  deletedEntityCount     = new HashMap<>();
+        Map<String, Long>  taggedEntityCount      = new HashMap<>();
+        long               unusedTypeCount        = 0;
+        long               totalEntities          = 0;
 
         if (entityDefNames != null) {
             for (String entityDefName : entityDefNames) {
-                activeCountMap.put(entityDefName, getTypeCount(entityDefName, ACTIVE));
-                deletedCountMap.put(entityDefName, getTypeCount(entityDefName, DELETED));
+                long activeCount  = getTypeCount(entityDefName, ACTIVE);
+                long deletedCount = getTypeCount(entityDefName, DELETED);
+
+                if (activeCount > 0) {
+                    activeEntityCount.put(entityDefName, activeCount);
+                    totalEntities += activeCount;
+                }
+
+                if (deletedCount > 0) {
+                    deletedEntityCount.put(entityDefName, deletedCount);
+                    totalEntities += deletedCount;
+                }
+
+                if (activeCount == 0 && deletedCount == 0) {
+                    unusedTypeCount++;
+                }
             }
         }
 
-        Map<String, Long> activeEntityCount  = new HashMap<>();
-        Map<String, Long> deletedEntityCount = new HashMap<>();
-        long              unusedTypeCount    = 0;
-        long              totalEntities      = 0;
+        if (classificationDefNames != null) {
+            for (String classificationDefName : classificationDefNames) {
+                long count = getTypeCount(classificationDefName, ACTIVE);
 
-        for (String entityDefName : typeRegistry.getAllEntityDefNames()) {
-            Long activeCount  = activeCountMap.get(entityDefName);
-            Long deletedCount = deletedCountMap.get(entityDefName);
-
-            if (activeCount > 0) {
-                activeEntityCount.put(entityDefName, activeCount);
-                totalEntities += activeCount.longValue();
-            }
-
-            if (deletedCount > 0) {
-                deletedEntityCount.put(entityDefName, deletedCount);
-                totalEntities += deletedCount.longValue();
-            }
-
-            if (activeCount == 0 && deletedCount == 0) {
-                unusedTypeCount++;
+                if (count > 0) {
+                    taggedEntityCount.put(classificationDefName, count);
+                }
             }
         }
 
+        AtlasMetrics metrics = new AtlasMetrics();
+
+        metrics.addMetric(GENERAL, METRIC_COLLECTION_TIME, System.currentTimeMillis());
+        metrics.addMetric(GENERAL, METRIC_STATS, metricsUtil.getStats()); //add atlas server stats
+        metrics.addMetric(GENERAL, METRIC_TYPE_COUNT, getAllTypesCount());
+        metrics.addMetric(GENERAL, METRIC_TAG_COUNT, getAllTagsCount());
         metrics.addMetric(GENERAL, METRIC_TYPE_UNUSED_COUNT, unusedTypeCount);
         metrics.addMetric(GENERAL, METRIC_ENTITY_COUNT, totalEntities);
+
         metrics.addMetric(ENTITY, METRIC_ENTITY_ACTIVE, activeEntityCount);
         metrics.addMetric(ENTITY, METRIC_ENTITY_DELETED, deletedEntityCount);
 
-        Map<String, Long> taggedEntityCount = new HashMap<>();
-
-        for (String classificationName : typeRegistry.getAllClassificationDefNames()) {
-            Long count = activeCountMap.get(classificationName);
-
-            if (count > 0) {
-                taggedEntityCount.put(classificationName, count);
-            }
-        }
-
         metrics.addMetric(TAG, METRIC_ENTITIES_PER_TAG, taggedEntityCount);
-
-        // Miscellaneous metrics
-        long collectionTime = System.currentTimeMillis();
-
-        metrics.addMetric(GENERAL, METRIC_COLLECTION_TIME, collectionTime);
-
-        //add atlas server stats
-        Map<String, Object> statistics = statisticsUtil.getAtlasStatistics();
-        metrics.addMetric(GENERAL, "stats", statistics);
 
         return metrics;
     }
 
-    private Long getTypeCount(String typeName, Status status) {
+    private long getTypeCount(String typeName, Status status) {
+        Long   ret        = null;
         String indexQuery = indexSearchPrefix + "\"" + ENTITY_TYPE_PROPERTY_KEY + "\" : (%s)" + AND_STR +
                             indexSearchPrefix + "\"" + STATE_PROPERTY_KEY       + "\" : (%s)";
 
         indexQuery = String.format(indexQuery, typeName, status.name());
 
         try {
-            return atlasGraph.indexQuery(VERTEX_INDEX, indexQuery).vertexTotals();
+            ret = atlasGraph.indexQuery(VERTEX_INDEX, indexQuery).vertexTotals();
         }catch (Exception e){
             LOG.error("Failed fetching using indexQuery: " + e.getMessage());
         }
-        return 0l;
+
+        return ret == null ? 0L : ret;
     }
 
     private int getAllTypesCount() {

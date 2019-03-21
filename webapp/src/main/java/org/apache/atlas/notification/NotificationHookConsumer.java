@@ -47,7 +47,8 @@ import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.atlas.utils.LruCache;
-import org.apache.atlas.util.StatisticsUtil;
+import org.apache.atlas.util.AtlasMetricsUtil;
+import org.apache.atlas.util.AtlasMetricsUtil.NotificationStat;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
@@ -140,7 +141,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final ServiceState                  serviceState;
     private final AtlasInstanceConverter        instanceConverter;
     private final AtlasTypeRegistry             typeRegistry;
-    private final StatisticsUtil                statisticsUtil;
+    private final AtlasMetricsUtil              metricsUtil;
     private final int                           maxRetries;
     private final int                           failedMsgCacheSize;
     private final int                           minWaitDuration;
@@ -156,10 +157,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final boolean                       hiveTypesRemoveOwnedRefAttrs;
     private final boolean                       rdbmsTypesRemoveOwnedRefAttrs;
     private final boolean                       preprocessEnabled;
-
-    private NotificationInterface notificationInterface;
-    private ExecutorService       executors;
-    private Configuration         applicationProperties;
+    private final NotificationInterface         notificationInterface;
+    private final Configuration                 applicationProperties;
+    private       ExecutorService               executors;
 
     @VisibleForTesting
     final int consumerRetryInterval;
@@ -170,14 +170,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     @Inject
     public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore,
                                     ServiceState serviceState, AtlasInstanceConverter instanceConverter,
-                                    AtlasTypeRegistry typeRegistry, StatisticsUtil statisticsUtil) throws AtlasException {
+                                    AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil) throws AtlasException {
         this.notificationInterface = notificationInterface;
         this.atlasEntityStore      = atlasEntityStore;
         this.serviceState          = serviceState;
         this.instanceConverter     = instanceConverter;
         this.typeRegistry          = typeRegistry;
         this.applicationProperties = ApplicationProperties.get();
-        this.statisticsUtil        = statisticsUtil;
+        this.metricsUtil           = metricsUtil;
 
         maxRetries            = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
         failedMsgCacheSize    = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 1);
@@ -475,12 +475,12 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         @VisibleForTesting
         void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) throws AtlasServiceException, AtlasException {
-            AtlasPerfTracer  perf        = null;
-            HookNotification message     = kafkaMsg.getMessage();
-            String           messageUser = message.getUser();
-            long             startTime   = System.currentTimeMillis();
-            boolean          isFailedMsg = false;
-            AuditLog         auditLog = null;
+            AtlasPerfTracer  perf           = null;
+            HookNotification message        = kafkaMsg.getMessage();
+            String           messageUser    = message.getUser();
+            long             startTime      = System.currentTimeMillis();
+            NotificationStat stats          = new NotificationStat();
+            AuditLog         auditLog       = null;
 
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, message.getType().name());
@@ -525,7 +525,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                                             AtlasClient.API_V1.CREATE_ENTITY.getNormalizedPath());
                                 }
 
-                                createOrUpdate(entities, false, context);
+                                createOrUpdate(entities, false, stats, context);
                             }
                             break;
 
@@ -546,7 +546,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 // There should only be one root entity
                                 entities.getEntities().get(0).setGuid(guid);
 
-                                createOrUpdate(entities, true, context);
+                                createOrUpdate(entities, true, stats, context);
                             }
                             break;
 
@@ -562,7 +562,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 try {
                                     AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(deleteRequest.getTypeName());
 
-                                    atlasEntityStore.deleteByUniqueAttributes(type, Collections.singletonMap(deleteRequest.getAttribute(), (Object) deleteRequest.getAttributeValue()));
+                                    EntityMutationResponse response = atlasEntityStore.deleteByUniqueAttributes(type, Collections.singletonMap(deleteRequest.getAttribute(), (Object) deleteRequest.getAttributeValue()));
+
+                                    stats.updateStats(response);
                                 } catch (ClassCastException cle) {
                                     LOG.error("Failed to delete entity {}", deleteRequest);
                                 }
@@ -579,7 +581,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                                             AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
                                 }
 
-                                createOrUpdate(entities, false, context);
+                                createOrUpdate(entities, false, stats, context);
                             }
                             break;
 
@@ -593,7 +595,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                                             AtlasClientV2.API_V2.CREATE_ENTITY.getNormalizedPath());
                                 }
 
-                                createOrUpdate(entities, false, context);
+                                createOrUpdate(entities, false, stats, context);
                             }
                             break;
 
@@ -608,7 +610,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                                             AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
                                 }
 
-                                atlasEntityStore.updateEntity(entityId, entity, true);
+                                EntityMutationResponse response = atlasEntityStore.updateEntity(entityId, entity, true);
+
+                                stats.updateStats(response);
                             }
                             break;
 
@@ -622,7 +626,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                                             AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
                                 }
 
-                                createOrUpdate(entities, false, context);
+                                createOrUpdate(entities, false, stats, context);
                             }
                             break;
 
@@ -640,7 +644,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                         AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
 
-                                        atlasEntityStore.deleteByUniqueAttributes(type, entity.getUniqueAttributes());
+                                        EntityMutationResponse response = atlasEntityStore.deleteByUniqueAttributes(type, entity.getUniqueAttributes());
+
+                                        stats.updateStats(response);
                                     }
                                 } catch (ClassCastException cle) {
                                     LOG.error("Failed to do delete entities {}", entities);
@@ -661,7 +667,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                             LOG.warn("Max retries exceeded for message {}", strMessage, e);
 
-                            isFailedMsg = true;
+                            stats.isFailedMsg = true;
 
                             failedMessages.add(strMessage);
 
@@ -689,33 +695,34 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             } finally {
                 AtlasPerfTracer.log(perf);
 
-                long msgProcessingTime = System.currentTimeMillis() - startTime;
+                stats.timeTakenMs = System.currentTimeMillis() - startTime;
 
-                if (msgProcessingTime > largeMessageProcessingTimeThresholdMs) {
+                metricsUtil.onNotificationProcessingComplete(kafkaMsg.getOffset(), stats);
+
+                if (stats.timeTakenMs > largeMessageProcessingTimeThresholdMs) {
                     String strMessage = AbstractNotification.getMessageJson(message);
 
-                    LOG.warn("msgProcessingTime={}, msgSize={}, topicOffset={}}", msgProcessingTime, strMessage.length(), kafkaMsg.getOffset());
-                    LARGE_MESSAGES_LOG.warn("{\"msgProcessingTime\":{},\"msgSize\":{},\"topicOffset\":{},\"data\":{}}", msgProcessingTime, strMessage.length(), kafkaMsg.getOffset(), strMessage);
+                    LOG.warn("msgProcessingTime={}, msgSize={}, topicOffset={}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getOffset());
+                    LARGE_MESSAGES_LOG.warn("{\"msgProcessingTime\":{},\"msgSize\":{},\"topicOffset\":{},\"data\":{}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getOffset(), strMessage);
                 }
 
                 if (auditLog != null) {
-                    auditLog.setHttpStatus(isFailedMsg ? SC_BAD_REQUEST : SC_OK);
-                    auditLog.setTimeTaken(msgProcessingTime);
+                    auditLog.setHttpStatus(stats.isFailedMsg ? SC_BAD_REQUEST : SC_OK);
+                    auditLog.setTimeTaken(stats.timeTakenMs);
 
                     AuditFilter.audit(auditLog);
                 }
-                statisticsUtil.setAvgMsgProcessingTime(msgProcessingTime);
             }
         }
 
-        private void createOrUpdate(AtlasEntitiesWithExtInfo entities, boolean isPartialUpdate, PreprocessorContext context) throws AtlasBaseException {
+        private void createOrUpdate(AtlasEntitiesWithExtInfo entities, boolean isPartialUpdate, NotificationStat stats, PreprocessorContext context) throws AtlasBaseException {
             List<AtlasEntity> entitiesList = entities.getEntities();
             AtlasEntityStream entityStream = new AtlasEntityStream(entities);
 
             if (commitBatchSize <= 0 || entitiesList.size() <= commitBatchSize) {
                 EntityMutationResponse response = atlasEntityStore.createOrUpdate(entityStream, isPartialUpdate);
 
-                recordProcessedEntities(response, context);
+                recordProcessedEntities(response, stats, context);
             } else {
                 for (int fromIdx = 0; fromIdx < entitiesList.size(); fromIdx += commitBatchSize) {
                     int toIndex = fromIdx + commitBatchSize;
@@ -733,7 +740,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                     EntityMutationResponse response = atlasEntityStore.createOrUpdate(batchStream, isPartialUpdate);
 
-                    recordProcessedEntities(response, context);
+                    recordProcessedEntities(response, stats, context);
 
                     RequestContext.get().resetEntityGuidUpdates();
 
@@ -770,8 +777,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                 consumer.commit(partition, kafkaMessage.getOffset() + 1);
                 commitSucceessStatus = true;
-                statisticsUtil.setKafkaOffsets(kafkaMessage.getOffset());
-                statisticsUtil.setLastMsgProcessedTime();
             } finally {
                 failedCommitOffsetRecorder.recordIfFailed(commitSucceessStatus, kafkaMessage.getOffset());
             }
@@ -1021,24 +1026,30 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         return ret;
     }
 
-    private void recordProcessedEntities(EntityMutationResponse mutationResponse, PreprocessorContext context) {
-        if (mutationResponse != null && context != null) {
-            if (MapUtils.isNotEmpty(mutationResponse.getGuidAssignments())) {
-                context.getGuidAssignments().putAll(mutationResponse.getGuidAssignments());
+    private void recordProcessedEntities(EntityMutationResponse mutationResponse, NotificationStat stats, PreprocessorContext context) {
+        if (mutationResponse != null) {
+            if (stats != null) {
+                stats.updateStats(mutationResponse);
             }
 
-            if (CollectionUtils.isNotEmpty(mutationResponse.getCreatedEntities())) {
-                for (AtlasEntityHeader entity : mutationResponse.getCreatedEntities()) {
-                    if (entity != null && entity.getGuid() != null) {
-                        context.getCreatedEntities().add(entity.getGuid());
+            if (context != null) {
+                if (MapUtils.isNotEmpty(mutationResponse.getGuidAssignments())) {
+                    context.getGuidAssignments().putAll(mutationResponse.getGuidAssignments());
+                }
+
+                if (CollectionUtils.isNotEmpty(mutationResponse.getCreatedEntities())) {
+                    for (AtlasEntityHeader entity : mutationResponse.getCreatedEntities()) {
+                        if (entity != null && entity.getGuid() != null) {
+                            context.getCreatedEntities().add(entity.getGuid());
+                        }
                     }
                 }
-            }
 
-            if (CollectionUtils.isNotEmpty(mutationResponse.getDeletedEntities())) {
-                for (AtlasEntityHeader entity : mutationResponse.getDeletedEntities()) {
-                    if (entity != null && entity.getGuid() != null) {
-                        context.getDeletedEntities().add(entity.getGuid());
+                if (CollectionUtils.isNotEmpty(mutationResponse.getDeletedEntities())) {
+                    for (AtlasEntityHeader entity : mutationResponse.getDeletedEntities()) {
+                        if (entity != null && entity.getGuid() != null) {
+                            context.getDeletedEntities().add(entity.getGuid());
+                        }
                     }
                 }
             }
