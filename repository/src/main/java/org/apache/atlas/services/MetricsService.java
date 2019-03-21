@@ -18,15 +18,13 @@
 package org.apache.atlas.services;
 
 import org.apache.atlas.annotation.AtlasService;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.util.StatisticsUtil;
+import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,10 +45,11 @@ public class MetricsService {
     private static final Logger LOG = LoggerFactory.getLogger(MetricsService.class);
 
     // Query Category constants
-    public static final String TYPE    = "type";
-    public static final String ENTITY  = "entity";
-    public static final String TAG     = "tag";
-    public static final String GENERAL = "general";
+    public static final String TYPE         = "type";
+    public static final String ENTITY       = "entity";
+    public static final String TAG          = "tag";
+    public static final String GENERAL      = "general";
+    public static final String NOTIFICATION = "notification";
 
     // Query names
     protected static final String METRIC_TYPE_COUNT        = TYPE + "Count";
@@ -61,18 +60,18 @@ public class MetricsService {
     protected static final String METRIC_TAG_COUNT         = TAG + "Count";
     protected static final String METRIC_ENTITIES_PER_TAG  = TAG + "Entities";
 
-    public static final String METRIC_COLLECTION_TIME                = "collectionTime";
+    public static final String METRIC_COLLECTION_TIME      = "collectionTime";
 
-    private final AtlasGraph        atlasGraph;
-    private final AtlasTypeRegistry typeRegistry;
-    private final StatisticsUtil    statisticsUtil;
-    private final String            indexSearchPrefix = AtlasGraphUtilsV2.getIndexSearchPrefix();
+    private final AtlasGraph             atlasGraph;
+    private final AtlasTypeRegistry      typeRegistry;
+    private final AtlasMetricsUtil       atlasMetricsUtil;
+    private final String                 indexSearchPrefix = AtlasGraphUtilsV2.getIndexSearchPrefix();
 
     @Inject
-    public MetricsService(final AtlasGraph graph, final AtlasTypeRegistry typeRegistry, StatisticsUtil statisticsUtil) {
+    public MetricsService(final AtlasGraph graph, final AtlasTypeRegistry typeRegistry, AtlasMetricsUtil atlasMetricsUtil) {
         this.atlasGraph   = graph;
         this.typeRegistry = typeRegistry;
-        this.statisticsUtil = statisticsUtil;
+        this.atlasMetricsUtil = atlasMetricsUtil;
     }
 
     @SuppressWarnings("unchecked")
@@ -151,8 +150,16 @@ public class MetricsService {
         metrics.addMetric(GENERAL, METRIC_COLLECTION_TIME, collectionTime);
 
         //add atlas server stats
-        Map<String, Object> statistics = statisticsUtil.getAtlasStatistics();
+        Map<String, Object> statistics = atlasMetricsUtil.getAtlasMetrics();
         metrics.addMetric(GENERAL, "stats", statistics);
+
+        Map<Object, Map<Object, Object>> map = atlasMetricsUtil.getMetrics(collectionTime);
+
+        for(Map.Entry<Object, Map<Object, Object>> entry : map.entrySet()) {
+            Object timeType = entry.getKey();
+            Map<Object, Object> categoryType = entry.getValue();
+            metrics.addMetric(NOTIFICATION, timeType.toString(), categoryType);
+        }
 
         return metrics;
     }

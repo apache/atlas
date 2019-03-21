@@ -47,7 +47,7 @@ import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.atlas.utils.LruCache;
-import org.apache.atlas.util.StatisticsUtil;
+import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
@@ -140,7 +140,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final ServiceState                  serviceState;
     private final AtlasInstanceConverter        instanceConverter;
     private final AtlasTypeRegistry             typeRegistry;
-    private final StatisticsUtil                statisticsUtil;
+    private final AtlasMetricsUtil              atlasMetricsUtil;
     private final int                           maxRetries;
     private final int                           failedMsgCacheSize;
     private final int                           minWaitDuration;
@@ -157,9 +157,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final boolean                       rdbmsTypesRemoveOwnedRefAttrs;
     private final boolean                       preprocessEnabled;
 
-    private NotificationInterface notificationInterface;
-    private ExecutorService       executors;
-    private Configuration         applicationProperties;
+    private NotificationInterface               notificationInterface;
+    private ExecutorService                     executors;
+    private Configuration                       applicationProperties;
 
     @VisibleForTesting
     final int consumerRetryInterval;
@@ -170,14 +170,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     @Inject
     public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore,
                                     ServiceState serviceState, AtlasInstanceConverter instanceConverter,
-                                    AtlasTypeRegistry typeRegistry, StatisticsUtil statisticsUtil) throws AtlasException {
+                                    AtlasTypeRegistry typeRegistry, AtlasMetricsUtil atlasMetricsUtil) throws AtlasException {
         this.notificationInterface = notificationInterface;
         this.atlasEntityStore      = atlasEntityStore;
         this.serviceState          = serviceState;
         this.instanceConverter     = instanceConverter;
         this.typeRegistry          = typeRegistry;
         this.applicationProperties = ApplicationProperties.get();
-        this.statisticsUtil        = statisticsUtil;
+        this.atlasMetricsUtil      = atlasMetricsUtil;
 
         maxRetries            = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
         failedMsgCacheSize    = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 1);
@@ -651,7 +651,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             default:
                                 throw new IllegalStateException("Unknown notification type: " + message.getType().name());
                         }
-
                         break;
                     } catch (Throwable e) {
                         RequestContext.get().resetEntityGuidUpdates();
@@ -687,6 +686,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                 commit(kafkaMsg);
             } finally {
+
+                atlasMetricsUtil.onNotificationProcessingComplete(message.getType(), isFailedMsg, System.currentTimeMillis());
+
                 AtlasPerfTracer.log(perf);
 
                 long msgProcessingTime = System.currentTimeMillis() - startTime;
@@ -704,7 +706,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                     AuditFilter.audit(auditLog);
                 }
-                statisticsUtil.setAvgMsgProcessingTime(msgProcessingTime);
+                atlasMetricsUtil.setAvgMsgProcessingTime(msgProcessingTime);
             }
         }
 
@@ -770,8 +772,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                 consumer.commit(partition, kafkaMessage.getOffset() + 1);
                 commitSucceessStatus = true;
-                statisticsUtil.setKafkaOffsets(kafkaMessage.getOffset());
-                statisticsUtil.setLastMsgProcessedTime();
+                atlasMetricsUtil.setKafkaOffsets(kafkaMessage.getOffset());
+                atlasMetricsUtil.setLastMsgProcessedTime();
             } finally {
                 failedCommitOffsetRecorder.recordIfFailed(commitSucceessStatus, kafkaMessage.getOffset());
             }
