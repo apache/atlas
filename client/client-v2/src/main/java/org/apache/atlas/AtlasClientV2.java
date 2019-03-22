@@ -326,7 +326,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public void updateClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATIONS, guid), AtlasClassifications.class, classifications);
+        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATIONS, guid), (Class<?>)null, classifications);
     }
 
     public void deleteClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
@@ -486,7 +486,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 DELETE_ENTITIES_BY_GUIDS    = new API_V2(ENTITY_BULK_API, HttpMethod.DELETE, Response.Status.OK);
         public static final API_V2 GET_CLASSIFICATIONS         = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.GET, Response.Status.OK);
         public static final API_V2 ADD_CLASSIFICATIONS         = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.POST, Response.Status.NO_CONTENT);
-        public static final API_V2 UPDATE_CLASSIFICATIONS      = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.PUT, Response.Status.OK);
+        public static final API_V2 UPDATE_CLASSIFICATIONS      = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.PUT, Response.Status.NO_CONTENT);
         public static final API_V2 DELETE_CLASSIFICATION       = new API_V2(ENTITY_API + "guid/%s/classification/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
         public static final API_V2 LINEAGE_INFO                = new API_V2(LINEAGE_URI, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 DSL_SEARCH                  = new API_V2(DSL_URI, HttpMethod.GET, Response.Status.OK);
