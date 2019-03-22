@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
@@ -60,29 +61,44 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
 
     public AtlasEntityDef() {
-        this(null, null, null, null, null, null);
+        this(null, null, null, null, null, null, null);
     }
 
     public AtlasEntityDef(String name) {
-        this(name, null, null, null, null, null);
+        this(name, null, null, null, null, null, null);
     }
 
     public AtlasEntityDef(String name, String description) {
-        this(name, description, null, null, null, null);
+        this(name, description, null, null, null, null, null);
     }
 
     public AtlasEntityDef(String name, String description, String typeVersion) {
-        this(name, description, typeVersion, null, null, null);
+        this(name, description, typeVersion, null, null, null, null);
+    }
+    
+    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType) {
+        this(name, description, typeVersion, serviceType, null, null, null);
     }
 
+
     public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
-        this(name, description, typeVersion, attributeDefs, null, null);
+        this(name, description, typeVersion, attributeDefs, null);
+    }
+    
+    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs) {
+        this(name, description, typeVersion, serviceType, attributeDefs, null, null);
     }
 
     public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs,
                           Set<String> superTypes) {
         this(name, description, typeVersion, attributeDefs, superTypes, null);
     }
+    
+    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs,
+            Set<String> superTypes) {
+    	this(name, description, typeVersion, serviceType, attributeDefs, superTypes, null);
+    }
+
 
     public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs,
                           Set<String> superTypes, Map<String, String> options) {
@@ -90,6 +106,14 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
         setSuperTypes(superTypes);
     }
+    
+    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs,
+            Set<String> superTypes, Map<String, String> options) {
+    	super(TypeCategory.ENTITY, name, description, typeVersion, attributeDefs, serviceType, options);
+
+		setSuperTypes(superTypes);
+	}
+
 
     public AtlasEntityDef(AtlasEntityDef other) {
         super(other);
@@ -97,7 +121,10 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         setSuperTypes(other != null ? other.getSuperTypes() : null);
     }
 
-    public Set<String> getSuperTypes() {
+
+
+
+	public Set<String> getSuperTypes() {
         return superTypes;
     }
 
