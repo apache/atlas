@@ -23,11 +23,11 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
-import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.SearchProcessor;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.patches.AtlasPatch;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
@@ -65,6 +65,7 @@ import java.util.Set;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
 import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
@@ -74,8 +75,11 @@ import static org.apache.atlas.repository.Constants.PATCH_ID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.PATCH_DESCRIPTION_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.PATCH_STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.PATCH_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.*;
 
 /**
@@ -133,7 +137,7 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static String getTypeName(AtlasElement element) {
-        return element.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
+        return element.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
     }
 
     public static String getEdgeLabel(String fromNode, String toNode) {
@@ -341,7 +345,7 @@ public class AtlasGraphUtilsV2 {
     public static AtlasVertex findByPatchId(String patchId) {
         AtlasVertex ret        = null;
         String      indexQuery = getIndexSearchPrefix() + "\"" + PATCH_ID_PROPERTY_KEY + "\" : ("+ patchId +")";
-        Iterator<Result<Object, Object>> results = AtlasGraphProvider.getGraphInstance().indexQuery(VERTEX_INDEX, indexQuery).vertices();
+        Iterator<Result<Object, Object>> results = getGraphInstance().indexQuery(VERTEX_INDEX, indexQuery).vertices();
 
         while (results != null && results.hasNext()) {
             ret = results.next().getVertex();
@@ -358,7 +362,7 @@ public class AtlasGraphUtilsV2 {
         AtlasVertex ret = GraphTransactionInterceptor.getVertexFromCache(guid);
 
         if (ret == null) {
-            AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
+            AtlasGraphQuery query = getGraphInstance().query()
                     .has(Constants.GUID_PROPERTY_KEY, guid);
 
             Iterator<AtlasVertex> results = query.vertices().iterator();
@@ -386,9 +390,9 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static boolean typeHasInstanceVertex(String typeName) throws AtlasBaseException {
-        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance()
+        AtlasGraphQuery query = getGraphInstance()
                 .query()
-                .has(Constants.TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
+                .has(TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -404,8 +408,8 @@ public class AtlasGraphUtilsV2 {
     public static AtlasVertex findByTypeAndUniquePropertyName(String typeName, String propertyName, Object attrVal) {
         MetricRecorder metric = RequestContext.get().startMetricRecord("findByTypeAndUniquePropertyName");
 
-        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
-                                                    .has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName)
+        AtlasGraphQuery query = getGraphInstance().query()
+                                                    .has(ENTITY_TYPE_PROPERTY_KEY, typeName)
                                                     .has(propertyName, attrVal);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
@@ -420,7 +424,7 @@ public class AtlasGraphUtilsV2 {
     public static AtlasVertex findBySuperTypeAndUniquePropertyName(String typeName, String propertyName, Object attrVal) {
         MetricRecorder metric = RequestContext.get().startMetricRecord("findBySuperTypeAndUniquePropertyName");
 
-        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
+        AtlasGraphQuery query = getGraphInstance().query()
                                                     .has(Constants.SUPER_TYPES_PROPERTY_KEY, typeName)
                                                     .has(propertyName, attrVal);
 
@@ -436,10 +440,10 @@ public class AtlasGraphUtilsV2 {
     public static AtlasVertex findByTypeAndPropertyName(String typeName, String propertyName, Object attrVal) {
         MetricRecorder metric = RequestContext.get().startMetricRecord("findByTypeAndPropertyName");
 
-        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
-                                                    .has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName)
+        AtlasGraphQuery query = getGraphInstance().query()
+                                                    .has(ENTITY_TYPE_PROPERTY_KEY, typeName)
                                                     .has(propertyName, attrVal)
-                                                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+                                                    .has(STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -453,10 +457,10 @@ public class AtlasGraphUtilsV2 {
     public static AtlasVertex findBySuperTypeAndPropertyName(String typeName, String propertyName, Object attrVal) {
         MetricRecorder metric = RequestContext.get().startMetricRecord("findBySuperTypeAndPropertyName");
 
-        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
+        AtlasGraphQuery query = getGraphInstance().query()
                                                     .has(Constants.SUPER_TYPES_PROPERTY_KEY, typeName)
                                                     .has(propertyName, attrVal)
-                                                    .has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+                                                    .has(STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -467,9 +471,9 @@ public class AtlasGraphUtilsV2 {
         return vertex;
     }
 
-    public static Map<String, PatchStatus> initPatchesRegistry() {
-        Map<String, PatchStatus>  ret     = new HashMap<>();
-        AtlasPatches              patches = getPatches();
+    public static Map<String, PatchStatus> getPatchesRegistry() {
+        Map<String, PatchStatus> ret     = new HashMap<>();
+        AtlasPatches             patches = getAllPatches();
 
         for (AtlasPatch patch : patches.getPatches()) {
             String      patchId     = patch.getId();
@@ -483,7 +487,7 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
-    public static AtlasPatches getPatches() {
+    public static AtlasPatches getAllPatches() {
         List<AtlasPatch>                 ret            = new ArrayList<>();
         String                           idxQueryString = getIndexSearchPrefix() + "\"" + PATCH_ID_PROPERTY_KEY + "\" : (*)";
         AtlasIndexQuery                  idxQuery       = AtlasGraphProvider.getGraphInstance().indexQuery(VERTEX_INDEX, idxQueryString);
@@ -534,8 +538,8 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static List<String> findEntityGUIDsByType(String typename, SortOrder sortOrder) {
-        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query()
-                                                  .has(Constants.ENTITY_TYPE_PROPERTY_KEY, typename);
+        AtlasGraphQuery query = getGraphInstance().query()
+                                                  .has(ENTITY_TYPE_PROPERTY_KEY, typename);
         if (sortOrder != null) {
             AtlasGraphQuery.SortOrder qrySortOrder = sortOrder == SortOrder.ASCENDING ? ASC : DESC;
             query.orderBy(Constants.QUALIFIED_NAME, qrySortOrder);
@@ -555,14 +559,22 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
+    public static Iterator<AtlasVertex> findActiveEntityVerticesByType(String typename) {
+        AtlasGraphQuery query = getGraphInstance().query()
+                                                  .has(ENTITY_TYPE_PROPERTY_KEY, typename)
+                                                  .has(STATE_PROPERTY_KEY, Status.ACTIVE.name());
+
+        return query.vertices().iterator();
+    }
+
     public static List<String> findEntityGUIDsByType(String typename) {
         return findEntityGUIDsByType(typename, null);
     }
 
     public static boolean relationshipTypeHasInstanceEdges(String typeName) throws AtlasBaseException {
-        AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance()
+        AtlasGraphQuery query = getGraphInstance()
                 .query()
-                .has(Constants.TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
+                .has(TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
 
         Iterator<AtlasEdge> results = query.edges().iterator();
 
@@ -626,7 +638,7 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static String getStateAsString(AtlasElement element) {
-        return element.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
+        return element.getProperty(STATE_PROPERTY_KEY, String.class);
     }
 
     private static boolean canUseIndexQuery(AtlasEntityType entityType, String attributeName) {
@@ -638,7 +650,7 @@ public class AtlasGraphUtilsV2 {
             ret = typeAndSubTypesQryStr.length() <= SearchProcessor.MAX_QUERY_STR_LENGTH_TYPES;
 
             if (ret) {
-                Set<String> indexSet = AtlasGraphProvider.getGraphInstance().getVertexIndexKeys();
+                Set<String> indexSet = getGraphInstance().getVertexIndexKeys();
                 try {
                     ret = indexSet.contains(entityType.getQualifiedAttributeName(attributeName));
                 }
@@ -693,13 +705,13 @@ public class AtlasGraphUtilsV2 {
     private static AtlasIndexQuery getIndexQuery(AtlasEntityType entityType, String propertyName, String value) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":").append(entityType.getTypeAndAllSubTypesQryStr())
+        sb.append(INDEX_SEARCH_PREFIX + "\"").append(TYPE_NAME_PROPERTY_KEY).append("\":").append(entityType.getTypeAndAllSubTypesQryStr())
                 .append(" AND ")
                 .append(INDEX_SEARCH_PREFIX + "\"").append(propertyName).append("\":").append(AtlasAttribute.escapeIndexQueryValue(value))
                 .append(" AND ")
-                .append(INDEX_SEARCH_PREFIX + "\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
+                .append(INDEX_SEARCH_PREFIX + "\"").append(STATE_PROPERTY_KEY).append("\":ACTIVE");
 
-        return AtlasGraphProvider.getGraphInstance().indexQuery(Constants.VERTEX_INDEX, sb.toString());
+        return getGraphInstance().indexQuery(Constants.VERTEX_INDEX, sb.toString());
     }
 
     public static String getIndexSearchPrefix() {

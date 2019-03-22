@@ -50,12 +50,12 @@ public class AtlasPatch implements Serializable {
     private long        updatedTime;
     private PatchStatus status;
 
-    public enum PatchStatus { APPLIED, SKIPPED, FAILED, UNKNOWN }
+    public enum PatchStatus { UNKNOWN, APPLIED, SKIPPED, FAILED }
 
     public AtlasPatch() { }
 
-    public AtlasPatch(String id, String patchName, String type, String action, PatchStatus status, String updatedBy,
-                      String createdBy, long createdTime, long updatedTime) {
+    public AtlasPatch(String id, String patchName, String type, String action, PatchStatus status,
+                      String updatedBy, String createdBy, long createdTime, long updatedTime) {
         this.id          = id;
         this.description = patchName;
         this.type        = type;

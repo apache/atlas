@@ -564,7 +564,7 @@ public class AdminResource {
             LOG.debug("==> AdminResource.getAtlasPatches()");
         }
 
-        AtlasPatches ret = AtlasGraphUtilsV2.getPatches();
+        AtlasPatches ret = AtlasGraphUtilsV2.getAllPatches();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getAtlasPatches()");

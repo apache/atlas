@@ -108,7 +108,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private boolean     recomputeIndexedKeys = true;
     private Set<String> vertexIndexKeys      = new HashSet<>();
 
-    private enum UniqueKind { NONE, GLOBAL_UNIQUE, PER_TYPE_UNIQUE }
+    public enum UniqueKind { NONE, GLOBAL_UNIQUE, PER_TYPE_UNIQUE }
 
     @Inject
     public GraphBackedSearchIndexer(AtlasTypeRegistry typeRegistry) throws AtlasException {
@@ -431,7 +431,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         return type instanceof AtlasRelationshipType;
     }
 
-    private Class getPrimitiveClass(String attribTypeName) {
+    public Class getPrimitiveClass(String attribTypeName) {
         String attributeTypeName = attribTypeName.toLowerCase();
 
         switch (attributeTypeName) {
@@ -461,7 +461,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         throw new IllegalArgumentException(String.format("Unknown primitive typename %s", attribTypeName));
     }
 
-    private AtlasCardinality toAtlasCardinality(AtlasAttributeDef.Cardinality cardinality) {
+    public AtlasCardinality toAtlasCardinality(AtlasAttributeDef.Cardinality cardinality) {
         switch (cardinality) {
             case SINGLE:
                 return SINGLE;
@@ -500,8 +500,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         return propertyKey;
     }
 
-    private void createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class propertyClass,
-                                   AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes) {
+    public void createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class propertyClass,
+                                  AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes) {
         if (propertyName != null) {
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
 
@@ -704,7 +704,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         return !(INDEX_EXCLUSION_CLASSES.contains(propertyClass) || cardinality.isMany());
     }
     
-    private void commit(AtlasGraphManagement management) throws IndexException {
+    public void commit(AtlasGraphManagement management) throws IndexException {
         try {
             management.commit();
 
@@ -715,7 +715,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    private void rollback(AtlasGraphManagement management) throws IndexException {
+    public void rollback(AtlasGraphManagement management) throws IndexException {
         try {
             management.rollback();
 
