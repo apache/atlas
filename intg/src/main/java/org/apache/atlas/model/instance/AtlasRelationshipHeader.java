@@ -61,20 +61,15 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
         setGuid(guid);
     }
 
-    public AtlasRelationshipHeader(String typeName, String guid, AtlasObjectId end1, AtlasObjectId end2) {
+    public AtlasRelationshipHeader(String typeName, String guid, AtlasObjectId end1, AtlasObjectId end2, AtlasRelationshipDef.PropagateTags propagateTags) {
         this(typeName, guid);
-
+        this.propagateTags = propagateTags;
         setEnd1(end1);
         setEnd2(end2);
     }
 
-    public AtlasRelationshipHeader(String typeName, String guid, AtlasObjectId end1, AtlasObjectId end2, AtlasEntity.Status status) {
-        this(typeName, guid, end1, end2);
-        setStatus(status);
-    }
-
     public AtlasRelationshipHeader(AtlasRelationship relationship) {
-        this(relationship.getTypeName(), relationship.getGuid(), relationship.getEnd1(), relationship.getEnd2());
+        this(relationship.getTypeName(), relationship.getGuid(), relationship.getEnd1(), relationship.getEnd2(), relationship.getPropagateTags());
 
         setLabel(relationship.getLabel());
         switch (relationship.getStatus()) {
@@ -103,6 +98,10 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
 
     public void setStatus(AtlasEntity.Status status) {
         this.status = status;
+    }
+
+    public AtlasRelationshipDef.PropagateTags getPropagateTags() {
+        return propagateTags;
     }
 
     public void setPropagateTags(AtlasRelationshipDef.PropagateTags propagateTags) {
@@ -167,7 +166,7 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, status);
+        return Objects.hash(super.hashCode(), guid, status, label, propagateTags, end1, end2);
     }
 
     @Override
