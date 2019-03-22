@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository.graphdb.janus.migration;
+package org.apache.atlas.pc;
 
-import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemConsumer;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.BlockingQueue;

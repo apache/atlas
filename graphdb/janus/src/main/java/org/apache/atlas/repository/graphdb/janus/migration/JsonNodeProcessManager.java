@@ -19,8 +19,8 @@
 package org.apache.atlas.repository.graphdb.janus.migration;
 
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
-import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemBuilder;
-import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemConsumer;
+import org.apache.atlas.pc.WorkItemBuilder;
+import org.apache.atlas.pc.WorkItemConsumer;
 import org.apache.atlas.repository.graphdb.janus.migration.JsonNodeParsers.ParseElement;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
@@ -206,7 +206,7 @@ public class JsonNodeProcessManager {
         }
     }
 
-    static class WorkItemManager extends org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemManager {
+    static class WorkItemManager extends org.apache.atlas.pc.WorkItemManager {
         public WorkItemManager(WorkItemBuilder builder, int batchSize, int numWorkers) {
             super(builder, batchSize, numWorkers);
         }

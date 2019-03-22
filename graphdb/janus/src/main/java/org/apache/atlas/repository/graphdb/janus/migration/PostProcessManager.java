@@ -18,9 +18,9 @@
 
 package org.apache.atlas.repository.graphdb.janus.migration;
 
-import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemBuilder;
-import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemConsumer;
-import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemManager;
+import org.apache.atlas.pc.WorkItemBuilder;
+import org.apache.atlas.pc.WorkItemConsumer;
+import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.graphdb.janus.migration.postProcess.PostProcessListProperty;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

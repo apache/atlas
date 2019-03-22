@@ -16,11 +16,8 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository.graphdb.janus.migration;
+package org.apache.atlas.pc;
 
-import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemBuilder;
-import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemConsumer;
-import org.apache.atlas.repository.graphdb.janus.migration.pc.WorkItemManager;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

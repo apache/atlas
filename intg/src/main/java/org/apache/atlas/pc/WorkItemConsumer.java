@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository.graphdb.janus.migration.pc;
+package org.apache.atlas.pc;
 
-import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,7 @@ public abstract class WorkItemConsumer<T> implements Runnable {
 
     private final BlockingQueue<T> queue;
     private       boolean          isDirty              = false;
-    private       long             maxCommitTimeSeconds = 0;
+    private       long maxCommitTimeInMs = 0;
 
     public WorkItemConsumer(BlockingQueue<T> queue) {
         this.queue = queue;
@@ -58,7 +57,7 @@ public abstract class WorkItemConsumer<T> implements Runnable {
     }
 
     public long getMaxCommitTimeSeconds() {
-        return (this.maxCommitTimeSeconds > 0 ? this.maxCommitTimeSeconds : 15);
+        return (this.maxCommitTimeInMs > 0 ? this.maxCommitTimeInMs / 1000 : 15);
     }
 
     protected void commitDirty() {
@@ -71,13 +70,13 @@ public abstract class WorkItemConsumer<T> implements Runnable {
     }
 
     protected void commit() {
-        Stopwatch sw = Stopwatch.createStarted();
+        long start = System.currentTimeMillis();
 
         doCommit();
 
-        sw.stop();
+        long end = System.currentTimeMillis();
 
-        updateCommitTime(sw.elapsed(TimeUnit.SECONDS));
+        updateCommitTime((end - start));
 
         isDirty = false;
     }
@@ -87,8 +86,8 @@ public abstract class WorkItemConsumer<T> implements Runnable {
     protected abstract void processItem(T item);
 
     protected void updateCommitTime(long commitTime) {
-        if (this.maxCommitTimeSeconds < commitTime) {
-            this.maxCommitTimeSeconds = commitTime;
+        if (this.maxCommitTimeInMs < commitTime) {
+            this.maxCommitTimeInMs = commitTime;
         }
     }
 }

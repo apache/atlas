@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository.graphdb.janus.migration.pc;
+package org.apache.atlas.pc;
 
 import java.util.concurrent.BlockingQueue;
 

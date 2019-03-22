@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository.graphdb.janus.migration.pc;
+package org.apache.atlas.pc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
