@@ -19,15 +19,16 @@ package org.apache.atlas.web.filters;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
+import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class AtlasCSRFPreventionFilterTest {
 	private static final String EXPECTED_MESSAGE = "Missing Required Header for CSRF Vulnerability Protection";
@@ -152,5 +153,51 @@ public class AtlasCSRFPreventionFilterTest {
 		filter.doFilter(mockReq, mockRes, mockChain);
 
 		Mockito.verifyZeroInteractions(mockChain);
+	}
+
+	@Test
+	public void testMethodsToIgnoreMultiValue()
+			throws ServletException, IOException {
+		// -- delete requests should be blocked since it has not been configured to be ignored in the atlas-application.properties
+		HttpServletRequest req = createRequest("DELETE");
+		HttpServletResponse res = createResponse();
+
+		// -- Objects to verify interactions based on request
+		FilterChain chain = Mockito.mock(FilterChain.class);
+
+		AtlasCSRFPreventionFilter filter = new AtlasCSRFPreventionFilter();
+		filter.doFilter(req, res, chain);
+		Mockito.verifyZeroInteractions(chain);
+
+		// -- options requests should pass since it has been configured to be ignored in the atlas-application.properties
+		req = createRequest("OPTIONS");
+		res = createResponse();
+
+		// -- Objects to verify interactions based on request
+		chain = Mockito.mock(FilterChain.class);
+
+		filter = new AtlasCSRFPreventionFilter();
+		filter.doFilter(req, res, chain);
+		Mockito.atLeastOnce();
+
+		verify(chain, times(1)).doFilter(req, res);
+	}
+
+	private HttpServletRequest createRequest(String method) {
+		HttpServletRequest mockReq = Mockito.mock(HttpServletRequest.class);
+		Mockito.when(mockReq.getHeader(AtlasCSRFPreventionFilter.HEADER_DEFAULT))
+				.thenReturn(null);
+		Mockito.when(mockReq.getMethod()).thenReturn(method);
+		Mockito.when(mockReq.getHeader(AtlasCSRFPreventionFilter.HEADER_USER_AGENT)).thenReturn(userAgent);
+
+		return mockReq;
+	}
+
+	private HttpServletResponse createResponse() throws IOException {
+		HttpServletResponse mockRes = Mockito.mock(HttpServletResponse.class);
+		PrintWriter mockWriter = Mockito.mock(PrintWriter.class);
+		Mockito.when(mockRes.getWriter()).thenReturn(mockWriter);
+
+		return mockRes;
 	}
 }

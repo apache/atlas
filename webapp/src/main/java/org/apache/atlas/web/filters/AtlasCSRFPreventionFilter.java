@@ -59,7 +59,7 @@ public class AtlasCSRFPreventionFilter implements Filter {
 	public static final String BROWSER_USER_AGENT_PARAM = "atlas.rest-csrf.browser-useragents-regex";
 	public static final String BROWSER_USER_AGENTS_DEFAULT = "^Mozilla.*,^Opera.*,^Chrome";
 	public static final String CUSTOM_METHODS_TO_IGNORE_PARAM = "atlas.rest-csrf.methods-to-ignore";
-	public static final String METHODS_TO_IGNORE_DEFAULT = "GET,OPTIONS,HEAD,TRACE";
+	public static final String[] METHODS_TO_IGNORE_DEFAULT = new String[]{"GET","OPTIONS","HEAD","TRACE"};
 	public static final String CUSTOM_HEADER_PARAM = "atlas.rest-csrf.custom-header";
 	public static final String HEADER_DEFAULT = "X-XSRF-HEADER";
 	public static final String HEADER_USER_AGENT = "User-Agent";
@@ -83,13 +83,14 @@ public class AtlasCSRFPreventionFilter implements Filter {
 	    if (customHeader != null) {
 	      headerName = customHeader;
 	    }
-	    
-	    String customMethodsToIgnore = configuration.getString(CUSTOM_METHODS_TO_IGNORE_PARAM, METHODS_TO_IGNORE_DEFAULT);
-        if (customMethodsToIgnore != null) {
-          parseMethodsToIgnore(customMethodsToIgnore);
-        } else {
-          parseMethodsToIgnore(METHODS_TO_IGNORE_DEFAULT);
-        }
+
+
+		String[] customMethodsToIgnore = METHODS_TO_IGNORE_DEFAULT;
+		if (configuration.containsKey(CUSTOM_METHODS_TO_IGNORE_PARAM)) {
+			customMethodsToIgnore = configuration.getStringArray(CUSTOM_METHODS_TO_IGNORE_PARAM);
+		}
+		parseMethodsToIgnore(customMethodsToIgnore);
+
         String agents = configuration.getString(BROWSER_USER_AGENT_PARAM, BROWSER_USER_AGENTS_DEFAULT);
         if (agents == null) {
           agents = BROWSER_USER_AGENTS_DEFAULT;
@@ -98,10 +99,9 @@ public class AtlasCSRFPreventionFilter implements Filter {
         LOG.info("Adding cross-site request forgery (CSRF) protection");
 	}
 	
-	void parseMethodsToIgnore(String mti) {
-        String[] methods = mti.split(",");
+	void parseMethodsToIgnore(String[] mti) {
         methodsToIgnore = new HashSet<>();
-		Collections.addAll(methodsToIgnore, methods);
+		Collections.addAll(methodsToIgnore, mti);
 	}
 	
 	void parseBrowserUserAgents(String userAgents) {
