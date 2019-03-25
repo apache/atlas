@@ -40,13 +40,15 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
     private static volatile AtlasPluginClassLoader me = null;
 
     private final MyClassLoader componentClassLoader;
+    private final String pluginType;
+    private ClassLoader previousLoader;
 
     private AtlasPluginClassLoader(String pluginType, Class<?> pluginClass) throws URISyntaxException {
-        this(AtlasPluginClassLoaderUtil.getPluginImplLibPath(pluginType, pluginClass));
+        this(AtlasPluginClassLoaderUtil.getPluginImplLibPath(pluginType, pluginClass),pluginType);
     }
 
     //visible for testing
-    AtlasPluginClassLoader(String libraryPath) {
+    AtlasPluginClassLoader(String libraryPath,String pluginType) {
         super(AtlasPluginClassLoaderUtil.getFilesInDirectories(new String[]{libraryPath}), null);
 
         componentClassLoader = AccessController.doPrivileged(new PrivilegedAction<MyClassLoader>() {
@@ -54,6 +56,7 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
                 return new MyClassLoader(Thread.currentThread().getContextClassLoader());
             }
         });
+        this.pluginType=pluginType;
     }
 
     public static AtlasPluginClassLoader getInstance(final String pluginType, final Class<?> pluginClass) throws PrivilegedActionException {
@@ -206,7 +209,7 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasPluginClassLoader.activate()");
         }
-
+        previousLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(this);
 
         if (LOG.isDebugEnabled()) {
@@ -220,8 +223,9 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
         }
 
         MyClassLoader savedClassLoader = getComponentClassLoader();
-
-        if (savedClassLoader != null && savedClassLoader.getParent() != null) {
+        if(previousLoader !=null && pluginType.equals("hive")){
+            Thread.currentThread().setContextClassLoader(previousLoader);
+        }else if (savedClassLoader != null && savedClassLoader.getParent() != null) {
             Thread.currentThread().setContextClassLoader(savedClassLoader.getParent());
         } else {
             LOG.warn("AtlasPluginClassLoader.deactivate() was not successful.Couldn't not get the saved "
