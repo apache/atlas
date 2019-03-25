@@ -52,7 +52,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
  * The way EntityDefs and RelationshipDefs are intended to be used is that EntityDefs will define AttributeDefs these AttributeDefs
  * will not specify an EntityDef type name as their types.
  * <p>
- * RelationshipDefs introduce new atributes to the entity instances. For example
+ * RelationshipDefs introduce new attributes to the entity instances. For example
  * <p>
  * EntityDef A might have attributes attr1,attr2,attr3 <br>
  * EntityDef B might have attributes attr4,attr5,attr6 <br>
@@ -163,6 +163,42 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
     }
 
     /**
+     * Create a relationshipDef without attributeDefs
+     * @param name
+     *            - the name of the relationship type
+     * @param description
+     *            - an optional description
+     * @param typeVersion
+     *            - version - that defaults to 1.0
+     * @param serviceType
+     *            - the serviceType
+     * @param relationshipCategory
+     *            - there are 3 sorts of relationship category ASSOCIATION, COMPOSITION
+     *            and AGGREGATION
+     * @param propagatetags
+     *            -
+     * @param endDef1
+     *            - first end. An end specifies an entity type and an attribute name. the attribute name then appears in
+     *            the relationship instance
+     * @param endDef2
+     *            - second end. An end specifies an entity type and an attribute name. the attribute name then appears in
+     *            the relationship instance
+     *
+     *            The ends are defined as 1 and 2 to avoid implying a direction. So we do not use to and from.
+     *
+     * @throws AtlasBaseException
+     */
+    public AtlasRelationshipDef(String name, String description, String typeVersion, String serviceType,
+                                RelationshipCategory relationshipCategory,
+                                PropagateTags propagatetags,
+                                AtlasRelationshipEndDef endDef1,
+                                AtlasRelationshipEndDef endDef2) throws AtlasBaseException {
+        this(name, description, typeVersion, relationshipCategory,propagatetags, endDef1, endDef2,
+             new ArrayList<AtlasAttributeDef>());
+    }
+
+
+    /**
      * Create a relationshipDef with attributeDefs
      * @param name
      *            - the name of the relationship type
@@ -189,9 +225,41 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
     public AtlasRelationshipDef(String name, String description, String typeVersion,
                                 RelationshipCategory relationshipCategory,
                                 PropagateTags propagatetags, AtlasRelationshipEndDef endDef1,
-                                AtlasRelationshipEndDef endDef2, List<AtlasAttributeDef> attributeDefs)
-            {
-        super(TypeCategory.RELATIONSHIP, name, description, typeVersion, attributeDefs, null);
+                                AtlasRelationshipEndDef endDef2, List<AtlasAttributeDef> attributeDefs) {
+        this(name, description, typeVersion, null, relationshipCategory, propagatetags, endDef1, endDef2, attributeDefs);
+    }
+
+    /**
+     * Create a relationshipDef with attributeDefs
+     * @param name
+     *            - the name of the relationship type
+     * @param description
+     *            - an optional description
+     * @param typeVersion
+     *            - version - that defaults to 1.0
+     * @param serviceType
+     *            - the serviceType
+     * @param relationshipCategory
+     *            - there are 3 sorts of relationship category ASSOCIATION, COMPOSITION
+     *            and AGGREGATION
+     * @param propagatetags
+     *            -
+     * @param endDef1
+     *            - First end. As end specifies an entity
+     *            type and an attribute name. the attribute name then appears in
+     *            the relationship instance
+     * @param endDef2
+     *            - Second end. The ends are defined as 1
+     *            ad 2 to avoid implying a direction. So we do not use to and
+     *            from.
+     * @param attributeDefs
+     *            - these are the attributes on the relationship itself.
+     */
+    public AtlasRelationshipDef(String name, String description, String typeVersion, String serviceType,
+                                RelationshipCategory relationshipCategory,
+                                PropagateTags propagatetags, AtlasRelationshipEndDef endDef1,
+                                AtlasRelationshipEndDef endDef2, List<AtlasAttributeDef> attributeDefs) {
+        super(TypeCategory.RELATIONSHIP, name, description, typeVersion, attributeDefs, serviceType, null);
 
         setRelationshipCategory(relationshipCategory);
         setRelationshipLabel(null);
