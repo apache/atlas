@@ -152,13 +152,12 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      *
      *            The ends are defined as 1 and 2 to avoid implying a direction. So we do not use to and from.
      *
-     * @throws AtlasBaseException
      */
     public AtlasRelationshipDef(String name, String description, String typeVersion,
                                 RelationshipCategory relationshipCategory,
                                 PropagateTags propagatetags,
                                 AtlasRelationshipEndDef endDef1,
-                                AtlasRelationshipEndDef endDef2) throws AtlasBaseException {
+                                AtlasRelationshipEndDef endDef2) {
         this(name, description, typeVersion, relationshipCategory,propagatetags, endDef1, endDef2,
              new ArrayList<AtlasAttributeDef>());
     }

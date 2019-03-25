@@ -21,6 +21,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -276,6 +277,10 @@ public class AtlasTypeUtil {
         return new AtlasEntityDef(name, description, version, Arrays.asList(attrDefs), superTypes);
     }
 
+    public static AtlasEntityDef createClassTypeDef(String name, String description, String version, Set<String> superTypes, Map<String, String> options, AtlasAttributeDef... attrDefs) {
+        return new AtlasEntityDef(name, description, version, Arrays.asList(attrDefs), superTypes, options);
+    }
+
     public static AtlasRelationshipDef createRelationshipTypeDef(String                  name,
                                                                  String                  description,
                                                                  String                  version,
@@ -288,11 +293,23 @@ public class AtlasTypeUtil {
                                         endDef1, endDef2, Arrays.asList(attrDefs));
     }
 
+    public static AtlasRelationshipEndDef createRelationshipEndDef(String typeName, String name, Cardinality cardinality, boolean isContainer) {
+        return new AtlasRelationshipEndDef(typeName, name, cardinality, isContainer);
+    }
+
     public static AtlasTypesDef getTypesDef(List<AtlasEnumDef> enums,
         List<AtlasStructDef> structs,
         List<AtlasClassificationDef> traits,
         List<AtlasEntityDef> classes) {
         return new AtlasTypesDef(enums, structs, traits, classes);
+    }
+
+    public static AtlasTypesDef getTypesDef(List<AtlasEnumDef> enums,
+                                            List<AtlasStructDef> structs,
+                                            List<AtlasClassificationDef> traits,
+                                            List<AtlasEntityDef> classes,
+                                            List<AtlasRelationshipDef> relations) {
+        return new AtlasTypesDef(enums, structs, traits, classes, relations);
     }
 
     public static List<AtlasTypeDefHeader> toTypeDefHeader(AtlasTypesDef typesDef) {
@@ -360,6 +377,20 @@ public class AtlasTypeUtil {
         return ret;
     }
 
+    public static Collection<AtlasRelatedObjectId> toAtlasRelatedObjectIds(Collection<AtlasEntity> entities) {
+        List<AtlasRelatedObjectId> ret = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(entities)) {
+            for (AtlasEntity entity : entities) {
+                if (entity != null) {
+                    ret.add(toAtlasRelatedObjectId(entity));
+                }
+            }
+        }
+
+        return ret;
+    }
+
     public static Map toStructAttributes(Map map) {
         if (map != null && map.containsKey("typeName") && map.containsKey("attributes") && map.get("attributes") instanceof Map) {
             return (Map)map.get("attributes");
@@ -376,6 +407,10 @@ public class AtlasTypeUtil {
         }
 
         return ret;
+    }
+
+    public static AtlasRelatedObjectId toAtlasRelatedObjectId(AtlasEntity entity) {
+        return new AtlasRelatedObjectId(getAtlasObjectId(entity));
     }
 
     public static AtlasObjectId getAtlasObjectId(AtlasEntity entity) {

@@ -95,7 +95,7 @@ public class AtlasGraphUtilsV2 {
     public static final String VERTEX_TYPE                 = "typeSystem";
 
     private static boolean USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = false;
-    private static boolean USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY            = false;
+    private static boolean USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY            = true;
     private static String  INDEX_SEARCH_PREFIX;
 
     static {
