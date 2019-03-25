@@ -294,6 +294,14 @@ public class AtlasTypeUtil {
         List<AtlasEntityDef> classes) {
         return new AtlasTypesDef(enums, structs, traits, classes);
     }
+    
+    public static AtlasTypesDef getTypesDef(List<AtlasEnumDef> enums,
+            List<AtlasStructDef> structs,
+            List<AtlasClassificationDef> traits,
+            List<AtlasEntityDef> classes,
+            List<AtlasRelationshipDef> relationships) {
+            return new AtlasTypesDef(enums, structs, traits, classes, relationships);
+        }
 
     public static List<AtlasTypeDefHeader> toTypeDefHeader(AtlasTypesDef typesDef) {
         List<AtlasTypeDefHeader> headerList = new LinkedList<>();
