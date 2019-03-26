@@ -269,7 +269,7 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         setEndDef2(endDef2);
     }
 
-    public AtlasRelationshipDef(AtlasRelationshipDef other) throws AtlasBaseException {
+    public AtlasRelationshipDef(AtlasRelationshipDef other) {
         super(other);
 
         if (other != null) {

@@ -191,6 +191,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
             setUpdateTime(other.getUpdateTime());
             setVersion(other.getVersion());
             setName(other.getName());
+            setServiceType(other.getServiceType());
             setDescription(other.getDescription());
             setTypeVersion(other.getTypeVersion());
             setOptions(other.getOptions());
@@ -204,6 +205,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
             setUpdateTime(null);
             setVersion(null);
             setName(null);
+            setServiceType(null);
             setDescription(null);
             setTypeVersion(null);
             setOptions(null);
