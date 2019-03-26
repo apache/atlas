@@ -478,7 +478,7 @@ define(['require',
                 if (_.isUndefined(isTypeOnly)) {
                     //to insert extra classification list
                     _.each(Enums.addOnClassification, function(classificationName) {
-                        tagStr += '<option>' + classificationName + '</option>';
+                        tagStr += '<option  value="' + (classificationName) + '" data-name="' + (classificationName) + '">' + classificationName + '</option>';
                     });
                     that.ui.tagLov.html(tagStr);
                     this.ui.tagLov.select2({
