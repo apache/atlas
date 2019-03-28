@@ -32,6 +32,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -55,10 +56,13 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
     private Set<String> superTypes;
 
-    // subTypes field below is derived from 'superTypes' specified in all AtlasEntityDef
-    // this value is ignored during create & update operations
+    // this is a read-only field, any value provided during create & update operation is ignored
+    // the value of this field is derived from 'superTypes' specified in all AtlasEntityDef
     private Set<String> subTypes;
 
+    // this is a read-only field, any value provided during create & update operation is ignored
+    // the value of this field is derived from all the relationshipDefs this entityType is referenced in
+    private List<AtlasRelationshipAttributeDef> relationshipAttributeDefs;
 
     public AtlasEntityDef() {
         this(null, null, null, null, null, null, null);
@@ -148,6 +152,14 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         this.subTypes = subTypes;
     }
 
+    public List<AtlasRelationshipAttributeDef> getRelationshipAttributeDefs() {
+        return relationshipAttributeDefs;
+    }
+
+    public void setRelationshipAttributeDefs(List<AtlasRelationshipAttributeDef> relationshipAttributeDefs) {
+        this.relationshipAttributeDefs = relationshipAttributeDefs;
+    }
+
     public boolean hasSuperType(String typeName) {
         return hasSuperType(superTypes, typeName);
     }
@@ -191,6 +203,18 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         sb.append(", superTypes=[");
         dumpObjects(superTypes, sb);
         sb.append("]");
+        sb.append(", relationshipAttributeDefs=[");
+        if (CollectionUtils.isNotEmpty(relationshipAttributeDefs)) {
+            int i = 0;
+            for (AtlasRelationshipAttributeDef attributeDef : relationshipAttributeDefs) {
+                attributeDef.toString(sb);
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                i++;
+            }
+        }
+        sb.append(']');
         sb.append('}');
 
         return sb;
@@ -214,6 +238,83 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+    /**
+     * class that captures details of a struct-attribute.
+     */
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include= JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
+    public static class AtlasRelationshipAttributeDef extends AtlasAttributeDef implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private String  relationshipTypeName;
+        private boolean isLegacyAttribute;
+
+        public AtlasRelationshipAttributeDef() { }
+
+        public AtlasRelationshipAttributeDef(String relationshipTypeName, boolean isLegacyAttribute, AtlasAttributeDef attributeDef) {
+            super(attributeDef);
+
+            this.relationshipTypeName = relationshipTypeName;
+            this.isLegacyAttribute    = isLegacyAttribute;
+        }
+
+        public String getRelationshipTypeName() {
+            return relationshipTypeName;
+        }
+
+        public void setRelationshipTypeName(String relationshipTypeName) {
+            this.relationshipTypeName = relationshipTypeName;
+        }
+
+        public boolean getIsLegacyAttribute() {
+            return isLegacyAttribute;
+        }
+
+        public void setIsLegacyAttribute(boolean isLegacyAttribute) {
+            this.isLegacyAttribute = isLegacyAttribute;
+        }
+
+        public StringBuilder toString(StringBuilder sb) {
+            if (sb == null) {
+                sb = new StringBuilder();
+            }
+
+            sb.append("AtlasRelationshipAttributeDef{");
+            super.toString(sb);
+            sb.append(", relationshipTypeName='").append(relationshipTypeName).append('\'');
+            sb.append(", isLegacyAttribute='").append(isLegacyAttribute).append('\'');
+            sb.append('}');
+
+            return sb;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+
+            if (o == null || getClass() != o.getClass()) return false;
+
+            AtlasRelationshipAttributeDef that = (AtlasRelationshipAttributeDef) o;
+
+            return super.equals(that) &&
+                   isLegacyAttribute == that.isLegacyAttribute &&
+                   Objects.equals(relationshipTypeName, that.relationshipTypeName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), relationshipTypeName, isLegacyAttribute);
+        }
+
+        @Override
+        public String toString() {
+            return toString(new StringBuilder()).toString();
+        }
     }
 
 

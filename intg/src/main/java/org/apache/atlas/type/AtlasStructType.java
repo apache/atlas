@@ -708,6 +708,7 @@ public class AtlasStructType extends AtlasType {
         private String                         relationshipName;
         private String                         relationshipEdgeLabel;
         private AtlasRelationshipEdgeDirection relationshipEdgeDirection;
+        private boolean                        isLegacyAttribute;
 
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType, String relationshipName, String relationshipLabel) {
             this.definedInType            = definedInType;
@@ -814,6 +815,10 @@ public class AtlasStructType extends AtlasType {
         public void setRelationshipEdgeDirection(AtlasRelationshipEdgeDirection relationshipEdgeDirection) {
             this.relationshipEdgeDirection = relationshipEdgeDirection;
         }
+
+        public boolean isLegacyAttribute() { return isLegacyAttribute; }
+
+        public void setLegacyAttribute(boolean legacyAttribute) { isLegacyAttribute = legacyAttribute; }
 
         public static String getEdgeLabel(String property) {
             return "__" + property;
