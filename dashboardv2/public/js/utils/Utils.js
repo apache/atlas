@@ -550,7 +550,9 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         loaderEl.hide ? loaderEl.hide() : null;
         titleBoxEl.fadeIn ? titleBoxEl.fadeIn() : null;
     }
-    Utils.findAndMergeRefEntity = function(attributeObject, referredEntities) {
+    Utils.findAndMergeRefEntity = function(options) {
+        var attributeObject = options.attributeObject,
+            referredEntities = options.referredEntities
         var mergeObject = function(obj) {
             if (obj) {
                 if (obj.attributes) {

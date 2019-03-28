@@ -417,7 +417,10 @@ define(['require',
                         }
                         if (isPostMethod) {
                             that.searchCollection.referredEntities = dataOrCollection.referredEntities;
-                            Utils.findAndMergeRefEntity(dataOrCollection.entities, dataOrCollection.referredEntities);
+                            Utils.findAndMergeRefEntity({
+                                attributeObject: dataOrCollection.entities,
+                                referredEntities: dataOrCollection.referredEntities
+                            });
                             that.searchCollection.reset(dataOrCollection.entities, { silent: true });
                         }
 

@@ -131,7 +131,15 @@ define(['require',
                         this.$(".termBox").hide();
                     }
                     // MergerRefEntity.
-                    Utils.findAndMergeRefEntity(collectionJSON.attributes, this.entityObject.referredEntities);
+                    Utils.findAndMergeRefEntity({
+                        attributeObject: collectionJSON.attributes,
+                        referredEntities: this.entityObject.referredEntities
+                    });
+
+                    Utils.findAndMergeRefEntity({
+                        attributeObject: collectionJSON.relationshipAttributes,
+                        referredEntities: this.entityObject.referredEntities
+                    });
 
                     // check if entity is process
                     var isProcess = false,
