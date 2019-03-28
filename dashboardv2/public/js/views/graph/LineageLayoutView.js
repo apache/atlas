@@ -940,8 +940,10 @@ define(['require',
                     $(svgClone).find('>g').attr("transform", "scale(" + scaleFactor + ")");
                     var canvasOffset = { x: 150, y: 150 },
                         setWidth = (svgClone.getBBox().width + (canvasOffset.x)),
-                        setHeight = (svgClone.getBBox().height + (canvasOffset.y));
-                    svgClone.attributes.viewBox.value = "-10,-10," + setWidth + "," + setHeight;
+                        setHeight = (svgClone.getBBox().height + (canvasOffset.y)),
+                        xAxis = svgClone.getBBox().x,
+                        yAxis = svgClone.getBBox().y;
+                    svgClone.attributes.viewBox.value = xAxis + "," + yAxis + "," + setWidth + "," + setHeight;
 
                     var createCanvas = document.createElement('canvas');
                     createCanvas.id = "canvas";
