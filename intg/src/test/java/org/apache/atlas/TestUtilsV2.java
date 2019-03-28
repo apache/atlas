@@ -553,6 +553,7 @@ public final class TestUtilsV2 {
     public static final String SERDE_TYPE = "serdeType";
     public static final String COLUMNS_MAP = "columnsMap";
     public static final String COLUMNS_ATTR_NAME = "columns";
+    public static final String ENTITY_TYPE_WITH_SIMPLE_ATTR = "entity_with_simple_attr";
     public static final String ENTITY_TYPE_WITH_NESTED_COLLECTION_ATTR = "entity_with_nested_collection_attr";
     public static final String ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR = "entity_with_complex_collection_attr";
     public static final String ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR_DELETE = "entity_with_complex_collection_attr_delete";
@@ -621,6 +622,42 @@ public final class TestUtilsV2 {
         return ret;
     }
 
+    public static AtlasTypesDef defineSimpleAttrType() {
+        AtlasEntityDef simpleAttributesEntityType =
+            createClassTypeDef(ENTITY_TYPE_WITH_SIMPLE_ATTR, ENTITY_TYPE_WITH_SIMPLE_ATTR + "_description", null,
+                createUniqueRequiredAttrDef("name", "string"),
+
+                new AtlasAttributeDef("stringAtrr", "string",
+                    true,
+                    SINGLE, 1, 1,
+                    false, false, false, null),
+
+                new AtlasAttributeDef("arrayOfStrings",
+                    "array<string>", true, SINGLE, 1, 1,
+                    false, false, false, null),
+
+                new AtlasAttributeDef("mapOfStrings", "map<string,string>",
+                    true, SINGLE, 1,1, false, false, false, null)
+            );
+
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(Collections.<AtlasEnumDef>emptyList(),
+            Collections.<AtlasStructDef>emptyList(),
+            Collections.<AtlasClassificationDef>emptyList(),
+            Collections.singletonList(simpleAttributesEntityType));
+
+        return ret;
+    }
+
+    public static AtlasEntityWithExtInfo createSimpleAttrTypeEntity() {
+        AtlasEntity entity = new AtlasEntity(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+
+        entity.setAttribute(NAME, ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        entity.setAttribute("stringAtrr", "DummyThree");
+        entity.setAttribute("arrayOfStrings", Arrays.asList("DummyOne", "DummyTwo"));
+        entity.setAttribute("mapOfStrings", Collections.singletonMap("one", "DummyString"));
+
+        return new AtlasEntityWithExtInfo(entity);
+    }
 
     public static AtlasTypesDef defineHiveTypes() {
         String _description = "_description";

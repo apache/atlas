@@ -74,6 +74,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -740,7 +741,9 @@ public class EntityGraphRetriever {
         Map<String, AtlasObjectId> ret        = null;
         Map                        softRefVal = entityVertex.getProperty(attribute.getVertexPropertyName(), Map.class);
 
-        if (MapUtils.isNotEmpty(softRefVal)) {
+        if (MapUtils.isEmpty(softRefVal)) {
+            return softRefVal;
+        } else {
             ret = new HashMap<>();
 
             for (Object mapKey : softRefVal.keySet()) {
@@ -751,7 +754,6 @@ public class EntityGraphRetriever {
                 }
             }
         }
-
         return ret;
     }
 
@@ -759,7 +761,9 @@ public class EntityGraphRetriever {
         List<AtlasObjectId> ret        = null;
         List                softRefVal = entityVertex.getListProperty(attribute.getVertexPropertyName(), List.class);
 
-        if (CollectionUtils.isNotEmpty(softRefVal)) {
+        if (CollectionUtils.isEmpty(softRefVal)) {
+            return softRefVal;
+        } else {
             ret = new ArrayList<>();
 
             for (Object o : softRefVal) {
@@ -841,10 +845,6 @@ public class EntityGraphRetriever {
             ret = getPrimitiveMap(entityVertex, attribute.getVertexPropertyName());
         }
 
-        if (MapUtils.isEmpty(ret)) {
-            ret = null;
-        }
-
         return ret;
     }
 
@@ -855,12 +855,12 @@ public class EntityGraphRetriever {
         AtlasType      arrayElementType = arrayType.getElementType();
         List<Object>   arrayElements    = getArrayElementsProperty(arrayElementType, entityVertex, attribute);
 
-        if (CollectionUtils.isEmpty(arrayElements)) {
-            return null;
-        }
-
         if (LOG.isDebugEnabled()) {
             LOG.debug("Mapping array attribute {} for vertex {}", arrayElementType.getTypeName(), entityVertex);
+        }
+
+        if (CollectionUtils.isEmpty(arrayElements)) {
+            return arrayElements;
         }
 
         List                           arrValues     = new ArrayList(arrayElements.size());

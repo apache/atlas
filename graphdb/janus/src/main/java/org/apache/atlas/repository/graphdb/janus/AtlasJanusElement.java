@@ -109,7 +109,14 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     @Override
     public void setProperty(String propertyName, Object value) {
         try {
-            getWrappedElement().property(propertyName, value);
+            if (value == null) {
+                Object existingVal = getProperty(propertyName, Object.class);
+                if (existingVal != null) {
+                    removeProperty(propertyName);
+                }
+            } else {
+                getWrappedElement().property(propertyName, value);
+            }
         } catch(SchemaViolationException e) {
             throw new AtlasSchemaViolationException(e);
         }
@@ -157,9 +164,6 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     @Override
     public List<String> getListProperty(String propertyName) {
         List<String> value =  getProperty(propertyName, List.class);
-        if (value == null) {
-            return Collections.emptyList();
-        }
         return value;
     }
 
@@ -200,7 +204,7 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
         List<String> value = getListProperty(propertyName);
 
-        if (value.isEmpty()) {
+        if (value == null || value.isEmpty()) {
             return (List<V>)value;
         }
 

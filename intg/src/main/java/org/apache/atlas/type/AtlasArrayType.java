@@ -154,9 +154,9 @@ public class AtlasArrayType extends AtlasType {
         boolean ret = true;
 
         if (val1 == null) {
-            ret = isEmptyArrayValue(val2);
+            ret = val2 == null;
         } else if (val2 == null) {
-            ret = isEmptyArrayValue(val1);
+            ret = false;
         } else {
             if (val1.getClass().isArray() && val2.getClass().isArray()) {
                 int len = Array.getLength(val1);
@@ -510,9 +510,7 @@ public class AtlasArrayType extends AtlasType {
     }
 
     private boolean isEmptyArrayValue(Object val) {
-        if (val == null) {
-            return true;
-        } else if (val instanceof Collection) {
+        if (val instanceof Collection) {
             return ((Collection) val).isEmpty();
         } else if (val.getClass().isArray()) {
             return Array.getLength(val) == 0;
