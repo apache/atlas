@@ -512,7 +512,15 @@ public class AtlasGraphUtilsV2 {
             LOG.warn("getPatches() returned empty result!");
         }
 
+        getGraphInstance().commit();
+
         return new AtlasPatches(ret);
+    }
+
+    public int getOpenTransactions() {
+        Set openTransactions = getGraphInstance().getOpenTransactions();
+
+        return (openTransactions != null) ? openTransactions.size() : 0;
     }
 
     private static AtlasPatch toAtlasPatch(AtlasVertex vertex) {

@@ -84,10 +84,10 @@ public abstract class AtlasJavaPatchHandler {
             setEncodedProperty(patchVertex, CREATED_BY_KEY, getCurrentUser());
             setEncodedProperty(patchVertex, MODIFIED_BY_KEY, getCurrentUser());
 
-            graph.commit();
-
             addToPatchesRegistry(patchId, getPatchStatus());
         }
+
+        graph.commit();
     }
 
     private PatchStatus getPatchStatus(Map<String, PatchStatus> patchesRegistry) {
@@ -108,10 +108,10 @@ public abstract class AtlasJavaPatchHandler {
             setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
             setEncodedProperty(patchVertex, MODIFIED_BY_KEY, getCurrentUser());
 
-            graph.commit();
-
             addToPatchesRegistry(getPatchId(), getPatchStatus());
         }
+
+        graph.commit();
     }
 
     public PatchStatus getPatchStatus() {

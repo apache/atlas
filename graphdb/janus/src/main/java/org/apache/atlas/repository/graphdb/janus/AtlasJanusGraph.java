@@ -60,6 +60,7 @@ import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
@@ -87,6 +88,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
     private final Set<String>                 multiProperties                   = new HashSet<>();
+    private final StandardJanusGraph          janusGraph;
 
     public AtlasJanusGraph() {
         //determine multi-properties once at startup
@@ -107,6 +109,8 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
                 mgmt.rollback();
             }
         }
+
+        janusGraph = (StandardJanusGraph) AtlasJanusGraphDatabase.getGraphInstance();
     }
 
     @Override
@@ -214,6 +218,11 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public AtlasGraphManagement getManagementSystem() {
         return new AtlasJanusGraphManagement(this, getGraph().openManagement());
+    }
+
+    @Override
+    public Set getOpenTransactions() {
+        return janusGraph.getOpenTransactions();
     }
 
     @Override

@@ -208,6 +208,11 @@ public interface AtlasGraph<V, E> {
     void clear();
 
     /**
+     * Gets all open transactions.
+     */
+    Set getOpenTransactions();
+
+    /**
      * Converts the graph to gson and writes it to the specified stream.
      *
      * @param os

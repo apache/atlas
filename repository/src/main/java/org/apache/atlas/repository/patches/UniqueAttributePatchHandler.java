@@ -136,7 +136,6 @@ public class UniqueAttributePatchHandler extends AtlasJavaPatchHandler {
 
     private void registerUniqueAttrPropertyKeys(Collection<AtlasAttribute> attributes) throws IndexException {
         AtlasGraphManagement management = graph.getManagementSystem();
-        boolean              idxCreated = false;
 
         for (AtlasAttribute attribute : attributes) {
             String  uniquePropertyName       = attribute.getVertexUniquePropertyName();
@@ -150,14 +149,11 @@ public class UniqueAttributePatchHandler extends AtlasJavaPatchHandler {
                 AtlasCardinality  cardinality    = indexer.toAtlasCardinality(attributeDef.getCardinality());
 
                 indexer.createVertexIndex(management, uniquePropertyName, UniqueKind.NONE, propertyClass, cardinality, isIndexable, true);
-
-                idxCreated = true;
             }
         }
 
         //Commit indexes
-        if (idxCreated) {
-            indexer.commit(management);
-        }
+        indexer.commit(management);
+        graph.commit();
     }
 }
