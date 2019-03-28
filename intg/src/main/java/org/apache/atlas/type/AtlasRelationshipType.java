@@ -349,11 +349,13 @@ public class AtlasRelationshipType extends AtlasStructType {
             attribute = new AtlasAttribute(entityType, attributeDef,
                                            typeRegistry.getType(attrTypeName), getTypeName(), relationshipLabel);
 
+            attribute.setLegacyAttribute(endDef.getIsLegacyAttribute());
         } else {
             // attribute already exists (legacy attribute which is also a relationship attribute)
             // add relationshipLabel information to existing attribute
             attribute.setRelationshipName(getTypeName());
             attribute.setRelationshipEdgeLabel(relationshipLabel);
+            attribute.setLegacyAttribute(true);
         }
 
         entityType.addRelationshipAttribute(attrName, attribute, this);

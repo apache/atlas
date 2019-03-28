@@ -24,6 +24,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasRelationshipAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.utils.AtlasEntityUtil;
@@ -241,6 +242,21 @@ public class AtlasEntityType extends AtlasStructType {
         ownedRefAttributes         = Collections.unmodifiableList(ownedRefAttributes);
 
         entityDef.setSubTypes(subTypes);
+
+        List<AtlasRelationshipAttributeDef> relationshipAttrDefs = new ArrayList<>();
+
+        for (Map.Entry<String, Map<String, AtlasAttribute>> attrEntry : relationshipAttributes.entrySet()) {
+            Map<String, AtlasAttribute> relations = attrEntry.getValue();
+
+            for (Map.Entry<String, AtlasAttribute> relationsEntry : relations.entrySet()) {
+                String         relationshipType = relationsEntry.getKey();
+                AtlasAttribute relationshipAttr = relationsEntry.getValue();
+
+                relationshipAttrDefs.add(new AtlasRelationshipAttributeDef(relationshipType, relationshipAttr.isLegacyAttribute(), relationshipAttr.getAttributeDef()));
+            }
+        }
+
+        entityDef.setRelationshipAttributeDefs(Collections.unmodifiableList(relationshipAttrDefs));
     }
 
     public Set<String> getSuperTypes() {
