@@ -39,6 +39,8 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
 
     private static volatile AtlasPluginClassLoader me = null;
 
+    private final ThreadLocal<ClassLoader> preActivateClassLoader = new ThreadLocal<>();
+
     private final MyClassLoader componentClassLoader;
 
     private AtlasPluginClassLoader(String pluginType, Class<?> pluginClass) throws URISyntaxException {
@@ -207,6 +209,8 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             LOG.debug("==> AtlasPluginClassLoader.activate()");
         }
 
+        preActivateClassLoader.set(Thread.currentThread().getContextClassLoader());
+
         Thread.currentThread().setContextClassLoader(this);
 
         if (LOG.isDebugEnabled()) {
@@ -219,10 +223,19 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             LOG.debug("==> AtlasPluginClassLoader.deactivate()");
         }
 
-        MyClassLoader savedClassLoader = getComponentClassLoader();
+        ClassLoader classLoader = preActivateClassLoader.get();
 
-        if (savedClassLoader != null && savedClassLoader.getParent() != null) {
-            Thread.currentThread().setContextClassLoader(savedClassLoader.getParent());
+        if (classLoader != null) {
+            preActivateClassLoader.remove();
+        } else {
+            MyClassLoader savedClassLoader = getComponentClassLoader();
+            if (savedClassLoader != null && savedClassLoader.getParent() != null) {
+                classLoader = savedClassLoader.getParent();
+            }
+        }
+
+        if (classLoader != null) {
+            Thread.currentThread().setContextClassLoader(classLoader);
         } else {
             LOG.warn("AtlasPluginClassLoader.deactivate() was not successful.Couldn't not get the saved "
                     + "componentClassLoader...");
