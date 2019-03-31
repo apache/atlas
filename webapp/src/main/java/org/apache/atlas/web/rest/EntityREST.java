@@ -105,7 +105,7 @@ public class EntityREST {
      */
     @GET
     @Path("/guid/{guid}")
-    public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo) throws AtlasBaseException {
+    public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
         AtlasPerfTracer perf = null;
@@ -115,7 +115,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getById(" + guid + ", " + minExtInfo + " )");
             }
 
-            return entitiesStore.getById(guid, minExtInfo);
+            return entitiesStore.getById(guid, minExtInfo, ignoreRelationships);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -165,7 +165,7 @@ public class EntityREST {
     @GET
     @Path("/uniqueAttribute/type/{typeName}")
     public AtlasEntityWithExtInfo getByUniqueAttributes(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo,
-                                                        @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+                                                        @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
 
         AtlasPerfTracer perf = null;
@@ -181,7 +181,7 @@ public class EntityREST {
 
             validateUniqueAttribute(entityType, attributes);
 
-            return entitiesStore.getByUniqueAttributes(entityType, attributes, minExtInfo);
+            return entitiesStore.getByUniqueAttributes(entityType, attributes, minExtInfo, ignoreRelationships);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -586,7 +586,7 @@ public class EntityREST {
      */
     @GET
     @Path("/bulk")
-    public AtlasEntitiesWithExtInfo getByGuids(@QueryParam("guid") List<String> guids, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo) throws AtlasBaseException {
+    public AtlasEntitiesWithExtInfo getByGuids(@QueryParam("guid") List<String> guids, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(guids)) {
             for (String guid : guids) {
                 Servlets.validateQueryParamLength("guid", guid);
@@ -604,7 +604,7 @@ public class EntityREST {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guids);
             }
 
-            return entitiesStore.getByIds(guids, minExtInfo);
+            return entitiesStore.getByIds(guids, minExtInfo, ignoreRelationships);
         } finally {
             AtlasPerfTracer.log(perf);
         }

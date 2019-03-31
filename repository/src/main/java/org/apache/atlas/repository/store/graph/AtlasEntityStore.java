@@ -61,7 +61,7 @@ public interface AtlasEntityStore {
      * @param isMinExtInfo
      * @return AtlasEntity
      */
-    AtlasEntityWithExtInfo getById(String guid, boolean isMinExtInfo) throws AtlasBaseException;
+    AtlasEntityWithExtInfo getById(String guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
 
     /**
      * Get entity header for the given GUID
@@ -86,7 +86,7 @@ public interface AtlasEntityStore {
      * @return
      * @throws AtlasBaseException
      */
-    AtlasEntitiesWithExtInfo getByIds(List<String> guid, boolean isMinExtInfo) throws AtlasBaseException;
+    AtlasEntitiesWithExtInfo getByIds(List<String> guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
 
     /**
      *
@@ -104,9 +104,10 @@ public interface AtlasEntityStore {
      * @param entityType     type of the entity
      * @param uniqAttributes Attributes that uniquely identify the entity
      * @param isMinExtInfo
+     * @param ignoreRelationships ignore relationship attributes
      * @return EntityMutationResponse details of the updates performed by this call
      */
-    AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes, boolean isMinExtInfo)
+    AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes, boolean isMinExtInfo, boolean ignoreRelationships)
             throws AtlasBaseException;
 
     /**

@@ -259,11 +259,27 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public AtlasEntityWithExtInfo getEntityByGuid(String guid) throws AtlasServiceException {
-        return callAPI(API_V2.GET_ENTITY_BY_GUID, AtlasEntityWithExtInfo.class, null, guid);
+        return getEntityByGuid(guid, false, false);
+    }
+
+    public AtlasEntityWithExtInfo getEntityByGuid(String guid, boolean minExtInfo, boolean ignoreRelationships) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+
+        queryParams.add("minExtInfo", String.valueOf(minExtInfo));
+        queryParams.add("ignoreRelationships", String.valueOf(ignoreRelationships));
+
+        return callAPI(API_V2.GET_ENTITY_BY_GUID, AtlasEntityWithExtInfo.class, queryParams, guid);
     }
 
     public AtlasEntityWithExtInfo getEntityByAttribute(String type, Map<String, String> attributes) throws AtlasServiceException {
+        return getEntityByAttribute(type, attributes, false, false);
+    }
+
+    public AtlasEntityWithExtInfo getEntityByAttribute(String type, Map<String, String> attributes, boolean minExtInfo, boolean ignoreRelationship) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(attributes);
+
+        queryParams.add("minExtInfo", String.valueOf(minExtInfo));
+        queryParams.add("ignoreRelationships", String.valueOf(ignoreRelationship));
 
         return callAPI(API_V2.GET_ENTITY_BY_ATTRIBUTE, AtlasEntityWithExtInfo.class, queryParams, type);
     }
@@ -298,9 +314,15 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public AtlasEntitiesWithExtInfo getEntitiesByGuids(List<String> guids) throws AtlasServiceException {
+        return getEntitiesByGuids(guids, false, false);
+    }
+
+    public AtlasEntitiesWithExtInfo getEntitiesByGuids(List<String> guids, boolean minExtInfo, boolean ignoreRelationships) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
 
         queryParams.put("guid", guids);
+        queryParams.add("minExtInfo", String.valueOf(minExtInfo));
+        queryParams.add("ignoreRelationships", String.valueOf(ignoreRelationships));
 
         return callAPI(API_V2.GET_ENTITIES_BY_GUIDS, AtlasEntitiesWithExtInfo.class, queryParams);
     }
