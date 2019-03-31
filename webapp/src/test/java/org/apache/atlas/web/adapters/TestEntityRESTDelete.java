@@ -71,13 +71,13 @@ public class TestEntityRESTDelete {
     }
 
     private void assertSoftDelete(String guid) throws AtlasBaseException {
-        AtlasEntity.AtlasEntityWithExtInfo entity = entityREST.getById(guid, false);
+        AtlasEntity.AtlasEntityWithExtInfo entity = entityREST.getById(guid, false, false);
         assertTrue(entity != null && entity.getEntity().getStatus() == AtlasEntity.Status.DELETED);
     }
 
     private void assertHardDelete(String guid) {
         try {
-            entityREST.getById(guid, false);
+            entityREST.getById(guid, false, false);
             fail("Entity should have been deleted. Exception should have been thrown.");
         } catch (AtlasBaseException e) {
             assertTrue(true);
