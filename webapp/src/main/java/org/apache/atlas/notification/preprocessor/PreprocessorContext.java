@@ -21,17 +21,26 @@ import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+
+import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 
 
 public class PreprocessorContext {
@@ -40,6 +49,7 @@ public class PreprocessorContext {
     public enum PreprocessAction { NONE, IGNORE, PRUNE }
 
     private final AtlasKafkaMessage<HookNotification> kafkaMessage;
+    private final AtlasTypeRegistry                   typeRegistry;
     private final AtlasEntitiesWithExtInfo            entitiesWithExtInfo;
     private final List<Pattern>                       hiveTablesToIgnore;
     private final List<Pattern>                       hiveTablesToPrune;
@@ -49,9 +59,14 @@ public class PreprocessorContext {
     private final Set<String>                         ignoredEntities        = new HashSet<>();
     private final Set<String>                         prunedEntities         = new HashSet<>();
     private final Set<String>                         referredEntitiesToMove = new HashSet<>();
+    private final Set<String>                         createdEntities        = new HashSet<>();
+    private final Set<String>                         deletedEntities        = new HashSet<>();
+    private final Map<String, String>                 guidAssignments        = new HashMap<>();
+    private       List<AtlasEntity>                   postUpdateEntities     = null;
 
-    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs) {
+    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, AtlasTypeRegistry typeRegistry, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs) {
         this.kafkaMessage                  = kafkaMessage;
+        this.typeRegistry                  = typeRegistry;
         this.hiveTablesToIgnore            = hiveTablesToIgnore;
         this.hiveTablesToPrune             = hiveTablesToPrune;
         this.hiveTablesCache               = hiveTablesCache;
@@ -118,6 +133,14 @@ public class PreprocessorContext {
     public Set<String> getPrunedEntities() { return prunedEntities; }
 
     public Set<String> getReferredEntitiesToMove() { return referredEntitiesToMove; }
+
+    public Set<String> getCreatedEntities() { return createdEntities; }
+
+    public Set<String> getDeletedEntities() { return deletedEntities; }
+
+    public Map<String, String> getGuidAssignments() { return guidAssignments; }
+
+    public List<AtlasEntity> getPostUpdateEntities() { return postUpdateEntities; }
 
     public PreprocessAction getPreprocessActionForHiveTable(String qualifiedName) {
         PreprocessAction ret = PreprocessAction.NONE;
@@ -199,12 +222,48 @@ public class PreprocessorContext {
         collectGuids(obj, prunedEntities);
     }
 
-    public void removeRefAttributeAndRegisterToMove(AtlasEntity entity, String attrName) {
-        Set<String> guidsToMove = new HashSet<>();
+    public void removeRefAttributeAndRegisterToMove(AtlasEntity entity, String attrName, String relationshipType, String refAttrName) {
+        Object attrVal = entity.removeAttribute(attrName);
 
-        collectGuids(entity.removeAttribute(attrName), guidsToMove);
+        if (attrVal != null) {
+            AtlasRelatedObjectId entityId = null;
+            Set<String>          guids    = new HashSet<>();
 
-        addToReferredEntitiesToMove(guidsToMove);
+            collectGuids(attrVal, guids);
+
+            // removed attrVal might have elements removed (e.g. removed column); to handle this case register the entity for partial update
+            addToPostUpdate(entity, attrName, attrVal);
+
+            for (String guid : guids) {
+                AtlasEntity refEntity = getEntity(guid);
+
+                if (refEntity != null) {
+                    Object refAttr = null;
+
+                    if (refEntity.hasRelationshipAttribute(refAttrName)) {
+                        refAttr = refEntity.getRelationshipAttribute(refAttrName);
+                    } else if (refEntity.hasAttribute(refAttrName)) {
+                        refAttr = refEntity.getAttribute(refAttrName);
+                    } else {
+                        if (entityId == null) {
+                            entityId = AtlasTypeUtil.toAtlasRelatedObjectId(entity, typeRegistry);
+                        }
+
+                        refAttr = entityId;
+                    }
+
+                    if (refAttr != null) {
+                        refAttr = setRelationshipType(refAttr, relationshipType);
+                    }
+
+                    if (refAttr != null) {
+                        refEntity.setRelationshipAttribute(refAttrName, refAttr);
+                    }
+
+                    addToReferredEntitiesToMove(guid);
+                }
+            }
+        }
     }
 
     public void moveRegisteredReferredEntities() {
@@ -236,6 +295,32 @@ public class PreprocessorContext {
         }
     }
 
+    public void prepareForPostUpdate() {
+        if (postUpdateEntities != null) {
+            ListIterator<AtlasEntity> iter = postUpdateEntities.listIterator();
+
+            while (iter.hasNext()) {
+                AtlasEntity entity       = iter.next();
+                String      assignedGuid = getAssignedGuid(entity.getGuid());
+
+                // no need to perform partial-update for entities that are created/deleted while processing this message
+                if (createdEntities.contains(assignedGuid) || deletedEntities.contains(assignedGuid)) {
+                    iter.remove();
+                } else {
+                    entity.setGuid(assignedGuid);
+
+                    if (entity.getAttributes() != null) {
+                        setAssignedGuids(entity.getAttributes().values());
+                    }
+
+                    if (entity.getRelationshipAttributes() != null) {
+                        setAssignedGuids(entity.getRelationshipAttributes().values());
+                    }
+                }
+            }
+        }
+    }
+
     public String getTypeName(Object obj) {
         Object ret = null;
 
@@ -258,7 +343,7 @@ public class PreprocessorContext {
         if (obj instanceof AtlasObjectId) {
             ret = ((AtlasObjectId) obj).getGuid();
         } else if (obj instanceof Map) {
-            ret = ((Map) obj).get(AtlasObjectId.KEY_GUID);
+            ret = ((Map) obj).get(KEY_GUID);
         } else if (obj instanceof AtlasEntity) {
             ret = ((AtlasEntity) obj).getGuid();
         } else if (obj instanceof AtlasEntity.AtlasEntityWithExtInfo) {
@@ -274,7 +359,7 @@ public class PreprocessorContext {
                 Collection objList = (Collection) obj;
 
                 for (Object objElem : objList) {
-                    collectGuid(objElem, guids);
+                    collectGuids(objElem, guids);
                 }
             } else {
                 collectGuid(obj, guids);
@@ -303,5 +388,92 @@ public class PreprocessorContext {
         }
 
         return ret;
+    }
+
+    private AtlasRelatedObjectId setRelationshipType(Object attr, String relationshipType) {
+        AtlasRelatedObjectId ret = null;
+
+        if (attr instanceof AtlasRelatedObjectId) {
+            ret = (AtlasRelatedObjectId) attr;
+        } else if (attr instanceof AtlasObjectId) {
+            ret = new AtlasRelatedObjectId((AtlasObjectId) attr);
+        } else if (attr instanceof Map) {
+            ret = new AtlasRelatedObjectId((Map) attr);
+        }
+
+        if (ret != null) {
+            ret.setRelationshipType(relationshipType);
+        }
+
+        return ret;
+    }
+
+    private String getAssignedGuid(String guid) {
+        String ret = guidAssignments.get(guid);
+
+        return ret != null ? ret : guid;
+    }
+
+    private void setAssignedGuids(Object obj) {
+        if (obj != null) {
+            if (obj instanceof Collection) {
+                Collection objList = (Collection) obj;
+
+                for (Object objElem : objList) {
+                    setAssignedGuids(objElem);
+                }
+            } else {
+                setAssignedGuid(obj);
+            }
+        }
+    }
+
+    private void setAssignedGuid(Object obj) {
+        if (obj instanceof AtlasRelatedObjectId) {
+            AtlasRelatedObjectId objId = (AtlasRelatedObjectId) obj;
+
+            objId.setGuid(getAssignedGuid(objId.getGuid()));
+        } else if (obj instanceof AtlasObjectId) {
+            AtlasObjectId objId = (AtlasObjectId) obj;
+
+            objId.setGuid(getAssignedGuid(objId.getGuid()));
+        } else if (obj instanceof Map) {
+            Map    objId = (Map) obj;
+            Object guid  = objId.get(KEY_GUID);
+
+            if (guid != null) {
+                objId.put(KEY_GUID, getAssignedGuid(guid.toString()));
+            }
+        }
+    }
+
+    private void addToPostUpdate(AtlasEntity entity, String attrName, Object attrVal) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("addToPostUpdate(guid={}, entityType={}, attrName={}", entity.getGuid(), entity.getTypeName(), attrName);
+        }
+
+        AtlasEntity partialEntity = null;
+
+        if (postUpdateEntities == null) {
+            postUpdateEntities = new ArrayList<>();
+        }
+
+        for (AtlasEntity existing : postUpdateEntities) {
+            if (StringUtils.equals(entity.getGuid(), existing.getGuid())) {
+                partialEntity = existing;
+
+                break;
+            }
+        }
+
+        if (partialEntity == null) {
+            partialEntity = new AtlasEntity(entity.getTypeName(), attrName, attrVal);
+
+            partialEntity.setGuid(entity.getGuid());
+
+            postUpdateEntities.add(partialEntity);
+        } else {
+            partialEntity.setAttribute(attrName, attrVal);
+        }
     }
 }

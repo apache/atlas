@@ -21,6 +21,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -37,6 +38,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinali
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.v1.model.typedef.AttributeDefinition;
 import org.apache.atlas.v1.model.typedef.ClassTypeDefinition;
 import org.apache.atlas.v1.model.typedef.Multiplicity;
@@ -376,8 +378,38 @@ public class AtlasTypeUtil {
         return ret;
     }
 
+    public static AtlasRelatedObjectId toAtlasRelatedObjectId(AtlasEntity entity) {
+        return new AtlasRelatedObjectId(getAtlasObjectId(entity));
+    }
+
+    public static AtlasRelatedObjectId toAtlasRelatedObjectId(AtlasEntity entity, AtlasTypeRegistry typeRegistry) {
+        return new AtlasRelatedObjectId(getAtlasObjectId(entity, typeRegistry));
+    }
+
     public static AtlasObjectId getAtlasObjectId(AtlasEntity entity) {
         return new AtlasObjectId(entity.getGuid(), entity.getTypeName());
+    }
+
+    public static AtlasObjectId getAtlasObjectId(AtlasEntity entity, AtlasTypeRegistry typeRegistry) {
+        String              typeName       = entity.getTypeName();
+        AtlasEntityType     entityType     = typeRegistry.getEntityTypeByName(typeName);
+        Map<String, Object> uniqAttributes = null;
+
+        if (entityType != null && MapUtils.isNotEmpty(entityType.getUniqAttributes())) {
+            for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
+                Object attrValue = entity.getAttribute(attribute.getName());
+
+                if (attrValue != null) {
+                    if (uniqAttributes == null) {
+                        uniqAttributes = new HashMap<>();
+                    }
+
+                    uniqAttributes.put(attribute.getName(), attrValue);
+                }
+            }
+        }
+
+        return new AtlasObjectId(entity.getGuid(), typeName, uniqAttributes);
     }
 
     public static AtlasObjectId getAtlasObjectId(AtlasEntityHeader header) {

@@ -63,12 +63,12 @@ public class TestAtlasStructType {
 
         multiValuedAttribMin.setName(MULTI_VAL_ATTR_NAME_MIN);
         multiValuedAttribMin.setTypeName(AtlasBaseTypeDef.getArrayTypeName(ATLAS_TYPE_INT));
-        multiValuedAttribMin.setCardinality(Cardinality.SET);
+        multiValuedAttribMin.setCardinality(Cardinality.LIST);
         multiValuedAttribMin.setValuesMinCount(MULTI_VAL_ATTR_MIN_COUNT);
 
         multiValuedAttribMax.setName(MULTI_VAL_ATTR_NAME_MAX);
         multiValuedAttribMax.setTypeName(AtlasBaseTypeDef.getArrayTypeName(ATLAS_TYPE_INT));
-        multiValuedAttribMax.setCardinality(Cardinality.LIST);
+        multiValuedAttribMax.setCardinality(Cardinality.SET);
         multiValuedAttribMax.setValuesMaxCount(MULTI_VAL_ATTR_MAX_COUNT);
 
         AtlasStructDef structDef = ModelTestUtil.newStructDef();

@@ -22,6 +22,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 
 import java.util.Iterator;
+import java.util.List;
 
 public class AtlasEntityStream implements EntityStream {
     protected final AtlasEntitiesWithExtInfo entitiesWithExtInfo;
@@ -31,6 +32,10 @@ public class AtlasEntityStream implements EntityStream {
 
     public AtlasEntityStream(AtlasEntity entity) {
         this(new AtlasEntitiesWithExtInfo(entity), null);
+    }
+
+    public AtlasEntityStream(List<AtlasEntity> entities) {
+        this(new AtlasEntitiesWithExtInfo(entities), null);
     }
 
     public AtlasEntityStream(AtlasEntityWithExtInfo entityWithExtInfo) {

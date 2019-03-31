@@ -22,7 +22,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasRelationshipAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
@@ -544,7 +543,9 @@ public class AtlasEntityType extends AtlasStructType {
                 superType.normalizeAttributeValues(ent);
             }
 
-            normalizeValues(ent);
+            super.normalizeAttributeValues(ent);
+
+            normalizeRelationshipAttributeValues(ent, false);
         }
     }
 
@@ -555,6 +556,8 @@ public class AtlasEntityType extends AtlasStructType {
             }
 
             super.normalizeAttributeValuesForUpdate(ent);
+
+            normalizeRelationshipAttributeValues(ent, true);
         }
     }
 
@@ -565,7 +568,9 @@ public class AtlasEntityType extends AtlasStructType {
                 superType.normalizeAttributeValues(obj);
             }
 
-            normalizeValues(obj);
+            super.normalizeAttributeValues(obj);
+
+            normalizeRelationshipAttributeValues(obj, false);
         }
     }
 
@@ -576,6 +581,8 @@ public class AtlasEntityType extends AtlasStructType {
             }
 
             super.normalizeAttributeValuesForUpdate(obj);
+
+            normalizeRelationshipAttributeValues(obj, true);
         }
     }
 
@@ -743,67 +750,56 @@ public class AtlasEntityType extends AtlasStructType {
         return ret;
     }
 
-    private void normalizeRelationshipAttributeValues(AtlasStruct obj) {
-        if (obj != null && obj instanceof AtlasEntity) {
-            AtlasEntity entityObj = (AtlasEntity) obj;
-
+    private void normalizeRelationshipAttributeValues(AtlasEntity entity, boolean isUpdate) {
+        if (entity != null) {
             for (String attributeName : relationshipAttributes.keySet()) {
-                if (entityObj.hasRelationshipAttribute(attributeName)) {
-                    Object            attributeValue   = entityObj.getRelationshipAttribute(attributeName);
-                    String            relationshipType = AtlasEntityUtil.getRelationshipType(attributeValue);
-                    AtlasAttribute    attribute        = getRelationshipAttribute(attributeName, relationshipType);
-                    AtlasAttributeDef attributeDef     = attribute.getAttributeDef();
+                if (entity.hasRelationshipAttribute(attributeName)) {
+                    Object         attributeValue   = entity.getRelationshipAttribute(attributeName);
+                    String         relationshipType = AtlasEntityUtil.getRelationshipType(attributeValue);
+                    AtlasAttribute attribute        = getRelationshipAttribute(attributeName, relationshipType);
 
-                    attributeValue = getNormalizedValue(attributeValue, attributeDef);
+                    if (attribute != null) {
+                        AtlasType attrType = attribute.getAttributeType();
 
-                    entityObj.setRelationshipAttribute(attributeName, attributeValue);
+                        if (isValidRelationshipType(attrType)) {
+                            if (isUpdate) {
+                                attributeValue = attrType.getNormalizedValueForUpdate(attributeValue);
+                            } else {
+                                attributeValue = attrType.getNormalizedValue(attributeValue);
+                            }
+
+                            entity.setRelationshipAttribute(attributeName, attributeValue);
+                        }
+                    }
                 }
             }
         }
     }
 
-    public void normalizeRelationshipAttributeValues(Map<String, Object> obj) {
+    public void normalizeRelationshipAttributeValues(Map<String, Object> obj, boolean isUpdate) {
         if (obj != null) {
             for (String attributeName : relationshipAttributes.keySet()) {
                 if (obj.containsKey(attributeName)) {
-                    Object            attributeValue   = obj.get(attributeName);
-                    String            relationshipType = AtlasEntityUtil.getRelationshipType(attributeValue);
-                    AtlasAttribute    attribute        = getRelationshipAttribute(attributeName, relationshipType);
-                    AtlasAttributeDef attributeDef     = attribute.getAttributeDef();
+                    Object         attributeValue   = obj.get(attributeName);
+                    String         relationshipType = AtlasEntityUtil.getRelationshipType(attributeValue);
+                    AtlasAttribute attribute        = getRelationshipAttribute(attributeName, relationshipType);
 
-                    attributeValue = getNormalizedValue(attributeValue, attributeDef);
+                    if (attribute != null) {
+                        AtlasType attrType = attribute.getAttributeType();
 
-                    obj.put(attributeName, attributeValue);
+                        if (isValidRelationshipType(attrType)) {
+                            if (isUpdate) {
+                                attributeValue = attrType.getNormalizedValueForUpdate(attributeValue);
+                            } else {
+                                attributeValue = attrType.getNormalizedValue(attributeValue);
+                            }
+
+                            obj.put(attributeName, attributeValue);
+                        }
+                    }
                 }
             }
         }
-    }
-
-    private Object getNormalizedValue(Object value, AtlasAttributeDef attributeDef) {
-        String         relationshipType = AtlasEntityUtil.getRelationshipType(value);
-        AtlasAttribute attribute        = getRelationshipAttribute(attributeDef.getName(), relationshipType);
-
-        if (attribute != null) {
-            AtlasType attrType = attribute.getAttributeType();
-
-            if (isValidRelationshipType(attrType) && value != null) {
-                return attrType.getNormalizedValue(value);
-            }
-        }
-
-        return null;
-    }
-
-    private void normalizeValues(AtlasEntity ent) {
-        super.normalizeAttributeValues(ent);
-
-        normalizeRelationshipAttributeValues(ent);
-    }
-
-    private void normalizeValues(Map<String, Object> obj) {
-        super.normalizeAttributeValues(obj);
-
-        normalizeRelationshipAttributeValues(obj);
     }
 
     private boolean validateRelationshipAttributes(Object obj, String objName, List<String> messages) {

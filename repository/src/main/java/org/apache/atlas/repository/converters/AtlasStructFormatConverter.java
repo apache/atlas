@@ -190,7 +190,7 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
 
                             if (entities != null) {
                                 v2Value  = entities;
-                                attrType = new AtlasArrayType(entityType);
+                                attrType = new AtlasArrayType(entityType, arrayType.getMinCount(), arrayType.getMaxCount(), arrayType.getCardinality());
 
                                 if (LOG.isDebugEnabled()) {
                                     LOG.debug("{}: replaced objIdList with entityList", attr.getQualifiedName());
