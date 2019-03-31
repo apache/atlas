@@ -34,6 +34,7 @@ import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.notification.HookNotification;
@@ -79,7 +80,6 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -492,7 +492,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     return;
                 }
 
-                preProcessNotificationMessage(kafkaMsg);
+                PreprocessorContext context = preProcessNotificationMessage(kafkaMsg);
 
                 if (isEmptyMessage(kafkaMsg)) {
                     commit(kafkaMsg);
@@ -525,7 +525,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                                             AtlasClient.API_V1.CREATE_ENTITY.getNormalizedPath());
                                 }
 
-                                createOrUpdate(entities, false);
+                                createOrUpdate(entities, false, context);
                             }
                             break;
 
@@ -546,7 +546,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 // There should only be one root entity
                                 entities.getEntities().get(0).setGuid(guid);
 
-                                createOrUpdate(entities, true);
+                                createOrUpdate(entities, true, context);
                             }
                             break;
 
@@ -579,7 +579,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                                             AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
                                 }
 
-                                createOrUpdate(entities, false);
+                                createOrUpdate(entities, false, context);
                             }
                             break;
 
@@ -593,7 +593,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                                             AtlasClientV2.API_V2.CREATE_ENTITY.getNormalizedPath());
                                 }
 
-                                createOrUpdate(entities, false);
+                                createOrUpdate(entities, false, context);
                             }
                             break;
 
@@ -622,7 +622,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                                             AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
                                 }
 
-                                createOrUpdate(entities, false);
+                                createOrUpdate(entities, false, context);
                             }
                             break;
 
@@ -708,15 +708,15 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             }
         }
 
-        private void createOrUpdate(AtlasEntitiesWithExtInfo entities, boolean isPartialUpdate) throws AtlasBaseException {
+        private void createOrUpdate(AtlasEntitiesWithExtInfo entities, boolean isPartialUpdate, PreprocessorContext context) throws AtlasBaseException {
             List<AtlasEntity> entitiesList = entities.getEntities();
             AtlasEntityStream entityStream = new AtlasEntityStream(entities);
 
             if (commitBatchSize <= 0 || entitiesList.size() <= commitBatchSize) {
-                atlasEntityStore.createOrUpdate(entityStream, isPartialUpdate);
-            } else {
-                Map<String, String> guidAssignments = new HashMap<>();
+                EntityMutationResponse response = atlasEntityStore.createOrUpdate(entityStream, isPartialUpdate);
 
+                recordProcessedEntities(response, context);
+            } else {
                 for (int fromIdx = 0; fromIdx < entitiesList.size(); fromIdx += commitBatchSize) {
                     int toIndex = fromIdx + commitBatchSize;
 
@@ -726,18 +726,28 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                     List<AtlasEntity> entitiesBatch = new ArrayList<>(entitiesList.subList(fromIdx, toIndex));
 
-                    updateProcessedEntityReferences(entitiesBatch, guidAssignments);
+                    updateProcessedEntityReferences(entitiesBatch, context.getGuidAssignments());
 
                     AtlasEntitiesWithExtInfo batch       = new AtlasEntitiesWithExtInfo(entitiesBatch);
                     AtlasEntityStream        batchStream = new AtlasEntityStream(batch, entityStream);
 
                     EntityMutationResponse response = atlasEntityStore.createOrUpdate(batchStream, isPartialUpdate);
 
-                    recordProcessedEntities(response, guidAssignments);
+                    recordProcessedEntities(response, context);
 
                     RequestContext.get().resetEntityGuidUpdates();
 
                     RequestContext.get().clearCache();
+                }
+            }
+
+            if (context != null) {
+                context.prepareForPostUpdate();
+
+                List<AtlasEntity> postUpdateEntities = context.getPostUpdateEntities();
+
+                if (CollectionUtils.isNotEmpty(postUpdateEntities)) {
+                    atlasEntityStore.createOrUpdate(new AtlasEntityStream(postUpdateEntities), true);
                 }
             }
         }
@@ -815,49 +825,51 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
     }
 
-    private void preProcessNotificationMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
-        if (!preprocessEnabled) {
-            return;
-        }
+    private PreprocessorContext preProcessNotificationMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
+        PreprocessorContext context = null;
 
-        PreprocessorContext context = new PreprocessorContext(kafkaMsg, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache, hiveTypesRemoveOwnedRefAttrs, rdbmsTypesRemoveOwnedRefAttrs);
+        if (preprocessEnabled) {
+            context = new PreprocessorContext(kafkaMsg, typeRegistry, hiveTablesToIgnore, hiveTablesToPrune, hiveTablesCache, hiveTypesRemoveOwnedRefAttrs, rdbmsTypesRemoveOwnedRefAttrs);
 
-        if (context.isHivePreprocessEnabled()) {
-            preprocessHiveTypes(context);
-        }
+            if (context.isHivePreprocessEnabled()) {
+                preprocessHiveTypes(context);
+            }
 
-        if (skipHiveColumnLineageHive20633) {
-            skipHiveColumnLineage(context);
-        }
+            if (skipHiveColumnLineageHive20633) {
+                skipHiveColumnLineage(context);
+            }
 
-        if (rdbmsTypesRemoveOwnedRefAttrs) {
-            rdbmsTypeRemoveOwnedRefAttrs(context);
-        }
+            if (rdbmsTypesRemoveOwnedRefAttrs) {
+                rdbmsTypeRemoveOwnedRefAttrs(context);
+            }
 
-        context.moveRegisteredReferredEntities();
+            context.moveRegisteredReferredEntities();
 
-        if (context.isHivePreprocessEnabled() && CollectionUtils.isNotEmpty(context.getEntities())) {
-            // move hive_process and hive_column_lineage entities to end of the list
-            List<AtlasEntity> entities = context.getEntities();
-            int               count    = entities.size();
+            if (context.isHivePreprocessEnabled() && CollectionUtils.isNotEmpty(context.getEntities())) {
+                // move hive_process and hive_column_lineage entities to end of the list
+                List<AtlasEntity> entities = context.getEntities();
+                int               count    = entities.size();
 
-            for (int i = 0; i < count; i++) {
-                AtlasEntity entity = entities.get(i);
+                for (int i = 0; i < count; i++) {
+                    AtlasEntity entity = entities.get(i);
 
-                switch (entity.getTypeName()) {
-                    case TYPE_HIVE_PROCESS:
-                    case TYPE_HIVE_COLUMN_LINEAGE:
-                        entities.remove(i--);
-                        entities.add(entity);
-                        count--;
-                    break;
+                    switch (entity.getTypeName()) {
+                        case TYPE_HIVE_PROCESS:
+                        case TYPE_HIVE_COLUMN_LINEAGE:
+                            entities.remove(i--);
+                            entities.add(entity);
+                            count--;
+                            break;
+                    }
+                }
+
+                if (entities.size() - count > 0) {
+                    LOG.info("moved {} hive_process/hive_column_lineage entities to end of list (listSize={})", entities.size() - count, entities.size());
                 }
             }
-
-            if (entities.size() - count > 0) {
-                LOG.info("moved {} hive_process/hive_column_lineage entities to end of list (listSize={})", entities.size() - count, entities.size());
-            }
         }
+
+        return context;
     }
 
     private void rdbmsTypeRemoveOwnedRefAttrs(PreprocessorContext context) {
@@ -1009,12 +1021,26 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         return ret;
     }
 
-    private void recordProcessedEntities(EntityMutationResponse mutationResponse, Map<String, String> guidAssignments) {
-        if (mutationResponse != null && MapUtils.isNotEmpty(mutationResponse.getGuidAssignments())) {
-            guidAssignments.putAll(mutationResponse.getGuidAssignments());
+    private void recordProcessedEntities(EntityMutationResponse mutationResponse, PreprocessorContext context) {
+        if (mutationResponse != null && context != null) {
+            if (MapUtils.isNotEmpty(mutationResponse.getGuidAssignments())) {
+                context.getGuidAssignments().putAll(mutationResponse.getGuidAssignments());
+            }
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("recordProcessedEntities: added {} guidAssignments. updatedSize={}", mutationResponse.getGuidAssignments().size(), guidAssignments.size());
+            if (CollectionUtils.isNotEmpty(mutationResponse.getCreatedEntities())) {
+                for (AtlasEntityHeader entity : mutationResponse.getCreatedEntities()) {
+                    if (entity != null && entity.getGuid() != null) {
+                        context.getCreatedEntities().add(entity.getGuid());
+                    }
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(mutationResponse.getDeletedEntities())) {
+                for (AtlasEntityHeader entity : mutationResponse.getDeletedEntities()) {
+                    if (entity != null && entity.getGuid() != null) {
+                        context.getDeletedEntities().add(entity.getGuid());
+                    }
+                }
             }
         }
     }

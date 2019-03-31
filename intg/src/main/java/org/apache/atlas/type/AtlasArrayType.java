@@ -21,12 +21,14 @@ package org.apache.atlas.type;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,33 +45,36 @@ public class AtlasArrayType extends AtlasType {
     private final String elementTypeName;
     private int          minCount;
     private int          maxCount;
+    private Cardinality  cardinality;
 
     private AtlasType elementType;
 
     public AtlasArrayType(AtlasType elementType) {
-        this(elementType, COUNT_NOT_SET, COUNT_NOT_SET);
+        this(elementType, COUNT_NOT_SET, COUNT_NOT_SET, Cardinality.LIST);
     }
 
-    public AtlasArrayType(AtlasType elementType, int minCount, int maxCount) {
+    public AtlasArrayType(AtlasType elementType, int minCount, int maxCount, Cardinality cardinality) {
         super(AtlasBaseTypeDef.getArrayTypeName(elementType.getTypeName()), TypeCategory.ARRAY, SERVICE_TYPE_ATLAS_CORE);
 
         this.elementTypeName = elementType.getTypeName();
         this.minCount        = minCount;
         this.maxCount        = maxCount;
+        this.cardinality     = cardinality;
         this.elementType     = elementType;
     }
 
     public AtlasArrayType(String elementTypeName, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        this(elementTypeName, COUNT_NOT_SET, COUNT_NOT_SET, typeRegistry);
+        this(elementTypeName, COUNT_NOT_SET, COUNT_NOT_SET, Cardinality.LIST, typeRegistry);
     }
 
-    public AtlasArrayType(String elementTypeName, int minCount, int maxCount, AtlasTypeRegistry typeRegistry)
+    public AtlasArrayType(String elementTypeName, int minCount, int maxCount, Cardinality cardinality, AtlasTypeRegistry typeRegistry)
         throws  AtlasBaseException {
         super(AtlasBaseTypeDef.getArrayTypeName(elementTypeName), TypeCategory.ARRAY, SERVICE_TYPE_ATLAS_CORE);
 
         this.elementTypeName = elementTypeName;
         this.minCount        = minCount;
         this.maxCount        = maxCount;
+        this.cardinality     = cardinality;
 
         this.resolveReferences(typeRegistry);
     }
@@ -89,6 +94,10 @@ public class AtlasArrayType extends AtlasType {
     public int getMaxCount() {
         return maxCount;
     }
+
+    public void setCardinality(Cardinality cardinality) { this.cardinality = cardinality; }
+
+    public Cardinality getCardinality() { return cardinality; }
 
     public AtlasType getElementType() {
         return elementType;
@@ -151,79 +160,12 @@ public class AtlasArrayType extends AtlasType {
 
     @Override
     public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
-        boolean ret = true;
+        final boolean ret;
 
-        if (val1 == null) {
-            ret = val2 == null;
-        } else if (val2 == null) {
-            ret = false;
+        if (cardinality == Cardinality.SET) {
+            ret = areEqualSets(val1, val2, guidAssignments);
         } else {
-            if (val1.getClass().isArray() && val2.getClass().isArray()) {
-                int len = Array.getLength(val1);
-
-                if (len != Array.getLength(val2)) {
-                    ret = false;
-                } else {
-                    for (int i = 0; i < len; i++) {
-                        if (!elementType.areEqualValues(Array.get(val1, i), Array.get(val2, i), guidAssignments)) {
-                            ret = false;
-
-                            break;
-                        }
-                    }
-                }
-            } else if ((val1 instanceof Set) && (val2 instanceof Set)) {
-                Set set1 = (Set) val1;
-                Set set2 = (Set) val2;
-
-                if (set1.size() != set2.size()) {
-                    ret = false;
-                } else {
-                    for (Object elem1 : set1) {
-                        boolean foundInSet2 = false;
-
-                        for (Object elem2 : set2) {
-                            if (elementType.areEqualValues(elem1, elem2, guidAssignments)) {
-                                foundInSet2 = true;
-
-                                break;
-                            }
-                        }
-
-                        if (!foundInSet2) {
-                            ret = false;
-
-                            break;
-                        }
-                    }
-                }
-            } else {
-                List list1 = getListFromValue(val1);
-
-                if (list1 == null) {
-                    ret = false;
-                } else {
-                    List list2 = getListFromValue(val2);
-
-                    if (list2 == null) {
-                        ret = false;
-                    } else {
-                        int len = list1.size();
-
-                        if (len != list2.size()) {
-                            ret = false;
-                        } else {
-                            for (int i = 0; i < len; i++) {
-                                if (!elementType.areEqualValues(list1.get(i), list2.get(i), guidAssignments)) {
-                                    ret = false;
-
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            ret = areEqualLists(val1, val2, guidAssignments);
         }
 
         return ret;
@@ -266,128 +208,120 @@ public class AtlasArrayType extends AtlasType {
 
     @Override
     public Collection<?> getNormalizedValue(Object obj) {
-        if (obj == null) {
-            return null;
-        }
+        Collection<Object> ret = null;
 
-        if (obj instanceof String){
-             obj = AtlasType.fromJson(obj.toString(), List.class);
+        if (obj instanceof String) {
+            obj = AtlasType.fromJson(obj.toString(), List.class);
         }
 
         if (obj instanceof List || obj instanceof Set) {
-            List<Object> ret = new ArrayList<>();
+            Collection collObj = (Collection) obj;
 
-            Collection objList = (Collection) obj;
+            if (isValidElementCount(collObj.size())) {
+                ret = new ArrayList<>(collObj.size());
 
-            if (!isValidElementCount(objList.size())) {
-                return null;
-            }
+                for (Object element : collObj) {
+                    if (element != null) {
+                        Object normalizedValue = elementType.getNormalizedValue(element);
 
-            for (Object element : objList) {
-                if (element != null) {
-                    Object normalizedValue = elementType.getNormalizedValue(element);
+                        if (normalizedValue != null) {
+                            ret.add(normalizedValue);
+                        } else {
+                            ret = null; // invalid element value
 
-                    if (normalizedValue != null) {
-                        ret.add(normalizedValue);
+                            break;
+                        }
                     } else {
-                        return null; // invalid element value
+                        ret.add(element);
                     }
-                } else {
-                    ret.add(element);
                 }
             }
-
-            return ret;
-        } else if (obj.getClass().isArray()) {
-            List<Object> ret = new ArrayList<>();
-
+        } else if (obj != null && obj.getClass().isArray()) {
             int arrayLen = Array.getLength(obj);
 
-            if (!isValidElementCount(arrayLen)) {
-                return null;
-            }
+            if (isValidElementCount(arrayLen)) {
+                ret = new ArrayList<>(arrayLen);
 
-            for (int i = 0; i < arrayLen; i++) {
-                Object element = Array.get(obj, i);
+                for (int i = 0; i < arrayLen; i++) {
+                    Object element = Array.get(obj, i);
 
-                if (element != null) {
-                    Object normalizedValue = elementType.getNormalizedValue(element);
+                    if (element != null) {
+                        Object normalizedValue = elementType.getNormalizedValue(element);
 
-                    if (normalizedValue != null) {
-                        ret.add(normalizedValue);
+                        if (normalizedValue != null) {
+                            ret.add(normalizedValue);
+                        } else {
+                            ret = null; // invalid element value
+
+                            break;
+                        }
                     } else {
-                        return null; // invalid element value
+                        ret.add(element);
                     }
-                } else {
-                    ret.add(element);
                 }
             }
-
-            return ret;
         }
 
-        return null;
+        return ret;
     }
 
     @Override
     public Collection<?> getNormalizedValueForUpdate(Object obj) {
-        if (obj == null) {
-            return null;
+        Collection<Object> ret = null;
+
+        if (obj instanceof String) {
+            obj = AtlasType.fromJson(obj.toString(), List.class);
         }
 
         if (obj instanceof List || obj instanceof Set) {
-            List<Object> ret = new ArrayList<>();
-
             Collection objList = (Collection) obj;
 
-            if (!isValidElementCount(objList.size())) {
-                return null;
-            }
+            if (isValidElementCount(objList.size())) {
+                ret = new ArrayList<>(objList.size());
 
-            for (Object element : objList) {
-                if (element != null) {
-                    Object normalizedValue = elementType.getNormalizedValueForUpdate(element);
+                for (Object element : objList) {
+                    if (element != null) {
+                        Object normalizedValue = elementType.getNormalizedValueForUpdate(element);
 
-                    if (normalizedValue != null) {
-                        ret.add(normalizedValue);
+                        if (normalizedValue != null) {
+                            ret.add(normalizedValue);
+                        } else {
+                            ret = null; // invalid element value
+
+                            break;
+                        }
                     } else {
-                        return null; // invalid element value
+                        ret.add(element);
                     }
-                } else {
-                    ret.add(element);
                 }
             }
-
-            return ret;
-        } else if (obj.getClass().isArray()) {
-            List<Object> ret = new ArrayList<>();
-
+        } else if (obj != null && obj.getClass().isArray()) {
             int arrayLen = Array.getLength(obj);
 
-            if (!isValidElementCount(arrayLen)) {
-                return null;
-            }
+            if (isValidElementCount(arrayLen)) {
+                ret = new ArrayList<>(arrayLen);
 
-            for (int i = 0; i < arrayLen; i++) {
-                Object element = Array.get(obj, i);
+                for (int i = 0; i < arrayLen; i++) {
+                    Object element = Array.get(obj, i);
 
-                if (element != null) {
-                    Object normalizedValue = elementType.getNormalizedValueForUpdate(element);
+                    if (element != null) {
+                        Object normalizedValue = elementType.getNormalizedValueForUpdate(element);
 
-                    if (normalizedValue != null) {
-                        ret.add(normalizedValue);
+                        if (normalizedValue != null) {
+                            ret.add(normalizedValue);
+                        } else {
+                            ret = null; // invalid element value
+
+                            break;
+                        }
                     } else {
-                        return null; // invalid element value
+                        ret.add(element);
                     }
-                } else {
-                    ret.add(element);
                 }
             }
-
-            return ret;
         }
 
-        return null;
+        return ret;
     }
 
     @Override
@@ -483,7 +417,7 @@ public class AtlasArrayType extends AtlasType {
         if (elementAttributeType == elementType) {
             return this;
         } else {
-            AtlasType attributeType = new AtlasArrayType(elementAttributeType, minCount, maxCount);
+            AtlasType attributeType = new AtlasArrayType(elementAttributeType, minCount, maxCount, cardinality);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("getTypeForAttribute(): {} ==> {}", getTypeName(), attributeType.getTypeName());
@@ -523,19 +457,97 @@ public class AtlasArrayType extends AtlasType {
         return false;
     }
 
+    private boolean areEqualSets(Object val1, Object val2, Map<String, String> guidAssignments) {
+        boolean ret  = true;
+
+        if (val1 == null) {
+            ret = val2 == null;
+        } else if (val2 == null) {
+            ret = false;
+        } else if (val1 == val2) {
+            ret = true;
+        } else {
+            Set set1 = getSetFromValue(val1);
+            Set set2 = getSetFromValue(val2);
+
+            if (set1.size() != set2.size()) {
+                ret = false;
+            } else {
+                for (Object elem1 : set1) {
+                    boolean foundInSet2 = false;
+
+                    for (Object elem2 : set2) {
+                        if (elementType.areEqualValues(elem1, elem2, guidAssignments)) {
+                            foundInSet2 = true;
+
+                            break;
+                        }
+                    }
+
+                    if (!foundInSet2) {
+                        ret = false;
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private boolean areEqualLists(Object val1, Object val2, Map<String, String> guidAssignments) {
+        boolean ret = true;
+
+        if (val1 == null) {
+            ret = val2 == null;
+        } else if (val2 == null) {
+            ret = false;
+        } else if (val1 == val2) {
+            ret = true;
+        } else if (val1.getClass().isArray() && val2.getClass().isArray()) {
+            int len = Array.getLength(val1);
+
+            if (len != Array.getLength(val2)) {
+                ret = false;
+            } else {
+                for (int i = 0; i < len; i++) {
+                    if (!elementType.areEqualValues(Array.get(val1, i), Array.get(val2, i), guidAssignments)) {
+                        ret = false;
+
+                        break;
+                    }
+                }
+            }
+        } else {
+            List list1 = getListFromValue(val1);
+            List list2 = getListFromValue(val2);
+
+            if (list1.size() != list2.size()) {
+                ret = false;
+            } else {
+                int len = list1.size();
+
+                for (int i = 0; i < len; i++) {
+                    if (!elementType.areEqualValues(list1.get(i), list2.get(i), guidAssignments)) {
+                        ret = false;
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
     private List getListFromValue(Object val) {
         final List ret;
 
         if (val instanceof List) {
             ret = (List) val;
         } else if (val instanceof Collection) {
-            int len = ((Collection) val).size();
-
-            ret = new ArrayList<>(len);
-
-            for (Object elem : ((Collection) val)) {
-                ret.add(elem);
-            }
+            ret = new ArrayList<>((Collection) val);
         } else if (val.getClass().isArray()) {
             int len = Array.getLength(val);
 
@@ -546,6 +558,30 @@ public class AtlasArrayType extends AtlasType {
             }
         } else if (val instanceof String){
             ret = AtlasType.fromJson(val.toString(), List.class);
+        } else {
+            ret = null;
+        }
+
+        return ret;
+    }
+
+    private Set getSetFromValue(Object val) {
+        final Set ret;
+
+        if (val instanceof Set) {
+            ret = (Set) val;
+        } else if (val instanceof Collection) {
+            ret = new HashSet<>((Collection) val);
+        } else if (val.getClass().isArray()) {
+            int len = Array.getLength(val);
+
+            ret = new HashSet<>(len);
+
+            for (int i = 0; i < len; i++) {
+                ret.add(Array.get(val, i));
+            }
+        } else if (val instanceof String){
+            ret = AtlasType.fromJson(val.toString(), Set.class);
         } else {
             ret = null;
         }

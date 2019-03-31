@@ -99,6 +99,7 @@ public class AtlasStructType extends AtlasType {
 
                 arrayType.setMinCount(attributeDef.getValuesMinCount());
                 arrayType.setMaxCount(attributeDef.getValuesMaxCount());
+                arrayType.setCardinality(cardinality);
             }
 
             //check if attribute type is not classification
