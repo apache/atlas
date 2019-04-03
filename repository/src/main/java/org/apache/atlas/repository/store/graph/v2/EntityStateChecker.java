@@ -268,7 +268,7 @@ public final class EntityStateChecker {
                     entityVertex.removeProperty(Constants.TRAIT_NAMES_PROPERTY_KEY);
 
                     for (String classificationName : traitVertexNames) {
-                        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, classificationName);
+                        AtlasGraphUtilsV2.addToEncodedSetProperty(entityVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, classificationName);
                     }
                 }
 
@@ -284,7 +284,7 @@ public final class EntityStateChecker {
                     entityVertex.removeProperty(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
 
                     for (String classificationName : propagatedTraitVertexNames) {
-                        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+                        AtlasGraphUtilsV2.addToEncodedListProperty(entityVertex, Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
                     }
                 }
 

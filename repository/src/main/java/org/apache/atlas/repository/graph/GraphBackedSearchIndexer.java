@@ -271,12 +271,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createVertexIndex(management, VERTEX_ID_IN_IMPORT_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
 
             createVertexIndex(management, ENTITY_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createVertexIndex(management, SUPER_TYPES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false);
             createVertexIndex(management, TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false);
             createVertexIndex(management, MODIFICATION_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false);
             createVertexIndex(management, STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
             createVertexIndex(management, CREATED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
             createVertexIndex(management, MODIFIED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
+
+            createVertexIndex(management, SUPER_TYPES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false);
             createVertexIndex(management, TRAIT_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, true);
             createVertexIndex(management, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, LIST, true, true);
 
@@ -351,10 +352,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 createLabelIfNeeded(management, propertyName, attribTypeName);
 
                 AtlasArrayType arrayType   = (AtlasArrayType) attributeType;
-                boolean        isReference = isReference(arrayType.getElementType());
+                AtlasType      elementType = arrayType.getElementType();
+                boolean        isReference = isReference(elementType);
 
                 if (!isReference) {
-                    createPropertyKey(management, propertyName, ArrayList.class, SINGLE);
+                    createVertexIndex(management, propertyName, UniqueKind.NONE, getPrimitiveClass(elementType.getTypeName()), cardinality, isIndexable, false);
                 }
             }
 
@@ -508,12 +510,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             if (propertyKey == null) {
                 propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
 
-                if (isIndexApplicable(propertyClass, cardinality)) {
+                if (isIndexApplicable(propertyClass)) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Creating backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
                     }
 
-                    management.addMixedIndex(VERTEX_INDEX, propertyKey);
+                    management.addMixedIndex(VERTEX_INDEX, propertyKey, propertyClass);
 
                     LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
                 }
@@ -591,12 +593,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             if (propertyKey == null) {
                 propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
 
-                if (isIndexApplicable(propertyClass, cardinality)) {
+                if (isIndexApplicable(propertyClass)) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Creating backing index for edge property {} of type {} ", propertyName, propertyClass.getName());
                     }
 
-                    management.addMixedIndex(EDGE_INDEX, propertyKey);
+                    management.addMixedIndex(EDGE_INDEX, propertyKey, propertyClass);
 
                     LOG.info("Created backing index for edge property {} of type {} ", propertyName, propertyClass.getName());
                 }
@@ -619,12 +621,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         if (propertyKey == null) {
             propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
 
-            if (isIndexApplicable(propertyClass, cardinality)) {
+            if (isIndexApplicable(propertyClass)) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Creating backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
                 }
 
-                management.addMixedIndex(FULLTEXT_INDEX, propertyKey);
+                management.addMixedIndex(FULLTEXT_INDEX, propertyKey, propertyClass);
 
                 LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
             }
@@ -700,8 +702,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    private boolean isIndexApplicable(Class propertyClass, AtlasCardinality cardinality) {
-        return !(INDEX_EXCLUSION_CLASSES.contains(propertyClass) || cardinality.isMany());
+    private boolean isIndexApplicable(Class propertyClass) {
+        return !INDEX_EXCLUSION_CLASSES.contains(propertyClass);
     }
     
     public void commit(AtlasGraphManagement management) throws IndexException {
