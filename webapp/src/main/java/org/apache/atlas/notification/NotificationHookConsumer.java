@@ -46,6 +46,7 @@ import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.atlas.utils.LruCache;
+import org.apache.atlas.util.StatisticsUtil;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
@@ -139,6 +140,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final ServiceState                  serviceState;
     private final AtlasInstanceConverter        instanceConverter;
     private final AtlasTypeRegistry             typeRegistry;
+    private final StatisticsUtil                statisticsUtil;
     private final int                           maxRetries;
     private final int                           failedMsgCacheSize;
     private final int                           minWaitDuration;
@@ -168,13 +170,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     @Inject
     public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore,
                                     ServiceState serviceState, AtlasInstanceConverter instanceConverter,
-                                    AtlasTypeRegistry typeRegistry) throws AtlasException {
+                                    AtlasTypeRegistry typeRegistry, StatisticsUtil statisticsUtil) throws AtlasException {
         this.notificationInterface = notificationInterface;
         this.atlasEntityStore      = atlasEntityStore;
         this.serviceState          = serviceState;
         this.instanceConverter     = instanceConverter;
         this.typeRegistry          = typeRegistry;
         this.applicationProperties = ApplicationProperties.get();
+        this.statisticsUtil        = statisticsUtil;
 
         maxRetries            = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
         failedMsgCacheSize    = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 1);
@@ -686,7 +689,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             } finally {
                 AtlasPerfTracer.log(perf);
 
-                long msgProcessingTime = perf != null ? perf.getElapsedTime() : 0;
+                long msgProcessingTime = System.currentTimeMillis() - startTime;
 
                 if (msgProcessingTime > largeMessageProcessingTimeThresholdMs) {
                     String strMessage = AbstractNotification.getMessageJson(message);
@@ -697,10 +700,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                 if (auditLog != null) {
                     auditLog.setHttpStatus(isFailedMsg ? SC_BAD_REQUEST : SC_OK);
-                    auditLog.setTimeTaken(System.currentTimeMillis() - startTime);
+                    auditLog.setTimeTaken(msgProcessingTime);
 
                     AuditFilter.audit(auditLog);
                 }
+                statisticsUtil.setAvgMsgProcessingTime(msgProcessingTime);
             }
         }
 
@@ -756,6 +760,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                 consumer.commit(partition, kafkaMessage.getOffset() + 1);
                 commitSucceessStatus = true;
+                statisticsUtil.setKafkaOffsets(kafkaMessage.getOffset());
+                statisticsUtil.setLastMsgProcessedTime();
             } finally {
                 failedCommitOffsetRecorder.recordIfFailed(commitSucceessStatus, kafkaMessage.getOffset());
             }

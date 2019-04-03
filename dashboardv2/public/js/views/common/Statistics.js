@@ -38,7 +38,8 @@ define(['require',
                 entityActive: "[data-id='entityActive'] tbody",
                 entityDelete: "[data-id='entityDelete'] tbody",
                 entityActiveHeader: "[data-id='entityActive'] .count",
-                entityDeletedHeader: "[data-id='entityDelete'] .count"
+                entityDeletedHeader: "[data-id='entityDelete'] .count",
+                stats: "[data-id='stats'] tbody"
             },
             /** ui events hash */
             events: function() {},
@@ -71,7 +72,8 @@ define(['require',
                         var data = _.first(data.toJSON()),
                             no_records = '<tr class="empty text-center"><td colspan="2"><span>No records found!</span></td></tr>',
                             activeEntityTable = _.isEmpty(data.entity.entityActive) ? no_records : that.getTable({ valueObject: data.entity.entityActive }),
-                            deleteEntityTable = _.isEmpty(data.entity.entityDeleted) ? no_records : that.getTable({ valueObject: data.entity.entityDeleted });
+                            deleteEntityTable = _.isEmpty(data.entity.entityDeleted) ? no_records : that.getTable({ valueObject: data.entity.entityDeleted}),
+                            stats = _.isEmpty(data.general.stats) ? no_records : that.getTable({ valueObject: data.general.stats, formatIntVal: false});
                         var totalActive = 0,
                             totalDeleted = 0;
                         if (data.entity && data.general.entityCount) {
@@ -84,6 +86,7 @@ define(['require',
                         }
                         that.ui.entityActive.html(activeEntityTable);
                         that.ui.entityDelete.html(deleteEntityTable);
+                        that.ui.stats.html(stats);
                         that.ui.entityActiveHeader.html("&nbsp;(" + _.numberFormatWithComa((totalActive - totalDeleted)) + ")");
                         that.ui.entityDeletedHeader.html("&nbsp;(" + _.numberFormatWithComa(totalDeleted) + ")");
                     }

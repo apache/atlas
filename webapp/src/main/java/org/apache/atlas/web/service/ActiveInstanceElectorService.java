@@ -23,6 +23,7 @@ import org.apache.atlas.ha.AtlasServerIdSelector;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.service.Service;
+import org.apache.atlas.util.StatisticsUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
@@ -38,6 +39,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+
 
 /**
  * A service that implements leader election to determine whether this Atlas server is Active.
@@ -59,6 +61,7 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     private final Configuration configuration;
     private final ServiceState serviceState;
     private final ActiveInstanceState activeInstanceState;
+    private final StatisticsUtil statisticsUtil;
     private Set<ActiveStateChangeHandler> activeStateChangeHandlerProviders;
     private List<ActiveStateChangeHandler> activeStateChangeHandlers;
     private CuratorFactory curatorFactory;
@@ -75,13 +78,14 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     ActiveInstanceElectorService(Configuration configuration,
                                  Set<ActiveStateChangeHandler> activeStateChangeHandlerProviders,
                                  CuratorFactory curatorFactory, ActiveInstanceState activeInstanceState,
-                                 ServiceState serviceState) {
+                                 ServiceState serviceState, StatisticsUtil statisticsUtil) {
         this.configuration = configuration;
         this.activeStateChangeHandlerProviders = activeStateChangeHandlerProviders;
         this.activeStateChangeHandlers = new ArrayList<>();
         this.curatorFactory = curatorFactory;
         this.activeInstanceState = activeInstanceState;
         this.serviceState = serviceState;
+        this.statisticsUtil = statisticsUtil;
     }
 
     /**
@@ -92,7 +96,9 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
      */
     @Override
     public void start() throws AtlasException {
+        statisticsUtil.setServerStartTime();
         if (!HAConfiguration.isHAEnabled(configuration)) {
+            statisticsUtil.setServerActiveTime();
             LOG.info("HA is not enabled, no need to start leader election service");
             return;
         }
@@ -150,6 +156,7 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
             }
             activeInstanceState.update(serverId);
             serviceState.setActive();
+            statisticsUtil.setServerActiveTime();
         } catch (Exception e) {
             LOG.error("Got exception while activating", e);
             notLeader();

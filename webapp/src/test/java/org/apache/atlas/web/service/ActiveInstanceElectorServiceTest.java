@@ -23,6 +23,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
+import org.apache.atlas.util.StatisticsUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.mockito.InOrder;
@@ -51,6 +52,9 @@ public class ActiveInstanceElectorServiceTest {
     @Mock
     private ServiceState serviceState;
 
+    @Mock
+    private StatisticsUtil statisticsUtil;
+
     @BeforeMethod
     public void setup() {
         System.setProperty(AtlasConstants.SYSTEM_PROPERTY_APP_PORT, "21000");
@@ -71,7 +75,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(), curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
         activeInstanceElectorService.start();
 
         verify(leaderLatch).start();
@@ -92,7 +96,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(), curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
         activeInstanceElectorService.start();
 
         verify(leaderLatch).addListener(activeInstanceElectorService);
@@ -104,7 +108,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(), curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
         activeInstanceElectorService.start();
 
         verifyZeroInteractions(curatorFactory);
@@ -125,7 +129,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(), curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
         activeInstanceElectorService.start();
         activeInstanceElectorService.stop();
 
@@ -147,7 +151,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(), curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
         activeInstanceElectorService.start();
         activeInstanceElectorService.stop();
 
@@ -161,7 +165,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(), curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
         activeInstanceElectorService.stop();
 
         verifyZeroInteractions(curatorFactory);
@@ -189,7 +193,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, changeHandlers, curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
         activeInstanceElectorService.start();
         activeInstanceElectorService.isLeader();
 
@@ -212,7 +216,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(), curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
 
         activeInstanceElectorService.start();
         activeInstanceElectorService.isLeader();
@@ -245,7 +249,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, changeHandlers, curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
         activeInstanceElectorService.start();
         activeInstanceElectorService.isLeader();
 
@@ -271,7 +275,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(), curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
 
         activeInstanceElectorService.start();
         activeInstanceElectorService.isLeader();
@@ -306,7 +310,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, changeHandlers, curatorFactory,
-                        activeInstanceState, serviceState);
+                        activeInstanceState, serviceState, statisticsUtil);
         activeInstanceElectorService.start();
         activeInstanceElectorService.notLeader();
 
@@ -318,7 +322,7 @@ public class ActiveInstanceElectorServiceTest {
     public void testActiveStateSetOnBecomingLeader() {
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(),
-                        curatorFactory, activeInstanceState, serviceState);
+                        curatorFactory, activeInstanceState, serviceState, statisticsUtil);
 
         activeInstanceElectorService.isLeader();
 
@@ -331,7 +335,7 @@ public class ActiveInstanceElectorServiceTest {
     public void testPassiveStateSetOnLoosingLeadership() {
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(),
-                        curatorFactory, activeInstanceState, serviceState);
+                        curatorFactory, activeInstanceState, serviceState, statisticsUtil);
 
         activeInstanceElectorService.notLeader();
 
@@ -358,7 +362,7 @@ public class ActiveInstanceElectorServiceTest {
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new HashSet<ActiveStateChangeHandler>(),
-                        curatorFactory, activeInstanceState, serviceState);
+                        curatorFactory, activeInstanceState, serviceState, statisticsUtil);
         activeInstanceElectorService.start();
         activeInstanceElectorService.isLeader();
 

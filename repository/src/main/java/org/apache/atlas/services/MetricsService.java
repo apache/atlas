@@ -18,11 +18,13 @@
 package org.apache.atlas.services;
 
 import org.apache.atlas.annotation.AtlasService;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.StatisticsUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -63,13 +65,14 @@ public class MetricsService {
 
     private final AtlasGraph        atlasGraph;
     private final AtlasTypeRegistry typeRegistry;
+    private final StatisticsUtil    statisticsUtil;
     private final String            indexSearchPrefix = AtlasGraphUtilsV2.getIndexSearchPrefix();
 
     @Inject
-    public MetricsService(final AtlasGraph graph, final AtlasTypeRegistry typeRegistry) {
+    public MetricsService(final AtlasGraph graph, final AtlasTypeRegistry typeRegistry, StatisticsUtil statisticsUtil) {
         this.atlasGraph   = graph;
         this.typeRegistry = typeRegistry;
-
+        this.statisticsUtil = statisticsUtil;
     }
 
     @SuppressWarnings("unchecked")
@@ -147,6 +150,10 @@ public class MetricsService {
 
         metrics.addMetric(GENERAL, METRIC_COLLECTION_TIME, collectionTime);
 
+        //add atlas server stats
+        Map<String, Object> statistics = statisticsUtil.getAtlasStatistics();
+        metrics.addMetric(GENERAL, "stats", statistics);
+
         return metrics;
     }
 
@@ -156,7 +163,12 @@ public class MetricsService {
 
         indexQuery = String.format(indexQuery, typeName, status.name());
 
-        return atlasGraph.indexQuery(VERTEX_INDEX, indexQuery).vertexTotals();
+        try {
+            return atlasGraph.indexQuery(VERTEX_INDEX, indexQuery).vertexTotals();
+        }catch (Exception e){
+            LOG.error("Failed fetching using indexQuery: " + e.getMessage());
+        }
+        return 0l;
     }
 
     private int getAllTypesCount() {
