@@ -22,6 +22,7 @@ import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer.UniqueKind;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -56,7 +57,7 @@ public class UniqueAttributePatchHandler extends AtlasJavaPatchHandler {
         for (AtlasEntityType entityType : allEntityTypes) {
             String                      typeName          = entityType.getTypeName();
             Map<String, AtlasAttribute> uniqAttributes    = entityType.getUniqAttributes();
-            int                         entitiesProcessed = 0;
+            int                         patchAppliedCount = 0;
 
             LOG.info("Applying java patch: {} for type: {}", getPatchId(), typeName);
 
@@ -67,11 +68,15 @@ public class UniqueAttributePatchHandler extends AtlasJavaPatchHandler {
                     // register unique attribute property keys in graph
                     registerUniqueAttrPropertyKeys(attributes);
 
-                    Iterator<AtlasVertex> iterator = findActiveEntityVerticesByType(typeName);
+                    Iterator<Result<Object, Object>> iterator = findActiveEntityVerticesByType(typeName);
 
-                    while (iterator.hasNext()) {
-                        AtlasVertex entityVertex = iterator.next();
+                    int entityCount = 0;
+
+                    while (iterator != null && iterator.hasNext()) {
+                        AtlasVertex entityVertex = iterator.next().getVertex();
                         boolean     patchApplied = false;
+
+                        entityCount++;
 
                         for (AtlasAttribute attribute : attributes) {
                             String                       uniquePropertyKey = attribute.getVertexUniquePropertyName();
@@ -104,11 +109,11 @@ public class UniqueAttributePatchHandler extends AtlasJavaPatchHandler {
                         }
 
                         if (patchApplied) {
-                            entitiesProcessed++;
+                            patchAppliedCount++;
                         }
 
-                        if (entitiesProcessed % 1000 == 0) {
-                            LOG.info("Java patch: {} : processed {} {} entities.", getPatchId(), entitiesProcessed, typeName);
+                        if (entityCount % 1000 == 0) {
+                            LOG.info("Java patch: {} : applied {}; processed {} {} entities.", getPatchId(), patchAppliedCount, entityCount, typeName);
                         }
                     }
                 } catch (IndexException e) {
@@ -120,7 +125,7 @@ public class UniqueAttributePatchHandler extends AtlasJavaPatchHandler {
                 }
             }
 
-            LOG.info("Applied java patch ({}) for type: {}; Total processed: {}", getPatchId(), typeName, entitiesProcessed);
+            LOG.info("Applied java patch ({}) for type: {}; Total processed: {}", getPatchId(), typeName, patchAppliedCount);
         }
 
         if (patchFailed) {

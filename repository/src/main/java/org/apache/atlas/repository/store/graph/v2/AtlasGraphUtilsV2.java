@@ -566,12 +566,20 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
-    public static Iterator<AtlasVertex> findActiveEntityVerticesByType(String typename) {
-        AtlasGraphQuery query = getGraphInstance().query()
-                                                  .has(ENTITY_TYPE_PROPERTY_KEY, typename)
-                                                  .has(STATE_PROPERTY_KEY, Status.ACTIVE.name());
+    public static Iterator<Result<Object, Object>> findActiveEntityVerticesByType(String typename) {
+        AtlasIndexQuery indexQuery = getActiveEntityIndexQuery(typename);
 
-        return query.vertices().iterator();
+        return indexQuery.vertices();
+    }
+
+    private static AtlasIndexQuery getActiveEntityIndexQuery(String typename) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(INDEX_SEARCH_PREFIX + "\"").append(TYPE_NAME_PROPERTY_KEY).append("\":").append(typename)
+          .append(" AND ")
+          .append(INDEX_SEARCH_PREFIX + "\"").append(STATE_PROPERTY_KEY).append("\":").append(Status.ACTIVE.name());
+
+        return getGraphInstance().indexQuery(VERTEX_INDEX, sb.toString());
     }
 
     public static List<String> findEntityGUIDsByType(String typename) {
