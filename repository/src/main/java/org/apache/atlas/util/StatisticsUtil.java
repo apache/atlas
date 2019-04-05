@@ -28,9 +28,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Locale;
 import java.util.concurrent.*;
 
 import static org.apache.atlas.model.AtlasStatistics.STAT_SERVER_START_TS;
@@ -42,6 +44,7 @@ import static org.apache.atlas.model.AtlasStatistics.STAT_SOLR_STATUS;
 import static org.apache.atlas.model.AtlasStatistics.STAT_HBASE_STATUS;
 import static org.apache.atlas.model.AtlasStatistics.STAT_LAST_MESSAGE_PROCESSED_TIME_TS;
 import static org.apache.atlas.model.AtlasStatistics.STAT_AVG_MESSAGE_PROCESSING_TIME;
+import static org.apache.atlas.model.AtlasStatistics.STAT_MESSAGES_CONSUMED;
 
 @Component
 public class StatisticsUtil {
@@ -61,11 +64,14 @@ public class StatisticsUtil {
 
     private long countMsgProcessed        = 0;
     private long totalMsgProcessingTimeMs = 0;
+    private Locale locale                 = new Locale("en", "US");
+    private NumberFormat numberFormat;
 
     @Inject
     public StatisticsUtil(AtlasGraph graph) {
         this.graph = graph;
         this.atlasStatistics = new AtlasStatistics();
+        numberFormat = NumberFormat.getInstance(locale);
     }
 
     public Map<String, Object> getAtlasStatistics() {
@@ -73,14 +79,17 @@ public class StatisticsUtil {
         statisticsMap.putAll(atlasStatistics.getData());
 
         statisticsMap.put(STAT_HBASE_STATUS, getHBaseStatus());
-        statisticsMap.put(STAT_SOLR_STATUS , getSolrStatus());
+        statisticsMap.put(STAT_SOLR_STATUS, getSolrStatus());
         statisticsMap.put(STAT_SERVER_UP_SINCE, getUpSinceTime());
+        if(countMsgProcessed > 0) {
+            statisticsMap.put(STAT_MESSAGES_CONSUMED, countMsgProcessed);
+        }
         formatStatistics(statisticsMap);
 
         return statisticsMap;
     }
 
-    public void setKafkaOffsets(long value){
+    public void setKafkaOffsets(long value) {
         if (Long.parseLong(getStat(STAT_START_OFFSET).toString()) == -1) {
             addStat(STAT_START_OFFSET, value);
         }
@@ -143,7 +152,7 @@ public class StatisticsUtil {
                     break;
 
                 case STAT_AVG_MESSAGE_PROCESSING_TIME:
-                    statisticsMap.put(stat.getKey(), stat.getValue() + " milliseconds");
+                    statisticsMap.put(stat.getKey(), formatNumber(Long.parseLong(stat.getValue().toString())) + " milliseconds");
                     break;
 
                 case STAT_HBASE_STATUS:
@@ -152,13 +161,19 @@ public class StatisticsUtil {
                     statisticsMap.put(stat.getKey(), curState);
                     break;
 
+                case STAT_MESSAGES_CONSUMED:
+                case STAT_START_OFFSET:
+                case STAT_CURRENT_OFFSET:
+                    statisticsMap.put(stat.getKey(), formatNumber(Long.parseLong(stat.getValue().toString())));
+                    break;
+
                 default:
                     statisticsMap.put(stat.getKey(), stat.getValue());
             }
         }
     }
 
-    private boolean getHBaseStatus(){
+    private boolean getHBaseStatus() {
 
         String query = "g.V().next()";
         try {
@@ -180,13 +195,13 @@ public class StatisticsUtil {
         return true;
     }
 
-    private boolean getSolrStatus(){
+    private boolean getSolrStatus() {
         String query = AtlasGraphUtilsV2.getIndexSearchPrefix() + "\"" + "__type.name\"" + " : (*)";
         try {
             runWithTimeout(new Runnable() {
                 @Override
                 public void run() {
-                        graph.indexQuery(Constants.VERTEX_INDEX, query).vertexTotals();
+                    graph.indexQuery(Constants.VERTEX_INDEX, query).vertexTotals();
                 }
             }, 10, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -251,4 +266,9 @@ public class StatisticsUtil {
     private String millisToTimeStamp(long ms) {
         return simpleDateFormat.format(ms);
     }
+
+    private String formatNumber(long value) {
+        return numberFormat.format(value);
+    }
+
 }

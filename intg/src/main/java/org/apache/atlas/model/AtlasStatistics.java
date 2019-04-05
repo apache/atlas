@@ -35,15 +35,16 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonSerialize(include = JsonSerialize.Inclusion.ALWAYS)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AtlasStatistics {
-    public static final String STAT_SERVER_START_TS                = "serverStartTimeStamp";
-    public static final String STAT_SERVER_ACTIVE_TS               = "serverActiveTimeStamp";
-    public static final String STAT_SERVER_UP_SINCE                = "serverUpTime";
-    public static final String STAT_START_OFFSET                   = "KafkaTopic:ATLAS_HOOK:startOffset";
-    public static final String STAT_CURRENT_OFFSET                 = "KafkaTopic:ATLAS_HOOK:currentOffset";
-    public static final String STAT_SOLR_STATUS                    = "solrConnectionStatus";
-    public static final String STAT_HBASE_STATUS                   = "HBaseConnectionStatus";
-    public static final String STAT_LAST_MESSAGE_PROCESSED_TIME_TS = "lastMessageProcessedTimeStamp";
-    public static final String STAT_AVG_MESSAGE_PROCESSING_TIME    = "avgMessageProcessingTime";
+    public static final String STAT_SERVER_START_TS                = "Server:upFrom";
+    public static final String STAT_SERVER_ACTIVE_TS               = "Server:activateFrom";
+    public static final String STAT_SERVER_UP_SINCE                = "Server:upTime";
+    public static final String STAT_START_OFFSET                   = "Notification:ATLAS_HOOK:offsetStart";
+    public static final String STAT_CURRENT_OFFSET                 = "Notification:ATLAS_HOOK:offsetCurrent";
+    public static final String STAT_SOLR_STATUS                    = "ConnectionStatus:Solr";
+    public static final String STAT_HBASE_STATUS                   = "ConnectionStatus:HBase";
+    public static final String STAT_LAST_MESSAGE_PROCESSED_TIME_TS = "Notification:ATLAS_HOOK:messageLastProcessedAt";
+    public static final String STAT_AVG_MESSAGE_PROCESSING_TIME    = "Notification:ATLAS_HOOK:messageAvgProcessingDuration";
+    public static final String STAT_MESSAGES_CONSUMED = "Notification:ATLAS_HOOK:messagesConsumed";
 
     private Map<String, Object> data = new HashMap<>();
 
