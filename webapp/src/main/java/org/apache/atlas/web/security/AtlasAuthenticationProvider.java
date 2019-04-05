@@ -21,6 +21,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
 @Component
+@Scope("prototype")
 public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
     private static final Logger LOG = LoggerFactory
             .getLogger(AtlasAuthenticationProvider.class);
