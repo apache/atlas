@@ -155,7 +155,6 @@ public interface AtlasGraphManagement {
      *
      * @param vertexIndex
      * @param propertyKey
-     * @param propertyClass
      */
-    void addMixedIndex(String vertexIndex, AtlasPropertyKey propertyKey, Class propertyClass);
+    void addMixedIndex(String vertexIndex, AtlasPropertyKey propertyKey);
 }

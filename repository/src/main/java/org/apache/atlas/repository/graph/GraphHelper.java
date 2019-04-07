@@ -199,7 +199,7 @@ public final class GraphHelper {
         AtlasGraphUtilsV2.setEncodedProperty(ret, MODIFIED_BY_KEY, RequestContext.get().getUser());
 
         for (String superTypeName : superTypeNames) {
-            AtlasGraphUtilsV2.addToEncodedSetProperty(ret, SUPER_TYPES_PROPERTY_KEY, superTypeName);
+            AtlasGraphUtilsV2.addEncodedProperty(ret, SUPER_TYPES_PROPERTY_KEY, superTypeName);
         }
 
         return ret;
@@ -1545,7 +1545,7 @@ public final class GraphHelper {
         if (isReference(elementType)) {
             return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
         } else {
-            return (List) instanceVertex.getPropertyValues(propertyName, List.class);
+            return (List) instanceVertex.getListProperty(propertyName);
         }
     }
 

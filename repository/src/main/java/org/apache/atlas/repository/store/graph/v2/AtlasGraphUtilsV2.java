@@ -32,7 +32,6 @@ import org.apache.atlas.model.patches.AtlasPatch;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -65,8 +64,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.LIST;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
 import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
@@ -190,23 +187,15 @@ public class AtlasGraphUtilsV2 {
      * @param propertyName
      * @param value
      */
-    public static AtlasVertex addToListProperty(AtlasVertex vertex, String propertyName, Object value) {
-        return addProperty(vertex, propertyName, LIST, false, value);
+    public static AtlasVertex addProperty(AtlasVertex vertex, String propertyName, Object value) {
+        return addProperty(vertex, propertyName, value, false);
     }
 
-    public static AtlasVertex addToSetProperty(AtlasVertex vertex, String propertyName, Object value) {
-        return addProperty(vertex, propertyName, SET, false, value);
+    public static AtlasVertex addEncodedProperty(AtlasVertex vertex, String propertyName, Object value) {
+        return addProperty(vertex, propertyName, value, true);
     }
 
-    public static AtlasVertex addToEncodedListProperty(AtlasVertex vertex, String propertyName, Object value) {
-        return addProperty(vertex, propertyName, LIST, true, value);
-    }
-
-    public static AtlasVertex addToEncodedSetProperty(AtlasVertex vertex, String propertyName, Object value) {
-        return addProperty(vertex, propertyName, SET, true, value);
-    }
-
-    public static AtlasVertex addProperty(AtlasVertex vertex, String propertyName, Cardinality cardinality, boolean isEncoded, Object value) {
+    public static AtlasVertex addProperty(AtlasVertex vertex, String propertyName, Object value, boolean isEncoded) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> addProperty({}, {}, {})", toString(vertex), propertyName, value);
         }
@@ -215,11 +204,7 @@ public class AtlasGraphUtilsV2 {
             propertyName = encodePropertyKey(propertyName);
         }
 
-        if (cardinality == LIST) {
-            vertex.addListProperty(propertyName, value);
-        } else {
-            vertex.addProperty(propertyName, value);
-        }
+        vertex.addProperty(propertyName, value);
 
         return vertex;
     }

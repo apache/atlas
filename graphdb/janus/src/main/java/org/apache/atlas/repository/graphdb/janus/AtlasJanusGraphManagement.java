@@ -195,15 +195,11 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     @Override
-    public void addMixedIndex(String indexName, AtlasPropertyKey propertyKey, Class propertyClass) {
+    public void addMixedIndex(String indexName, AtlasPropertyKey propertyKey) {
         PropertyKey     janusKey    = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
         JanusGraphIndex vertexIndex = management.getGraphIndex(indexName);
 
-        if (propertyClass == String.class) {
-            management.addIndexKey(vertexIndex, janusKey, Mapping.STRING.asParameter());
-        } else {
-            management.addIndexKey(vertexIndex, janusKey);
-        }
+        management.addIndexKey(vertexIndex, janusKey);
     }
 
     @Override
