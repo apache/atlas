@@ -104,6 +104,12 @@
     }
 }
 
+.invisible {
+    .node circle {
+        transition: all 0s;
+    }
+}
+
 .edgePath {
     .path {
         cursor: pointer;

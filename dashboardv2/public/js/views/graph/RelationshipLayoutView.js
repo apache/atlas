@@ -96,6 +96,7 @@ define(['require',
                 return { nodes: nodes, links: links };
             },
             onRender: function() {
+                this.ui.zoomControl.hide();
                 this.$el.addClass('auto-height');
             },
             onShow: function(argument) {
@@ -103,8 +104,8 @@ define(['require',
                     this.noRelationship();
                 } else {
                     this.createGraph(this.graphData);
-                    this.createTable();
                 }
+                this.createTable();
             },
             noRelationship: function() {
                 this.$('svg').html('<text x="50%" y="50%" alignment-baseline="middle" text-anchor="middle">No relationship data found</text>');

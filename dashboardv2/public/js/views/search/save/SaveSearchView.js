@@ -128,7 +128,7 @@ define(['require',
             obj.name = selectedEl.find('a').text();
             obj.guid = selectedEl.data('id');
             if (selectedEl && selectedEl.length) {
-                notifyObj['text'] = Messages.search.favoriteSearch.save + " <b>" + obj.name + "</b> ?";
+                notifyObj['text'] = Messages.search.favoriteSearch.save + " <b>" + _.escape(obj.name) + "</b> ?";
                 Utils.notifyConfirm(notifyObj);
             } else {
                 Utils.notifyInfo({
@@ -176,7 +176,7 @@ define(['require',
                 var notifyObj = {
                     modal: true,
                     html: true,
-                    text: Messages.conformation.deleteMessage + "<b>" + options.model.get('name') + "</b>" + " ?",
+                    text: Messages.conformation.deleteMessage + "<b>" + _.escape(options.model.get('name')) + "</b>" + " ?",
                     ok: function(argument) {
                         that.onDeleteNotifyOk(options);
                     },

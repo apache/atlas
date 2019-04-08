@@ -85,8 +85,8 @@ define(['require',
             getObjDef: function(attrObj, rules) {
                 var obj = {
                     id: attrObj.name,
-                    label: attrObj.name.capitalize() + " (" + attrObj.typeName + ")",
-                    type: attrObj.typeName
+                    label: _.escape(attrObj.name.capitalize() + " (" + attrObj.typeName + ")"),
+                    type: _.escape(attrObj.typeName)
                 };
                 if (obj.type === "date") {
                     obj['plugin'] = 'daterangepicker';
@@ -122,9 +122,9 @@ define(['require',
                             obj.type = "double";
                         } else if (obj.type === "int" || obj.type === "byte" || obj.type === "short" || obj.type === "long") {
                             obj.type = "integer"
-                            }
                         }
-                        return obj;
+                    }
+                    return obj;
                 }
                 var enumObj = this.enumDefCollection.fullCollection.find({ name: obj.type });
                 if (enumObj) {
@@ -158,7 +158,7 @@ define(['require',
                         filters: filters,
                         select_placeholder: '--Select Attribute--',
                         allow_empty: true,
-                        conditions: ['AND','OR'],
+                        conditions: ['AND', 'OR'],
                         allow_groups: true,
                         allow_empty: true,
                         operators: [
