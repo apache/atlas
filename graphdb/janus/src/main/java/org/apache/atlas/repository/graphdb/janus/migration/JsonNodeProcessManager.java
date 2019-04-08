@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class JsonNodeProcessManager {
     private static class Consumer extends WorkItemConsumer<JsonNode> {
@@ -42,9 +43,9 @@ public class JsonNodeProcessManager {
         protected final Graph              bulkLoadGraph;
         protected final ParseElement       parseElement;
         private   final long               batchSize;
-        private         long               counter;
+        private         AtomicLong         counter;
         private   final MappedElementCache cache;
-        private   final List<JsonNode>     nodes = new ArrayList<>();
+        private   static ThreadLocal<List<JsonNode>> nodes = ThreadLocal.withInitial(() -> new ArrayList<>());
 
         public Consumer(BlockingQueue<JsonNode> workQueue, Graph graph, Graph bulkLoadGraph, ParseElement parseElement, long batchSize) {
             super(workQueue);
@@ -53,7 +54,7 @@ public class JsonNodeProcessManager {
             this.bulkLoadGraph = bulkLoadGraph;
             this.parseElement  = parseElement;
             this.batchSize     = batchSize;
-            this.counter       = 0;
+            this.counter       = new AtomicLong(0);
             this.cache         = new MappedElementCache();
         }
 
@@ -63,8 +64,8 @@ public class JsonNodeProcessManager {
                 Map<String, Object> result = parseElement.parse(bulkLoadGraph, cache, node);
 
                 if (result == null) {
-                    nodes.add(node);
-                    commitConditionally(counter++);
+                    addNode(node);
+                    commitConditionally(counter.getAndIncrement());
                 } else {
                     commitBulk();
                     cache.clearAll();
@@ -75,6 +76,10 @@ public class JsonNodeProcessManager {
                 error("Failed! Retrying...", ex);
                 retryBatchCommit();
             }
+        }
+
+        private void addNode(JsonNode node) {
+            nodes.get().add(node);
         }
 
         @Override
@@ -89,18 +94,18 @@ public class JsonNodeProcessManager {
         }
 
         private void commitConditionally(long index) {
-            if (index % batchSize == 0 && nodes.size() > 0) {
+            if (index % batchSize == 0 && nodes.get().size() > 0) {
                 commitBulk();
             }
         }
 
         private void commitBulk() {
-            commit(bulkLoadGraph, nodes.size());
-            nodes.clear();
+            commit(bulkLoadGraph, nodes.get().size());
+            nodes.get().clear();
         }
 
         private void commitRegular() {
-            commit(graph, nodes.size());
+            commit(graph, nodes.get().size());
             cache.clearAll();
         }
 
@@ -139,15 +144,15 @@ public class JsonNodeProcessManager {
         }
 
         private void retryBatchCommit() {
-            display("Waiting with [{} nodes] for 1 secs.", nodes.size());
+            display("Waiting with [{} nodes] for 1 secs.", nodes.get().size());
 
             try {
                 Thread.sleep(WAIT_DURATION_AFTER_COMMIT_EXCEPTION);
-                for (JsonNode n : nodes) {
+                for (JsonNode n : nodes.get()) {
                     parseElement.parse(bulkLoadGraph, cache, n);
                 }
                 commitBulk();
-                display("Done!: After re-adding {}.", nodes.size());
+                display("Done!: After re-adding {}.", nodes.get().size());
             } catch (Exception ex) {
                 error("retryBatchCommit: Failed! Potential data loss.", ex);
             }
