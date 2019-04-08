@@ -75,14 +75,14 @@ define([
             var that = this;
             $('body').on('click', 'a.show-stat', function() {
                 require([
-                    'views/common/Statistics',
+                    'views/site/Statistics',
                 ], function(Statistics) {
                     new Statistics();
                 });
             });
             $('body').on('click', 'li.aboutAtlas', function() {
                 require([
-                    'views/common/AboutAtlas',
+                    'views/site/AboutAtlas',
                 ], function(AboutAtlas) {
                     new AboutAtlas();
                 });

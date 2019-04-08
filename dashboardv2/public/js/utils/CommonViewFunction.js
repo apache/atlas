@@ -272,7 +272,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             }
 
         });
-        return table;
+        return table && table.length > 0 ? table : '<tr class="empty"><td colspan="22"><span>No Record found!</span></td></tr>';
     }
     CommonViewFunction.tagForTable = function(obj) {
         var traits = obj.classifications,
@@ -324,7 +324,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             terms.map(function(term) {
                 var className = "btn btn-action btn-sm btn-blue btn-icon",
                     deleteIcon = '<i class="fa fa-times" data-id="delete"  data-assetname="' + entityName + '"data-name="' + term.displayText + '" data-type="term" data-guid="' + obj.guid + '" data-termGuid="' + term.termGuid + '" ></i>',
-                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + term.displayText + '">' + term.displayText + '</span>' + deleteIcon + '</a>';
+                    termString = '<a class="' + className + '" data-id="termClick"><span title="' + _.escape(term.displayText) + '">' + _.escape(term.displayText) + '</span>' + deleteIcon + '</a>';
                 if (count >= 1) {
                     popTerm += termString;
                 } else {

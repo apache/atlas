@@ -417,7 +417,7 @@ define(['require',
                 _.each(data, function(val) {
                     console.log(val.guid)
                     if (val.relationshipStatus == "ACTIVE") {
-                        termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.displayText + ' data-id="termClick"><span>' + val.displayText + '</span><i class="fa fa-close" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
+                        termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + _.escape(val.displayText) + ' data-id="termClick"><span>' + _.escape(val.displayText) + '</span><i class="fa fa-close" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
                     }
                 });
                 this.ui.termList.find("span.btn").remove();

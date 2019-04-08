@@ -18,7 +18,7 @@
 
 define(['require',
     'backbone',
-    'hbs!tmpl/common/Statistics_tmpl',
+    'hbs!tmpl/site/Statistics_tmpl',
     'modules/Modal',
     'models/VCommon',
     'utils/UrlLinks',
