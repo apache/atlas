@@ -24,74 +24,85 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-public class WorkItemConsumerTest {
-
-    static class IntegerConsumerSpy extends WorkItemConsumer<Integer> {
-        boolean commitDirtyCalled = false;
-        private boolean updateCommitTimeCalled;
+public class WorkItemConsumerWithResultsTest {
+    private class IntegerConsumerSpy extends WorkItemConsumer<Integer> {
+        int payload = -1;
 
         public IntegerConsumerSpy(BlockingQueue<Integer> queue) {
             super(queue);
-            setCountDownLatch(new CountDownLatch(1));
         }
 
         @Override
         protected void doCommit() {
-
+            addResult(payload);
         }
 
         @Override
         protected void processItem(Integer item) {
-
+            payload = item.intValue();
         }
 
         @Override
         protected void commitDirty() {
-            commitDirtyCalled = true;
             super.commitDirty();
+        }
+    }
+
+    private class IntegerConsumerThrowingError extends WorkItemConsumer<Integer> {
+        int payload = -1;
+
+        public IntegerConsumerThrowingError(BlockingQueue<Integer> queue) {
+            super(queue);
         }
 
         @Override
-        protected void updateCommitTime(long commitTime) {
-            updateCommitTimeCalled = true;
+        protected void doCommit() {
+            throw new NullPointerException();
         }
 
-        public boolean isCommitDirtyCalled() {
-            return commitDirtyCalled;
+        @Override
+        protected void processItem(Integer item) {
+            payload = item.intValue();
         }
 
-        public boolean isUpdateCommitTimeCalled() {
-            return updateCommitTimeCalled;
+        @Override
+        protected void commitDirty() {
+            super.commitDirty();
         }
     }
 
-
     @Test
-    public void callingRunOnEmptyQueueCallsDoesNotCallCommitDirty() {
+    public void runningConsumerWillPopulateResults() {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         BlockingQueue<Integer> bc = new LinkedBlockingQueue<>(5);
+        LinkedBlockingQueue<Object> results = new LinkedBlockingQueue<>();
 
         IntegerConsumerSpy ic = new IntegerConsumerSpy(bc);
+        ic.setResults(results);
+        ic.setCountDownLatch(countDownLatch);
         ic.run();
 
         assertTrue(bc.isEmpty());
-        assertTrue(ic.isCommitDirtyCalled());
-        assertFalse(ic.isUpdateCommitTimeCalled());
+        assertEquals(results.size(), bc.size());
+        assertEquals(countDownLatch.getCount(), 0);
     }
 
-
     @Test
-    public void runOnQueueRemovesItemFromQueuCallsCommitDirty() {
+    public void errorInConsumerWillDecrementCountdownLatch() {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         BlockingQueue<Integer> bc = new LinkedBlockingQueue<>(5);
-        bc.add(1);
+        LinkedBlockingQueue<Object> results = new LinkedBlockingQueue<>();
 
-        IntegerConsumerSpy ic = new IntegerConsumerSpy(bc);
+        IntegerConsumerThrowingError ic = new IntegerConsumerThrowingError(bc);
+        ic.setCountDownLatch(countDownLatch);
+        ic.setResults(results);
         ic.run();
 
         assertTrue(bc.isEmpty());
-        assertTrue(ic.isCommitDirtyCalled());
-        assertTrue(ic.isUpdateCommitTimeCalled());
+        assertTrue(results.isEmpty());
+        assertEquals(countDownLatch.getCount(), 0);
     }
 }

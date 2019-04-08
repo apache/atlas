@@ -22,24 +22,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class WorkItemConsumer<T> implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(WorkItemConsumer.class);
 
     private static final int POLLING_DURATION_SECONDS = 5;
+    private static final int DEFAULT_COMMIT_TIME_IN_MS = 15000;
 
     private final BlockingQueue<T> queue;
-    private       boolean          isDirty              = false;
-    private       long maxCommitTimeInMs = 0;
+    private AtomicBoolean isDirty = new AtomicBoolean(false);
+    private AtomicLong maxCommitTimeInMs = new AtomicLong(0);
+    private CountDownLatch countdownLatch;
+    private BlockingQueue<Object> results;
 
     public WorkItemConsumer(BlockingQueue<T> queue) {
         this.queue = queue;
     }
 
     public void run() {
-        while (!Thread.currentThread().isInterrupted()) {
-            try {
+        try {
+            while (!Thread.currentThread().isInterrupted()) {
+
                 T item = queue.poll(POLLING_DURATION_SECONDS, TimeUnit.SECONDS);
 
                 if (item == null) {
@@ -47,21 +54,24 @@ public abstract class WorkItemConsumer<T> implements Runnable {
                     return;
                 }
 
-                isDirty = true;
-
+                isDirty.set(true);
                 processItem(item);
-            } catch (InterruptedException e) {
-                LOG.error("WorkItemConsumer: Interrupted: ", e);
             }
+        } catch (InterruptedException e) {
+            LOG.error("WorkItemConsumer: Interrupted: ", e);
+        } finally {
+            maxCommitTimeInMs.set(0);
+            countdownLatch.countDown();
         }
     }
 
-    public long getMaxCommitTimeSeconds() {
-        return (this.maxCommitTimeInMs > 0 ? this.maxCommitTimeInMs / 1000 : 15);
+    public long getMaxCommitTimeInMs() {
+        long commitTime = this.maxCommitTimeInMs.get();
+        return ((commitTime > DEFAULT_COMMIT_TIME_IN_MS) ? commitTime : DEFAULT_COMMIT_TIME_IN_MS);
     }
 
     protected void commitDirty() {
-        if (!isDirty) {
+        if (!isDirty.get()) {
             return;
         }
 
@@ -78,16 +88,32 @@ public abstract class WorkItemConsumer<T> implements Runnable {
 
         updateCommitTime((end - start));
 
-        isDirty = false;
+        isDirty.set(false);
     }
 
     protected abstract void doCommit();
 
     protected abstract void processItem(T item);
 
-    protected void updateCommitTime(long commitTime) {
-        if (this.maxCommitTimeInMs < commitTime) {
-            this.maxCommitTimeInMs = commitTime;
+    protected void addResult(Object value) {
+        try {
+            results.put(value);
+        } catch (InterruptedException e) {
+            LOG.error("Interrupted while adding result: {}", value);
         }
+    }
+
+    protected void updateCommitTime(long commitTime) {
+        if (this.maxCommitTimeInMs.get() < commitTime) {
+            this.maxCommitTimeInMs.set(commitTime);
+        }
+    }
+
+    public void setCountDownLatch(CountDownLatch countdownLatch) {
+        this.countdownLatch = countdownLatch;
+    }
+
+    public <V> void setResults(BlockingQueue<Object> queue) {
+        this.results = queue;
     }
 }
