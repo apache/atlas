@@ -18,7 +18,7 @@
 
 define(['require',
     'backbone',
-    'hbs!tmpl/common/AboutAtlas_tmpl',
+    'hbs!tmpl/site/AboutAtlas_tmpl',
     'modules/Modal',
     'models/VCommon',
     'utils/UrlLinks',

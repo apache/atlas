@@ -16,6 +16,14 @@
  * limitations under the License.
  */
 
+tr.empty {
+    td {
+        display: table-cell;
+        text-align: center;
+    }
+}
+
+
 .stat-table {
 
     tbody,
