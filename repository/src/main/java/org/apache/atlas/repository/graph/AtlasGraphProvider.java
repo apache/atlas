@@ -72,6 +72,20 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
         }
     }
 
+    public AtlasGraph getBulkLoading() {
+        try {
+            GraphDatabase<?, ?> graphDB = null;
+            synchronized (AtlasGraphProvider.class) {
+                Class implClass = AtlasRepositoryConfiguration.getGraphDatabaseImpl();
+                graphDB = (GraphDatabase<?, ?>) implClass.newInstance();
+            }
+
+            return graphDB.getGraphBulkLoading();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException("Error initializing graph database", e);
+        }
+    }
+
     @VisibleForTesting
     public static void cleanup() {
         getGraphDatabase().cleanup();

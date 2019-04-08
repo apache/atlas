@@ -37,6 +37,11 @@ public interface GraphDatabase<V, E> {
      */
     AtlasGraph<V, E> getGraph();
 
+    /*
+     * Get graph initialized for bulk loading. This instance is used for high-performance ingest.
+     */
+    AtlasGraph<V, E> getGraphBulkLoading();
+
     /**
      * Sets things up so that getGraph() will return a graph that can be used for running
      * tests.
