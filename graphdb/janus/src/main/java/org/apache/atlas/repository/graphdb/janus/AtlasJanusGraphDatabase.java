@@ -264,6 +264,11 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         return atlasGraphInstance;
     }
 
+    @Override
+    public AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> getGraphBulkLoading() {
+        return new AtlasJanusGraph(getBulkLoadingGraphInstance());
+    }
+
     private static void startLocalSolr() {
         if (isEmbeddedSolr()) {
             try {

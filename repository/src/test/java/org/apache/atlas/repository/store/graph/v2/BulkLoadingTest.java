@@ -16,19 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository.graph;
+package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.TestModules;
 import org.apache.atlas.repository.RepositoryException;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.testng.annotations.Guice;
+import org.testng.annotations.Test;
 
-/**
- * Provides a mechanism to control what graph is used in various places.  This
- * allows the graph to be mocked out during unit testing and be initialized
- * lazily.
- */
-public interface IAtlasGraphProvider {
-    
-    AtlasGraph get() throws RepositoryException;
+import javax.inject.Inject;
 
-    AtlasGraph getBulkLoading() throws RepositoryException;
+import static org.testng.Assert.assertNotNull;
+
+@Guice(modules = TestModules.TestOnlyModule.class)
+public class BulkLoadingTest {
+
+    @Inject
+    AtlasGraphProvider graphProvider;
+
+    @Test(expectedExceptions = RuntimeException.class)
+    public void instantiateBulkLoadingForBerkeleyDB() throws RepositoryException {
+        assertNotNull(graphProvider.get());
+        assertNotNull(graphProvider.getBulkLoading());
+    }
 }
