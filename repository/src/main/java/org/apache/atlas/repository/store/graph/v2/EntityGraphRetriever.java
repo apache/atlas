@@ -87,6 +87,7 @@ import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_EXPRE
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_SOURCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STATUS;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STEWARD;
+import static org.apache.atlas.model.instance.AtlasRelationship.Status.ACTIVE;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN;
@@ -1088,13 +1089,19 @@ public class EntityGraphRetriever {
     private Object toAtlasObjectId(Object obj) {
         final Object ret;
 
-        if (obj instanceof AtlasObjectId) {
-            ret = new AtlasObjectId((AtlasObjectId) obj);
+        if (obj instanceof AtlasRelatedObjectId) {
+            AtlasRelatedObjectId relatedObjId = (AtlasRelatedObjectId) obj;
+
+            ret = relatedObjId.getRelationshipStatus() == ACTIVE ? new AtlasObjectId((AtlasObjectId) obj) : null;
         } else if (obj instanceof Collection) {
             List list = new ArrayList();
 
             for (Object elem : (Collection) obj) {
-                list.add(toAtlasObjectId(elem));
+                Object objId = toAtlasObjectId(elem);
+
+                if (objId != null) {
+                    list.add(objId);
+                }
             }
 
             ret = list;
