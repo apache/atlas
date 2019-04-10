@@ -592,27 +592,56 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         return _.uniq(superTypes);
     }
     Utils.getNestedSuperTypeObj = function(options) {
-        var flag = 0,
-            data = options.data,
-            collection = options.collection;
-        if (options.attrMerge) {
-            var attributeDefs = [];
-        } else {
-            var attributeDefs = {};
+        var mainData = options.data,
+            collection = options.collection,
+            attrMerge = options.attrMerge,
+            mergeRelationAttributes = options.mergeRelationAttributes || false,
+            seperateRelatioshipAttr = options.seperateRelatioshipAttr || false;
+        if (mergeRelationAttributes && seperateRelatioshipAttr) {
+            throw "Both mergeRelationAttributes & seperateRelatioshipAttr cannot be true!"
+        }
+        var attributeDefs = {};
+        if (attrMerge && !seperateRelatioshipAttr) {
+            attributeDefs = [];
+        } else if (options.attrMerge && seperateRelatioshipAttr) {
+            attributeDefs = {
+                attributeDefs: [],
+                relationshipAttributeDefs: []
+            }
+        }
+        var getRelationshipAttributeDef = function(data) {
+            return _.filter(
+                data.relationshipAttributeDefs,
+                function(obj, key) {
+                    return obj;
+                })
         }
         var getData = function(data, collection) {
             if (options.attrMerge) {
-                attributeDefs = attributeDefs.concat(data.attributeDefs);
+                if (seperateRelatioshipAttr) {
+                    attributeDefs.attributeDefs = attributeDefs.attributeDefs.concat(data.attributeDefs);
+                    attributeDefs.relationshipAttributeDefs = attributeDefs.relationshipAttributeDefs.concat(getRelationshipAttributeDef(data));
+                } else {
+                    attributeDefs = attributeDefs.concat(data.attributeDefs);
+                    if (mergeRelationAttributes) {
+                        attributeDefs = attributeDefs.concat(getRelationshipAttributeDef(data));
+                    }
+                }
             } else {
                 if (attributeDefs[data.name]) {
-                    if (_.isArray(attributeDefs[data.name])) {
-                        attributeDefs[data.name] = attributeDefs[data.name].concat(data.attributeDefs);
-                    } else {
-                        _.extend(attributeDefs[data.name], data.attributeDefs);
-                    }
-
+                    attributeDefs[data.name] = _.toArrayifObject(attributeDefs[data.name]).concat(data.attributeDefs);
                 } else {
-                    attributeDefs[data.name] = data.attributeDefs;
+                    if (seperateRelatioshipAttr) {
+                        attributeDefs[data.name] = {
+                            attributeDefs: data.attributeDefs,
+                            relationshipAttributeDefs: data.relationshipAttributeDefs
+                        };
+                    } else {
+                        attributeDefs[data.name] = data.attributeDefs;
+                        if (mergeRelationAttributes) {
+                            attributeDefs[data.name] = _.toArrayifObject(attributeDefs[data.name]).concat(getRelationshipAttributeDef(data));
+                        }
+                    }
                 }
             }
             if (data.superTypes && data.superTypes.length) {
@@ -631,7 +660,27 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 });
             }
         }
-        getData(data, collection);
+        getData(mainData, collection);
+        if (attrMerge) {
+            if (seperateRelatioshipAttr) {
+                attributeDefs = {
+                    attributeDefs: _.uniq(_.sortBy(attributeDefs.attributeDefs, 'name'), true, function(obj) {
+                        return obj.name
+                    }),
+                    relationshipAttributeDefs: _.uniq(_.sortBy(attributeDefs.relationshipAttributeDefs, 'name'), true, function(obj) {
+                        return (obj.name + obj.relationshipTypeName)
+                    })
+                }
+            } else {
+                attributeDefs = _.uniq(_.sortBy(attributeDefs, 'name'), true, function(obj) {
+                    if (obj.relationshipTypeName) {
+                        (obj.name + obj.relationshipTypeName)
+                    } else {
+                        (obj.name)
+                    }
+                });
+            }
+        }
         return attributeDefs;
     }
 

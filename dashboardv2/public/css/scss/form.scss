@@ -23,10 +23,12 @@
     .control-label-sm {
         padding-top: 3px;
     }
+
     .control-label-sm-pl {
         @extend .control-label-sm;
         padding-left: 10px;
     }
+
     .control-label-sm-pr {
         @extend .control-label-sm;
         padding-right: 10px;
@@ -44,6 +46,7 @@
         &.text-left {
             text-align: left;
         }
+
         &.text-right {
             text-align: right;
         }
@@ -53,6 +56,7 @@
         //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
         background-color: $color_mystic_approx;
         border: 1px $color_mystic_approx solid;
+
         &:focus {
             border-color: $color_bali_hai_approx;
             outline: 0; //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
@@ -62,6 +66,7 @@
 }
 
 .form-color {
+
     .form-group span[class^="select2-selection select2-selection--"],
     .form-control {
         background-color: #e8e8e8 !important;
@@ -70,6 +75,7 @@
 
 .sidebar-wrapper {
     z-index: 9 !important;
+
     .form-control {
         background-color: $white;
         border: 1px $white solid;
@@ -83,6 +89,7 @@
 
 textarea {
     resize: none;
+
     &:focus {
         outline: none !important;
     }
@@ -99,6 +106,7 @@ button:focus {
 .btn {
     //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
     border-radius: 4px;
+
     &:hover {
         text-decoration: none;
     }
@@ -106,6 +114,7 @@ button:focus {
 
 [class^="col-md-"],
 [class^="col-sm-"] {
+
     .btn.checkbox-inline,
     .btn.radio-inline {
         padding-left: 19px;
@@ -116,6 +125,7 @@ button:focus {
     color: $white;
     background-color: $color_blue_bayoux_approx;
     border-color: $color_blue_bayoux_approx;
+
     &:hover {
         color: $white;
         background-color: $color_pickled_bluewood_approx;
@@ -127,11 +137,13 @@ button:focus {
     color: $white;
     background-color: $color_jungle_green_approx;
     border-color: $color_jungle_green_approx;
+
     &:hover {
         color: $white;
         background-color: $color_jungle_green_approx;
         border-color: $color_jungle_green_approx;
     }
+
     &:focus {
         color: $white;
         background-color: $color_jungle_green_approx;
@@ -143,11 +155,13 @@ button:focus {
     color: $white;
     background-color: $color_picton_blue_approx;
     border-color: $color_picton_blue_approx;
+
     &:hover {
         color: $white;
         background-color: $color_curious_blue_approx;
         border-color: $color_curious_blue_approx;
     }
+
     &:focus {
         color: $white;
         background-color: $color_curious_blue_approx;
@@ -159,11 +173,13 @@ button:focus {
     color: $white;
     background-color: $color_yellow_sea_approx;
     border-color: $color_yellow_sea_approx;
+
     &:hover {
         color: $white;
         background-color: $color_gamboge_approx;
         border-color: $color_gamboge_approx;
     }
+
     &:focus {
         color: $white;
         background-color: $color_gamboge_approx;
@@ -175,11 +191,13 @@ button:focus {
     color: $white;
     background-color: $color_trinidad_approx;
     border-color: $color_trinidad_approx;
+
     &:hover {
         color: $white;
         background-color: $color_grenadier_approx;
         border-color: $color_grenadier_approx;
     }
+
     &:focus {
         color: $white;
         background-color: $color_grenadier_approx;
@@ -196,17 +214,21 @@ button:focus {
     border-radius: 4px; //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
     transition: all .3s ease;
     margin: 2px;
+
     &:hover {
         @include btn-action-effect('default');
         background-color: $transparent;
     }
+
     &:focus {
         @include btn-action-effect('default');
         background-color: $transparent;
     }
+
     &.btn-sm {
         padding: 2px 6px;
     }
+
     &.btn-md {
         padding: 6px 10px;
     }
@@ -222,17 +244,20 @@ button:focus {
 .btn-fixed-width {
     .btn-icon {
         min-width: 100px;
+
         &.propagte-classification {
             >span {
                 width: 98px;
             }
         }
+
         >span {
             @include ellipsis();
             float: left;
             width: 76px;
             padding: 2px 5px !important;
         }
+
         >i {
             float: right;
             line-height: 15px;
@@ -246,6 +271,7 @@ button:focus {
     border-radius: 4px;
     font-size: 14px;
     background-color: $transparent;
+
     &.active {
         @include btn-action-hover-effect('default');
     }
@@ -262,33 +288,41 @@ button:focus {
     &.btn-sm {
         padding: 2px 6px;
     }
+
     &.btn-md {
         padding: 5px 10px;
     }
 
     &.btn-blue {
         @include btn-action-effect('blue');
+
         &.active {
             @include btn-action-hover-effect('blue');
         }
+
         &:hover {
             @include btn-action-hover-effect('blue');
         }
+
         &:focus {
             @include btn-action-effect('blue');
         }
+
         &.btn-icon {
             @include btn-action-effect('blue');
             color: $tag_color !important;
+
             &:hover {
                 color: $color_havelock_blue_approx;
                 background-color: $transparent;
             }
+
             >span {
                 &:hover {
                     @include btn-action-hover-effect('blue');
                 }
             }
+
             i.fa {
                 &:hover {
                     @include btn-action-hover-effect('blue');
@@ -301,10 +335,12 @@ button:focus {
         border: 1px $action_gray solid;
         color: $action_gray;
         cursor: default;
+
         i.fa {
             position: relative;
             right: -5px;
         }
+
         &:hover {
             color: $white;
             background-color: $action_gray;
@@ -315,25 +351,31 @@ button:focus {
         padding: 0px;
         overflow: hidden;
         background-color: $transparent;
+
         &:hover {
             color: $color_keppel_approx;
             background-color: $transparent;
         }
+
         >span {
             padding: 5px;
+
             &:hover {
                 @include btn-action-hover-effect('default');
             }
         }
+
         i.fa {
             position: relative;
             padding: 5px;
             cursor: pointer;
+
             &:hover {
                 @include btn-action-hover-effect('default');
             }
         }
     }
+
     &.btn-icon-pd {
         i.fa {
             padding: 5px;
@@ -343,6 +385,7 @@ button:focus {
 }
 
 .btn-group {
+
     .btn-atlas,
     .btn-action {
         margin: 0px;
@@ -353,10 +396,12 @@ button:focus {
     >a {
         background-color: $color_curious_blue_approx;
         border-color: $color_curious_blue_approx;
+
         &:focus {
             background-color: $color_curious_blue_approx;
             border-color: $color_curious_blue_approx;
         }
+
         &:hover {
             background-color: $color_curious_blue_approx;
             border-color: $color_curious_blue_approx;
@@ -366,10 +411,12 @@ button:focus {
     >span {
         background-color: $color_curious_blue_approx;
         border-color: $color_curious_blue_approx;
+
         &:focus {
             background-color: $color_curious_blue_approx;
             border-color: $color_curious_blue_approx;
         }
+
         &:hover {
             background-color: $color_curious_blue_approx;
             border-color: $color_curious_blue_approx;
@@ -382,6 +429,7 @@ button:focus {
     color: $color_mountain_mist_approx;
     cursor: default;
     margin: 5px 10px;
+
     &:hover {
         border-color: $color_mountain_mist_approx;
         color: $color_mountain_mist_approx !important;
@@ -401,4 +449,43 @@ button:focus {
 
 .list-style-disc {
     list-style: disc;
+}
+
+.create-entity-form {
+
+    &.all {
+        .attribute-dash-box {
+            &.alloptional {
+                display: block;
+            }
+        }
+    }
+
+    .attribute-dash-box {
+        border-style: dashed;
+        border-width: 2px;
+        border-spacing: 8px;
+        border-radius: 12px;
+        border-color: #cbcbcb;
+        position: relative;
+        padding: 0px 10px;
+        margin-top: 25px;
+
+        span.required:after {
+            content: "*";
+            padding-left: 1%;
+            color: $red
+        }
+
+        &.alloptional {
+            display: none;
+        }
+
+        .attribute-type-label {
+            background: $white;
+            padding: 5px 10px;
+            position: absolute;
+            top: -16px;
+        }
+    }
 }

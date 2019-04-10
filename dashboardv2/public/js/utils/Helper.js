@@ -32,6 +32,9 @@ define(['require',
                 return false;
             }
         },
+        toArrayifObject: function(val) {
+            return _.isObject(val) ? [val] : val;
+        },
         startsWith: function(str, matchStr) {
             if (str && matchStr && _.isString(str) && _.isString(matchStr)) {
                 return str.lastIndexOf(matchStr, 0) === 0
