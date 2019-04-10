@@ -112,7 +112,9 @@ header {
     h1 {
         &.title {
             word-break: break-all;
-        } // margin-top: 50px;
+        }
+
+        // margin-top: 50px;
         margin-bottom: 10px;
         font-weight: 600;
         @include ellipsis();
@@ -286,15 +288,18 @@ hr[size="10"] {
         .panel-title {
             display: inline-block;
         }
+
         i.ec-icon:before {
             content: "\f078"
         }
+
         &.collapsed,
         &[aria-expanded="false"] {
             i.ec-icon:before {
                 content: "\f078"
             }
         }
+
         &[aria-expanded="true"] {
             i.ec-icon:before {
                 content: "\f077"
@@ -386,10 +391,6 @@ hr[size="10"] {
 .errorClass {
     border: 1px solid red !important;
     box-shadow: none !important;
-}
-
-fieldset.fieldset-child-pd>div {
-    padding-left: 12px;
 }
 
 .inline-content {
