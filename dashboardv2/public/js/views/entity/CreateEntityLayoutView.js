@@ -236,7 +236,7 @@ define(['require',
                     var str = '<option disabled="disabled" selected>--Select entity-type--</option>';
                     this.entityDefCollection.fullCollection.each(function(val) {
                         var name = Utils.getName(val.toJSON());
-                        if (Globals.entityTypeConfList) {
+                        if (Globals.entityTypeConfList && name.indexOf("__") !== 0) {
                             if (_.isEmptyArray(Globals.entityTypeConfList)) {
                                 str += '<option>' + name + '</option>';
                             } else {
@@ -256,11 +256,13 @@ define(['require',
             },
             requiredAllToggle: function(checked) {
                 if (checked) {
+                    this.ui.entityInputData.addClass('all').removeClass('required');
                     this.ui.entityInputData.find('div.true').show();
                     this.ui.entityInputData.find('fieldset div.true').show();
                     this.ui.entityInputData.find('fieldset').show();
                     this.required = false;
                 } else {
+                    this.ui.entityInputData.addClass('required').removeClass('all');
                     this.ui.entityInputData.find('fieldset').each(function() {
                         if (!$(this).find('div').hasClass('false')) {
                             $(this).hide();
@@ -296,26 +298,111 @@ define(['require',
                     silent: true
                 });
             },
+            renderAttribute: function(object) {
+                var that = this,
+                    visitedAttr = {},
+                    attributeObj = object.attributeDefs,
+                    isAllAttributeOptinal = true,
+                    isAllRelationshipAttributeOptinal = true,
+                    attributeDefList = attributeObj.attributeDefs,
+                    relationshipAttributeDefsList = attributeObj.relationshipAttributeDefs,
+                    attributeHtml = "",
+                    relationShipAttributeHtml = "",
+                    fieldElemetHtml = '',
+                    commonInput = function(object) {
+                        var value = object.value,
+                            containerHtml = '';
+                        containerHtml += that.getContainer(object);
+                        return containerHtml;
+                    };
+                if (attributeDefList.length || relationshipAttributeDefsList.length) {
+                    _.each(attributeDefList, function(value) {
+                        if (value.isOptional === false) {
+                            isAllAttributeOptinal = false;
+                        }
+                        attributeHtml += commonInput({
+                            "value": value,
+                            "duplicateValue": false,
+                            "isAttribute": true
+                        });
+                    });
+                    _.each(relationshipAttributeDefsList, function(value) {
+                        if (value.isOptional === false) {
+                            isAllRelationshipAttributeOptinal = false;
+                        }
+                        if (visitedAttr[value.name] === null) {
+                            // on second visited set it to true;and now onwords ignore if same value come.
+                            var duplicateRelationship = _.where(relationshipAttributeDefsList, { name: value.name });
+                            var str = '<option value="">--Select a Relationship Type--</option>';
+                            _.each(duplicateRelationship, function(val, index, list) {
+                                str += '<option>' + _.escape(val.relationshipTypeName) + '</option>';
+                            });
+                            var isOptional = value.isOptional;
+                            visitedAttr[value.name] = '<div class="form-group"><select class="form-control row-margin-bottom entityInputBox ' + (value.isOptional === true ? "false" : "true") + '" data-for-key= "' + value.name + '"> ' + str + '</select></div>';
+                        } else {
+                            relationShipAttributeHtml += commonInput({
+                                "value": value,
+                                "duplicateValue": true,
+                                "isRelation": true
+                            });
+                            // once visited set it to null;
+                            visitedAttr[value.name] = null;
+                        }
+                    });
+                    if (attributeHtml.length) {
+                        fieldElemetHtml += that.getFieldElementContainer({
+                            "htmlField": attributeHtml,
+                            "attributeType": true,
+                            "alloptional": isAllAttributeOptinal
+                        });
+                    }
+                    if (relationShipAttributeHtml.length) {
+                        fieldElemetHtml += that.getFieldElementContainer({
+                            "htmlField": relationShipAttributeHtml,
+                            "relationshipType": true,
+                            "alloptional": isAllRelationshipAttributeOptinal
+                        });
+                    }
+                    if (fieldElemetHtml.length) {
+                        that.ui.entityInputData.append(fieldElemetHtml);
+                        _.each(_.keys(visitedAttr), function(key) {
+                            if (visitedAttr[key] === null) {
+                                return;
+                            }
+                            var elFound = that.ui.entityInputData.find('[data-key="' + key + '"]');
+                            elFound.parent().prepend(visitedAttr[key]);
+                        });
+                    } else {
+                        fieldElemetHtml = "<h4 class='text-center'>Defination not found</h4>";
+                        that.ui.entityInputData.append(fieldElemetHtml);
+                    }
+
+                }
+                that.ui.entityInputData.find("select[data-for-key]").select2({})
+                return false;
+            },
             subAttributeData: function(data) {
                 var that = this,
                     attributeInput = "",
                     alloptional = false,
-                    attributeDefs = Utils.getNestedSuperTypeObj({ data: data, collection: this.entityDefCollection });
-                _.each(_.sortBy(_.keys(attributeDefs)), function(key) {
-                    if (attributeDefs[key].length) {
-                        attributeInput = "";
-                        _.each(_.sortBy(attributeDefs[key], 'name'), function(value) {
-                            if (value.isOptional == true) {
-                                alloptional = true;
-                            }
-                            attributeInput += that.getContainer(value);
-                        });
-                        if (attributeInput !== "") {
-                            entityTitle = that.getFieldSet(key, alloptional, attributeInput);
-                            that.ui.entityInputData.append(entityTitle);
+                    attributeDefs = Utils.getNestedSuperTypeObj({
+                        seperateRelatioshipAttr: true,
+                        attrMerge: true,
+                        data: data,
+                        collection: this.entityDefCollection
+                    });
+                if (attributeDefs && attributeDefs.relationshipAttributeDefs.length) {
+                    attributeDefs.attributeDefs = _.filter(attributeDefs.attributeDefs, function(obj) {
+                        if (_.find(attributeDefs.relationshipAttributeDefs, { name: obj.name }) === undefined) {
+                            return true;
                         }
-                    }
+                    })
+                }
+                //make a function call.
+                this.renderAttribute({
+                    attributeDefs: attributeDefs
                 });
+
                 if (this.required) {
                     this.ui.entityInputData.find('fieldset div.true').hide()
                     this.ui.entityInputData.find('div.true').hide();
@@ -395,19 +482,35 @@ define(['require',
                     }
                 });
             },
-            getContainer: function(value) {
-                var entityLabel = this.capitalize(value.name);
-                return '<div class="row form-group ' + value.isOptional + '"><span class="col-sm-3">' +
+            getContainer: function(object) {
+                var value = object.value,
+                    entityLabel = this.capitalize(value.name);
+
+                return '<div class=" row ' + value.isOptional + '"><span class="col-sm-3">' +
                     '<label><span class="' + (value.isOptional ? 'true' : 'false required') + '">' + entityLabel + '</span><span class="center-block ellipsis text-gray" title="Data Type : ' + value.typeName + '">' + '(' + Utils.escapeHtml(value.typeName) + ')' + '</span></label></span>' +
-                    '<span class="col-sm-9">' + (this.getElement(value)) +
+                    '<span class="col-sm-9">' + (this.getElement(object)) +
                     '</input></span></div>';
             },
-            getFieldSet: function(name, alloptional, attributeInput) {
-                return '<fieldset class="form-group fieldset-child-pd ' + (alloptional ? "alloptional" : "") + '"><legend class="legend-sm">' + name + '</legend>' + attributeInput + '</fieldset>';
+            getFieldElementContainer: function(object) {
+                var htmlField = object.htmlField,
+                    attributeType = object.attributeType ? object.attributeType : false,
+                    relationshipType = object.relationshipType ? object.relationshipType : false,
+                    alloptional = object.alloptional,
+                    typeOfDefination = (relationshipType ? "Relationships" : "Attributes");
+                return '<div class="attribute-dash-box ' + (alloptional ? "alloptional" : "") + ' "><span class="attribute-type-label">' + (typeOfDefination) + '</span>' + htmlField + '</div>';
             },
-            getSelect: function(value, entityValue) {
+            getSelect: function(object) {
+                var value = object.value,
+                    entityValue = object.entityValue,
+                    isAttribute = object.isAttribute,
+                    isRelation = object.isRelation;
                 if (value.typeName === "boolean") {
-                    return '<select class="form-control row-margin-bottom ' + (value.isOptional === true ? "false" : "true") + '" data-type="' + value.typeName + '" data-key="' + value.name + '" data-id="entityInput">' +
+                    return '<select class="form-control row-margin-bottom ' + (value.isOptional === true ? "false" : "true") +
+                        '" data-type="' + value.typeName +
+                        '" data-attribute="' + isAttribute +
+                        '" data-relation="' + isRelation +
+                        '" data-key="' + value.name +
+                        '" data-id="entityInput">' +
                         '<option value="">--Select true or false--</option><option value="true">true</option>' +
                         '<option value="false">false</option></select>';
                 } else {
@@ -417,13 +520,21 @@ define(['require',
                     } else {
                         splitTypeName = value.typeName;
                     }
-                    return '<select class="form-control row-margin-bottom entityInputBox ' + (value.isOptional === true ? "false" : "true") + '" data-type="' + value.typeName +
-                        '" data-key="' + value.name + '" data-id="entitySelectData" data-queryData="' + splitTypeName + '">' + (this.guid ? entityValue : "") + '</select>';
+                    return '<select class="form-control row-margin-bottom entityInputBox ' + (value.isOptional === true ? "false" : "true") +
+                        '" data-type="' + value.typeName +
+                        '" data-attribute="' + isAttribute +
+                        '" data-relation="' + isRelation +
+                        '" data-key="' + value.name +
+                        '" data-id="entitySelectData" data-queryData="' + splitTypeName + '">' + (this.guid ? entityValue : "") + '</select>';
                 }
 
             },
-            getTextArea: function(value, entityValue, structType) {
-                var setValue = entityValue
+            getTextArea: function(object) {
+                var value = object.value,
+                    setValue = object.entityValue,
+                    isAttribute = object.isAttribute,
+                    isRelation = object.isRelation,
+                    structType = object.structType;
                 try {
                     if (structType && entityValue && entityValue.length) {
                         var parseValue = JSON.parse(entityValue);
@@ -436,20 +547,31 @@ define(['require',
                 return '<textarea class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
                     ' data-type="' + value.typeName + '"' +
                     ' data-key="' + value.name + '"' +
+                    ' data-attribute="' + isAttribute + '"' +
+                    ' data-relation="' + isRelation + '"' +
                     ' placeholder="' + value.name + '"' +
                     ' data-id="entityInput">' + setValue + '</textarea>';
 
             },
-            getInput: function(value, entityValue) {
+            getInput: function(object) {
+                var value = object.value,
+                    entityValue = object.entityValue,
+                    isAttribute = object.isAttribute,
+                    isRelation = object.isRelation;
                 return '<input class="form-control entityInputBox ' + (value.isOptional === true ? "false" : "true") + '"' +
                     ' data-type="' + value.typeName + '"' +
                     ' value="' + entityValue + '"' +
                     ' data-key="' + value.name + '"' +
+                    ' data-attribute="' + isAttribute + '"' +
+                    ' data-relation="' + isRelation + '"' +
                     ' placeholder="' + value.name + '"' +
                     ' data-id="entityInput">';
             },
-            getElement: function(value) {
-                var typeName = value.typeName,
+            getElement: function(object) {
+                var value = object.value,
+                    isAttribute = object.isAttribute,
+                    isRelation = object.isRelation,
+                    typeName = value.typeName,
                     entityValue = "";
                 if (this.guid) {
                     var dataValue = this.entityData.get("entity").attributes[value.name];
@@ -469,15 +591,38 @@ define(['require',
                     }
                 }
                 if ((typeName && this.entityDefCollection.fullCollection.find({ name: typeName })) || typeName === "boolean" || typeName.indexOf("array") > -1) {
-                    return this.getSelect(value, entityValue);
+                    return this.getSelect({
+                        "value": value,
+                        "entityValue": entityValue,
+                        "isAttribute": isAttribute,
+                        "isRelation": isRelation
+
+                    });
                 } else if (typeName.indexOf("map") > -1) {
-                    return this.getTextArea(value, entityValue);
+                    return this.getTextArea({
+                        "value": value,
+                        "entityValue": entityValue,
+                        "isAttribute": isAttribute,
+                        "isRelation": isRelation,
+                        "structType": false
+                    });
                 } else {
                     var typeNameCategory = this.typeHeaders.fullCollection.findWhere({ name: typeName });
                     if (typeNameCategory && typeNameCategory.get('category') === 'STRUCT') {
-                        return this.getTextArea(value, entityValue, true);
+                        return this.getTextArea({
+                            "value": value,
+                            "entityValue": entityValue,
+                            "isAttribute": isAttribute,
+                            "isRelation": isRelation,
+                            "structType": true
+                        });
                     } else {
-                        return this.getInput(value, entityValue);
+                        return this.getInput({
+                            "value": value,
+                            "entityValue": entityValue,
+                            "isAttribute": isAttribute,
+                            "isRelation": isRelation,
+                        });
                     }
                 }
             },
@@ -485,8 +630,9 @@ define(['require',
                 var that = this;
                 this.showLoader();
                 this.parentEntity = this.ui.entityList.val();
-                var entity = {};
-                var referredEntities = {};
+                var entityAttribute = {},
+                    referredEntities = {},
+                    relationshipAttribute = {};
                 var extractValue = function(value, typeName) {
                     if (!value) {
                         return value;
@@ -503,7 +649,8 @@ define(['require',
                 }
                 try {
                     this.ui.entityInputData.find("input,select,textarea").each(function() {
-                        var value = $(this).val();
+                        var value = $(this).val(),
+                            el = this;
                         if ($(this).val() && $(this).val().trim) {
                             value = $(this).val().trim();
                         }
@@ -534,19 +681,21 @@ define(['require',
                         var dataTypeEnitity = $(this).data('type'),
                             datakeyEntity = $(this).data('key'),
                             typeName = $(this).data('querydata'),
-                            typeNameCategory = that.typeHeaders.fullCollection.findWhere({ name: dataTypeEnitity });
-
+                            attribute = $(this).data('attribute') == 'undefined' ? false : true,
+                            relation = $(this).data('relation') == 'undefined' ? false : true,
+                            typeNameCategory = that.typeHeaders.fullCollection.findWhere({ name: dataTypeEnitity }),
+                            val = null;
                         // Extract Data
                         if (dataTypeEnitity && datakeyEntity) {
                             if (that.entityDefCollection.fullCollection.find({ name: dataTypeEnitity })) {
-                                entity[datakeyEntity] = extractValue(value, typeName);
+                                val = extractValue(value, typeName);
                             } else if (dataTypeEnitity === 'date' || dataTypeEnitity === 'time') {
-                                entity[datakeyEntity] = Date.parse(value);
+                                val = Date.parse(value);
                             } else if (dataTypeEnitity.indexOf("map") > -1 || (typeNameCategory && typeNameCategory.get('category') === 'STRUCT')) {
                                 try {
                                     if (value && value.length) {
                                         parseData = JSON.parse(value);
-                                        entity[datakeyEntity] = parseData;
+                                        val = parseData;
                                     }
                                 } catch (err) {
                                     $(this).addClass('errorClass');
@@ -554,24 +703,44 @@ define(['require',
                                     return;
                                 }
                             } else if (dataTypeEnitity.indexOf("array") > -1 && dataTypeEnitity.indexOf("string") === -1) {
-                                entity[datakeyEntity] = extractValue(value, typeName);
+                                val = extractValue(value, typeName);
                             } else {
                                 if (_.isString(value)) {
                                     if (value.length) {
-                                        entity[datakeyEntity] = value;
+                                        val = value;
                                     } else {
-                                        entity[datakeyEntity] = null;
+                                        val = null;
                                     }
                                 } else {
-                                    entity[datakeyEntity] = value;
+                                    val = value;
                                 }
+                            }
+                            if (attribute) {
+                                entityAttribute[datakeyEntity] = val;
+                            } else if (relation) {
+                                relationshipAttribute[datakeyEntity] = val;
+                            }
+                        } else {
+                            var dataRelEntity = $(this).data('forKey');
+                            if (dataRelEntity && relationshipAttribute[dataRelEntity]) {
+                                if (_.isArray(relationshipAttribute[dataRelEntity])) {
+                                    _.each(relationshipAttribute[dataRelEntity], function(obj) {
+                                        if (obj) {
+                                            obj["relationshipType"] = $(el).val();
+                                        }
+                                    });
+                                } else {
+                                    relationshipAttribute[dataRelEntity]["relationshipType"] = $(this).val();
+                                }
+
                             }
                         }
                     });
                     var entityJson = {
                         "entity": {
                             "typeName": (this.guid ? this.entityData.get("entity").typeName : this.parentEntity),
-                            "attributes": entity,
+                            "attributes": entityAttribute,
+                            "relationshipAttributes": relationshipAttribute,
                             "guid": (this.guid ? this.guid : -1)
                         },
                         "referredEntities": referredEntities
@@ -628,17 +797,16 @@ define(['require',
                         queryData = $(this).data("querydata"),
                         skip = $(this).data('skip'),
                         placeholderName = "Select a " + typeData + " from the dropdown list";
-
                     $this.attr("multiple", ($this.data('type').indexOf("array") === -1 ? false : true));
 
                     // Select Value.
                     if (that.guid) {
                         var dataValue = that.entityData.get("entity").attributes[keyData],
                             entities = that.entityData.get("entity").attributes,
+                            relationshipType = that.entityData.get("entity").relationshipAttributes[keyData],
                             referredEntities = that.entityData.get("referredEntities"),
                             selectedValue = [],
                             select2Options = [];
-
                         if (dataValue) {
                             if (_.isObject(dataValue) && !_.isArray(dataValue)) {
                                 dataValue = [dataValue];
@@ -653,6 +821,12 @@ define(['require',
                                     }
                                 }
                             });
+                            if (!_.isUndefined(relationshipType)) {
+                                if (relationshipType && relationshipType.relationshipAttributes && relationshipType.relationshipAttributes.typeName) {
+                                    that.$("select[data-for-key=" + keyData + "]").val(relationshipType.relationshipAttributes.typeName).trigger("change");
+                                }
+
+                            }
                         }
 
                         // Array of string.

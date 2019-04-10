@@ -50,7 +50,7 @@
 .modal-body {
     position: relative;
     padding: 15px;
-    max-height: 72vh;
+    max-height: calc(100vh - 200px);
     min-height: 70px;
     overflow: auto;
 
