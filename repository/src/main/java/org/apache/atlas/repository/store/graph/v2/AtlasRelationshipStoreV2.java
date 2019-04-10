@@ -427,6 +427,16 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
                 if (relationship.hasAttribute(attrName)) {
                     AtlasGraphUtilsV2.setEncodedProperty(relationshipEdge, attrVertexProperty, relationship.getAttribute(attrName));
+                } else {
+                    String defaultValue = attr.getAttributeDef().getDefaultValue();
+
+                    if (StringUtils.isNotEmpty(defaultValue)) {
+                        Object attrValue = attr.getAttributeType().createDefaultValue(defaultValue);
+
+                        if (attrValue != null) {
+                            AtlasGraphUtilsV2.setEncodedProperty(relationshipEdge, attrVertexProperty, attrValue);
+                        }
+                    }
                 }
             }
         }
