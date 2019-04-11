@@ -23,6 +23,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
@@ -31,24 +32,14 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.apache.atlas.AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME;
-import static org.apache.atlas.examples.QuickStartV2.CLUSTER_SUFFIX;
-import static org.apache.atlas.examples.QuickStartV2.LOAD_PROCESS_TYPE;
-import static org.apache.atlas.examples.QuickStartV2.LOAD_SALES_DAILY_PROCESS;
-import static org.apache.atlas.examples.QuickStartV2.LOAD_SALES_MONTHLY_PROCESS;
-import static org.apache.atlas.examples.QuickStartV2.PRODUCT_DIM_TABLE;
-import static org.apache.atlas.examples.QuickStartV2.PRODUCT_DIM_VIEW;
-import static org.apache.atlas.examples.QuickStartV2.SALES_DB;
-import static org.apache.atlas.examples.QuickStartV2.SALES_FACT_DAILY_MV_TABLE;
-import static org.apache.atlas.examples.QuickStartV2.SALES_FACT_MONTHLY_MV_TABLE;
-import static org.apache.atlas.examples.QuickStartV2.SALES_FACT_TABLE;
-import static org.apache.atlas.examples.QuickStartV2.TIME_DIM_TABLE;
-import static org.apache.atlas.examples.QuickStartV2.VIEW_TYPE;
+import static org.apache.atlas.examples.QuickStartV2.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
@@ -91,11 +82,34 @@ public class QuickStartV2IT extends BaseResourceIT {
         verifyTrait(table);
     }
 
+    @Test
+    public void testTablesAreAdded2() throws AtlasServiceException {
+        List<String> tableNames = Arrays.asList(SALES_FACT_TABLE, PRODUCT_DIM_TABLE, CUSTOMER_DIM_TABLE,
+                                                TIME_DIM_TABLE, SALES_FACT_DAILY_MV_TABLE, SALES_FACT_MONTHLY_MV_TABLE,
+                                                LOG_FACT_DAILY_MV_TABLE, LOG_FACT_MONTHLY_MV_TABLE);
+
+        AtlasEntitiesWithExtInfo entities = getTables(tableNames);
+
+        assertNotNull(entities);
+        assertNotNull(entities.getEntities());
+        assertEquals(entities.getEntities().size(), tableNames.size());
+    }
+
     private AtlasEntity getTable(String tableName) throws AtlasServiceException {
         Map<String, String> attributes  = Collections.singletonMap(REFERENCEABLE_ATTRIBUTE_NAME, tableName + CLUSTER_SUFFIX);
         AtlasEntity         tableEntity = atlasClientV2.getEntityByAttribute(QuickStartV2.TABLE_TYPE, attributes).getEntity();
 
         return tableEntity;
+    }
+
+    private AtlasEntitiesWithExtInfo getTables(List<String> tableNames) throws AtlasServiceException {
+        List<Map<String, String>> attributesList = new ArrayList<>();
+
+        for (String tableName : tableNames) {
+            attributesList.add(Collections.singletonMap(REFERENCEABLE_ATTRIBUTE_NAME, tableName + CLUSTER_SUFFIX));
+        }
+
+        return atlasClientV2.getEntitiesByAttribute(QuickStartV2.TABLE_TYPE, attributesList);
     }
 
     private AtlasEntity getProcess(String processName) throws AtlasServiceException {
