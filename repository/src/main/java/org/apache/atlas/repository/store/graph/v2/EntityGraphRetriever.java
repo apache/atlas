@@ -35,7 +35,6 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
@@ -45,7 +44,6 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasRelationshipType;
@@ -119,8 +117,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.getPrimitiveMap;
 import static org.apache.atlas.repository.graph.GraphHelper.getReferenceMap;
 import static org.apache.atlas.repository.graph.GraphHelper.getOutGoingEdgesByLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedClassificationEdge;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagationEnabledClassificationVertices;
 import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getRemovePropagations;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
@@ -371,6 +367,33 @@ public class EntityGraphRetriever {
                 }
             }
         }
+
+        return ret;
+    }
+
+    public AtlasEntitiesWithExtInfo getEntitiesByUniqueAttributes(String typeName, List<Map<String, Object>> uniqueAttributesList, boolean isMinExtInfo) throws AtlasBaseException {
+        AtlasEntitiesWithExtInfo ret        = new AtlasEntitiesWithExtInfo();
+        AtlasEntityType          entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        if (entityType != null) {
+            for (Map<String, Object> uniqAttributes : uniqueAttributesList) {
+                try {
+                    AtlasVertex vertex = AtlasGraphUtilsV2.getVertexByUniqueAttributes(entityType, uniqAttributes);
+
+                    if (vertex != null) {
+                        AtlasEntity entity = mapVertexToAtlasEntity(vertex, ret, isMinExtInfo);
+
+                        ret.addEntity(entity);
+                    }
+                } catch(AtlasBaseException e) {
+                    if (e.getAtlasErrorCode() != AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND) {
+                        throw e;
+                    }
+                }
+            }
+        }
+
+        ret.compact();
 
         return ret;
     }
