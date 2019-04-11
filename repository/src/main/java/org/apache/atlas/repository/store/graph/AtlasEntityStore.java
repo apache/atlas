@@ -89,6 +89,17 @@ public interface AtlasEntityStore {
     AtlasEntitiesWithExtInfo getByIds(List<String> guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
 
     /**
+     * Batch GET to retrieve entities by their uniqueIds
+     * @param entityType
+     * @param uniqueAttributes
+     * @param isMinExtInfo
+     * @param ignoreRelationships
+     * @return
+     * @throws AtlasBaseException
+     */
+    AtlasEntitiesWithExtInfo getEntitiesByUniqueAttributes(AtlasEntityType entityType, List<Map<String, Object>> uniqueAttributes, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
+
+    /**
      *
      * Get an eneity by its unique attribute
      * @param entityType     type of the entity

@@ -89,7 +89,26 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VALIDITY_PERIODS_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
-import static org.apache.atlas.repository.graph.GraphHelper.*;
+import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
+import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getAdjacentEdgesByLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
+import static org.apache.atlas.repository.graph.GraphHelper.getAllTraitNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
+import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
+import static org.apache.atlas.repository.graph.GraphHelper.getArrayElementsProperty;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityStatus;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertices;
+import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
+import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getPrimitiveMap;
+import static org.apache.atlas.repository.graph.GraphHelper.getReferenceMap;
+import static org.apache.atlas.repository.graph.GraphHelper.getOutGoingEdgesByLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
+import static org.apache.atlas.repository.graph.GraphHelper.getRelationshipGuid;
+import static org.apache.atlas.repository.graph.GraphHelper.getRemovePropagations;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
+import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
@@ -336,6 +355,33 @@ public class EntityGraphRetriever {
                 }
             }
         }
+
+        return ret;
+    }
+
+    public AtlasEntitiesWithExtInfo getEntitiesByUniqueAttributes(String typeName, List<Map<String, Object>> uniqueAttributesList, boolean isMinExtInfo) throws AtlasBaseException {
+        AtlasEntitiesWithExtInfo ret        = new AtlasEntitiesWithExtInfo();
+        AtlasEntityType          entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        if (entityType != null) {
+            for (Map<String, Object> uniqAttributes : uniqueAttributesList) {
+                try {
+                    AtlasVertex vertex = AtlasGraphUtilsV2.getVertexByUniqueAttributes(entityType, uniqAttributes);
+
+                    if (vertex != null) {
+                        AtlasEntity entity = mapVertexToAtlasEntity(vertex, ret, isMinExtInfo);
+
+                        ret.addEntity(entity);
+                    }
+                } catch(AtlasBaseException e) {
+                    if (e.getAtlasErrorCode() != AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND) {
+                        throw e;
+                    }
+                }
+            }
+        }
+
+        ret.compact();
 
         return ret;
     }
