@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="panel-group" id="accordion">
+<div class="panel-group server-stats-container statsContainer hide" id="accordion">
     <div class="panel panel-default expand_collapse_panel-icon" data-id="entityActive">
         <div class="panel-heading" data-toggle="collapse" href="#collapse1" aria-expanded="true">
             <h4 class="panel-title">
@@ -28,12 +28,12 @@
             <div class="panel-body">
                 <table class="table stat-table">
                     <thead>
-                    <tr>
-                        <th>Entity</th>
-                        <th>Count</th>
-                    </tr>
+                        <tr>
+                            <th>Entity</th>
+                            <th>Count</th>
+                        </tr>
                     </thead>
-                    <tbody >
+                    <tbody>
                     </tbody>
                 </table>
             </div>
@@ -52,18 +52,17 @@
             <div class="panel-body">
                 <table class="table stat-table">
                     <thead>
-                    <tr>
-                        <th>Entity</th>
-                        <th>Count</th>
-                    </tr>
+                        <tr>
+                            <th>Entity</th>
+                            <th>Count</th>
+                        </tr>
                     </thead>
-                    <tbody >
+                    <tbody>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-
     <div class="panel panel-default expand_collapse_panel-icon" data-id="stats">
         <div class="panel-heading" data-toggle="collapse" href="#collapse3">
             <h4 class="panel-title">
@@ -75,17 +74,46 @@
         </div>
         <div id="collapse3" class="panel-collapse collapse">
             <div class="panel-body">
-                <table class="table stat-table">
-                    <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Value</th>
-                    </tr>
-                    </thead>
-                    <tbody >
-                    </tbody>
-                </table>
+                <div class="col-sm-12">
+                    <div class="card-container panel panel-primary">
+                        <div class="panel-heading">Server Details</div>
+                        <div class="panel-body">
+                            <table class="table stat-table">
+                                <tbody data-id="server-card">
+                                    <tr class="empty text-center">
+                                        <td colspan="2"><span>No records found!</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-12">
+                    <div class="card-container panel panel-primary">
+                        <div class="panel-heading">Notification Details</div>
+                        <div class="panel-body">
+                            <table class="table stat-table">
+                                <tbody data-id="notification-small-card">
+                                    <tr class="empty text-center">
+                                        <td colspan="2"><span>No records found!</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <hr></hr>
+                            <table data-id="notification-card" class="table stat-table notification-table table-striped ">
+                                <tbody>
+                                    <tr class="empty text-center">
+                                        <td colspan="2"><span>No records found!</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+</div>
+<div class="fontLoader-relative statsLoader show">
+    <i class="fa fa-refresh fa-spin-custom"></i>
 </div>

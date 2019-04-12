@@ -453,3 +453,88 @@ hr[size="10"] {
         height: 50px;
     }
 }
+
+.server-stats-container {
+
+    .connection-status {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        display: inline-block;
+
+        &.connected {
+            background-color: #4CAF50;
+        }
+
+        &.not-connected {
+            background-color: #f44336;
+        }
+    }
+
+    .notification-card {
+        padding-top: 5px;
+    }
+
+    .card-container {
+        &.panel {
+            &.panel-primary {
+                border: 1px solid #ddd;
+                padding: 5px;
+            }
+        }
+
+        &.panel-primary>.panel-heading {
+            color: #686868;
+            background-color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    }
+
+
+    .panel-group {
+        .panel {
+            padding: 5px;
+        }
+    }
+
+    .panel {
+        &.panel-default {
+            padding: 5px;
+        }
+
+        .panel-body {
+
+            .col-sm-6,
+            .col-sm-12 {
+                padding: 5px;
+
+                .panel-heading {
+                    padding: 5px 0 0 15px;
+                }
+            }
+
+        }
+
+    }
+
+    .table {
+        &.stat-table {
+            &.notification-table {
+                &.table-striped>tbody>tr:nth-of-type(odd) {
+                    background-color: $color_white_lilac_approx;
+                }
+
+                tr {
+
+                    th:not(:first-child),
+                    td:not(:first-child) {
+                        text-align: right;
+                    }
+                }
+            }
+
+
+        }
+    }
+}
