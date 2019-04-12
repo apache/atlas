@@ -40,8 +40,6 @@ public class AtlasMetrics {
     public static final String PREFIX_NOTIFICATION      = "Notification:";
     public static final String PREFIX_SERVER            = "Server:";
 
-    public static final String STAT_CONNECTION_STATUS_BACKEND_STORE    = PREFIX_CONNECTION_STATUS + "backendStore";
-    public static final String STAT_CONNECTION_STATUS_INDEX_STORE      = PREFIX_CONNECTION_STATUS + "indexStore";
     public static final String STAT_NOTIFY_COUNT_CURR_DAY              = PREFIX_NOTIFICATION + "currentDay";
     public static final String STAT_NOTIFY_AVG_TIME_CURR_DAY           = PREFIX_NOTIFICATION + "currentDayAvgTime";
     public static final String STAT_NOTIFY_CREATES_COUNT_CURR_DAY      = PREFIX_NOTIFICATION + "currentDayEntityCreates";
@@ -79,6 +77,8 @@ public class AtlasMetrics {
     public static final String STAT_NOTIFY_FAILED_COUNT_TOTAL          = PREFIX_NOTIFICATION + "totalFailed";
     public static final String STAT_SERVER_ACTIVE_TIMESTAMP            = PREFIX_SERVER + "activeTimeStamp";
     public static final String STAT_SERVER_START_TIMESTAMP             = PREFIX_SERVER + "startTimeStamp";
+    public static final String STAT_SERVER_STATUS_BACKEND_STORE        = PREFIX_SERVER + "statusBackendStore";
+    public static final String STAT_SERVER_STATUS_INDEX_STORE          = PREFIX_SERVER + "statusIndexStore";
     public static final String STAT_SERVER_UP_TIME                     = PREFIX_SERVER + "upTime";
 
     private Map<String, Map<String, Object>> data;
