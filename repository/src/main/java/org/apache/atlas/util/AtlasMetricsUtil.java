@@ -112,8 +112,9 @@ public class AtlasMetricsUtil {
         ret.put(STAT_SERVER_START_TIMESTAMP, serverStartTime);
         ret.put(STAT_SERVER_ACTIVE_TIMESTAMP, serverActiveTime);
         ret.put(STAT_SERVER_UP_TIME, millisToTimeDiff(System.currentTimeMillis() - serverStartTime));
-        ret.put(STAT_CONNECTION_STATUS_BACKEND_STORE, getHBaseStatus() ? STATUS_CONNECTED : STATUS_NOT_CONNECTED);
-        ret.put(STAT_CONNECTION_STATUS_INDEX_STORE, getSolrStatus() ? STATUS_CONNECTED : STATUS_NOT_CONNECTED);
+        ret.put(STAT_SERVER_STATUS_BACKEND_STORE, getBackendStoreStatus() ? STATUS_CONNECTED : STATUS_NOT_CONNECTED);
+        ret.put(STAT_SERVER_STATUS_INDEX_STORE, getIndexStoreStatus() ? STATUS_CONNECTED : STATUS_NOT_CONNECTED);
+
         ret.put(STAT_NOTIFY_START_OFFSET, msgOffsetStart);
         ret.put(STAT_NOTIFY_CURRENT_OFFSET, msgOffsetCurrent);
         ret.put(STAT_NOTIFY_LAST_MESSAGE_PROCESSED_TIME, this.messagesProcessed.getLastIncrTime().toEpochMilli());
@@ -158,7 +159,7 @@ public class AtlasMetricsUtil {
         return ret;
     }
 
-    private boolean getHBaseStatus(){
+    private boolean getBackendStoreStatus(){
         try {
             runWithTimeout(new Runnable() {
                 @Override
@@ -174,7 +175,7 @@ public class AtlasMetricsUtil {
         return true;
     }
 
-    private boolean getSolrStatus(){
+    private boolean getIndexStoreStatus(){
         final String query = AtlasGraphUtilsV2.getIndexSearchPrefix() + "\"" + Constants.TYPE_NAME_PROPERTY_KEY + "\":(" + TYPE_NAME_INTERNAL + ")";
 
         try {
