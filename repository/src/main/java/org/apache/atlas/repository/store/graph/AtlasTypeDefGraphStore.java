@@ -473,6 +473,14 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                     CollectionUtils.size(typesDef.getRelationshipDefs()));
         }
 
+        if (CollectionUtils.isEmpty(typesDef.getRelationshipDefs()) &&
+            CollectionUtils.isEmpty(typesDef.getStructDefs()) &&
+            CollectionUtils.isEmpty(typesDef.getClassificationDefs()) &&
+            CollectionUtils.isEmpty(typesDef.getEntityDefs()) &&
+            CollectionUtils.isEmpty(typesDef.getEnumDefs())) {
+            return;
+        }
+
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
         AtlasDefStore<AtlasEnumDef>           enumDefStore          = getEnumDefStore(ttr);
