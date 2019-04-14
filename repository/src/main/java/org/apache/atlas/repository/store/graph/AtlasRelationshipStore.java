@@ -59,7 +59,7 @@ public interface AtlasRelationshipStore {
 
     AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
 
-    AtlasEdge getRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship);
+    AtlasEdge getRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
 
     AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
 
