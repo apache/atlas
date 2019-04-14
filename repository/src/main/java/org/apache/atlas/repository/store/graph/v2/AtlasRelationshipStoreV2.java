@@ -294,7 +294,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     @Override
-    public AtlasEdge getRelationship(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) {
+    public AtlasEdge getRelationship(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) throws AtlasBaseException {
         String relationshipLabel = getRelationshipEdgeLabel(fromVertex, toVertex, relationship.getTypeName());
 
         return getRelationshipEdge(fromVertex, toVertex, relationshipLabel);
@@ -802,18 +802,31 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         return ret;
     }
 
-    private String getRelationshipEdgeLabel(AtlasVertex fromVertex, AtlasVertex toVertex, String relationshipTypeName) {
+    private String getRelationshipEdgeLabel(AtlasVertex fromVertex, AtlasVertex toVertex, String relationshipTypeName) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("getRelationshipEdgeLabel({})", relationshipTypeName);
         }
 
-        AtlasRelationshipType   relationshipType   = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
-        String                  ret                = relationshipType.getRelationshipLabel();
-        AtlasRelationshipEndDef endDef1            = relationshipType.getRelationshipDef().getEndDef1();
-        AtlasRelationshipEndDef endDef2            = relationshipType.getRelationshipDef().getEndDef2();
-        Set<String>             fromVertexTypes    = getTypeAndAllSuperTypes(AtlasGraphUtilsV2.getTypeName(fromVertex));
-        Set<String>             toVertexTypes      = getTypeAndAllSuperTypes(AtlasGraphUtilsV2.getTypeName(toVertex));
-        AtlasAttribute          attribute          = null;
+        AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
+
+        if (relationshipType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "unknown relationship type'" + relationshipTypeName + "'");
+        }
+
+        if (fromVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_END_IS_NULL, relationshipType.getEnd1Type().getTypeName());
+        }
+
+        if (toVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_END_IS_NULL, relationshipType.getEnd2Type().getTypeName());
+        }
+
+        String                  ret             = relationshipType.getRelationshipLabel();
+        AtlasRelationshipEndDef endDef1         = relationshipType.getRelationshipDef().getEndDef1();
+        AtlasRelationshipEndDef endDef2         = relationshipType.getRelationshipDef().getEndDef2();
+        Set<String>             fromVertexTypes = getTypeAndAllSuperTypes(AtlasGraphUtilsV2.getTypeName(fromVertex));
+        Set<String>             toVertexTypes   = getTypeAndAllSuperTypes(AtlasGraphUtilsV2.getTypeName(toVertex));
+        AtlasAttribute          attribute       = null;
 
         // validate entity type and all its supertypes contains relationshipDefs end type
         // e.g. [hive_process -> hive_table] -> [Process -> DataSet]
