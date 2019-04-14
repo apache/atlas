@@ -73,19 +73,6 @@
                     "cardinality": "SINGLE",
                     "isUnique": false,
                     "isIndexable": false
-                },
-                {
-                    "name": "databases",
-                    "typeName": "array<rdbms_db>",
-                    "isOptional": true,
-                    "cardinality": "SET",
-                    "isUnique": false,
-                    "isIndexable": false,
-                    "constraints": [
-                       {
-                          "type": "ownedRef"
-                       }
-                    ]
                 }
             ]
         },
@@ -105,41 +92,12 @@
                     "isIndexable": true
                 },
                 {
-                    "name": "instance",
-                    "typeName": "rdbms_instance",
-                    "isOptional": true,
-                    "cardinality": "SINGLE",
-                    "isUnique": false,
-                    "isIndexable": false,
-                    "constraints": [
-                       {
-                           "type": "inverseRef",
-                           "params": {
-                               "attribute": "databases"
-                           }
-                       }
-                    ]
-                },
-                {
                     "name": "contact_info",
                     "typeName": "string",
                     "isOptional": true,
                     "cardinality": "SINGLE",
                     "isUnique": false,
                     "isIndexable": false
-                },
-                {
-                    "name": "tables",
-                    "typeName": "array<rdbms_table>",
-                    "isOptional": true,
-                    "cardinality": "SET",
-                    "isUnique": false,
-                    "isIndexable": false,
-                    "constraints": [
-                       {
-                           "type": "ownedRef"
-                       }
-                    ]
                 }
             ]
         },
@@ -153,22 +111,6 @@
               "schemaElementsAttribute": "columns"
             },
             "attributeDefs": [
-                {
-                    "name": "db",
-                    "typeName": "rdbms_db",
-                    "isOptional": true,
-                    "cardinality": "SINGLE",
-                    "isUnique": false,
-                    "isIndexable": false,
-                    "constraints": [
-                       {
-                           "type": "inverseRef",
-                           "params": {
-                               "attribute": "tables"
-                           }
-                       }
-                    ]
-                },
                 {
                     "name": "name_path",
                     "typeName": "string",
@@ -210,45 +152,6 @@
                     "valuesMaxCount": 1,
                     "isUnique": false,
                     "isIndexable": false
-                },
-                {
-                    "name": "columns",
-                    "typeName": "array<rdbms_column>",
-                    "isOptional": true,
-                    "cardinality": "SET",
-                    "isUnique": false,
-                    "isIndexable": false,
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ]
-                },
-                {
-                    "name": "indexes",
-                    "typeName": "array<rdbms_index>",
-                    "isOptional": true,
-                    "cardinality": "SET",
-                    "isUnique": false,
-                    "isIndexable": false,
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ]
-                },
-                {
-                    "name": "foreign_keys",
-                    "typeName": "array<rdbms_foreign_key>",
-                    "isOptional": true,
-                    "cardinality": "SET",
-                    "isUnique": false,
-                    "isIndexable": false,
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ]
                 }
             ]
         },
@@ -295,22 +198,6 @@
                     "isIndexable": false
                 },
                 {
-                    "name": "table",
-                    "typeName": "rdbms_table",
-                    "isOptional": true,
-                    "cardinality": "SINGLE",
-                    "isUnique": false,
-                    "isIndexable": false,
-                    "constraints": [
-                       {
-                        "type": "inverseRef",
-                        "params": {
-                            "attribute": "columns"
-                        }
-                    }
-                    ]
-                },
-                {
                     "name": "isNullable",
                     "typeName": "boolean",
                     "isOptional": true,
@@ -336,22 +223,6 @@
             "typeVersion": "1.1",
             "attributeDefs": [
                 {
-                    "name": "table",
-                    "typeName": "rdbms_table",
-                    "isOptional": true,
-                    "cardinality": "SINGLE",
-                    "isUnique": false,
-                    "isIndexable": false,
-                    "constraints": [
-                        {
-                            "type": "inverseRef",
-                            "params": {
-                                "attribute": "indexes"
-                            }
-                        }
-                    ]
-                },
-                {
                     "name": "index_type",
                     "typeName": "string",
                     "isOptional": true,
@@ -364,14 +235,6 @@
                     "typeName": "boolean",
                     "isOptional": true,
                     "cardinality": "SINGLE",
-                    "isUnique": false,
-                    "isIndexable": false
-                },
-                {
-                    "name": "columns",
-                    "typeName": "array<rdbms_column>",
-                    "isOptional": true,
-                    "cardinality": "SET",
                     "isUnique": false,
                     "isIndexable": false
                 },
@@ -392,38 +255,6 @@
             "serviceType": "rdbms",
             "typeVersion": "1.1",
             "attributeDefs": [
-                {
-                    "name": "table",
-                    "typeName": "rdbms_table",
-                    "isOptional": true,
-                    "cardinality": "SINGLE",
-                    "isUnique": false,
-                    "isIndexable": false
-                },
-                {
-                    "name": "key_columns",
-                    "typeName": "array<rdbms_column>",
-                    "isOptional": true,
-                    "cardinality": "SET",
-                    "isUnique": false,
-                    "isIndexable": false
-                },
-                {
-                    "name": "references_table",
-                    "typeName": "rdbms_table",
-                    "isOptional": true,
-                    "cardinality": "SINGLE",
-                    "isUnique": false,
-                    "isIndexable": false
-                },
-                {
-                    "name": "references_columns",
-                    "typeName": "array<rdbms_column>",
-                    "isOptional": true,
-                    "cardinality": "SET",
-                    "isUnique": false,
-                    "isIndexable": false
-                }
             ]
         }
     ],
@@ -431,8 +262,9 @@
         {
             "name": "rdbms_instance_databases",
             "serviceType": "rdbms",
-            "typeVersion": "1.0",
-            "relationshipCategory": "AGGREGATION",
+            "typeVersion": "1.2",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel":    "__rdbms_instance.databases",
             "endDef1": {
                 "type": "rdbms_instance",
                 "name": "databases",
@@ -452,8 +284,9 @@
         {
             "name": "rdbms_db_tables",
             "serviceType": "rdbms",
-            "typeVersion": "1.0",
-            "relationshipCategory": "AGGREGATION",
+            "typeVersion": "1.2",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel":    "__rdbms_db.tables",
             "endDef1": {
                 "type": "rdbms_db",
                 "name": "tables",
@@ -473,8 +306,9 @@
         {
             "name": "rdbms_table_columns",
             "serviceType": "rdbms",
-            "typeVersion": "1.0",
-            "relationshipCategory": "AGGREGATION",
+            "typeVersion": "1.2",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel":    "__rdbms_table.columns",
             "endDef1": {
                 "type": "rdbms_table",
                 "name": "columns",
@@ -494,8 +328,9 @@
         {
             "name": "rdbms_table_indexes",
             "serviceType": "rdbms",
-            "typeVersion": "1.0",
-            "relationshipCategory": "AGGREGATION",
+            "typeVersion": "1.2",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel":    "__rdbms_table.indexes",
             "endDef1": {
                 "type": "rdbms_table",
                 "name": "indexes",
@@ -515,8 +350,9 @@
         {
             "name": "rdbms_index_columns",
             "serviceType": "rdbms",
-            "typeVersion": "1.0",
+            "typeVersion": "1.2",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__rdbms_index.columns",
             "endDef1": {
                 "type": "rdbms_index",
                 "name": "columns",
@@ -536,8 +372,9 @@
         {
             "name": "rdbms_table_foreign_key",
             "serviceType": "rdbms",
-            "typeVersion": "1.0",
-            "relationshipCategory": "AGGREGATION",
+            "typeVersion": "1.2",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel":    "__rdbms_table.foreign_keys",
             "endDef1": {
                 "type": "rdbms_table",
                 "name": "foreign_keys",
@@ -557,8 +394,9 @@
         {
             "name": "rdbms_foreign_key_key_columns",
             "serviceType": "rdbms",
-            "typeVersion": "1.0",
+            "typeVersion": "1.2",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__rdbms_foreign_key.key_columns",
             "endDef1": {
                 "type": "rdbms_foreign_key",
                 "name": "key_columns",
@@ -577,8 +415,9 @@
         {
             "name": "rdbms_foreign_key_table_references",
             "serviceType": "rdbms",
-            "typeVersion": "1.0",
+            "typeVersion": "1.2",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__rdbms_foreign_key.references_table",
             "endDef1": {
                 "type": "rdbms_foreign_key",
                 "name": "references_table",
@@ -597,8 +436,9 @@
         {
             "name": "rdbms_foreign_key_column_references",
             "serviceType": "rdbms",
-            "typeVersion": "1.0",
+            "typeVersion": "1.2",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__rdbms_foreign_key.references_columns",
             "endDef1": {
                 "type": "rdbms_foreign_key",
                 "name": "references_columns",
