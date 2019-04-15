@@ -451,6 +451,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 for (String resultAttribute : resultAttributes) {
                     AtlasAttribute  attribute  = entityType.getAttribute(resultAttribute);
 
+                    if (attribute == null) {
+                        attribute = entityType.getRelationshipAttribute(resultAttribute, null);
+                    }
+
                     if (attribute != null) {
                         AtlasType attributeType = attribute.getAttributeType();
 
@@ -535,6 +539,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         AtlasAttribute attribute = entityType.getAttribute(relation);
+
+        if (attribute == null) {
+            attribute = entityType.getRelationshipAttribute(relation, null);
+        }
 
         if (attribute != null) {
             if (attribute.isObjectRef()) {

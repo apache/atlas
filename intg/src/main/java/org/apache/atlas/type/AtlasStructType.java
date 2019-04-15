@@ -744,19 +744,19 @@ public class AtlasStructType extends AtlasType {
             this.inverseRefAttributeName   = inverseRefAttribute;
             this.relationshipEdgeDirection = AtlasRelationshipEdgeDirection.OUT;
 
-            switch (attributeType.getTypeCategory()) {
+            switch (this.attributeType.getTypeCategory()) {
                 case OBJECT_ID_TYPE:
                     isObjectRef = true;
                 break;
 
                 case MAP:
-                    AtlasMapType mapType = (AtlasMapType) attributeType;
+                    AtlasMapType mapType = (AtlasMapType) this.attributeType;
 
                     isObjectRef = mapType.getValueType().getTypeCategory() == OBJECT_ID_TYPE;
                 break;
 
                 case ARRAY:
-                    AtlasArrayType arrayType = (AtlasArrayType) attributeType;
+                    AtlasArrayType arrayType = (AtlasArrayType) this.attributeType;
 
                     isObjectRef = arrayType.getElementType().getTypeCategory() == OBJECT_ID_TYPE;
                 break;

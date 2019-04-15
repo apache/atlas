@@ -521,7 +521,13 @@ public class EntityGraphRetriever {
                         continue;
                     }
 
-                    Object attrValue = getVertexAttribute(entityVertex, entityType.getAttribute(nonQualifiedAttrName));
+                    AtlasAttribute attribute = entityType.getAttribute(nonQualifiedAttrName);
+
+                    if (attribute == null) {
+                        attribute = entityType.getRelationshipAttribute(nonQualifiedAttrName, null);
+                    }
+
+                    Object attrValue = getVertexAttribute(entityVertex, attribute);
 
                     if (attrValue != null) {
                         ret.setAttribute(nonQualifiedAttrName, attrValue);
