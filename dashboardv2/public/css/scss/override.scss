@@ -210,7 +210,19 @@ td {
 }
 
 .select2-container--default {
+    &.select2-container--disabled {
+        .select2-selection--multiple {
+            background-color: $color_gallery_approx !important;
+            cursor: not-allowed;
+
+            input.select2-search__field {
+                cursor: not-allowed;
+            }
+        }
+    }
+
     .select2-selection--multiple {
+
         background-color: $color_white_lilac_approx !important;
         border: 1px $color_mystic_approx solid !important;
 

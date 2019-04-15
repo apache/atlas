@@ -602,8 +602,9 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         var mainData = options.data,
             collection = options.collection,
             attrMerge = options.attrMerge,
-            mergeRelationAttributes = options.mergeRelationAttributes || false,
-            seperateRelatioshipAttr = options.seperateRelatioshipAttr || false;
+            seperateRelatioshipAttr = options.seperateRelatioshipAttr || false,
+            mergeRelationAttributes = options.mergeRelationAttributes || (seperateRelatioshipAttr ? false : true);
+
         if (mergeRelationAttributes && seperateRelatioshipAttr) {
             throw "Both mergeRelationAttributes & seperateRelatioshipAttr cannot be true!"
         }
@@ -681,9 +682,9 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             } else {
                 attributeDefs = _.uniq(_.sortBy(attributeDefs, 'name'), true, function(obj) {
                     if (obj.relationshipTypeName) {
-                        (obj.name + obj.relationshipTypeName)
+                        return (obj.name + obj.relationshipTypeName)
                     } else {
-                        (obj.name)
+                        return (obj.name)
                     }
                 });
             }

@@ -56,7 +56,9 @@ define(['require',
                 entityInputData: "[data-id='entityInputData']",
                 toggleRequired: 'input[name="toggleRequired"]',
                 assetName: "[data-id='assetName']",
-                entityInput: "[data-id='entityInput']"
+                entityInput: "[data-id='entityInput']",
+                entitySelectionBox: "[data-id='entitySelectionBox']",
+
             },
             /** ui events hash */
             events: function() {
@@ -149,22 +151,18 @@ define(['require',
                     if (this.value !== "") {
                         if ($(this).data('select2')) {
                             $(this).data('select2').$container.find('.select2-selection').removeClass("errorClass");
-                            if (that.ui.entityInputData.find('.errorClass').length === 0) {
-                                that.modal.$el.find('button.ok').prop("disabled", false);
-                            }
                         } else {
                             $(this).removeClass('errorClass');
-                            if (that.ui.entityInputData.find('.errorClass').length === 0) {
-                                that.modal.$el.find('button.ok').prop("disabled", false);
-                            }
+                        }
+                        if (that.ui.entityInputData.find('.errorClass').length === 0) {
+                            that.modal.$el.find('button.ok').prop("disabled", false);
                         }
                     } else {
+                        that.modal.$el.find('button.ok').prop("disabled", true);
                         if ($(this).data('select2')) {
                             $(this).data('select2').$container.find('.select2-selection').addClass("errorClass");
-                            that.modal.$el.find('button.ok').prop("disabled", true);
                         } else {
                             $(this).addClass('errorClass');
-                            that.modal.$el.find('button.ok').prop("disabled", true);
                         }
                     }
                 });
@@ -370,6 +368,7 @@ define(['require',
                                 return;
                             }
                             var elFound = that.ui.entityInputData.find('[data-key="' + key + '"]');
+                            elFound.prop('disabled', true);
                             elFound.parent().prepend(visitedAttr[key]);
                         });
                     } else {
@@ -378,7 +377,21 @@ define(['require',
                     }
 
                 }
-                that.ui.entityInputData.find("select[data-for-key]").select2({})
+                that.ui.entityInputData.find("select[data-for-key]").select2({}).on('change', function() {
+                    var forKey = $(this).data('forKey'),
+                        forKeyEl = null;
+                    if (forKey && forKey.length) {
+                        forKeyEl = that.ui.entityInputData.find('[data-key="' + forKey + '"]');
+                        if (forKeyEl) {
+                            if (this.value == "") {
+                                forKeyEl.val(null).trigger('change');
+                                forKeyEl.prop("disabled", true);
+                            } else {
+                                forKeyEl.prop("disabled", false);
+                            }
+                        }
+                    }
+                });
                 return false;
             },
             subAttributeData: function(data) {
@@ -628,7 +641,9 @@ define(['require',
             },
             okButton: function() {
                 var that = this;
-                this.showLoader();
+                this.showLoader({
+                    editVisiblityOfEntitySelectionBox: true
+                });
                 this.parentEntity = this.ui.entityList.val();
                 var entityAttribute = {},
                     referredEntities = {},
@@ -751,7 +766,7 @@ define(['require',
                         success: function(model, response) {
                             that.modal.close();
                             Utils.notifySuccess({
-                                content: "entity " + Messages[that.guid ? 'editSuccessMessage' : 'addSuccessMessage']
+                                content: "Entity " + Messages[that.guid ? 'editSuccessMessage' : 'addSuccessMessage']
                             });
                             if (that.guid && that.callback) {
                                 that.callback();
@@ -766,7 +781,9 @@ define(['require',
                             }
                         },
                         complete: function() {
-                            that.hideLoader();
+                            that.hideLoader({
+                                editVisiblityOfEntitySelectionBox: true
+                            });
                         }
                     });
 
@@ -774,16 +791,26 @@ define(['require',
                     Utils.notifyError({
                         content: e.message
                     });
-                    that.hideLoader();
+                    that.hideLoader({
+                        editVisiblityOfEntitySelectionBox: true
+                    });
                 }
             },
-            showLoader: function() {
-                this.$('.entityLoader').show();
+            showLoader: function(options) {
+                var editVisiblityOfEntitySelectionBox = options && options.editVisiblityOfEntitySelectionBox;
+                this.$('.entityLoader').addClass('show');
                 this.$('.entityInputData').hide();
+                if (this.guid || editVisiblityOfEntitySelectionBox) {
+                    this.ui.entitySelectionBox.hide();
+                }
             },
-            hideLoader: function() {
-                this.$('.entityLoader').hide();
+            hideLoader: function(options) {
+                var editVisiblityOfEntitySelectionBox = options && options.editVisiblityOfEntitySelectionBox
+                this.$('.entityLoader').removeClass('show');
                 this.$('.entityInputData').show();
+                if (this.guid || editVisiblityOfEntitySelectionBox) {
+                    this.ui.entitySelectionBox.show();
+                }
                 // To enable scroll after selecting value from select2.
                 this.ui.entityList.select2('open');
                 this.ui.entityList.select2('close');

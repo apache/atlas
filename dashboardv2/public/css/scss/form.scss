@@ -54,8 +54,12 @@
 
     .form-control {
         //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-        background-color: $color_mystic_approx;
+        background-color: $color_white_lilac_approx;
         border: 1px $color_mystic_approx solid;
+
+        &[disabled] {
+            background-color: $color_gallery_approx;
+        }
 
         &:focus {
             border-color: $color_bali_hai_approx;
