@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
 
 
 @Component
-@Order(2)
+@Order(3)
 public class EmbeddedKafkaServer implements Service {
     public static final Logger LOG = LoggerFactory.getLogger(EmbeddedKafkaServer.class);
 

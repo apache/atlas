@@ -23,16 +23,16 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
@@ -46,14 +46,14 @@ import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.impexp.ZipSource;
+import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.SearchTracker;
-import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
@@ -138,6 +138,7 @@ public class AdminResource {
     private final  ExportImportAuditService exportImportAuditService;
     private final  AtlasServerService       atlasServerService;
     private final  AtlasEntityStore         entityStore;
+    private final  AtlasPatchManager        patchManager;
 
     static {
         try {
@@ -152,7 +153,8 @@ public class AdminResource {
                          ExportService exportService, ImportService importService, SearchTracker activeSearches,
                          MigrationProgressService migrationProgressService,
                          AtlasServerService serverService,
-                         ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore) {
+                         ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
+                         AtlasPatchManager patchManager) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -164,6 +166,7 @@ public class AdminResource {
         this.entityStore               = entityStore;
         this.exportImportAuditService  = exportImportAuditService;
         this.importExportOperationLock = new ReentrantLock();
+        this.patchManager              = patchManager;
     }
 
     /**
@@ -564,7 +567,7 @@ public class AdminResource {
             LOG.debug("==> AdminResource.getAtlasPatches()");
         }
 
-        AtlasPatches ret = AtlasGraphUtilsV2.getAllPatches();
+        AtlasPatches ret = patchManager.getAllPatches();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getAtlasPatches()");

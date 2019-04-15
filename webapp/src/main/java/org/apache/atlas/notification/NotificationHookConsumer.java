@@ -100,7 +100,7 @@ import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE
  * Consumer of notifications from hooks e.g., hive hook etc.
  */
 @Component
-@Order(4)
+@Order(5)
 @DependsOn(value = {"atlasTypeDefStoreInitializer", "atlasTypeDefGraphStoreV2"})
 public class NotificationHookConsumer implements Service, ActiveStateChangeHandler {
     private static final Logger LOG        = LoggerFactory.getLogger(NotificationHookConsumer.class);

@@ -21,7 +21,6 @@ package org.apache.atlas.repository.store.bootstrap;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -41,14 +40,8 @@ import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.patches.AtlasJavaPatchHandler;
-import org.apache.atlas.repository.patches.PatchContext;
-import org.apache.atlas.repository.patches.UniqueAttributePatchHandler;
-import org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2;
+import org.apache.atlas.repository.patches.AtlasPatchRegistry;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -83,19 +76,6 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
-import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
-import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
-import static org.apache.atlas.repository.Constants.PATCH_ACTION_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.PATCH_ID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.PATCH_DESCRIPTION_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.PATCH_STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.PATCH_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.findByPatchId;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getPatchesRegistry;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 /**
  * Class that handles initial loading of models and patches into typedef store
@@ -111,18 +91,16 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
     private final AtlasTypeDefStore        typeDefStore;
     private final AtlasTypeRegistry        typeRegistry;
-    private final AtlasGraph               graph;
     private final Configuration            conf;
-    private final GraphBackedSearchIndexer indexer;
+    private final AtlasPatchRegistry       patchRegistry;
 
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
-                                        AtlasGraph graph, Configuration conf, GraphBackedSearchIndexer indexer) {
-        this.typeDefStore = typeDefStore;
-        this.typeRegistry = typeRegistry;
-        this.graph        = graph;
-        this.conf         = conf;
-        this.indexer      = indexer;
+                                        AtlasGraph graph, Configuration conf) {
+        this.typeDefStore  = typeDefStore;
+        this.typeRegistry  = typeRegistry;
+        this.conf          = conf;
+        this.patchRegistry = new AtlasPatchRegistry(graph);
     }
 
     @PostConstruct
@@ -157,7 +135,6 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
         String       atlasHomeDir  = System.getProperty("atlas.home");
         String       modelsDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "models";
-        PatchContext patchContext  = initPatchContext();
 
         if (modelsDirName == null || modelsDirName.length() == 0) {
             LOG.info("Types directory {} does not exist or not readable or has no typedef files", modelsDirName);
@@ -176,49 +153,23 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 	                        continue;
 	                    } else if (!folder.getName().equals(PATCHES_FOLDER_NAME)){
 	                        // load the models alphabetically in the subfolders apart from patches
-	                        loadModelsInFolder(folder, patchContext);
+	                        loadModelsInFolder(folder);
 	                    }
 	            }
             }
 
             // load any files in the top models folder and any associated patches.
-            loadModelsInFolder(topModeltypesDir, patchContext);
+            loadModelsInFolder(topModeltypesDir);
         }
-
-        // apply java patches
-        applyJavaPatches(patchContext);
 
         LOG.info("<== AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
-    }
-
-    private void applyJavaPatches(PatchContext context) {
-        // register java patches
-        AtlasJavaPatchHandler[] patches = new AtlasJavaPatchHandler[] { new UniqueAttributePatchHandler(context) };
-
-        // apply java patches
-        for (AtlasJavaPatchHandler patch : patches) {
-            PatchStatus patchStatus = patch.getPatchStatus();
-
-            if (patchStatus == APPLIED || patchStatus == SKIPPED) {
-                LOG.info("Ignoring java patch: {}; status: {}", patch.getPatchId(), patchStatus);
-            } else {
-                LOG.info("Applying java patch: {}; status: {}", patch.getPatchId(), patchStatus);
-
-                patch.applyPatch();
-            }
-        }
-    }
-
-    public PatchContext initPatchContext() {
-        return new PatchContext(graph, typeRegistry, indexer, getPatchesRegistry());
     }
 
     /**
      * Load all the model files in the supplied folder followed by the contents of the patches folder.
      * @param typesDir
-     * @param context
      */
-    private void loadModelsInFolder(File typesDir, PatchContext context) {
+    private void loadModelsInFolder(File typesDir) {
         LOG.info("==> AtlasTypeDefStoreInitializer({})", typesDir);
 
         String typesDirName = typesDir.getName();
@@ -260,7 +211,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 }
             }
 
-            applyTypePatches(typesDir.getPath(), context);
+            applyTypePatches(typesDir.getPath());
         }
         LOG.info("<== AtlasTypeDefStoreInitializer({})", typesDir);
     }
@@ -458,11 +409,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         return ret;
     }
 
-    private void applyTypePatches(String typesDirName, PatchContext context) {
-        String typePatchesDirName = typesDirName + File.separator + PATCHES_FOLDER_NAME;
-        File   typePatchesDir     = new File(typePatchesDirName);
-        File[] typePatchFiles     = typePatchesDir.exists() ? typePatchesDir.listFiles() : null;
-        Map<String, PatchStatus> patchesRegistry = context.getPatchesRegistry();
+    private void applyTypePatches(String typesDirName) {
+        String             typePatchesDirName = typesDirName + File.separator + PATCHES_FOLDER_NAME;
+        File               typePatchesDir     = new File(typePatchesDirName);
+        File[]             typePatchFiles     = typePatchesDir.exists() ? typePatchesDir.listFiles() : null;
 
         if (typePatchFiles == null || typePatchFiles.length == 0) {
             LOG.info("Type patches directory {} does not exist or not readable or has no patches", typePatchesDirName);
@@ -505,7 +455,6 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         }
 
                         int patchIndex = 0;
-
                         for (TypeDefPatch patch : patches.getPatches()) {
                             PatchHandler patchHandler = patchHandlerRegistry.get(patch.getAction());
 
@@ -514,15 +463,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                                 continue;
                             }
 
-                            String patchId = patch.getId();
-
-                            if (StringUtils.isEmpty(patchId)) {
-                                patchId = typePatchFile.getName() + "_" + patchIndex;
-
-                                patch.setId(patchId);
-                            }
-
-                            if (isPatchApplicable(patchId, patchesRegistry)) {
+                            if (patchRegistry.isApplicable(patch.getId(), patchFile, patchIndex++)) {
                                 PatchStatus status;
 
                                 try {
@@ -531,17 +472,14 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                                     status = FAILED;
 
                                     LOG.error("Failed to apply {} (status: {}; action: {}) in file: {}. Ignored.",
-                                               patchId, status.toString(), patch.getAction(), patchFile);
+                                               patch.getId(), status.toString(), patch.getAction(), patchFile);
                                 }
 
-                                createOrUpdatePatchVertex(patch, status, patchesRegistry);
-
-                                LOG.info("{} (status: {}; action: {}) in file: {}", patchId, status.toString(), patch.getAction(), patchFile);
+                                patchRegistry.register(patch.id, patch.description, patch.action, status);
+                                LOG.info("{} (status: {}; action: {}) in file: {}", patch.getId(), status.toString(), patch.getAction(), patchFile);
                             } else {
-                                LOG.info("{} in file: {} already {}. Ignoring.", patchId, patchFile, patchesRegistry.get(patchId).toString());
+                                LOG.info("{} in file: {} already {}. Ignoring.", patch.getId(), patchFile, patchRegistry.getStatus(patch.getId()).toString());
                             }
-
-                            patchIndex++;
                         }
                     } catch (Throwable t) {
                         LOG.error("Failed to apply patches in file {}. Ignored", patchFile, t);
@@ -549,38 +487,6 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 }
             }
         }
-    }
-
-    private boolean isPatchApplicable(String patchId, Map<String, PatchStatus> patchesRegistry) {
-        if (MapUtils.isEmpty(patchesRegistry) || !patchesRegistry.containsKey(patchId)) {
-            return true;
-        }
-
-        PatchStatus status = patchesRegistry.get(patchId);
-
-        if (status == FAILED || status == UNKNOWN) {
-            return true;
-        }
-
-        return false;
-    }
-
-    private void createOrUpdatePatchVertex(TypeDefPatch patch, PatchStatus patchStatus, Map<String, PatchStatus> patchesRegistry) {
-        String      patchId           = patch.getId();
-        boolean     isPatchRegistered = MapUtils.isNotEmpty(patchesRegistry) && patchesRegistry.containsKey(patchId);
-        AtlasVertex patchVertex       = isPatchRegistered ? findByPatchId(patchId) : graph.addVertex();
-
-        setEncodedProperty(patchVertex, PATCH_ID_PROPERTY_KEY, patchId);
-        setEncodedProperty(patchVertex, PATCH_DESCRIPTION_PROPERTY_KEY, patch.getDescription());
-        setEncodedProperty(patchVertex, PATCH_TYPE_PROPERTY_KEY, TYPEDEF_PATCH_TYPE);
-        setEncodedProperty(patchVertex, PATCH_ACTION_PROPERTY_KEY, patch.getAction());
-        setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, patchStatus.toString());
-        setEncodedProperty(patchVertex, TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        setEncodedProperty(patchVertex, CREATED_BY_KEY, AtlasTypeDefGraphStoreV2.getCurrentUser());
-        setEncodedProperty(patchVertex, MODIFIED_BY_KEY, AtlasTypeDefGraphStoreV2.getCurrentUser());
-
-        AtlasGraphProvider.getGraphInstance().commit();
     }
 
     /**

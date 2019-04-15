@@ -28,15 +28,12 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
-import org.apache.atlas.model.patches.AtlasPatch;
-import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
-import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasElement;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
@@ -46,7 +43,6 @@ import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -57,30 +53,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
-import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
-import static org.apache.atlas.repository.Constants.PATCH_ACTION_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.PATCH_ID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.PATCH_DESCRIPTION_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.PATCH_STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.PATCH_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
-import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.*;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
 
 /**
  * Utility methods for Graph.
@@ -163,6 +149,10 @@ public class AtlasGraphUtilsV2 {
         return StringUtils.isNotEmpty(getIdFromVertex(vertex)) && StringUtils.isNotEmpty(getTypeName(vertex));
     }
 
+    public static boolean isTypeVertex(AtlasVertex vertex) {
+        return vertex.getProperty(TYPENAME_PROPERTY_KEY, String.class) != null;
+    }
+
     public static boolean isReference(AtlasType type) {
         return isReference(type.getTypeCategory());
     }
@@ -228,11 +218,12 @@ public class AtlasGraphUtilsV2 {
 
         Object existingValue = element.getProperty(propertyName, Object.class);
 
-        if (value == null) {
+        if (value == null || (value instanceof Collection && ((Collection)value).isEmpty())) {
             if (existingValue != null) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Removing property {} from {}", propertyName, toString(element));
                 }
+
                 element.removeProperty(propertyName);
             }
         } else {
@@ -241,7 +232,7 @@ public class AtlasGraphUtilsV2 {
                     LOG.debug("Setting property {} in {}", propertyName, toString(element));
                 }
 
-                if (value instanceof Date) {
+                if ( value instanceof Date) {
                     Long encodedValue = ((Date) value).getTime();
                     element.setProperty(propertyName, encodedValue);
                 } else {
@@ -339,22 +330,6 @@ public class AtlasGraphUtilsV2 {
         RequestContext.get().endMetricRecord(metric);
 
         return vertex;
-    }
-
-    public static AtlasVertex findByPatchId(String patchId) {
-        AtlasVertex ret        = null;
-        String      indexQuery = getIndexSearchPrefix() + "\"" + PATCH_ID_PROPERTY_KEY + "\" : ("+ patchId +")";
-        Iterator<Result<Object, Object>> results = getGraphInstance().indexQuery(VERTEX_INDEX, indexQuery).vertices();
-
-        while (results != null && results.hasNext()) {
-            ret = results.next().getVertex();
-
-            if (ret != null) {
-                break;
-            }
-        }
-
-        return ret;
     }
 
     public static AtlasVertex findByGuid(String guid) {
@@ -470,78 +445,10 @@ public class AtlasGraphUtilsV2 {
         return vertex;
     }
 
-    public static Map<String, PatchStatus> getPatchesRegistry() {
-        Map<String, PatchStatus> ret     = new HashMap<>();
-        AtlasPatches             patches = getAllPatches();
-
-        for (AtlasPatch patch : patches.getPatches()) {
-            String      patchId     = patch.getId();
-            PatchStatus patchStatus = patch.getStatus();
-
-            if (patchId != null && patchStatus != null) {
-                ret.put(patchId, patchStatus);
-            }
-        }
-
-        return ret;
-    }
-
-    public static AtlasPatches getAllPatches() {
-        List<AtlasPatch>                 ret            = new ArrayList<>();
-        String                           idxQueryString = getIndexSearchPrefix() + "\"" + PATCH_ID_PROPERTY_KEY + "\" : (*)";
-        AtlasIndexQuery                  idxQuery       = AtlasGraphProvider.getGraphInstance().indexQuery(VERTEX_INDEX, idxQueryString);
-        Iterator<Result<Object, Object>> results;
-
-        try {
-            results = idxQuery.vertices();
-
-            while (results != null && results.hasNext()) {
-                AtlasVertex patchVertex = results.next().getVertex();
-                AtlasPatch  patch       = toAtlasPatch(patchVertex);
-
-                ret.add(patch);
-            }
-
-            // Sort the patches based on patch id
-            if (CollectionUtils.isNotEmpty(ret)) {
-                Collections.sort(ret, (p1, p2) -> p1.getId().compareTo(p2.getId()));
-            }
-        } catch (Throwable t) {
-            // first time idx query is fired, returns no field exists in solr exception
-            LOG.warn("getPatches() returned empty result!");
-        }
-
-        getGraphInstance().commit();
-
-        return new AtlasPatches(ret);
-    }
-
     public int getOpenTransactions() {
         Set openTransactions = getGraphInstance().getOpenTransactions();
 
         return (openTransactions != null) ? openTransactions.size() : 0;
-    }
-
-    private static AtlasPatch toAtlasPatch(AtlasVertex vertex) {
-        AtlasPatch ret = new AtlasPatch();
-
-        ret.setId(getEncodedProperty(vertex, PATCH_ID_PROPERTY_KEY, String.class));
-        ret.setDescription(getEncodedProperty(vertex, PATCH_DESCRIPTION_PROPERTY_KEY, String.class));
-        ret.setType(getEncodedProperty(vertex, PATCH_TYPE_PROPERTY_KEY, String.class));
-        ret.setAction(getEncodedProperty(vertex, PATCH_ACTION_PROPERTY_KEY, String.class));
-        ret.setCreatedBy(getEncodedProperty(vertex, CREATED_BY_KEY, String.class));
-        ret.setUpdatedBy(getEncodedProperty(vertex, MODIFIED_BY_KEY, String.class));
-        ret.setCreatedTime(getEncodedProperty(vertex, TIMESTAMP_PROPERTY_KEY, Long.class));
-        ret.setUpdatedTime(getEncodedProperty(vertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class));
-        ret.setStatus(getPatchStatus(vertex));
-
-        return ret;
-    }
-
-    private static PatchStatus getPatchStatus(AtlasVertex vertex) {
-        String patchStatus = AtlasGraphUtilsV2.getEncodedProperty(vertex, PATCH_STATE_PROPERTY_KEY, String.class);
-
-        return patchStatus != null ? PatchStatus.valueOf(patchStatus) : UNKNOWN;
     }
 
     public static List<String> findEntityGUIDsByType(String typename, SortOrder sortOrder) {
@@ -566,20 +473,16 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
-    public static Iterator<Result<Object, Object>> findActiveEntityVerticesByType(String typename) {
-        AtlasIndexQuery indexQuery = getActiveEntityIndexQuery(typename);
-
-        return indexQuery.vertices();
+    public static Iterator<AtlasVertex> findActiveEntityVerticesByType(String typename) {
+        return findActiveEntityVerticesByType(getGraphInstance(), typename);
     }
 
-    private static AtlasIndexQuery getActiveEntityIndexQuery(String typename) {
-        StringBuilder sb = new StringBuilder();
+    public static Iterator<AtlasVertex> findActiveEntityVerticesByType(AtlasGraph graph, String typename) {
+        AtlasGraphQuery query = graph.query()
+                                          .has(ENTITY_TYPE_PROPERTY_KEY, typename)
+                                          .has(STATE_PROPERTY_KEY, Status.ACTIVE.name());
 
-        sb.append(INDEX_SEARCH_PREFIX + "\"").append(TYPE_NAME_PROPERTY_KEY).append("\":").append(typename)
-          .append(" AND ")
-          .append(INDEX_SEARCH_PREFIX + "\"").append(STATE_PROPERTY_KEY).append("\":").append(Status.ACTIVE.name());
-
-        return getGraphInstance().indexQuery(VERTEX_INDEX, sb.toString());
+        return query.vertices().iterator();
     }
 
     public static List<String> findEntityGUIDsByType(String typename) {

@@ -48,7 +48,7 @@ import java.util.concurrent.Future;
  * Kafka specific access point to the Atlas notification framework.
  */
 @Component
-@Order(3)
+@Order(4)
 public class KafkaNotification extends AbstractNotification implements Service {
     public static final Logger LOG = LoggerFactory.getLogger(KafkaNotification.class);
 
