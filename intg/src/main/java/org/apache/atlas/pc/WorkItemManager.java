@@ -33,20 +33,20 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
     private final ExecutorService  service;
     private final List<U>          consumers = new ArrayList<>();
     private CountDownLatch         countdownLatch;
-    private BlockingQueue<Object> resultsQueue;
+    private BlockingQueue<Object>  resultsQueue;
 
     public WorkItemManager(WorkItemBuilder builder, String namePrefix, int batchSize, int numWorkers, boolean collectResults) {
         this.numWorkers = numWorkers;
-        workQueue = new LinkedBlockingQueue<>(batchSize * numWorkers);
-        service   = Executors.newFixedThreadPool(numWorkers,
-                                        new ThreadFactoryBuilder().setNameFormat(namePrefix + "-%d").build());
+        this.workQueue  = new LinkedBlockingQueue<>(batchSize * numWorkers);
+        this.service    = Executors.newFixedThreadPool(numWorkers, new ThreadFactoryBuilder().setNameFormat(namePrefix + "-%d").build());
 
         createConsumers(builder, numWorkers, collectResults);
-        execute();
+
+        start();
     }
 
     public WorkItemManager(WorkItemBuilder builder, int batchSize, int numWorkers) {
-        this(builder, "workItem", batchSize, numWorkers, false);
+        this(builder, "workItemConsumer", batchSize, numWorkers, false);
     }
 
     public void setResultsCollection(BlockingQueue<Object> resultsQueue) {
@@ -60,6 +60,7 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
 
         for (int i = 0; i < numWorkers; i++) {
             U c = (U) builder.build(workQueue);
+
             consumers.add(c);
 
             if (collectResults) {
@@ -68,10 +69,12 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
         }
     }
 
-    private void execute() {
+    public void start() {
         this.countdownLatch = new CountDownLatch(numWorkers);
+
         for (U c : consumers) {
             c.setCountDownLatch(countdownLatch);
+
             service.execute(c);
         }
     }
@@ -85,9 +88,14 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
     }
 
     public void checkProduce(T item) {
-        if (countdownLatch.getCount() == 0) {
-            execute();
+        if (countdownLatch.getCount() < numWorkers) {
+            LOG.info("Fewer workers detected: {}", countdownLatch.getCount());
+
+            drain();
+
+            start();
         }
+
         produce(item);
     }
 

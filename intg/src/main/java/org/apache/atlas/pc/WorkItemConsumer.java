@@ -30,31 +30,35 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class WorkItemConsumer<T> implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(WorkItemConsumer.class);
 
-    private static final int POLLING_DURATION_SECONDS = 5;
+    private static final int POLLING_DURATION_SECONDS  = 30;
     private static final int DEFAULT_COMMIT_TIME_IN_MS = 15000;
 
     private final BlockingQueue<T> queue;
-    private AtomicBoolean isDirty = new AtomicBoolean(false);
-    private AtomicLong maxCommitTimeInMs = new AtomicLong(0);
-    private CountDownLatch countdownLatch;
-    private BlockingQueue<Object> results;
+    private final AtomicBoolean    isDirty           = new AtomicBoolean(false);
+    private final AtomicLong       maxCommitTimeInMs = new AtomicLong(DEFAULT_COMMIT_TIME_IN_MS);
+    private CountDownLatch         countdownLatch;
+    private BlockingQueue<Object>  results;
 
     public WorkItemConsumer(BlockingQueue<T> queue) {
-        this.queue = queue;
+        this.queue          = queue;
+        this.countdownLatch = null;
     }
 
     public void run() {
         try {
             while (!Thread.currentThread().isInterrupted()) {
-
                 T item = queue.poll(POLLING_DURATION_SECONDS, TimeUnit.SECONDS);
 
                 if (item == null) {
+                    LOG.warn("WorkItemConsumer.run(): no more items found in the queue. Will exit after committing");
+
                     commitDirty();
+
                     return;
                 }
 
                 isDirty.set(true);
+
                 processItem(item);
             }
         } catch (InterruptedException e) {
@@ -67,6 +71,7 @@ public abstract class WorkItemConsumer<T> implements Runnable {
 
     public long getMaxCommitTimeInMs() {
         long commitTime = this.maxCommitTimeInMs.get();
+
         return ((commitTime > DEFAULT_COMMIT_TIME_IN_MS) ? commitTime : DEFAULT_COMMIT_TIME_IN_MS);
     }
 
