@@ -20,6 +20,7 @@ define(['require',
     'backbone',
     'hbs!tmpl/site/Statistics_tmpl',
     'hbs!tmpl/site/Statistics_Notification_table_tmpl',
+    'hbs!tmpl/site/entity_tmpl',
     'modules/Modal',
     'models/VCommon',
     'utils/UrlLinks',
@@ -29,7 +30,7 @@ define(['require',
     'moment',
     'utils/Utils',
     'moment-timezone'
-], function(require, Backbone, StatTmpl, StatsNotiTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, moment, Utils) {
+], function(require, Backbone, StatTmpl, StatsNotiTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, moment, Utils) {
     'use strict';
 
     var StatisticsView = Backbone.Marionette.LayoutView.extend(
@@ -41,15 +42,13 @@ define(['require',
             regions: {},
             /** ui selector cache */
             ui: {
-                entityActive: "[data-id='entityActive'] tbody",
-                entityDelete: "[data-id='entityDelete'] tbody",
-                entityActiveHeader: "[data-id='entityActive'] .count",
-                entityDeletedHeader: "[data-id='entityDelete'] .count",
+                entityHeader: "[data-id='entity'] .count",
                 serverCard: "[data-id='server-card']",
                 connectionCard: "[data-id='connection-card']",
                 notificationCard: "[data-id='notification-card']",
                 statsNotificationTable: "[data-id='stats-notification-table']",
-                notificationSmallCard: "[data-id='notification-small-card']"
+                notificationSmallCard: "[data-id='notification-small-card']",
+                entityCard: "[data-id='entity-card']"
             },
             /** ui events hash */
             events: function() {},
@@ -80,25 +79,9 @@ define(['require',
                 entityCountCollection.modelAttrName = "data";
                 entityCountCollection.fetch({
                     success: function(data) {
-                        var data = _.first(data.toJSON()),
-                            no_records = '<tr class="empty text-center"><td colspan="2"><span>No records found!</span></td></tr>',
-                            activeEntityTable = _.isEmpty(data.entity.entityActive) ? no_records : that.getTable({ valueObject: data.entity.entityActive }),
-                            deleteEntityTable = _.isEmpty(data.entity.entityDeleted) ? no_records : that.getTable({ valueObject: data.entity.entityDeleted });
-                        that.renderStats({ valueObject: data.general.stats });
-                        var totalActive = 0,
-                            totalDeleted = 0;
-                        if (data.entity && data.general.entityCount) {
-                            totalActive = data.general.entityCount;
-                        }
-                        if (data.entity && data.entity.entityDeleted) {
-                            _.each(data.entity.entityDeleted, function(val) {
-                                totalDeleted += val;
-                            });
-                        }
-                        that.ui.entityActive.html(activeEntityTable);
-                        that.ui.entityDelete.html(deleteEntityTable);
-                        that.ui.entityActiveHeader.html("&nbsp;(" + _.numberFormatWithComa((totalActive - totalDeleted)) + ")");
-                        that.ui.entityDeletedHeader.html("&nbsp;(" + _.numberFormatWithComa(totalDeleted) + ")");
+                        var data = _.first(data.toJSON());
+                        that.renderStats({ valueObject: data.general.stats, dataObject: data.general });
+                        that.renderEntities({ data: data });
                         that.$('.statsContainer,.statsNotificationContainer').removeClass('hide');
                         that.$('.statsLoader,.statsNotificationLoader').removeClass('show');
                     }
@@ -120,25 +103,78 @@ define(['require',
                 });
                 return stats;
             },
+            renderEntities: function(options) {
+                var that = this,
+                    data = options.data,
+                    entityData = data.entity,
+                    activeEntities = entityData.entityActive || {},
+                    deletedEntities = entityData.entityDeleted || {},
+                    stats = {},
+                    activeEntityCount = 0,
+                    deletedEntityCount = 0,
+                    createEntityData = function(opt) {
+                        var entityData = opt.entityData,
+                            type = opt.type;
+                        _.each(entityData, function(val, key) {
+                            var intVal = _.isUndefined(val) ? 0 : val;
+                            if (stats[key]) {
+                                stats[key][type] = intVal;
+                            } else {
+                                stats[key] = {};
+                                stats[key][type] = intVal;
+                            }
+                            if (type == "active") {
+                                activeEntityCount += intVal;
+                            } else {
+                                deletedEntityCount += intVal;
+                            }
+                        })
+                    };
+
+                createEntityData({
+                    "entityData": activeEntities,
+                    "type": "active"
+                })
+                createEntityData({
+                    "entityData": deletedEntities,
+                    "type": "deleted"
+                });
+                if (!_.isEmpty(stats)) {
+                    that.ui.entityCard.html(
+                        EntityTable({
+                            "data": _.pick(stats, (_.keys(stats).sort())),
+                        })
+                    );
+                    that.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComa(activeEntityCount) + ")");
+                    that.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComa(deletedEntityCount) + ")");
+                    that.ui.entityHeader.html("&nbsp;(" + _.numberFormatWithComa(data.general.entityCount) + ")");
+                }
+            },
             renderStats: function(options) {
                 var that = this,
                     data = this.genrateStatusData(options.valueObject),
+                    generalData = options.dataObject,
                     createTable = function(obj) {
                         var tableBody = '',
                             enums = obj.enums,
-                            data = obj.data,
-                            showConnectionStatus = obj.showConnectionStatus;
+                            data = obj.data;
                         _.each(data, function(value, key, list) {
                             tableBody += '<tr><td>' + key + '</td><td class="">' + that.getValue({
                                 "value": value,
-                                "type": enums[key],
-                                "showConnectionStatus": showConnectionStatus
+                                "type": enums[key]
                             }) + '</td></tr>';
                         });
                         return tableBody;
                     };
                 if (data.Notification) {
-                    var tableCol = [{ label: "Total", key: "total" },
+                    var tableCol = [
+                            {
+                                label: "Total <br> (from " + (that.getValue({
+                                    "value": data.Server["startTimeStamp"],
+                                    "type": Enums.stats.Server["startTimeStamp"],
+                                })) + ")",
+                                key: "total"
+                            },
                             {
                                 label: "Current Hour <br> (from " + (that.getValue({
                                     "value": data.Notification["currentHourStartTime"],
@@ -163,33 +199,45 @@ define(['require',
                             "data": data.Notification,
                             "tableHeader": tableHeader,
                             "tableCol": tableCol,
-                            "getValue": function(argument, args) {
-                                var returnVal = (args == 'count' ? data.Notification[argument.key] : data.Notification[argument.key.concat(args)]);
+                            "getTmplValue": function(argument, args) {
+                                var pickValueFrom = argument.key.concat(args);
+                                if (argument.key == "total" && args == "EntityCreates") {
+                                    pickValueFrom = "totalCreates";
+                                } else if (argument.key == "total" && args == "EntityUpdates") {
+                                    pickValueFrom = "totalUpdates";
+                                } else if (argument.key == "total" && args == "EntityDeletes") {
+                                    pickValueFrom = "totalDeletes";
+                                } else if (args == "count") {
+                                    pickValueFrom = argument.key;
+                                }
+                                var returnVal = data.Notification[pickValueFrom];
                                 return returnVal ? _.numberFormatWithComa(returnVal) : 0;
                             }
                         })
                     );
 
-                    that.ui.notificationSmallCard.html(createTable({
-                        "enums": Enums.stats.Notification,
-                        "data": _.pick(data.Notification, 'lastMessageProcessedTime', 'offsetCurrent', 'offsetStart')
-                    }));
+                    that.ui.notificationSmallCard.html(
+                        createTable({
+                            "enums": Enums.stats.Notification,
+                            "data": _.pick(data.Notification, 'lastMessageProcessedTime', 'offsetCurrent', 'offsetStart')
+                        })
+                    );
                 }
 
                 if (data.Server) {
                     that.ui.serverCard.html(
                         createTable({
-                            "enums": _.extend(Enums.stats.Server, Enums.stats.ConnectionStatus),
-                            "data": _.extend(_.pick(data.Server, 'startTimeStamp', 'activeTimeStamp', 'upTime'), data.ConnectionStatus),
-                            "showConnectionStatus": true
+                            "enums": _.extend(Enums.stats.Server, Enums.stats.ConnectionStatus, Enums.stats.generalData),
+                            "data": _.extend(
+                                _.pick(data.Server, 'startTimeStamp', 'activeTimeStamp', 'upTime', 'statusBackendStore', 'statusIndexStore'),
+                                _.pick(generalData, 'collectionTime'))
                         })
                     );
                 }
             },
             getValue: function(options) {
                 var value = options.value,
-                    type = options.type,
-                    showConnectionStatus = options.showConnectionStatus;
+                    type = options.type;
                 if (type == 'time') {
                     return Utils.millisecondsToTime(value);
                 } else if (type == 'day') {
@@ -198,17 +246,11 @@ define(['require',
                     return _.numberFormatWithComa(value);
                 } else if (type == 'millisecond') {
                     return _.numberFormatWithComa(value) + " millisecond/s";
-                } else if ((showConnectionStatus && (value.indexOf('connected') != -1))) {
-                    return '<span class="connection-status ' + (showConnectionStatus && showConnectionStatus == true ? value : "") + '"></span>';
+                } else if (type == "status-html") {
+                    return '<span class="connection-status ' + value + '"></span>';
                 } else {
                     return value;
                 }
-            },
-            getTable: function(obj) {
-                return CommonViewFunction.propertyTable(_.extend({
-                    scope: this,
-                    formatIntVal: true
-                }, obj))
             }
         });
     return StatisticsView;
