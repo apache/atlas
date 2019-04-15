@@ -24,16 +24,19 @@
         color: $color_jungle_green_approx;
         background: $white;
         border-color: $color_jungle_green_approx;
+
         button {
             color: $color_jungle_green_approx;
             background: $white;
             border: none;
         }
+
         .panel-title {
             font-weight: bold;
             padding-top: 8px;
         }
     }
+
     .nav-tabs {
         >li {
             &.active {
@@ -41,6 +44,7 @@
                     color: $color_jungle_green_approx;
                 }
             }
+
             >a {
                 color: $black;
             }
@@ -51,8 +55,9 @@
 .panel-fullscreen {
     .panel-body {
         //overflow: hidden;
-        height: calc(100% - 46px)!important;
+        height: calc(100% - 46px) !important;
     }
+
     .ui-resizable-handle {
         display: none !important;
     }
@@ -72,9 +77,46 @@
             &>div {
                 position: relative;
             }
+
             &.active {
                 padding: 20px 10px 0px 10px;
                 min-height: 50px;
+            }
+        }
+    }
+}
+
+.panel-fullscreen {
+    position: fixed;
+    height: 100%;
+    top: 0px;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    right: 0;
+    z-index: 999;
+}
+
+.panel.expand_collapse_panel-icon {
+    .panel-heading {
+        .panel-title {
+            display: inline-block;
+        }
+
+        i.ec-icon:before {
+            content: "\f078"
+        }
+
+        &.collapsed,
+        &[aria-expanded="false"] {
+            i.ec-icon:before {
+                content: "\f078"
+            }
+        }
+
+        &[aria-expanded="true"] {
+            i.ec-icon:before {
+                content: "\f077"
             }
         }
     }

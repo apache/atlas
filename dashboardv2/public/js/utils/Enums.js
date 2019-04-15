@@ -137,14 +137,17 @@ define(['require'], function(require) {
     Enums.addOnClassification = ["_CLASSIFIED", "_NOT_CLASSIFIED"];
 
     Enums.stats = {
+        generalData: {
+            "collectionTime": "day"
+        },
         Server: {
             "startTimeStamp": "day",
             "activeTimeStamp": "day",
             "upTime": "none"
         },
         ConnectionStatus: {
-            "backendStore": "none",
-            "indexStore": "none"
+            "statusBackendStore": "status-html",
+            "statusIndexStore": "status-html"
         },
         Notification: {
             "currentDay": "number",

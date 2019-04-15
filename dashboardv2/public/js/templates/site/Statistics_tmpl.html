@@ -15,10 +15,10 @@
  * limitations under the License.
 -->
 <div class="panel-group server-stats-container statsContainer hide" id="accordion">
-    <div class="panel panel-default expand_collapse_panel-icon" data-id="entityActive">
+    <div class="panel panel-default expand_collapse_panel-icon" data-id="entity">
         <div class="panel-heading" data-toggle="collapse" href="#collapse1" aria-expanded="true">
             <h4 class="panel-title">
-                <a>Active Entities <span class="count">(0)</span></a>
+                <a>Entities <span class="count">(0)</span></a>
             </h4>
             <div class="btn-group pull-right">
                 <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
@@ -26,45 +26,18 @@
         </div>
         <div id="collapse1" class="panel-collapse collapse in">
             <div class="panel-body">
-                <table class="table stat-table">
-                    <thead>
-                        <tr>
-                            <th>Entity</th>
-                            <th>Count</th>
-                        </tr>
-                    </thead>
+                <table class="table stat-table entityTable" data-id="entity-card">
                     <tbody>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    <div class="panel panel-default expand_collapse_panel-icon" data-id="entityDelete">
-        <div class="panel-heading" data-toggle="collapse" href="#collapse2">
-            <h4 class="panel-title">
-                <a>Deleted Entities <span class="count">(0)</span></a>
-            </h4>
-            <div class="btn-group pull-right">
-                <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
-            </div>
-        </div>
-        <div id="collapse2" class="panel-collapse collapse">
-            <div class="panel-body">
-                <table class="table stat-table">
-                    <thead>
-                        <tr>
-                            <th>Entity</th>
-                            <th>Count</th>
+                        <tr class="empty text-center">
+                            <td colspan="3"><span>No records found!</span></td>
                         </tr>
-                    </thead>
-                    <tbody>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
     <div class="panel panel-default expand_collapse_panel-icon" data-id="stats">
-        <div class="panel-heading" data-toggle="collapse" href="#collapse3">
+        <div class="panel-heading" data-toggle="collapse" href="#collapse3" aria-expanded="true">
             <h4 class="panel-title">
                 <a>Server Statistics </a>
             </h4>
@@ -72,7 +45,7 @@
                 <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
             </div>
         </div>
-        <div id="collapse3" class="panel-collapse collapse">
+        <div id="collapse3" class="panel-collapse collapse in">
             <div class="panel-body">
                 <div class="col-sm-12">
                     <div class="card-container panel panel-primary">
@@ -99,7 +72,8 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            <hr></hr>
+                            <hr>
+                            </hr>
                             <table data-id="notification-card" class="table stat-table notification-table table-striped ">
                                 <tbody>
                                     <tr class="empty text-center">

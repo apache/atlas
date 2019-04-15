@@ -16,23 +16,26 @@
 -->
 <thead>
     <tr>
-        <th>Period</th>
-        <th>Count</th>
-        <th>Avg Time <span style="text-transform: lowercase;">(ms)</span></th>
-        <th>Creates</th>
-        <th>Updates</th>
-        <th>Deletes</th>
-        <th>Failed</th>
+        <th>Entities</th>
+        <th>Active <span data-id="activeEntity"></span></th>
+        <th>Deleted <span data-id="deletedEntity"></span></th>
     </tr>
 </thead>
 {{#if data}}
 <tbody>
-    {{#each tableCol}}
+    {{#each data}}
     <tr>
-        <td>{{{this.label}}}</td>
-        {{#each ../tableHeader}}
-        <td>{{callmyfunction ../../getTmplValue ../this this}}</td>
-        {{/each }}
+        <td>{{@key}}</td>
+        {{#if this.active}}
+        <td>{{this.active}}</td>
+        {{else}}
+        <td>0</td>
+        {{/if}}
+        {{#if this.deleted}}
+        <td>{{this.deleted}}</td>
+        {{else}}
+        <td>0</td>
+        {{/if}}
     </tr>
     {{/each}}
 </tbody>
