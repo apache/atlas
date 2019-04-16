@@ -117,20 +117,20 @@ define(['require',
                             type = opt.type;
                         _.each(entityData, function(val, key) {
                             var intVal = _.isUndefined(val) ? 0 : val;
+                            if (type == "active") {
+                                activeEntityCount += intVal;
+                            } else {
+                                deletedEntityCount += intVal;
+                            }
+                            intVal = _.numberFormatWithComa(intVal)
                             if (stats[key]) {
                                 stats[key][type] = intVal;
                             } else {
                                 stats[key] = {};
                                 stats[key][type] = intVal;
                             }
-                            if (type == "active") {
-                                activeEntityCount += intVal;
-                            } else {
-                                deletedEntityCount += intVal;
-                            }
                         })
                     };
-
                 createEntityData({
                     "entityData": activeEntities,
                     "type": "active"
@@ -167,8 +167,7 @@ define(['require',
                         return tableBody;
                     };
                 if (data.Notification) {
-                    var tableCol = [
-                            {
+                    var tableCol = [{
                                 label: "Total <br> (from " + (that.getValue({
                                     "value": data.Server["startTimeStamp"],
                                     "type": Enums.stats.Server["startTimeStamp"],
