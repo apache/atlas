@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class WorkItemConsumer<T> implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(WorkItemConsumer.class);
 
-    private static final int POLLING_DURATION_SECONDS  = 30;
+    private static final int POLLING_DURATION_SECONDS  = 5;
     private static final int DEFAULT_COMMIT_TIME_IN_MS = 15000;
 
     private final BlockingQueue<T> queue;
@@ -50,7 +50,7 @@ public abstract class WorkItemConsumer<T> implements Runnable {
                 T item = queue.poll(POLLING_DURATION_SECONDS, TimeUnit.SECONDS);
 
                 if (item == null) {
-                    LOG.warn("WorkItemConsumer.run(): no more items found in the queue. Will exit after committing");
+                    LOG.debug("WorkItemConsumer.run(): no more items found in the queue. Will exit after committing");
 
                     commitDirty();
 

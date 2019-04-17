@@ -76,6 +76,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
+import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
 
 /**
  * Class that handles initial loading of models and patches into typedef store
@@ -475,7 +476,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                                                patch.getId(), status.toString(), patch.getAction(), patchFile);
                                 }
 
-                                patchRegistry.register(patch.id, patch.description, patch.action, status);
+                                patchRegistry.register(patch.id, patch.description, TYPEDEF_PATCH_TYPE, patch.action, status);
                                 LOG.info("{} (status: {}; action: {}) in file: {}", patch.getId(), status.toString(), patch.getAction(), patchFile);
                             } else {
                                 LOG.info("{} in file: {} already {}. Ignoring.", patch.getId(), patchFile, patchRegistry.getStatus(patch.getId()).toString());
@@ -783,7 +784,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
             String           typeName       = patch.getTypeName();
             AtlasBaseTypeDef typeDef        = typeRegistry.getTypeDefByName(typeName);
-            PatchStatus      ret            = null;
+            PatchStatus      ret            = UNKNOWN;
 
             if (typeDef == null) {
                 throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);

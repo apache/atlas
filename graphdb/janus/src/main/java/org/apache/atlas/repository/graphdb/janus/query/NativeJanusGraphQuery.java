@@ -158,6 +158,64 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
     }
 
     @Override
+    public Iterable<Object> vertexIds() {
+        Set<Object>                result = new HashSet<>();
+        Iterable<JanusGraphVertex> it     = query.vertices();
+
+        for (Iterator<? extends Vertex> iter = it.iterator(); iter.hasNext(); ) {
+            result.add(iter.next().id());
+        }
+
+        return result;
+    }
+
+    @Override
+    public Iterable<Object> vertexIds(int limit) {
+        Set<Object>                result = new HashSet<>(limit);
+        Iterable<JanusGraphVertex> it     = query.limit(limit).vertices();
+
+        if (LOG.isDebugEnabled()) {
+            if (query instanceof GraphCentricQueryBuilder) {
+                LOG.debug("NativeJanusGraphQuery.vertices({}): resultSize={}, {}", limit, getCountForDebugLog(it), ((GraphCentricQueryBuilder) query).constructQuery(ElementCategory.VERTEX));
+            } else {
+                LOG.debug("NativeJanusGraphQuery.vertices({}): resultSize={}, {}", limit, getCountForDebugLog(it), query);
+            }
+        }
+
+        for (Iterator<? extends Vertex> iter = it.iterator(); iter.hasNext(); ) {
+            result.add(iter.next().id());
+        }
+
+        return result;
+    }
+
+    @Override
+    public Iterable<Object> vertexIds(int offset, int limit) {
+        Set<Object>                result = new HashSet<>(limit);
+        Iterable<JanusGraphVertex> it     = query.limit(offset + limit).vertices();
+
+        if (LOG.isDebugEnabled()) {
+            if (query instanceof GraphCentricQueryBuilder) {
+                LOG.debug("NativeJanusGraphQuery.vertices({}, {}): resultSize={}, {}", offset, limit, getCountForDebugLog(it), ((GraphCentricQueryBuilder) query).constructQuery(ElementCategory.VERTEX));
+            } else {
+                LOG.debug("NativeJanusGraphQuery.vertices({}, {}): resultSize={}, {}", offset, limit, getCountForDebugLog(it), query);
+            }
+        }
+
+        Iterator<? extends Vertex> iter = it.iterator();
+
+        for (long resultIdx = 0; iter.hasNext() && result.size() < limit; resultIdx++) {
+            if (resultIdx < offset) {
+                continue;
+            }
+
+            result.add(iter.next().id());
+        }
+
+        return result;
+    }
+
+    @Override
     public void in(String propertyName, Collection<? extends Object> values) {
         query.has(propertyName, Contain.IN, values);
 

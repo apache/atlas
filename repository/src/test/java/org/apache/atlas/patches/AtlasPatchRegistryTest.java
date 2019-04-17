@@ -27,6 +27,7 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
+import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.TYPEDEF_PATCH_TYPE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -46,7 +47,7 @@ public class AtlasPatchRegistryTest {
     public void registerPatch() {
         AtlasPatchRegistry registry = new AtlasPatchRegistry(graph);
 
-        registry.register("1", "test patch", "apply", AtlasPatch.PatchStatus.UNKNOWN);
+        registry.register("1", "test patch", TYPEDEF_PATCH_TYPE, "apply", AtlasPatch.PatchStatus.UNKNOWN);
 
         assertPatches(registry, 1);
     }

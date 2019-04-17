@@ -77,6 +77,27 @@ public interface NativeTinkerpopGraphQuery<V, E> {
      */
     Iterable<AtlasVertex<V, E>> vertices(int offset, int limit);
 
+    /**
+     * Executes the graph query.
+     * @return
+     */
+    Iterable<Object> vertexIds();
+
+    /**
+     * Executes graph query
+     * @param limit Max vertices to return
+     * @return
+     */
+    Iterable<Object> vertexIds(int limit);
+
+    /**
+     * Executes graph query
+     * @param offset Starting offset
+     * @param limit Max vertices to return
+     * @return
+     */
+    Iterable<Object> vertexIds(int offset, int limit);
+
 
     /**
      * Adds an in condition to the query.
