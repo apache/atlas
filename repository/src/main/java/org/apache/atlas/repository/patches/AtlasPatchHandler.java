@@ -41,8 +41,8 @@ public abstract class AtlasPatchHandler {
     private void register() {
         PatchStatus patchStatus = getStatus();
 
-        if (patchStatus == UNKNOWN) {
-            patchRegistry.register(patchId, patchDescription, JAVA_PATCH_TYPE, getStatus());
+        if (patchStatus == null || patchStatus == UNKNOWN) {
+            patchRegistry.register(patchId, patchDescription, JAVA_PATCH_TYPE, "apply", UNKNOWN);
         }
     }
 

@@ -237,6 +237,63 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
     }
 
     @Override
+    public Iterable<Object> vertexIds() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Executing: " + queryCondition);
+        }
+
+        // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
+        Set<Object> result = new HashSet<>();
+
+        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+            NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+            for(Object vertexId : andQuery.vertexIds()) {
+                result.add(vertexId);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public Iterable<Object> vertexIds(int limit) {
+        return vertexIds(0, limit);
+    }
+
+    @Override
+    public Iterable<Object> vertexIds(int offset, int limit) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Executing: " + queryCondition);
+        }
+
+        Preconditions.checkArgument(offset >= 0, "Offset must be non-negative");
+        Preconditions.checkArgument(limit >= 0, "Limit must be non-negative");
+
+        // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
+        Set<Object> result = new HashSet<>();
+        long resultIdx = 0;
+        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+            if (result.size() == limit) {
+                break;
+            }
+
+            NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+            for(Object vertexId : andQuery.vertexIds(offset + limit)) {
+                if (resultIdx >= offset) {
+                    result.add(vertexId);
+
+                    if (result.size() == limit) {
+                        break;
+                    }
+                }
+
+                resultIdx++;
+            }
+        }
+
+        return result;
+    }
+
+    @Override
     public AtlasGraphQuery<V, E> has(String propertyKey, QueryOperator operator,
             Object value) {
         queryCondition.andWith(new HasPredicate(propertyKey, operator, value));

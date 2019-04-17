@@ -96,6 +96,27 @@ public interface AtlasGraphQuery<V, E> {
      */
     Iterable<AtlasVertex<V, E>> vertices(int offset, int limit);
 
+    /**
+     * Executes the query and returns IDs of matching vertices.
+     * @return
+     */
+    Iterable<Object> vertexIds();
+
+    /**
+     * Executes the query and returns IDs of the matching vertices from given offset till the max limit
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<Object> vertexIds(int limit);
+
+    /**
+     * Executes the query and returns IDs of the matching vertices from given offset till the max limit
+     * @param offset starting offset
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<Object> vertexIds(int offset, int limit);
+
 
     /**
      * Adds a predicate that the returned vertices must have the specified

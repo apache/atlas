@@ -59,8 +59,16 @@ public class AtlasPatchRegistry {
     private final AtlasGraph               graph;
 
     public AtlasPatchRegistry(AtlasGraph graph) {
+        LOG.info("AtlasPatchRegistry: initializing..");
+
         this.graph              = graph;
         this.patchNameStatusMap = getPatchNameStatusForAllRegistered(graph);
+
+        LOG.info("AtlasPatchRegistry: found {} patches", patchNameStatusMap.size());
+
+        for (Map.Entry<String, PatchStatus> entry : patchNameStatusMap.entrySet()) {
+            LOG.info("AtlasPatchRegistry: patchId={}, status={}", entry.getKey(), entry.getValue());
+        }
     }
 
     public boolean isApplicable(String incomingId, String patchFile, int index) {
@@ -83,8 +91,8 @@ public class AtlasPatchRegistry {
         return patchNameStatusMap.get(id);
     }
 
-    public void register(String patchId, String description, String action, PatchStatus patchStatus) {
-        createOrUpdatePatchVertex(graph, patchId, description, action, patchStatus);
+    public void register(String patchId, String description, String patchType, String action, PatchStatus patchStatus) {
+        createOrUpdatePatchVertex(graph, patchId, description, patchType, action, patchStatus);
     }
 
     public void updateStatus(String patchId, PatchStatus patchStatus) {
@@ -118,14 +126,14 @@ public class AtlasPatchRegistry {
         return getAllPatches(graph);
     }
 
-    private void createOrUpdatePatchVertex(AtlasGraph graph, String patchId,
-                                           String description, String action, PatchStatus patchStatus) {
+    private void createOrUpdatePatchVertex(AtlasGraph graph, String patchId, String description,
+                                           String patchType, String action, PatchStatus patchStatus) {
         boolean     isPatchRegistered = MapUtils.isNotEmpty(patchNameStatusMap) && patchNameStatusMap.containsKey(patchId);
         AtlasVertex patchVertex       = isPatchRegistered ? findByPatchId(patchId) : graph.addVertex();
 
         setEncodedProperty(patchVertex, PATCH_ID_PROPERTY_KEY, patchId);
         setEncodedProperty(patchVertex, PATCH_DESCRIPTION_PROPERTY_KEY, description);
-        setEncodedProperty(patchVertex, PATCH_TYPE_PROPERTY_KEY, TYPEDEF_PATCH_TYPE);
+        setEncodedProperty(patchVertex, PATCH_TYPE_PROPERTY_KEY, patchType);
         setEncodedProperty(patchVertex, PATCH_ACTION_PROPERTY_KEY, action);
         setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, patchStatus.toString());
         setEncodedProperty(patchVertex, TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
