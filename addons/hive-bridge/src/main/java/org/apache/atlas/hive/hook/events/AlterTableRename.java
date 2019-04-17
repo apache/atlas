@@ -29,6 +29,7 @@ import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateR
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Table;
@@ -49,24 +50,48 @@ public class AlterTableRename extends BaseHiveEvent {
 
     @Override
     public List<HookNotification> getNotificationMessages() throws Exception {
-        List<HookNotification> ret = new ArrayList<>();
+        return context.isMetastoreHook() ? getHiveMetastoreMessages() : getHiveMessages();
+    }
 
-        if (CollectionUtils.isEmpty(getHiveContext().getInputs())) {
+    public List<HookNotification> getHiveMetastoreMessages() throws Exception {
+        List<HookNotification> ret      = new ArrayList<>();
+        AlterTableEvent        tblEvent = (AlterTableEvent) context.getMetastoreEvent();
+        Table                  oldTable = toTable(tblEvent.getOldTable());
+        Table                  newTable = toTable(tblEvent.getNewTable());
+
+        if (newTable == null) {
+            LOG.error("AlterTableRename: renamed table not found in outputs list");
+
+            return ret;
+        }
+
+        processTables(oldTable, newTable, ret);
+
+        return ret;
+    }
+
+    public List<HookNotification> getHiveMessages() throws Exception {
+        List<HookNotification> ret = new ArrayList<>();
+        Table oldTable;
+        Table newTable;
+
+        if (CollectionUtils.isEmpty(getInputs())) {
             LOG.error("AlterTableRename: old-table not found in inputs list");
 
             return ret;
         }
 
-        Table oldTable  = getHiveContext().getInputs().iterator().next().getTable();
-        Table newTable = null;
+        oldTable = getInputs().iterator().next().getTable();
+        newTable = null;
 
-        if (CollectionUtils.isNotEmpty(getHiveContext().getOutputs())) {
-            for (WriteEntity entity : getHiveContext().getOutputs()) {
+        if (CollectionUtils.isNotEmpty(getOutputs())) {
+            for (WriteEntity entity : getOutputs()) {
                 if (entity.getType() == Entity.Type.TABLE) {
                     newTable = entity.getTable();
 
                     //Hive sends with both old and new table names in the outputs which is weird. So skipping that with the below check
-                    if (StringUtils.equalsIgnoreCase(newTable.getDbName(), oldTable.getDbName()) && StringUtils.equalsIgnoreCase(newTable.getTableName(), oldTable.getTableName())) {
+                    if (StringUtils.equalsIgnoreCase(newTable.getDbName(), oldTable.getDbName()) &&
+                            StringUtils.equalsIgnoreCase(newTable.getTableName(), oldTable.getTableName())) {
                         newTable = null;
 
                         continue;
@@ -85,11 +110,17 @@ public class AlterTableRename extends BaseHiveEvent {
             return ret;
         }
 
+        processTables(oldTable, newTable, ret);
+
+        return ret;
+    }
+
+    private void processTables(Table oldTable, Table newTable, List<HookNotification> ret) throws Exception {
         AtlasEntityWithExtInfo oldTableEntity     = toTableEntity(oldTable);
         AtlasEntityWithExtInfo renamedTableEntity = toTableEntity(newTable);
 
         if (oldTableEntity == null || renamedTableEntity == null) {
-            return ret;
+            return;
         }
 
         // first update with oldTable info, so that the table will be created if it is not present in Atlas
@@ -110,14 +141,13 @@ public class AlterTableRename extends BaseHiveEvent {
         // set previous name as the alias
         renamedTableEntity.getEntity().setAttribute(ATTRIBUTE_ALIASES, Collections.singletonList(oldTable.getTableName()));
 
-        AtlasObjectId oldTableId = new AtlasObjectId(oldTableEntity.getEntity().getTypeName(), ATTRIBUTE_QUALIFIED_NAME, oldTableEntity.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+        String        oldTableQualifiedName = (String) oldTableEntity.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+        AtlasObjectId oldTableId            = new AtlasObjectId(oldTableEntity.getEntity().getTypeName(), ATTRIBUTE_QUALIFIED_NAME, oldTableQualifiedName);
 
         // update qualifiedName and other attributes (like params - which include lastModifiedTime, lastModifiedBy) of the table
         ret.add(new EntityPartialUpdateRequestV2(getUserName(), oldTableId, renamedTableEntity));
 
-        context.removeFromKnownTable((String) oldTableEntity.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME));
-
-        return ret;
+        context.removeFromKnownTable(oldTableQualifiedName);
     }
 
     private void renameColumns(List<AtlasObjectId> columns, AtlasEntityExtInfo oldEntityExtInfo, String newTableQualifiedName, List<HookNotification> notifications) {

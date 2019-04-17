@@ -72,13 +72,12 @@ public class CreateHiveProcess extends BaseHiveEvent {
         if (!skipProcess()) {
             List<AtlasEntity> inputs         = new ArrayList<>();
             List<AtlasEntity> outputs        = new ArrayList<>();
-            HookContext       hiveContext    = getHiveContext();
             Set<String>       processedNames = new HashSet<>();
 
             ret = new AtlasEntitiesWithExtInfo();
 
-            if (hiveContext.getInputs() != null) {
-                for (ReadEntity input : hiveContext.getInputs()) {
+            if (getInputs() != null) {
+                for (ReadEntity input : getInputs()) {
                     String qualifiedName = getQualifiedName(input);
 
                     if (qualifiedName == null || !processedNames.add(qualifiedName)) {
@@ -97,8 +96,8 @@ public class CreateHiveProcess extends BaseHiveEvent {
                 }
             }
 
-            if (hiveContext.getOutputs() != null) {
-                for (WriteEntity output : hiveContext.getOutputs()) {
+            if (getOutputs() != null) {
+                for (WriteEntity output : getOutputs()) {
                     String qualifiedName = getQualifiedName(output);
 
                     if (qualifiedName == null || !processedNames.add(qualifiedName)) {
@@ -130,7 +129,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
     }
 
     private void processColumnLineage(AtlasEntity hiveProcess, AtlasEntitiesWithExtInfo entities) {
-        LineageInfo lineageInfo = getHiveContext().getLinfo();
+        LineageInfo lineageInfo = getLineageInfo();
 
         if (lineageInfo == null || CollectionUtils.isEmpty(lineageInfo.entrySet())) {
             return;
@@ -235,8 +234,8 @@ public class CreateHiveProcess extends BaseHiveEvent {
 
 
     private boolean skipProcess() {
-        Set<ReadEntity>  inputs  = getHiveContext().getInputs();
-        Set<WriteEntity> outputs = getHiveContext().getOutputs();
+        Set<ReadEntity>  inputs  = getInputs();
+        Set<WriteEntity> outputs = getOutputs();
 
         boolean ret = CollectionUtils.isEmpty(inputs) && CollectionUtils.isEmpty(outputs);
 

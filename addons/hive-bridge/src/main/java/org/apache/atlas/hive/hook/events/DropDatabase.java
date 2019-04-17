@@ -23,11 +23,15 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.hadoop.hive.metastore.events.DropDatabaseEvent;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static org.apache.hadoop.hive.ql.hooks.Entity.Type.DATABASE;
+import static org.apache.hadoop.hive.ql.hooks.Entity.Type.TABLE;
 
 public class DropDatabase extends BaseHiveEvent {
     public DropDatabase(AtlasHiveHookContext context) {
@@ -35,9 +39,9 @@ public class DropDatabase extends BaseHiveEvent {
     }
 
     @Override
-    public List<HookNotification> getNotificationMessages() throws Exception {
+    public List<HookNotification> getNotificationMessages() {
         List<HookNotification> ret      = null;
-        List<AtlasObjectId>    entities = getEntities();
+        List<AtlasObjectId>    entities = context.isMetastoreHook() ? getHiveMetastoreEntities() : getHiveEntities();
 
         if (CollectionUtils.isNotEmpty(entities)) {
             ret = new ArrayList<>(entities.size());
@@ -50,24 +54,37 @@ public class DropDatabase extends BaseHiveEvent {
         return ret;
     }
 
-    public List<AtlasObjectId> getEntities() throws Exception {
+    private List<AtlasObjectId> getHiveMetastoreEntities() {
+        List<AtlasObjectId> ret     = new ArrayList<>();
+        DropDatabaseEvent   dbEvent = (DropDatabaseEvent) context.getMetastoreEvent();
+        String              dbQName = getQualifiedName(dbEvent.getDatabase());
+        AtlasObjectId       dbId    = new AtlasObjectId(HIVE_TYPE_DB, ATTRIBUTE_QUALIFIED_NAME, dbQName);
+
+        context.removeFromKnownDatabase(dbQName);
+
+        ret.add(dbId);
+
+        return ret;
+    }
+
+    private List<AtlasObjectId> getHiveEntities() {
         List<AtlasObjectId> ret = new ArrayList<>();
 
-        for (Entity entity : getHiveContext().getOutputs()) {
-            if (entity.getType() == Entity.Type.DATABASE) {
+        for (Entity entity : getOutputs()) {
+            if (entity.getType() == DATABASE) {
                 String        dbQName = getQualifiedName(entity.getDatabase());
                 AtlasObjectId dbId    = new AtlasObjectId(HIVE_TYPE_DB, ATTRIBUTE_QUALIFIED_NAME, dbQName);
 
                 context.removeFromKnownDatabase(dbQName);
 
                 ret.add(dbId);
-            } else if (entity.getType() == Entity.Type.TABLE) {
+            } else if (entity.getType() == TABLE) {
                 String        tblQName = getQualifiedName(entity.getTable());
-                AtlasObjectId dbId     = new AtlasObjectId(HIVE_TYPE_TABLE, ATTRIBUTE_QUALIFIED_NAME, tblQName);
+                AtlasObjectId tblId    = new AtlasObjectId(HIVE_TYPE_TABLE, ATTRIBUTE_QUALIFIED_NAME, tblQName);
 
                 context.removeFromKnownTable(tblQName);
 
-                ret.add(dbId);
+                ret.add(tblId);
             }
         }
 

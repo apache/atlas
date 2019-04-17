@@ -37,11 +37,10 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Order;
 import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
-import org.apache.hadoop.hive.ql.hooks.Entity;
-import org.apache.hadoop.hive.ql.hooks.HookContext;
+import org.apache.hadoop.hive.metastore.utils.SecurityUtils;
+import org.apache.hadoop.hive.ql.hooks.*;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo.BaseColumnInfo;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo.DependencyKey;
-import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
@@ -328,7 +327,8 @@ public abstract class BaseHiveEvent {
     }
 
     protected AtlasEntity toTableEntity(Table table, AtlasEntityExtInfo entityExtInfo) throws Exception {
-        AtlasEntity dbEntity = toDbEntity(getHive().getDatabase(table.getDbName()));
+        Database    db       = getDatabases(table.getDbName());
+        AtlasEntity dbEntity = toDbEntity(db);
 
         if (entityExtInfo != null) {
             if (dbEntity != null) {
@@ -594,8 +594,7 @@ public abstract class BaseHiveEvent {
 
     protected AtlasEntity getHiveProcessEntity(List<AtlasEntity> inputs, List<AtlasEntity> outputs) throws Exception {
         AtlasEntity ret         = new AtlasEntity(HIVE_TYPE_PROCESS);
-        HookContext hookContext = getHiveContext();
-        String      queryStr    = hookContext.getQueryPlan().getQueryStr();
+        String      queryStr    = getQueryString();
 
         if (queryStr != null) {
             queryStr = queryStr.toLowerCase().trim();
@@ -605,12 +604,12 @@ public abstract class BaseHiveEvent {
         ret.setAttribute(ATTRIBUTE_INPUTS, getObjectIds(inputs));
         ret.setAttribute(ATTRIBUTE_OUTPUTS,  getObjectIds(outputs));
         ret.setAttribute(ATTRIBUTE_NAME, queryStr);
-        ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, hookContext.getOperationName());
-        ret.setAttribute(ATTRIBUTE_START_TIME, hookContext.getQueryPlan().getQueryStartTime());
+        ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, getOperationName());
+        ret.setAttribute(ATTRIBUTE_START_TIME, getQueryStartTime());
         ret.setAttribute(ATTRIBUTE_END_TIME, System.currentTimeMillis());
         ret.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
         ret.setAttribute(ATTRIBUTE_QUERY_TEXT, queryStr);
-        ret.setAttribute(ATTRIBUTE_QUERY_ID, hookContext.getQueryPlan().getQuery().getQueryId());
+        ret.setAttribute(ATTRIBUTE_QUERY_ID, getQueryId());
         ret.setAttribute(ATTRIBUTE_QUERY_PLAN, "Not Supported");
         ret.setAttribute(ATTRIBUTE_RECENT_QUERIES, Collections.singletonList(queryStr));
 
@@ -621,34 +620,86 @@ public abstract class BaseHiveEvent {
         return context.getClusterName();
     }
 
+    protected Database getDatabases(String dbName) throws Exception {
+        return context.isMetastoreHook() ? context.getMetastoreHandler().get_database(dbName) :
+                                           context.getHive().getDatabase(dbName);
+    }
+
     protected Hive getHive() {
         return context.getHive();
     }
 
-    protected HookContext getHiveContext() {
-        return context.getHiveContext();
+    protected Set<ReadEntity> getInputs() {
+        return context != null ? context.getInputs() : Collections.emptySet();
+    }
+
+    protected Set<WriteEntity> getOutputs() {
+        return context != null ? context.getOutputs() : Collections.emptySet();
+    }
+
+    protected LineageInfo getLineageInfo() {
+        return context != null ? context.getLineageInfo() : null;
+    }
+
+    protected String getQueryString() {
+        return isHiveContextValid() ? context.getHiveContext().getQueryPlan().getQueryStr() : null;
+    }
+
+    protected String getOperationName() {
+        return isHiveContextValid() ? context.getHiveContext().getOperationName() : null;
+    }
+
+    protected String getHiveUserName() {
+        return isHiveContextValid() ? context.getHiveContext().getUserName() : null;
+    }
+
+    protected UserGroupInformation getUgi() {
+        return isHiveContextValid() ? context.getHiveContext().getUgi() : null;
+    }
+
+    protected Long getQueryStartTime() {
+        return isHiveContextValid() ? context.getHiveContext().getQueryPlan().getQueryStartTime() : null;
+    }
+
+    protected String getQueryId() {
+        return isHiveContextValid() ? context.getHiveContext().getQueryPlan().getQueryId() : null;
+    }
+
+    private boolean isHiveContextValid() {
+        return context != null && context.getHiveContext() != null;
     }
 
     protected String getUserName() {
-        String ret = getHiveContext().getUserName();
+        String               ret = null;
+        UserGroupInformation ugi = null;
 
-        if (StringUtils.isEmpty(ret)) {
-            UserGroupInformation ugi = getHiveContext().getUgi();
-
-            if (ugi != null) {
-                ret = ugi.getShortUserName();
+        if (context.isMetastoreHook()) {
+            try {
+                ugi = SecurityUtils.getUGI();
+            } catch (Exception e) {
+                //do nothing
             }
+        } else {
+            ret = getHiveUserName();
 
             if (StringUtils.isEmpty(ret)) {
-                try {
-                    ret = UserGroupInformation.getCurrentUser().getShortUserName();
-                } catch (IOException e) {
-                    LOG.warn("Failed for UserGroupInformation.getCurrentUser() ", e);
-                    ret = System.getProperty("user.name");
-                }
+                ugi = getUgi();
             }
         }
 
+        if (ugi != null) {
+            ret = ugi.getShortUserName();
+        }
+
+        if (StringUtils.isEmpty(ret)) {
+            try {
+                ret = UserGroupInformation.getCurrentUser().getShortUserName();
+            } catch (IOException e) {
+                LOG.warn("Failed for UserGroupInformation.getCurrentUser() ", e);
+
+                ret = System.getProperty("user.name");
+            }
+        }
 
         return ret;
     }
@@ -757,7 +808,7 @@ public abstract class BaseHiveEvent {
             operation == HiveOperation.CREATEVIEW ||
             operation == HiveOperation.ALTERVIEW_AS ||
             operation == HiveOperation.ALTERTABLE_LOCATION) {
-            List<? extends Entity> sortedEntities = new ArrayList<>(getHiveContext().getOutputs());
+            List<? extends Entity> sortedEntities = new ArrayList<>(getOutputs());
 
             Collections.sort(sortedEntities, entityComparator);
 
@@ -774,15 +825,23 @@ public abstract class BaseHiveEvent {
             }
         }
 
-        StringBuilder sb = new StringBuilder(getHiveContext().getOperationName());
+        String qualifiedName = null;
+        String operationName = getOperationName();
 
-        boolean ignoreHDFSPaths = ignoreHDFSPathsinProcessQualifiedName();
+        if (operationName != null) {
+            StringBuilder sb = new StringBuilder(operationName);
 
-        addToProcessQualifiedName(sb, getHiveContext().getInputs(), ignoreHDFSPaths);
-        sb.append("->");
-        addToProcessQualifiedName(sb, getHiveContext().getOutputs(), ignoreHDFSPaths);
+            boolean ignoreHDFSPaths = ignoreHDFSPathsinProcessQualifiedName();
 
-        return sb.toString();
+            addToProcessQualifiedName(sb, getInputs(), ignoreHDFSPaths);
+            sb.append("->");
+            addToProcessQualifiedName(sb, getOutputs(), ignoreHDFSPaths);
+
+            qualifiedName = sb.toString();
+        }
+
+
+        return qualifiedName;
     }
 
     protected AtlasEntity toReferencedHBaseTable(Table table, AtlasEntitiesWithExtInfo entities) {
@@ -836,9 +895,9 @@ public abstract class BaseHiveEvent {
         switch (context.getHiveOperation()) {
             case LOAD:
             case IMPORT:
-                return hasPartitionEntity(getHiveContext().getOutputs());
+                return hasPartitionEntity(getOutputs());
             case EXPORT:
-                return hasPartitionEntity(getHiveContext().getInputs());
+                return hasPartitionEntity(getInputs());
             case QUERY:
                 return true;
         }
@@ -1005,5 +1064,9 @@ public abstract class BaseHiveEvent {
         public String getHbaseTableName() {
             return hbaseTableName;
         }
+    }
+
+    public static Table toTable(org.apache.hadoop.hive.metastore.api.Table table) {
+        return new Table(table);
     }
 }
