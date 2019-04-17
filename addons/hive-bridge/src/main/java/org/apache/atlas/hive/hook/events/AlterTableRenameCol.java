@@ -26,6 +26,7 @@ import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,27 +35,53 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AlterTableRenameCol extends AlterTable {
-    private static final Logger LOG = LoggerFactory.getLogger(AlterTableRenameCol.class);
+    private static final Logger      LOG = LoggerFactory.getLogger(AlterTableRenameCol.class);
+    private        final FieldSchema columnOld;
+    private        final FieldSchema columnNew;
 
     public AlterTableRenameCol(AtlasHiveHookContext context) {
+        this(null, null, context);
+    }
+
+    public AlterTableRenameCol(FieldSchema columnOld, FieldSchema columnNew, AtlasHiveHookContext context) {
         super(context);
+
+        this.columnOld = columnOld;
+        this.columnNew = columnNew;
     }
 
     @Override
     public List<HookNotification> getNotificationMessages() throws Exception {
-        if (CollectionUtils.isEmpty(getHiveContext().getInputs())) {
+        return context.isMetastoreHook() ? getHiveMetastoreMessages() : getHiveMessages();
+    }
+
+    public List<HookNotification> getHiveMetastoreMessages() throws Exception {
+        List<HookNotification> baseMsgs = super.getNotificationMessages();
+        List<HookNotification> ret      = new ArrayList<>(baseMsgs);
+        AlterTableEvent        tblEvent = (AlterTableEvent) context.getMetastoreEvent();
+        Table                  oldTable = toTable(tblEvent.getOldTable());
+        Table                  newTable = toTable(tblEvent.getNewTable());
+
+        processColumns(oldTable, newTable, ret);
+
+        return ret;
+    }
+
+    public List<HookNotification> getHiveMessages() throws Exception {
+        List<HookNotification> baseMsgs = super.getNotificationMessages();
+        List<HookNotification> ret      = new ArrayList<>(baseMsgs);
+
+        if (CollectionUtils.isEmpty(getInputs())) {
             LOG.error("AlterTableRenameCol: old-table not found in inputs list");
 
             return null;
         }
 
-        if (CollectionUtils.isEmpty(getHiveContext().getOutputs())) {
+        if (CollectionUtils.isEmpty(getOutputs())) {
             LOG.error("AlterTableRenameCol: new-table not found in outputs list");
 
             return null;
         }
-
-        List<HookNotification> baseMsgs = super.getNotificationMessages();
 
         if (CollectionUtils.isEmpty(baseMsgs)) {
             LOG.debug("Skipped processing of column-rename (on a temporary table?)");
@@ -62,36 +89,25 @@ public class AlterTableRenameCol extends AlterTable {
             return null;
         }
 
-        List<HookNotification> ret      = new ArrayList<>(baseMsgs);
-        Table                  oldTable = getHiveContext().getInputs().iterator().next().getTable();
-        Table                  newTable = getHiveContext().getOutputs().iterator().next().getTable();
+        Table oldTable = getInputs().iterator().next().getTable();
+        Table newTable = getOutputs().iterator().next().getTable();
 
-        newTable = getHive().getTable(newTable.getDbName(), newTable.getTableName());
-
-        List<FieldSchema> oldColumns       = oldTable.getCols();
-        List<FieldSchema> newColumns       = newTable.getCols();
-        FieldSchema       changedColumnOld = null;
-        FieldSchema       changedColumnNew = null;
-
-        for (FieldSchema oldColumn : oldColumns) {
-            if (!newColumns.contains(oldColumn)) {
-                changedColumnOld = oldColumn;
-
-                break;
-            }
+        if (newTable != null) {
+            newTable = getHive().getTable(newTable.getDbName(), newTable.getTableName());
         }
 
-        for (FieldSchema newColumn : newColumns) {
-            if (!oldColumns.contains(newColumn)) {
-                changedColumnNew = newColumn;
+        processColumns(oldTable, newTable, ret);
 
-                break;
-            }
-        }
+        return ret;
+    }
+
+    private void processColumns(Table oldTable, Table newTable, List<HookNotification> ret) {
+        FieldSchema changedColumnOld = (columnOld == null) ? findRenamedColumn(oldTable, newTable) : columnOld;
+        FieldSchema changedColumnNew = (columnNew == null) ? findRenamedColumn(newTable, oldTable) : columnNew;
 
         if (changedColumnOld != null && changedColumnNew != null) {
             AtlasObjectId oldColumnId = new AtlasObjectId(HIVE_TYPE_COLUMN, ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(oldTable, changedColumnOld));
-            AtlasEntity   newColumn   = new AtlasEntity(HIVE_TYPE_COLUMN);
+            AtlasEntity newColumn   = new AtlasEntity(HIVE_TYPE_COLUMN);
 
             newColumn.setAttribute(ATTRIBUTE_NAME, changedColumnNew.getName());
             newColumn.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(newTable, changedColumnNew));
@@ -99,6 +115,20 @@ public class AlterTableRenameCol extends AlterTable {
             ret.add(0, new EntityPartialUpdateRequestV2(getUserName(), oldColumnId, new AtlasEntityWithExtInfo(newColumn)));
         } else {
             LOG.error("AlterTableRenameCol: no renamed column detected");
+        }
+    }
+
+    public static FieldSchema findRenamedColumn(Table inputTable, Table outputTable) {
+        FieldSchema       ret           = null;
+        List<FieldSchema> inputColumns  = inputTable.getCols();
+        List<FieldSchema> outputColumns = outputTable.getCols();
+
+        for (FieldSchema inputColumn : inputColumns) {
+            if (!outputColumns.contains(inputColumn)) {
+                ret = inputColumn;
+
+                break;
+            }
         }
 
         return ret;
