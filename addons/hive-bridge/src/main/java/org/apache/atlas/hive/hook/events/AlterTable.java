@@ -35,7 +35,7 @@ public class AlterTable extends CreateTable {
     @Override
     public List<HookNotification> getNotificationMessages() throws Exception {
         List<HookNotification>   ret      = null;
-        AtlasEntitiesWithExtInfo entities = getEntities();
+        AtlasEntitiesWithExtInfo entities = context.isMetastoreHook() ? getHiveMetastoreEntities() : getHiveEntities();
 
         if (entities != null && CollectionUtils.isNotEmpty(entities.getEntities())) {
             ret = Collections.singletonList(new EntityUpdateRequestV2(getUserName(), entities));

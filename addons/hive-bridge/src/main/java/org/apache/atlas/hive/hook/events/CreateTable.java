@@ -24,13 +24,18 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.hadoop.hive.metastore.TableType;
-import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
+import org.apache.hadoop.hive.metastore.events.CreateTableEvent;
+import org.apache.hadoop.hive.metastore.events.ListenerEvent;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
 
 import java.util.Collections;
 import java.util.List;
+
+import static org.apache.hadoop.hive.metastore.TableType.EXTERNAL_TABLE;
+import static org.apache.hadoop.hive.ql.plan.HiveOperation.*;
 
 public class CreateTable extends BaseHiveEvent {
     private final boolean skipTempTables;
@@ -44,7 +49,7 @@ public class CreateTable extends BaseHiveEvent {
     @Override
     public List<HookNotification> getNotificationMessages() throws Exception {
         List<HookNotification>   ret      = null;
-        AtlasEntitiesWithExtInfo entities = getEntities();
+        AtlasEntitiesWithExtInfo entities = context.isMetastoreHook() ? getHiveMetastoreEntities() : getHiveEntities();
 
         if (entities != null && CollectionUtils.isNotEmpty(entities.getEntities())) {
             ret = Collections.singletonList(new EntityCreateRequestV2(getUserName(), entities));
@@ -53,31 +58,62 @@ public class CreateTable extends BaseHiveEvent {
         return ret;
     }
 
-    public AtlasEntitiesWithExtInfo getEntities() throws Exception {
+    public AtlasEntitiesWithExtInfo getHiveMetastoreEntities() throws Exception {
         AtlasEntitiesWithExtInfo ret   = new AtlasEntitiesWithExtInfo();
-        Database                 db    = null;
+        ListenerEvent            event = context.getMetastoreEvent();
+        HiveOperation            oper  = context.getHiveOperation();
+        Table                    table;
+
+        if (isAlterTable(oper)) {
+            table = toTable(((AlterTableEvent) event).getNewTable());
+        } else {
+            table = toTable(((CreateTableEvent) event).getTable());
+        }
+
+        if (skipTemporaryTable(table)) {
+            table = null;
+        }
+
+        processTable(table, ret);
+
+        addProcessedEntities(ret);
+
+        return ret;
+    }
+
+    public AtlasEntitiesWithExtInfo getHiveEntities() throws Exception {
+        AtlasEntitiesWithExtInfo ret   = new AtlasEntitiesWithExtInfo();
         Table                    table = null;
 
-        for (Entity entity : getHiveContext().getOutputs()) {
-            if (entity.getType() == Entity.Type.TABLE) {
-                table = entity.getTable();
-
-                if (table != null) {
-                    db    = getHive().getDatabase(table.getDbName());
-                    table = getHive().getTable(table.getDbName(), table.getTableName());
+        if (CollectionUtils.isNotEmpty(getOutputs())) {
+            for (Entity entity : getOutputs()) {
+                if (entity.getType() == Entity.Type.TABLE) {
+                    table = entity.getTable();
 
                     if (table != null) {
-                        // If its an external table, even though the temp table skip flag is on, we create the table since we need the HDFS path to temp table lineage.
-                        if (skipTempTables && table.isTemporary() && !TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
-                            table = null;
-                        } else {
-                            break;
+                        table = getHive().getTable(table.getDbName(), table.getTableName());
+
+                        if (table != null) {
+                            if (skipTemporaryTable(table)) {
+                                table = null;
+                            } else {
+                                break;
+                            }
                         }
                     }
                 }
             }
         }
 
+        processTable(table, ret);
+
+        addProcessedEntities(ret);
+
+        return ret;
+    }
+
+    // create process entities for lineages from HBase/HDFS to hive table
+    private void processTable(Table table, AtlasEntitiesWithExtInfo ret) throws Exception {
         if (table != null) {
             AtlasEntity tblEntity = toTableEntity(table, ret);
 
@@ -89,7 +125,7 @@ public class CreateTable extends BaseHiveEvent {
                     if (hbaseTableEntity != null) {
                         final AtlasEntity processEntity;
 
-                        if (TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
+                        if (EXTERNAL_TABLE.equals(table.getTableType())) {
                             processEntity = getHiveProcessEntity(Collections.singletonList(hbaseTableEntity), Collections.singletonList(tblEntity));
                         } else {
                             processEntity = getHiveProcessEntity(Collections.singletonList(tblEntity), Collections.singletonList(hbaseTableEntity));
@@ -98,7 +134,7 @@ public class CreateTable extends BaseHiveEvent {
                         ret.addEntity(processEntity);
                     }
                 } else {
-                    if (TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
+                    if (EXTERNAL_TABLE.equals(table.getTableType())) {
                         AtlasEntity hdfsPathEntity = getPathEntity(table.getDataLocation(), ret);
                         AtlasEntity processEntity  = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity), Collections.singletonList(tblEntity));
 
@@ -108,9 +144,14 @@ public class CreateTable extends BaseHiveEvent {
                 }
             }
         }
+    }
 
-        addProcessedEntities(ret);
+    private static boolean isAlterTable(HiveOperation oper) {
+        return (oper == ALTERTABLE_PROPERTIES || oper == ALTERTABLE_RENAME || oper == ALTERTABLE_RENAMECOL);
+    }
 
-        return ret;
+    private boolean skipTemporaryTable(Table table) {
+        // If its an external table, even though the temp table skip flag is on, we create the table since we need the HDFS path to temp table lineage.
+        return table != null && skipTempTables && table.isTemporary() && !EXTERNAL_TABLE.equals(table.getTableType());
     }
 }

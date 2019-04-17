@@ -19,21 +19,25 @@
 package org.apache.atlas.hive.hook;
 
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.hive.hook.HiveMetastoreHookImpl.HiveMetastoreHook;
 import org.apache.atlas.hive.hook.HiveHook.PreprocessAction;
 import org.apache.atlas.hive.hook.HiveHook.HiveHookObjectNamesCache;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.hadoop.hive.metastore.IHMSHandler;
 import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.events.*;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
+import org.apache.hadoop.hive.ql.hooks.LineageInfo;
+import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+
+import static org.apache.atlas.hive.hook.events.BaseHiveEvent.toTable;
 
 
 public class AtlasHiveHookContext {
@@ -41,6 +45,8 @@ public class AtlasHiveHookContext {
     public static final char   QNAME_SEP_ENTITY_NAME  = '.';
     public static final char   QNAME_SEP_PROCESS      = ':';
     public static final String TEMP_TABLE_PREFIX      = "_temp-";
+    public static final String CREATE_OPERATION       = "CREATE";
+    public static final String ALTER_OPERATION        = "ALTER";
 
     private final HiveHook                 hook;
     private final HiveOperation            hiveOperation;
@@ -48,15 +54,56 @@ public class AtlasHiveHookContext {
     private final Hive                     hive;
     private final Map<String, AtlasEntity> qNameEntityMap = new HashMap<>();
     private final HiveHookObjectNamesCache knownObjects;
+    private final HiveMetastoreHook        metastoreHook;
+    private final ListenerEvent            metastoreEvent;
+    private final IHMSHandler              metastoreHandler;
 
-    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext, HiveHookObjectNamesCache knownObjects) throws Exception {
-        this.hook          = hook;
-        this.hiveOperation = hiveOperation;
-        this.hiveContext   = hiveContext;
-        this.hive          = Hive.get(hiveContext.getConf());
-        this.knownObjects  = knownObjects;
+    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext,
+                                HiveHookObjectNamesCache knownObjects) throws Exception {
+        this(hook, hiveOperation, hiveContext, knownObjects, null, null);
+    }
+
+    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HiveHookObjectNamesCache knownObjects,
+                                HiveMetastoreHook metastoreHook, ListenerEvent listenerEvent) throws Exception {
+        this(hook, hiveOperation, null, knownObjects, metastoreHook, listenerEvent);
+    }
+
+    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext, HiveHookObjectNamesCache knownObjects,
+                                HiveMetastoreHook metastoreHook, ListenerEvent listenerEvent) throws Exception {
+        this.hook             = hook;
+        this.hiveOperation    = hiveOperation;
+        this.hiveContext      = hiveContext;
+        this.hive             = hiveContext != null ? Hive.get(hiveContext.getConf()) : null;
+        this.knownObjects     = knownObjects;
+        this.metastoreHook    = metastoreHook;
+        this.metastoreEvent   = listenerEvent;
+        this.metastoreHandler = (listenerEvent != null) ? metastoreEvent.getIHMSHandler() : null;
 
         init();
+    }
+
+    public boolean isMetastoreHook() {
+        return metastoreHook != null;
+    }
+
+    public ListenerEvent getMetastoreEvent() {
+        return metastoreEvent;
+    }
+
+    public IHMSHandler getMetastoreHandler() {
+        return metastoreHandler;
+    }
+
+    public Set<ReadEntity> getInputs() {
+        return hiveContext != null ? hiveContext.getInputs() : Collections.emptySet();
+    }
+
+    public Set<WriteEntity> getOutputs() {
+        return hiveContext != null ? hiveContext.getOutputs() : Collections.emptySet();
+    }
+
+    public LineageInfo getLineageInfo() {
+        return hiveContext != null ? hiveContext.getLinfo() : null;
     }
 
     public HookContext getHiveContext() {
@@ -147,24 +194,59 @@ public class AtlasHiveHookContext {
     }
 
     private void init() {
-        if (knownObjects != null) {
-            String operationName = hiveContext.getOperationName();
+        String operation = hiveOperation.getOperationName();
 
-            if (operationName != null && operationName.startsWith("CREATE") || operationName.startsWith("ALTER")) {
-                if (CollectionUtils.isNotEmpty(hiveContext.getOutputs())) {
-                    for (WriteEntity output : hiveContext.getOutputs()) {
-                        switch (output.getType()) {
-                            case DATABASE:
-                                knownObjects.removeFromKnownDatabase(getQualifiedName(output.getDatabase()));
-                                break;
+        if (knownObjects == null || !isCreateAlterOperation(operation)) {
+            return;
+        }
 
-                            case TABLE:
-                                knownObjects.removeFromKnownTable(getQualifiedName(output.getTable()));
-                                break;
-                        }
+        List<Database> databases = new ArrayList<>();
+        List<Table>    tables    = new ArrayList<>();
+
+        if (isMetastoreHook()) {
+            switch (hiveOperation) {
+                case CREATEDATABASE:
+                    databases.add(((CreateDatabaseEvent) metastoreEvent).getDatabase());
+                    break;
+                case ALTERDATABASE:
+                    databases.add(((AlterDatabaseEvent) metastoreEvent).getOldDatabase());
+                    databases.add(((AlterDatabaseEvent) metastoreEvent).getNewDatabase());
+                    break;
+                case CREATETABLE:
+                    tables.add(toTable(((CreateTableEvent) metastoreEvent).getTable()));
+                    break;
+                case ALTERTABLE_PROPERTIES:
+                case ALTERTABLE_RENAME:
+                case ALTERTABLE_RENAMECOL:
+                    tables.add(toTable(((AlterTableEvent) metastoreEvent).getOldTable()));
+                    tables.add(toTable(((AlterTableEvent) metastoreEvent).getNewTable()));
+                    break;
+            }
+        } else {
+            if (getOutputs() != null) {
+                for (WriteEntity output : hiveContext.getOutputs()) {
+                    switch (output.getType()) {
+                        case DATABASE:
+                            databases.add(output.getDatabase());
+                            break;
+                        case TABLE:
+                            tables.add(output.getTable());
+                            break;
                     }
                 }
             }
         }
+
+        for (Database database : databases) {
+            knownObjects.removeFromKnownDatabase(getQualifiedName(database));
+        }
+
+        for (Table table : tables) {
+            knownObjects.removeFromKnownTable(getQualifiedName(table));
+        }
+    }
+
+    private static boolean isCreateAlterOperation(String operationName) {
+        return operationName != null && operationName.startsWith(CREATE_OPERATION) || operationName.startsWith(ALTER_OPERATION);
     }
 }
