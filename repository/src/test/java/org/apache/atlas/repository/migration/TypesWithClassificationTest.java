@@ -39,7 +39,7 @@ public class TypesWithClassificationTest extends MigrationBaseAsserts {
 
     @Test
     public void verify() throws IOException, AtlasBaseException {
-        int EXPECTED_TOTAL_COUNT = 63;
+        int EXPECTED_TOTAL_COUNT = 62;
         String ENTITY_TYPE = "ComplexTraitType";
         String LEGACY_TYPE_TRAIT = "legacy_traitprayivofx4";
         String LEGACY_TYPE_VENDOR_PII = "legacy_VENDOR_PII";
