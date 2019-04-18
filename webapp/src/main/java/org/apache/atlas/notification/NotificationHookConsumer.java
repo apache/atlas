@@ -46,6 +46,8 @@ import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
+import org.apache.atlas.util.AtlasMetricsCounter;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.LruCache;
 import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.atlas.util.AtlasMetricsUtil.NotificationStat;
@@ -78,6 +80,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -160,6 +163,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final NotificationInterface         notificationInterface;
     private final Configuration                 applicationProperties;
     private       ExecutorService               executors;
+    private       Instant                       nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(Instant.now());
 
     @VisibleForTesting
     final int consumerRetryInterval;
@@ -711,6 +715,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     auditLog.setTimeTaken(stats.timeTakenMs);
 
                     AuditFilter.audit(auditLog);
+                }
+
+                Instant now = Instant.now();
+
+                if (now.isAfter(nextStatsLogTime)) {
+                    LOG.info("STATS: {}", AtlasJson.toJson(metricsUtil.getStats()));
+
+                    nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(now);
                 }
             }
         }

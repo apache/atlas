@@ -105,43 +105,50 @@ public class AtlasMetricsCounter {
         updateForTime(clock.instant());
     }
 
-    protected void updateForTime(Instant instant) {
-        if (instant.isAfter(dayEndTime)) {
-            rolloverDay(instant);
-            rolloverHour(instant);
-        } else if (instant.isAfter(hourEndTime)) {
-            rolloverHour(instant);
+    protected void updateForTime(Instant now) {
+        Instant dayEndTime  = this.dayEndTime;
+        Instant hourEndTime = this.hourEndTime;
+
+        if (now.isAfter(dayEndTime)) {
+            rolloverDay(dayEndTime, now);
+            rolloverHour(hourEndTime, now);
+        } else if (now.isAfter(hourEndTime)) {
+            rolloverHour(hourEndTime, now);
         }
     }
 
-    protected void rolloverDay(Instant instant) {
-        Instant dayStartTime = getDayStartTime(instant);
+    protected synchronized void rolloverDay(Instant fromDayEndTime, Instant now) {
+        if (fromDayEndTime == dayEndTime) { // only if rollover was not done already
+            Instant dayStartTime = getDayStartTime(now);
 
-        if (dayStartTime.equals(dayEndTime)) {
-            stats.copy(CURR_DAY, PREV_DAY);
-        } else {
-            stats.reset(PREV_DAY);
+            if (dayStartTime.equals(dayEndTime)) {
+                stats.copy(CURR_DAY, PREV_DAY);
+            } else {
+                stats.reset(PREV_DAY);
+            }
+
+            stats.reset(CURR_DAY);
+
+            this.dayStartTime = dayStartTime;
+            this.dayEndTime   = getNextDayStartTime(now);
         }
-
-        stats.reset(CURR_DAY);
-
-        this.dayStartTime = dayStartTime;
-        this.dayEndTime   = getNextDayStartTime(instant);
     }
 
-    protected void rolloverHour(Instant instant) {
-        Instant hourStartTime = getHourStartTime(instant);
+    protected synchronized void rolloverHour(Instant fromHourEndTime, Instant now) {
+        if (fromHourEndTime == hourEndTime) { // only if rollover was not done already
+            Instant hourStartTime = getHourStartTime(now);
 
-        if (hourStartTime.equals(hourEndTime)) {
-            stats.copy(CURR_HOUR, PREV_HOUR);
-        } else {
-            stats.reset(PREV_HOUR);
+            if (hourStartTime.equals(hourEndTime)) {
+                stats.copy(CURR_HOUR, PREV_HOUR);
+            } else {
+                stats.reset(PREV_HOUR);
+            }
+
+            stats.reset(CURR_HOUR);
+
+            this.hourStartTime = hourStartTime;
+            this.hourEndTime   = getNextHourStartTime(now);
         }
-
-        stats.reset(CURR_HOUR);
-
-        this.hourStartTime = hourStartTime;
-        this.hourEndTime   = getNextHourStartTime(instant);
     }
 
     public static LocalDateTime getLocalDateTime(Instant instant) {
