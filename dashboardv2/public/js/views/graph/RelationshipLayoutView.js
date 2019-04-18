@@ -49,7 +49,8 @@ define(['require',
                 relationshipSVG: "[data-id='relationshipSVG']",
                 relationshipDetailValue: "[data-id='relationshipDetailValue']",
                 zoomControl: "[data-id='zoomControl']",
-                boxClose: '[data-id="box-close"]'
+                boxClose: '[data-id="box-close"]',
+                noValueToggle: "[data-id='noValueToggle']"
             },
 
             /** ui events hash */
@@ -62,6 +63,12 @@ define(['require',
                 events["click " + this.ui.boxClose] = 'toggleBoxPanel';
                 events["change " + this.ui.relationshipViewToggle] = function(e) {
                     this.relationshipViewToggle(e.currentTarget.checked)
+                };
+                events["click " + this.ui.noValueToggle] = function(e) {
+                    Utils.togglePropertyRelationshipTableEmptyValues({
+                        "inputType": this.ui.noValueToggle,
+                        "tableEl": this.ui.relationshipDetailValue
+                    });
                 };
                 return events;
             },
@@ -463,6 +470,10 @@ define(['require',
                 this.entityModel = new VEntity({});
                 var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.relationshipAttributes, attributeDefs: this.attributeDefs });
                 this.ui.relationshipDetailValue.html(table);
+                Utils.togglePropertyRelationshipTableEmptyValues({
+                    "inputType": this.ui.noValueToggle,
+                    "tableEl": this.ui.relationshipDetailValue
+                });
             },
             relationshipViewToggle: function(checked) {
                 this.ui.relationshipDetailTable.toggleClass('visible invisible');

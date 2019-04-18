@@ -20,8 +20,9 @@ define(['require',
     'backbone',
     'hbs!tmpl/entity/EntityDetailTableLayoutView_tmpl',
     'utils/CommonViewFunction',
-    'models/VEntity'
-], function(require, Backbone, EntityDetailTableLayoutView_tmpl, CommonViewFunction, VEntity) {
+    'models/VEntity',
+    'utils/Utils'
+], function(require, Backbone, EntityDetailTableLayoutView_tmpl, CommonViewFunction, VEntity, Utils) {
     'use strict';
 
     var EntityDetailTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -37,10 +38,17 @@ define(['require',
             /** ui selector cache */
             ui: {
                 detailValue: "[data-id='detailValue']",
+                noValueToggle: "[data-id='noValueToggle']"
             },
             /** ui events hash */
             events: function() {
                 var events = {};
+                events["click " + this.ui.noValueToggle] = function() {
+                    Utils.togglePropertyRelationshipTableEmptyValues({
+                        "inputType": this.ui.noValueToggle,
+                        "tableEl": this.ui.detailValue
+                    });
+                };
                 return events;
             },
             /**
@@ -58,6 +66,10 @@ define(['require',
             entityTableGenerate: function() {
                 var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.attributes, attributeDefs: this.attributeDefs });
                 this.ui.detailValue.append(table);
+                Utils.togglePropertyRelationshipTableEmptyValues({
+                    "inputType": this.ui.noValueToggle,
+                    "tableEl": this.ui.detailValue
+                });
             }
         });
     return EntityDetailTableLayoutView;

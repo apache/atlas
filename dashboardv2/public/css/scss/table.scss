@@ -42,3 +42,29 @@ tr.empty {
     position: absolute;
     right: 0px;
 }
+
+.entity-detail-table,
+.relationship-detail-table {
+    position: relative;
+
+    .hide-empty-value {
+        .hide-row {
+            display: none;
+        }
+    }
+
+    .entity-relationship-table-toggle,
+    .entity-detail-table-toggle {
+        position: absolute;
+        right: 0;
+        top: 18px;
+    }
+
+    table {
+
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 20%;
+        }
+    }
+}
