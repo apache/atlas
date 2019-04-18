@@ -254,7 +254,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 val = _.escape(keyValue);
             }
             if (isTable) {
-                var htmlTag = '<div class="scroll-y">' + getValue(val) + '</div>';
+                var value = getValue(val),
+                    appendClass = (value == "N/A" ? "hide-row" : ""),
+                    htmlTag = '<div class="scroll-y">' + value + '</div>';
                 if (_.isObject(valueObject[key]) && !_.isEmpty(valueObject[key])) {
                     var matchedLinkString = val.match(/href|value-loader\w*/g),
                         matchedJson = val.match(/json-value|json-string\w*/g),
@@ -266,7 +268,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         htmlTag = '<pre class="shrink code-block ' + (isMatchJSONStringIsSingle ? 'fixed-height' : '') + '">' + expandCollapseButton + '<code>' + val + '</code></pre>';
                     }
                 }
-                table += '<tr><td>' + (_.escape(key) + listCount) + '</td><td>' + htmlTag + '</td></tr>';
+                table += '<tr class="' + appendClass + '"><td>' + (_.escape(key) + listCount) + '</td><td>' + htmlTag + '</td></tr>';
             } else {
                 table += '<div>' + val + '</div>';
             }

@@ -828,5 +828,15 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
 
         return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
     }
+    Utils.togglePropertyRelationshipTableEmptyValues = function(object) {
+        var inputSelector = object.inputType,
+            tableEl = object.tableEl;
+        if (inputSelector.prop('checked') == true) {
+            tableEl.removeClass('hide-empty-value');
+        } else {
+            tableEl.addClass('hide-empty-value');
+        }
+
+    }
     return Utils;
 });
