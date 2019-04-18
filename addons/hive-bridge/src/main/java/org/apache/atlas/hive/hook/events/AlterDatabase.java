@@ -19,22 +19,15 @@
 package org.apache.atlas.hive.hook.events;
 
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.hadoop.hive.metastore.api.Database;
-import org.apache.hadoop.hive.metastore.events.AlterDatabaseEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
 
 public class AlterDatabase extends CreateDatabase {
-    private static final Logger LOG = LoggerFactory.getLogger(AlterDatabase.class);
-
     public AlterDatabase(AtlasHiveHookContext context) {
         super(context);
     }
@@ -42,35 +35,12 @@ public class AlterDatabase extends CreateDatabase {
     @Override
     public List<HookNotification> getNotificationMessages() throws Exception {
         List<HookNotification>   ret      = null;
-        AtlasEntitiesWithExtInfo entities = context.isMetastoreHook() ? getHiveMetastoreEntities() : getHiveEntities();
+        AtlasEntitiesWithExtInfo entities = getEntities();
 
         if (entities != null && CollectionUtils.isNotEmpty(entities.getEntities())) {
             ret = Collections.singletonList(new EntityUpdateRequestV2(getUserName(), entities));
         }
 
         return ret;
-    }
-
-    public AtlasEntitiesWithExtInfo getHiveMetastoreEntities() throws Exception {
-        AtlasEntitiesWithExtInfo ret     = new AtlasEntitiesWithExtInfo();
-        AlterDatabaseEvent       dbEvent = (AlterDatabaseEvent) context.getMetastoreEvent();
-        Database                 oldDb   = dbEvent.getOldDatabase();
-        Database                 newDb   = dbEvent.getNewDatabase();
-
-        if (newDb != null) {
-            AtlasEntity dbEntity = toDbEntity(newDb);
-
-            ret.addEntity(dbEntity);
-        } else {
-            LOG.error("AlterDatabase.getEntities(): failed to retrieve db");
-        }
-
-        addProcessedEntities(ret);
-
-        return ret;
-    }
-
-    public AtlasEntitiesWithExtInfo getHiveEntities() throws Exception {
-        return super.getHiveEntities();
     }
 }
