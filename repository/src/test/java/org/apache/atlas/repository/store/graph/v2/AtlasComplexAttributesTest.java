@@ -53,8 +53,8 @@ import static org.apache.atlas.TestUtilsV2.ENTITY_TYPE_WITH_SIMPLE_ATTR;
 import static org.apache.atlas.TestUtilsV2.NAME;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
-import static org.testng.AssertJUnit.assertEquals;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
@@ -218,7 +218,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
 
         assertNull(updatedSimpleEntity.getAttribute("stringAtrr"));
         assertEquals(updatedSimpleEntity.getAttribute("mapOfStrings"), Collections.emptyMap());
-        assertEquals(updatedSimpleEntity.getAttribute("arrayOfStrings"), Collections.emptyList());
+        assertNull(updatedSimpleEntity.getAttribute("arrayOfStrings"));
 
         updatedSimpleEntity.setAttribute("stringAtrr", "");
         updatedSimpleEntity.setAttribute("mapOfStrings", null);
