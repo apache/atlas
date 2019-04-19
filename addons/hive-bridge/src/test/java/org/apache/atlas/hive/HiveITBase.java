@@ -82,7 +82,7 @@ public class HiveITBase {
     protected static final String DGI_URL      = "http://localhost:21000/";
     protected static final String CLUSTER_NAME = "primary";
     protected static final String PART_FILE    = "2015-01-01";
-    protected static final String INPUTS       = "inputs";;
+    protected static final String INPUTS       = "inputs";
     protected static final String OUTPUTS      = "outputs";
 
 
