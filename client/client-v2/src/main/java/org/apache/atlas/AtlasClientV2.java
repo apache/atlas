@@ -28,6 +28,7 @@ import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
@@ -436,8 +437,16 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.FACETED_SEARCH, AtlasSearchResult.class, searchParameters);
     }
 
-    public AtlasRelationship getRelationshipByGuid(String guid) throws AtlasServiceException {
-        return callAPI(API_V2.GET_RELATIONSHIP_BY_GUID, AtlasRelationship.class, null, guid);
+    public AtlasRelationshipWithExtInfo getRelationshipByGuid(String guid) throws AtlasServiceException {
+        return callAPI(API_V2.GET_RELATIONSHIP_BY_GUID, AtlasRelationshipWithExtInfo.class, null, guid);
+    }
+
+    public AtlasRelationshipWithExtInfo getRelationshipByGuid(String guid, boolean extendedInfo) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+
+        queryParams.add("extendedInfo", String.valueOf(extendedInfo));
+
+        return callAPI(API_V2.GET_RELATIONSHIP_BY_GUID, AtlasRelationshipWithExtInfo.class, queryParams, guid);
     }
 
     public void deleteRelationshipByGuid(String guid) throws AtlasServiceException {
