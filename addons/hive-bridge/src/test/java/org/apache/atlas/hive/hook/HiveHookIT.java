@@ -1388,7 +1388,7 @@ public class HiveHookIT extends HiveITBase {
         String testPath  = createTestDFSPath("testBaseDir");
         String query     = "alter table " + tableName + " set location '" + testPath + "'";
 
-        runCommand(query);
+        runCommandWithDelay(query, 5000);
 
         assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
             @Override
