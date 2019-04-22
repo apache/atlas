@@ -103,6 +103,7 @@ public class HiveMetaStoreBridge {
 
     public static void main(String[] args) {
         int exitCode = EXIT_CODE_FAILED;
+        AtlasClientV2 atlasClientV2 = null;
 
         try {
             Options options = new Options();
@@ -123,7 +124,6 @@ public class HiveMetaStoreBridge {
                 atlasEndpoint = new String[] { DEFAULT_ATLAS_URL };
             }
 
-            final AtlasClientV2 atlasClientV2;
 
             if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
                 String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
@@ -174,6 +174,10 @@ public class HiveMetaStoreBridge {
             printUsage();
         } catch(Exception e) {
             LOG.error("Import failed", e);
+        } finally {
+            if( atlasClientV2 !=null) {
+                atlasClientV2.close();
+            }
         }
 
         System.exit(exitCode);

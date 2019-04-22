@@ -57,9 +57,10 @@ public class SecureClientUtils {
 
     public final static int DEFAULT_SOCKET_TIMEOUT_IN_MSECS = 1 * 60 * 1000; // 1 minute
     private static final Logger LOG = LoggerFactory.getLogger(SecureClientUtils.class);
+    private SSLFactory factory = null;
 
 
-    public static URLConnectionClientHandler getClientConnectionHandler(DefaultClientConfig config,
+    public  URLConnectionClientHandler getClientConnectionHandler(DefaultClientConfig config,
             org.apache.commons.configuration.Configuration clientConfig, String doAsUser,
             final UserGroupInformation ugi) {
         config.getProperties().put(URLConnectionClientHandler.PROPERTY_HTTP_URL_CONNECTION_SET_METHOD_WORKAROUND, true);
@@ -125,7 +126,7 @@ public class SecureClientUtils {
         }
     };
 
-    private static ConnectionConfigurator newConnConfigurator(Configuration conf) {
+    private  ConnectionConfigurator newConnConfigurator(Configuration conf) {
         try {
             return newSslConnConfigurator(DEFAULT_SOCKET_TIMEOUT_IN_MSECS, conf);
         } catch (Exception e) {
@@ -134,14 +135,12 @@ public class SecureClientUtils {
         }
     }
 
-    private static ConnectionConfigurator newSslConnConfigurator(final int timeout, Configuration conf)
+    private  ConnectionConfigurator newSslConnConfigurator(final int timeout, Configuration conf)
     throws IOException, GeneralSecurityException {
-        final SSLFactory factory;
         final SSLSocketFactory sf;
         final HostnameVerifier hv;
 
-        factory = new SSLFactory(SSLFactory.Mode.CLIENT, conf);
-        factory.init();
+        factory = getSSLFactory(conf);
         sf = factory.createSSLSocketFactory();
         hv = factory.getHostnameVerifier();
 
@@ -158,6 +157,22 @@ public class SecureClientUtils {
             }
         };
     }
+
+    public SSLFactory getSSLFactory(Configuration conf) throws IOException, GeneralSecurityException {
+        if (factory == null) {
+            factory = new SSLFactory(SSLFactory.Mode.CLIENT, conf);
+            factory.init();
+        }
+        return factory;
+    }
+
+    public void destroyFactory() {
+        if (factory != null) {
+            factory.destroy();
+            factory = null;
+        }
+    }
+
 
     private static void setTimeouts(URLConnection connection, int socketTimeout) {
         connection.setConnectTimeout(socketTimeout);
@@ -210,7 +225,7 @@ public class SecureClientUtils {
         }
     }
 
-    public static URLConnectionClientHandler getUrlConnectionClientHandler() {
+    public  URLConnectionClientHandler getUrlConnectionClientHandler() {
         return new URLConnectionClientHandler(new HttpURLConnectionFactory() {
             @Override
             public HttpURLConnection getHttpURLConnection(URL url)
@@ -230,8 +245,7 @@ public class SecureClientUtils {
                         UserGroupInformation.setConfiguration(conf);
 
                         HttpsURLConnection c = (HttpsURLConnection) connection;
-                        factory = new SSLFactory(SSLFactory.Mode.CLIENT, conf);
-                        factory.init();
+                        factory = getSSLFactory(conf);
                         sf = factory.createSSLSocketFactory();
                         hv = factory.getHostnameVerifier();
                         c.setSSLSocketFactory(sf);

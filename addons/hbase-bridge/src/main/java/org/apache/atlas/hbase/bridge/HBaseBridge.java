@@ -114,6 +114,7 @@ public class HBaseBridge {
 
     public static void main(String[] args) {
         int exitCode = EXIT_CODE_FAILED;
+        AtlasClientV2 atlasClientV2  =null;
 
         try {
             Options options = new Options();
@@ -133,7 +134,6 @@ public class HBaseBridge {
                 urls = new String[] { DEFAULT_ATLAS_URL };
             }
 
-            final AtlasClientV2 atlasClientV2;
 
             if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
                 String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
@@ -186,6 +186,10 @@ public class HBaseBridge {
             System.out.println("ImportHBaseEntities failed. Please check the log file for the detailed error message");
 
             LOG.error("ImportHBaseEntities failed", e);
+        }finally {
+            if(atlasClientV2!=null) {
+                atlasClientV2.close();
+            }
         }
 
         System.exit(exitCode);

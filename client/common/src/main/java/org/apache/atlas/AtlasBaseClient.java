@@ -114,6 +114,8 @@ public abstract class AtlasBaseClient {
     private boolean retryEnabled = false;
     private Cookie cookie = null;
 
+    private SecureClientUtils clientUtils;
+
     protected AtlasBaseClient() {
     }
 
@@ -282,14 +284,15 @@ public abstract class AtlasBaseClient {
         }
 
         final URLConnectionClientHandler handler;
+        clientUtils = new SecureClientUtils();
 
         boolean isKerberosEnabled = AuthenticationUtil.isKerberosAuthenticationEnabled(ugi);
 
         if (isKerberosEnabled) {
-            handler = SecureClientUtils.getClientConnectionHandler(config, configuration, doAsUser, ugi);
+            handler = clientUtils.getClientConnectionHandler(config, configuration, doAsUser, ugi);
         } else {
             if (configuration.getBoolean(TLS_ENABLED, false)) {
-                handler = SecureClientUtils.getUrlConnectionClientHandler();
+                handler = clientUtils.getUrlConnectionClientHandler();
             } else {
                 handler = new URLConnectionClientHandler();
             }
@@ -298,6 +301,12 @@ public abstract class AtlasBaseClient {
         client.setReadTimeout(readTimeout);
         client.setConnectTimeout(connectTimeout);
         return client;
+    }
+
+    public void close() {
+        if (clientUtils != null) {
+            clientUtils.destroyFactory();
+        }
     }
 
     @VisibleForTesting
