@@ -88,6 +88,7 @@ public class KafkaBridge {
 
     public static void main(String[] args) {
         int exitCode = EXIT_CODE_FAILED;
+        AtlasClientV2 atlasClientV2 = null;
 
         try {
             Options options = new Options();
@@ -105,7 +106,6 @@ public class KafkaBridge {
                 urls = new String[] { DEFAULT_ATLAS_URL };
             }
 
-            final AtlasClientV2 atlasClientV2;
 
             if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
                 String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
@@ -148,6 +148,10 @@ public class KafkaBridge {
             System.out.println("ImportKafkaEntities failed. Please check the log file for the detailed error message");
             e.printStackTrace();
             LOG.error("ImportKafkaEntities failed", e);
+        } finally {
+            if (atlasClientV2 != null) {
+                atlasClientV2.close();
+            }
         }
 
         System.exit(exitCode);
