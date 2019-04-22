@@ -84,22 +84,28 @@ public class QuickStart {
     @VisibleForTesting
     static void runQuickstart(String[] args, String[] basicAuthUsernamePassword) throws Exception {
         String[] urls = getServerUrl(args);
-        QuickStart quickStart;
+        QuickStart quickStart = null;
 
-        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            quickStart = new QuickStart(urls, basicAuthUsernamePassword);
-        } else {
-            quickStart = new QuickStart(urls);
+        try {
+            if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+                quickStart = new QuickStart(urls, basicAuthUsernamePassword);
+            } else {
+                quickStart = new QuickStart(urls);
+            }
+
+            // Shows how to create types in Atlas for your meta model
+            quickStart.createTypes();
+
+            // Shows how to create entities (instances) for the added types in Atlas
+            quickStart.createEntities();
+
+            // Shows some search queries using DSL based on types
+            quickStart.search();
+        } finally {
+            if(quickStart!=null) {
+                quickStart.closeConnection();
+            }
         }
-
-        // Shows how to create types in Atlas for your meta model
-        quickStart.createTypes();
-
-        // Shows how to create entities (instances) for the added types in Atlas
-        quickStart.createEntities();
-
-        // Shows some search queries using DSL based on types
-        quickStart.search();
     }
 
     static String[] getServerUrl(String[] args) throws AtlasException {
@@ -499,6 +505,12 @@ public class QuickStart {
             }
         } catch (Exception e) {
             throw new AtlasBaseException(AtlasErrorCode.QUICK_START, e, "one or more dsl queries failed");
+        }
+    }
+
+    private void closeConnection() {
+        if (metadataServiceClient != null) {
+            metadataServiceClient.close();
         }
     }
 }
