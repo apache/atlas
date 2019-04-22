@@ -151,25 +151,30 @@ public class QuickStartV2 {
     static void runQuickstart(String[] args, String[] basicAuthUsernamePassword) throws Exception {
         String[] urls = getServerUrl(args);
 
-        QuickStartV2 quickStartV2;
+        QuickStartV2 quickStartV2 = null;
+        try {
+            if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+                quickStartV2 = new QuickStartV2(urls, basicAuthUsernamePassword);
+            } else {
+                quickStartV2 = new QuickStartV2(urls);
+            }
 
-        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            quickStartV2 = new QuickStartV2(urls, basicAuthUsernamePassword);
-        } else {
-            quickStartV2 = new QuickStartV2(urls);
+            // Shows how to create v2 types in Atlas for your meta model
+            quickStartV2.createTypes();
+
+            // Shows how to create v2 entities (instances) for the added types in Atlas
+            quickStartV2.createEntities();
+
+            // Shows some search queries using DSL based on types
+            quickStartV2.search();
+
+            // Shows some lineage information on entity
+            quickStartV2.lineage();
+        } finally {
+            if (quickStartV2!= null) {
+                quickStartV2.closeConnection();
+            }
         }
-
-        // Shows how to create v2 types in Atlas for your meta model
-        quickStartV2.createTypes();
-
-        // Shows how to create v2 entities (instances) for the added types in Atlas
-        quickStartV2.createEntities();
-
-        // Shows some search queries using DSL based on types
-        quickStartV2.search();
-
-        // Shows some lineage information on entity
-        quickStartV2.lineage();
         
     }
 
@@ -646,5 +651,11 @@ public class QuickStartV2 {
         AtlasEntity         tableEntity = atlasClientV2.getEntityByAttribute(TABLE_TYPE, attributes).getEntity();
 
         return tableEntity.getGuid();
+    }
+
+    private void closeConnection() {
+        if (atlasClientV2 != null) {
+            atlasClientV2.close();
+        }
     }
 }
