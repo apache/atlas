@@ -19,11 +19,9 @@ package org.apache.atlas.model.typedef;
 
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -124,9 +122,8 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
 
     /**
      * AtlasRelationshipDef contructor
-     * @throws AtlasBaseException
      */
-    public AtlasRelationshipDef() throws AtlasBaseException {
+    public AtlasRelationshipDef()  {
         this(null, null, null, null,null, null, null);
     }
 
@@ -158,8 +155,7 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
                                 PropagateTags propagatetags,
                                 AtlasRelationshipEndDef endDef1,
                                 AtlasRelationshipEndDef endDef2) {
-        this(name, description, typeVersion, relationshipCategory,propagatetags, endDef1, endDef2,
-             new ArrayList<AtlasAttributeDef>());
+        this(name, description, typeVersion, relationshipCategory,propagatetags, endDef1, endDef2, new ArrayList<>());
     }
 
     /**
@@ -185,16 +181,13 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      *            the relationship instance
      *
      *            The ends are defined as 1 and 2 to avoid implying a direction. So we do not use to and from.
-     *
-     * @throws AtlasBaseException
      */
     public AtlasRelationshipDef(String name, String description, String typeVersion, String serviceType,
                                 RelationshipCategory relationshipCategory,
                                 PropagateTags propagatetags,
                                 AtlasRelationshipEndDef endDef1,
-                                AtlasRelationshipEndDef endDef2) throws AtlasBaseException {
-        this(name, description, typeVersion, relationshipCategory,propagatetags, endDef1, endDef2,
-             new ArrayList<AtlasAttributeDef>());
+                                AtlasRelationshipEndDef endDef2)  {
+        this(name, description, typeVersion, serviceType, relationshipCategory,propagatetags, endDef1, endDef2, new ArrayList<>());
     }
 
 
