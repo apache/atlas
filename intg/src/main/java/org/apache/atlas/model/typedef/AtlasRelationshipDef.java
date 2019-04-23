@@ -126,7 +126,7 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      * AtlasRelationshipDef contructor
      * @throws AtlasBaseException
      */
-    public AtlasRelationshipDef() throws AtlasBaseException {
+    public AtlasRelationshipDef()  {
         this(null, null, null, null,null, null, null);
     }
 
@@ -192,7 +192,7 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
                                 RelationshipCategory relationshipCategory,
                                 PropagateTags propagatetags,
                                 AtlasRelationshipEndDef endDef1,
-                                AtlasRelationshipEndDef endDef2) throws AtlasBaseException {
+                                AtlasRelationshipEndDef endDef2)  {
         this(name, description, typeVersion, relationshipCategory,propagatetags, endDef1, endDef2,
              new ArrayList<AtlasAttributeDef>());
     }
