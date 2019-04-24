@@ -130,8 +130,11 @@ public class CreateTable extends BaseHiveEvent {
                         } else {
                             processEntity = getHiveProcessEntity(Collections.singletonList(tblEntity), Collections.singletonList(hbaseTableEntity));
                         }
-
                         ret.addEntity(processEntity);
+
+                        AtlasEntity processExecution = getHiveProcessExecutionEntity(processEntity);
+                        ret.addEntity(processExecution);
+
                     }
                 } else {
                     if (EXTERNAL_TABLE.equals(table.getTableType())) {
@@ -140,6 +143,9 @@ public class CreateTable extends BaseHiveEvent {
 
                         ret.addEntity(processEntity);
                         ret.addReferredEntity(hdfsPathEntity);
+
+                        AtlasEntity processExecution = getHiveProcessExecutionEntity(processEntity);
+                        ret.addEntity(processExecution);
                     }
                 }
             }

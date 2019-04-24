@@ -324,6 +324,15 @@
               "isUnique": false
             }
           ]
+        },
+        {
+          "name": "ProcessExecution",
+          "superTypes": [
+            "Asset"
+          ],
+          "serviceType": "atlas_core",
+          "typeVersion": "1.0",
+          "attributeDefs": []
         }
     ],
     "relationshipDefs": [

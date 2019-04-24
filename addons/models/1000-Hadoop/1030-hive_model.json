@@ -457,6 +457,80 @@
                     "isUnique": false
                 }
             ]
+        },
+        {
+            "name" : "hive_process_execution",
+            "superTypes" : [
+                "ProcessExecution"
+            ],
+            "serviceType": "hive",
+            "typeVersion" : "1.0",
+            "attributeDefs" : [
+                {
+                    "name": "startTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "endTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "userName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryText",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryGraph",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryId",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryPlan",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "hostName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                }
+            ]
         }
     ],
     "relationshipDefs": [
@@ -565,6 +639,24 @@
                 "name": "columnLineages",
                 "isContainer": true,
                 "cardinality": "SET"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "hive_process_process_executions",
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_process",
+                "name": "processExecutions",
+                "cardinality": "SET",
+                "isContainer": true
+            },
+            "endDef2": {
+                "type": "hive_process_execution",
+                "name": "process",
+                "cardinality": "SINGLE"
             },
             "propagateTags": "NONE"
         }

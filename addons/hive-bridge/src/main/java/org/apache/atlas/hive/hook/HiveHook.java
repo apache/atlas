@@ -32,6 +32,8 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,7 +47,6 @@ import java.util.regex.Pattern;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_QUALIFIED_NAME;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_DB;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_TABLE;
-
 
 public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final Logger LOG = LoggerFactory.getLogger(HiveHook.class);
@@ -66,6 +67,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String HOOK_HIVE_TABLE_CACHE_SIZE                                = CONF_PREFIX + "hive_table.cache.size";
 
     public static final String DEFAULT_CLUSTER_NAME = "primary";
+    public static final String DEFAULT_HOST_NAME = "localhost";
 
     private static final Map<String, HiveOperation> OPERATION_MAP = new HashMap<>();
 
@@ -83,6 +85,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final Map<String, PreprocessAction> hiveTablesCache;
 
     private static HiveHookObjectNamesCache knownObjects = null;
+    private static String hostName;
 
     static {
         for (HiveOperation hiveOperation : HiveOperation.values()) {
@@ -134,6 +137,13 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
 
         knownObjects = nameCacheEnabled ? new HiveHookObjectNamesCache(nameCacheDatabaseMaxCount, nameCacheTableMaxCount, nameCacheRebuildIntervalSeconds) : null;
+
+        try {
+            hostName = InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            LOG.warn("No hostname found. Setting the hostname to default value {}", DEFAULT_HOST_NAME, e);
+            hostName = DEFAULT_HOST_NAME;
+        }
     }
 
 
@@ -290,6 +300,10 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
 
         return knownObjects;
+    }
+
+    public String getHostName() {
+        return hostName;
     }
 
     public static class HiveHookObjectNamesCache {
