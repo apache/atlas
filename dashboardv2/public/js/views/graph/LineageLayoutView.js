@@ -65,6 +65,7 @@ define(['require',
                 showOnlyHoverPath: '[data-id="showOnlyHoverPath"]',
                 showTooltip: '[data-id="showTooltip"]',
                 saveSvg: '[data-id="saveSvg"]',
+                resetLineage: '[data-id="resetLineage"]'
             },
             templateHelpers: function() {
                 return {
@@ -84,6 +85,7 @@ define(['require',
                 events["click " + this.ui.lineageFullscreenToggler] = 'onClickLineageFullscreenToggler';
                 events["click " + this.ui.searchToggler] = 'onClickSearchToggler';
                 events["click " + this.ui.saveSvg] = 'onClickSaveSvg';
+                events["click " + this.ui.resetLineage] = 'onClickResetLineage';
                 return events;
             },
 
@@ -97,7 +99,6 @@ define(['require',
                 this.lineageData = null;
                 this.typeMap = {};
                 this.apiGuid = {};
-                this.asyncFetchCounter = 0;
                 this.edgeCall;
                 this.filterObj = {
                     isProcessHideCheck: false,
@@ -207,6 +208,9 @@ define(['require',
                 this.fromToNodeData = {};
                 this.$('.fontLoader').show();
                 this.$('svg>g').hide();
+                this.toggleDisableState({
+                    "el": that.$(".graph-button-group button,select[data-id='selectDepth']")
+                });
                 this.collection.getLineage(this.guid, {
                     skipDefaultError: true,
                     queryParam: queryParam,
@@ -219,9 +223,13 @@ define(['require',
                                 that.renderLineageTypeSearch();
                             }
                             that.generateData({ "relationshipMap": that.relationshipMap, "guidEntityMap": that.guidEntityMap });
+                            that.toggleDisableState({
+                                "el": that.$(".graph-button-group button,select[data-id='selectDepth']")
+                            });
                         } else {
                             that.noLineage();
                             that.hideCheckForProcess();
+
                         }
                     },
                     cust_error: function(model, response) {
@@ -434,9 +442,7 @@ define(['require',
                     this.fromToNodeData[this.guid]['isLineage'] = false;
                     this.findImpactNodeAndUpdateData({ "relationshipMap": filterRelationshipMap, "guid": this.guid, "getStyleObjStr": getStyleObjStr });
                 }
-                if (this.asyncFetchCounter == 0) {
-                    this.createGraph();
-                }
+                this.createGraph();
             },
             findImpactNodeAndUpdateData: function(options) {
                 var that = this,
@@ -807,7 +813,6 @@ define(['require',
                     g: this.g,
                     guid: this.guid
                 }).init();
-                this.$el.find('[data-id="saveSvg"]').removeClass('disabled')
             },
             renderLineageTypeSearch: function() {
                 var that = this;
@@ -1008,6 +1013,15 @@ define(['require',
                     (element).removeClass("fa-spin-custom fa-refresh").addClass('fa-camera');
                 }
             },
+            onClickResetLineage: function() {
+                this.createGraph()
+            },
+            toggleDisableState: function(options) {
+                var el = options.el;
+                if (el && el.prop) {
+                    el.prop("disabled", !el.prop("disabled"));
+                }
+            }
         });
     return LineageLayoutView;
 });
