@@ -18,6 +18,7 @@
 
 package org.apache.atlas.hive.hook.events;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
 import org.apache.atlas.hive.hook.HiveHook.PreprocessAction;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -27,6 +28,8 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -49,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -67,24 +71,25 @@ import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_PROCESS;
 public abstract class BaseHiveEvent {
     private static final Logger LOG = LoggerFactory.getLogger(BaseHiveEvent.class);
 
-    public static final String HIVE_TYPE_DB             = "hive_db";
-    public static final String HIVE_TYPE_TABLE          = "hive_table";
-    public static final String HIVE_TYPE_STORAGEDESC    = "hive_storagedesc";
-    public static final String HIVE_TYPE_COLUMN         = "hive_column";
-    public static final String HIVE_TYPE_PROCESS        = "hive_process";
-    public static final String HIVE_TYPE_COLUMN_LINEAGE = "hive_column_lineage";
-    public static final String HIVE_TYPE_SERDE          = "hive_serde";
-    public static final String HIVE_TYPE_ORDER          = "hive_order";
-    public static final String HDFS_TYPE_PATH           = "hdfs_path";
-    public static final String HBASE_TYPE_TABLE         = "hbase_table";
-    public static final String HBASE_TYPE_NAMESPACE     = "hbase_namespace";
-    public static final String AWS_S3_BUCKET            = "aws_s3_bucket";
-    public static final String AWS_S3_PSEUDO_DIR        = "aws_s3_pseudo_dir";
-    public static final String AWS_S3_OBJECT            = "aws_s3_object";
+    public static final String HIVE_TYPE_DB                        = "hive_db";
+    public static final String HIVE_TYPE_TABLE                     = "hive_table";
+    public static final String HIVE_TYPE_STORAGEDESC               = "hive_storagedesc";
+    public static final String HIVE_TYPE_COLUMN                    = "hive_column";
+    public static final String HIVE_TYPE_PROCESS                   = "hive_process";
+    public static final String HIVE_TYPE_COLUMN_LINEAGE            = "hive_column_lineage";
+    public static final String HIVE_TYPE_SERDE                     = "hive_serde";
+    public static final String HIVE_TYPE_ORDER                     = "hive_order";
+    public static final String HIVE_TYPE_PROCESS_EXECUTION         = "hive_process_execution";
+    public static final String HDFS_TYPE_PATH                      = "hdfs_path";
+    public static final String HBASE_TYPE_TABLE                    = "hbase_table";
+    public static final String HBASE_TYPE_NAMESPACE                = "hbase_namespace";
+    public static final String AWS_S3_BUCKET                       = "aws_s3_bucket";
+    public static final String AWS_S3_PSEUDO_DIR                   = "aws_s3_pseudo_dir";
+    public static final String AWS_S3_OBJECT                       = "aws_s3_object";
 
-    public static final String SCHEME_SEPARATOR         = "://";
-    public static final String S3_SCHEME                = "s3" + SCHEME_SEPARATOR;
-    public static final String S3A_SCHEME               = "s3a" + SCHEME_SEPARATOR;
+    public static final String SCHEME_SEPARATOR                    = "://";
+    public static final String S3_SCHEME                           = "s3" + SCHEME_SEPARATOR;
+    public static final String S3A_SCHEME                          = "s3a" + SCHEME_SEPARATOR;
 
     public static final String ATTRIBUTE_QUALIFIED_NAME            = "qualifiedName";
     public static final String ATTRIBUTE_NAME                      = "name";
@@ -126,6 +131,8 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_START_TIME                = "startTime";
     public static final String ATTRIBUTE_USER_NAME                 = "userName";
     public static final String ATTRIBUTE_QUERY_TEXT                = "queryText";
+    public static final String ATTRIBUTE_PROCESS                   = "process";
+    public static final String ATTRIBUTE_PROCESS_EXECUTIONS        = "processExecutions";
     public static final String ATTRIBUTE_QUERY_ID                  = "queryId";
     public static final String ATTRIBUTE_QUERY_PLAN                = "queryPlan";
     public static final String ATTRIBUTE_END_TIME                  = "endTime";
@@ -139,6 +146,7 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_NAMESPACE                 = "namespace";
     public static final String ATTRIBUTE_OBJECT_PREFIX             = "objectPrefix";
     public static final String ATTRIBUTE_BUCKET                    = "bucket";
+    public static final String ATTRIBUTE_HOSTNAME                  = "hostName";
 
     public static final String HBASE_STORAGE_HANDLER_CLASS         = "org.apache.hadoop.hive.hbase.HBaseStorageHandler";
     public static final String HBASE_DEFAULT_NAMESPACE             = "default";
@@ -146,6 +154,7 @@ public abstract class BaseHiveEvent {
     public static final String HBASE_PARAM_TABLE_NAME              = "hbase.table.name";
     public static final long   MILLIS_CONVERT_FACTOR               = 1000;
     public static final String HDFS_PATH_PREFIX                    = "hdfs://";
+    public static final String EMPTY_ATTRIBUTE_VALUE = "";
 
     public static final Map<Integer, String> OWNER_TYPE_TO_ENUM_VALUE = new HashMap<>();
 
@@ -619,14 +628,41 @@ public abstract class BaseHiveEvent {
         ret.setAttribute(ATTRIBUTE_OUTPUTS,  getObjectIds(outputs));
         ret.setAttribute(ATTRIBUTE_NAME, queryStr);
         ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, getOperationName());
+
+        // We are setting an empty value to these attributes, since now we have a new entity type called hive process
+        // execution which captures these values. We have to set empty values here because these attributes are
+        // mandatory attributes for hive process entity type.
+        ret.setAttribute(ATTRIBUTE_START_TIME, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_END_TIME, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_USER_NAME, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_QUERY_TEXT, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_QUERY_ID, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_QUERY_PLAN, "Not Supported");
+        ret.setAttribute(ATTRIBUTE_RECENT_QUERIES, Collections.singletonList(queryStr));
+        return ret;
+    }
+
+    protected AtlasEntity getHiveProcessExecutionEntity(AtlasEntity hiveProcess) throws Exception {
+        AtlasEntity ret         = new AtlasEntity(HIVE_TYPE_PROCESS_EXECUTION);
+        String      queryStr    = getQueryString();
+
+        if (queryStr != null) {
+            queryStr = queryStr.toLowerCase().trim();
+        }
+
+        Long endTime = System.currentTimeMillis();
+        ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, hiveProcess.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString() +
+                QNAME_SEP_PROCESS + getQueryStartTime().toString() +
+                QNAME_SEP_PROCESS + endTime.toString());
+        ret.setAttribute(ATTRIBUTE_NAME, queryStr + QNAME_SEP_PROCESS + getQueryStartTime().toString());
         ret.setAttribute(ATTRIBUTE_START_TIME, getQueryStartTime());
-        ret.setAttribute(ATTRIBUTE_END_TIME, System.currentTimeMillis());
+        ret.setAttribute(ATTRIBUTE_END_TIME, endTime);
         ret.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
         ret.setAttribute(ATTRIBUTE_QUERY_TEXT, queryStr);
         ret.setAttribute(ATTRIBUTE_QUERY_ID, getQueryId());
         ret.setAttribute(ATTRIBUTE_QUERY_PLAN, "Not Supported");
-        ret.setAttribute(ATTRIBUTE_RECENT_QUERIES, Collections.singletonList(queryStr));
-
+        ret.setAttribute(ATTRIBUTE_HOSTNAME, getContext().getHostName());
+        ret.setRelationshipAttribute(ATTRIBUTE_PROCESS, AtlasTypeUtil.toAtlasRelatedObjectId(hiveProcess));
         return ret;
     }
 

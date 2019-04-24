@@ -19,6 +19,7 @@
 package org.apache.atlas.examples;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
@@ -42,6 +43,8 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
@@ -107,9 +110,15 @@ public class QuickStartV2 {
     public static final String JDBC_CLASSIFICATION         = "JdbcAccess";
     public static final String LOGDATA_CLASSIFICATION      = "Log Data";
 
-    public static final String LOAD_SALES_DAILY_PROCESS    = "loadSalesDaily";
-    public static final String LOAD_SALES_MONTHLY_PROCESS  = "loadSalesMonthly";
-    public static final String LOAD_LOGS_MONTHLY_PROCESS   = "loadLogsMonthly";
+    public static final String LOAD_SALES_DAILY_PROCESS         = "loadSalesDaily";
+    public static final String LOAD_SALES_DAILY_PROCESS_EXEC1   = "loadSalesDailyExec1";
+    public static final String LOAD_SALES_DAILY_PROCESS_EXEC2   = "loadSalesDailyExec2";
+    public static final String LOAD_SALES_MONTHLY_PROCESS       = "loadSalesMonthly";
+    public static final String LOAD_SALES_MONTHLY_PROCESS_EXEC1 = "loadSalesMonthlyExec1";
+    public static final String LOAD_SALES_MONTHLY_PROCESS_EXEC2 = "loadSalesMonthlyExec2";
+    public static final String LOAD_LOGS_MONTHLY_PROCESS        = "loadLogsMonthly";
+    public static final String LOAD_LOGS_MONTHLY_PROCESS_EXEC1  = "loadLogsMonthlyExec1";
+    public static final String LOAD_LOGS_MONTHLY_PROCESS_EXEC2  = "loadLogsMonthlyExec2";
 
     public static final String PRODUCT_DIM_VIEW            = "product_dim_view";
     public static final String CUSTOMER_DIM_VIEW           = "customer_dim_view";
@@ -119,6 +128,7 @@ public class QuickStartV2 {
     public static final String TABLE_TYPE                  = "Table";
     public static final String VIEW_TYPE                   = "View";
     public static final String LOAD_PROCESS_TYPE           = "LoadProcess";
+    public static final String LOAD_PROCESS_EXECUTION_TYPE = "LoadProcessExecution";
     public static final String STORAGE_DESC_TYPE           = "StorageDesc";
 
     public static final String TABLE_DATABASE_TYPE         = "Table_DB";
@@ -126,13 +136,14 @@ public class QuickStartV2 {
     public static final String VIEW_TABLES_TYPE            = "View_Tables";
     public static final String TABLE_COLUMNS_TYPE          = "Table_Columns";
     public static final String TABLE_STORAGE_DESC_TYPE     = "Table_StorageDesc";
+    public static final String PROCESS_PROCESS_EXECUTION_DESC_TYPE = "Process_ProcessExecution";
 
     public static final String VERSION_1                   = "1.0";
     public static final String MANAGED_TABLE               = "Managed";
     public static final String EXTERNAL_TABLE              = "External";
     public static final String CLUSTER_SUFFIX              = "@cl1";
 
-    public static final String[] TYPES = { DATABASE_TYPE, TABLE_TYPE, STORAGE_DESC_TYPE, COLUMN_TYPE, LOAD_PROCESS_TYPE,
+    public static final String[] TYPES = { DATABASE_TYPE, TABLE_TYPE, STORAGE_DESC_TYPE, COLUMN_TYPE, LOAD_PROCESS_TYPE, LOAD_PROCESS_EXECUTION_TYPE,
                                            VIEW_TYPE, JDBC_CLASSIFICATION, ETL_CLASSIFICATION, METRIC_CLASSIFICATION,
                                            PII_CLASSIFICATION, FACT_CLASSIFICATION, DIMENSION_CLASSIFICATION, LOGDATA_CLASSIFICATION,
                                            TABLE_DATABASE_TYPE, VIEW_DATABASE_TYPE, VIEW_TABLES_TYPE, TABLE_COLUMNS_TYPE, TABLE_STORAGE_DESC_TYPE };
@@ -256,28 +267,41 @@ public class QuickStartV2 {
                                                             createRequiredAttrDef("queryId", "string"),
                                                             createRequiredAttrDef("queryGraph", "string"));
 
+        AtlasEntityDef processExecutionTypeDef = createClassTypeDef(LOAD_PROCESS_EXECUTION_TYPE, LOAD_PROCESS_EXECUTION_TYPE, VERSION_1, Collections.singleton("ProcessExecution"),
+                createOptionalAttrDef("userName", "string"),
+                createOptionalAttrDef("startTime", "long"),
+                createOptionalAttrDef("endTime", "long"),
+                createRequiredAttrDef("queryText", "string"),
+                createRequiredAttrDef("queryPlan", "string"),
+                createRequiredAttrDef("queryId", "string"),
+                createRequiredAttrDef("queryGraph", "string"));
+
         AtlasEntityDef viewTypeDef    = createClassTypeDef(VIEW_TYPE, VIEW_TYPE, VERSION_1, Collections.singleton("DataSet"));
 
         // Relationship-Definitions
-        AtlasRelationshipDef tableDatabaseTypeDef    = createRelationshipTypeDef(TABLE_DATABASE_TYPE, TABLE_DATABASE_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
+        AtlasRelationshipDef tableDatabaseTypeDef            = createRelationshipTypeDef(TABLE_DATABASE_TYPE, TABLE_DATABASE_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
                                                                                     createRelationshipEndDef(TABLE_TYPE, "db", SINGLE, false),
                                                                                     createRelationshipEndDef(DATABASE_TYPE, "tables", SET, true));
 
-        AtlasRelationshipDef viewDatabaseTypeDef     = createRelationshipTypeDef(VIEW_DATABASE_TYPE, VIEW_DATABASE_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
+        AtlasRelationshipDef viewDatabaseTypeDef             = createRelationshipTypeDef(VIEW_DATABASE_TYPE, VIEW_DATABASE_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
                                                                                     createRelationshipEndDef(VIEW_TYPE, "db", SINGLE, false),
                                                                                     createRelationshipEndDef(DATABASE_TYPE, "views", SET, true));
 
-        AtlasRelationshipDef viewTablesTypeDef       = createRelationshipTypeDef(VIEW_TABLES_TYPE, VIEW_TABLES_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
+        AtlasRelationshipDef viewTablesTypeDef               = createRelationshipTypeDef(VIEW_TABLES_TYPE, VIEW_TABLES_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
                                                                                     createRelationshipEndDef(VIEW_TYPE, "inputTables", SET, true),
                                                                                     createRelationshipEndDef(TABLE_TYPE, "view", SINGLE, false));
 
-        AtlasRelationshipDef tableColumnsTypeDef     = createRelationshipTypeDef(TABLE_COLUMNS_TYPE, TABLE_COLUMNS_TYPE, VERSION_1, COMPOSITION, PropagateTags.NONE,
+        AtlasRelationshipDef tableColumnsTypeDef             = createRelationshipTypeDef(TABLE_COLUMNS_TYPE, TABLE_COLUMNS_TYPE, VERSION_1, COMPOSITION, PropagateTags.NONE,
                                                                                     createRelationshipEndDef(TABLE_TYPE, "columns", SET, true),
                                                                                     createRelationshipEndDef(COLUMN_TYPE, "table", SINGLE, false));
 
-        AtlasRelationshipDef tableStorageDescTypeDef = createRelationshipTypeDef(TABLE_STORAGE_DESC_TYPE, TABLE_STORAGE_DESC_TYPE, VERSION_1, COMPOSITION, PropagateTags.NONE,
+        AtlasRelationshipDef tableStorageDescTypeDef         = createRelationshipTypeDef(TABLE_STORAGE_DESC_TYPE, TABLE_STORAGE_DESC_TYPE, VERSION_1, COMPOSITION, PropagateTags.NONE,
                                                                                     createRelationshipEndDef(TABLE_TYPE, "sd", SINGLE, true),
                                                                                     createRelationshipEndDef(STORAGE_DESC_TYPE, "table", SINGLE, false));
+        AtlasRelationshipDef processProcessExecutionTypeDef  = createRelationshipTypeDef(PROCESS_PROCESS_EXECUTION_DESC_TYPE, PROCESS_PROCESS_EXECUTION_DESC_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
+                                                                                    createRelationshipEndDef(LOAD_PROCESS_TYPE, "processExecutions", SET, true),
+                                                                                    createRelationshipEndDef(LOAD_PROCESS_EXECUTION_TYPE, "process", SINGLE, false));
+
 
         // Classification-Definitions
         AtlasClassificationDef dimClassifDef    = createTraitTypeDef(DIMENSION_CLASSIFICATION,  "Dimension Classification", VERSION_1, Collections.emptySet());
@@ -288,8 +312,8 @@ public class QuickStartV2 {
         AtlasClassificationDef jdbcClassifDef   = createTraitTypeDef(JDBC_CLASSIFICATION, "JdbcAccess Classification", VERSION_1, Collections.emptySet());
         AtlasClassificationDef logClassifDef    = createTraitTypeDef(LOGDATA_CLASSIFICATION, "LogData Classification", VERSION_1, Collections.emptySet());
 
-        List<AtlasEntityDef>         entityDefs         = asList(dbTypeDef, sdTypeDef, colTypeDef, tableTypeDef, processTypeDef, viewTypeDef);
-        List<AtlasRelationshipDef>   relationshipDefs   = asList(tableDatabaseTypeDef, viewDatabaseTypeDef, viewTablesTypeDef, tableColumnsTypeDef, tableStorageDescTypeDef);
+        List<AtlasEntityDef>         entityDefs         = asList(dbTypeDef, sdTypeDef, colTypeDef, tableTypeDef, processTypeDef, processExecutionTypeDef, viewTypeDef);
+        List<AtlasRelationshipDef>   relationshipDefs   = asList(tableDatabaseTypeDef, viewDatabaseTypeDef, viewTablesTypeDef, tableColumnsTypeDef, tableStorageDescTypeDef, processProcessExecutionTypeDef);
         List<AtlasClassificationDef> classificationDefs = asList(dimClassifDef, factClassifDef, piiClassifDef, metricClassifDef, etlClassifDef, jdbcClassifDef, logClassifDef);
 
         return new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, entityDefs, relationshipDefs);
@@ -362,20 +386,36 @@ public class QuickStartV2 {
         createView(CUSTOMER_DIM_VIEW, reportingDB, asList(customerDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
 
         // Process entities
-        createProcess(LOAD_SALES_DAILY_PROCESS, "hive query for daily summary", "John ETL",
+        AtlasEntity loadProcess = createProcess(LOAD_SALES_DAILY_PROCESS, "hive query for daily summary", "John ETL",
                       asList(salesFact, timeDim),
                       asList(salesFactDaily),
                       "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
 
-        createProcess(LOAD_SALES_MONTHLY_PROCESS, "hive query for monthly summary", "John ETL",
-                      asList(salesFactDaily),
-                        asList(salesFactMonthly),
-                      "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
+        createProcessExecution(loadProcess, LOAD_SALES_DAILY_PROCESS_EXEC1, "hive query execution 1 for daily summary", "John ETL",
+                "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
 
-        createProcess(LOAD_LOGS_MONTHLY_PROCESS, "hive query for monthly summary", "Tim ETL",
+        createProcessExecution(loadProcess, LOAD_SALES_DAILY_PROCESS_EXEC2, "hive query execution 2 for daily summary", "John ETL",
+                "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
+
+        AtlasEntity loadProcess2 = createProcess(LOAD_SALES_MONTHLY_PROCESS, "hive query for monthly summary", "John ETL",
+                      asList(salesFactDaily),
+                      asList(salesFactMonthly),
+                      "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
+        createProcessExecution(loadProcess2, LOAD_SALES_MONTHLY_PROCESS_EXEC1, "hive query execution 1 for monthly summary", "John ETL",
+                "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
+
+        createProcessExecution(loadProcess2, LOAD_SALES_MONTHLY_PROCESS_EXEC2, "hive query execution 2 for monthly summary", "John ETL",
+                "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
+
+
+        AtlasEntity loadProcess3 = createProcess(LOAD_LOGS_MONTHLY_PROCESS, "hive query for monthly summary", "Tim ETL",
                       asList(loggingFactDaily),
                       asList(loggingFactMonthly),
                       "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
+        createProcessExecution(loadProcess3, LOAD_LOGS_MONTHLY_PROCESS_EXEC1, "hive query execution 1 for monthly summary", "Tim ETL",
+                "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
+        createProcessExecution(loadProcess3, LOAD_LOGS_MONTHLY_PROCESS_EXEC2, "hive query execution 1 for monthly summary", "Tim ETL",
+                "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
     }
 
     private AtlasEntity createInstance(AtlasEntity entity) throws Exception {
@@ -515,6 +555,31 @@ public class QuickStartV2 {
         // set relationship attributes
         entity.setRelationshipAttribute("inputs", toAtlasRelatedObjectIds(inputs));
         entity.setRelationshipAttribute("outputs", toAtlasRelatedObjectIds(outputs));
+
+        // set classifications
+        entity.setClassifications(toAtlasClassifications(classificationNames));
+
+        return createInstance(entity);
+    }
+
+    AtlasEntity createProcessExecution(AtlasEntity hiveProcess, String name, String description, String user,
+                              String queryText, String queryPlan, String queryId, String queryGraph, String... classificationNames) throws Exception {
+
+        AtlasEntity entity = new AtlasEntity(LOAD_PROCESS_EXECUTION_TYPE);
+        Long startTime = System.currentTimeMillis();
+        Long endTime = System.currentTimeMillis() + 10000;
+        // set attributes
+        entity.setAttribute("name", name);
+        entity.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, name + CLUSTER_SUFFIX + startTime.toString() + endTime.toString());
+        entity.setAttribute("description", description);
+        entity.setAttribute("user", user);
+        entity.setAttribute("startTime", startTime);
+        entity.setAttribute("endTime", endTime);
+        entity.setAttribute("queryText", queryText);
+        entity.setAttribute("queryPlan", queryPlan);
+        entity.setAttribute("queryId", queryId);
+        entity.setAttribute("queryGraph", queryGraph);
+        entity.setRelationshipAttribute("process", AtlasTypeUtil.toAtlasRelatedObjectId(hiveProcess));
 
         // set classifications
         entity.setClassifications(toAtlasClassifications(classificationNames));

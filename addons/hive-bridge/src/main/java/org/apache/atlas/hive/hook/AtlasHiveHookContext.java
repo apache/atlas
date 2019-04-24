@@ -161,6 +161,8 @@ public class AtlasHiveHookContext {
         return hook.getClusterName();
     }
 
+    public String getHostName() { return hook.getHostName(); }
+
     public boolean isConvertHdfsPathToLowerCase() {
         return hook.isConvertHdfsPathToLowerCase();
     }

@@ -240,6 +240,25 @@ public class HiveITBase {
         return (String) entity.getGuid();
     }
 
+    protected String assertEntityIsRegisteredViaGuid(String guid,
+                                              final HiveHookIT.AssertPredicate assertPredicate) throws Exception {
+        waitFor(80000, new HiveHookIT.Predicate() {
+            @Override
+            public void evaluate() throws Exception {
+                    AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByGuid(guid);
+                    AtlasEntity entity = atlasEntityWithExtInfo.getEntity();
+                    assertNotNull(entity);
+                    if (assertPredicate != null) {
+                        assertPredicate.assertOnEntity(entity);
+                    }
+
+            }
+        });
+        AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByGuid(guid);
+        AtlasEntity entity = atlasEntityWithExtInfo.getEntity();
+        return (String) entity.getGuid();
+    }
+
     protected AtlasEntity assertEntityIsRegistedViaEntity(final String typeName, final String property, final String value,
                                               final HiveHookIT.AssertPredicate assertPredicate) throws Exception {
         waitFor(80000, new HiveHookIT.Predicate() {
@@ -517,7 +536,6 @@ public class HiveITBase {
         LOG.info("Setting process qualified name to {}", buffer);
         return buffer.toString();
     }
-
 
     protected static Entity getEntityByType(Set<? extends Entity> entities, Entity.Type entityType) {
         for (Entity entity : entities) {

@@ -126,6 +126,9 @@ public class CreateHiveProcess extends BaseHiveEvent {
 
                 ret.addEntity(process);
 
+                AtlasEntity processExecution = getHiveProcessExecutionEntity(process);
+                ret.addEntity(processExecution);
+
                 processColumnLineage(process, ret);
 
                 addProcessedEntities(ret);
