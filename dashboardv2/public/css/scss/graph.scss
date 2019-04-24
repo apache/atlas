@@ -318,6 +318,10 @@ g.type-TK>rect {
     color: $dark_gray;
     background: white;
 
+    &[disabled] {
+        opacity: .3;
+    }
+
     &:hover {
         border: 1px solid #686868;
         color: $dark_gray !important;

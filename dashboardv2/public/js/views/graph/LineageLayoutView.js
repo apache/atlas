@@ -92,7 +92,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'processCheck', 'guid', 'entityDefCollection', 'actionCallBack', 'fetchCollection', 'attributeDefs'));
+                _.extend(this, _.pick(options, 'processCheck', 'guid', 'entity', 'entityName', 'entityDefCollection', 'actionCallBack', 'fetchCollection', 'attributeDefs'));
                 this.collection = new VLineageList();
                 this.lineageData = null;
                 this.typeMap = {};
@@ -912,12 +912,6 @@ define(['require',
             onClickSaveSvg: function(e, a) {
                 var that = this;
                 var loaderTargetDiv = $(e.currentTarget).find('>i');
-                if ($(e.currentTarget).hasClass('disabled')) {
-                    Utils.notifyWarn({
-                        content: "Lineage can be downloaded once it is rendered."
-                    });
-                    return false; // return if the lineage is not loaded.
-                }
 
                 if (loaderTargetDiv.hasClass('fa-refresh')) {
                     Utils.notifyWarn({
@@ -934,7 +928,11 @@ define(['require',
                 setTimeout(function() {
                     var svg = that.$('svg')[0],
                         svgClone = svg.cloneNode(true),
-                        scaleFactor = 1;
+                        scaleFactor = 1,
+                        svgWidth = that.$('svg').width(),
+                        svgHeight = that.$('svg').height();
+                    svgClone.setAttribute('width', svgWidth);
+                    svgClone.setAttribute('height', svgHeight);
 
                     $('.hidden-svg').html(svgClone);
                     $(svgClone).find('>g').attr("transform", "scale(" + scaleFactor + ")");
@@ -970,7 +968,8 @@ define(['require',
                     img.onload = function() {
                         try {
                             var a = document.createElement("a");
-                            a.download = "download.png";
+                            a.download = that.entityName + ".png";
+                            document.body.appendChild(a);
                             ctx.drawImage(img, 50, 50, canvas.width, canvas.height);
                             canvas.toBlob(function(blob) {
                                 if (!blob) {
