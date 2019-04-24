@@ -282,12 +282,10 @@ define(['require',
 
                         if (isLineageRender) {
                             this.$('.lineageGraph').show();
-                            this.renderLineageLayoutView({
+                            this.renderLineageLayoutView(_.extend(obj, {
                                 processCheck: isProcess,
-                                guid: this.id,
-                                entityDefCollection: this.entityDefCollection,
                                 fetchCollection: this.fetchCollection.bind(this),
-                            });
+                            }));
                         } else if (this.value && this.value.tabActive == "lineage") {
                             Utils.setUrl({
                                 url: Utils.getUrlState.getQueryUrl().queyParams[0],
