@@ -136,14 +136,84 @@ define(['require',
                 var data = options.obj.value,
                     typeName = data.typeName || options.obj.name,
                     searchString = options.searchString,
-                    listString = "";
+                    listString = "",
+                    getEntityTypelist = function(options) {
+                        var activeEntityColor = "#4a90e2",
+                            deletedEntityColor = "#BB5838",
+                            entityTypeHtml = '',
+                            getdefault = function(obj) {
+                                var options = obj.options,
+                                    status = (Enums.entityStateReadOnly[options.entityStatus || options.status] ? " deleted-relation" : ''),
+                                    guid = options.guid,
+                                    entityColor = obj.color,
+                                    name = obj.name,
+                                    typeName = options.typeName;
+
+                                return "<li class=" + status + ">" +
+                                    "<a style='color:" + entityColor + "' href=#!/detailPage/" + guid + "?tabActive=relationship>" + name + " (" + typeName + ")</a>" +
+                                    "</li>";
+                            },
+                            getWithButton = function(obj) {
+                                var options = obj.options,
+                                    status = (Enums.entityStateReadOnly[options.entityStatus || options.status] ? " deleted-relation" : ''),
+                                    guid = options.guid,
+                                    entityColor = obj.color,
+                                    name = obj.name,
+                                    typeName = options.typeName,
+                                    relationship = obj.relationship || false,
+                                    entity = obj.entity || false,
+                                    icon = '<i class="fa fa-trash"></i>',
+                                    title = "Deleted";
+                                if (relationship) {
+                                    icon = '<i class="fa fa-long-arrow-right"></i>';
+                                    status = (Enums.entityStateReadOnly[options.relationshipStatus || options.status] ? "deleted-relation" : '');
+                                    title = "Relationship Deleted";
+                                }
+                                return "<li class=" + status + ">" +
+                                    "<a style='color:" + entityColor + "' href=#!/detailPage/" + options.guid + "?tabActive=relationship>" + _.escape(name) + " (" + options.typeName + ")</a>" +
+                                    '<button type="button" title="' + title + '" class="btn btn-sm deleteBtn deletedTableBtn btn-action ">' + icon + '</button>' +
+                                    "</li>";
+                            };
+
+                        var name = options.entityName ? options.entityName : Utils.getName(options, "displayText");
+                        if (options.entityStatus == "ACTIVE") {
+                            if (options.relationshipStatus == "ACTIVE") {
+                                entityTypeHtml = getdefault({
+                                    "color": activeEntityColor,
+                                    "options": options,
+                                    "name": _.escape(name)
+                                });
+                            } else if (options.relationshipStatus == "DELETED") {
+                                entityTypeHtml = getWithButton({
+                                    "color": activeEntityColor,
+                                    "options": options,
+                                    "name": _.escape(name),
+                                    "relationship": true
+                                })
+                            }
+                        } else if (options.entityStatus == "DELETED") {
+                            entityTypeHtml = getWithButton({
+                                "color": deletedEntityColor,
+                                "options": options,
+                                "name": _.escape(name),
+                                "entity": true
+                            })
+                        } else {
+
+                            entityTypeHtml = getdefault({
+                                "color": activeEntityColor,
+                                "options": options,
+                                "name": _.escape(name)
+                            });
+                        }
+                        return entityTypeHtml;
+                    };
                 this.ui.searchNode.hide();
                 this.$("[data-id='typeName']").text(typeName);
                 var getElement = function(options) {
                     var name = options.entityName ? options.entityName : Utils.getName(options, "displayText");
-                    return "<li class=" + (Enums.entityStateReadOnly[options.entityStatus || options.status] ? "deleted-relation" : '') + "><a href=#!/detailPage/" + options.guid + "?tabActive=relationship>" + _.escape(name) + " (" + options.typeName + ")</a>" +
-                        '<button type="button" title="Deleted" class="btn btn-sm deleteBtn deletedTableBtn ' + (Enums.entityStateReadOnly[options.entityStatus || options.status] ? "" : 'hide') + '"><i class="fa fa-trash"></i></button>' +
-                        "</li>";
+                    var entityTypeButton = getEntityTypelist(options);
+                    return entityTypeButton;
                 }
                 if (_.isArray(data)) {
                     if (data.length > 1) {
@@ -175,7 +245,8 @@ define(['require',
                 var scale = 1.0,
                     activeEntityColor = "#00b98b",
                     deletedEntityColor = "#BB5838",
-                    defaultEntityColor = "#e0e0e0";
+                    defaultEntityColor = "#e0e0e0",
+                    selectedNodeColor = "#4a90e2";
 
                 var force = d3.layout.force()
                     .nodes(d3.values(data.nodes))
@@ -329,6 +400,10 @@ define(['require',
                     })
                     .on('click', function(d) {
                         if (d3.event.defaultPrevented) return; // ignore drag
+                        if (d && d.value && d.value.guid == that.guid) {
+                            that.ui.boxClose.trigger('click');
+                            return;
+                        }
                         that.toggleBoxPanel({ el: that.$('.relationship-node-details') });
                         that.ui.searchNode.data({ obj: d });
                         $(this).find('circle').addClass("node-detail-highlight");
@@ -363,12 +438,12 @@ define(['require',
                             if (isAllEntityRelationDeleted({ data: d, type: 'node' })) {
                                 return deletedEntityColor;
                             } else {
-                                return activeEntityColor;
+                                return selectedNodeColor;
                             }
                         } else if (isAllEntityRelationDeleted({ data: d, type: 'node' })) {
                             return deletedEntityColor;
                         } else {
-                            return defaultEntityColor;
+                            return activeEntityColor;
                         }
                     })
                     .attr("typename", function(d) {
@@ -394,13 +469,7 @@ define(['require',
                         }
                     })
                     .attr("fill", function(d) {
-                        if (d && d.value && d.value.guid == that.guid) {
-                            return "#fff";
-                        } else if (isAllEntityRelationDeleted({ data: d, type: 'node' })) {
-                            return "#fff";
-                        } else {
-                            return "#000";
-                        }
+                        return "#fff";
                     });
                 var countBox = circleContainer.append('g')
                 countBox.append("circle")

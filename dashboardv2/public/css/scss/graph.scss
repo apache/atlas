@@ -61,7 +61,6 @@
         &.node-detail-highlight {
             stroke: $color_havelock_blue_approx;
             stroke-width: 2px;
-            opacity: 0.8;
         }
 
         &.nodeImage {
@@ -268,9 +267,6 @@ g.type-TK>rect {
         text-align: left;
 
         &.deleted-relation {
-            a {
-                color: #BB5838 !important;
-            }
 
             .deleteBtn {
                 padding: 2px 8px !important;
@@ -431,4 +427,23 @@ span#zoom_in {
 
 .hidden-svg {
     visibility: hidden;
+}
+
+#tab-relationship {
+
+    .entity-status {
+        &.active {
+            color: $color_jungle_green_approx;
+        }
+
+        &.deleted {
+            color: $delete_link;
+        }
+
+    }
+
+    .entity-list {
+        list-style-position: inside;
+
+    }
 }
