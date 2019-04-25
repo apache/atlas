@@ -157,8 +157,8 @@ public class MetricsServiceTest {
         // general metrics
         assertEquals(metrics.getNumericMetric(GENERAL, METRIC_ENTITY_COUNT).intValue(), 43);
         assertEquals(metrics.getNumericMetric(GENERAL, METRIC_TAG_COUNT).intValue(), 1);
-        assertEquals(metrics.getNumericMetric(GENERAL, METRIC_TYPE_UNUSED_COUNT).intValue(), 10);
-        assertEquals(metrics.getNumericMetric(GENERAL, METRIC_TYPE_COUNT).intValue(), 44);
+        assertTrue(metrics.getNumericMetric(GENERAL, METRIC_TYPE_UNUSED_COUNT).intValue() >= 10);
+        assertTrue(metrics.getNumericMetric(GENERAL, METRIC_TYPE_COUNT).intValue() >= 44);
 
         // tag metrics
         Map tagMetricsActual           = (Map) metrics.getMetric(TAG, METRIC_ENTITIES_PER_TAG);
