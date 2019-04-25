@@ -53,6 +53,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.core.annotation.Order;
 
 import javax.inject.Singleton;
 import java.io.Closeable;
@@ -84,6 +85,7 @@ import java.util.Set;
 @Singleton
 @Component
 @ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl", isDefault = true)
+@Order(0)
 public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseBasedAuditRepository.class);
 

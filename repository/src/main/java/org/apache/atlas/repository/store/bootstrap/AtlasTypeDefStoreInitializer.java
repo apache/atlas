@@ -55,6 +55,7 @@ import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -82,6 +83,7 @@ import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
  * Class that handles initial loading of models and patches into typedef store
  */
 @Service
+@Order(2)
 public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     public static final Logger LOG                    = LoggerFactory.getLogger(AtlasTypeDefStoreInitializer.class);
     public static final String PATCHES_FOLDER_NAME    = "patches";
@@ -93,7 +95,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private final AtlasTypeDefStore        typeDefStore;
     private final AtlasTypeRegistry        typeRegistry;
     private final Configuration            conf;
-    private final AtlasPatchRegistry       patchRegistry;
+    private final AtlasGraph               graph;
 
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
@@ -101,24 +103,15 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         this.typeDefStore  = typeDefStore;
         this.typeRegistry  = typeRegistry;
         this.conf          = conf;
-        this.patchRegistry = new AtlasPatchRegistry(graph);
+        this.graph         = graph;
     }
 
     @PostConstruct
-    public void init() throws AtlasBaseException {
+    public void init() {
         LOG.info("==> AtlasTypeDefStoreInitializer.init()");
 
         if (!HAConfiguration.isHAEnabled(conf)) {
-            typeDefStore.init();
-            loadBootstrapTypeDefs();
-
-            try {
-                AtlasAuthorizerFactory.getAtlasAuthorizer();
-            } catch (Throwable t) {
-                LOG.error("AtlasTypeDefStoreInitializer.init(): Unable to obtain AtlasAuthorizer", t);
-            }
-        } else {
-            LOG.info("AtlasTypeDefStoreInitializer.init(): deferring type loading until instance activation");
+            startInternal();
         }
 
         LOG.info("<== AtlasTypeDefStoreInitializer.init()");
@@ -348,12 +341,17 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     }
 
     @Override
-    public void instanceIsActive() throws AtlasException {
+    public void instanceIsActive() {
         LOG.info("==> AtlasTypeDefStoreInitializer.instanceIsActive()");
 
+        startInternal();
+
+        LOG.info("<== AtlasTypeDefStoreInitializer.instanceIsActive()");
+    }
+
+    private void startInternal() {
         try {
             typeDefStore.init();
-
             loadBootstrapTypeDefs();
 
             try {
@@ -364,8 +362,6 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         } catch (AtlasBaseException e) {
             LOG.error("Failed to init after becoming active", e);
         }
-
-        LOG.info("<== AtlasTypeDefStoreInitializer.instanceIsActive()");
     }
 
     @Override
@@ -414,6 +410,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         String             typePatchesDirName = typesDirName + File.separator + PATCHES_FOLDER_NAME;
         File               typePatchesDir     = new File(typePatchesDirName);
         File[]             typePatchFiles     = typePatchesDir.exists() ? typePatchesDir.listFiles() : null;
+        AtlasPatchRegistry patchRegistry      = new AtlasPatchRegistry(graph);
 
         if (typePatchFiles == null || typePatchFiles.length == 0) {
             LOG.info("Type patches directory {} does not exist or not readable or has no patches", typePatchesDirName);
