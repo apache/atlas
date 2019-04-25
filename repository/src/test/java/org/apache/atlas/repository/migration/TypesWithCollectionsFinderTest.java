@@ -20,12 +20,12 @@ package org.apache.atlas.repository.migration;
 
 import com.google.inject.Inject;
 import org.apache.atlas.TestModules;
-import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.graphdb.janus.migration.TypesWithCollectionsFinder;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
@@ -56,7 +56,7 @@ public class TypesWithCollectionsFinderTest extends MigrationBaseAsserts {
     public void fetchAll() {
         Map<String, Map<String, List<String>>> typeAttrMap = TypesWithCollectionsFinder.getVertexPropertiesForCollectionAttributes(typeRegistry);
 
-        assertEquals(typeAttrMap.size(), 17);
+        assertTrue(typeAttrMap.size() >= 19);
 
         assertProperties(typeAttrMap, "__AtlasUserProfile", "ARRAY", "__AtlasUserProfile.savedSearches");
 

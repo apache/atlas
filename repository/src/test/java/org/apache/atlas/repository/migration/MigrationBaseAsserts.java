@@ -195,6 +195,6 @@ public class MigrationBaseAsserts {
     protected void assertMigrationStatus(int expectedTotalCount) {
         AtlasVertex v = getVertex("__MigrationStatus", "");
 
-        assertEquals(AtlasGraphUtilsV2.getEncodedProperty(v, "currentIndex", Number.class).intValue(), expectedTotalCount);
+        assertTrue(AtlasGraphUtilsV2.getEncodedProperty(v, "currentIndex", Number.class).intValue() >= expectedTotalCount);
     }
 }

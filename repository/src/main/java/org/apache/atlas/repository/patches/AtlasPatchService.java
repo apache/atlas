@@ -18,8 +18,6 @@
 
 package org.apache.atlas.repository.patches;
 
-import javafx.application.Application;
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -37,49 +35,59 @@ import javax.inject.Inject;
 public class AtlasPatchService implements Service, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPatchService.class);
 
+    private final Configuration     configuration;
     private final AtlasPatchManager patchManager;
 
     @Inject
-    public AtlasPatchService(AtlasPatchManager patchManager) {
-        this.patchManager = patchManager;
+    public AtlasPatchService(Configuration configuration, AtlasPatchManager patchManager) {
+        this.configuration = configuration;
+        this.patchManager  = patchManager;
     }
 
     @Override
     public void start() throws AtlasException {
-        LOG.info("PatchService: Started.");
+        LOG.info("==> AtlasPatchService.start()");
 
-        startInternal(ApplicationProperties.get());
-    }
-
-    void startInternal(Configuration configuration) {
         if (!HAConfiguration.isHAEnabled(configuration)) {
-            instanceIsActive();
+            startInternal();
+        } else {
+            LOG.info("AtlasPatchService.start(): deferring patches until instance activation");
         }
+
+        LOG.info("<== AtlasPatchService.start()");
     }
 
     @Override
     public void stop() {
-        LOG.info("PatchService: Stopped.");
+        LOG.info("AtlasPatchService.stop(): stopped");
     }
 
     @Override
     public void instanceIsActive() {
-        try {
-            LOG.info("PatchService: Applying patches...");
-            patchManager.applyAll();
-        }
-        catch (Exception ex) {
-            LOG.error("PatchService: Applying patches: Failed!", ex);
-        }
+        LOG.info("==> AtlasPatchService.instanceIsActive()");
+
+        startInternal();
+
+        LOG.info("<== AtlasPatchService.instanceIsActive()");
     }
 
     @Override
     public void instanceIsPassive() {
-        LOG.info("Reacting to passive: No action for now.");
+        LOG.info("AtlasPatchService.instanceIsPassive(): no action needed");
     }
 
     @Override
     public int getHandlerOrder() {
         return HandlerOrder.ATLAS_PATCH_SERVICE.getOrder();
+    }
+
+    void startInternal() {
+        try {
+            LOG.info("AtlasPatchService: applying patches...");
+
+            patchManager.applyAll();
+        } catch (Exception ex) {
+            LOG.error("AtlasPatchService: failed in applying patches", ex);
+        }
     }
 }
