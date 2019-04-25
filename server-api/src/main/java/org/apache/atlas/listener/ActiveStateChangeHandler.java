@@ -30,8 +30,9 @@ public interface ActiveStateChangeHandler {
         AUDIT_REPOSITORY(0),
         GRAPH_BACKED_SEARCH_INDEXER(1),
         TYPEDEF_STORE_INITIALIZER(2),
-        DEFAULT_METADATA_SERVICE(3),
-        NOTIFICATION_HOOK_CONSUMER(4);
+        ATLAS_PATCH_SERVICE(3),
+        DEFAULT_METADATA_SERVICE(4),
+        NOTIFICATION_HOOK_CONSUMER(5);
 
 
         private final int order;

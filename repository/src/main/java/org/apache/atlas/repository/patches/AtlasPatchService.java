@@ -18,8 +18,13 @@
 
 package org.apache.atlas.repository.patches;
 
+import javafx.application.Application;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.service.Service;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -28,12 +33,11 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 
 @Component
-@Order(2)
-public class AtlasPatchService implements Service {
+@Order(3)
+public class AtlasPatchService implements Service, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPatchService.class);
 
     private final AtlasPatchManager patchManager;
-
 
     @Inject
     public AtlasPatchService(AtlasPatchManager patchManager) {
@@ -44,11 +48,38 @@ public class AtlasPatchService implements Service {
     public void start() throws AtlasException {
         LOG.info("PatchService: Started.");
 
-        patchManager.applyAll();
+        startInternal(ApplicationProperties.get());
+    }
+
+    void startInternal(Configuration configuration) {
+        if (!HAConfiguration.isHAEnabled(configuration)) {
+            instanceIsActive();
+        }
     }
 
     @Override
-    public void stop() throws AtlasException {
+    public void stop() {
         LOG.info("PatchService: Stopped.");
+    }
+
+    @Override
+    public void instanceIsActive() {
+        try {
+            LOG.info("PatchService: Applying patches...");
+            patchManager.applyAll();
+        }
+        catch (Exception ex) {
+            LOG.error("PatchService: Applying patches: Failed!", ex);
+        }
+    }
+
+    @Override
+    public void instanceIsPassive() {
+        LOG.info("Reacting to passive: No action for now.");
+    }
+
+    @Override
+    public int getHandlerOrder() {
+        return HandlerOrder.ATLAS_PATCH_SERVICE.getOrder();
     }
 }

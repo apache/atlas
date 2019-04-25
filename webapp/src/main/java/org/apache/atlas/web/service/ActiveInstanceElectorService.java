@@ -53,7 +53,9 @@ import java.util.Set;
  */
 
 @Component
-@Order(1)
+//
+// This should be called the last, leaving it without the @Order(Integer.MAX_VALUE) will make it get
+// called after all services have their start called.
 public class ActiveInstanceElectorService implements Service, LeaderLatchListener {
     private static final Logger LOG = LoggerFactory.getLogger(ActiveInstanceElectorService.class);
 
