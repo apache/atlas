@@ -137,7 +137,7 @@ define(['require',
                     '<div class="col-md-10"><input class="select2-search__field" placeholder="' + placeholder + '" type="search"' +
                     ' tabindex="-1" autocomplete="off" autocorrect="off" autocapitalize="off"' +
                     ' spellcheck="false" role="textbox" /></div>' +
-                    '<div class="col-md-2"><button type="button" style="margin-left: -20px" class="btn btn-action btn-sm filter " title="Entity Attribute Filter"><i class="fa fa-filter"></i></button></div>' +
+                    '<div class="col-md-2"><button type="button" style="margin-left: -20px" class="btn btn-action btn-sm filter " title="Type Filter"><i class="fa fa-filter"></i></button></div>' +
                     '</div></span>'
                 );
                 if (!this.options.options.getFilterBox) {
