@@ -355,7 +355,6 @@ define(['require',
                     showLoader: that.showLoader.bind(that),
                     hideLoader: that.hideLoader.bind(that),
                     tagName: tagName,
-                    guid: that.id,
                     callback: function() {
                         that.fetchCollection();
                     }

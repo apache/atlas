@@ -535,8 +535,11 @@ define(['require',
                         .attr('fill', 'url(#img_' + node.id + ')')
                         .attr('r', '24px')
                         .attr('data-stroke', node.id)
+                        .attr('stroke-width', "2px")
                         .attr("class", "nodeImage " + (currentNode ? "currentNode" : (node.isProcess ? "process" : "node")));
-
+                    if (currentNode) {
+                        shapeSvg.attr("stroke", "#fb4200")
+                    }
                     parent.insert("defs")
                         .append("pattern")
                         .attr("x", "0%")
@@ -1004,6 +1007,7 @@ define(['require',
 
                     };
                     img.src = url;
+
                 }, 0)
             },
             toggleLoader: function(element) {

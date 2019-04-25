@@ -41,6 +41,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 
 import javax.inject.Inject;
 import java.util.LinkedHashMap;
@@ -126,7 +127,10 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         httpSecurity
                 .authorizeRequests().anyRequest().authenticated()
                 .and()
-                    .headers().disable()
+                    .headers()
+                        .addHeaderWriter(new StaticHeadersWriter("Content-Security-Policy","script-src 'self' 'unsafe-inline' 'unsafe-eval'"))
+                        .addHeaderWriter(new StaticHeadersWriter("Server","Apache Atlas"))
+                .and()
                     .servletApi()
                 .and()
                     .csrf().disable()
