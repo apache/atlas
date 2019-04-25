@@ -62,6 +62,7 @@ define(['require',
                 events["keyup " + this.ui.searchInput] = function(e) {
                     var code = e.which;
                     this.value.query = e.currentTarget.value;
+                    this.query[this.type].query = this.value.query;
                     if (code == 13) {
                         that.findSearchResult();
                     }
@@ -253,8 +254,9 @@ define(['require',
                 });
             },
             checkForButtonVisiblity: function(e, options) {
-                var that = this;
-                if (this.type == "basic" && e && e.currentTarget) {
+                var that = this,
+                    isBasicSearch = (this.type == "basic");
+                if (e && e.currentTarget) {
                     var $el = $(e.currentTarget),
                         isTagEl = $el.data('id') == "tagLOV",
                         isTermEl = $el.data('id') == "termLOV",
@@ -263,11 +265,13 @@ define(['require',
                     if (e.type == "change" && select2Data) {
                         var value = (_.isEmpty(select2Data) ? select2Data : _.first(select2Data).id),
                             key = "tag",
-                            filterType = 'tagFilters',
+                            filterType = isBasicSearch ? 'tagFilters' : null,
                             value = value && value.length ? value : null;
                         if (!isTagEl) {
                             key = (isTermEl ? "term" : "type");
-                            filterType = (isTypeEl ? "entityFilters" : null);
+                            if (isBasicSearch) {
+                                filterType = (isTypeEl ? "entityFilters" : null);
+                            }
                         }
                         if (this.value) {
                             //On Change handle
@@ -280,7 +284,7 @@ define(['require',
                                     this.value.pageOffset = 0;
                                 }
                                 _.extend(this.query[this.type], temp);
-                            } else {
+                            } else if (isBasicSearch) {
                                 // Initial loading handle.
                                 if (filterType) {
                                     var filterObj = this.searchTableFilters[filterType];
@@ -303,10 +307,10 @@ define(['require',
                                     }
                                 }
                             }
-                            if (filterType) {
+                            if (isBasicSearch && filterType) {
                                 this.makeFilterButtonActive(filterType);
                             }
-                        } else {
+                        } else if (isBasicSearch) {
                             this.ui.tagAttrFilter.prop('disabled', true);
                             this.ui.typeAttrFilter.prop('disabled', true);
                         }
@@ -407,6 +411,17 @@ define(['require',
                     filtertype = isTag ? 'tagFilters' : 'entityFilters',
                     queryBuilderRef = this.attrModal.RQueryBuilder.currentView.ui.builder,
                     col = [];
+
+                function getIdFromRuleObject(rule) {
+                    _.map(rule.rules, function(obj, key) {
+                        if (_.has(obj, 'condition')) {
+                            return getIdFromRuleObject(obj);
+                        } else {
+                            return col.push(obj.id)
+                        }
+                    });
+                    return col;
+                }
                 if (queryBuilderRef.data('queryBuilder')) {
                     var rule = queryBuilderRef.queryBuilder('getRules');
                 }
@@ -423,17 +438,6 @@ define(['require',
                     this.attrModal.modal.close();
                     if ($(e.currentTarget).hasClass('search')) {
                         this.findSearchResult();
-                    }
-
-                    function getIdFromRuleObject(rule) {
-                        _.map(rule.rules, function(obj, key) {
-                            if (_.has(obj, 'condition')) {
-                                return getIdFromRuleObject(obj);
-                            } else {
-                                return col.push(obj.id)
-                            }
-                        });
-                        return col;
                     }
                 }
             },

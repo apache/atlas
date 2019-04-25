@@ -547,11 +547,34 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 urlObj = options.value,
                 formatDate = options.formatDate,
                 spliter = 1,
-                apiObj = options.apiObj; //if apiObj then create object for API call else for QueryBuilder.
-            if (urlObj && urlObj.length) {
-                attrObj = createObject(urlObj);
-
-                function createObject(urlObj) {
+                apiObj = options.apiObj,
+                mapUiOperatorToAPI = function(oper) {
+                    if (oper == "=") {
+                        return "eq";
+                    } else if (oper == "!=") {
+                        return "neq";
+                    } else if (oper == "<") {
+                        return "lt";
+                    } else if (oper == "<=") {
+                        return "lte";
+                    } else if (oper == ">") {
+                        return "gt";
+                    } else if (oper == ">=") {
+                        return "gte";
+                    } else if (oper == "begins_with") {
+                        return "startsWith";
+                    } else if (oper == "ends_with") {
+                        return "endsWith";
+                    } else if (oper == "contains") {
+                        return "contains";
+                    } else if (oper == "not_null") {
+                        return "notNull";
+                    } else if (oper == "is_null") {
+                        return "isNull";
+                    }
+                    return oper;
+                },
+                createObject = function(urlObj) {
                     var finalObj = {};
                     finalObj['condition'] = /^AND\(/.test(urlObj) ? "AND" : "OR";
                     urlObj = finalObj.condition === "AND" ? urlObj.substr(4).slice(0, -1) : urlObj.substr(3).slice(0, -1);
@@ -581,37 +604,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     });
                     return finalObj;
                 }
+            //if apiObj then create object for API call else for QueryBuilder.
+            if (urlObj && urlObj.length) {
+                attrObj = createObject(urlObj);
             } else {
                 return null;
             }
             return attrObj;
-
-            function mapUiOperatorToAPI(oper) {
-                if (oper == "=") {
-                    return "eq";
-                } else if (oper == "!=") {
-                    return "neq";
-                } else if (oper == "<") {
-                    return "lt";
-                } else if (oper == "<=") {
-                    return "lte";
-                } else if (oper == ">") {
-                    return "gt";
-                } else if (oper == ">=") {
-                    return "gte";
-                } else if (oper == "begins_with") {
-                    return "startsWith";
-                } else if (oper == "ends_with") {
-                    return "endsWith";
-                } else if (oper == "contains") {
-                    return "contains";
-                } else if (oper == "not_null") {
-                    return "notNull";
-                } else if (oper == "is_null") {
-                    return "isNull";
-                }
-                return oper;
-            }
         },
         generateAPIObj: function(url) {
             if (url && url.length) {

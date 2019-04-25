@@ -61,7 +61,7 @@ define(['require',
                 };
                 events["click " + this.ui.propagatedFromClick] = function(e) {
                     Utils.setUrl({
-                        url: '#!/detailPage/' + e.currentTarget.dataset.guid,
+                        url: '#!/detailPage/' + $(e.currentTarget).data("guid"),
                         mergeBrowserUrl: false,
                         trigger: true
                     });
@@ -84,7 +84,6 @@ define(['require',
                     collection: this.tagCollection,
                     includeFilter: false,
                     includePagination: true,
-                    includePageSize: false,
                     includeFooterRecords: true,
                     includePageSize: true,
                     includeGotoPage: true,
