@@ -56,6 +56,8 @@ public class TypesWithCollectionsFinderTest extends MigrationBaseAsserts {
     public void fetchAll() {
         Map<String, Map<String, List<String>>> typeAttrMap = TypesWithCollectionsFinder.getVertexPropertiesForCollectionAttributes(typeRegistry);
 
+        assertTrue(typeAttrMap.size() >= 19);
+
         assertProperties(typeAttrMap, "__AtlasUserProfile", "ARRAY", "__AtlasUserProfile.savedSearches");
 
         assertProperties(typeAttrMap, "Process", "ARRAY", "Process.inputs");
