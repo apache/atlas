@@ -549,6 +549,12 @@
     </developers>
 
     <profiles>
+        <profile>
+            <id>embedded-cassandra-solr</id>
+            <properties>
+                <guava.version>19.0</guava.version>
+            </properties>
+        </profile>
 
         <!-- Turning on this profile affects only tests and does not affect packaging -->
         <profile>
