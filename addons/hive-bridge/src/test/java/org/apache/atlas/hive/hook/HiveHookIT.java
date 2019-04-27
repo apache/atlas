@@ -28,12 +28,8 @@ import org.apache.atlas.hive.HiveITBase;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.hook.events.BaseHiveEvent;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -41,18 +37,22 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
+import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.text.ParseException;
@@ -60,16 +60,31 @@ import java.util.*;
 
 import static org.apache.atlas.AtlasClient.NAME;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.*;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.*;
 
 public class HiveHookIT extends HiveITBase {
     private static final Logger LOG = LoggerFactory.getLogger(HiveHookIT.class);
 
     private static final String PART_FILE  = "2015-01-01";
+
+    private Driver driverWithNoHook;
+
+    @BeforeClass
+    public void setUp() throws Exception {
+        //  initialize 'driverWithNoHook' with HiveServer2 hook and HiveMetastore hook disabled
+        HiveConf conf = new HiveConf();
+        conf.set("hive.exec.post.hooks", "");
+        conf.set("hive.metastore.event.listeners", "");
+
+        SessionState ss = new SessionState(conf);
+        ss = SessionState.start(ss);
+        SessionState.setCurrentSessionState(ss);
+
+        // Initialize 'driverWithNoHook'  with HS2 hook disabled and HMS hook disabled.
+        driverWithNoHook = new Driver(conf);
+
+        super.setUp();
+    }
 
     @Test
     public void testCreateDatabase() throws Exception {
@@ -87,7 +102,7 @@ public class HiveHookIT extends HiveITBase {
 
         //There should be just one entity per dbname
         runCommand("drop database " + dbName);
-        assertDBIsNotRegistered(dbName);
+        assertDatabaseIsNotRegistered(dbName);
 
         runCommand("create database " + dbName);
         dbId = assertDatabaseIsRegistered(dbName);
@@ -1557,7 +1572,7 @@ public class HiveHookIT extends HiveITBase {
         String tableName     = tableName();
         String createCommand = "create table " + tableName + " (id int, name string)";
 
-        driverWithoutContext.run(createCommand);
+        driverWithNoHook.run(createCommand);
 
         assertTableIsNotRegistered(DEFAULT_DB, tableName);
 
@@ -1802,7 +1817,7 @@ public class HiveHookIT extends HiveITBase {
             assertTableIsNotRegistered(dbName, tableNames[i]);
         }
 
-        assertDBIsNotRegistered(dbName);
+        assertDatabaseIsNotRegistered(dbName);
     }
 
     @Test
@@ -1849,14 +1864,14 @@ public class HiveHookIT extends HiveITBase {
         //Test Deletion of a non existing DB
         String dbName = "nonexistingdb";
 
-        assertDBIsNotRegistered(dbName);
+        assertDatabaseIsNotRegistered(dbName);
 
         String query = String.format("drop database if exists %s cascade", dbName);
 
         runCommand(query);
 
         //Should have no effect
-        assertDBIsNotRegistered(dbName);
+        assertDatabaseIsNotRegistered(dbName);
     }
 
     @Test
@@ -2209,31 +2224,8 @@ public class HiveHookIT extends HiveITBase {
         assertEntityIsNotRegistered(HiveDataTypes.HIVE_TABLE.getName(), ATTRIBUTE_QUALIFIED_NAME, tableQualifiedName);
     }
 
-    private void assertDBIsNotRegistered(String dbName) throws Exception {
-        LOG.debug("Searching for database {}", dbName);
-        String dbQualifiedName = HiveMetaStoreBridge.getDBQualifiedName(CLUSTER_NAME, dbName);
-        assertEntityIsNotRegistered(HiveDataTypes.HIVE_DB.getName(), ATTRIBUTE_QUALIFIED_NAME, dbQualifiedName);
-    }
-
     private String assertTableIsRegistered(String dbName, String tableName, AssertPredicate assertPredicate) throws Exception {
         return assertTableIsRegistered(dbName, tableName, assertPredicate, false);
-    }
-
-    private void assertEntityIsNotRegistered(final String typeName, final String property, final String value) throws Exception {
-        waitFor(80000, new Predicate() {
-            @Override
-            public void evaluate() throws Exception {
-                try {
-                    atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(property, value));
-                } catch (AtlasServiceException e) {
-                    if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
-                        return;
-                    }
-                }
-                fail(String.format("Entity was not supposed to exist for typeName = %s, attributeName = %s, "
-                        + "attributeValue = %s", typeName, property, value));
-            }
-        });
     }
 
     @Test
@@ -2265,10 +2257,6 @@ public class HiveHookIT extends HiveITBase {
     public void testNoopOperation() throws Exception {
         runCommand("show compactions");
         runCommand("show transactions");
-    }
-
-    private String dbName() {
-        return "db" + random();
     }
 
     private String createDatabase() throws Exception {
