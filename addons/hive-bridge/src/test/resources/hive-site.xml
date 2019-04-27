@@ -37,6 +37,11 @@
     </property>
 
     <property>
+        <name>hive.metastore.event.listeners</name>
+        <value>org.apache.atlas.hive.hook.HiveMetastoreHookImpl</value>
+    </property>
+
+    <property>
         <name>hive.support.concurrency</name>
         <value>false</value>
     </property>
