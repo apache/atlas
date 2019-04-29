@@ -19,7 +19,7 @@ It also adds sample entities along with traits as shown in the instance graph be
 
 This will add sample types and instances along with traits as shown in the instance graph above.
 
-   * bin/quick-start.sh
+   * bin/quick-start.py
 
 ---++ Dashboard
 A simple dashboard with search is available.
