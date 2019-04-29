@@ -82,6 +82,8 @@ bin/atlas_start.py</verbatim>
   curl -u username:password http://localhost:21000/api/atlas/admin/version
 
   {"Description":"Metadata Management and Data Governance Platform over Hadoop","Version":"1.0.0","Name":"apache-atlas"}</verbatim>
+  
+ NOTE: The account (admin/admin) can be used as default, please refer to [[Atlas-Authentication][Atlas-Authentication]] for account setting.
 
    * Run quick start to load sample model and data
 <verbatim>
