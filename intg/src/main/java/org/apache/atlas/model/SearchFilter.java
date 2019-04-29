@@ -43,7 +43,9 @@ public class SearchFilter {
     public static final String PARAM_TYPE = "type";
     public static final String PARAM_NAME = "name";
     public static final String PARAM_SUPERTYPE = "supertype";
+    public static final String PARAM_SERVICETYPE = "servicetype";
     public static final String PARAM_NOT_SUPERTYPE = "notsupertype";
+    public static final String PARAM_NOT_SERVICETYPE = "notservicetype";
     public static final String PARAM_NOT_NAME      = "notname";
 
     /**
