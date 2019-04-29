@@ -40,7 +40,7 @@ public class KafkaNotificationTest {
 
     @BeforeClass
     public void setup() throws Exception {
-        initNotificationService();
+        startNotificationServicesWithRetry();
     }
 
     @AfterClass
@@ -75,6 +75,31 @@ public class KafkaNotificationTest {
         }
 
         consumer.close();
+    }
+
+    // retry starting notification services every 2 mins for total of 20 mins
+    // running parallel tests will keep the notification service ports occupied, hence retry
+    void startNotificationServicesWithRetry() throws Exception {
+        long totalTime = 0;
+        long sleepTime = 2 * 60 * 1000; // 2 mins
+        long maxTime   = 20 * 60 * 1000; // 20 mins
+
+        while (true) {
+            try {
+                initNotificationService();
+                break;
+            } catch (Exception ex) {
+                cleanUpNotificationService();
+
+                if (totalTime >= maxTime) {
+                    throw ex;
+                }
+
+                Thread.sleep(sleepTime);
+
+                totalTime = totalTime + sleepTime;
+            }
+        }
     }
 
     void initNotificationService() throws Exception {
