@@ -126,7 +126,16 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
         return ret;
     }
-
+    
+    @Override
+    public List<AtlasEnumDef> getEnumDefByServiceType(String serviceType) throws AtlasBaseException {
+        List<AtlasEnumDef> ret = typeRegistry.getEnumDefByServiceType(serviceType);
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_SERVICE_TYPE_NOT_FOUND, serviceType);
+        }
+        return ret;
+    }
+    
     @Override
     @GraphTransaction
     public AtlasEnumDef updateEnumDefByName(String name, AtlasEnumDef enumDef) throws AtlasBaseException {
@@ -168,6 +177,17 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         return ret;
     }
+    
+    @Override
+    public List<AtlasStructDef> getStructDefByServiceType(String serviceType) throws AtlasBaseException {
+        List<AtlasStructDef> ret = typeRegistry.getStructDefByServiceType(serviceType);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_SERVICE_TYPE_NOT_FOUND, serviceType);
+        }
+
+        return ret;
+    }
 
     @Override
     public AtlasRelationshipDef getRelationshipDefByName(String name) throws AtlasBaseException {
@@ -186,6 +206,17 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
+        }
+
+        return ret;
+    }
+    
+    @Override
+    public List<AtlasRelationshipDef> getRelationshipDefByServiceType(String serviceType) throws AtlasBaseException {
+        List<AtlasRelationshipDef> ret = typeRegistry.getRelationshipDefByServiceType(serviceType);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_SERVICE_TYPE_NOT_FOUND, serviceType);
         }
 
         return ret;
@@ -272,6 +303,17 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
+        }
+
+        return ret;
+    }
+    
+    @Override
+    public List<AtlasEntityDef> getEntityDefByServiceType(String serviceType) throws AtlasBaseException {
+        List<AtlasEntityDef> ret = typeRegistry.getEntityDefByServiceType(serviceType);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_SERVICE_TYPE_NOT_FOUND, serviceType);
         }
 
         return ret;
@@ -627,6 +669,55 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         deleteTypesDef(typesDef);
     }
+    
+    @Override
+    @GraphTransaction
+    public void deleteTypesByServiceType(String serviceType) throws AtlasBaseException {
+        
+    	deleteTypesDef(getTypesByServiceType(serviceType));
+    }
+    
+    @Override
+    public AtlasTypesDef getTypesByServiceType(String serviceType) throws AtlasBaseException{
+
+        List<AtlasType> atlasTypes = typeRegistry.getTypesByServiceType(serviceType);
+
+        if (atlasTypes == null ) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS.TYPE_SERVICE_TYPE_NOT_FOUND, serviceType);
+        } else if(atlasTypes.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS.TYPE_SERVICE_TYPE_NOT_FOUND, serviceType);
+        }
+
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+        List<AtlasBaseTypeDef> baseTypesDef = getByServiceType(serviceType);
+        
+        List<AtlasClassificationDef> atlasClassificationDefs = new ArrayList<>();
+        List<AtlasEntityDef> atlasEntityDefs = new ArrayList<>();
+        List<AtlasEnumDef> atlasEnumDefs = new ArrayList<>();
+        List<AtlasStructDef> atlasStructDefs = new ArrayList<>();
+        List<AtlasRelationshipDef> atlasRealationshipDefs = new ArrayList<>();
+        
+        for(AtlasBaseTypeDef atlasBaseTypeDef: baseTypesDef) {
+        	if (atlasBaseTypeDef instanceof AtlasClassificationDef) {
+        		atlasClassificationDefs.add((AtlasClassificationDef)atlasBaseTypeDef);
+        	} else if (atlasBaseTypeDef instanceof AtlasEntityDef) {
+        		atlasEntityDefs.add((AtlasEntityDef)atlasBaseTypeDef);
+        	} else if (atlasBaseTypeDef instanceof AtlasEnumDef) {
+        		atlasEnumDefs.add((AtlasEnumDef)atlasBaseTypeDef);
+        	} else if (atlasBaseTypeDef instanceof AtlasRelationshipDef) {
+        		atlasRealationshipDefs.add((AtlasRelationshipDef)atlasBaseTypeDef);
+        	} else if (atlasBaseTypeDef instanceof AtlasStructDef) {
+        		atlasStructDefs.add((AtlasStructDef)atlasBaseTypeDef);
+        	}
+        }
+        typesDef.setClassificationDefs(Collections.unmodifiableList(atlasClassificationDefs));
+        typesDef.setEntityDefs(Collections.unmodifiableList(atlasEntityDefs));
+        typesDef.setEnumDefs(Collections.unmodifiableList(atlasEnumDefs));
+        typesDef.setStructDefs(Collections.unmodifiableList(atlasStructDefs));
+        typesDef.setRelationshipDefs(Collections.unmodifiableList(atlasRealationshipDefs));
+        return typesDef;
+    }
+
 
     @Override
     public AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException {
@@ -683,6 +774,15 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasType type = typeRegistry.getTypeByGuid(guid);
         return getTypeDefFromType(type);
     }
+    
+    @Override
+    public List<AtlasBaseTypeDef> getByServiceType(String serviceType) throws AtlasBaseException {
+        if (StringUtils.isBlank(serviceType)) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_SERVICE_TYPE_NOT_FOUND, serviceType);
+        }
+        List<AtlasType> types= typeRegistry.getTypesByServiceType(serviceType);
+        return getTypesDefFromTypes(types);
+    }
 
     private AtlasBaseTypeDef getTypeDefFromType(AtlasType type) throws AtlasBaseException {
         AtlasBaseTypeDef ret;
@@ -710,6 +810,16 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                 throw new AtlasBaseException(AtlasErrorCode.SYSTEM_TYPE, type.getTypeCategory().name());
         }
         return ret;
+    }
+    
+    private List<AtlasBaseTypeDef> getTypesDefFromTypes(List<AtlasType> types ) throws AtlasBaseException {
+    	List<AtlasBaseTypeDef> baseTypesDef =new ArrayList<>();
+    	
+    	for(AtlasType t: types) {
+    		AtlasBaseTypeDef baseTypeDef = getTypeDefFromType(t);
+    		baseTypesDef.add(baseTypeDef);
+    	}
+        return baseTypesDef;
     }
 
     private AtlasTransientTypeRegistry lockTypeRegistryAndReleasePostCommit() throws AtlasBaseException {
@@ -840,7 +950,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                 AtlasEnumDef createdDef = enumDefStore.create(enumDef, null);
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
-
                 ret.getEnumDefs().add(createdDef);
             }
         }
@@ -961,6 +1070,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         return ret;
     }
+    
+
 
     private class TypeRegistryUpdateHook extends GraphTransactionInterceptor.PostTransactionHook {
 
