@@ -25,7 +25,7 @@
     </api-classes>
 
     <modules>
-        <swagger host="localhost:21000"/>
+        <swagger host="localhost:21000" basePath="/api/atlas/"/>
         <jackson datatype-detection="aggressive" propertiesAlphabetical="true" honorJaxb="false"/>
         <jaxrs datatype-detection="aggressive"/>
         <jackson1 disabled="true"/>
