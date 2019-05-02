@@ -72,7 +72,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -85,7 +84,7 @@ import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_EXPRE
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_SOURCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STATUS;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STEWARD;
-import static org.apache.atlas.model.instance.AtlasRelationship.Status.ACTIVE;
+import static org.apache.atlas.model.instance.AtlasRelationship.Status.DELETED;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN;
@@ -101,12 +100,9 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VALIDITY_PERIODS_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
-import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
-import static org.apache.atlas.repository.graph.GraphHelper.addToPropagatedTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getAdjacentEdgesByLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getAllTraitNames;
-import static org.apache.atlas.repository.graph.GraphHelper.getAssociatedEntityVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
 import static org.apache.atlas.repository.graph.GraphHelper.getArrayElementsProperty;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityStatus;
@@ -1108,42 +1104,64 @@ public class EntityGraphRetriever {
             entity.setRelationshipAttribute(attributeName, ret);
 
             if (attributeEndDef.getIsLegacyAttribute() && !entity.hasAttribute(attributeName)) {
-                entity.setAttribute(attributeName, toAtlasObjectId(ret));
+                entity.setAttribute(attributeName, toLegacyAttribute(ret));
             }
         }
 
         return ret;
     }
 
-    private Object toAtlasObjectId(Object obj) {
+    private Object toLegacyAttribute(Object obj) {
         final Object ret;
 
         if (obj instanceof AtlasRelatedObjectId) {
-            AtlasRelatedObjectId relatedObjId = (AtlasRelatedObjectId) obj;
-
-            ret = relatedObjId.getRelationshipStatus() == ACTIVE ? new AtlasObjectId((AtlasObjectId) obj) : null;
+            ret = toLegacyAttribute((AtlasRelatedObjectId) obj);
         } else if (obj instanceof Collection) {
-            List list = new ArrayList();
-
-            for (Object elem : (Collection) obj) {
-                Object objId = toAtlasObjectId(elem);
-
-                if (objId != null) {
-                    list.add(objId);
-                }
-            }
-
-            ret = list;
+            ret = toLegacyAttribute((Collection) obj);
         } else if (obj instanceof Map) {
-            Map map = new HashMap();
-
-            for (Object key : ((Map) obj).keySet()) {
-                map.put(key, toAtlasObjectId(((Map) obj).get(key)));
-            }
-
-            ret = map;
+            ret = toLegacyAttribute((Map) obj);
         } else {
             ret = obj;
+        }
+
+        return ret;
+    }
+
+    private AtlasObjectId toLegacyAttribute(AtlasRelatedObjectId relatedObjId) {
+        final AtlasObjectId ret;
+
+        if (relatedObjId.getRelationshipStatus() == DELETED && relatedObjId.getEntityStatus() == AtlasEntity.Status.ACTIVE) {
+            ret = null;
+        } else {
+            ret = new AtlasObjectId(relatedObjId);
+        }
+
+        return ret;
+    }
+
+    private Collection toLegacyAttribute(Collection collection) {
+        final List ret = new ArrayList();
+
+        for (Object elem : collection) {
+            Object objId = toLegacyAttribute(elem);
+
+            if (objId != null) {
+                ret.add(objId);
+            }
+        }
+
+        return ret;
+    }
+
+    private Map toLegacyAttribute(Map map) {
+        final Map ret = new HashMap();
+
+        for (Object key : map.keySet()) {
+            Object elem = toLegacyAttribute(map.get(key));
+
+            if (elem != null) {
+                ret.put(key, elem);
+            }
         }
 
         return ret;
