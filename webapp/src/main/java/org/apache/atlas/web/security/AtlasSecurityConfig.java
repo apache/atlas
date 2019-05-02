@@ -128,7 +128,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests().anyRequest().authenticated()
                 .and()
                     .headers()
-                        .addHeaderWriter(new StaticHeadersWriter("Content-Security-Policy","script-src 'self' 'unsafe-inline' 'unsafe-eval'"))
+                        .addHeaderWriter(new StaticHeadersWriter("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:; connect-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline';font-src 'self' data:"))
                         .addHeaderWriter(new StaticHeadersWriter("Server","Apache Atlas"))
                 .and()
                     .servletApi()

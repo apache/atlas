@@ -25,10 +25,13 @@
     <div class="searchTable">
         <div class="{{#unless isGlossaryView}}row well{{/unless}}" style="padding-top: 0px;">
             <div class="row form-group pagination-box filter-box" style="display: none;">
-                <div class="col-sm-4">
+                <div class="col-sm-3">
                     <span class="labelShowRecord pull-left" data-id="pageRecordText"> </span>
                 </div>
-                <div class="col-sm-8 inline-content-fr no-padding-left">
+                <div class="col-sm-9 inline-content-fr no-padding-left">
+                    <div class="inline">
+                        <a href="javascript:void(0)" class=" multiSelectTag assignTag btn btn-action btn-sm" style="display:none" title="Assign Classification" data-id="addAssignTag"><i class="fa fa-plus"></i>&nbsp;Classification</a>
+                    </div>
                     <div class="inline" data-id="colManager"></div>
                     <div class="inline" data-id="containerCheckBox" style="display: none;">
                         <label class="checkbox-inline btn" for="historicalentities">
@@ -47,9 +50,6 @@
                             <b>Exclude sub-types</b></label>
                     </div>
                     {{/ifCond}}
-                    <div class="inline">
-                        <a href="javascript:void(0)" class=" multiSelectTag assignTag btn btn-action btn-sm" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i> Assign Tag</a>
-                    </div>
                 </div>
             </div>
             <div id="r_searchResultTableLayoutView">

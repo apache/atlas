@@ -125,6 +125,7 @@ define(['require',
                 }
                 this.showLoader();
                 this.fetchCollections();
+                this.$('.toggleRequiredSwitch').hide();
             },
             bindRequiredField: function() {
                 var that = this;
@@ -411,6 +412,11 @@ define(['require',
                         }
                     })
                 }
+                if (attributeDefs.attributeDefs.length || attributeDefs.relationshipAttributeDefs.length) {
+                    this.$('.toggleRequiredSwitch').show();
+                } else {
+                    this.$('.toggleRequiredSwitch').hide();
+                }
                 //make a function call.
                 this.renderAttribute({
                     attributeDefs: attributeDefs
@@ -443,14 +449,6 @@ define(['require',
                         // For create entity bind keyup for non-required field when all elements are optional
                         this.bindNonRequiredField();
                     }
-                    this.ui.toggleRequired.prop('checked', true);
-                } else {
-                    this.ui.entityInputData.find('fieldset').each(function() {
-                        // if checkbox is alredy selected then dont hide
-                        if (!$(this).find('div').hasClass('false') && !that.ui.toggleRequired.is(":checked")) {
-                            $(this).hide();
-                        }
-                    });
                 }
                 this.$('select[data-type="boolean"]').each(function(value, key) {
                     var dataKey = $(key).data('key');
