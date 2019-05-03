@@ -149,6 +149,18 @@ public class AtlasHiveHookContext {
         return hook.getPreprocessActionForHiveTable(qualifiedName);
     }
 
+    public List getIgnoreDummyDatabaseName() {
+        return hook.getIgnoreDummyDatabaseName();
+    }
+
+    public  List getIgnoreDummyTableName() {
+        return hook.getIgnoreDummyTableName();
+    }
+
+    public  String getIgnoreValuesTmpTableNamePrefix() {
+        return hook.getIgnoreValuesTmpTableNamePrefix();
+    }
+
     public String getQualifiedName(Database db) {
         return (db.getName() + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
     }
