@@ -238,17 +238,29 @@ public abstract class BaseHiveEvent {
 
         switch (entity.getType()) {
             case DATABASE: {
-                Database db = getHive().getDatabase(entity.getDatabase().getName());
+                if (!context.getIgnoreDummyDatabaseName().contains(entity.getDatabase().getName())) {
+                    Database db = getHive().getDatabase(entity.getDatabase().getName());
 
-                ret = toDbEntity(db);
+                    ret = toDbEntity(db);
+                }
             }
             break;
 
             case TABLE:
             case PARTITION: {
-                Table table = getHive().getTable(entity.getTable().getDbName(), entity.getTable().getTableName());
+                String  dbName    = entity.getTable().getDbName();
+                String  tableName = entity.getTable().getTableName();
+                boolean skipTable = StringUtils.isNotEmpty(context.getIgnoreValuesTmpTableNamePrefix()) && tableName.toLowerCase().startsWith(context.getIgnoreValuesTmpTableNamePrefix());
 
-                ret = toTableEntity(table, entityExtInfo);
+                if (!skipTable) {
+                    skipTable = context.getIgnoreDummyTableName().contains(tableName) && context.getIgnoreDummyDatabaseName().contains(dbName);
+                }
+
+                if (!skipTable) {
+                    Table table = getHive().getTable(dbName, tableName);
+
+                    ret = toTableEntity(table, entityExtInfo);
+                }
             }
             break;
 
