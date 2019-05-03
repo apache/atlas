@@ -26,6 +26,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
+import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.shims.Utils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -83,6 +84,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final List<Pattern>                 hiveTablesToIgnore = new ArrayList<>();
     private static final List<Pattern>                 hiveTablesToPrune  = new ArrayList<>();
     private static final Map<String, PreprocessAction> hiveTablesCache;
+    private static final List                          ignoreDummyDatabaseName;
+    private static final List                          ignoreDummyTableName;
+    private static final String                        ignoreValuesTmpTableNamePrefix;
 
     private static HiveHookObjectNamesCache knownObjects = null;
     private static String hostName;
@@ -137,6 +141,16 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
 
         knownObjects = nameCacheEnabled ? new HiveHookObjectNamesCache(nameCacheDatabaseMaxCount, nameCacheTableMaxCount, nameCacheRebuildIntervalSeconds) : null;
+
+        List<String> defaultDummyDatabase = new ArrayList<>();
+        List<String> defaultDummyTable    = new ArrayList<>();
+
+        defaultDummyDatabase.add(SemanticAnalyzer.DUMMY_DATABASE);
+        defaultDummyTable.add(SemanticAnalyzer.DUMMY_TABLE);
+
+        ignoreDummyDatabaseName        = atlasProperties.getList("atlas.hook.hive.ignore.dummy.database.name", defaultDummyDatabase);
+        ignoreDummyTableName           = atlasProperties.getList("atlas.hook.hive.ignore.dummy.table.name", defaultDummyTable);
+        ignoreValuesTmpTableNamePrefix = atlasProperties.getString("atlas.hook.hive.ignore.values.tmp.table.name.prefix", "Values__Tmp__Table__");
 
         try {
             hostName = InetAddress.getLocalHost().getHostName();
@@ -254,6 +268,18 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     public int getSkipHiveColumnLineageHive20633InputsThreshold() {
         return skipHiveColumnLineageHive20633InputsThreshold;
+    }
+
+    public  List getIgnoreDummyDatabaseName() {
+        return ignoreDummyDatabaseName;
+    }
+
+    public  List getIgnoreDummyTableName() {
+        return ignoreDummyTableName;
+    }
+
+    public  String getIgnoreValuesTmpTableNamePrefix() {
+        return ignoreValuesTmpTableNamePrefix;
     }
 
     public PreprocessAction getPreprocessActionForHiveTable(String qualifiedName) {
