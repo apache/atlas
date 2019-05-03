@@ -259,6 +259,8 @@ public abstract class BaseHiveEvent {
                     Table table = getHive().getTable(dbName, tableName);
 
                     ret = toTableEntity(table, entityExtInfo);
+                } else {
+                    context.registerSkippedEntity(entity);
                 }
             }
             break;
