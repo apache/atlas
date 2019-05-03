@@ -26,10 +26,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.hive.metastore.IHMSHandler;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.events.*;
-import org.apache.hadoop.hive.ql.hooks.HookContext;
-import org.apache.hadoop.hive.ql.hooks.LineageInfo;
-import org.apache.hadoop.hive.ql.hooks.ReadEntity;
-import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.hooks.*;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
@@ -57,6 +54,9 @@ public class AtlasHiveHookContext {
     private final HiveMetastoreHook        metastoreHook;
     private final ListenerEvent            metastoreEvent;
     private final IHMSHandler              metastoreHandler;
+
+    private boolean isSkippedInputEntity;
+    private boolean isSkippedOutputEntity;
 
     public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext,
                                 HiveHookObjectNamesCache knownObjects) throws Exception {
@@ -100,6 +100,34 @@ public class AtlasHiveHookContext {
 
     public Set<WriteEntity> getOutputs() {
         return hiveContext != null ? hiveContext.getOutputs() : Collections.emptySet();
+    }
+
+    public boolean isSkippedInputEntity() {
+        return isSkippedInputEntity;
+    }
+
+    public boolean isSkippedOutputEntity() {
+        return isSkippedOutputEntity;
+    }
+
+    public void registerSkippedEntity(Entity entity) {
+        if (entity instanceof ReadEntity) {
+            registerSkippedInputEntity();
+        } else if (entity instanceof WriteEntity) {
+            registerSkippedOutputEntity();
+        }
+    }
+
+    public void registerSkippedInputEntity() {
+        if (!isSkippedInputEntity) {
+            isSkippedInputEntity = true;
+        }
+    }
+
+    public void registerSkippedOutputEntity() {
+        if (!isSkippedOutputEntity) {
+            isSkippedOutputEntity = true;
+        }
     }
 
     public LineageInfo getLineageInfo() {

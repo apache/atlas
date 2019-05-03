@@ -18,7 +18,6 @@
 
 package org.apache.atlas.hive.hook.events;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
 import org.apache.atlas.hive.hook.HiveHook.PreprocessAction;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -28,7 +27,6 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.notification.HookNotification;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.HdfsNameServiceResolver;
 import org.apache.commons.collections.CollectionUtils;
@@ -52,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -268,6 +265,8 @@ public abstract class BaseHiveEvent {
                     Table table = getHive().getTable(dbName, tableName);
 
                     ret = toTableEntity(table, entityExtInfo);
+                } else {
+                    context.registerSkippedEntity(entity);
                 }
             }
             break;
