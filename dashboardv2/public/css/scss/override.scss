@@ -30,6 +30,21 @@
 .modal-header {
     padding: 15px;
     border-bottom: 1px solid #DEDEDE;
+
+    .header-button {
+        float: right;
+        opacity: .2;
+        color: $black;
+        margin-top: -2px;
+
+        &:hover {
+            color: $black;
+            text-decoration: none;
+            cursor: pointer;
+            filter: alpha(opacity=50);
+            opacity: .5;
+        }
+    }
 }
 
 .modal-title {

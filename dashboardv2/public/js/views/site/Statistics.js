@@ -58,23 +58,34 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, options);
+                var that = this;
                 var modal = new Modal({
                     title: 'Statistics',
                     content: this,
                     okCloses: true,
+                    okText: "Close",
                     showFooter: true,
                     allowCancel: false,
-                    width: "60%"
+                    width: "60%",
+                    headerButtons: [{
+                        title: "Refresh Data",
+                        btnClass: "fa fa-refresh",
+                        onClick: function() {
+                            modal.$el.find('.header-button .fa-refresh').tooltip('hide').prop('disabled', true).addClass('fa-spin');
+                            that.fetchMetricData({ update: true });
+                        }
+                    }]
                 }).open();
 
                 modal.on('closeModal', function() {
                     modal.trigger('cancel');
                 });
+                this.modal = modal;
             },
             bindEvents: function() {},
-            onRender: function() {
-                var that = this;
-                var entityCountCollection = new VTagList();
+            fetchMetricData: function(options) {
+                var that = this,
+                    entityCountCollection = new VTagList();
                 entityCountCollection.url = UrlLinks.entityCountApi();
                 entityCountCollection.modelAttrName = "data";
                 entityCountCollection.fetch({
@@ -84,8 +95,17 @@ define(['require',
                         that.renderEntities({ data: data });
                         that.$('.statsContainer,.statsNotificationContainer').removeClass('hide');
                         that.$('.statsLoader,.statsNotificationLoader').removeClass('show');
+                        if (options && options.update) {
+                            that.modal.$el.find('.header-button .fa-refresh').prop('disabled', false).removeClass('fa-spin');
+                            Utils.notifySuccess({
+                                content: "Metric data is refreshed"
+                            })
+                        }
                     }
                 });
+            },
+            onRender: function() {
+                this.fetchMetricData();
             },
             genrateStatusData: function(stateObject) {
                 var that = this,
