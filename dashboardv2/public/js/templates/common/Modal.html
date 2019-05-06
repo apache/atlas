@@ -19,13 +19,20 @@
         {{#if title}}
         <div class="modal-header">
             <a class="close">&times;</a>
+            {{#if headerButtons}}
+            <div class="header-button">
+                {{#each headerButtons}}
+                <button type="button" data-index={{@index}} {{#if this.title}} title="{{this.title}}" {{/if}} class="btn {{this.btnClass}}">{{this.text}}</button>
+                {{/each}}
+            </div>
+            {{/if}}
             <h4 class="modal-title">
-                    {{#if titleHtml}}
-                        {{{tt title}}}
-                      {{else}}
-                        {{tt title}}
-                      {{/if}}
-                </h4>
+                {{#if titleHtml}}
+                {{{tt title}}}
+                {{else}}
+                {{tt title}}
+                {{/if}}
+            </h4>
         </div>
         {{/if}} {{#if contentWithFooter}} {{else}}
         <div class="modal-body">{{#if contentHtml}} {{{content}}} {{else}} {{content}} {{/if}}
