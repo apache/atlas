@@ -307,7 +307,7 @@ public final class TypeConverterUtil {
     }
 
     public static AtlasAttributeDef toAtlasAttributeDef(final AttributeDefinition attrDefinition) {
-        AtlasAttributeDef ret = new AtlasAttributeDef(attrDefinition.getName(), attrDefinition.getDataTypeName());
+        AtlasAttributeDef ret = new AtlasAttributeDef(attrDefinition.getName(), attrDefinition.getDataTypeName(), attrDefinition.getSearchWeight());
 
         ret.setIsIndexable(attrDefinition.getIsIndexable());
         ret.setIsUnique(attrDefinition.getIsUnique());
@@ -362,7 +362,7 @@ public final class TypeConverterUtil {
 
                 AttributeDefinition oldAttrDef = AtlasStructDefStoreV2.toAttributeDefinition(attribute);
 
-                ret.add(new AttributeDefinition(oldAttrDef.getName(), oldAttrDef.getDataTypeName(), new Multiplicity(oldAttrDef.getMultiplicity()), oldAttrDef.getIsComposite(), oldAttrDef.getIsUnique(), oldAttrDef.getIsIndexable(), oldAttrDef.getReverseAttributeName(), oldAttrDef.getOptions()));
+                ret.add(new AttributeDefinition(oldAttrDef.getName(), oldAttrDef.getDataTypeName(), new Multiplicity(oldAttrDef.getMultiplicity()), oldAttrDef.getIsComposite(), oldAttrDef.getIsUnique(), oldAttrDef.getIsIndexable(), oldAttrDef.getReverseAttributeName(), oldAttrDef.getOptions(), oldAttrDef.getSearchWeight()));
             }
         }
 

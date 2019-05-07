@@ -200,6 +200,14 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         JanusGraphIndex vertexIndex = management.getGraphIndex(indexName);
 
         management.addIndexKey(vertexIndex, janusKey);
+        String encodedName = graph.getIndexFieldName(propertyKey, vertexIndex.getBackingIndex());
+        LOG.info("property '{}' is encoded to '{}'.", propertyKey.getName(), encodedName);
+    }
+
+    @Override
+    public String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey) {
+        JanusGraphIndex index = management.getGraphIndex(indexName);
+        return graph.getIndexFieldName(propertyKey, index.getBackingIndex());
     }
 
     @Override

@@ -135,9 +135,9 @@ public class Solr6Index implements IndexProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(Solr6Index.class);
 
-
     private static final String DEFAULT_ID_FIELD  = "id";
     private static final char   CHROOT_START_CHAR = '/';
+    private static Configuration config;
 
     private enum Mode {
         HTTP, CLOUD;
@@ -181,7 +181,7 @@ public class Solr6Index implements IndexProvider {
     public Solr6Index(final Configuration config) throws BackendException {
         // Add Kerberos-enabled SolrHttpClientBuilder
         HttpClientUtil.setHttpClientBuilder(new Krb5HttpClientBuilder().getBuilder());
-
+        initConfiguration(config);
         Preconditions.checkArgument(config!=null);
         configuration = config;
         mode = Mode.parse(config.get(SOLR_MODE));
@@ -200,23 +200,39 @@ public class Solr6Index implements IndexProvider {
             logger.debug("KERBEROS_ENABLED name is " + KERBEROS_ENABLED.getName() + " and it is" + (KERBEROS_ENABLED.isOption() ? " " : " not") + " an option.");
             logger.debug("KERBEROS_ENABLED type is " + KERBEROS_ENABLED.getType().name());
         }
+        solrClient = getSolrClient();
+
+    }
+
+    private static void initConfiguration(Configuration config) {
+        if(Solr6Index.config == null) {
+            Solr6Index.config = config;
+        }
+    }
+
+    public static SolrClient getSolrClient() {
         final ModifiableSolrParams clientParams = new ModifiableSolrParams();
+        SolrClient solrClient = null;
+        if(Solr6Index.config == null) {
+            logger.error("The solr client is not being used for the indexing purposes.");
+            return null;
+        }
+        Configuration config = Solr6Index.config;
+        Mode mode = Mode.parse(config.get(SOLR_MODE));
         switch (mode) {
             case CLOUD:
-                /* ATLAS-2920: Update JanusGraph Solr clients to use all zookeeper entries – start */
-                final List<String> zookeeperUrls = getZookeeperURLs(config);
-                /* ATLAS-2920: end */
                 final CloudSolrClient cloudServer = new CloudSolrClient.Builder()
                         .withLBHttpSolrClientBuilder(
                                 new LBHttpSolrClient.Builder()
                                         .withHttpSolrClientBuilder(new HttpSolrClient.Builder().withInvariantParams(clientParams))
                                         .withBaseSolrUrls(config.get(HTTP_URLS))
                         )
-                        .withZkHost(zookeeperUrls)
+                        .withZkHost(getZookeeperURLs(config))
                         .sendUpdatesOnlyToShardLeaders()
                         .build();
                 cloudServer.connect();
                 solrClient = cloudServer;
+                logger.info("Created solr client using Cloud based configuration.");
                 break;
             case HTTP:
                 clientParams.add(HttpClientUtil.PROP_ALLOW_COMPRESSION, config.get(HTTP_ALLOW_COMPRESSION).toString());
@@ -228,12 +244,12 @@ public class Solr6Index implements IndexProvider {
                         .withHttpClient(client)
                         .withBaseSolrUrls(config.get(HTTP_URLS))
                         .build();
-
-
+                logger.info("Created solr client using HTTP based configuration.");
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported Solr operation mode: " + mode);
         }
+        return solrClient;
     }
 
     private void configureSolrClientsForKerberos() throws PermanentBackendException {
@@ -1146,7 +1162,7 @@ public class Solr6Index implements IndexProvider {
     }
 
     /* ATLAS-2920: Update JanusGraph Solr clients to use all zookeeper entries – start */
-    private List<String> getZookeeperURLs(Configuration config) {
+    private static List<String> getZookeeperURLs(Configuration config) {
         List<String> ret     = null;
         String[]     zkHosts = config.get(ZOOKEEPER_URLS);
 

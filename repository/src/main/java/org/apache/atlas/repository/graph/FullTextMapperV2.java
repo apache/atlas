@@ -106,7 +106,7 @@ public class FullTextMapperV2 {
 
                     sb.append(classification.getTypeName()).append(FULL_TEXT_DELIMITER);
 
-                    mapAttributes(classificationType, classification.getAttributes(), entityWithExtInfo, sb, new HashSet<String>(), excludeAttributes);
+                    mapAttributes(classificationType, classification.getAttributes(), entityWithExtInfo, sb, new HashSet<String>(), excludeAttributes, false); //false because of full text context.
                 }
             }
 
@@ -138,7 +138,7 @@ public class FullTextMapperV2 {
         if (entity != null) {
             StringBuilder sb = new StringBuilder();
 
-            map(entity, entityExtInfo, sb, new HashSet<String>());
+            map(entity, entityExtInfo, sb, new HashSet<String>(), false);
 
             ret = sb.toString();
         }
@@ -150,7 +150,22 @@ public class FullTextMapperV2 {
         return ret;
     }
 
-    private void map(AtlasEntity entity, AtlasEntityExtInfo entityExtInfo, StringBuilder sb, Set<String> processedGuids) throws AtlasBaseException {
+    public String getClassificationTextForEntity(AtlasEntity entity) throws AtlasBaseException {
+        String                   ret    = null;
+
+        if (entity != null) {
+            StringBuilder sb = new StringBuilder();
+            map(entity, null, sb, new HashSet<String>(), true);
+            ret = sb.toString();
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.info("FullTextMapperV2.getClassificationTextForEntity({}): {}", entity.getGuid(), ret);
+        }
+        return ret;
+    }
+
+    private void map(AtlasEntity entity, AtlasEntityExtInfo entityExtInfo, StringBuilder sb, Set<String> processedGuids, boolean isClassificationOnly) throws AtlasBaseException {
         if (entity == null || processedGuids.contains(entity.getGuid())) {
             return;
         }
@@ -159,10 +174,11 @@ public class FullTextMapperV2 {
         final Set<String>     excludeAttributes = getExcludeAttributesForIndexText(entity.getTypeName());
 
         processedGuids.add(entity.getGuid());
+        if(!isClassificationOnly) {
+            sb.append(entity.getTypeName()).append(FULL_TEXT_DELIMITER);
 
-        sb.append(entity.getTypeName()).append(FULL_TEXT_DELIMITER);
-
-        mapAttributes(entityType, entity.getAttributes(), entityExtInfo, sb, processedGuids, excludeAttributes);
+            mapAttributes(entityType, entity.getAttributes(), entityExtInfo, sb, processedGuids, excludeAttributes, isClassificationOnly);
+        }
 
         final List<AtlasClassification> classifications = entity.getClassifications();
         if (CollectionUtils.isNotEmpty(classifications)) {
@@ -173,13 +189,13 @@ public class FullTextMapperV2 {
 
                 sb.append(classification.getTypeName()).append(FULL_TEXT_DELIMITER);
 
-                mapAttributes(classificationType, classification.getAttributes(), entityExtInfo, sb, processedGuids, excludeClassificationAttributes);
+                mapAttributes(classificationType, classification.getAttributes(), entityExtInfo, sb, processedGuids, excludeClassificationAttributes, isClassificationOnly);
             }
         }
     }
 
     private void mapAttributes(AtlasStructType structType, Map<String, Object> attributes, AtlasEntityExtInfo entityExtInfo, StringBuilder sb,
-                               Set<String> processedGuids, Set<String> excludeAttributes) throws AtlasBaseException {
+                               Set<String> processedGuids, Set<String> excludeAttributes, boolean isClassificationOnly) throws AtlasBaseException {
         if (MapUtils.isEmpty(attributes)) {
             return;
         }
@@ -212,32 +228,32 @@ public class FullTextMapperV2 {
 
             sb.append(attribKey).append(FULL_TEXT_DELIMITER);
 
-            mapAttribute(attrValue, entityExtInfo, sb, processedGuids);
+            mapAttribute(attrValue, entityExtInfo, sb, processedGuids, isClassificationOnly);
         }
     }
 
-    private void mapAttribute(Object value, AtlasEntityExtInfo entityExtInfo, StringBuilder sb, Set<String> processedGuids) throws AtlasBaseException {
+    private void mapAttribute(Object value, AtlasEntityExtInfo entityExtInfo, StringBuilder sb, Set<String> processedGuids, boolean isClassificationOnly) throws AtlasBaseException {
         if (value instanceof AtlasObjectId) {
             if (followReferences && entityExtInfo != null) {
                 AtlasObjectId objectId = (AtlasObjectId) value;
                 AtlasEntity   entity   = entityExtInfo.getEntity(objectId.getGuid());
 
                 if (entity != null) {
-                    map(entity, entityExtInfo, sb, processedGuids);
+                    map(entity, entityExtInfo, sb, processedGuids, isClassificationOnly);
                 }
             }
         } else if (value instanceof List) {
             List valueList = (List) value;
 
             for (Object listElement : valueList) {
-                mapAttribute(listElement, entityExtInfo, sb, processedGuids);
+                mapAttribute(listElement, entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else if (value instanceof Map) {
             Map valueMap = (Map) value;
 
             for (Object key : valueMap.keySet()) {
-                mapAttribute(key, entityExtInfo, sb, processedGuids);
-                mapAttribute(valueMap.get(key), entityExtInfo, sb, processedGuids);
+                mapAttribute(key, entityExtInfo, sb, processedGuids, isClassificationOnly);
+                mapAttribute(valueMap.get(key), entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else if (value instanceof Enum) {
             Enum enumValue = (Enum) value;
@@ -248,7 +264,7 @@ public class FullTextMapperV2 {
 
             for (Map.Entry<String, Object> entry : atlasStruct.getAttributes().entrySet()) {
                 sb.append(entry.getKey()).append(FULL_TEXT_DELIMITER);
-                mapAttribute(entry.getValue(), entityExtInfo, sb, processedGuids);
+                mapAttribute(entry.getValue(), entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else {
             sb.append(String.valueOf(value)).append(FULL_TEXT_DELIMITER);

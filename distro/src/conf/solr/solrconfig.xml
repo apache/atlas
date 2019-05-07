@@ -110,9 +110,13 @@
        When ManagedIndexSchemaFactory is specified with mutable = true, schema
        modification REST API calls will be allowed; otherwise, error responses will be
        sent back for these requests.
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
   -->
 
-  <schemaFactory class="ClassicIndexSchemaFactory"/>
+  <schemaFactory class="ManagedIndexSchemaFactory">
+         <bool name="mutable">true</bool>
+         <str name="managedSchemaResourceName">managed-schema</str>
+  </schemaFactory>
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Index Config - These settings control low-level behavior of indexing
@@ -473,6 +477,22 @@
        <str name="df">text</str>
      </lst>
   </requestHandler>
+
+  <requestHandler name="/freetext" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="defType">edismax</str>
+      <int name="rows">100</int>
+      <str name="lowercaseOperators">true</str>
+      <str name="qf">
+       allt10s^10 allt9s^9 allt8s^8 allt7s^7 allt6s^6 allt5s^5 allt4s^4 allt3s^3 allt2s^2 allt1s^1
+      </str>
+      <str name="hl.fl">*</str>
+      <str name="hl.requireFieldMatch">true</str>
+      <str name="lowercaseOperators">true</str>
+      <str name="facet.limit">5</str>
+    </lst>
+  </requestHandler>
+
 
   <!--
     The export request handler is used to export full sorted result sets.

@@ -81,9 +81,11 @@ public final class Constants {
     public static final String TRAIT_NAMES_PROPERTY_KEY            = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "traitNames");
     public static final String PROPAGATED_TRAIT_NAMES_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "propagatedTraitNames");
 
-    public static final String VERSION_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "version");
-    public static final String STATE_PROPERTY_KEY   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "state");
-    public static final String CREATED_BY_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "createdBy");
+    public static final String VERSION_PROPERTY_KEY          = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "version");
+    public static final String STATE_PROPERTY_KEY            = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "state");
+    public static final String CREATED_BY_KEY                = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "createdBy");
+    public static final String CLASSIFICATION_TEXT_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "classificationsText");
+
     public static final String MODIFIED_BY_KEY      = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modifiedBy");
 
     /**
