@@ -48,7 +48,7 @@ import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassificationDef> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasClassificationDefStoreV2.class);
 
-    private static final String  TRAIT_NAME_REGEX   = "[a-zA-Z][a-zA-Z0-9_ .]*";
+    private static final String  TRAIT_NAME_REGEX   = "[a-zA-Z[^\\p{ASCII}]][a-zA-Z0-9[^\\p{ASCII}]_ .]*";
 
     private static final Pattern TRAIT_NAME_PATTERN = Pattern.compile(TRAIT_NAME_REGEX);
 
