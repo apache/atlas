@@ -77,6 +77,8 @@ public abstract class BaseHiveEvent {
     public static final String HIVE_TYPE_SERDE                     = "hive_serde";
     public static final String HIVE_TYPE_ORDER                     = "hive_order";
     public static final String HIVE_TYPE_PROCESS_EXECUTION         = "hive_process_execution";
+    public static final String HIVE_DB_DDL                         = "hive_db_ddl";
+    public static final String HIVE_TABLE_DDL                      = "hive_table_ddl";
     public static final String HDFS_TYPE_PATH                      = "hdfs_path";
     public static final String HBASE_TYPE_TABLE                    = "hbase_table";
     public static final String HBASE_TYPE_NAMESPACE                = "hbase_namespace";
@@ -144,6 +146,8 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_OBJECT_PREFIX             = "objectPrefix";
     public static final String ATTRIBUTE_BUCKET                    = "bucket";
     public static final String ATTRIBUTE_HOSTNAME                  = "hostName";
+    public static final String ATTRIBUTE_EXEC_TIME                 = "execTime";
+    public static final String ATTRIBUTE_DDL_QUERIES               = "ddlQueries";
 
     public static final String HBASE_STORAGE_HANDLER_CLASS         = "org.apache.hadoop.hive.hbase.HBaseStorageHandler";
     public static final String HBASE_DEFAULT_NAMESPACE             = "default";
@@ -661,6 +665,35 @@ public abstract class BaseHiveEvent {
         ret.setAttribute(ATTRIBUTE_HOSTNAME, getContext().getHostName());
         ret.setRelationshipAttribute(ATTRIBUTE_PROCESS, AtlasTypeUtil.toAtlasRelatedObjectId(hiveProcess));
         return ret;
+    }
+
+    protected AtlasEntity createHiveDDLEntity(AtlasEntity dbOrTable) {
+        return createHiveDDLEntity(dbOrTable, false);
+    }
+
+    protected AtlasEntity createHiveDDLEntity(AtlasEntity dbOrTable, boolean excludeEntityGuid) {
+        AtlasObjectId objId   = BaseHiveEvent.getObjectId(dbOrTable);
+        AtlasEntity   hiveDDL = null;
+
+        if (excludeEntityGuid) {
+            objId.setGuid(null);
+        }
+
+        if (StringUtils.equals(objId.getTypeName(), HIVE_TYPE_DB)) {
+            hiveDDL = new AtlasEntity(HIVE_DB_DDL, ATTRIBUTE_DB, objId);
+        } else if (StringUtils.equals(objId.getTypeName(), HIVE_TYPE_TABLE)) {
+            hiveDDL = new AtlasEntity(HIVE_TABLE_DDL, ATTRIBUTE_TABLE, objId);
+        }
+
+        if (hiveDDL != null) {
+            hiveDDL.setAttribute(ATTRIBUTE_EXEC_TIME, getQueryStartTime());
+            hiveDDL.setAttribute(ATTRIBUTE_QUERY_TEXT, getQueryString());
+            hiveDDL.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
+            hiveDDL.setAttribute(ATTRIBUTE_NAME, getQueryString() + QNAME_SEP_PROCESS + getQueryStartTime().toString());
+            hiveDDL.setAttribute(ATTRIBUTE_QUALIFIED_NAME, hiveDDL.getAttribute(ATTRIBUTE_NAME));
+        }
+
+        return hiveDDL;
     }
 
     protected String getClusterName() {
