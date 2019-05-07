@@ -539,6 +539,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         attribInfo.put("reverseAttributeName", attribute.getInverseRefAttributeName());
         attribInfo.put("defaultValue", attributeDef.getDefaultValue());
         attribInfo.put("description", attributeDef.getDescription());
+        attribInfo.put("searchWeight", attributeDef.getSearchWeight());
 
         if(attributeDef.getOptions() != null) {
             attribInfo.put("options", AtlasType.toJson(attributeDef.getOptions()));
@@ -627,6 +628,12 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
             ret.setValuesMaxCount(maxCount.intValue());
         }
 
+        Number searchWeight = (Number) attribInfo.get("searchWeight");
+        if( searchWeight != null ) {
+            ret.setSearchWeight(searchWeight.intValue());
+        } else {
+            ret.setSearchWeight(-1);
+        }
         return ret;
     }
 
@@ -644,7 +651,9 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         ret.setReverseAttributeName(attribute.getInverseRefAttributeName());
         ret.setDescription(attrDef.getDescription());
         ret.setDefaultValue(attrDef.getDefaultValue());
+        ret.setSearchWeight(attrDef.getSearchWeight());
 
         return ret;
     }
 }
+

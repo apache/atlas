@@ -49,7 +49,8 @@
           "cardinality": "SINGLE",
           "isIndexable": false,
           "isOptional": false,
-          "isUnique": false
+          "isUnique": false,
+          "searchWeight": 10
         },
         {
           "name": "queryPlan",
@@ -82,7 +83,8 @@
           "isIndexable": false,
           "isOptional": true,
           "includeInNotification": true,
-          "isUnique": false
+          "isUnique": false,
+          "searchWeight": 10
         },
         {
           "name": "queryGraph",
@@ -150,7 +152,8 @@
           "cardinality": "SINGLE",
           "isIndexable": false,
           "isOptional": false,
-          "isUnique": false
+          "isUnique": false,
+          "searchWeight": 10
         },
         {
           "name": "queryGraph",

@@ -524,11 +524,37 @@
                class="solr.UUIDField"
                indexed="true" />
 
+ <fieldType name="freetext" class="solr.TextField" omitNorms="true"
+              omitTermFreqAndPositions="true">
+     <analyzer type="index">
+       <tokenizer class="solr.StandardTokenizerFactory"/>
+       <filter class="solr.LowerCaseFilterFactory"/>
+       <filter class="solr.EdgeNGramFilterFactory" minGramSize="2" maxGramSize="16" />
+       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+     </analyzer>
+     <analyzer type="query">
+       <tokenizer class="solr.KeywordTokenizerFactory"/>
+       <filter class="solr.LowerCaseFilterFactory"/>
+     </analyzer>
+   </fieldType>
+
+
     <dynamicField name="*_uuid" type="uuid"     indexed="true"  stored="true"/>
 
     <!-- TTL -->
     <field name="ttl"  type="string" indexed="true" stored="true" />
     <field name="expire_at" type="date" indexed="true" stored="true" />
     <field name="timestamp" type="date" indexed="true" stored="true" />
+    <field name="allt1s" type="freetext" multiValued="true" indexed="true" stored="false"/>
+    <field name="allt2s" type="freetext" multiValued="true" indexed="true" stored="false"/>
+    <field name="allt3s" type="freetext" multiValued="true" indexed="true" stored="false"/>
+    <field name="allt4s" type="freetext" multiValued="true" indexed="true" stored="false"/>
+    <field name="allt5s" type="freetext" multiValued="true" indexed="true" stored="false"/>
+    <field name="allt6s" type="freetext" multiValued="true" indexed="true" stored="false"/>
+    <field name="allt7s" type="freetext" multiValued="true" indexed="true" stored="false"/>
+    <field name="allt8s" type="freetext" multiValued="true" indexed="true" stored="false"/>
+    <field name="allt9s" type="freetext" multiValued="true" indexed="true" stored="false"/>
+    <field name="allt10s" type="freetext" multiValued="true" indexed="true" stored="false"/>
+
 
 </schema>

@@ -32,6 +32,7 @@ import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.DEFAULT_SEARCHWEIGHT;
 
 
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
@@ -40,7 +41,6 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AttributeDefinition implements Serializable {
     private static final long serialVersionUID = 1L;
-
     private String       name;
     private String       dataTypeName;
     private Multiplicity multiplicity;
@@ -51,22 +51,34 @@ public class AttributeDefinition implements Serializable {
     private String       defaultValue;
     private String       description;
     private Map<String, String> options;
+    private int searchWeight = DEFAULT_SEARCHWEIGHT;
 
     public AttributeDefinition() {
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity) {
-        this(name, dataTypeName, multiplicity, false, false, true, null, null);
+        this(name, dataTypeName, multiplicity, false, false, true, null, null, DEFAULT_SEARCHWEIGHT);
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                String reverseAttributeName) {
-        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName, null);
+        this(name, dataTypeName, multiplicity, isComposite, reverseAttributeName,  DEFAULT_SEARCHWEIGHT);
+    }
+
+    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
+                               String reverseAttributeName, int searchWeight) {
+        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName, null, searchWeight);
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                boolean isUnique, boolean isIndexable, String reverseAttributeName,
                                Map<String, String> options) {
+        this(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,reverseAttributeName, options, DEFAULT_SEARCHWEIGHT);
+    }
+
+    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
+                               boolean isUnique, boolean isIndexable, String reverseAttributeName,
+                               Map<String, String> options, int searchWeight) {
         this.name                 = name;
         this.dataTypeName         = dataTypeName;
         this.multiplicity         = multiplicity;
@@ -75,6 +87,7 @@ public class AttributeDefinition implements Serializable {
         this.isIndexable          = isIndexable;
         this.reverseAttributeName = reverseAttributeName;
         this.options              = options;
+        this.searchWeight         = searchWeight;
     }
 
 
@@ -183,12 +196,21 @@ public class AttributeDefinition implements Serializable {
                Objects.equals(defaultValue, that.defaultValue) &&
                Objects.equals(description, that.description) &&
                Objects.equals(reverseAttributeName, that.reverseAttributeName) &&
-                Objects.equals(options, that.options);
+               Objects.equals(options, that.options) &&
+               Objects.equals(searchWeight, that.searchWeight);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,
-                            reverseAttributeName, defaultValue, description, options);
+                            reverseAttributeName, defaultValue, description, options, searchWeight);
     }
+
+  public void setSearchWeight(int searchWeight) {
+        this.searchWeight = searchWeight;
+  }
+
+  public int getSearchWeight() {
+        return searchWeight;
+  }
 }

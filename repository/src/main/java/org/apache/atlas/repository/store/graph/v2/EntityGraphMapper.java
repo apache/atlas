@@ -38,6 +38,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.graph.FullTextMapperV2;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -79,28 +80,7 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DE
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PARTIAL_UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
-import static org.apache.atlas.repository.Constants.ATTRIBUTE_KEY_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_STATUS;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_VALIDITY_PERIODS_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY;
-import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
-import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.HOME_ID_KEY;
-import static org.apache.atlas.repository.Constants.IS_PROXY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
-import static org.apache.atlas.repository.Constants.PROVENANCE_TYPE_KEY;
-import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getCollectionElementsUsingRelationship;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
@@ -136,11 +116,12 @@ public class EntityGraphMapper {
     private final AtlasEntityChangeNotifier entityChangeNotifier;
     private final AtlasInstanceConverter    instanceConverter;
     private final EntityGraphRetriever      entityRetriever;
+    private final FullTextMapperV2 fullTextMapperV2;
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph,
                              AtlasRelationshipStore relationshipStore, AtlasEntityChangeNotifier entityChangeNotifier,
-                             AtlasInstanceConverter instanceConverter) {
+                             AtlasInstanceConverter instanceConverter, FullTextMapperV2 fullTextMapperV2) {
         this.deleteDelegate       = deleteDelegate;
         this.typeRegistry         = typeRegistry;
         this.graph                = atlasGraph;
@@ -148,6 +129,7 @@ public class EntityGraphMapper {
         this.entityChangeNotifier = entityChangeNotifier;
         this.instanceConverter    = instanceConverter;
         this.entityRetriever      = new EntityGraphRetriever(typeRegistry);
+        this.fullTextMapperV2     = fullTextMapperV2;
     }
 
     public AtlasVertex createVertex(AtlasEntity entity) {
@@ -1588,6 +1570,8 @@ public class EntityGraphMapper {
                 AtlasEntity               entity               = instanceConverter.getAndCacheEntity(entityGuid);
                 List<AtlasClassification> addedClassifications = StringUtils.equals(entityGuid, guid) ? addClassifications : propagations.get(vertex);
 
+
+                vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
                 if (CollectionUtils.isNotEmpty(addedClassifications)) {
                     entityChangeNotifier.onClassificationAddedToEntity(entity, addedClassifications);
                 }
@@ -1691,10 +1675,12 @@ public class EntityGraphMapper {
         updateModificationMetadata(entityVertex);
 
         for (Map.Entry<AtlasVertex, List<AtlasClassification>> entry : removedClassifications.entrySet()) {
-            String                    guid                       = GraphHelper.getGuid(entry.getKey());
+            AtlasVertex               vertex                     = entry.getKey();
+            String                    guid                       = GraphHelper.getGuid(vertex);
             List<AtlasClassification> deletedClassificationNames = entry.getValue();
             AtlasEntity               entity                     = instanceConverter.getAndCacheEntity(guid);
 
+            vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
             entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassificationNames);
         }
     }
@@ -1854,6 +1840,7 @@ public class EntityGraphMapper {
             AtlasEntity entity     = instanceConverter.getAndCacheEntity(entityGuid);
 
             if (isActive(entity)) {
+                vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
                 entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
             }
         }
@@ -1866,6 +1853,7 @@ public class EntityGraphMapper {
                 AtlasEntity               entity                 = instanceConverter.getAndCacheEntity(entityGuid);
 
                 if (isActive(entity)) {
+                    vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
                     entityChangeNotifier.onClassificationDeletedFromEntity(entity, removedClassifications);
                 }
             }

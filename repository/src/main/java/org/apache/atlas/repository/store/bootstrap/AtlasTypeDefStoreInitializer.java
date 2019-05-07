@@ -40,6 +40,8 @@ import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -66,11 +68,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -425,7 +423,8 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     new UpdateAttributePatchHandler(typeDefStore, typeRegistry),
                     new RemoveLegacyRefAttributesPatchHandler(typeDefStore, typeRegistry),
                     new UpdateTypeDefOptionsPatchHandler(typeDefStore, typeRegistry),
-                    new SetServiceTypePatchHandler(typeDefStore, typeRegistry)
+                    new SetServiceTypePatchHandler(typeDefStore, typeRegistry),
+                    new UpdateAttributeMetadataHandler(typeDefStore, typeRegistry)
             };
 
             Map<String, PatchHandler> patchHandlerRegistry = new HashMap<>();
@@ -506,6 +505,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         private List<AtlasAttributeDef> attributeDefs;
         private Map<String, String>     typeDefOptions;
         private String                  serviceType;
+        private String attributeName;
 
         public String getId() {
             return id;
@@ -586,6 +586,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         public void setServiceType(String serviceType) {
             this.serviceType = serviceType;
         }
+
+        public String getAttributeName() { return attributeName; }
+
+        public void setAttributeName(String attributeName) { this.attributeName = attributeName; }
     }
 
     /**
@@ -960,6 +964,94 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             }
 
             return ret;
+        }
+    }
+
+    class UpdateAttributeMetadataHandler extends PatchHandler {
+        public UpdateAttributeMetadataHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] { "UPDATE_ATTRIBUTE_METADATA" });
+        }
+
+        @Override
+        public PatchStatus applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String           typeName       = patch.getTypeName();
+            AtlasBaseTypeDef typeDef        = typeRegistry.getTypeDefByName(typeName);
+            PatchStatus      ret;
+
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+
+            if (isPatchApplicable(patch, typeDef)) {
+                String attributeNameFromPatch = patch.getAttributeName();
+                if (typeDef.getClass().equals(AtlasEntityDef.class)) {
+                    AtlasEntityDef entityDef = new AtlasEntityDef((AtlasEntityDef)typeDef);
+
+                    updateAttributeMetadata(patch, entityDef.getAttributeDefs());
+
+                    entityDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    typeDefStore.updateEntityDefByName(typeName, entityDef);
+
+                    ret = APPLIED;
+                } else if (typeDef.getClass().equals(AtlasStructDef.class)) {
+                    AtlasStructDef updatedDef = new AtlasStructDef((AtlasStructDef)typeDef);
+
+                    updateAttributeMetadata(patch, updatedDef.getAttributeDefs());
+
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    typeDefStore.updateStructDefByName(typeName, updatedDef);
+
+                    ret = APPLIED;
+                } else {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE, patch.getAction(), typeDef.getClass().getSimpleName());
+                }
+            } else {
+                LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
+                        patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
+                ret = SKIPPED;
+            }
+
+            return ret;
+        }
+
+        private void updateAttributeMetadata(TypeDefPatch patch, List<AtlasAttributeDef> attributeDefsFromEntity) {
+            for(AtlasAttributeDef attributeDef: attributeDefsFromEntity) {
+                if(attributeDef.getName().equalsIgnoreCase(patch.getAttributeName())) {
+                    updateAttribute(attributeDef, patch.getParams());
+                }
+            }
+        }
+
+        private void updateAttribute(AtlasAttributeDef atlasAttributeDef, Map<String, Object> params) {
+            if(!params.isEmpty()) {
+                for(Map.Entry<String, Object> entry: params.entrySet()) {
+                    try {
+                        if (AtlasAttributeDef.SEARCH_WEIGHT_ATTR_NAME.equalsIgnoreCase(entry.getKey())) {
+                            Number number = (Number) entry.getValue();
+                            int searchWeight = number.intValue();
+                            if(!GraphBackedSearchIndexer.isValidSearchWeight(number.intValue())) {
+                                String msg = String.format("Invalid search weight '%d' was provided for property %s.", searchWeight, atlasAttributeDef.getName());
+                                LOG.error(msg);
+                                throw new RuntimeException(msg);
+                            }
+                            atlasAttributeDef.setSearchWeight(searchWeight);
+                            LOG.info("Updating Model attribute {}'s property{} to {}.", atlasAttributeDef.getName(), entry.getKey(), entry.getValue());
+                        } else {
+                            //sanity exception
+                            //more attributes can be added as needed.
+                            String msg = String.format("Received unknown property{} for attribute {}'s ", entry.getKey(), atlasAttributeDef.getName());
+                            LOG.error(msg);
+                            throw new RuntimeException(msg);
+                        }
+                    } catch (Exception e) {
+                        String msg = String.format("Error encountered in updating Model attribute %s's property '%s' to %s.", atlasAttributeDef.getName(), entry.getKey(), entry.getValue().toString());
+                        LOG.info(msg, e);
+                        throw new RuntimeException(msg, e);
+                    }
+                }
+            }
         }
     }
 }

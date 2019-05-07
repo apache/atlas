@@ -18,7 +18,9 @@
 package org.apache.atlas.discovery;
 
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
@@ -39,6 +41,8 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -56,6 +60,7 @@ import static org.apache.atlas.model.discovery.SearchParameters.WILDCARD_CLASSIF
  * possible chaining of processor(s)
  */
 public class SearchContext {
+    private static final Logger LOG      = LoggerFactory.getLogger(SearchContext.class);
     private final SearchParameters        searchParameters;
     private final AtlasTypeRegistry       typeRegistry;
     private final AtlasGraph              graph;
@@ -65,11 +70,21 @@ public class SearchContext {
     private final AtlasClassificationType classificationType;
     private       SearchProcessor         searchProcessor;
     private       boolean                 terminateSearch = false;
+    private static boolean          isIndexSolrBased = false;
 
     public final static AtlasClassificationType MATCH_ALL_WILDCARD_CLASSIFICATION = new AtlasClassificationType(new AtlasClassificationDef(WILDCARD_CLASSIFICATIONS));
     public final static AtlasClassificationType MATCH_ALL_CLASSIFIED              = new AtlasClassificationType(new AtlasClassificationDef(ALL_CLASSIFICATIONS));
     public final static AtlasClassificationType MATCH_ALL_NOT_CLASSIFIED          = new AtlasClassificationType(new AtlasClassificationDef(NO_CLASSIFICATIONS));
 
+    static {
+        try {
+            isIndexSolrBased = ApplicationProperties.INDEX_BACKEND_SOLR.equalsIgnoreCase(ApplicationProperties.get().getString(ApplicationProperties.INDEX_BACKEND_CONF));
+        } catch (AtlasException e) {
+            String msg = String.format("Error encountered in verifying the backend index mode.");
+            LOG.error(msg, e);
+            throw new RuntimeException(msg, e);
+        };
+    }
     public SearchContext(SearchParameters searchParameters, AtlasTypeRegistry typeRegistry, AtlasGraph graph, Set<String> indexedKeys) throws AtlasBaseException {
         String classificationName = searchParameters.getClassification();
 
@@ -109,12 +124,19 @@ public class SearchContext {
         }
 
         if (needFullTextProcessor()) {
-            addProcessor(new FullTextSearchProcessor(this));
+            if(!isFreeTextIndexEnabled()) {
+                LOG.info("Using Full Text index based search.");
+                addProcessor(new FullTextSearchProcessor(this));
+            }else {
+                LOG.info("Using Free Text index based search.");
+                addProcessor(new FreeTextSearchProcessor(this));
+            }
         }
 
         if (needClassificationProcessor()) {
             addProcessor(new ClassificationSearchProcessor(this));
         }
+
 
         if (needEntityProcessor()) {
             addProcessor(new EntitySearchProcessor(this));
@@ -261,5 +283,19 @@ public class SearchContext {
 
     private AtlasEntityType getTermEntityType() {
         return typeRegistry.getEntityTypeByName(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
+    }
+
+    public static boolean isFreeTextIndexEnabled() {
+        try {
+            return isIndexSolrBased() && ApplicationProperties.get().getBoolean(ApplicationProperties.FREE_TEXT_INDEX_ENABLED, ApplicationProperties.DEFAULT_FREE_TEXT_INDEX_ENABLED);
+        } catch (AtlasException e) {
+            String msg = String.format("Error encountered in fetching the configuration %s.", ApplicationProperties.FREE_TEXT_INDEX_ENABLED);
+            LOG.error(msg, e);
+            throw new RuntimeException(msg, e);
+        }
+    }
+
+    public static boolean isIndexSolrBased() {
+        return isIndexSolrBased;
     }
 }
