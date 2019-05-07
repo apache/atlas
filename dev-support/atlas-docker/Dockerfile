@@ -37,6 +37,10 @@ WORKDIR /root
 # Pull down Atlas and build it into /root/atlas-bin.
 RUN git clone https://github.com/apache/atlas.git -b master
 
+# Memory requirements
+ENV MAVEN_OPTS "-Xms2g -Xmx2g"
+# RUN export MAVEN_OPTS="-Xms2g -Xmx2g"
+
 # Remove -DskipTests if unit tests are to be included
 RUN mvn clean install -DskipTests -Pdist,embedded-hbase-solr -f ./atlas/pom.xml
 RUN mkdir -p atlas-bin
