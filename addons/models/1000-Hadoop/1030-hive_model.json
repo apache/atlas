@@ -531,6 +531,58 @@
                     "isUnique": false
                 }
             ]
+        },
+        {
+            "name": "hive_ddl",
+            "superTypes": [
+                "Referenceable"
+            ],
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "queryText",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "execTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "userName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "hive_db_ddl",
+            "superTypes": [
+                "hive_ddl"
+            ],
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "attributeDefs": []
+        },
+        {
+            "name": "hive_table_ddl",
+            "superTypes": [
+                "hive_ddl"
+            ],
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "attributeDefs": []
         }
     ],
     "relationshipDefs": [
@@ -656,6 +708,44 @@
             "endDef2": {
                 "type": "hive_process_execution",
                 "name": "process",
+                "cardinality": "SINGLE"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "hive_table_ddl_queries",
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_table",
+                "name": "ddlQueries",
+                "isContainer": true,
+                "cardinality": "SET"
+            },
+            "endDef2": {
+                "type": "hive_table_ddl",
+                "name": "table",
+                "isContainer": false,
+                "cardinality": "SINGLE"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "hive_db_ddl_queries",
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_db",
+                "name": "ddlQueries",
+                "isContainer": true,
+                "cardinality": "SET"
+            },
+            "endDef2": {
+                "type": "hive_db_ddl",
+                "name": "db",
+                "isContainer": false,
                 "cardinality": "SINGLE"
             },
             "propagateTags": "NONE"

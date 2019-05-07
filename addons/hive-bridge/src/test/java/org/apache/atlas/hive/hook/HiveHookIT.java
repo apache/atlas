@@ -96,9 +96,13 @@ public class HiveHookIT extends HiveITBase {
 
         runCommand("create database " + dbName + " WITH DBPROPERTIES ('p1'='v1', 'p2'='v2')");
 
-        String      dbId     = assertDatabaseIsRegistered(dbName);
-        AtlasEntity dbEntity = atlasClientV2.getEntityByGuid(dbId).getEntity();
-        Map         params   = (Map) dbEntity.getAttribute(ATTRIBUTE_PARAMETERS);
+        String      dbId       = assertDatabaseIsRegistered(dbName);
+        AtlasEntity dbEntity   = atlasClientV2.getEntityByGuid(dbId).getEntity();
+        Map         params     = (Map) dbEntity.getAttribute(ATTRIBUTE_PARAMETERS);
+        List        ddlQueries = (List) dbEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        Assert.assertNotNull(ddlQueries);
+        Assert.assertEquals(ddlQueries.size(),1);
 
         Assert.assertNotNull(params);
         Assert.assertEquals(params.size(), 2);
@@ -128,9 +132,13 @@ public class HiveHookIT extends HiveITBase {
         String      tableId   = assertTableIsRegistered(dbName, tableName);
         String      colId     = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName), colName)); //there is only one instance of column registered
         AtlasEntity colEntity = atlasClientV2.getEntityByGuid(colId).getEntity();
+        AtlasEntity tblEntity = atlasClientV2.getEntityByGuid(colId).getEntity();
 
         Assert.assertEquals(colEntity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), String.format("%s.%s.%s@%s", dbName.toLowerCase(), tableName.toLowerCase(), colName.toLowerCase(), CLUSTER_NAME));
         Assert.assertNotNull(colEntity.getAttribute(ATTRIBUTE_TABLE));
+
+        Assert.assertNotNull(tblEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES));
+        Assert.assertEquals(((List)tblEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 1);
 
         AtlasObjectId tblObjId = toAtlasObjectId(colEntity.getAttribute(ATTRIBUTE_TABLE));
 
@@ -1208,7 +1216,7 @@ public class HiveHookIT extends HiveITBase {
         assertTrait(partColumnGuid, partColTraitDetails);
         assertTableIsNotRegistered(DEFAULT_DB, tableName);
 
-        assertTableIsRegistered(newDBName, newTableName, new AssertPredicate() {
+        String renamedTableId = assertTableIsRegistered(newDBName, newTableName, new AssertPredicate() {
             @Override
             public void assertOnEntity(final AtlasEntity entity) throws Exception {
                 AtlasObjectId sd = toAtlasObjectId(entity.getAttribute(ATTRIBUTE_STORAGEDESC));
@@ -1216,6 +1224,13 @@ public class HiveHookIT extends HiveITBase {
                 assertNotNull(sd);
             }
         });
+
+        AtlasEntity renamedTableEntity = atlasClientV2.getEntityByGuid(renamedTableId).getEntity();
+        List        ddlQueries         = (List) renamedTableEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        Assert.assertNotNull(ddlQueries);
+        Assert.assertEquals(ddlQueries.size(), 2);
+
     }
 
     private List<AtlasEntity> getColumns(String dbName, String tableName) throws Exception {
@@ -1270,6 +1285,14 @@ public class HiveHookIT extends HiveITBase {
         List<AtlasEntity> columns = getColumns(DEFAULT_DB, tableName);
 
         Assert.assertEquals(columns.size(), 3);
+
+        String      tblId      = assertTableIsRegistered(DEFAULT_DB, tableName);
+        AtlasEntity tblEntity  = atlasClientV2.getEntityByGuid(tblId).getEntity();
+        List        ddlQueries = (List) tblEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        Assert.assertNotNull(ddlQueries);
+        Assert.assertEquals(ddlQueries.size(), 2);
+
     }
 
     //ATLAS-1321: Disable problematic tests. Need to revisit and fix them later
@@ -1288,6 +1311,13 @@ public class HiveHookIT extends HiveITBase {
 
         assertEquals(columns.size(), 1);
         assertEquals(columns.get(0).getAttribute(NAME), "name");
+
+        String tblId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        AtlasEntity tblEntity = atlasClientV2.getEntityByGuid(tblId).getEntity();
+        List ddlQueries = (List) tblEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        Assert.assertNotNull(ddlQueries);
+        Assert.assertEquals(ddlQueries.size(), 2);
     }
 
     @Test
@@ -1307,6 +1337,13 @@ public class HiveHookIT extends HiveITBase {
         List<AtlasEntity> columns = getColumns(DEFAULT_DB, tableName);
 
         Assert.assertEquals(columns.size(), 2);
+
+        String tblId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        AtlasEntity tblEntity = atlasClientV2.getEntityByGuid(tblId).getEntity();
+        List ddlQueries = (List) tblEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        Assert.assertNotNull(ddlQueries);
+        Assert.assertEquals(ddlQueries.size(), 2);
 
         //Change column type
         oldColName = "name1";
@@ -1332,6 +1369,12 @@ public class HiveHookIT extends HiveITBase {
         });
 
         assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
+
+        AtlasEntity tblEntity2  = atlasClientV2.getEntityByGuid(tblId).getEntity();
+        List        ddlQueries2 = (List) tblEntity2.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        Assert.assertNotNull(ddlQueries2);
+        Assert.assertEquals(ddlQueries2.size(), 3);
 
         //Change name and add comment
         oldColName = "name2";
@@ -1377,7 +1420,7 @@ public class HiveHookIT extends HiveITBase {
 
         String finalNewColName = newColName;
 
-        assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
+        String tblId3 = assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
                     @Override
                     public void assertOnEntity(AtlasEntity entity) throws Exception {
                         List<AtlasObjectId> columns = toAtlasObjectIdList(entity.getAttribute(ATTRIBUTE_COLUMNS));
@@ -1386,6 +1429,12 @@ public class HiveHookIT extends HiveITBase {
                     }
                 }
         );
+
+        AtlasEntity tblEntity3  = atlasClientV2.getEntityByGuid(tblId3).getEntity();
+        List        ddlQueries3 = (List) tblEntity3.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        Assert.assertNotNull(ddlQueries3);
+        Assert.assertEquals(ddlQueries3.size(), 4);
 
         //Change col position again
         oldColName = "name4";
@@ -1407,7 +1456,7 @@ public class HiveHookIT extends HiveITBase {
         //Check col position
         String finalNewColName2 = newColName;
 
-        assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
+        String tblId4 = assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
                     @Override
                     public void assertOnEntity(AtlasEntity entity) throws Exception {
                         List<AtlasObjectId> columns = toAtlasObjectIdList(entity.getAttribute(ATTRIBUTE_COLUMNS));
@@ -1416,6 +1465,12 @@ public class HiveHookIT extends HiveITBase {
                     }
                 }
         );
+
+        AtlasEntity tblEntity4  = atlasClientV2.getEntityByGuid(tblId4).getEntity();
+        List        ddlQueries4 = (List) tblEntity4.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        Assert.assertNotNull(ddlQueries4);
+        Assert.assertEquals(ddlQueries4.size(), 5);
     }
 
     /**

@@ -149,6 +149,12 @@ public class CreateTable extends BaseHiveEvent {
                     }
                 }
             }
+
+            AtlasEntity tableDDLEntity = createHiveDDLEntity(tblEntity);
+
+            if (tableDDLEntity != null) {
+                ret.addEntity(tableDDLEntity);
+            }
         }
     }
 
