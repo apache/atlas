@@ -285,6 +285,13 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public AtlasObjectId toAtlasObjectIdWithoutGuid(AtlasEntity entity) {
+        AtlasObjectId objectId = toAtlasObjectId(entity);
+        objectId.setGuid(null);
+
+        return objectId;
+    }
+
     public AtlasClassification toAtlasClassification(AtlasVertex classificationVertex) throws AtlasBaseException {
         AtlasClassification ret = new AtlasClassification(getTypeName(classificationVertex));
 
