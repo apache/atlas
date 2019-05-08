@@ -116,12 +116,14 @@ public class AtlasTypeRegistry {
         return ret;
     }
 
-    public AtlasType getTypeByGuid(String guid) {
+    public AtlasType getTypeByGuid(String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasTypeRegistry.getTypeByGuid({})", guid);
         }
 
         AtlasType ret = registryData.allTypes.getTypeByGuid(guid);
+        if(ret == null)
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasTypeRegistry.getTypeByGuid({}): {}", guid, ret);
