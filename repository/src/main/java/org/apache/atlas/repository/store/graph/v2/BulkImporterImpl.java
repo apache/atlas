@@ -20,14 +20,25 @@ package org.apache.atlas.repository.store.graph.v2;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.impexp.StartEntityFetchByExportRequest;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.BulkImporter;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -37,17 +48,26 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import static org.apache.atlas.repository.Constants.HISTORICAL_GUID_PROPERTY_KEY;
 
 @Component
 public class BulkImporterImpl implements BulkImporter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2.class);
 
     private final AtlasEntityStore entityStore;
+    private final EntityGraphRetriever entityGraphRetriever;
+    private final Map<AtlasObjectId, String> objectIdExistingGuidMap;
+    private final StartEntityFetchByExportRequest startEntityFetchByExportRequest;
 
     @Inject
-    public BulkImporterImpl(AtlasEntityStore entityStore) {
+    public BulkImporterImpl(AtlasGraph atlasGraph, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
         this.entityStore = entityStore;
+        this.entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
+        this.objectIdExistingGuidMap = new HashMap<>();
+        this.startEntityFetchByExportRequest = new StartEntityFetchByExportRequest(atlasGraph, typeRegistry, AtlasGremlinQueryProvider.INSTANCE);
     }
 
     @Override
@@ -60,8 +80,9 @@ public class BulkImporterImpl implements BulkImporter {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
 
+        fetchExistingEntitiesNotCreatedByImport(importResult.getExportResult().getRequest());
         EntityMutationResponse ret = new EntityMutationResponse();
-        ret.setGuidAssignments(new HashMap<String, String>());
+        ret.setGuidAssignments(new HashMap<>());
 
         Set<String>  processedGuids = new HashSet<>();
         float        currentPercent = 0f;
@@ -76,7 +97,7 @@ public class BulkImporterImpl implements BulkImporter {
             if (entity == null) {
                 continue;
             }
-            
+
             AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, entityStream);
 
             try {
@@ -93,7 +114,15 @@ public class BulkImporterImpl implements BulkImporter {
                 if (!updateResidualList(e, residualList, entityWithExtInfo.getEntity().getGuid())) {
                     throw e;
                 }
-            } catch (Throwable e) {
+            } catch (AtlasSchemaViolationException e) {
+                AtlasObjectId objectId = entityGraphRetriever.toAtlasObjectIdWithoutGuid(entity);
+                if (objectIdExistingGuidMap.containsKey(objectId)) {
+                    updateVertexGuidIfImportingToNonImportedEntity(entity, objectId);
+                }
+
+                continue;
+            }
+            catch (Throwable e) {
                 AtlasBaseException abe = new AtlasBaseException(e);
 
                 if (!updateResidualList(abe, residualList, entityWithExtInfo.getEntity().getGuid())) {
@@ -110,6 +139,55 @@ public class BulkImporterImpl implements BulkImporter {
         return ret;
     }
 
+    private void fetchExistingEntitiesNotCreatedByImport(AtlasExportRequest request) {
+        List<AtlasObjectId> objectIds = startEntityFetchByExportRequest.get(request);
+        if (objectIds.isEmpty()) {
+            return;
+        }
+
+        for (AtlasObjectId objectId : objectIds) {
+            String existingGuid = objectId.getGuid();
+            objectId.setGuid(null);
+
+            objectIdExistingGuidMap.put(objectId, existingGuid);
+        }
+    }
+
+    @GraphTransaction
+    public void updateVertexGuidIfImportingToNonImportedEntity(AtlasEntity entity, AtlasObjectId objectId) {
+        String entityGuid = entity.getGuid();
+        String vertexGuid = objectIdExistingGuidMap.get(objectId);
+        if (vertexGuid.equals(entityGuid)) {
+            return;
+        }
+
+        AtlasVertex v = AtlasGraphUtilsV2.findByGuid(vertexGuid);
+        if (v == null) {
+            return;
+        }
+
+        addHistoricalGuid(v, vertexGuid);
+        AtlasGraphUtilsV2.setProperty(v, Constants.GUID_PROPERTY_KEY, entityGuid);
+
+        LOG.warn("GUID Updated: Entity: {}: from: {}: to: {}", objectId, vertexGuid, entity.getGuid());
+    }
+
+    private void addHistoricalGuid(AtlasVertex v, String vertexGuid) {
+        String existingJson = AtlasGraphUtilsV2.getProperty(v, HISTORICAL_GUID_PROPERTY_KEY, String.class);
+        
+        AtlasGraphUtilsV2.setProperty(v, HISTORICAL_GUID_PROPERTY_KEY, getJsonArray(existingJson, vertexGuid));
+    }
+
+    @VisibleForTesting
+    static String getJsonArray(String json, String vertexGuid) {
+        String quotedGuid = String.format("\"%s\"", vertexGuid);
+        if (StringUtils.isEmpty(json)) {
+            json = String.format("[%s]", quotedGuid);
+        } else {
+            json = json.replace("]", "").concat(",").concat(quotedGuid).concat("]");
+        }
+        return json;
+    }
 
     private boolean updateResidualList(AtlasBaseException e, List<String> lineageList, String guid) {
         if (!e.getAtlasErrorCode().getErrorCode().equals(AtlasErrorCode.INVALID_OBJECT_ID.getErrorCode())) {

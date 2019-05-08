@@ -32,7 +32,7 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-public class AtlasEntityStoreV2BulkImportPercentTest {
+public class BulkImportPercentTest {
 
     private final int MAX_PERCENT = 100;
     private final float MAX_PERCENT_FLOAT = 100.0F;
@@ -174,4 +174,15 @@ public class AtlasEntityStoreV2BulkImportPercentTest {
         }
         return expected;
     }
+
+    @Test
+    public void jsonArrayTest() {
+        String t1 = "123-abcd";
+        String t2 = "456-efgh";
+
+        String jsonArray = BulkImporterImpl.getJsonArray(null, t1);
+        assertEquals(jsonArray, String.format("[\"%s\"]", t1));
+        assertEquals(BulkImporterImpl.getJsonArray(jsonArray, t2), String.format("[\"%s\",\"%s\"]", t1, t2));
+    }
+
 }

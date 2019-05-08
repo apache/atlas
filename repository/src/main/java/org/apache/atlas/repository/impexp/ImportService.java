@@ -215,11 +215,11 @@ public class ImportService {
     }
 
     private void processEntities(String userName, ZipSource importSource, AtlasImportResult result) throws AtlasBaseException {
+        result.setExportResult(importSource.getExportResult());
         this.bulkImporter.bulkImport(importSource, result);
 
         endTimestamp = System.currentTimeMillis();
         result.incrementMeticsCounter("duration", getDuration(this.endTimestamp, this.startTimestamp));
-        result.setExportResult(importSource.getExportResult());
 
         result.setOperationStatus(AtlasImportResult.OperationStatus.SUCCESS);
         auditsWriter.write(userName, result, startTimestamp, endTimestamp, importSource.getCreationOrder());
