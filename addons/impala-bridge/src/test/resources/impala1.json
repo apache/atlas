@@ -1,0 +1,84 @@
+{
+  "queryText": "INSERT INTO TABLE db_wlwspnwgfp.tbl_wlwspnwgfp_7 VALUES (1, 'foo', 'foo', 'foo', 'foo', 1), (2, 'foo', 'foo', 'foo', 'foo', 2)",
+  "queryId": "4c4cb5dc22194e20:c440f5fe00000000",
+  "hash": "d936d531989bd0f46d636bd05fc2540c",
+  "user": "impala@GCE.ABCDEFGH.COM",
+  "timestamp": 1553528501,
+  "endTime": 1553528505,
+  "edges": [
+    {
+      "sources": [],
+      "targets": [
+        0
+      ],
+      "edgeType": "PROJECTION"
+    },
+    {
+      "sources": [],
+      "targets": [
+        1
+      ],
+      "edgeType": "PROJECTION"
+    },
+    {
+      "sources": [],
+      "targets": [
+        2
+      ],
+      "edgeType": "PROJECTION"
+    },
+    {
+      "sources": [],
+      "targets": [
+        3
+      ],
+      "edgeType": "PROJECTION"
+    },
+    {
+      "sources": [],
+      "targets": [
+        4
+      ],
+      "edgeType": "PROJECTION"
+    },
+    {
+      "sources": [],
+      "targets": [
+        5
+      ],
+      "edgeType": "PROJECTION"
+    }
+  ],
+  "vertices": [
+    {
+      "id": 0,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_id"
+    },
+    {
+      "id": 1,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_name"
+    },
+    {
+      "id": 2,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_street"
+    },
+    {
+      "id": 3,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_city"
+    },
+    {
+      "id": 4,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_state"
+    },
+    {
+      "id": 5,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_zipcode"
+    }
+  ]
+}

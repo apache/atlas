@@ -1,0 +1,306 @@
+{
+  "queryText": "with a AS (SELECT * FROM db_wlwspnwgfp.tbl_wlwspnwgfp_1), b AS (SELECT * FROM db_wlwspnwgfp.tbl_wlwspnwgfp_2), c AS (SELECT * FROM db_wlwspnwgfp.tbl_wlwspnwgfp_3), d AS (SELECT * FROM db_wlwspnwgfp.tbl_wlwspnwgfp_4), e AS (SELECT * FROM db_wlwspnwgfp.tbl_wlwspnwgfp_5), f AS (SELECT * FROM db_wlwspnwgfp.tbl_wlwspnwgfp_6) INSERT INTO table db_wlwspnwgfp.tbl_wlwspnwgfp_7 SELECT * FROM a UNION SELECT * FROM b UNION SELECT * FROM c UNION SELECT * FROM d UNION SELECT * FROM e UNION SELECT * FROM f",
+  "queryId": "b9423a1de88a33c3:997879c000000000",
+  "hash": "a6ff7959c66c23499346eef791c66439",
+  "user": "impala@GCE.ABCDEFGH.COM",
+  "timestamp": 1553528521,
+  "endTime": 1553528525,
+  "edges": [
+    {
+      "sources": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "targets": [
+        0
+      ],
+      "edgeType": "PROJECTION"
+    },
+    {
+      "sources": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "targets": [
+        7
+      ],
+      "edgeType": "PROJECTION"
+    },
+    {
+      "sources": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "targets": [
+        14
+      ],
+      "edgeType": "PROJECTION"
+    },
+    {
+      "sources": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        27
+      ],
+      "targets": [
+        21
+      ],
+      "edgeType": "PROJECTION"
+    },
+    {
+      "sources": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34
+      ],
+      "targets": [
+        28
+      ],
+      "edgeType": "PROJECTION"
+    },
+    {
+      "sources": [
+        36,
+        37,
+        38,
+        39,
+        40,
+        41
+      ],
+      "targets": [
+        35
+      ],
+      "edgeType": "PROJECTION"
+    }
+  ],
+  "vertices": [
+    {
+      "id": 0,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_id"
+    },
+    {
+      "id": 1,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_1.col_tbl_wlwspnwgfp_1_id"
+    },
+    {
+      "id": 2,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_2.col_tbl_wlwspnwgfp_2_id"
+    },
+    {
+      "id": 3,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_3.col_tbl_wlwspnwgfp_3_id"
+    },
+    {
+      "id": 4,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_4.col_tbl_wlwspnwgfp_4_id"
+    },
+    {
+      "id": 5,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_5.col_tbl_wlwspnwgfp_5_id"
+    },
+    {
+      "id": 6,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_6.col_tbl_wlwspnwgfp_6_id"
+    },
+    {
+      "id": 7,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_name"
+    },
+    {
+      "id": 8,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_1.col_tbl_wlwspnwgfp_1_name"
+    },
+    {
+      "id": 9,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_2.col_tbl_wlwspnwgfp_2_name"
+    },
+    {
+      "id": 10,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_3.col_tbl_wlwspnwgfp_3_name"
+    },
+    {
+      "id": 11,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_4.col_tbl_wlwspnwgfp_4_name"
+    },
+    {
+      "id": 12,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_5.col_tbl_wlwspnwgfp_5_name"
+    },
+    {
+      "id": 13,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_6.col_tbl_wlwspnwgfp_6_name"
+    },
+    {
+      "id": 14,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_street"
+    },
+    {
+      "id": 15,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_1.col_tbl_wlwspnwgfp_1_street"
+    },
+    {
+      "id": 16,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_2.col_tbl_wlwspnwgfp_2_street"
+    },
+    {
+      "id": 17,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_3.col_tbl_wlwspnwgfp_3_street"
+    },
+    {
+      "id": 18,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_4.col_tbl_wlwspnwgfp_4_street"
+    },
+    {
+      "id": 19,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_5.col_tbl_wlwspnwgfp_5_street"
+    },
+    {
+      "id": 20,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_6.col_tbl_wlwspnwgfp_6_street"
+    },
+    {
+      "id": 21,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_city"
+    },
+    {
+      "id": 22,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_1.col_tbl_wlwspnwgfp_1_city"
+    },
+    {
+      "id": 23,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_2.col_tbl_wlwspnwgfp_2_city"
+    },
+    {
+      "id": 24,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_3.col_tbl_wlwspnwgfp_3_city"
+    },
+    {
+      "id": 25,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_4.col_tbl_wlwspnwgfp_4_city"
+    },
+    {
+      "id": 26,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_5.col_tbl_wlwspnwgfp_5_city"
+    },
+    {
+      "id": 27,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_6.col_tbl_wlwspnwgfp_6_city"
+    },
+    {
+      "id": 28,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_state"
+    },
+    {
+      "id": 29,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_1.col_tbl_wlwspnwgfp_1_state"
+    },
+    {
+      "id": 30,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_2.col_tbl_wlwspnwgfp_2_state"
+    },
+    {
+      "id": 31,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_3.col_tbl_wlwspnwgfp_3_state"
+    },
+    {
+      "id": 32,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_4.col_tbl_wlwspnwgfp_4_state"
+    },
+    {
+      "id": 33,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_5.col_tbl_wlwspnwgfp_5_state"
+    },
+    {
+      "id": 34,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_6.col_tbl_wlwspnwgfp_6_state"
+    },
+    {
+      "id": 35,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_7.col_tbl_wlwspnwgfp_7_zipcode"
+    },
+    {
+      "id": 36,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_1.col_tbl_wlwspnwgfp_1_zipcode"
+    },
+    {
+      "id": 37,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_2.col_tbl_wlwspnwgfp_2_zipcode"
+    },
+    {
+      "id": 38,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_3.col_tbl_wlwspnwgfp_3_zipcode"
+    },
+    {
+      "id": 39,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_4.col_tbl_wlwspnwgfp_4_zipcode"
+    },
+    {
+      "id": 40,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_5.col_tbl_wlwspnwgfp_5_zipcode"
+    },
+    {
+      "id": 41,
+      "vertexType": "COLUMN",
+      "vertexId": "db_wlwspnwgfp.tbl_wlwspnwgfp_6.col_tbl_wlwspnwgfp_6_zipcode"
+    }
+  ]
+}
