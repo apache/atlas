@@ -364,11 +364,6 @@
                   <artifactItems>
                     <artifactItem>
                       <groupId>${project.groupId}</groupId>
-                      <artifactId>impala-bridge-shim</artifactId>
-                      <version>${project.version}</version>
-                    </artifactItem>
-                    <artifactItem>
-                      <groupId>${project.groupId}</groupId>
                       <artifactId>atlas-plugin-classloader</artifactId>
                       <version>${project.version}</version>
                     </artifactItem>
