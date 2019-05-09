@@ -108,6 +108,14 @@ public class CreateHiveProcess extends BaseHiveEvent {
                     if (entity != null) {
                         outputs.add(entity);
                     }
+
+                    if (entity != null && !context.isMetastoreHook()) {
+                        AtlasEntity ddlEntity = createHiveDDLEntity(entity);
+
+                        if (ddlEntity != null) {
+                            ret.addEntity(ddlEntity);
+                        }
+                    }
                 }
             }
 
@@ -121,7 +129,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
                 }
             }
 
-            if (!skipProcess) {
+            if (!skipProcess && !context.isMetastoreHook()) {
                 AtlasEntity process = getHiveProcessEntity(inputs, outputs);
 
                 ret.addEntity(process);

@@ -148,10 +148,12 @@ public class AlterTableRename extends BaseHiveEvent {
         ret.add(new EntityPartialUpdateRequestV2(getUserName(), oldTableId, renamedTableEntity));
 
         // partial update relationship attribute ddl
-        AtlasEntity ddlEntity = createHiveDDLEntity(renamedTableEntity.getEntity(), true);
+        if (!context.isMetastoreHook()) {
+            AtlasEntity ddlEntity = createHiveDDLEntity(renamedTableEntity.getEntity(), true);
 
-        if (ddlEntity != null) {
-            ret.add(new HookNotification.EntityCreateRequestV2(getUserName(), new AtlasEntitiesWithExtInfo(ddlEntity)));
+            if (ddlEntity != null) {
+                ret.add(new HookNotification.EntityCreateRequestV2(getUserName(), new AtlasEntitiesWithExtInfo(ddlEntity)));
+            }
         }
 
         context.removeFromKnownTable(oldTableQualifiedName);

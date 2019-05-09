@@ -117,7 +117,7 @@ public class CreateTable extends BaseHiveEvent {
         if (table != null) {
             AtlasEntity tblEntity = toTableEntity(table, ret);
 
-            if (tblEntity != null) {
+            if (tblEntity != null && !context.isMetastoreHook()) {
                 if (isHBaseStore(table)) {
                     // This create lineage to HBase table in case of Hive on HBase
                     AtlasEntity hbaseTableEntity = toReferencedHBaseTable(table, ret);
@@ -134,7 +134,6 @@ public class CreateTable extends BaseHiveEvent {
 
                         AtlasEntity processExecution = getHiveProcessExecutionEntity(processEntity);
                         ret.addEntity(processExecution);
-
                     }
                 } else {
                     if (EXTERNAL_TABLE.equals(table.getTableType())) {
@@ -148,12 +147,12 @@ public class CreateTable extends BaseHiveEvent {
                         ret.addEntity(processExecution);
                     }
                 }
-            }
 
-            AtlasEntity tableDDLEntity = createHiveDDLEntity(tblEntity);
+                AtlasEntity tableDDLEntity = createHiveDDLEntity(tblEntity);
 
-            if (tableDDLEntity != null) {
-                ret.addEntity(tableDDLEntity);
+                if (tableDDLEntity != null) {
+                    ret.addEntity(tableDDLEntity);
+                }
             }
         }
     }

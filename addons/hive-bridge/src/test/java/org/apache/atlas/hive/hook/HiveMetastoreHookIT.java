@@ -26,9 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_DDL_QUERIES;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.testng.AssertJUnit.*;
@@ -42,10 +43,10 @@ public class HiveMetastoreHookIT extends HiveITBase {
         String query  = "CREATE DATABASE " + dbName;
 
         runCommand(query);
-        String dbId = assertDatabaseIsRegistered(dbName);
-
+        String dbId          = assertDatabaseIsRegistered(dbName);
         AtlasEntity dbEntity = getAtlasEntity(dbId);
-        assertNotNull(dbEntity);
+
+        assertEquals(((List) dbEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
     }
 
     @Test (priority = 2)
@@ -66,6 +67,7 @@ public class HiveMetastoreHookIT extends HiveITBase {
         dbEntity = getAtlasEntity(dbId);
         Map parameters = (Map) dbEntity.getAttribute("parameters");
 
+        assertEquals(((List) dbEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
         assertNotNull(parameters);
         assertEquals(2, parameters.size());
 
@@ -75,6 +77,8 @@ public class HiveMetastoreHookIT extends HiveITBase {
 
         dbEntity = getAtlasEntity(dbId);
 
+
+        assertEquals(((List) dbEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
         assertEquals(dbEntity.getAttribute("owner"), "hive");
         assertEquals(dbEntity.getAttribute("ownerType"), "USER");
 
@@ -85,6 +89,8 @@ public class HiveMetastoreHookIT extends HiveITBase {
         runCommandWithDelay(query);
 
         dbEntity = getAtlasEntity(dbId);
+
+        assertEquals(((List) dbEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
 
         String location = (String) dbEntity.getAttribute("location");
         assertEquals(location, hdfsPath);
@@ -146,9 +152,12 @@ public class HiveMetastoreHookIT extends HiveITBase {
         String dbId = assertDatabaseIsRegistered(dbName);
         assertEquals(getAtlasEntity(dbId).getStatus(), ACTIVE);
 
-        String tableName = tableName();
+        String tableName      = tableName();
         runCommand("CREATE TABLE " + dbName + "." + tableName + " (name string, age int, dob date)");
-        String tblId = assertTableIsRegistered(dbName, tableName);
+        String tblId          = assertTableIsRegistered(dbName, tableName);
+        AtlasEntity tblEntity = getAtlasEntity(tblId);
+
+        assertEquals(((List) tblEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
         assertEquals(getAtlasEntity(tblId).getStatus(), ACTIVE);
     }
 
@@ -167,8 +176,13 @@ public class HiveMetastoreHookIT extends HiveITBase {
         assertEquals(getAtlasEntity(tblId).getStatus(), ACTIVE);
 
         String viewName = tableName();
+
         runCommand("CREATE VIEW " + dbName + "." + viewName + " AS SELECT * FROM " + dbName + "." + tableName);
-        tblId = assertTableIsRegistered(dbName, viewName);
+
+        tblId                 = assertTableIsRegistered(dbName, viewName);
+        AtlasEntity tblEntity = getAtlasEntity(tblId);
+
+        assertEquals(((List) tblEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
         assertEquals(getAtlasEntity(tblId).getStatus(), ACTIVE);
     }
 
@@ -180,11 +194,13 @@ public class HiveMetastoreHookIT extends HiveITBase {
         runCommand(query);
         String dbId = assertDatabaseIsRegistered(dbName);
         assertEquals(getAtlasEntity(dbId).getStatus(), ACTIVE);
+        assertEquals(((List) getAtlasEntity(dbId).getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
 
         String tableName = tableName();
         runCommand("CREATE TABLE " + dbName + "." + tableName + " (name string, age int, dob date)");
         String tblId = assertTableIsRegistered(dbName, tableName);
         assertEquals(getAtlasEntity(tblId).getStatus(), ACTIVE);
+        assertEquals(((List) getAtlasEntity(tblId).getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
 
         // SET TBLPROPERTIES
         query = "ALTER TABLE " + dbName + "." + tableName + " SET TBLPROPERTIES (\"prop1\"=\"val1\", \"prop2\"=\"val2\", \"prop3\"=\"val3\")";
@@ -216,6 +232,7 @@ public class HiveMetastoreHookIT extends HiveITBase {
         assertEquals(serdeAttrs.get("serializationLib"), "org.apache.hadoop.hive.ql.io.orc.OrcSerde");
         assertEquals(((Map) serdeAttrs.get("parameters")).get("prop1"), "val1");
         assertEquals(((Map) serdeAttrs.get("parameters")).get("prop2"), "val2");
+        assertEquals(((List) tableEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
     }
 
     @Test (priority = 8)
@@ -239,6 +256,8 @@ public class HiveMetastoreHookIT extends HiveITBase {
 
         AtlasEntityWithExtInfo tableEntityWithExtInfo = getAtlasEntityWithExtInfo(tblId);
         AtlasEntity            tableEntity            = tableEntityWithExtInfo.getEntity();
+
+        assertEquals(((List) tableEntity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
 
         // validate table rename in table entity
         assertEquals(newTableName, tableEntity.getAttribute("name"));
@@ -284,6 +303,7 @@ public class HiveMetastoreHookIT extends HiveITBase {
         AtlasEntity col2Entity = getAtlasEntity(col2Id);
         assertEquals(col2Entity.getAttribute("name"), "col22");
         assertEquals(col2Entity.getAttribute("type"), "string");
+        assertEquals(((List) getAtlasEntity(tblId).getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES)).size(), 0);
     }
 
     @Test (priority = 10)
