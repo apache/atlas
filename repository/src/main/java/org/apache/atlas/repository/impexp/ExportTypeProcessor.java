@@ -42,11 +42,9 @@ class ExportTypeProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ExportTypeProcessor.class);
 
     private AtlasTypeRegistry typeRegistry;
-    private final ExportService.ExportContext context;
 
-    ExportTypeProcessor(AtlasTypeRegistry typeRegistry, ExportService.ExportContext context) {
+    ExportTypeProcessor(AtlasTypeRegistry typeRegistry) {
         this.typeRegistry = typeRegistry;
-        this.context = context;
     }
 
     public void addTypes(AtlasEntity entity, ExportService.ExportContext context) {

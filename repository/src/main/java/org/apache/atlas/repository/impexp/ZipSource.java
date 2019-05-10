@@ -190,10 +190,10 @@ public class ZipSource implements EntityImportStream {
         T t;
         try {
             t = AtlasType.fromJson(jsonData, clazz);
-            if(t == null) {
-                throw new AtlasBaseException("Error converting file to JSON.");
+            if (t == null) {
+                LOG.error("Error converting file to JSON.");
+                return null;
             }
-
         } catch (Exception e) {
             throw new AtlasBaseException("Error converting file to JSON.", e);
         }
@@ -238,7 +238,7 @@ public class ZipSource implements EntityImportStream {
             currentPosition++;
             return getEntityWithExtInfo(this.iterator.next());
         } catch (AtlasBaseException e) {
-            LOG.error("getNextEntityWithExtInfo", e);
+            LOG.warn("getNextEntityWithExtInfo", e);
             return null;
         }
     }
