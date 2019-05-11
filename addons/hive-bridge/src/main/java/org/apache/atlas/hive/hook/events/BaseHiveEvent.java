@@ -463,7 +463,7 @@ public abstract class BaseHiveEvent {
             ret.setAttribute(ATTRIBUTE_NUM_BUCKETS, sd.getNumBuckets());
             ret.setAttribute(ATTRIBUTE_STORED_AS_SUB_DIRECTORIES, sd.isStoredAsSubDirectories());
 
-            if (sd.getBucketCols().size() > 0) {
+            if (sd.getBucketCols() != null && sd.getBucketCols().size() > 0) {
                 ret.setAttribute(ATTRIBUTE_BUCKET_COLS, sd.getBucketCols());
             }
 
@@ -500,36 +500,38 @@ public abstract class BaseHiveEvent {
     }
 
     protected List<AtlasEntity> getColumnEntities(AtlasObjectId tableId, Table table, List<FieldSchema> fieldSchemas) {
-        List<AtlasEntity> ret          = new ArrayList<>();
-        boolean           isKnownTable = tableId.getGuid() == null;
+        List<AtlasEntity> ret            = new ArrayList<>();
+        boolean           isKnownTable   = tableId.getGuid() == null;
+        int               columnPosition = 0;
 
-        int columnPosition = 0;
-        for (FieldSchema fieldSchema : fieldSchemas) {
-            String      colQualifiedName = getQualifiedName(table, fieldSchema);
-            AtlasEntity column           = context.getEntity(colQualifiedName);
+        if (CollectionUtils.isNotEmpty(fieldSchemas)) {
+            for (FieldSchema fieldSchema : fieldSchemas) {
+                String      colQualifiedName = getQualifiedName(table, fieldSchema);
+                AtlasEntity column           = context.getEntity(colQualifiedName);
 
-            if (column == null) {
-                column = new AtlasEntity(HIVE_TYPE_COLUMN);
+                if (column == null) {
+                    column = new AtlasEntity(HIVE_TYPE_COLUMN);
 
-                // if column's table was sent in an earlier notification, set 'guid' to null - which will:
-                //  - result in this entity to be not included in 'referredEntities'
-                //  - cause Atlas server to resolve the entity by its qualifiedName
-                if (isKnownTable) {
-                    column.setGuid(null);
+                    // if column's table was sent in an earlier notification, set 'guid' to null - which will:
+                    //  - result in this entity to be not included in 'referredEntities'
+                    //  - cause Atlas server to resolve the entity by its qualifiedName
+                    if (isKnownTable) {
+                        column.setGuid(null);
+                    }
+
+                    column.setAttribute(ATTRIBUTE_TABLE, tableId);
+                    column.setAttribute(ATTRIBUTE_QUALIFIED_NAME, colQualifiedName);
+                    column.setAttribute(ATTRIBUTE_NAME, fieldSchema.getName());
+                    column.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
+                    column.setAttribute(ATTRIBUTE_COL_TYPE, fieldSchema.getType());
+                    column.setAttribute(ATTRIBUTE_COL_POSITION, columnPosition++);
+                    column.setAttribute(ATTRIBUTE_COMMENT, fieldSchema.getComment());
+
+                    context.putEntity(colQualifiedName, column);
                 }
 
-                column.setAttribute(ATTRIBUTE_TABLE, tableId);
-                column.setAttribute(ATTRIBUTE_QUALIFIED_NAME, colQualifiedName);
-                column.setAttribute(ATTRIBUTE_NAME, fieldSchema.getName());
-                column.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
-                column.setAttribute(ATTRIBUTE_COL_TYPE, fieldSchema.getType());
-                column.setAttribute(ATTRIBUTE_COL_POSITION, columnPosition++);
-                column.setAttribute(ATTRIBUTE_COMMENT, fieldSchema.getComment());
-
-                context.putEntity(colQualifiedName, column);
+                ret.add(column);
             }
-
-            ret.add(column);
         }
 
         return ret;
