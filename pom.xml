@@ -719,6 +719,10 @@
         <hppc.version>0.8.1</hppc.version>
         <!-- Storm dependencies -->
 
+        <!-- keycloak dependencies -->
+        <keycloak.version>6.0.1</keycloak.version>
+        <!-- keycloak dependencies -->
+
         <PermGen>64m</PermGen>
         <MaxPermGen>512m</MaxPermGen>
 
