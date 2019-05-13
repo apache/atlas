@@ -7,6 +7,7 @@ Atlas supports following authentication methods
    * *File*
    * *Kerberos*
    * *LDAP*
+   * *Keycloak (OpenID Connect / OAUTH2)*
 
 
 Following properties should be set true to enable the authentication of that type in =atlas-application.properties= file.
@@ -16,6 +17,7 @@ Following properties should be set true to enable the authentication of that typ
 atlas.authentication.method.kerberos=true|false
 atlas.authentication.method.ldap=true|false
 atlas.authentication.method.file=true|false
+atlas.authentication.method.keycloak=true|false
 </verbatim>
 
 If two or more authentication methods are set to true, then the authentication falls back to the latter method if the earlier one fails.
@@ -111,3 +113,29 @@ atlas.authentication.method.ldap.user.searchfilter=(uid={0})
 atlas.authentication.method.ldap.default.role=ROLE_USER
 </verbatim>
 
+---++++ Keycloak Method.
+
+To enable Keycloak authentication mode in Atlas, set the property =atlas.authentication.method.keycloak= to true and also set the property =atlas.authentication.method.keycloak.file= to the localtion of your =keycloak.json= in =atlas-application.properties=.
+Also set =atlas.authentication.method.keycloak.ugi-groups= to false if you want to pickup groups from Keycloak. By default the groups will be picked up from the *roles* defined in Keycloak. In case you want to use the groups
+you need to create a mapping in keycloak and define =atlas.authentication.method.keycloak.groups_claim= equal to the token claim name. Make sure *not* to use the full group path and add the information to the access token.
+
+<verbatim>
+atlas.authentication.method.keycloak=true
+atlas.authentication.method.keycloak.file=/opt/atlas/conf/keycloak.json
+atlas.authentication.method.keycloak.ugi-groups=false
+</verbatim>
+
+Setup you keycloak.json per instructions from Keycloak. Make sure to include ="principal-attribute": "preferred_username"= to ensure readable user names and ="autodetect-bearer-only": true=.
+
+<verbatim>
+{
+  "realm": "auth",
+  "auth-server-url": "http://keycloak-server/auth",
+  "ssl-required": "external",
+  "resource": "atlas",
+  "public-client": true,
+  "confidential-port": 0,
+  "principal-attribute": "preferred_username",
+  "autodetect-bearer-only": true
+}
+</verbatim>
