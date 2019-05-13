@@ -468,6 +468,14 @@
             <artifactId>hadoop-aws</artifactId>
             <version>${hadoop.version}</version>
         </dependency>
+
+        <!-- Keycloak -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-spring-security-adapter</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
