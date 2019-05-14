@@ -70,6 +70,7 @@ define(['require',
                     includeFilter: false,
                     includePagination: false,
                     includePageSize: false,
+                    includeAtlasTableSorting: true,
                     includeFooterRecords: false,
                     gridOpts: {
                         className: "table table-hover backgrid table-quickMenu",
@@ -182,13 +183,11 @@ define(['require',
                         label: "Users",
                         cell: "html",
                         editable: false,
-                        sortable: false,
                     },
                     timestamp: {
                         label: "Timestamp",
                         cell: "html",
                         editable: false,
-                        sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 return new Date(rawValue);
@@ -199,7 +198,6 @@ define(['require',
                         label: "Actions",
                         cell: "html",
                         editable: false,
-                        sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 if (Enums.auditAction[rawValue]) {

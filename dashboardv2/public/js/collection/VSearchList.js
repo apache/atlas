@@ -30,7 +30,8 @@ define(['require',
 
             model: VSearch,
 
-            initialize: function() {
+            initialize: function(options) {
+                _.extend(this, options);
                 this.modelName = 'VSearchList';
                 this.modelAttrName = '';
             },

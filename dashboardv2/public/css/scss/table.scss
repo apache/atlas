@@ -68,3 +68,93 @@ tr.empty {
         }
     }
 }
+
+.backgrid {
+    td {
+        white-space: normal;
+    }
+
+    .select-all-header-cell {
+        width: 42px;
+    }
+
+    thead {
+        th {
+            button {
+                padding-right: 11px;
+            }
+        }
+    }
+
+    .sortable:not(.descending):not(.ascending) {
+        .sort-caret {
+            font: normal normal normal 14px/1 FontAwesome;
+            font-size: inherit;
+            text-rendering: auto;
+            -webkit-font-smoothing: antialiased;
+            font-size: 11px;
+
+            &:before {
+                content: "\f0dc";
+            }
+        }
+    }
+}
+
+.backgrid-paginator ul {
+    display: inline-block;
+    padding-left: 0;
+    margin: 20px 0;
+    border: 1px $color_keppel_approx solid;
+    margin: 0px;
+    float: right;
+    border-radius: 4px;
+    overflow: hidden;
+
+    >.active>span,
+    >.active>a,
+    >.active>a:hover {
+        background: none;
+        color: $color_keppel_approx;
+        background: none;
+        color: #37bb9b;
+        font-weight: 600;
+        font-family: sans-serif;
+    }
+
+    >li>a,
+    >li>span,
+    >li>button {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        line-height: 30px;
+        text-decoration: none;
+        border: none;
+        float: left;
+        background: $transparent;
+        color: $color_keppel_approx;
+        @include ellipsis();
+
+        i {
+            font-weight: bold;
+        }
+
+        &:hover {
+            color: $white;
+            background: $color_keppel_approx
+        }
+    }
+
+    >.disabled>span,
+    >.disabled>a,
+    >li>button[disabled] {
+        color: $color_mountain_mist_approx;
+
+        &:hover {
+            cursor: not-allowed;
+            color: $white;
+            background: $color_jungle_green_light !important;
+        }
+    }
+}

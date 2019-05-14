@@ -18,6 +18,7 @@
 
 //colors
 $color_celeste_approx: #1D1F2B;
+
 .switch {
     position: relative;
     width: 50px;
@@ -46,6 +47,7 @@ $color_celeste_approx: #1D1F2B;
     border-radius: 10px;
     box-shadow: 1px 1px 5px rgba(black, .2);
     @include transition(left #{$switchTransition});
+
     &:before {
         content: '';
         position: absolute;
@@ -59,6 +61,7 @@ $color_celeste_approx: #1D1F2B;
         box-shadow: inset 0 1px rgba(black, .02);
         @include transition(inherit)
     }
+
     .switch-input:checked~& {
         left: 30px;
         box-shadow: -1px 1px 5px rgba(black, .2);
@@ -71,6 +74,7 @@ $color_celeste_approx: #1D1F2B;
 
 .srchType {
     margin: 5px 0px;
+
     .srchTitle {
         font-size: 14px;
         color: $gray
@@ -79,16 +83,20 @@ $color_celeste_approx: #1D1F2B;
 
 .filterQuery {
     word-break: break-all;
+
     span {
         font-size: 15px;
         font-weight: bold;
     }
+
     .key {
         color: $color_jungle_green_approx;
     }
+
     .operator {
         color: $action_gray;
     }
+
     .value {
         color: $tag_color;
     }
@@ -107,6 +115,7 @@ $color_celeste_approx: #1D1F2B;
 .gu-mirror {
     .table-quickMenu {
         border: none;
+
         td {
             height: 54px;
         }
@@ -119,17 +128,20 @@ $color_celeste_approx: #1D1F2B;
 
 .sindu_dragger {
     @extend .gu-mirror;
+
     &.sindu_column {
         li {
             float: none !important;
             display: table-cell !important;
         }
     }
+
     .gu-transit {
-        box-shadow: 0px 1px 15px inset;
+        //box-shadow: 0px 1px 15px inset;
     }
+
     table {
-        background: rgba(0, 0, 0, 0.18) !important;
+        background: rgb(242, 242, 242) !important;
     }
 }
 
@@ -152,12 +164,14 @@ $color_celeste_approx: #1D1F2B;
             cursor: pointer;
         }
     }
+
     button.dropdown-toggle {
         width: 99.5%;
         text-align: left;
         background-color: white;
         color: $color_star_dust_approx;
         border: $color_star_dust_approx;
+
         &:hover {
             color: $color_star_dust_approx !important;
             border: $color_star_dust_approx !important;
@@ -173,25 +187,30 @@ ul.type-filter-ul {
     width: 100%;
     padding-top: 0px;
     margin-bottom: 0px;
+
     li {
         padding: 2px;
     }
+
     .typeLi li {
         padding: 3px;
         background-color: #f7fbff;
         margin: 3px;
         border: 1px solid #dbd6d6;
         border-radius: 4px;
+
         &:hover {
             color: $white;
             background-color: $color_star_dust_approx;
             cursor: pointer;
         }
+
         &.active {
             background-color: #37bb9b;
             color: white;
         }
     }
+
     .filterLi li {
         padding: 2px;
         margin: 4px;
@@ -215,10 +234,12 @@ ul.type-filter-ul {
     top: 0px;
     background-color: white;
     padding-top: 8px;
+
     & .row {
         margin-right: -10px;
         margin-left: -10px;
     }
+
     & input.form-control {
         border: 1px #c9c9c9 solid;
     }

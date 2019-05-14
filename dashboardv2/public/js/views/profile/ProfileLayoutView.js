@@ -88,7 +88,7 @@ define(['require',
                         'typeHeaders': that.typeHeaders,
                         'entityDefCollection': that.entityDefCollection,
                         'enumDefCollection': that.enumDefCollection,
-                        'isDisable': true,
+                        'isTableDropDisable': true,
                         'glossaryCollection': that.glossaryCollection,
                         'classificationDefCollection': that.classificationDefCollection
                     }));

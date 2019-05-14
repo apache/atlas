@@ -29,8 +29,9 @@ define(['require',
     'utils/CommonViewFunction',
     'utils/Messages',
     'utils/Enums',
-    'utils/UrlLinks'
-], function(require, Backbone, tableDragger, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks) {
+    'utils/UrlLinks',
+    'platform'
+], function(require, Backbone, tableDragger, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks, platform) {
     'use strict';
 
     var SearchResultLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -144,7 +145,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isDisable', 'fromView', 'glossaryCollection', 'termName'));
+                _.extend(this, _.pick(options, 'value', 'guid', 'initialView', 'isTypeTagNotExists', 'classificationDefCollection', 'entityDefCollection', 'typeHeaders', 'searchVent', 'enumDefCollection', 'tagCollection', 'searchTableColumns', 'isTableDropDisable', 'fromView', 'glossaryCollection', 'termName'));
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
@@ -176,6 +177,9 @@ define(['require',
                             this.offset = pageOffset;
                         }
                     }
+                };
+                if (platform.name === "IE") {
+                    this.isTableDropDisable = true;
                 }
             },
             bindEvents: function() {
@@ -237,6 +241,9 @@ define(['require',
                 this.listenTo(this.searchVent, "search:refresh", function(model, response) {
                     this.fetchCollection();
                 }, this);
+                this.listenTo(this.searchCollection, "backgrid:sorted", function(model, response) {
+                    this.checkTableFetch();
+                }, this)
             },
             onRender: function() {
                 var that = this;
@@ -248,6 +255,7 @@ define(['require',
                     includeOrderAbleColumns: false,
                     includeSizeAbleColumns: false,
                     includeTableLoader: false,
+                    includeAtlasTableSorting: true,
                     columnOpts: {
                         opts: {
                             initialColumnsVisible: null,
@@ -422,7 +430,7 @@ define(['require',
                                 attributeObject: dataOrCollection.entities,
                                 referredEntities: dataOrCollection.referredEntities
                             });
-                            that.searchCollection.reset(dataOrCollection.entities, { silent: true });
+                            that.searchCollection.fullCollection.reset(dataOrCollection.entities, { silent: false });
                         }
 
 
@@ -530,17 +538,13 @@ define(['require',
                     }));
                 });
             },
-            renderTableLayoutView: function(col) {
-                var that = this;
-                require(['utils/TableLayout'], function(TableLayout) {
-                    // displayOrder added for column manager
-                    if (that.value.uiParameters) {
-                        var savedColumnOrder = _.object(that.value.uiParameters.split(',').map(function(a) {
-                            return a.split('::');
-                        })); // get Column position from string to object
-                    }
-                    var columnCollection = Backgrid.Columns.extend({
+            tableRender: function(options) {
+                var that = this,
+                    savedColumnOrder = options.order,
+                    TableLayout = options.table,
+                    columnCollection = Backgrid.Columns.extend({
                         sortKey: "displayOrder",
+                        className: "my-awesome-css-animated-grid",
                         comparator: function(item) {
                             return item.get(this.sortKey) || 999;
                         },
@@ -551,29 +555,46 @@ define(['require',
                             return this;
                         }
                     });
-                    var columns = new columnCollection((that.searchCollection.dynamicTable ? that.getDaynamicColumns(that.searchCollection.toJSON()) : that.getFixedDslColumn()));
-                    columns.setPositions().sort();
-                    var table = new TableLayout(_.extend({}, that.commonTableOptions, {
-                        columns: columns
-                    }));
-                    if (!that.REntityTableLayoutView) {
-                        return;
+                var columns = new columnCollection((that.searchCollection.dynamicTable ? that.getDaynamicColumns(that.searchCollection.toJSON()) : that.getFixedDslColumn()));
+                columns.setPositions().sort();
+                var table = new TableLayout(_.extend({}, that.commonTableOptions, {
+                    columns: columns
+                }));
+                if (!that.REntityTableLayoutView) {
+                    return;
+                }
+                that.REntityTableLayoutView.show(table);
+                if (that.value.searchType !== "dsl") {
+                    that.ui.containerCheckBox.show();
+                } else {
+                    that.ui.containerCheckBox.hide();
+                }
+                that.$(".ellipsis .inputAssignTag").hide();
+                table.trigger("grid:refresh"); /*Event fire when table rendered*/
+                // that.REntityTableLayoutView.$el.find('.colSort thead tr th:not(:first)').addClass('dragHandler');
+                if (that.isTableDropDisable !== true) {
+                    var tableDropFunction = function(from, to, el) {
+                        tableDragger(document.querySelector(".colSort")).destroy();
+                        that.columnOrder = that.getColumnOrder(el.querySelectorAll('th.renderable'));
+                        that.triggerUrl();
+                        that.tableRender({ "order": that.columnOrder, "table": TableLayout });
+                        that.checkTableFetch();
                     }
-                    that.REntityTableLayoutView.show(table);
-                    if (that.value.searchType !== "dsl") {
-                        that.ui.containerCheckBox.show();
-                    } else {
-                        that.ui.containerCheckBox.hide();
+                    that.REntityTableLayoutView.$el.find('.colSort thead tr th:not(:first)').addClass('dragHandler');
+                    tableDragger(document.querySelector(".colSort"), { dragHandler: ".dragHandler" }).on('drop', tableDropFunction);
+                }
+            },
+            renderTableLayoutView: function(col) {
+                var that = this;
+                require(['utils/TableLayout'], function(TableLayout) {
+                    // displayOrder added for column manager
+                    if (that.value.uiParameters) {
+                        var savedColumnOrder = _.object(that.value.uiParameters.split(',').map(function(a) {
+                            return a.split('::');
+                        })); // get Column position from string to object
                     }
-                    that.$(".ellipsis .inputAssignTag").hide();
-                    table.trigger("grid:refresh"); /*Event fire when table rendered*/
-                    if (that.isDisable !== true) {
-                        tableDragger(document.querySelector(".colSort")).on('drop', function(from, to, el) {
-                            that.columnOrder = that.getColumnOrder(el.querySelectorAll('th.renderable'));
-                            table.trigger("grid:refresh:update");
-                            that.triggerUrl();
-                        });
-                    }
+
+                    that.tableRender({ "order": savedColumnOrder, "table": TableLayout });
                     that.checkTableFetch();
                 });
             },
@@ -625,9 +646,8 @@ define(['require',
                     label: this.value && this.value.profileDBView ? "Table Name" : "Name",
                     cell: "html",
                     editable: false,
-                    sortable: false,
                     resizeable: true,
-                    orderable: true,
+                    orderable: false,
                     renderable: true,
                     className: "searchTableName",
                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
@@ -657,7 +677,6 @@ define(['require',
                     label: "Owner",
                     cell: "String",
                     editable: false,
-                    sortable: false,
                     resizeable: true,
                     orderable: true,
                     renderable: true,
@@ -677,7 +696,6 @@ define(['require',
                         label: "Date Created",
                         cell: "Html",
                         editable: false,
-                        sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON();
@@ -696,7 +714,6 @@ define(['require',
                         label: "Description",
                         cell: "String",
                         editable: false,
-                        sortable: false,
                         resizeable: true,
                         orderable: true,
                         renderable: true,
@@ -715,7 +732,6 @@ define(['require',
                         label: "Type",
                         cell: "Html",
                         editable: false,
-                        sortable: false,
                         resizeable: true,
                         orderable: true,
                         renderable: (columnToShow ? _.contains(columnToShow, 'typeName') : true),
@@ -750,7 +766,6 @@ define(['require',
                                     label: obj.name.capitalize(),
                                     cell: "Html",
                                     editable: false,
-                                    sortable: false,
                                     resizeable: true,
                                     orderable: true,
                                     renderable: isRenderable,
@@ -786,7 +801,6 @@ define(['require',
                             label: key.capitalize(),
                             cell: "Html",
                             editable: false,
-                            sortable: false,
                             resizeable: true,
                             orderable: true,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {

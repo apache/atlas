@@ -147,6 +147,8 @@ define(['require',
 
             includeTableLoader: true,
 
+            includeAtlasTableSorting: false,
+
 
             /** ui events hash */
             events: function() {
@@ -184,6 +186,52 @@ define(['require',
                 _.extend(this, _.omit(options, 'gridOpts', 'atlasPaginationOpts'));
                 _.extend(this, options.atlasPaginationOpts);
                 _.extend(this.gridOpts, options.gridOpts, { collection: this.collection, columns: this.columns });
+                if (this.includeAtlasTableSorting) {
+                    var oldSortingRef = this.collection.setSorting;
+                    this.collection.setSorting = function() {
+                        var val = oldSortingRef.apply(this, arguments);
+                        // console.log(val)
+                        val.fullCollection.models.sort();
+                        this.comparator = function(next, previous, data) {
+
+
+                            // return a.get('year');
+                            var getValue = function(options) {
+
+                                var next = options.next,
+                                    previous = options.previous,
+                                    order = options.order;
+
+                                if (order === -1) {
+                                    return next < previous ? -1 : 1;
+                                } else {
+                                    return next < previous ? 1 : -1;
+                                }
+                            }
+                            if (val.state && (!_.isNull(val.state.sortKey))) {
+
+                                var nextValue,
+                                    previousValue;
+                                if ((next && next.get("attributes") && next.get("attributes")[val.state.sortKey]) || (previous && previous.get("attributes") && previous.get("attributes")[val.state.sortKey])) {
+                                    nextValue = next.get("attributes")[val.state.sortKey];
+                                    previousValue = previous.get("attributes")[val.state.sortKey];
+                                } else {
+                                    nextValue = next.attributes[val.state.sortKey];
+                                    previousValue = previous.attributes[val.state.sortKey];
+                                }
+                                nextValue = (typeof nextValue === 'string') ? nextValue.toLowerCase() : nextValue;
+                                previousValue = (typeof previousValue === 'string') ? previousValue.toLowerCase() : previousValue;
+                                return getValue({
+                                    "next": nextValue || '',
+                                    "previous": previousValue || '',
+                                    "order": val.state.order
+                                });
+                            }
+                        }
+
+                        return val;
+                    };
+                }
                 this.bindEvents();
             },
 
@@ -220,9 +268,9 @@ define(['require',
                 on collection (backgrid.js - line no: 2081).
                 removeCellDirection function - removes "ascending" and "descending"
                 which in turn removes chevrons from every 'sortable' header-cells*/
-                this.listenTo(this.collection, "backgrid:sort", function() {
-                    this.collection.trigger("sort");
-                });
+                this.listenTo(this.collection, "backgrid:sorted", function(column, direction, collection) {
+                    this.collection.fullCollection.trigger("backgrid:sorted", column, direction, collection)
+                }, this);
                 this.listenTo(this, "grid:refresh", function() {
                     if (this.grid) {
                         this.grid.trigger("backgrid:refresh");
