@@ -79,6 +79,10 @@
         </menu>
 
         <menu name="Downloads">
+            <item name="2.0.0"
+                  href="Downloads.html"/>
+            <item name="1.1.0"
+                  href="Downloads.html"/>
             <item name="1.0.0"
                   href="Downloads.html"/>
             <item name="0.8.2"
@@ -99,6 +103,8 @@
 
         <menu name="Documentation">
             <item name="latest" href="../index.html"/>
+            <item name="2.0.0" href="../2.0.0/index.html"/>
+            <item name="1.1.0" href="../1.1.0/index.html"/>
             <item name="1.0.0" href="../1.0.0/index.html"/>
             <item name="0.8.2" href="../0.8.2/index.html"/>
             <item name="0.8.1" href="../0.8.1/index.html"/>
