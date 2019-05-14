@@ -23,7 +23,7 @@
     <parent>
         <artifactId>atlas-graphdb</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>2.0.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>atlas-janusgraph-hbase2</artifactId>
     <description>Apache Atlas JanusGraph-HBase2 Module</description>
