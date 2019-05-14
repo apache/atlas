@@ -556,7 +556,10 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         var mergeObject = function(obj) {
             if (obj) {
                 if (obj.attributes) {
-                    Utils.findAndMergeRefEntity(obj.attributes, referredEntities);
+                    Utils.findAndMergeRefEntity({
+                        "attributeObject": obj.attributes,
+                        "referredEntities": referredEntities
+                    });
                 } else if (referredEntities[obj.guid]) {
                     _.extend(obj, referredEntities[obj.guid]);
                 }

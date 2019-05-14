@@ -83,6 +83,7 @@ define(['require',
                     includeGotoPage: true,
                     includeFooterRecords: true,
                     includeOrderAbleColumns: false,
+                    includeAtlasTableSorting: true,
                     gridOpts: {
                         className: "table table-hover backgrid table-quickMenu",
                         emptyText: 'No records found!'
@@ -200,10 +201,9 @@ define(['require',
                     _.each(_.keys(this.schemaTableAttribute), function(key) {
                         if (key !== "position") {
                             col[key] = {
-                                label: key,
+                                label: key.capitalize(),
                                 cell: "html",
                                 editable: false,
-                                sortable: false,
                                 className: "searchTableName",
                                 formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                     fromRaw: function(rawValue, model) {
@@ -225,7 +225,7 @@ define(['require',
                         }
                     });
                     col['tag'] = {
-                        label: "Tags",
+                        label: "Classifications",
                         cell: "Html",
                         editable: false,
                         sortable: false,
