@@ -352,6 +352,7 @@ public class AtlasTypeRegistry {
         private List<AtlasBaseTypeDef> addedTypes   = new ArrayList<>();
         private List<AtlasBaseTypeDef> updatedTypes = new ArrayList<>();
         private List<AtlasBaseTypeDef> deletedTypes = new ArrayList<>();
+        private List<AtlasBaseTypeDef> preDeletedTypes = new ArrayList<>();
 
 
         private AtlasTransientTypeRegistry(AtlasTypeRegistry parent) throws AtlasBaseException {
@@ -366,6 +367,7 @@ public class AtlasTypeRegistry {
             addedTypes.clear();
             updatedTypes.clear();
             deletedTypes.clear();
+            preDeletedTypes.clear();
         }
 
         private void resolveReferences() throws AtlasBaseException {
@@ -547,9 +549,9 @@ public class AtlasTypeRegistry {
                 LOG.debug("<== AtlasTypeRegistry.updateTypesWithNoRefResolve({})", typesDef);
             }
         }
-
+        
         public void removeTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
-            if (null != typesDef && !typesDef.isEmpty()) {
+        	if (null != typesDef && !typesDef.isEmpty()) {
                 removeTypesWithNoRefResolve(typesDef.getEnumDefs());
                 removeTypesWithNoRefResolve(typesDef.getStructDefs());
                 removeTypesWithNoRefResolve(typesDef.getClassificationDefs());
@@ -558,6 +560,24 @@ public class AtlasTypeRegistry {
             }
 
             resolveReferences();
+        }
+        
+        public void preRemoveTypesDef(AtlasTypesDef typesDef) {
+        	if (null != typesDef && !typesDef.isEmpty()) {
+                preRemoveTypes(typesDef.getEnumDefs());
+                preRemoveTypes(typesDef.getStructDefs());
+                preRemoveTypes(typesDef.getClassificationDefs());
+                preRemoveTypes(typesDef.getEntityDefs());
+                preRemoveTypes(typesDef.getRelationshipDefs());
+            }
+        }
+
+        private void preRemoveTypes(Collection<? extends AtlasBaseTypeDef> typeDefs) {
+            if (CollectionUtils.isNotEmpty(typeDefs)) {
+                for (AtlasBaseTypeDef typeDef : typeDefs) {
+                	preDeletedTypes.add(typeDef);
+                }
+            }
         }
 
         private void removeTypesWithNoRefResolve(Collection<? extends AtlasBaseTypeDef> typeDefs) {
@@ -663,8 +683,9 @@ public class AtlasTypeRegistry {
         public List<AtlasBaseTypeDef> getUpdatedTypes() { return updatedTypes; }
 
         public List<AtlasBaseTypeDef> getDeleteedTypes() { return deletedTypes; }
-
-
+        
+        public List<AtlasBaseTypeDef> getPreDeleteedTypes() { return preDeletedTypes; }
+        
         private void addTypeWithNoRefResolve(AtlasBaseTypeDef typeDef) throws AtlasBaseException{
             if (LOG.isDebugEnabled()) {
                 LOG.debug("==> AtlasTypeRegistry.addTypeWithNoRefResolve({})", typeDef);
