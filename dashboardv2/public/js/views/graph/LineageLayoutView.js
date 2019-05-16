@@ -130,8 +130,16 @@ define(['require',
             onRender: function() {
                 var that = this;
                 this.fetchGraphData();
+
+
                 if (platform.name === "IE") {
                     this.$('svg').css('opacity', '0');
+
+                }
+
+                if (platform.name === "Microsoft Edge" || platform.name === "IE") {
+                    $(that.ui.saveSvg).hide();
+
                 }
                 if (this.layoutRendered) {
                     this.layoutRendered();
@@ -161,10 +169,10 @@ define(['require',
                 var icon = $(e.currentTarget).find('i'),
                     panel = $(e.target).parents('.tab-pane').first();
                 icon.toggleClass('fa-expand fa-compress');
-                if(icon.hasClass('fa-expand')){
-                    icon.parent('button').attr("data-original-title","Full Screen");
-                }else{
-                    icon.parent('button').attr("data-original-title","Default View");
+                if (icon.hasClass('fa-expand')) {
+                    icon.parent('button').attr("data-original-title", "Full Screen");
+                } else {
+                    icon.parent('button').attr("data-original-title", "Default View");
                 }
                 panel.toggleClass('fullscreen-mode');
             },
@@ -483,6 +491,9 @@ define(['require',
                     "translate(" + this.zoom.translate() + ")" +
                     "scale(" + this.zoom.scale() + ")"
                 );
+                LineageUtils.refreshGraphForIE({
+                    edgeEl: this.$('svg .edgePath')
+                });
             },
             interpolateZoom: function(translate, scale, that, zoom) {
                 return d3.transition().duration(350).tween("zoom", function() {
@@ -501,6 +512,8 @@ define(['require',
                     width = this.$('svg').width(),
                     height = this.$('svg').height(),
                     imageObject = {};
+                $('.resizeGraph').css("height", height + "px");
+
                 this.g.nodes().forEach(function(v) {
                     var node = that.g.node(v);
                     // Round the corners of the nodes
@@ -552,38 +565,51 @@ define(['require',
                         .attr("width", "100%")
                         .attr("height", "100%")
                         .append('image')
-                        .attr("xlink:href", function(d) {
+                        .attr("href", function(d) {
                             var that = this;
                             if (node) {
-                                var imageIconPath = Utils.getEntityIconPath({ entityData: node }),
-                                    imagePath = ((window.location.origin + Utils.getBaseUrl(window.location.pathname)) + imageIconPath);
-
-                                var xhr = new XMLHttpRequest();
-                                xhr.responseType = 'blob';
-
-                                xhr.onload = function() {
-                                    var reader = new FileReader();
-                                    reader.onloadend = function() {
-                                        _.each(imageObject[imageIconPath], function(obj) {
-                                            obj.attr("xlink:href", reader.result);
-                                        });
-                                        imageObject[imageIconPath] = reader.result;
-                                    }
-
-                                    if (xhr.status != 404) {
-                                        reader.readAsDataURL(xhr.response);
-                                    } else {
-                                        xhr.open('GET',
-                                            Utils.getEntityIconPath({ entityData: node, errorUrl: this.responseURL }),
-                                            true);
-                                        xhr.send();
-                                    }
+                                // to check for IE-10
+                                var originLink = window.location.origin;
+                                if (platform.name === "IE") {
+                                    originLink = window.location.protocol + "//" + window.location.host;
                                 }
+                                var imageIconPath = Utils.getEntityIconPath({ entityData: node }),
+                                    imagePath = ((originLink + Utils.getBaseUrl(window.location.pathname)) + imageIconPath);
+
+                                var getImageData = function(options) {
+                                    var imagePath = options.imagePath,
+                                        ajaxOptions = {
+                                            "url": imagePath,
+                                            "method": "get",
+                                            "async": false,
+                                        }
+
+                                    if (platform.name !== "IE") {
+                                        ajaxOptions["mimeType"] = "text/plain; charset=x-user-defined";
+                                    }
+                                    $.ajax(ajaxOptions)
+                                        .always(function(data, status, xhr) {
+                                            if (data.status == 404) {
+                                                getImageData({
+                                                    "imagePath": Utils.getEntityIconPath({ entityData: node, errorUrl: imagePath }),
+                                                    "imageIconPath": imageIconPath
+                                                });
+                                            } else if (data) {
+                                                if (platform.name !== "IE") {
+                                                    imageObject[imageIconPath] = 'data:image/png;base64,' + LineageUtils.base64Encode({ "data": data });
+                                                } else {
+                                                    imageObject[imageIconPath] = imagePath;
+                                                }
+                                            }
+                                        });
+                                }
+                                getImageData({
+                                    "imagePath": imagePath,
+                                    "imageIconPath": imageIconPath
+                                });
                                 if (_.isUndefined(imageObject[imageIconPath])) {
                                     // before img success
                                     imageObject[imageIconPath] = [d3.select(that)];
-                                    xhr.open('GET', imagePath, true);
-                                    xhr.send();
                                 } else if (_.isArray(imageObject[imageIconPath])) {
                                     // before img success
                                     imageObject[imageIconPath].push(d3.select(that));
@@ -790,6 +816,7 @@ define(['require',
                     guid: that.guid,
                     svg: that.$('svg'),
                     g: this.g,
+                    edgeEl: $('svg .edgePath'),
                     afterCenterZoomed: function(options) {
                         var newScale = options.newScale,
                             newTranslate = options.newTranslate;
@@ -798,29 +825,39 @@ define(['require',
                     }
                 }).init();
                 zoom.event(svg);
+                // console.log(this.$('svg')[0].getBBox())
                 //svg.attr('height', this.g.graph().height * initialScale + 40);
                 if (platform.name === "IE") {
-                    this.IEGraphRenderDone = 0;
-                    this.$('svg .edgePath').each(function(argument) {
-                        var childNode = $(this).find('marker');
-                        $(this).find('marker').remove();
-                        var eleRef = this;
-                        ++that.IEGraphRenderDone;
-                        setTimeout(function(argument) {
-                            $(eleRef).find('defs').append(childNode);
-                            --that.IEGraphRenderDone;
-                            if (that.IEGraphRenderDone === 0) {
-                                this.$('.fontLoader').hide();
-                                this.$('svg').fadeTo(1000, 1)
-                            }
-                        }, 1000);
+
+
+                    LineageUtils.refreshGraphForIE({
+                        edgeEl: this.$('svg .edgePath')
                     });
+                    // this.$('svg .edgePath').each(function(argument) {
+                    //     var childNode = $(this).find('marker');
+                    //     console.log(childNode);
+                    //     $(this).find('marker').remove();
+                    //     var eleRef = this;
+                    //     ++that.IEGraphRenderDone;
+                    //     setTimeout(function(argument) {
+                    //         $(eleRef).find('defs').append(childNode);
+                    //         --that.IEGraphRenderDone;
+                    //         if (that.IEGraphRenderDone === 0) {
+                    //             this.$('.fontLoader').hide();
+                    //             this.$('svg').fadeTo(1000, 1)
+                    //         }
+                    //     }, 1000);
+                    // });
                 }
+                // console.log(platform.name)
+                // if (platform.name !== "IE") {
                 LineageUtils.DragNode({
                     svg: this.svg,
                     g: this.g,
-                    guid: this.guid
+                    guid: this.guid,
+                    edgeEl: this.$('svg .edgePath')
                 }).init();
+                // }
             },
             renderLineageTypeSearch: function() {
                 var that = this,
@@ -856,6 +893,7 @@ define(['require',
                         guid: selectedNode,
                         svg: $(that.svg[0]),
                         g: that.g,
+                        edgeEl: $('svg .edgePath'),
                         afterCenterZoomed: function(options) {
                             var newScale = options.newScale,
                                 newTranslate = options.newTranslate;

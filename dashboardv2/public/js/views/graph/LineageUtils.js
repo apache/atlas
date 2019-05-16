@@ -23,7 +23,8 @@ define(['require', ''], function(require) {
         var that = this,
             g = options.g,
             svg = options.svg,
-            guid = options.guid;
+            guid = options.guid,
+            edgePathEl = options.edgeEl;
         return {
             init: function() {
                 var that = this;
@@ -62,6 +63,7 @@ define(['require', ''], function(require) {
 
                 nodeDrag.call(svg.selectAll("g.node"));
                 edgeDrag.call(svg.selectAll("g.edgePath"));
+                // this.refreshGraphForIE();
             },
             dragstart: function(d) {
                 d3.event.sourceEvent.stopPropagation();
@@ -91,15 +93,14 @@ define(['require', ''], function(require) {
                             var parts = /translate\(\s*([^\s,)]+)[ ,]?([^\s,)]+)?/.exec(xforms),
                                 X = parseInt(parts[1]) + dx,
                                 Y = parseInt(parts[2]) + dy;
-                            // console.log(X, Y);
                             if (isNaN(Y)) {
                                 Y = dy;
                             }
                             label.attr('transform', 'translate(' + X + ',' + Y + ')');
                         }
                     }
-                })
-
+                });
+                LinegaeUtils.refreshGraphForIE({ "edgeEl": edgePathEl })
             },
             translateEdge: function(e, dx, dy) {
                 e.points.forEach(function(p) {
@@ -155,12 +156,29 @@ define(['require', ''], function(require) {
                     x: x + sx,
                     y: y + sy
                 };
-            }
-
+            },
         }
     }
 
+    LinegaeUtils.refreshGraphForIE = function(options) {
 
+        var edgePathEl = options.edgeEl,
+            IEGraphRenderDone = 0;
+        edgePathEl.each(function(argument) {
+            var childNode = $(this).find('marker');
+            $(this).find('marker').remove();
+            var eleRef = this;
+            ++IEGraphRenderDone;
+            setTimeout(function(argument) {
+                $(eleRef).find('defs').append(childNode);
+                --IEGraphRenderDone;
+                if (IEGraphRenderDone === 0) {
+                    this.$('.fontLoader').hide();
+                    this.$('svg').fadeTo(1000, 1)
+                }
+            }, 1000);
+        });
+    }
     LinegaeUtils.centerNode = function(options) {
         var nodeID = options.guid,
             svg = options.svg,
@@ -168,6 +186,7 @@ define(['require', ''], function(require) {
             afterCenterZoomed = options.afterCenterZoomed,
             zoom = d3.behavior.zoom(),
             svgGroup = svg.find("g"),
+            edgePathEl = options.edgeEl,
             zoomBind = function() {
                 svgGroup.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
             },
@@ -176,8 +195,11 @@ define(['require', ''], function(require) {
             init: function() {
                 if (selectedNode.length > 0) {
                     selectedNode = selectedNode;
-                    var matrix = selectedNode.attr('transform').replace(/[^0-9\-.,]/g, '').split(','),
-                        x = matrix[0],
+                    var matrix = selectedNode.attr('transform').replace(/[^0-9\-.,]/g, '').split(',');
+                    if (platform.name === "IE" || platform.name === "Microsoft Edge") {
+                        var matrix = selectedNode.attr('transform').replace(/[a-z\()]/g, '').split(' ');
+                    }
+                    var x = matrix[0],
                         y = matrix[1];
                 } else {
                     selectedNode = $(svg).find("g.nodes").find('g').eq(1);
@@ -185,7 +207,6 @@ define(['require', ''], function(require) {
                         y = g.graph().height / 2;
 
                 }
-
                 var viewerWidth = $(svg).width(),
                     viewerHeight = $(svg).height(),
                     gBBox = d3.select('g').node().getBBox(),
@@ -202,6 +223,7 @@ define(['require', ''], function(require) {
                 zoomListener.translate([xa, ya]);
                 zoom.scale(scale);
                 afterCenterZoomed({ newScale: scale, newTranslate: [xa, ya] });
+                LinegaeUtils.refreshGraphForIE({ "edgeEl": edgePathEl })
             }
         }
     }
@@ -238,6 +260,37 @@ define(['require', ''], function(require) {
             }
         }
 
+    }
+    LinegaeUtils.base64Encode = function(options) {
+        var str = options.data,
+            CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+            out = "",
+            i = 0,
+            len = str.length,
+            c1, c2, c3;
+        while (i < len) {
+            c1 = str.charCodeAt(i++) & 0xff;
+            if (i == len) {
+                out += CHARS.charAt(c1 >> 2);
+                out += CHARS.charAt((c1 & 0x3) << 4);
+                out += "==";
+                break;
+            }
+            c2 = str.charCodeAt(i++);
+            if (i == len) {
+                out += CHARS.charAt(c1 >> 2);
+                out += CHARS.charAt(((c1 & 0x3) << 4) | ((c2 & 0xF0) >> 4));
+                out += CHARS.charAt((c2 & 0xF) << 2);
+                out += "=";
+                break;
+            }
+            c3 = str.charCodeAt(i++);
+            out += CHARS.charAt(c1 >> 2);
+            out += CHARS.charAt(((c1 & 0x3) << 4) | ((c2 & 0xF0) >> 4));
+            out += CHARS.charAt(((c2 & 0xF) << 2) | ((c3 & 0xC0) >> 6));
+            out += CHARS.charAt(c3 & 0x3F);
+        }
+        return out;
     }
     return LinegaeUtils;
 });
