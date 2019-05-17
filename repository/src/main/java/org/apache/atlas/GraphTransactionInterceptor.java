@@ -20,6 +20,7 @@ package org.apache.atlas;
 import com.google.common.annotations.VisibleForTesting;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.NotFoundException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -63,6 +64,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         Method        method            = invocation.getMethod();
         String        invokingClass     = method.getDeclaringClass().getSimpleName();
         String        invokedMethodName = method.getName();
+        boolean       logRollback       = method.getAnnotation(GraphTransaction.class).logRollback();
 
         boolean isInnerTxn = isTxnOpen.get();
         // Outermost txn marks any subsequent transaction as inner
@@ -99,7 +101,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                     }
                     innerFailure.set(true);
                 } else {
-                    doRollback(t);
+                    doRollback(logRollback, t);
                 }
                 throw t;
             }
@@ -159,12 +161,15 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         }
     }
 
-    private void doRollback(final Throwable t) {
-        if (logException(t)) {
-            LOG.error("graph rollback due to exception ", t);
-        } else {
-            LOG.error("graph rollback due to exception {}:{}", t.getClass().getSimpleName(), t.getMessage());
+    private void doRollback(boolean logRollback, final Throwable t) {
+        if (logRollback) {
+            if (logException(t)) {
+                LOG.error("graph rollback due to exception ", t);
+            } else {
+                LOG.error("graph rollback due to exception {}:{}", t.getClass().getSimpleName(), t.getMessage());
+            }
         }
+
         graph.rollback();
     }
 
