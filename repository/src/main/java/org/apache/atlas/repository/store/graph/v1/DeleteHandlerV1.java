@@ -516,8 +516,7 @@ public abstract class DeleteHandlerV1 {
                 }
             } else {
                 // Cannot unset a required attribute.
-                throw new AtlasBaseException("Cannot unset required attribute " + propertyName +
-                    " on " + GraphHelper.vertexString(outVertex) + " edge = " + edgeLabel);
+                LOG.error("Cannot unset required attribute " + propertyName + " on vertex id:" + outId + " edge = " + edgeLabel);
             }
             break;
 
