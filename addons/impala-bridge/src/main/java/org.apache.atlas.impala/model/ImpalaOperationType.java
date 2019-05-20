@@ -18,7 +18,17 @@
 package org.apache.atlas.impala.model;
 
 public enum ImpalaOperationType{
+    // main operation type
     CREATEVIEW ("CREATEVIEW"),
+    CREATETABLE_AS_SELECT ("CREATETABLE_AS_SELECT"),
+    ALTERVIEW_AS ("ALTERVIEW_AS"),
+    QUERY ("QUERY"),
+
+    // sub operation type, which is associated with output
+    INSERT ("INSERT"),
+    INSERT_OVERWRITE ("INSERT_OVERWRITE"),
+
+    // default type
     UNKNOWN ("UNKNOWN");
 
     private final String name;

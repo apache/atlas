@@ -46,7 +46,6 @@ public class ImpalaLineageHook extends AtlasHook implements IImpalaLineageHook {
     public static final String CONF_REALM_NAME                     = "atlas.realm.name";
     public static final String HDFS_PATH_CONVERT_TO_LOWER_CASE     = CONF_PREFIX + "hdfs_path.convert_to_lowercase";
 
-    private ImpalaOperationParser parser = new ImpalaOperationParser();
     private static final String clusterName;
     private  static final String realm;
     private static final boolean convertHdfsPathToLowerCase;
@@ -77,13 +76,16 @@ public class ImpalaLineageHook extends AtlasHook implements IImpalaLineageHook {
         }
 
         try {
-            ImpalaOperationType operationType = parser.getImpalaOperationType(lineageQuery.getQueryText());
+            ImpalaOperationType operationType = ImpalaOperationParser.getImpalaOperationType(lineageQuery.getQueryText());
             AtlasImpalaHookContext context =
                 new AtlasImpalaHookContext(this, operationType, lineageQuery);
             BaseImpalaEvent event = null;
 
             switch (operationType) {
                     case CREATEVIEW:
+                    case CREATETABLE_AS_SELECT:
+                    case ALTERVIEW_AS:
+                    case QUERY:
                         event = new CreateImpalaProcess(context);
                         break;
                 default:

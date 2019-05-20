@@ -19,6 +19,7 @@
 package org.apache.atlas.impala.hook;
 
 import org.apache.atlas.impala.model.ImpalaOperationType;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Parse an Impala query text and output the impala operation type
@@ -28,12 +29,40 @@ public class ImpalaOperationParser {
     public ImpalaOperationParser() {
     }
 
-    public ImpalaOperationType getImpalaOperationType(String queryText) {
-        // TODO: more Impala commands will be handled in ATLAS-3184
-        if (queryText.toLowerCase().startsWith("create view")) {
+    public static ImpalaOperationType getImpalaOperationType(String queryText) {
+        // Impala does no generate lineage record for command "LOAD DATA INPATH"
+        if (StringUtils.startsWithIgnoreCase(queryText, "create view")) {
             return ImpalaOperationType.CREATEVIEW;
+        } else if (StringUtils.startsWithIgnoreCase(queryText, "create table") &&
+        StringUtils.containsIgnoreCase(queryText, "as select")) {
+            return ImpalaOperationType.CREATETABLE_AS_SELECT;
+        } else if (StringUtils.startsWithIgnoreCase(queryText, "alter view") &&
+            StringUtils.containsIgnoreCase(queryText, "as select")) {
+            return ImpalaOperationType.ALTERVIEW_AS;
+        } else if (StringUtils.containsIgnoreCase(queryText, "insert into") &&
+            StringUtils.containsIgnoreCase(queryText, "select") &&
+            StringUtils.containsIgnoreCase(queryText, "from")) {
+            return ImpalaOperationType.QUERY;
+        } else if (StringUtils.containsIgnoreCase(queryText,"insert overwrite") &&
+            StringUtils.containsIgnoreCase(queryText, "select") &&
+            StringUtils.containsIgnoreCase(queryText, "from")) {
+            return ImpalaOperationType.QUERY;
         }
 
         return ImpalaOperationType.UNKNOWN;
     }
+
+    public static ImpalaOperationType getImpalaOperationSubType(ImpalaOperationType operationType, String queryText) {
+        if (operationType == ImpalaOperationType.QUERY) {
+            if (StringUtils.containsIgnoreCase(queryText, "insert into")) {
+                return ImpalaOperationType.INSERT;
+            } else if (StringUtils.containsIgnoreCase(queryText, "insert overwrite")) {
+                return ImpalaOperationType.INSERT_OVERWRITE;
+            }
+        }
+
+        return ImpalaOperationType.UNKNOWN;
+    }
+
+
 }

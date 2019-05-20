@@ -21,12 +21,16 @@ package org.apache.atlas.impala.hook.events;
 import static org.apache.atlas.impala.hook.AtlasImpalaHookContext.QNAME_SEP_PROCESS;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.atlas.impala.hook.AtlasImpalaHookContext;
+import org.apache.atlas.impala.hook.ImpalaOperationParser;
 import org.apache.atlas.impala.model.ImpalaDataType;
 import org.apache.atlas.impala.model.ImpalaNode;
 import org.apache.atlas.impala.model.ImpalaOperationType;
@@ -172,8 +176,9 @@ public abstract class BaseImpalaEvent {
     protected String getQualifiedName(List<AtlasEntity> inputs, List<AtlasEntity> outputs) throws Exception {
         ImpalaOperationType operation = context.getImpalaOperationType();
 
-        // TODO: add more operation type here
-        if (operation == ImpalaOperationType.CREATEVIEW) {
+        if (operation == ImpalaOperationType.CREATEVIEW ||
+            operation == ImpalaOperationType.CREATETABLE_AS_SELECT ||
+            operation == ImpalaOperationType.ALTERVIEW_AS) {
             List<? extends AtlasEntity> sortedEntities = new ArrayList<>(outputs);
 
             Collections.sort(sortedEntities, entityComparator);
@@ -187,8 +192,83 @@ public abstract class BaseImpalaEvent {
             }
         }
 
-        // TODO: add code for name construction for HDFS path
-        return null;
+        if (operation != ImpalaOperationType.QUERY) {
+            String errorMessage = String.format("Expect operation to be QUERY, but get unexpected operation type {}", operation.name());
+            LOG.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+        }
+
+        // construct qualified name for QUERY
+        String qualifiedName = null;
+        String operationName = operation.toString();
+
+        if (operationName != null) {
+            StringBuilder sb = new StringBuilder(operationName);
+
+            addToProcessQualifiedName(sb, inputs, false);
+            sb.append("->");
+            addToProcessQualifiedName(sb, outputs, true);
+
+            qualifiedName = sb.toString();
+        }
+
+
+        return qualifiedName;
+    }
+
+    protected void addToProcessQualifiedName(StringBuilder processQualifiedName, Collection<? extends AtlasEntity> entities, boolean isOutput) {
+        if (entities == null) {
+            return;
+        }
+
+        ImpalaOperationType         operation      = context.getImpalaOperationType();
+        String                      queryText      = context.getQueryStr();
+        List<? extends AtlasEntity> sortedEntities = new ArrayList<>(entities);
+
+        Collections.sort(sortedEntities, entityComparator);
+
+        Set<String> dataSetsProcessed = new HashSet<>();
+
+        for (AtlasEntity entity : sortedEntities) {
+            String qualifiedName = null;
+            long   createTime    = 0;
+
+            qualifiedName = (String)entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+
+            if (entity.getTypeName().equalsIgnoreCase(HIVE_TYPE_TABLE)) {
+                Long createTimeObj = (Long)entity.getAttribute(ATTRIBUTE_CREATE_TIME);
+                if (createTimeObj != null) {
+                    createTime = createTimeObj;
+                }
+            }
+
+            if (qualifiedName == null || !dataSetsProcessed.add(qualifiedName)) {
+                continue;
+            }
+
+            if (isOutput) {
+                boolean             addWriteType = false;
+                ImpalaOperationType subType      = ImpalaOperationParser.getImpalaOperationSubType(operation, queryText);
+
+                    switch (subType) {
+                        // Impala does not generate lineage for UPDATE and DELETE
+                        case INSERT:
+                        case INSERT_OVERWRITE:
+                            addWriteType = true;
+                            break;
+                    }
+
+                    if (addWriteType) {
+                        processQualifiedName.append(QNAME_SEP_PROCESS).append(subType.name());
+                    }
+            }
+
+            processQualifiedName.append(QNAME_SEP_PROCESS).append(qualifiedName.toLowerCase().replaceAll("/", ""));
+
+            if (createTime != 0) {
+                processQualifiedName.append(QNAME_SEP_PROCESS).append(createTime);
+            }
+        }
     }
 
     protected AtlasEntity getInputOutputEntity(ImpalaNode node, AtlasEntityExtInfo entityExtInfo) throws Exception {
@@ -419,8 +499,8 @@ public abstract class BaseImpalaEvent {
     }
 
     protected AtlasEntity getImpalaProcessEntity(List<AtlasEntity> inputs, List<AtlasEntity> outputs) throws Exception {
-        AtlasEntity ret         = new AtlasEntity(ImpalaDataType.IMPALA_PROCESS.getName());
-        String      queryStr    = context.getQueryStr();
+        AtlasEntity         ret           = new AtlasEntity(ImpalaDataType.IMPALA_PROCESS.getName());
+        String              queryStr      = context.getQueryStr();
 
         if (queryStr != null) {
             queryStr = queryStr.toLowerCase().trim();
