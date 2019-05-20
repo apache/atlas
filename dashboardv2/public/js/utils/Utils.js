@@ -576,6 +576,34 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             });
         }
     }
+
+    Utils.findAndMergeRelationShipEntity = function(options) {
+        var attributeObject = options.attributeObject,
+            relationshipAttributes = options.relationshipAttributes;
+        _.each(attributeObject, function(val, key) {
+            var attributVal = val;
+            if (relationshipAttributes && relationshipAttributes[key]) {
+                var relationShipVal = relationshipAttributes[key];
+                if (_.isObject(val)) {
+                    if (_.isArray(val)) {
+                        _.each(val, function(attr) {
+                            if (attr && attr.attributes === undefined) {
+                                var entityFound = _.find(relationShipVal, { guid: attr.guid });
+                                if (entityFound) {
+                                    attr.attributes = _.omit(entityFound, 'typeName', 'guid', 'entityStatus');
+                                    attr.status = entityFound.entityStatus;
+                                }
+                            }
+                        });
+                    } else if (relationShipVal && val.attributes === undefined) {
+                        val.attributes = _.omit(relationShipVal, 'typeName', 'guid', 'entityStatus');
+                        val.status = relationShipVal.entityStatus;
+                    }
+                }
+            }
+        })
+    }
+
     Utils.getNestedSuperTypes = function(options) {
         var data = options.data,
             collection = options.collection,

@@ -104,7 +104,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         value = Utils.getName(data);
                         var id = "";
                         if (data.guid) {
-                            if (Enums.entityStateReadOnly[data.status]) {
+                            if (Enums.entityStateReadOnly[data.status || data.entityStatus]) {
                                 deleteButton += '<button title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
                             }
                             id = data.guid;
@@ -144,7 +144,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     var inputOutputField = keyValue[i],
                         id = inputOutputField.guid || (_.isObject(inputOutputField.id) ? inputOutputField.id.id : inputOutputField.id),
                         tempLink = "",
-                        status = inputOutputField.status || (_.isObject(inputOutputField.id) ? inputOutputField.id.state : inputOutputField.state),
+                        status = (inputOutputField.status || inputOutputField.entityStatus) || (_.isObject(inputOutputField.id) ? inputOutputField.id.state : inputOutputField.state),
                         readOnly = Enums.entityStateReadOnly[status];
                     if (!inputOutputField.attributes && inputOutputField.values) {
                         inputOutputField['attributes'] = inputOutputField.values;
@@ -303,7 +303,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 ++count;
             });
         }
-        if (!Enums.entityStateReadOnly[obj.status]) {
+        if (!Enums.entityStateReadOnly[obj.status || obj.entityStatus]) {
             if (obj.guid) {
                 addTag += '<a href="javascript:void(0)" data-id="addTag" class="btn btn-action btn-sm assignTag" data-guid="' + obj.guid + '" ><i class="fa fa-plus"></i></a>';
             } else {
@@ -335,7 +335,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 ++count;
             });
         }
-        if (!Enums.entityStateReadOnly[obj.status]) {
+        if (!Enums.entityStateReadOnly[obj.status || obj.entityStatus]) {
             if (obj.guid) {
                 addTerm += '<a href="javascript:void(0)" data-id="addTerm" class="btn btn-action btn-sm assignTag" data-guid="' + obj.guid + '" ><i class="fa fa-plus"></i></a>';
             } else {
