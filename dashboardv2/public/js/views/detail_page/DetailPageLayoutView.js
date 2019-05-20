@@ -141,6 +141,11 @@ define(['require',
                         referredEntities: this.entityObject.referredEntities
                     });
 
+                    Utils.findAndMergeRelationShipEntity({
+                        attributeObject: collectionJSON.attributes,
+                        relationshipAttributes: collectionJSON.relationshipAttributes
+                    });
+
                     // check if entity is process
                     var isProcess = false,
                         superTypes = Utils.getNestedSuperTypes({ data: this.activeEntityDef.toJSON(), collection: this.entityDefCollection }),
@@ -217,7 +222,7 @@ define(['require',
                         }
                         if (collectionJSON.attributes && collectionJSON.attributes.columns) {
                             var valueSorted = _.sortBy(collectionJSON.attributes.columns, function(val) {
-                                return val.attributes.position
+                                return val.attributes && val.attributes.position
                             });
                             collectionJSON.attributes.columns = valueSorted;
                         }
