@@ -696,8 +696,9 @@ public abstract class BaseHiveEvent {
             hiveDDL.setAttribute(ATTRIBUTE_EXEC_TIME, getQueryStartTime());
             hiveDDL.setAttribute(ATTRIBUTE_QUERY_TEXT, getQueryString());
             hiveDDL.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
-            hiveDDL.setAttribute(ATTRIBUTE_NAME, getQueryString() + QNAME_SEP_PROCESS + getQueryStartTime().toString());
-            hiveDDL.setAttribute(ATTRIBUTE_QUALIFIED_NAME, hiveDDL.getAttribute(ATTRIBUTE_NAME));
+            hiveDDL.setAttribute(ATTRIBUTE_NAME, getQueryString());
+            hiveDDL.setAttribute(ATTRIBUTE_QUALIFIED_NAME, dbOrTable.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString()
+                                                           + QNAME_SEP_PROCESS + getQueryStartTime().toString());
         }
 
         return hiveDDL;
