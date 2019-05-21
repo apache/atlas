@@ -318,7 +318,7 @@ define(['require',
             var that = this,
                 notifyObj = {
                     modal: true,
-                    text: "It looks like you have been edited something. If you leave before saving, your changes will be lost.",
+                    text: "It looks like you have edited something. If you leave before saving, your changes will be lost.",
                     ok: function(argument) {
                         that.viewType = that.ui.editPropagationType.is(":checked") ? "flow" : "table";
                         that.ui.editPropagationType.prop("checked", that.viewType === "flow" ? false : true).trigger("change");
