@@ -63,7 +63,6 @@ define(['require', ''], function(require) {
 
                 nodeDrag.call(svg.selectAll("g.node"));
                 edgeDrag.call(svg.selectAll("g.edgePath"));
-                // this.refreshGraphForIE();
             },
             dragstart: function(d) {
                 d3.event.sourceEvent.stopPropagation();
@@ -159,9 +158,18 @@ define(['require', ''], function(require) {
             },
         }
     }
-
+    LinegaeUtils.refreshGraphForSafari = function(options) {
+        var edgePathEl = options.edgeEl,
+            IEGraphRenderDone = 0;
+        edgePathEl.each(function(argument) {
+            var eleRef = this,
+                childNode = $(this).find('pattern');
+            setTimeout(function(argument) {
+                $(eleRef).find('defs').append(childNode);
+            }, 500);
+        });
+    }
     LinegaeUtils.refreshGraphForIE = function(options) {
-
         var edgePathEl = options.edgeEl,
             IEGraphRenderDone = 0;
         edgePathEl.each(function(argument) {

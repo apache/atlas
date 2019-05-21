@@ -603,10 +603,13 @@ define(['require',
                                             }
                                         });
                                 }
-                                getImageData({
-                                    "imagePath": imagePath,
-                                    "imageIconPath": imageIconPath
-                                });
+                                if (_.keys(imageObject).indexOf(imageIconPath) === -1) {
+                                    getImageData({
+                                        "imagePath": imagePath,
+                                        "imageIconPath": imageIconPath
+                                    });
+                                }
+
                                 if (_.isUndefined(imageObject[imageIconPath])) {
                                     // before img success
                                     imageObject[imageIconPath] = [d3.select(that)];
@@ -755,6 +758,7 @@ define(['require',
                             return;
                         }
                         that.$('svg').removeClass('hover');
+                        that.$('svg').removeClass('hover-active');
                         LineageUtils.onHoverFade({
                             opacity: 1,
                             selectedNode: d,
@@ -825,39 +829,17 @@ define(['require',
                     }
                 }).init();
                 zoom.event(svg);
-                // console.log(this.$('svg')[0].getBBox())
-                //svg.attr('height', this.g.graph().height * initialScale + 40);
                 if (platform.name === "IE") {
-
-
                     LineageUtils.refreshGraphForIE({
                         edgeEl: this.$('svg .edgePath')
                     });
-                    // this.$('svg .edgePath').each(function(argument) {
-                    //     var childNode = $(this).find('marker');
-                    //     console.log(childNode);
-                    //     $(this).find('marker').remove();
-                    //     var eleRef = this;
-                    //     ++that.IEGraphRenderDone;
-                    //     setTimeout(function(argument) {
-                    //         $(eleRef).find('defs').append(childNode);
-                    //         --that.IEGraphRenderDone;
-                    //         if (that.IEGraphRenderDone === 0) {
-                    //             this.$('.fontLoader').hide();
-                    //             this.$('svg').fadeTo(1000, 1)
-                    //         }
-                    //     }, 1000);
-                    // });
                 }
-                // console.log(platform.name)
-                // if (platform.name !== "IE") {
                 LineageUtils.DragNode({
                     svg: this.svg,
                     g: this.g,
                     guid: this.guid,
                     edgeEl: this.$('svg .edgePath')
                 }).init();
-                // }
             },
             renderLineageTypeSearch: function() {
                 var that = this,
@@ -987,7 +969,7 @@ define(['require',
                         scaleFactor = 1,
                         svgWidth = that.$('svg').width(),
                         svgHeight = that.$('svg').height();
-                    if (platform.name != "Chrome") {
+                    if (platform.name === "Firefox") {
                         svgClone.setAttribute('width', svgWidth);
                         svgClone.setAttribute('height', svgHeight);
                     }
@@ -1020,6 +1002,9 @@ define(['require',
 
                     var img = new Image(canvas.width, canvas.height);
                     var svgBlob = new Blob([data], { type: 'image/svg+xml;base64' });
+                    if (platform.name === "Safari") {
+                        svgBlob = new Blob([data], { type: 'image/svg+xml' });
+                    }
                     var url = DOMURL.createObjectURL(svgBlob);
 
                     img.onload = function() {
@@ -1045,6 +1030,11 @@ define(['require',
                                 }
                                 a.click();
                                 that.toggleLoader(loaderTargetDiv);
+                                if (platform.name === 'Safari') {
+                                    LineageUtils.refreshGraphForSafari({
+                                        edgeEl: that.$('svg g.node')
+                                    });
+                                }
                             }, 'image/png');
                             $('.hidden-svg').html('');
                             createCanvas.remove();
