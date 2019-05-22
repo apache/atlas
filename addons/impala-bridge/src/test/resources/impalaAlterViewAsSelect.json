@@ -29,34 +29,38 @@
     {
       "id":0,
       "vertexType":"COLUMN",
-      "vertexId":"db_4.view_1.count"
+      "vertexId":"db_4.view_1.count",
+      "metadata": {
+        "tableName": "db_4.view_1",
+        "createTime": 1554750072
+      }
     },
     {
       "id":1,
       "vertexType":"COLUMN",
-      "vertexId":"db_4.table_1.count"
+      "vertexId":"db_4.table_1.count",
+      "metadata": {
+        "tableName": "db_4.table_1",
+        "createTime": 1554750070
+      }
     },
     {
       "id":2,
       "vertexType":"COLUMN",
-      "vertexId":"db_4.view_1.id"
+      "vertexId":"db_4.view_1.id",
+      "metadata": {
+        "tableName": "db_4.view_1",
+        "createTime": 1554750072
+      }
     },
     {
       "id":3,
       "vertexType":"COLUMN",
-      "vertexId":"db_4.table_1.id"
-    },
-    {
-      "id":4,
-      "vertexType":"TABLE",
-      "vertexId":"db_4.table_1",
-      "createTime":1554750070
-    },
-    {
-      "id":5,
-      "vertexType":"TABLE",
-      "vertexId":"db_4.view_1",
-      "createTime":1554750072
+      "vertexId":"db_4.table_1.id",
+      "metadata": {
+        "tableName": "db_4.table_1",
+        "createTime": 1554750070
+      }
     }
   ]
 }

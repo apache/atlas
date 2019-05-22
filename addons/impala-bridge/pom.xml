@@ -53,7 +53,12 @@
       <artifactId>atlas-notification</artifactId>
     </dependency>
 
-    <!-- to bring up atlas server for integration tests -->
+    <dependency>
+      <groupId>org.apache.atlas</groupId>
+      <artifactId>impala-hook-api</artifactId>
+    </dependency>
+
+     <!-- to bring up atlas server for integration tests -->
     <dependency>
       <groupId>org.apache.atlas</groupId>
       <artifactId>atlas-client-v2</artifactId>

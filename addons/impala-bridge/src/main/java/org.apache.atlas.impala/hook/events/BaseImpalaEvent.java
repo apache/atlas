@@ -36,6 +36,7 @@ import org.apache.atlas.impala.model.ImpalaNode;
 import org.apache.atlas.impala.model.ImpalaOperationType;
 import org.apache.atlas.impala.model.ImpalaVertexType;
 import org.apache.atlas.impala.model.LineageVertex;
+import org.apache.atlas.impala.model.LineageVertexMetadata;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
@@ -82,13 +83,7 @@ public abstract class BaseImpalaEvent {
     public static final String ATTRIBUTE_DEPENDENCY_TYPE           = "dependencyType";
     public static final long   MILLIS_CONVERT_FACTOR               = 1000;
 
-    public static final Map<Integer, String> OWNER_TYPE_TO_ENUM_VALUE = new HashMap<>();
 
-    static {
-        OWNER_TYPE_TO_ENUM_VALUE.put(1, "USER");
-        OWNER_TYPE_TO_ENUM_VALUE.put(2, "ROLE");
-        OWNER_TYPE_TO_ENUM_VALUE.put(3, "GROUP");
-    }
 
     protected final AtlasImpalaHookContext context;
     protected final Map<String, ImpalaNode> vertexNameMap;
@@ -108,6 +103,18 @@ public abstract class BaseImpalaEvent {
     public abstract List<HookNotification> getNotificationMessages() throws Exception;
 
     public String getUserName() { return context.getUserName(); }
+
+    public String getTableNameFromVertex(LineageVertex vertex) {
+        if (vertex.getVertexType() == ImpalaVertexType.COLUMN) {
+            LineageVertexMetadata metadata = vertex.getMetadata();
+
+            if (metadata != null) {
+                return metadata.getTableName();
+            }
+        }
+
+        return getTableNameFromColumn(vertex.getVertexId());
+    }
 
     public String getTableNameFromColumn(String columnName) {
         return context.getTableNameFromColumn(columnName);
@@ -453,6 +460,11 @@ public abstract class BaseImpalaEvent {
         return ret;
     }
 
+    /**
+     * return the createTime of the table.
+     * @param table
+     * @return the createTime of the table. Its unit is in milliseconds.
+     */
     public static long getTableCreateTime(ImpalaNode table) {
         return getTableCreateTime(table.getOwnVertex());
     }
@@ -460,6 +472,7 @@ public abstract class BaseImpalaEvent {
     public static long getTableCreateTime(LineageVertex tableVertex) {
         Long createTime = tableVertex.getCreateTime();
         if (createTime != null) {
+            // the time unit of vertex is in seconds. Convert to milliseconds before sending to Atlas.
             return createTime.longValue() * MILLIS_CONVERT_FACTOR;
         } else {
             return System.currentTimeMillis();
@@ -511,8 +524,11 @@ public abstract class BaseImpalaEvent {
         ret.setAttribute(ATTRIBUTE_OUTPUTS,  getObjectIds(outputs));
         ret.setAttribute(ATTRIBUTE_NAME, queryStr);
         ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, context.getImpalaOperationType());
-        ret.setAttribute(ATTRIBUTE_START_TIME, context.getLineageQuery().getTimestamp());
-        ret.setAttribute(ATTRIBUTE_END_TIME, System.currentTimeMillis());
+
+        // the unit of timestamp from lineage record is in seconds. Convert to milliseconds to Atlas
+        ret.setAttribute(ATTRIBUTE_START_TIME, context.getLineageQuery().getTimestamp() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR);
+        ret.setAttribute(ATTRIBUTE_END_TIME, context.getLineageQuery().getEndTime() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR);
+
         ret.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
         ret.setAttribute(ATTRIBUTE_QUERY_TEXT, queryStr);
         ret.setAttribute(ATTRIBUTE_QUERY_ID, context.getLineageQuery().getQueryId());
@@ -528,5 +544,38 @@ public abstract class BaseImpalaEvent {
         }
 
         entitiesWithExtInfo.compact();
+    }
+
+    // The unit of createTime in vertex is in seconds. So the returned value is
+    // time in seconds.
+    protected Long getCreateTimeInVertex(LineageVertex vertex) {
+        if (vertex == null) {
+            return System.currentTimeMillis() / MILLIS_CONVERT_FACTOR;
+        }
+
+        Long createTime = vertex.getCreateTime();
+
+        if (createTime != null) {
+            return createTime;
+        }
+
+        if (vertex.getVertexType() == ImpalaVertexType.COLUMN) {
+            LineageVertexMetadata metadata = vertex.getMetadata();
+
+            if (metadata != null) {
+                return metadata.getCreateTime();
+            }
+        }
+
+        return System.currentTimeMillis() / MILLIS_CONVERT_FACTOR;
+    }
+
+    protected ImpalaNode createTableNode(String tableName, Long createTime) {
+        // the created table vertex does not have its Id set as it is not referred in edge
+        LineageVertex tableVertex = new LineageVertex();
+        tableVertex.setVertexType(ImpalaVertexType.TABLE);
+        tableVertex.setVertexId(tableName);
+        tableVertex.setCreateTime(createTime);
+        return new ImpalaNode(tableVertex);
     }
 }

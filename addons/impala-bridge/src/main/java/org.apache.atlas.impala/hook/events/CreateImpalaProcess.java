@@ -33,6 +33,7 @@ import org.apache.atlas.impala.model.ImpalaVertexType;
 import org.apache.atlas.impala.model.LineageEdge;
 import org.apache.atlas.impala.model.ImpalaQuery;
 import org.apache.atlas.impala.model.LineageVertex;
+import org.apache.atlas.impala.model.LineageVertexMetadata;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
@@ -192,7 +193,6 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
             AtlasEntity columnLineageProcess = new AtlasEntity(ImpalaDataType.IMPALA_COLUMN_LINEAGE.getName());
 
-            // TODO: when there are multiple target IDs, should we use first column name or all of their name?
             String columnQualifiedName = (String)impalaProcess.getAttribute(ATTRIBUTE_QUALIFIED_NAME) +
                 AtlasImpalaHookContext.QNAME_SEP_PROCESS + outputColumns.get(0).getAttribute(ATTRIBUTE_NAME);
             columnLineageProcess.setAttribute(ATTRIBUTE_NAME, columnQualifiedName);
@@ -233,8 +233,7 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
         // get vertex map with key being its id and
         // ImpalaNode map with its own vertex's vertexId as its key
         for (LineageVertex vertex : lineageQuery.getVertices()) {
-            verticesMap.put(vertex.getId(), vertex);
-            vertexNameMap.put(vertex.getVertexId(), new ImpalaNode(vertex));
+            updateVertexMap(vertex);
         }
 
         // get set of source ID and set of target Id
@@ -252,6 +251,29 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
         inputNodes.addAll(inputMap.values());
         outputNodes.addAll(outputMap.values());
+    }
+
+    // Update internal maps using this vertex.
+    private void updateVertexMap(LineageVertex vertex) {
+        verticesMap.put(vertex.getId(), vertex);
+        vertexNameMap.put(vertex.getVertexId(), new ImpalaNode(vertex));
+
+        if (vertex.getVertexType() == ImpalaVertexType.COLUMN) {
+            LineageVertexMetadata metadata = vertex.getMetadata();
+
+            if (metadata == null) {
+                return;
+            }
+
+            // if the vertex is column and contains metadata, create a vertex for its table
+            String tableName = metadata.getTableName();
+            ImpalaNode tableNode = vertexNameMap.get(tableName);
+
+            if (tableNode == null) {
+                tableNode = createTableNode(tableName, metadata.getCreateTime());
+                vertexNameMap.put(tableName, tableNode);
+            }
+        }
     }
 
     /**
@@ -274,10 +296,11 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
             if (ImpalaVertexType.COLUMN.equals(vertex.getVertexType())) {
                 // add column to its table node
-                String tableName = getTableNameFromColumn(vertex.getVertexId());
+                String tableName = getTableNameFromVertex(vertex);
                 if (tableName == null) {
                     LOG.warn("cannot find tableName for vertex with id: {}, column name : {}",
                         id, vertex.getVertexId() == null? "null" : vertex.getVertexId());
+
                     continue;
                 }
 
@@ -289,7 +312,9 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
                     if (tableNode == null) {
                         LOG.warn("cannot find table node for vertex with id: {}, column name : {}",
                             id, vertex.getVertexId());
-                        continue;
+
+                        tableNode = createTableNode(tableName, getCreateTimeInVertex(null));
+                        vertexNameMap.put(tableName, tableNode);
                     }
 
                     returnTableMap.put(tableName, tableNode);
