@@ -784,7 +784,9 @@
         <module>addons/hbase-testing-util</module>
         <module>addons/kafka-bridge</module>
         <module>tools/classification-updater</module>
+        <module>addons/impala-hook-api</module>
         <module>addons/impala-bridge</module>
+        <module>addons/impala-bridge-shim</module>
 
         <module>distro</module>
     </modules>
@@ -1516,6 +1518,24 @@
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>kafka-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>impala-hook-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>impala-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>impala-bridge-shim</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

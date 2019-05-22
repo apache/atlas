@@ -25,8 +25,10 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.impala.hook.AtlasImpalaHookContext;
@@ -116,9 +118,58 @@ public class ImpalaLineageITBase {
         return (String) entity.getGuid();
     }
 
+    protected String assertEntityIsRegistered(final String typeName, List<String> processQFNames,
+        final AssertPredicates assertPredicates) throws Exception {
+        List<Map<String, String>> attributesList = new ArrayList<>();
+
+        for (String processName : processQFNames) {
+            attributesList.add(Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, processName));
+        }
+
+        return waitForWithReturn(80000, new PredicateWithReturn() {
+            @Override
+            public String evaluate() throws Exception {
+                AtlasEntity.AtlasEntitiesWithExtInfo atlasEntitiesWithExtInfo = atlasClientV2.getEntitiesByAttribute(typeName, attributesList);
+                List<AtlasEntity> entities = atlasEntitiesWithExtInfo.getEntities();
+                assertNotNull(entities);
+                if (assertPredicates != null) {
+                    return assertPredicates.assertOnEntities(entities);
+                }
+
+                return null;
+            }
+        });
+    }
+
+
+    protected String assertProcessIsRegistered(List<String> processQFNames, String queryString) throws Exception {
+        try {
+            LOG.debug("Searching for process with query {}", queryString);
+
+            return assertEntityIsRegistered(ImpalaDataType.IMPALA_PROCESS.getName(), processQFNames, new AssertPredicates() {
+                @Override
+                public String assertOnEntities(final List<AtlasEntity> entities) throws Exception {
+                    for (AtlasEntity entity : entities) {
+                        List<String> recentQueries = (List<String>) entity
+                            .getAttribute(ATTRIBUTE_RECENT_QUERIES);
+
+                        if (queryString.equalsIgnoreCase(recentQueries.get(0)))
+                            return entity.getGuid();
+
+                    }
+
+                    throw new IllegalStateException("Not found entity with matching query");
+                }
+            });
+        } catch(Exception e) {
+            LOG.error("Exception : ", e);
+            throw e;
+        }
+    }
+
     protected String assertProcessIsRegistered(String processQFName, String queryString) throws Exception {
         try {
-            LOG.debug("Searching for process with query {}", processQFName);
+            LOG.debug("Searching for process with qualified name {} and query {}", processQFName, queryString);
 
             return assertEntityIsRegistered(ImpalaDataType.IMPALA_PROCESS.getName(), ATTRIBUTE_QUALIFIED_NAME, processQFName, new AssertPredicate() {
                 @Override
@@ -180,6 +231,20 @@ public class ImpalaLineageITBase {
         void assertOnEntity(AtlasEntity entity) throws Exception;
     }
 
+    public interface AssertPredicates {
+        String assertOnEntities(List<AtlasEntity> entities) throws Exception;
+    }
+
+    public interface PredicateWithReturn {
+        /**
+         * Perform a predicate evaluation.
+         *
+         * @return the boolean result of the evaluation.
+         * @throws Exception thrown if the predicate evaluation could not evaluate.
+         */
+        String evaluate() throws Exception;
+    }
+
     public interface Predicate {
         /**
          * Perform a predicate evaluation.
@@ -204,6 +269,29 @@ public class ImpalaLineageITBase {
             try {
                 predicate.evaluate();
                 return;
+            } catch(Error | Exception e) {
+                if (System.currentTimeMillis() >= mustEnd) {
+                    fail("Assertions failed. Failing after waiting for timeout " + timeout + " msecs", e);
+                }
+                LOG.debug("Waiting up to {} msec as assertion failed", mustEnd - System.currentTimeMillis(), e);
+                Thread.sleep(5000);
+            }
+        }
+    }
+
+    /**
+     * Wait for a condition, expressed via a {@link Predicate} to become true.
+     *
+     * @param timeout maximum time in milliseconds to wait for the predicate to become true.
+     * @param predicate predicate waiting on.
+     */
+    protected String waitForWithReturn(int timeout, PredicateWithReturn predicate) throws Exception {
+        ParamChecker.notNull(predicate, "predicate");
+        long mustEnd = System.currentTimeMillis() + timeout;
+
+        while (true) {
+            try {
+                return predicate.evaluate();
             } catch(Error | Exception e) {
                 if (System.currentTimeMillis() >= mustEnd) {
                     fail("Assertions failed. Failing after waiting for timeout " + timeout + " msecs", e);

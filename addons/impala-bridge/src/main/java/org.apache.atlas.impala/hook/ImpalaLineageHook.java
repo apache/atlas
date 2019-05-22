@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.impala.hook.events.BaseImpalaEvent;
 import org.apache.atlas.impala.hook.events.CreateImpalaProcess;
-import org.apache.atlas.impala.model.IImpalaLineageHook;
 import org.apache.atlas.impala.model.ImpalaOperationType;
 import org.apache.atlas.impala.model.ImpalaQuery;
 import org.apache.atlas.type.AtlasType;
@@ -37,7 +36,7 @@ import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
 import java.util.HashSet;
 
-public class ImpalaLineageHook extends AtlasHook implements IImpalaLineageHook {
+public class ImpalaLineageHook extends AtlasHook {
     private static final Logger LOG = LoggerFactory.getLogger(ImpalaLineageHook.class);
     public static final String ATLAS_ENDPOINT                      = "atlas.rest.address";
     public static final String REALM_SEPARATOR                     = "@";
@@ -61,11 +60,21 @@ public class ImpalaLineageHook extends AtlasHook implements IImpalaLineageHook {
     }
 
     public void process(String impalaQueryString) throws Exception {
+        if (StringUtils.isEmpty(impalaQueryString)) {
+            LOG.warn("==> ImpalaLineageHook.process skips because the impalaQueryString is empty <==");
+            return;
+        }
+
         ImpalaQuery lineageQuery = AtlasType.fromJson(impalaQueryString, ImpalaQuery.class);
         process(lineageQuery);
     }
 
     public void process(ImpalaQuery lineageQuery) throws Exception {
+        if (lineageQuery == null) {
+            LOG.warn("==> ImpalaLineageHook.process skips because the query object is null <==");
+            return;
+        }
+
         if (StringUtils.isEmpty(lineageQuery.getQueryText())) {
             LOG.warn("==> ImpalaLineageHook.process skips because the query text is empty <==");
             return;

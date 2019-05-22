@@ -28,7 +28,7 @@
       "sources":[
       ],
       "targets":[
-        6
+        4
       ],
       "edgeType":"PROJECTION"
     }
@@ -37,39 +37,47 @@
     {
       "id":0,
       "vertexType":"COLUMN",
-      "vertexId":"db_5.table_2.count"
+      "vertexId":"db_5.table_2.count",
+      "metadata": {
+        "tableName": "db_5.table_2",
+        "createTime": 1554750072
+      }
     },
     {
       "id":1,
       "vertexType":"COLUMN",
-      "vertexId":"db_5.table_1.count"
+      "vertexId":"db_5.table_1.count",
+      "metadata": {
+        "tableName": "db_5.table_1",
+        "createTime": 1554750070
+      }
     },
     {
       "id":2,
       "vertexType":"COLUMN",
-      "vertexId":"db_5.table_2.id"
+      "vertexId":"db_5.table_2.id",
+      "metadata": {
+        "tableName": "db_5.table_2",
+        "createTime": 1554750072
+      }
     },
     {
       "id":3,
       "vertexType":"COLUMN",
-      "vertexId":"db_5.table_1.id"
+      "vertexId":"db_5.table_1.id",
+      "metadata": {
+        "tableName": "db_5.table_1",
+        "createTime": 1554750070
+      }
     },
     {
       "id":4,
-      "vertexType":"TABLE",
-      "vertexId":"db_5.table_1",
-      "createTime":1554750070
-    },
-    {
-      "id":5,
-      "vertexType":"TABLE",
-      "vertexId":"db_5.table_2",
-      "createTime":1554750072
-    },
-    {
-      "id":6,
       "vertexType":"COLUMN",
-      "vertexId":"db_5.table_2.int_col"
+      "vertexId":"db_5.table_2.int_col",
+      "metadata": {
+        "tableName": "db_5.table_2",
+        "createTime": 1554750072
+      }
     }
   ]
 }
