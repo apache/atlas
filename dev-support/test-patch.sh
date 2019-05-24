@@ -126,6 +126,9 @@ parseArgs() {
     --review-id=*)
       REVIEW_ID=${i#*=}
       ;;
+    --pullrequest-id=*)
+      PR_ID=${i#*=}
+      ;;
     --local-patch=*)
       LOCAL_PATCH=${i#*=}
       ;;
@@ -213,6 +216,9 @@ downloadPatch () {
     if [[ -n $REVIEW_ID ]]; then
         echo "Download Patch from Review Board: https://reviews.apache.org/r/$REVIEW_ID/diff/raw at `date`"
         $WGET -q -O $PATCH_DIR/patch https://reviews.apache.org/r/$REVIEW_ID/diff/raw
+    elif [[ -n $PR_ID ]]; then
+        echo "Download Patch from Git pull request: https://patch-diff.githubusercontent.com/raw/apache/atlas/pull/$PR_ID.patch at `date`"
+        $WGET -q -O $PATCH_DIR/patch https://patch-diff.githubusercontent.com/raw/apache/atlas/pull/$PR_ID.patch
     elif [[ -n $LOCAL_PATCH ]]; then
         echo "Using Local Patch in $LOCAL_PATCH at `date`"
     else
