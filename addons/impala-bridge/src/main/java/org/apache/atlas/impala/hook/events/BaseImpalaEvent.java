@@ -563,7 +563,7 @@ public abstract class BaseImpalaEvent {
             LineageVertexMetadata metadata = vertex.getMetadata();
 
             if (metadata != null) {
-                return metadata.getCreateTime();
+                return metadata.getTableCreateTime();
             }
         }
 

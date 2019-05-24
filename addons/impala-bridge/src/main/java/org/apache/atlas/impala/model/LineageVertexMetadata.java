@@ -36,13 +36,13 @@ public class LineageVertexMetadata {
     private String tableName;
 
     // the create time of the table. Its unit is in seconds.
-    private Long createTime;
+    private Long tableCreateTime;
 
     public String getTableName() { return tableName; }
 
-    public Long getCreateTime() { return createTime; }
+    public Long getTableCreateTime() { return tableCreateTime; }
 
     public void setTableName(String tableName) { this.tableName = tableName; }
 
-    public void setCreateTime(Long createTime) { this.createTime = createTime; }
+    public void setTableCreateTime(Long createTime) { this.tableCreateTime = createTime; }
 }

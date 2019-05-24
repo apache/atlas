@@ -19,8 +19,8 @@
 package org.apache.atlas.impala.hook;
 
 import org.apache.atlas.plugin.classloader.AtlasPluginClassLoader;
-import org.apache.impala.hooks.PostQueryHookContext;
-import org.apache.impala.hooks.QueryExecHook;
+import org.apache.impala.hooks.QueryCompleteContext;
+import org.apache.impala.hooks.QueryEventHook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * This class is used to convert lineage records from Impala to lineage notifications and
  * send them to Atlas.
  */
-public class ImpalaLineageHook implements QueryExecHook {
+public class ImpalaLineageHook implements QueryEventHook {
     private static final Logger LOG = LoggerFactory.getLogger(ImpalaLineageHook.class);
 
     private static final String ATLAS_PLUGIN_TYPE_IMPALA = "impala";
@@ -36,20 +36,20 @@ public class ImpalaLineageHook implements QueryExecHook {
         "org.apache.atlas.impala.hook.ImpalaHook";
 
     private AtlasPluginClassLoader atlasPluginClassLoader = null;
-    private QueryExecHook impalaLineageHookImpl;
+    private QueryEventHook impalaLineageHookImpl;
 
     public ImpalaLineageHook() {
     }
 
     /**
-     * Execute Impala post-hook
+     * Execute Impala hook
      */
-    public void postQueryExecute(PostQueryHookContext context) {
-        LOG.debug("==> ImpalaLineageHook.postQueryExecute()");
+    public void onQueryComplete(QueryCompleteContext context) {
+        LOG.debug("==> ImpalaLineageHook.onQueryComplete()");
 
         try {
             activatePluginClassLoader();
-            impalaLineageHookImpl.postQueryExecute(context);
+            impalaLineageHookImpl.onQueryComplete(context);
         } catch (Exception ex) {
             String errorMessage = String.format("Error in processing impala lineage: {}", context.getLineageGraph());
             LOG.error(errorMessage, ex);
@@ -57,33 +57,33 @@ public class ImpalaLineageHook implements QueryExecHook {
             deactivatePluginClassLoader();
         }
 
-        LOG.debug("<== ImpalaLineageHook.postQueryExecute()");
+        LOG.debug("<== ImpalaLineageHook.onQueryComplete()");
     }
 
     /**
-     * Initialization of Impala post-execution hook
+     * Initialization of Impala hook
      */
-    public void impalaStartup() {
-        LOG.debug("==> ImpalaLineageHook.impalaStartup()");
+    public void onImpalaStartup() {
+        LOG.debug("==> ImpalaLineageHook.onImpalaStartup()");
 
         try {
             atlasPluginClassLoader = AtlasPluginClassLoader.getInstance(ATLAS_PLUGIN_TYPE_IMPALA, this.getClass());
 
             @SuppressWarnings("unchecked")
-            Class<QueryExecHook> cls = (Class<QueryExecHook>) Class
+            Class<QueryEventHook> cls = (Class<QueryEventHook>) Class
                 .forName(ATLAS_IMPALA_LINEAGE_HOOK_IMPL_CLASSNAME, true, atlasPluginClassLoader);
 
             activatePluginClassLoader();
 
             impalaLineageHookImpl = cls.newInstance();
-            impalaLineageHookImpl.impalaStartup();
+            impalaLineageHookImpl.onImpalaStartup();
         } catch (Exception excp) {
             LOG.error("Error instantiating Atlas hook implementation for Impala lineage", excp);
         } finally {
             deactivatePluginClassLoader();
         }
 
-        LOG.debug("<== ImpalaLineageHook.impalaStartup()");
+        LOG.debug("<== ImpalaLineageHook.onImpalaStartup()");
     }
 
     private void activatePluginClassLoader() {
