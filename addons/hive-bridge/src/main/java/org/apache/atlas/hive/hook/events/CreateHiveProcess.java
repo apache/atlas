@@ -109,7 +109,8 @@ public class CreateHiveProcess extends BaseHiveEvent {
                         outputs.add(entity);
                     }
 
-                    if (entity != null && !context.isMetastoreHook()) {
+                    if (isDdlOperation(entity)) {
+
                         AtlasEntity ddlEntity = createHiveDDLEntity(entity);
 
                         if (ddlEntity != null) {
@@ -276,5 +277,12 @@ public class CreateHiveProcess extends BaseHiveEvent {
         }
 
         return ret;
+    }
+
+    private boolean isDdlOperation(AtlasEntity entity) {
+        return entity != null && !context.isMetastoreHook()
+            && (context.getHiveOperation().equals(HiveOperation.CREATETABLE_AS_SELECT)
+             || context.getHiveOperation().equals(HiveOperation.CREATEVIEW)
+             || context.getHiveOperation().equals(HiveOperation.ALTERVIEW_AS));
     }
 }
