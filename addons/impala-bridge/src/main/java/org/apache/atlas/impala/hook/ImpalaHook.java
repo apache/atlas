@@ -18,20 +18,20 @@
 
 package org.apache.atlas.impala.hook;
 
-import org.apache.impala.hooks.PostQueryHookContext;
-import org.apache.impala.hooks.QueryExecHook;
+import org.apache.impala.hooks.QueryCompleteContext;
+import org.apache.impala.hooks.QueryEventHook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ImpalaHook implements QueryExecHook {
+public class ImpalaHook implements QueryEventHook {
     private static final Logger LOG = LoggerFactory.getLogger(ImpalaHook.class);
 
     private ImpalaLineageHook lineageHook;
 
     /**
-     * Execute Impala post-hook
+     * Execute Impala hook
      */
-    public void postQueryExecute(PostQueryHookContext context)  {
+    public void onQueryComplete(QueryCompleteContext context)  {
         try {
             lineageHook.process(context.getLineageGraph());
         } catch (Exception ex) {
@@ -41,9 +41,9 @@ public class ImpalaHook implements QueryExecHook {
     }
 
     /**
-     * Initialization of Impala post-execution hook
+     * Initialization of Impala hook
      */
-    public void impalaStartup() {
+    public void onImpalaStartup() {
         lineageHook = new ImpalaLineageHook();
     }
 }

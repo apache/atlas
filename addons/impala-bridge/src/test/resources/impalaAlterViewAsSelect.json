@@ -32,7 +32,7 @@
       "vertexId":"db_4.view_1.count",
       "metadata": {
         "tableName": "db_4.view_1",
-        "createTime": 1554750072
+        "tableCreateTime": 1554750072
       }
     },
     {
@@ -41,7 +41,7 @@
       "vertexId":"db_4.table_1.count",
       "metadata": {
         "tableName": "db_4.table_1",
-        "createTime": 1554750070
+        "tableCreateTime": 1554750070
       }
     },
     {
@@ -50,7 +50,7 @@
       "vertexId":"db_4.view_1.id",
       "metadata": {
         "tableName": "db_4.view_1",
-        "createTime": 1554750072
+        "tableCreateTime": 1554750072
       }
     },
     {
@@ -59,7 +59,7 @@
       "vertexId":"db_4.table_1.id",
       "metadata": {
         "tableName": "db_4.table_1",
-        "createTime": 1554750070
+        "tableCreateTime": 1554750070
       }
     }
   ]

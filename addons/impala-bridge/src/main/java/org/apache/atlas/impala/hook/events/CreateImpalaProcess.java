@@ -270,7 +270,7 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
             ImpalaNode tableNode = vertexNameMap.get(tableName);
 
             if (tableNode == null) {
-                tableNode = createTableNode(tableName, metadata.getCreateTime());
+                tableNode = createTableNode(tableName, metadata.getTableCreateTime());
                 vertexNameMap.put(tableName, tableNode);
             }
         }
