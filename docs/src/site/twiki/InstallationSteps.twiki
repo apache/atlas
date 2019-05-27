@@ -1,11 +1,11 @@
 ---++ Building & Installing Apache Atlas
 
 ---+++ Building Apache Atlas
-Download Apache Atlas 1.0.0 release sources, apache-atlas-1.0.0-sources.tar.gz, from [[http://atlas.apache.org/Downloads.html][downloads]] page.
+Download Apache Atlas 2.0.0 release sources, apache-atlas-2.0.0-sources.tar.gz, from [[http://atlas.apache.org/Downloads.html][downloads]] page.
 Then follow the instructions below to to build Apache Atlas.
 <verbatim>
-tar xvfz apache-atlas-1.0.0-sources.tar.gz
-cd apache-atlas-sources-1.0.0/
+tar xvfz apache-atlas-2.0.0-sources.tar.gz
+cd apache-atlas-sources-2.0.0/
 export MAVEN_OPTS="-Xms2g -Xmx2g"
 mvn clean -DskipTests install</verbatim>
 
@@ -81,7 +81,7 @@ bin/atlas_start.py</verbatim>
 <verbatim>
   curl -u username:password http://localhost:21000/api/atlas/admin/version
 
-  {"Description":"Metadata Management and Data Governance Platform over Hadoop","Version":"1.0.0","Name":"apache-atlas"}</verbatim>
+  {"Description":"Metadata Management and Data Governance Platform over Hadoop","Version":"2.0.0","Name":"apache-atlas"}</verbatim>
 
    * Run quick start to load sample model and data
 <verbatim>

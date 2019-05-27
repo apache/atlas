@@ -173,7 +173,7 @@ make convention based assumptions about what attributes they can expect of types
 *Infrastructure*: This type extends Asset and typically can be used to be a common super type for infrastructural
 metadata objects like clusters, hosts etc.
 
-*!DataSet*: This type extends Referenceable. Conceptually, it can be used to represent an type that stores data. In Atlas,
+*!DataSet*: This type extends Asset. Conceptually, it can be used to represent a type that stores data. In Atlas,
 hive tables, hbase_tables etc are all types that extend from !DataSet. Types that extend !DataSet can be expected to have
 a Schema in the sense that they would have an attribute that defines attributes of that dataset. For e.g. the columns
 attribute in a hive_table. Also entities of types that extend !DataSet participate in data transformation and this
