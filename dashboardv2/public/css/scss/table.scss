@@ -74,8 +74,15 @@ tr.empty {
         white-space: normal;
     }
 
-    .select-all-header-cell {
+    th.renderable.html-cell,
+    td.renderable.html-cell {
+        max-width: 250px;
+    }
+
+    .select-all-header-cell,
+    .select-row-cell {
         width: 42px;
+        text-overflow: clip;
     }
 
     thead {
