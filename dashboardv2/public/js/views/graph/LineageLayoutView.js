@@ -161,6 +161,11 @@ define(['require',
                 var icon = $(e.currentTarget).find('i'),
                     panel = $(e.target).parents('.tab-pane').first();
                 icon.toggleClass('fa-expand fa-compress');
+                if(icon.hasClass('fa-expand')){
+                    icon.parent('button').attr("data-original-title","Full Screen");
+                }else{
+                    icon.parent('button').attr("data-original-title","Default View");
+                }
                 panel.toggleClass('fullscreen-mode');
             },
             onCheckUnwantedEntity: function(e) {
@@ -991,6 +996,7 @@ define(['require',
                                     Utils.notifyError({
                                         content: "There was an error in downloading Lineage!"
                                     });
+                                    that.toggleLoader(loaderTargetDiv);
                                     return;
                                 }
                                 a.href = DOMURL.createObjectURL(blob);
