@@ -196,7 +196,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public AtlasGraphIndexClient getGraphIndexClient() throws AtlasException {
         try {
-            return new AtlasJanusGraphSolrIndexClient();
+            return new AtlasJanusGraphSolrIndexClient(this);
         } catch (Exception e) {
             LOG.error("Error encountered in creating Graph Index Client.", e);
             throw new AtlasException(e);

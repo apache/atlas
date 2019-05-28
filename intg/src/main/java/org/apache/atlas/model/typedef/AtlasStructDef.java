@@ -261,7 +261,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     public static class AtlasAttributeDef implements Serializable {
         private static final long serialVersionUID               = 1L;
         public static final int DEFAULT_SEARCHWEIGHT             = -1;
-        public static final int DEFAULT_SEARCHWEIGHT_FOR_STRINGS = 3;
+
         public static final String SEARCH_WEIGHT_ATTR_NAME       = "searchWeight";
         public static final String ATTRDEF_OPTION_SOFT_REFERENCE = "isSoftReference";
         private final String STRING_TRUE                         = "true";

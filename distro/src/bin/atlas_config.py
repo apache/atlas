@@ -32,7 +32,7 @@ LIB = "lib"
 CONF = "conf"
 LOG = "logs"
 WEBAPP = "server" + os.sep + "webapp"
-SOLR_CONF_DIR = "conf" + os.sep + "solr"
+CONFIG_SETS_CONF = "server" + os.sep + "solr" + os.sep + "configsets" + os.sep + "_default" + os.sep + "conf"
 DATA = "data"
 ATLAS_CONF = "ATLAS_CONF"
 ATLAS_LOG = "ATLAS_LOG_DIR"
@@ -112,7 +112,7 @@ def elasticsearchBinDir(dir):
     return os.environ.get(SOLR_BIN, os.path.join(dir, "elasticsearch", BIN))
 
 def solrConfDir(dir):
-    return os.environ.get(SOLR_CONF, os.path.join(dir, SOLR_CONF_DIR))
+    return os.environ.get(SOLR_CONF, os.path.join(dir, "solr", CONFIG_SETS_CONF))
 
 def solrPort():
     return os.environ.get(SOLR_PORT, DEFAULT_SOLR_PORT)

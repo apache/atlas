@@ -23,7 +23,6 @@ import com.google.common.base.Preconditions;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
@@ -59,8 +58,6 @@ import java.util.List;
 import java.util.Set;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.DEFAULT_SEARCHWEIGHT;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.DEFAULT_SEARCHWEIGHT_FOR_STRINGS;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.LIST;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SET;
@@ -92,15 +89,27 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     // Added for type lookup when indexing the new typedefs
     private final AtlasTypeRegistry typeRegistry;
-
-    private final AtlasGraphIndexClient atlasGraphIndexClient;
+    private final List<IndexChangeListener> indexChangeListeners = new ArrayList<>();
 
     //allows injection of a dummy graph for testing
     private IAtlasGraphProvider provider;
 
     private boolean     recomputeIndexedKeys = true;
     private Set<String> vertexIndexKeys      = new HashSet<>();
-    private final String[] mappedCopyFieldNames;
+
+    public static boolean isValidSearchWeight(int searchWeight) {
+        if (searchWeight != -1 ) {
+            if (searchWeight < 1 || searchWeight > 10) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean isStringAttribute(AtlasStructDef.AtlasAttributeDef attributeDef) {
+        return AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(attributeDef.getTypeName());
+    }
+
     public enum UniqueKind { NONE, GLOBAL_UNIQUE, PER_TYPE_UNIQUE }
 
     @Inject
@@ -113,22 +122,18 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             throws IndexException, RepositoryException {
         this.provider = provider;
         this.typeRegistry = typeRegistry;
-
-        mappedCopyFieldNames = new String[11];
-        for(int i=0; i < mappedCopyFieldNames.length; i++) {
-            mappedCopyFieldNames[i] = String.format("allt%ds", i);
-        }
-
-        try {
-            atlasGraphIndexClient = provider.get().getGraphIndexClient();
-        } catch (Exception e) {
-            LOG.error("Error encountered in creating solr client.", e);
-            throw new RepositoryException("Error encountered in creating solr client.", e);
-        }
+        //make sure solr index follows graph backed index listener
+        addIndexListener(new SolrIndexHelper(typeRegistry));
         if (!HAConfiguration.isHAEnabled(configuration)) {
             initialize(provider.get());
         }
+
     }
+
+    public void addIndexListener(IndexChangeListener listener) {
+        indexChangeListeners.add(listener);
+    }
+
 
     /**
      * Initialize global indices for JanusGraph on server activation.
@@ -191,7 +196,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             LOG.error("Failed to update indexes for changed typedefs", e);
             attemptRollback(changedTypeDefs, management);
         }
-
+        notifyChangeListeners();
     }
 
     public Set<String> getVertexIndexKeys() {
@@ -283,7 +288,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createVertexIndex(management, MODIFICATION_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false);
             createVertexIndex(management, STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
             createVertexIndex(management, CREATED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
-            createVertexIndex(management, CLASSIFICATION_TEXT_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, 10);
+            createVertexIndex(management, CLASSIFICATION_TEXT_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
             createVertexIndex(management, MODIFIED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
             createVertexIndex(management, TRAIT_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, true);
             createVertexIndex(management, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, LIST, true, true);
@@ -356,12 +361,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         LOG.info("Completed deleting indexes for type {}", typeDef.getName());
     }
 
-    private static boolean isStringAttribute(AtlasStructDef.AtlasAttributeDef attributeDef) {
-        return AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(attributeDef.getTypeName());
-    }
-
     private void createIndexForAttribute(AtlasGraphManagement management, String typeName, AtlasAttributeDef attributeDef) {
-        final String     propertyName   = AtlasGraphUtilsV2.encodePropertyKey(typeName + "." + attributeDef.getName());
+        final String     propertyName   = getEncodedPropertyName(typeName, attributeDef);
         AtlasCardinality cardinality    = toAtlasCardinality(attributeDef.getCardinality());
         boolean          isUnique       = attributeDef.getIsUnique();
         boolean          isIndexable    = attributeDef.getIsIndexable();
@@ -370,22 +371,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         boolean          isArrayType    = isArrayType(attribTypeName);
         boolean          isMapType      = isMapType(attribTypeName);
         final String     uniqPropName   = isUnique ? AtlasGraphUtilsV2.encodePropertyKey(typeName + "." + UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + attributeDef.getName()) : null;
-        int              searchWeight   = attributeDef.getSearchWeight();
-
-        if(attributeDef.getSearchWeight() == DEFAULT_SEARCHWEIGHT) {
-            if (isStringAttribute(attributeDef)) {
-                //We will use default search weight of 3 for string attributes.
-                //this will make the string data searchable like in FullTextIndex Searcher using Free Text searcher.
-                LOG.info("Applying default search weight of {} for attribute{}.", DEFAULT_SEARCHWEIGHT_FOR_STRINGS, propertyName);
-                searchWeight = DEFAULT_SEARCHWEIGHT_FOR_STRINGS;
-            }
-        }
-
-        if(!GraphBackedSearchIndexer.isValidSearchWeight(searchWeight)) {
-            String msg = String.format("Invalid search weight '%d' was provided for property %s.", searchWeight, propertyName);
-            LOG.error(msg);
-            throw new RuntimeException(msg);
-        }
 
         try {
             AtlasType atlasType     = typeRegistry.getType(typeName);
@@ -424,7 +409,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 if (isRelationshipType(atlasType)) {
                     createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, false);
                 } else {
-                    createVertexIndex(management, propertyName, UniqueKind.NONE, getPrimitiveClass(attribTypeName), cardinality, isIndexable, false, searchWeight);
+                    createVertexIndex(management, propertyName, UniqueKind.NONE, getPrimitiveClass(attribTypeName), cardinality, isIndexable, false);
 
                     if (uniqPropName != null) {
                         createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, getPrimitiveClass(attribTypeName), cardinality, isIndexable, true);
@@ -461,6 +446,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         } catch (Exception excp) {
             LOG.warn("Failed to delete propertyKey {}, for attribute {}.{}", propertyName, typeName, attributeDef.getName());
         }
+    }
+
+    /**
+     * gets the encoded property name for the attribute passed in.
+     * @param typeName the type system of the attribute
+     * @param attributeDef the attribute definition
+     * @return the encoded property name for the attribute passed in.
+     */
+    public static String getEncodedPropertyName(String typeName, AtlasAttributeDef attributeDef) {
+        return AtlasGraphUtilsV2.encodePropertyKey(typeName + "." + attributeDef.getName());
     }
 
     private void createLabelIfNeeded(final AtlasGraphManagement management, final String propertyName, final String attribTypeName) {
@@ -564,10 +559,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     public void createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class propertyClass,
                                   AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes) {
-        createVertexIndex(management, propertyName, uniqueKind, propertyClass, cardinality, createCompositeIndex, createCompositeIndexWithTypeAndSuperTypes, -1);
-    }
-    private void createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class propertyClass,
-                                  AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, int searchWeight) {
         if (propertyName != null) {
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
 
@@ -583,16 +574,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                     LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
 
                 }
-            }
-
-            //for now, we will support free text based enhancements for SOLR backed index systems only.
-            //WARNING--it is suggested that we don't change the search weight once is assigned with a number in the range 1 to 10.
-            //otherwise, we might end up mapping the index to multiple copy fields...unwanted to space usage.
-            if( searchWeight != -1 && SearchContext.isIndexSolrBased()) {
-                String encodedPropertyName = management.getIndexFieldName(VERTEX_INDEX, propertyKey);
-                String mappedCopyFieldName = mappedCopyFieldNames[searchWeight];
-                atlasGraphIndexClient.createCopyField(VERTEX_INDEX, encodedPropertyName, mappedCopyFieldName);
-                LOG.info("Created copy field from {} to {} for collection {} for property {}.", encodedPropertyName, mappedCopyFieldName, VERTEX_INDEX, propertyName);
             }
 
             if (propertyKey != null) {
@@ -620,7 +601,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Creating vertex-centric index for edge label: {} direction: {} for property: {} of type: {} ",
-                        edgeLabel, edgeDirection.name(), propertyName, propertyClass.getName());
+                    edgeLabel, edgeDirection.name(), propertyName, propertyClass.getName());
         }
 
         final String indexName = edgeLabel + propertyKey.getName();
@@ -824,12 +805,15 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         LOG.info("Index creation for type {} complete", typeDef.getName());
     }
 
-    public static boolean isValidSearchWeight(int searchWeight) {
-        if(searchWeight != -1 ) {
-            if(searchWeight < 1 || searchWeight > 10) {
-                return false;
+    private void notifyChangeListeners() {
+        for (IndexChangeListener indexChangeListener : indexChangeListeners) {
+            try {
+                indexChangeListener.onChange();
+            } catch (Throwable t) {
+                LOG.error("Error encountered in notifying the index change listener {}.", indexChangeListener.getClass().getName(), t);
+                //we need to throw exception if any of the listeners throw execption.
+                throw new RuntimeException("Error encountered in notifying the index change listener " + indexChangeListener.getClass().getName(), t);
             }
         }
-        return true;
     }
 }
