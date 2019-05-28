@@ -478,21 +478,6 @@
      </lst>
   </requestHandler>
 
-  <requestHandler name="/freetext" class="solr.SearchHandler">
-    <lst name="defaults">
-      <str name="defType">edismax</str>
-      <int name="rows">100</int>
-      <str name="lowercaseOperators">true</str>
-      <str name="qf">
-       allt10s^10 allt9s^9 allt8s^8 allt7s^7 allt6s^6 allt5s^5 allt4s^4 allt3s^3 allt2s^2 allt1s^1
-      </str>
-      <str name="hl.fl">*</str>
-      <str name="hl.requireFieldMatch">true</str>
-      <str name="lowercaseOperators">true</str>
-      <str name="facet.limit">5</str>
-    </lst>
-  </requestHandler>
-
 
   <!--
     The export request handler is used to export full sorted result sets.
