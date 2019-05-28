@@ -4,8 +4,8 @@
 Download Apache Atlas 1.0.0 release sources, apache-atlas-1.0.0-sources.tar.gz, from [[http://atlas.apache.org/Downloads.html][downloads]] page.
 Then follow the instructions below to to build Apache Atlas.
 <verbatim>
-tar xvfz apache-atlas-1.0.0-sources.tar.gz
-cd apache-atlas-sources-1.0.0/
+tar xvfz apache-atlas-2.0.0-sources.tar.gz
+cd apache-atlas-sources-2.0.0/
 export MAVEN_OPTS="-Xms2g -Xmx2g"
 mvn clean -DskipTests install</verbatim>
 
