@@ -19,7 +19,8 @@
 package org.apache.atlas.impala.hook;
 
 import static org.apache.atlas.AtlasConstants.DEFAULT_CLUSTER_NAME;
-
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import com.google.common.collect.Sets;
 import java.io.IOException;
 import org.apache.atlas.hook.AtlasHook;
@@ -44,15 +45,24 @@ public class ImpalaLineageHook extends AtlasHook {
     public static final String CONF_CLUSTER_NAME                   = "atlas.cluster.name";
     public static final String CONF_REALM_NAME                     = "atlas.realm.name";
     public static final String HDFS_PATH_CONVERT_TO_LOWER_CASE     = CONF_PREFIX + "hdfs_path.convert_to_lowercase";
+    public static final String DEFAULT_HOST_NAME                   = "localhost";
 
     private static final String clusterName;
-    private  static final String realm;
+    private static final String realm;
     private static final boolean convertHdfsPathToLowerCase;
+    private static String hostName;
 
     static {
         clusterName                     = atlasProperties.getString(CONF_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
         realm                           = atlasProperties.getString(CONF_REALM_NAME, DEFAULT_CLUSTER_NAME);  // what should default be ??
         convertHdfsPathToLowerCase      = atlasProperties.getBoolean(HDFS_PATH_CONVERT_TO_LOWER_CASE, false);
+
+        try {
+            hostName = InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            LOG.warn("No hostname found. Setting the hostname to default value {}", DEFAULT_HOST_NAME, e);
+            hostName = DEFAULT_HOST_NAME;
+        }
     }
 
     public ImpalaLineageHook() {
@@ -120,6 +130,10 @@ public class ImpalaLineageHook extends AtlasHook {
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== ImpalaLineageHook.process({})", lineageQuery.getQueryText());
         }
+    }
+
+    public String getHostName() {
+        return hostName;
     }
 
     private UserGroupInformation getUgiFromUserName(String userName)  throws IOException {

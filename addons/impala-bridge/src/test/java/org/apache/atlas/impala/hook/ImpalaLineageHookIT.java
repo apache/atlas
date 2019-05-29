@@ -28,6 +28,9 @@ import org.apache.atlas.impala.model.ImpalaVertexType;
 import org.apache.atlas.impala.model.LineageEdge;
 import org.apache.atlas.impala.model.ImpalaQuery;
 import org.apache.atlas.impala.model.LineageVertex;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
@@ -135,7 +138,12 @@ public class ImpalaLineageHookIT extends ImpalaLineageITBase {
 
             processQFName = processQFName.toLowerCase();
 
-            assertProcessIsRegistered(processQFName, queryObj.getQueryText());
+            AtlasEntity processEntity1 = validateProcess(processQFName, queryObj.getQueryText());
+            AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryObj.getQueryText());
+            AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
+                BaseImpalaEvent.ATTRIBUTE_PROCESS));
+            Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
+            Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
         } catch (Exception ex) {
             LOG.error("process create_view failed: ", ex);
             assertFalse(true);

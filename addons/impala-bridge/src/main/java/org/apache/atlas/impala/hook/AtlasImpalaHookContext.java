@@ -24,7 +24,7 @@ import java.util.Map;
 import org.apache.atlas.impala.model.ImpalaOperationType;
 import org.apache.atlas.impala.model.ImpalaQuery;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.commons.lang.StringUtils;
+
 
 /**
  * Contain the info related to an linear record from Impala
@@ -68,6 +68,10 @@ public class AtlasImpalaHookContext {
 
     public String getClusterName() {
         return hook.getClusterName();
+    }
+
+    public String getHostName() {
+        return hook.getHostName();
     }
 
     public boolean isConvertHdfsPathToLowerCase() {
