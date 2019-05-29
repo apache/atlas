@@ -128,6 +128,7 @@ atlas.graph.index.search.solr.wait-searcher=true
                                     <descriptors>
                                         <descriptor>src/main/assemblies/atlas-hbase-hook-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/atlas-hive-hook-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-impala-hook-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/atlas-falcon-hook-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/atlas-sqoop-hook-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/atlas-storm-hook-package.xml</descriptor>
