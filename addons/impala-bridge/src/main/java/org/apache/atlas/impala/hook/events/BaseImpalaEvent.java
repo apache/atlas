@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.atlas.impala.hook.AtlasImpalaHookContext;
 import org.apache.atlas.impala.hook.ImpalaOperationParser;
 import org.apache.atlas.impala.model.ImpalaDataType;
@@ -43,6 +44,8 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.type.AtlasTypeUtil;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,12 +78,17 @@ public abstract class BaseImpalaEvent {
     public static final String ATTRIBUTE_START_TIME                = "startTime";
     public static final String ATTRIBUTE_USER_NAME                 = "userName";
     public static final String ATTRIBUTE_QUERY_TEXT                = "queryText";
+    public static final String ATTRIBUTE_PROCESS                   = "process";
+    public static final String ATTRIBUTE_PROCESS_EXECUTIONS        = "processExecutions";
     public static final String ATTRIBUTE_QUERY_ID                  = "queryId";
     public static final String ATTRIBUTE_QUERY_PLAN                = "queryPlan";
     public static final String ATTRIBUTE_END_TIME                  = "endTime";
     public static final String ATTRIBUTE_RECENT_QUERIES            = "recentQueries";
     public static final String ATTRIBUTE_QUERY                     = "query";
     public static final String ATTRIBUTE_DEPENDENCY_TYPE           = "dependencyType";
+    public static final String ATTRIBUTE_HOSTNAME                  = "hostName";
+    public static final String EMPTY_ATTRIBUTE_VALUE               = "";
+
     public static final long   MILLIS_CONVERT_FACTOR               = 1000;
 
 
@@ -525,15 +533,43 @@ public abstract class BaseImpalaEvent {
         ret.setAttribute(ATTRIBUTE_NAME, queryStr);
         ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, context.getImpalaOperationType());
 
-        // the unit of timestamp from lineage record is in seconds. Convert to milliseconds to Atlas
-        ret.setAttribute(ATTRIBUTE_START_TIME, context.getLineageQuery().getTimestamp() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR);
-        ret.setAttribute(ATTRIBUTE_END_TIME, context.getLineageQuery().getEndTime() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR);
+        // We are setting an empty value to these attributes, since now we have a new entity type called impala process
+        // execution which captures these values. We have to set empty values here because these attributes are
+        // mandatory attributes for impala process entity type.
+        ret.setAttribute(ATTRIBUTE_START_TIME, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_END_TIME, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_USER_NAME, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_QUERY_TEXT, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_QUERY_ID, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_QUERY_PLAN, "Not Supported");
+        ret.setAttribute(ATTRIBUTE_RECENT_QUERIES, Collections.singletonList(queryStr));
 
+        return ret;
+    }
+
+    protected AtlasEntity getImpalaProcessExecutionEntity(AtlasEntity impalaProcess) throws Exception {
+        AtlasEntity ret         = new AtlasEntity(ImpalaDataType.IMPALA_PROCESS_EXECUTION.getName());
+        String      queryStr    = context.getQueryStr();
+
+        if (queryStr != null) {
+            queryStr = queryStr.toLowerCase().trim();
+        }
+
+        Long startTime = context.getLineageQuery().getTimestamp() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
+        Long endTime = context.getLineageQuery().getEndTime() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
+
+        ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, impalaProcess.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString() +
+            QNAME_SEP_PROCESS + startTime.toString() +
+            QNAME_SEP_PROCESS + endTime.toString());
+        ret.setAttribute(ATTRIBUTE_NAME, queryStr + QNAME_SEP_PROCESS + startTime);
+        ret.setAttribute(ATTRIBUTE_START_TIME, startTime);
+        ret.setAttribute(ATTRIBUTE_END_TIME, endTime);
         ret.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
         ret.setAttribute(ATTRIBUTE_QUERY_TEXT, queryStr);
         ret.setAttribute(ATTRIBUTE_QUERY_ID, context.getLineageQuery().getQueryId());
         ret.setAttribute(ATTRIBUTE_QUERY_PLAN, "Not Supported");
-        ret.setAttribute(ATTRIBUTE_RECENT_QUERIES, Collections.singletonList(queryStr));
+        ret.setAttribute(ATTRIBUTE_HOSTNAME, context.getHostName());
+        ret.setRelationshipAttribute(ATTRIBUTE_PROCESS, AtlasTypeUtil.toAtlasRelatedObjectId(impalaProcess));
 
         return ret;
     }

@@ -18,7 +18,6 @@
 
 package org.apache.atlas.impala;
 
-import java.lang.Runnable;
 import org.apache.atlas.impala.hook.ImpalaLineageHook;
 
 import java.io.*;

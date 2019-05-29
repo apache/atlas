@@ -110,15 +110,28 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
         if (!inputs.isEmpty() || !outputs.isEmpty()) {
             AtlasEntity process = getImpalaProcessEntity(inputs, outputs);
-            if (process!= null && LOG.isDebugEnabled()) {
-                LOG.debug("get process entity with qualifiedName: {}", process.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+            if (process!= null) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("get process entity with qualifiedName: {}",
+                        process.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                }
+
+                ret.addEntity(process);
+
+                AtlasEntity processExecution = getImpalaProcessExecutionEntity(process);
+                if (processExecution != null) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("get process executition entity with qualifiedName: {}",
+                            processExecution.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                    }
+
+                    ret.addEntity(processExecution);
+                }
+
+                processColumnLineage(process, ret);
+
+                addProcessedEntities(ret);
             }
-
-            ret.addEntity(process);
-
-            processColumnLineage(process, ret);
-
-            addProcessedEntities(ret);
         } else {
             ret = null;
         }
@@ -154,8 +167,10 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
                 String outputColName = getQualifiedName(columnVertex);
                 AtlasEntity outputColumn = context.getEntity(outputColName);
 
-                LOG.debug("processColumnLineage(): target id = {}, target column name = {}",
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("processColumnLineage(): target id = {}, target column name = {}",
                         targetId, outputColName);
+                }
 
                 if (outputColumn == null) {
                     LOG.warn("column-lineage: non-existing output-column {}", outputColName);
@@ -219,7 +234,9 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
         for (AtlasEntity columnLineage : columnLineages) {
             String columnQualifiedName = (String)columnLineage.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
-            LOG.debug("get column lineage entity with qualifiedName: {}", columnQualifiedName);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("get column lineage entity with qualifiedName: {}", columnQualifiedName);
+            }
 
             entities.addEntity(columnLineage);
         }

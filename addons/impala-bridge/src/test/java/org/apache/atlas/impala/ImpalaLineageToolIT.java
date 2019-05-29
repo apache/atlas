@@ -17,12 +17,17 @@
  */
 package org.apache.atlas.impala;
 
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_QUERY_TEXT;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.atlas.impala.hook.AtlasImpalaHookContext;
 import org.apache.atlas.impala.hook.ImpalaLineageHook;
 import org.apache.atlas.impala.hook.events.BaseImpalaEvent;
 import org.apache.atlas.impala.model.ImpalaQuery;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class ImpalaLineageToolIT extends ImpalaLineageITBase {
@@ -73,8 +78,13 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
 
             processQFName = processQFName.toLowerCase();
 
-            assertProcessIsRegistered(processQFName,
-                "create view db_1.view_1 as select count, id from db_1.table_1");
+            String queryString = "create view db_1.view_1 as select count, id from db_1.table_1";
+            AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
+            AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+            AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
+                BaseImpalaEvent.ATTRIBUTE_PROCESS));
+            Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
+            Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
 
         } catch (Exception e) {
             System.out.print("Appending file error");
@@ -136,8 +146,13 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             // verify the process is saved in Atlas. the value is from info in IMPALA_4.
             // There is no createTime in lineage record, so we don't know the process qualified name
             // And can only verify the process is created for the given query.
-            assertProcessIsRegistered(processQFNames,"create view " + dbName + "." + targetTableName + " as select count, id from " + dbName + "." + sourceTableName);
-
+            String queryString = "create view " + dbName + "." + targetTableName + " as select count, id from " + dbName + "." + sourceTableName;
+            AtlasEntity processEntity1 = validateProcess(processQFNames, queryString);
+            AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+            AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
+                BaseImpalaEvent.ATTRIBUTE_PROCESS));
+            Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
+            Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
         } catch (Exception e) {
             System.out.print("Appending file error");
         }
@@ -183,8 +198,13 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
 
         processQFName = processQFName.toLowerCase();
 
-        assertProcessIsRegistered(processQFName,
-            "create table " + dbName + "." + targetTableName + " as select count, id from " + dbName + "." + sourceTableName);
+        String queryString = "create table " + dbName + "." + targetTableName + " as select count, id from " + dbName + "." + sourceTableName;
+        AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
+        AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+        AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
+            BaseImpalaEvent.ATTRIBUTE_PROCESS));
+        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
+        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
     }
 
     /**
@@ -227,8 +247,13 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
 
         processQFName = processQFName.toLowerCase();
 
-        assertProcessIsRegistered(processQFName,
-            "alter view " + dbName + "." + targetTableName + " as select count, id from " + dbName + "." + sourceTableName);
+        String queryString = "alter view " + dbName + "." + targetTableName + " as select count, id from " + dbName + "." + sourceTableName;
+        AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
+        AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+        AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
+            BaseImpalaEvent.ATTRIBUTE_PROCESS));
+        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
+        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
     }
 
     /**
@@ -272,7 +297,79 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime2;
         String processQFName = "QUERY:" + sourceQFName.toLowerCase() + "->:INSERT:" + targetQFName.toLowerCase();
 
-        assertProcessIsRegistered(processQFName,
-            "insert into table " + dbName + "." + targetTableName + " (count, id) select count, id from " + dbName + "." + sourceTableName);
+        String queryString = "insert into table " + dbName + "." + targetTableName + " (count, id) select count, id from " + dbName + "." + sourceTableName;
+        AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
+        AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+        AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
+            BaseImpalaEvent.ATTRIBUTE_PROCESS));
+        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
+        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+    }
+
+    /**
+     * This tests
+     * 1) ImpalaLineageTool can parse one lineage file that contains multiple "insert into" command lineages,
+     *    there is table vertex with createTime.
+     * 2) Lineage is sent to Atlas
+     * 3) Atlas can get these lineages from Atlas
+     */
+    @Test
+    public void testMultipleInsertIntoAsSelectFromFile() throws Exception {
+        String IMPALA = dir + "impalaMultipleInsertIntoAsSelect1.json";
+        String IMPALA_WAL = dir + "WALimpala.wal";
+
+        ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
+
+        // create database and tables to simulate Impala behavior that Impala updates metadata
+        // to HMS and HMSHook sends the metadata to Atlas, which has to happen before
+        // Atlas can handle lineage notification
+        String dbName = "db_6";
+        createDatabase(dbName);
+
+        String sourceTableName = "table_1";
+        createTable(dbName, sourceTableName,"(id string, count int)", false);
+
+        String targetTableName = "table_2";
+        createTable(dbName, targetTableName,"(count int, id string, int_col int)", false);
+
+        // process lineage record, and send corresponding notification to Atlas
+        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
+        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+
+        // re-run the same lineage record, should have the same process entity and another process execution entity
+        Thread.sleep(500);
+        IMPALA = dir + "impalaMultipleInsertIntoAsSelect2.json";
+        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+
+        // verify the process is saved in Atlas
+        // the value is from info in IMPALA_4.
+        String createTime1 = new Long(TABLE_CREATE_TIME_SOURCE*1000).toString();
+        String createTime2 = new Long(TABLE_CREATE_TIME*1000).toString();
+        String sourceQFName = dbName + "." + sourceTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+            CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime1;
+        String targetQFName = dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+            CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime2;
+        String processQFName = "QUERY:" + sourceQFName.toLowerCase() + "->:INSERT:" + targetQFName.toLowerCase();
+
+        String queryString = "insert into table " + dbName + "." + targetTableName + " (count, id) select count, id from " + dbName + "." + sourceTableName;
+        queryString = queryString.toLowerCase().trim();
+        String queryString2 = queryString;
+        AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
+
+        List<AtlasObjectId> processExecutions = toAtlasObjectIdList(processEntity1.getRelationshipAttribute(
+            BaseImpalaEvent.ATTRIBUTE_PROCESS_EXECUTIONS));
+        Assert.assertEquals(processExecutions.size(), 2);
+        for (AtlasObjectId processExecutionId : processExecutions) {
+            AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.
+                getEntityByGuid(processExecutionId.getGuid());
+
+            AtlasEntity processExecutionEntity = atlasEntityWithExtInfo.getEntity();
+            String entityQueryText = String.valueOf(processExecutionEntity.getAttribute(ATTRIBUTE_QUERY_TEXT)).toLowerCase().trim();
+            if (!(queryString.equalsIgnoreCase(entityQueryText) || queryString2.equalsIgnoreCase(entityQueryText))) {
+                String errorMessage = String.format("process query text '%s' does not match expected value of '%s' or '%s'", entityQueryText, queryString, queryString2);
+                Assert.assertTrue(false, errorMessage);
+            }
+        }
     }
 }
