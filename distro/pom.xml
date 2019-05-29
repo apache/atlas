@@ -16,7 +16,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -67,7 +67,7 @@ atlas.graph.index.search.solr.wait-searcher=true
 # https://www.elastic.co/products/x-pack/security
 #
 # Alternatively, the JanusGraph documentation provides some tips on how to secure Elasticsearch without additional
-# plugins: http://docs.janusgraph.org/latest/elasticsearch.html
+# plugins: https://docs.janusgraph.org/latest/elasticsearch.html
 #atlas.graph.index.hostname=localhost
 #atlas.graph.index.search.elasticsearch.client-only=true
         </graph.index.properties>
@@ -251,11 +251,11 @@ atlas.graph.index.search.solr.wait-searcher=true
                 <solr.embedded>true</solr.embedded>
 
                 <hbase.dir>${project.build.directory}/hbase</hbase.dir>
-                <hbase.tar>http://archive.apache.org/dist/hbase/${hbase.version}/hbase-${hbase.version}-bin.tar.gz</hbase.tar>
+                <hbase.tar>https://archive.apache.org/dist/hbase/${hbase.version}/hbase-${hbase.version}-bin.tar.gz</hbase.tar>
                 <hbase.folder>hbase-${hbase.version}</hbase.folder>
 
                 <solr.dir>${project.build.directory}/solr</solr.dir>
-                <solr.tar>http://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
+                <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
                 <solr.folder>solr-${solr.version}</solr.folder>
             </properties>
             <build>
@@ -342,11 +342,11 @@ atlas.graph.index.search.solr.wait-searcher=true
                 <solr.embedded>true</solr.embedded>
 
                 <solr.dir>${project.build.directory}/solr</solr.dir>
-                <solr.tar>http://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
+                <solr.tar>https://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
                 <solr.folder>solr-${solr.version}</solr.folder>
 
                 <zk.dir>${project.build.directory}/zk</zk.dir>
-                <zk.tar>http://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/zookeeper-${zookeeper.version}.tar.gz</zk.tar>
+                <zk.tar>https://archive.apache.org/dist/zookeeper/zookeeper-${zookeeper.version}/zookeeper-${zookeeper.version}.tar.gz</zk.tar>
                 <zk.folder>zookeeper-${zookeeper.version}</zk.folder>
             </properties>
             <build>
