@@ -17,7 +17,7 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
 
     <parent>
         <groupId>org.apache</groupId>
@@ -32,7 +32,7 @@
     <description>Metadata Management and Data Governance Platform over Hadoop</description>
     <name>apache-atlas</name>
     <packaging>pom</packaging>
-    <url>http://atlas.apache.org</url>
+    <url>https://atlas.apache.org</url>
 
     <prerequisites>
         <maven>3.0.4</maven>
@@ -47,7 +47,7 @@
 
     <organization>
         <name>Apache Software Foundation</name>
-        <url>http://www.apache.org</url>
+        <url>https://www.apache.org</url>
     </organization>
 
     <issueManagement>
@@ -68,21 +68,21 @@
             <subscribe>dev-subscribe@atlas.apache.org</subscribe>
             <unsubscribe>dev-unsubscribe@atlas.apache.org</unsubscribe>
             <post>dev@atlas.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/atlas-dev/</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/atlas-dev/</archive>
         </mailingList>
         <mailingList>
             <name>atlas-user</name>
             <subscribe>user-subscribe@atlas.apache.org</subscribe>
             <unsubscribe>user-unsubscribe@atlas.apache.org</unsubscribe>
             <post>user@atlas.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/atlas-user/</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/atlas-user/</archive>
         </mailingList>
         <mailingList>
             <name>atlas-commits</name>
             <subscribe>commits-subscribe@atlas.apache.org</subscribe>
             <unsubscribe>commits-unsubscribe@atlas.apache.org</unsubscribe>
             <post>commits@atlas.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/atlas-commits/</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/atlas-commits/</archive>
         </mailingList>
     </mailingLists>
 
@@ -104,7 +104,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Target Inc.</organization>
-            <!--<organizationUrl>http://www.target.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.target.com</organizationUrl>-->
         </developer>
         <developer>
             <id>AAhn</id>
@@ -127,7 +127,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>acmurthy</id>
@@ -139,7 +139,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>ayubpathan</id>
@@ -151,7 +151,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>bstortz</id>
@@ -163,7 +163,7 @@
                 <role>PMC</role>
             </roles>
             <organization>SAP Inc.</organization>
-            <!--<organizationUrl>http://www.sap.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.sap.com</organizationUrl>-->
         </developer>
         <developer>
             <id>chyzer</id>
@@ -175,7 +175,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
         </developer>
         <developer>
             <id>dmarkwat</id>
@@ -187,7 +187,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
         </developer>
         <developer>
             <id>darshankumar</id>
@@ -210,7 +210,7 @@
                 <role>PMC</role>
             </roles>
             <organization>IBM Corporation</organization>
-            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
         </developer>
         <developer>
             <id>dkaspar</id>
@@ -222,7 +222,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Merck &amp; Co Inc.</organization>
-            <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.merck.com</organizationUrl>-->
         </developer>
         <developer>
             <id>dfusaro</id>
@@ -234,7 +234,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
         </developer>
         <developer>
             <id>gsenia</id>
@@ -246,7 +246,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
-            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.aetna.com</organizationUrl>-->
         </developer>
         <developer>
             <id>rhbutani</id>
@@ -257,8 +257,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization />
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <organization/>
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>yhemanth</id>
@@ -270,7 +270,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>ilasek</id>
@@ -282,7 +282,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Merck &amp; Co Inc.</organization>
-            <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.merck.com</organizationUrl>-->
         </developer>
         <developer>
             <id>jnhagelberg</id>
@@ -294,7 +294,7 @@
                 <role>PMC</role>
             </roles>
             <organization>IBM Corporation</organization>
-            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
         </developer>
         <developer>
             <id>jitendra</id>
@@ -306,7 +306,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>jmaron</id>
@@ -351,7 +351,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>mschussler</id>
@@ -363,7 +363,7 @@
                 <role>PMC</role>
             </roles>
             <organization>JPMC</organization>
-            <!--<organizationUrl>http://</organizationUrl>-->
+            <!--<organizationUrl>https://</organizationUrl>-->
         </developer>
         <developer>
             <id>guptaneeru</id>
@@ -375,7 +375,7 @@
                 <role>PMC</role>
             </roles>
             <organization>IBM Corporation</organization>
-            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.ibm.com</organizationUrl>-->
         </developer>
         <developer>
             <id>nixon</id>
@@ -398,7 +398,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>shwethags</id>
@@ -410,7 +410,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>sriksun</id>
@@ -422,7 +422,7 @@
                 <role>PMC</role>
             </roles>
             <organization>InMobi</organization>
-            <!--<organizationUrl>http://www.inmobi.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.inmobi.com</organizationUrl>-->
         </developer>
         <developer>
             <id>sumasai</id>
@@ -434,7 +434,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>ssuresh</id>
@@ -446,7 +446,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>tbeerbower</id>
@@ -469,7 +469,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>venkatesh</id>
@@ -492,7 +492,7 @@
                 <role>PMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.hortonworks.com</organizationUrl>-->
         </developer>
     </developers>
 
@@ -670,14 +670,14 @@
     <repositories>
         <repository>
             <id>central</id>
-            <url>http://repo1.maven.org/maven2</url>
+            <url>https://repo1.maven.org/maven2</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
         </repository>
         <repository>
             <id>hortonworks.repo</id>
-            <url>http://repo.hortonworks.com/content/repositories/releases</url>
+            <url>https://repo.hortonworks.com/content/repositories/releases</url>
             <name>Hortonworks Repo</name>
             <snapshots>
                 <enabled>false</enabled>
@@ -712,7 +712,7 @@
         <repository>
             <id>typesafe</id>
             <name>Typesafe Repository</name>
-            <url>http://repo.typesafe.com/typesafe/releases/</url>
+            <url>https://repo.typesafe.com/typesafe/releases/</url>
         </repository>
     </repositories>
 
