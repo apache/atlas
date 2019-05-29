@@ -389,6 +389,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         HttpServletResponse        httpResponse         = (HttpServletResponse) response;
         boolean                    isHttps              = "https".equals(httpRequest.getScheme());
         AuthenticationHandler      authHandler          = getAuthenticationHandler();
+        String doAsUser = supportTrustedProxy ? Servlets.getDoAsUser(httpRequest) : null;
 
         try {
             boolean             newToken = false;
@@ -445,7 +446,6 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                     };
 
                     // Create the proxy user if doAsUser exists
-                    String doAsUser = supportTrustedProxy ? Servlets.getDoAsUser(httpRequest) : null;
 
                     if (supportTrustedProxy && doAsUser != null && !doAsUser.equals(httpRequest.getRemoteUser())) {
                         LOG.debug("doAsUser is {}", doAsUser);
@@ -507,8 +507,10 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                     errCode = HttpServletResponse.SC_FORBIDDEN;
                 }
 
+                boolean isKerberosOnBrowser = supportKeyTabBrowserLogin || doAsUser != null;
+
                 if (authenticationEx == null) { // added this code for atlas error handling and fallback
-                    if (!supportKeyTabBrowserLogin && isBrowser(httpRequest.getHeader("User-Agent"))) {
+                    if (!isKerberosOnBrowser && isBrowser(httpRequest.getHeader("User-Agent"))) {
                         filterChain.doFilter(request, response);
                     } else {
                         boolean            chk         = true;
