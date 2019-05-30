@@ -271,7 +271,12 @@ public class CreateHiveProcess extends BaseHiveEvent {
                             ret = true;
                         }
                     }
-
+                    // DELETE and UPDATE initially have one input and one output.
+                    // Since they do not support sub-query, they won't create a lineage that have one input and one output. (One input only)
+                    // It's safe to filter them out here.
+                    if (output.getWriteType() == WriteEntity.WriteType.DELETE || output.getWriteType() == WriteEntity.WriteType.UPDATE) {
+                        ret = true;
+                    }
                 }
             }
         }

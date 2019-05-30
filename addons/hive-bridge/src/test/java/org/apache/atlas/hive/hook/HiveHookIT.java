@@ -1674,30 +1674,17 @@ public class HiveHookIT extends HiveITBase {
     }
 
     @Test
-    public void testTruncateTable() throws Exception {
+    public void testIgnoreTruncateTable() throws Exception {
         String tableName = createTable(false);
-        String  query    = String.format("truncate table %s", tableName);
+        String query     = String.format("truncate table %s", tableName);
 
         runCommand(query);
 
         Set<WriteEntity> outputs = getOutputs(tableName, Entity.Type.TABLE);
-        String           tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
         HiveEventContext event   = constructEvent(query, HiveOperation.TRUNCATETABLE, null, outputs);
 
-        AtlasEntity processEntity = validateProcess(event);
-        AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity, event);
-        AtlasObjectId process = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
-                BaseHiveEvent.ATTRIBUTE_PROCESS));
-        Assert.assertEquals(process.getGuid(), processEntity.getGuid());
-
-        //Check lineage
-        String                         datasetName           = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName);
-        AtlasLineageInfo               atlasLineageInfoInput = atlasClientV2.getLineageInfo(tableId, AtlasLineageInfo.LineageDirection.INPUT,0);
-        Map<String, AtlasEntityHeader> entityMap             = atlasLineageInfoInput.getGuidEntityMap();
-
-        Assert.assertEquals(numberOfProcessExecutions(processEntity), 1);
-        //Below should be assertTrue - Fix https://issues.apache.org/jira/browse/ATLAS-653
-        Assert.assertFalse(entityMap.containsKey(tableId));
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+        assertProcessIsNotRegistered(event);
     }
 
     @Test
