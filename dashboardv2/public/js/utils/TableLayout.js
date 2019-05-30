@@ -273,6 +273,7 @@ define(['require',
                 }, this);
                 this.listenTo(this, "grid:refresh", function() {
                     if (this.grid) {
+                        this.grid.collection.fullCollection.reset(this.collection.entities, { silent: true });
                         this.grid.trigger("backgrid:refresh");
                     }
                 });
