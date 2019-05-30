@@ -687,7 +687,7 @@
 
         <!-- Needed for hooks -->
         <aopalliance.version>1.0</aopalliance.version>
-        <jackson.version>2.9.8</jackson.version>
+        <jackson.version>2.9.9</jackson.version>
 
         <!-- Apache commons -->
         <commons-conf.version>1.10</commons-conf.version>
