@@ -206,7 +206,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 case EXPORT:
                 case IMPORT:
                 case QUERY:
-                case TRUNCATETABLE:
                     event = new CreateHiveProcess(context);
                 break;
 
