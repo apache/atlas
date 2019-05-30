@@ -267,7 +267,7 @@ define(['require',
                         el: this.ui.colManager
                     },
                     gridOpts: {
-                        emptyText: 'No Record found!',
+                        emptyText: 'No Records found!',
                         className: 'table table-hover backgrid table-quickMenu colSort'
                     },
                     filterOpts: {},
@@ -425,12 +425,13 @@ define(['require',
                             return;
                         }
                         if (isPostMethod) {
-                            that.searchCollection.referredEntities = dataOrCollection.referredEntities;
                             Utils.findAndMergeRefEntity({
                                 attributeObject: dataOrCollection.entities,
                                 referredEntities: dataOrCollection.referredEntities
                             });
-                            that.searchCollection.fullCollection.reset(dataOrCollection.entities, { silent: false });
+                            that.searchCollection.referredEntities = dataOrCollection.referredEntities;
+                            that.searchCollection.entities = dataOrCollection.entities;
+                            that.searchCollection.reset(dataOrCollection.entities, { silent: true });
                         }
 
 
