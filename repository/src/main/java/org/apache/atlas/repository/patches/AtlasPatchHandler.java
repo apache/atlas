@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.patches;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
@@ -64,5 +65,5 @@ public abstract class AtlasPatchHandler {
         return patchId;
     }
 
-    public abstract void apply();
+    public abstract void apply() throws AtlasBaseException;
 }

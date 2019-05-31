@@ -22,6 +22,7 @@ import org.apache.atlas.model.patches.AtlasPatch;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,8 +40,8 @@ public class AtlasPatchManager {
     private final PatchContext context;
 
     @Inject
-    public AtlasPatchManager(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, GraphBackedSearchIndexer indexer) {
-        this.context = new PatchContext(atlasGraph, typeRegistry, indexer);
+    public AtlasPatchManager(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, GraphBackedSearchIndexer indexer, EntityGraphMapper entityGraphMapper) {
+        this.context = new PatchContext(atlasGraph, typeRegistry, indexer, entityGraphMapper);
     }
 
     public AtlasPatch.AtlasPatches getAllPatches() {
@@ -49,7 +50,8 @@ public class AtlasPatchManager {
 
     public void applyAll() {
         final AtlasPatchHandler handlers[] = {
-                new UniqueAttributePatch(context)
+                new UniqueAttributePatch(context),
+                new ClassificationTextPatch(context)
         };
 
         try {
