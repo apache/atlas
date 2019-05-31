@@ -34,6 +34,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -131,6 +132,26 @@ public class AtlasTypeRegistry {
 
         return ret;
     }
+    
+    public List<AtlasType> getTypesByServiceType(String serviceType) throws AtlasBaseException {
+    	if(LOG.isDebugEnabled()) {
+    		LOG.debug("==> AtlasTypeRegistry.getTypesByServiceType({}", serviceType);
+    	}
+    	
+    	List<AtlasType> ret = registryData.allTypes.getTypesByServiceType(serviceType);
+    	
+    	if(ret==null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_SERVICE_TYPE_NOT_FOUND, serviceType);
+    	}
+
+        if (LOG.isDebugEnabled()) {
+        	List<String> names = new ArrayList<>();
+    		ret.forEach(at->names.add("{" + at.getTypeName() + "," + at.getTypeCategory()+"}"));
+        	LOG.debug("<== AtlasTypeRegistry.getTypesByServiceType({}): {}", serviceType, names.toString());
+        }
+
+        return ret;
+    }
 
     public AtlasBaseTypeDef getTypeDefByName(String name) { return registryData.getTypeDefByName(name); }
 
@@ -142,10 +163,16 @@ public class AtlasTypeRegistry {
     public AtlasEnumDef getEnumDefByGuid(String guid) {
         return registryData.enumDefs.getTypeDefByGuid(guid);
     }
+    
+    public List<AtlasEnumDef> getEnumDefByServiceType(String serviceType) {
+        return registryData.enumDefs.getTypeDefByServiceType(serviceType);
+    }
+
 
     public AtlasEnumDef getEnumDefByName(String name) {
         return registryData.enumDefs.getTypeDefByName(name);
     }
+  
 
     public Collection<String> getAllEnumDefNames() { return registryData.enumDefs.getAllNames(); }
 
@@ -159,6 +186,11 @@ public class AtlasTypeRegistry {
     public AtlasStructDef getStructDefByGuid(String guid) {
         return registryData.structDefs.getTypeDefByGuid(guid);
     }
+    
+    public List<AtlasStructDef> getStructDefByServiceType(String serviceType) {
+        return registryData.structDefs.getTypeDefByServiceType(serviceType);
+    }
+
 
     public AtlasStructDef getStructDefByName(String name) { return registryData.structDefs.getTypeDefByName(name); }
 
@@ -197,6 +229,10 @@ public class AtlasTypeRegistry {
     public AtlasEntityDef getEntityDefByGuid(String guid) {
         return registryData.entityDefs.getTypeDefByGuid(guid);
     }
+    
+    public List<AtlasEntityDef> getEntityDefByServiceType(String serviceType) {
+        return registryData.entityDefs.getTypeDefByServiceType(serviceType);
+    }
 
     public AtlasEntityDef getEntityDefByName(String name) {
         return registryData.entityDefs.getTypeDefByName(name);
@@ -212,6 +248,9 @@ public class AtlasTypeRegistry {
 
     public AtlasRelationshipDef getRelationshipDefByGuid(String guid) {
         return registryData.relationshipDefs.getTypeDefByGuid(guid);
+    }
+    public List<AtlasRelationshipDef> getRelationshipDefByServiceType(String serviceType) {
+        return registryData.relationshipDefs.getTypeDefByServiceType(serviceType);
     }
     public AtlasRelationshipDef getRelationshipDefByName(String name) {
         return registryData.relationshipDefs.getTypeDefByName(name);
@@ -935,28 +974,24 @@ public class AtlasTypeRegistry {
 class TypeCache {
     private final Map<String, AtlasType> typeGuidMap;
     private final Map<String, AtlasType> typeNameMap;
-    private final Set<String>            serviceTypes;
+    private final Map<String, List<AtlasType>> typeServiceTypeMap; 
 
     public TypeCache() {
         typeGuidMap  = new ConcurrentHashMap<>();
         typeNameMap  = new ConcurrentHashMap<>();
-        serviceTypes = new HashSet<>();
+        typeServiceTypeMap = new ConcurrentHashMap<>();
     }
 
     public TypeCache(TypeCache other) {
         typeGuidMap  = new ConcurrentHashMap<>(other.typeGuidMap);
         typeNameMap  = new ConcurrentHashMap<>(other.typeNameMap);
-        serviceTypes = new HashSet<>(other.serviceTypes);
+        typeServiceTypeMap = new ConcurrentHashMap<>(other.typeServiceTypeMap);
     }
 
     public void addType(AtlasType type) {
         if (type != null) {
             if (StringUtils.isNotEmpty(type.getTypeName())) {
                 typeNameMap.put(type.getTypeName(), type);
-            }
-
-            if (StringUtils.isNotEmpty(type.getServiceType())) {
-                serviceTypes.add(type.getServiceType());
             }
         }
     }
@@ -972,7 +1007,11 @@ class TypeCache {
             }
 
             if (StringUtils.isNotEmpty(type.getServiceType())) {
-                serviceTypes.add(type.getServiceType());
+            	if(typeServiceTypeMap.get(typeDef.getServiceType()) == null) {
+            		typeServiceTypeMap.put(typeDef.getServiceType(), new ArrayList<>(Arrays.asList(type)));
+            	} else {
+            		typeServiceTypeMap.get(type.getServiceType()).add(type);
+            	}
             }
         }
     }
@@ -990,7 +1029,7 @@ class TypeCache {
     }
 
     public Set<String> getAllServiceTypes() {
-        return Collections.unmodifiableSet(serviceTypes);
+        return Collections.unmodifiableSet(typeServiceTypeMap.keySet());
     }
 
     public AtlasType getTypeByGuid(String guid) {
@@ -1001,6 +1040,11 @@ class TypeCache {
     public AtlasType getTypeByName(String name) {
 
         return name != null ? typeNameMap.get(name) : null;
+    }
+    
+    public List<AtlasType> getTypesByServiceType(String serviceType) {
+    	
+    	return serviceType != null ? typeServiceTypeMap.get(serviceType) : null;
     }
 
     public void updateGuid(String typeName, String currGuid, String newGuid) {
@@ -1028,10 +1072,19 @@ class TypeCache {
             typeNameMap.remove(name);
         }
     }
+    
+    public void removeTypeByServiceType(String serviceType, AtlasType type) {
+    	if(serviceType != null) {
+    		typeServiceTypeMap.get(serviceType).remove(type);
+    		if(typeServiceTypeMap.get(serviceType).size()==0)
+    			typeServiceTypeMap.remove(serviceType );
+    	}
+    }
 
     public void clear() {
         typeGuidMap.clear();
         typeNameMap.clear();
+        typeServiceTypeMap.clear();
     }
 }
 
@@ -1041,12 +1094,14 @@ class TypeDefCache<T1 extends AtlasBaseTypeDef, T2 extends AtlasType> {
     private final TypeCache       typeCache;
     private final Map<String, T1> typeDefGuidMap;
     private final Map<String, T1> typeDefNameMap;
+    private final Map<String, List<T1>> typeDefServiceTypeMap;
     private final Map<String, T2> typeNameMap;
 
     public TypeDefCache(TypeCache typeCache) {
         this.typeCache      = typeCache;
         this.typeDefGuidMap = new ConcurrentHashMap<>();
         this.typeDefNameMap = new ConcurrentHashMap<>();
+        this.typeDefServiceTypeMap = new ConcurrentHashMap<>();
         this.typeNameMap    = new ConcurrentHashMap<>();
     }
 
@@ -1054,6 +1109,7 @@ class TypeDefCache<T1 extends AtlasBaseTypeDef, T2 extends AtlasType> {
         this.typeCache      = typeCache;
         this.typeDefGuidMap = new ConcurrentHashMap<>(other.typeDefGuidMap);
         this.typeDefNameMap = new ConcurrentHashMap<>(other.typeDefNameMap);
+        this.typeDefServiceTypeMap =new ConcurrentHashMap<>(other.typeDefServiceTypeMap);
         this.typeNameMap    = new ConcurrentHashMap<>(other.typeNameMap);
     }
 
@@ -1067,6 +1123,14 @@ class TypeDefCache<T1 extends AtlasBaseTypeDef, T2 extends AtlasType> {
                 typeDefNameMap.put(typeDef.getName(), typeDef);
                 typeNameMap.put(typeDef.getName(), type);
             }
+            
+            if(StringUtils.isNotEmpty(typeDef.getServiceType())) {
+            	if(typeDefServiceTypeMap.get(typeDef.getServiceType())==null) {
+                	typeDefServiceTypeMap.put(typeDef.getServiceType(), new ArrayList<>(Arrays.asList(typeDef)));
+            	} else {
+            		typeDefServiceTypeMap.get(typeDef.getServiceType()).add(typeDef);
+            	}
+            } 
 
             typeCache.addType(typeDef, type);
         }
@@ -1081,11 +1145,15 @@ class TypeDefCache<T1 extends AtlasBaseTypeDef, T2 extends AtlasType> {
     public T1 getTypeDefByGuid(String guid) {
         return guid != null ? typeDefGuidMap.get(guid) : null;
     }
+    
+    public List<T1> getTypeDefByServiceType(String serviceType) {
+        return serviceType != null ? typeDefServiceTypeMap.get(serviceType) : null;
+    }
 
     public T1 getTypeDefByName(String name) {
         return name != null ? typeDefNameMap.get(name) : null;
     }
-
+    
     public Collection<T2> getAllTypes() {
         return Collections.unmodifiableCollection(typeNameMap.values());
     }
@@ -1127,7 +1195,8 @@ class TypeDefCache<T1 extends AtlasBaseTypeDef, T2 extends AtlasType> {
     public void removeTypeDefByGuid(String guid) {
         if (guid != null) {
             T1 typeDef = typeDefGuidMap.remove(guid);
-
+            AtlasType type = typeCache.getTypeByGuid(guid);
+            
             typeCache.removeTypeByGuid(guid);
 
             String name = typeDef != null ? typeDef.getName() : null;
@@ -1137,13 +1206,24 @@ class TypeDefCache<T1 extends AtlasBaseTypeDef, T2 extends AtlasType> {
                 typeNameMap.remove(name);
                 typeCache.removeTypeByName(name);
             }
-
+            
+            String serviceType = typeDef != null ? typeDef.getServiceType() : null;
+            
+            if(serviceType != null) {
+            	typeDefServiceTypeMap.get(serviceType).remove(typeDef);
+            	if(typeDefServiceTypeMap.get(serviceType).size()==0) {
+            		typeDefServiceTypeMap.remove(serviceType);
+            	}
+           		typeCache.removeTypeByServiceType(serviceType, type);
+            }
+ 
         }
     }
 
     public void removeTypeDefByName(String name) {
         if (name != null) {
             T1 typeDef = typeDefNameMap.remove(name);
+            AtlasType type = typeCache.getTypeByName(name);
 
             typeNameMap.remove(name);
             typeCache.removeTypeByName(name);
@@ -1154,6 +1234,16 @@ class TypeDefCache<T1 extends AtlasBaseTypeDef, T2 extends AtlasType> {
                 typeDefGuidMap.remove(guid);
                 typeCache.removeTypeByGuid(guid);
             }
+            
+            String serviceType = typeDef != null ? typeDef.getServiceType() : null;
+            
+            if(serviceType != null) {
+            	typeDefServiceTypeMap.get(serviceType).remove(typeDef);
+            	if(typeDefServiceTypeMap.get(serviceType).size()==0) {
+            		typeDefServiceTypeMap.remove(serviceType);
+            	}
+           		typeCache.removeTypeByServiceType(serviceType, type);
+            }
         }
     }
 
@@ -1162,5 +1252,6 @@ class TypeDefCache<T1 extends AtlasBaseTypeDef, T2 extends AtlasType> {
         typeDefGuidMap.clear();
         typeDefNameMap.clear();
         typeNameMap.clear();
+        typeDefServiceTypeMap.clear();
     }
 }

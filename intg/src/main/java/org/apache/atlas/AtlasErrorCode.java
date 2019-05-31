@@ -161,6 +161,7 @@ public enum AtlasErrorCode {
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS-404-00-002", "Given type guid {0} was invalid"),
+    TYPE_SERVICE_TYPE_NOT_FOUND(404, "ATLAS-404-00-014", "Given service type {0} was invalid"),
     NO_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-003", "No classifications associated with entity: {0}"),
     EMPTY_RESULTS(404, "ATLAS-404-00-004", "No result found for {0}"),
     INSTANCE_GUID_NOT_FOUND(404, "ATLAS-404-00-005", "Given instance guid {0} is invalid/not found"),

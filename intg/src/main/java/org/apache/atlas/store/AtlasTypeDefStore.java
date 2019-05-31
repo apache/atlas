@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.store;
 
+import java.util.List;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -39,6 +40,8 @@ public interface AtlasTypeDefStore {
     AtlasEnumDef getEnumDefByName(String name) throws AtlasBaseException;
 
     AtlasEnumDef getEnumDefByGuid(String guid) throws AtlasBaseException;
+    
+    List<AtlasEnumDef> getEnumDefByServiceType(String serviceType) throws AtlasBaseException;
 
     AtlasEnumDef updateEnumDefByName(String name, AtlasEnumDef enumDef) throws AtlasBaseException;
 
@@ -50,6 +53,8 @@ public interface AtlasTypeDefStore {
 
     AtlasStructDef getStructDefByGuid(String guid) throws AtlasBaseException;
 
+	List<AtlasStructDef> getStructDefByServiceType(String serviceType) throws AtlasBaseException;
+    
     AtlasStructDef updateStructDefByName(String name, AtlasStructDef structDef) throws AtlasBaseException;
 
     AtlasStructDef updateStructDefByGuid(String guid, AtlasStructDef structDef) throws AtlasBaseException;
@@ -72,6 +77,8 @@ public interface AtlasTypeDefStore {
 
     AtlasEntityDef getEntityDefByGuid(String guid) throws AtlasBaseException;
 
+	List<AtlasEntityDef> getEntityDefByServiceType(String serviceType)throws AtlasBaseException;
+
     AtlasEntityDef updateEntityDefByName(String name, AtlasEntityDef entityDef) throws AtlasBaseException;
 
     AtlasEntityDef updateEntityDefByGuid(String guid, AtlasEntityDef entityDef) throws AtlasBaseException;
@@ -80,6 +87,8 @@ public interface AtlasTypeDefStore {
     AtlasRelationshipDef getRelationshipDefByName(String name) throws AtlasBaseException;
 
     AtlasRelationshipDef getRelationshipDefByGuid(String guid) throws AtlasBaseException;
+    
+	List<AtlasRelationshipDef> getRelationshipDefByServiceType(String serviceType) throws AtlasBaseException;
 
     AtlasRelationshipDef updateRelationshipDefByName(String name, AtlasRelationshipDef structDef) throws AtlasBaseException;
 
@@ -98,12 +107,18 @@ public interface AtlasTypeDefStore {
     void deleteTypesDef(AtlasTypesDef atlasTypesDef) throws AtlasBaseException;
 
     AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException;
-
+    
+    AtlasTypesDef  getTypesByServiceType(String serviceType) throws AtlasBaseException;
 
     /* Generic operation */
     AtlasBaseTypeDef getByName(String name) throws AtlasBaseException;
 
     AtlasBaseTypeDef getByGuid(String guid) throws AtlasBaseException;
+    
+    List<AtlasBaseTypeDef> getByServiceType(String serviceType) throws AtlasBaseException;
 
     void deleteTypeByName(String typeName) throws AtlasBaseException;
+    
+    public void deleteTypesByServiceType(String serviceType) throws AtlasBaseException;
+
 }

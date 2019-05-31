@@ -104,6 +104,24 @@ public class TypesREST {
 
         return ret;
     }
+    
+    /**
+     * Get type definition by it's service type
+     * @param servicetype Service Type of the types
+     * @return Types definition
+     * @throws AtlasBaseException
+     * @HTTP 200 Successful lookup
+     * @HTTP 404 Failed lookup
+     */
+    @GET
+    @Path("/typedef/servicetype/{servicetype}")
+    public AtlasTypesDef getTypeDefsByServiceType(@PathParam("servicetype") String serviceType) throws AtlasBaseException {
+    	Servlets.validateQueryParamLength("servicetype", serviceType);
+    	
+    	AtlasTypesDef ret = typeDefStore.getTypesByServiceType(serviceType);
+    	
+    	return ret;
+    }
 
     /**
      * Bulk retrieval API for all type definitions returned as a list of minimal information header
@@ -124,7 +142,7 @@ public class TypesREST {
 
     /**
      * Bulk retrieval API for retrieving all type definitions in Atlas
-     * @return A composite wrapper object with lists of all type definitions
+     * @return A composite wrapper object with lists of all type definitions 
      * @throws Exception
      * @HTTP 200 {@link AtlasTypesDef} with type definitions matching the search criteria or else returns empty list of type definitions
      */
@@ -174,7 +192,23 @@ public class TypesREST {
         return ret;
     }
 
+    /**
+     * Get the enum definition for the given serviceType
+     * @param guid enum serviceType
+     * @return enum definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the enum definition by it's guid
+     * @HTTP 404 On Failed lookup for the given serviceType
+     */
+    @GET
+    @Path("/enumdef/servicetype/{servicetype}")
+    public List<AtlasEnumDef> getEnumDefByServiceType(@PathParam("servicetype") String serviceType) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("servicetype", serviceType);
 
+        List<AtlasEnumDef> ret = typeDefStore.getEnumDefByServiceType(serviceType);
+
+        return ret;
+    }
     /**
      * Get the struct definition by it's name (unique)
      * @param name struct name
@@ -207,6 +241,24 @@ public class TypesREST {
         Servlets.validateQueryParamLength("guid", guid);
 
         AtlasStructDef ret = typeDefStore.getStructDefByGuid(guid);
+
+        return ret;
+    }
+    
+    /**
+     * Get the struct definition for the given serviceType
+     * @param servicetype struct serviceType
+     * @return struct definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the struct definition by it's serviceType
+     * @HTTP 404 On Failed lookup for the given serviceType
+     */
+    @GET
+    @Path("/structdef/servicetype/{servicetype}")
+    public List<AtlasStructDef> getStructDefByServiceType(@PathParam("servicetype") String serviceType) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("servicetype", serviceType);
+
+        List<AtlasStructDef> ret = typeDefStore.getStructDefByServiceType(serviceType);
 
         return ret;
     }
@@ -282,6 +334,24 @@ public class TypesREST {
 
         return ret;
     }
+    
+    /**
+     * Get the Entity definition for the given serviceType
+     * @param guid entity serviceTyu
+     * @return Entity definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the entity definition by it's serviceType
+     * @HTTP 404 On Failed lookup for the given serviceType
+     */
+    @GET
+    @Path("/entitydef/servicetype/{servicetype}")
+    public List<AtlasEntityDef> getEntityDefByServiceType(@PathParam("servicetype") String serviceType) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("servicetype", serviceType);
+
+        List<AtlasEntityDef> ret = typeDefStore.getEntityDefByServiceType(serviceType);
+
+        return ret;
+    }
     /**
      * Get the relationship definition by it's name (unique)
      * @param name relationship name
@@ -317,6 +387,25 @@ public class TypesREST {
 
         return ret;
     }
+    
+    /**
+     * Get the relationship definition for the given serviceType
+     * @param servicetype relationship serviceType
+     * @return relationship definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the relationship definition by it's serviceType
+     * @HTTP 404 On Failed lookup for the given serviceType
+     */
+    @GET
+    @Path("/relationshipdef/servicetype/{servicetype}")
+    public List<AtlasRelationshipDef> getRelationshipDefByServiceType(@PathParam("servicetype") String serviceType) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("servicetype", serviceType);
+
+        List<AtlasRelationshipDef> ret = typeDefStore.getRelationshipDefByServiceType(serviceType);
+
+        return ret;
+    }
+    
     /* Bulk API operation */
 
     /**
@@ -417,6 +506,30 @@ public class TypesREST {
             }
 
             typeDefStore.deleteTypeByName(typeName);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+    
+    /**
+     * Delete API for type identified by its name.
+     * @param typeName Name of the type to be deleted.
+     * @throws AtlasBaseException
+     * @HTTP 204 On successful deletion of the requested type definitions
+     * @HTTP 400 On validation failure for any type definitions
+     */
+    @DELETE
+    @Path("/typedef/servicetype/{servicetype}")
+    public void deleteAtlasTypeByServiceType(@PathParam("servicetype") final String serviceType) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByServiceType(" 
+                		+ serviceType + ")");
+            }
+
+            typeDefStore.deleteTypesByServiceType(serviceType);
         } finally {
             AtlasPerfTracer.log(perf);
         }
