@@ -1675,14 +1675,20 @@ public class EntityGraphMapper {
         updateModificationMetadata(entityVertex);
 
         for (Map.Entry<AtlasVertex, List<AtlasClassification>> entry : removedClassifications.entrySet()) {
-            AtlasVertex               vertex                     = entry.getKey();
-            String                    guid                       = GraphHelper.getGuid(vertex);
-            List<AtlasClassification> deletedClassificationNames = entry.getValue();
-            AtlasEntity               entity                     = instanceConverter.getAndCacheEntity(guid);
+            AtlasEntity entity = updateClassificationText(entry.getKey());
 
-            vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+
+            List<AtlasClassification> deletedClassificationNames = entry.getValue();
             entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassificationNames);
         }
+    }
+
+    public AtlasEntity updateClassificationText(AtlasVertex vertex) throws AtlasBaseException {
+        String                    guid                       = GraphHelper.getGuid(vertex);
+        AtlasEntity               entity                     = instanceConverter.getAndCacheEntity(guid);
+
+        vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+        return entity;
     }
 
     public void updateClassifications(EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {

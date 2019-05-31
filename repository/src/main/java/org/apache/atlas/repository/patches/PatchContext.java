@@ -20,6 +20,7 @@ package org.apache.atlas.repository.patches;
 
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
 public class PatchContext {
@@ -27,12 +28,14 @@ public class PatchContext {
     private final AtlasTypeRegistry        typeRegistry;
     private final GraphBackedSearchIndexer indexer;
     private final AtlasPatchRegistry       patchRegistry;
+    private final EntityGraphMapper entityGraphMapper;
 
-    public PatchContext(AtlasGraph graph, AtlasTypeRegistry typeRegistry, GraphBackedSearchIndexer indexer) {
+    public PatchContext(AtlasGraph graph, AtlasTypeRegistry typeRegistry, GraphBackedSearchIndexer indexer, EntityGraphMapper entityGraphMapper) {
         this.graph         = graph;
         this.typeRegistry  = typeRegistry;
         this.indexer       = indexer;
         this.patchRegistry = new AtlasPatchRegistry(this.graph);
+        this.entityGraphMapper = entityGraphMapper;
     }
 
     public AtlasGraph getGraph() {
@@ -50,4 +53,5 @@ public class PatchContext {
     public AtlasPatchRegistry getPatchRegistry() {
         return patchRegistry;
     }
+    public EntityGraphMapper getEntityGraphMapper() { return entityGraphMapper;}
 }

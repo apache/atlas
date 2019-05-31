@@ -19,16 +19,11 @@ package org.apache.atlas.repository.patches;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.pc.WorkItemBuilder;
-import org.apache.atlas.pc.WorkItemConsumer;
-import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.IndexException;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer.UniqueKind;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -36,15 +31,11 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
@@ -64,8 +55,8 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
     }
 
     @Override
-    public void apply() {
-        UniqueAttributePatchProcessor patchProcessor = new UniqueAttributePatchProcessor(context);
+    public void apply() throws AtlasBaseException {
+        ConcurrentPatchProcessor patchProcessor = new UniqueAttributePatchProcessor(context);
 
         patchProcessor.apply();
 
@@ -74,16 +65,12 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
         LOG.info("UniqueAttributePatch.apply(): patchId={}, status={}", getPatchId(), getStatus());
     }
 
-    public static class UniqueAttributePatchProcessor {
+    public static class UniqueAttributePatchProcessor extends ConcurrentPatchProcessor {
         private static final String NUM_WORKERS_PROPERTY = "atlas.patch.unique_attribute_patch.numWorkers";
         private static final String BATCH_SIZE_PROPERTY  = "atlas.patch.unique_attribute_patch.batchSize";
         private static final String ATLAS_SOLR_SHARDS    = "ATLAS_SOLR_SHARDS";
         private static final int    NUM_WORKERS;
         private static final int    BATCH_SIZE;
-
-        private final AtlasGraph               graph;
-        private final GraphBackedSearchIndexer indexer;
-        private final AtlasTypeRegistry        typeRegistry;
 
         static {
             int numWorkers = 3;
@@ -103,37 +90,23 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
         }
 
         public UniqueAttributePatchProcessor(PatchContext context) {
-            this.graph        = context.getGraph();
-            this.indexer      = context.getIndexer();
-            this.typeRegistry = context.getTypeRegistry();
+            super(context);
         }
 
-        public void apply() {
+        @Override
+        protected void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
+            //process the vertex
+            processItem(vertexId, vertex, typeName, entityType);
+        }
+
+        @Override
+        protected void prepareForExecution() {
+            //create the new attribute for all unique attributes.
             createIndexForUniqueAttributes();
-            addUniqueAttributeToAllVertices();
-        }
-
-        private void addUniqueAttributeToAllVertices() {
-            Iterable<Object> iterable = graph.query().vertexIds();
-            WorkItemManager manager = new WorkItemManager(new ConsumerBuilder(graph, typeRegistry), BATCH_SIZE, NUM_WORKERS);
-            try {
-                for (Iterator<Object> iter = iterable.iterator(); iter.hasNext(); ) {
-                    Object vertexId = iter.next();
-                    submitForProcessing((Long) vertexId, manager);
-                }
-
-                manager.drain();
-            } finally {
-                try {
-                    manager.shutdown();
-                } catch (InterruptedException e) {
-                    LOG.error("UniqueAttributePatchProcessor.apply(): interrupted during WorkItemManager shutdown", e);
-                }
-            }
         }
 
         private void createIndexForUniqueAttributes() {
-            for (AtlasEntityType entityType : typeRegistry.getAllEntityTypes()) {
+            for (AtlasEntityType entityType : getTypeRegistry().getAllEntityTypes()) {
 
                 String typeName = entityType.getTypeName();
                 Collection<AtlasAttribute> uniqAttributes = entityType.getUniqAttributes().values();
@@ -150,7 +123,7 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
 
         private void createIndexForUniqueAttributes(String typeName, Collection<AtlasAttribute> attributes) {
             try {
-                AtlasGraphManagement management = graph.getManagementSystem();
+                AtlasGraphManagement management = getGraph().getManagementSystem();
 
                 for (AtlasAttribute attribute : attributes) {
                     String uniquePropertyName = attribute.getVertexUniquePropertyName();
@@ -162,14 +135,14 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
                     AtlasAttributeDef attributeDef   = attribute.getAttributeDef();
                     boolean           isIndexable    = attributeDef.getIsIndexable();
                     String            attribTypeName = attributeDef.getTypeName();
-                    Class             propertyClass  = indexer.getPrimitiveClass(attribTypeName);
-                    AtlasCardinality  cardinality    = indexer.toAtlasCardinality(attributeDef.getCardinality());
+                    Class             propertyClass  = getIndexer().getPrimitiveClass(attribTypeName);
+                    AtlasCardinality  cardinality    = getIndexer().toAtlasCardinality(attributeDef.getCardinality());
 
-                    indexer.createVertexIndex(management, uniquePropertyName, UniqueKind.PER_TYPE_UNIQUE, propertyClass, cardinality, isIndexable, true);
+                    getIndexer().createVertexIndex(management, uniquePropertyName, UniqueKind.PER_TYPE_UNIQUE, propertyClass, cardinality, isIndexable, true);
                 }
 
-                indexer.commit(management);
-                graph.commit();
+                getIndexer().commit(management);
+                getGraph().commit();
 
                 LOG.info("Unique attributes: type: {}: Registered!", typeName);
             } catch (IndexException e) {
@@ -181,134 +154,29 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
             return ApplicationProperties.get().getInt(ATLAS_SOLR_SHARDS, 1) * 3;
         }
 
-        private void submitForProcessing(Long vertexId, WorkItemManager manager) {
-            manager.checkProduce(vertexId);
-        }
+        protected void processItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
+            LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
 
-        private static class ConsumerBuilder implements WorkItemBuilder<Consumer, Long> {
-            private final AtlasTypeRegistry typeRegistry;
-            private final AtlasGraph graph;
+            for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
+                String                       uniquePropertyKey = attribute.getVertexUniquePropertyName();
+                Collection<? extends String> propertyKeys      = vertex.getPropertyKeys();
+                Object                       uniqAttrValue     = null;
 
-            public ConsumerBuilder(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
-                this.graph = graph;
-                this.typeRegistry = typeRegistry;
-            }
-
-            @Override
-            public Consumer build(BlockingQueue<Long> queue) {
-                return new Consumer(graph, typeRegistry, queue);
-            }
-        }
-
-        private static class Consumer extends WorkItemConsumer<Long> {
-            private int MAX_COMMIT_RETRY_COUNT = 3;
-            private final AtlasGraph graph;
-            private final AtlasTypeRegistry typeRegistry;
-
-            private final AtomicLong counter;
-
-            public Consumer(AtlasGraph graph, AtlasTypeRegistry typeRegistry, BlockingQueue<Long> queue) {
-                super(queue);
-
-                this.graph        = graph;
-                this.typeRegistry = typeRegistry;
-                this.counter = new AtomicLong(0);
-            }
-
-            @Override
-            protected void doCommit() {
-                if (counter.get() % BATCH_SIZE == 0) {
-                    LOG.info("Processed: {}", counter.get());
-
-                    attemptCommit();
-                }
-            }
-
-            @Override
-            protected void commitDirty() {
-                attemptCommit();
-
-                LOG.info("Total: Commit: {}", counter.get());
-
-                super.commitDirty();
-            }
-
-            private void attemptCommit() {
-                for (int retryCount = 1; retryCount <= MAX_COMMIT_RETRY_COUNT; retryCount++) {
+                if (propertyKeys == null || !propertyKeys.contains(uniquePropertyKey)) {
                     try {
-                        graph.commit();
+                        String propertyKey = attribute.getVertexPropertyName();
 
-                        break;
-                    } catch(Exception ex) {
-                        LOG.error("Commit exception: ", retryCount, ex);
+                        uniqAttrValue = EntityGraphRetriever.mapVertexToPrimitive(vertex, propertyKey, attribute.getAttributeDef());
 
-                        try {
-                            Thread.currentThread().sleep(300 * retryCount);
-                        } catch (InterruptedException e) {
-                            LOG.error("Commit exception: Pause: Interrputed!", e);
-                        }
+                        AtlasGraphUtilsV2.setEncodedProperty(vertex, uniquePropertyKey, uniqAttrValue);
+                    } catch(AtlasSchemaViolationException ex) {
+                        LOG.error("Duplicates detected: {}:{}:{}", typeName, uniqAttrValue, getIdFromVertex(vertex));
+                        vertex.removeProperty(uniquePropertyKey);
                     }
                 }
             }
 
-            @Override
-            protected void processItem(Long vertexId) {
-                AtlasVertex vertex = graph.getVertex(Long.toString(vertexId));
-
-                if (vertex == null) {
-                    LOG.warn("processItem(vertexId={}): AtlasVertex not found!", vertexId);
-
-                    return;
-                }
-
-                if (AtlasGraphUtilsV2.isTypeVertex(vertex)) {
-                    return;
-                }
-
-                if (AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
-                    return;
-                }
-
-                String          typeName   = AtlasGraphUtilsV2.getTypeName(vertex);
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-                if (entityType == null) {
-                    return;
-                }
-
-                processItem(vertexId, vertex, typeName, entityType);
-            }
-
-            private void processItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
-                try {
-                    counter.incrementAndGet();
-                    LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
-
-                    for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                        String                       uniquePropertyKey = attribute.getVertexUniquePropertyName();
-                        Collection<? extends String> propertyKeys      = vertex.getPropertyKeys();
-                        Object                       uniqAttrValue     = null;
-
-                        if (propertyKeys == null || !propertyKeys.contains(uniquePropertyKey)) {
-                            try {
-                                String propertyKey = attribute.getVertexPropertyName();
-
-                                uniqAttrValue = EntityGraphRetriever.mapVertexToPrimitive(vertex, propertyKey, attribute.getAttributeDef());
-
-                                AtlasGraphUtilsV2.setEncodedProperty(vertex, uniquePropertyKey, uniqAttrValue);
-                            } catch(AtlasSchemaViolationException ex) {
-                                LOG.error("Duplicates detected: {}:{}:{}", typeName, uniqAttrValue, getIdFromVertex(vertex));
-                                vertex.removeProperty(uniquePropertyKey);
-                            }
-                        }
-                    }
-
-                    LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
-                } catch (Exception ex) {
-                    LOG.error("processItem(typeName={}, vertexId={}): failed!", typeName, vertexId, ex);
-                } finally {
-                    commit();
-                }
-            }
+            LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
         }
     }
 }
