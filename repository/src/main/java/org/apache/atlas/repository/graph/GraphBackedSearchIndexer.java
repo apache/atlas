@@ -314,6 +314,27 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
+    private void deleteIndexForType(AtlasGraphManagement management, AtlasBaseTypeDef typeDef) {
+        Preconditions.checkNotNull(typeDef, "Cannot process null typedef");
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Deleting indexes for type {}", typeDef.getName());
+        }
+
+        if (typeDef instanceof AtlasStructDef) {
+            AtlasStructDef          structDef     = (AtlasStructDef) typeDef;
+            List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
+
+            if (CollectionUtils.isNotEmpty(attributeDefs)) {
+                for (AtlasAttributeDef attributeDef : attributeDefs) {
+                    deleteIndexForAttribute(management, typeDef.getName(), attributeDef);
+                }
+            }
+        }
+
+        LOG.info("Completed deleting indexes for type {}", typeDef.getName());
+    }
+
     private void createIndexForAttribute(AtlasGraphManagement management, String typeName,
                                          AtlasAttributeDef attributeDef) {
         final String propertyName = AtlasGraphUtilsV1.encodePropertyKey(typeName + "." + attributeDef.getName());
@@ -345,6 +366,20 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             }
         } catch (AtlasBaseException e) {
             LOG.error("No type exists for {}", attribTypeName, e);
+        }
+    }
+
+    private void deleteIndexForAttribute(AtlasGraphManagement management, String typeName, AtlasAttributeDef attributeDef) {
+        final String propertyName = AtlasGraphUtilsV1.encodePropertyKey(typeName + "." + attributeDef.getName());
+
+        try {
+            if (management.containsPropertyKey(propertyName)) {
+                LOG.info("Deleting propertyKey {}, for attribute {}.{}", propertyName, typeName, attributeDef.getName());
+
+                management.deletePropertyKey(propertyName);
+            }
+        } catch (Exception excp) {
+            LOG.warn("Failed to delete propertyKey {}, for attribute {}.{}", propertyName, typeName, attributeDef.getName());
         }
     }
 
@@ -729,7 +764,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             // Invalidate the property key for deleted types
             if (CollectionUtils.isNotEmpty(changedTypeDefs.getDeletedTypeDefs())) {
                 for (AtlasBaseTypeDef typeDef : changedTypeDefs.getDeletedTypeDefs()) {
-                    cleanupIndices(management, typeDef);
+                    deleteIndexForType(management, typeDef);
                 }
             }
 
@@ -740,60 +775,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             attemptRollback(changedTypeDefs, management);
         }
 
-    }
-
-    private void cleanupIndices(AtlasGraphManagement management, AtlasBaseTypeDef typeDef) {
-        Preconditions.checkNotNull(typeDef, "Cannot process null typedef");
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Cleaning up index for {}", typeDef);
-        }
-
-        if (typeDef instanceof AtlasEnumDef) {
-            // Only handle complex types like Struct, Classification and Entity
-            return;
-        }
-
-        if (typeDef instanceof AtlasStructDef) {
-            AtlasStructDef structDef = (AtlasStructDef) typeDef;
-            List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
-            if (CollectionUtils.isNotEmpty(attributeDefs)) {
-                for (AtlasAttributeDef attributeDef : attributeDefs) {
-                    cleanupIndexForAttribute(management, typeDef.getName(), attributeDef);
-                }
-            }
-        } else if (!AtlasTypeUtil.isBuiltInType(typeDef.getName())){
-            throw new IllegalArgumentException("bad data type" + typeDef.getName());
-        }
-    }
-
-    private void cleanupIndexForAttribute(AtlasGraphManagement management, String typeName, AtlasAttributeDef attributeDef) {
-        final String propertyName = AtlasGraphUtilsV1.encodePropertyKey(typeName + "." + attributeDef.getName());
-        String attribTypeName = attributeDef.getTypeName();
-        boolean isBuiltInType = AtlasTypeUtil.isBuiltInType(attribTypeName);
-        boolean isArrayType = AtlasTypeUtil.isArrayType(attribTypeName);
-        boolean isMapType = AtlasTypeUtil.isMapType(attribTypeName);
-
-        try {
-            AtlasType atlasType = typeRegistry.getType(attribTypeName);
-
-            if (isMapType || isArrayType || isClassificationType(atlasType) || isEntityType(atlasType)) {
-                LOG.warn("Ignoring non-indexable attribute {}", attribTypeName);
-            } else if (isBuiltInType || isEnumType(atlasType)) {
-                cleanupIndex(management, propertyName);
-            } else if (isStructType(atlasType)) {
-                AtlasStructDef structDef = typeRegistry.getStructDefByName(attribTypeName);
-                cleanupIndices(management, structDef);
-            }
-        } catch (AtlasBaseException e) {
-            LOG.error("No type exists for {}", attribTypeName, e);
-        }
-    }
-
-    private void cleanupIndex(AtlasGraphManagement management, String propertyKey) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Invalidating property key = {}", propertyKey);
-        }
-        management.deletePropertyKey(propertyKey);
     }
 
     private void attemptRollback(ChangedTypeDefs changedTypeDefs, AtlasGraphManagement management)
