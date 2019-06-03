@@ -61,6 +61,48 @@
             ]
         },
         {
+            "name": "ddl",
+            "superTypes": [
+            "Referenceable"
+            ],
+            "serviceType": "atlas_core",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "queryText",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "execTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "userName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "serviceType",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
             "name": "DataSet",
             "superTypes": [
                 "Asset"

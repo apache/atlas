@@ -104,6 +104,13 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
                 if (entity != null) {
                     outputs.add(entity);
+
+                    if (isDdlOperation()) {
+                        AtlasEntity ddlEntity = createHiveDDLEntity(entity);
+                        if (ddlEntity != null) {
+                            ret.addEntity(ddlEntity);
+                        }
+                    }
                 }
             }
         }

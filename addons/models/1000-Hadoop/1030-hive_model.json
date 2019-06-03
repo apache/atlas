@@ -533,43 +533,9 @@
             ]
         },
         {
-            "name": "hive_ddl",
-            "superTypes": [
-                "Referenceable"
-            ],
-            "serviceType": "hive",
-            "typeVersion": "1.0",
-            "attributeDefs": [
-                {
-                    "name": "queryText",
-                    "typeName": "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional": false,
-                    "isUnique": false
-                },
-                {
-                    "name": "execTime",
-                    "typeName": "date",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": false,
-                    "isUnique": false
-                },
-                {
-                    "name": "userName",
-                    "typeName": "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional": false,
-                    "isUnique": false
-                }
-            ]
-        },
-        {
             "name": "hive_db_ddl",
             "superTypes": [
-                "hive_ddl"
+                "ddl"
             ],
             "serviceType": "hive",
             "typeVersion": "1.0",
@@ -578,7 +544,7 @@
         {
             "name": "hive_table_ddl",
             "superTypes": [
-                "hive_ddl"
+                "ddl"
             ],
             "serviceType": "hive",
             "typeVersion": "1.0",

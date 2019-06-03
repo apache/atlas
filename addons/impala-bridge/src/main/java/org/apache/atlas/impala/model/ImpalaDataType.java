@@ -24,7 +24,9 @@ public enum ImpalaDataType {
 
     IMPALA_PROCESS,
     IMPALA_PROCESS_EXECUTION,
-    IMPALA_COLUMN_LINEAGE;
+    IMPALA_COLUMN_LINEAGE,
+    HIVE_DB_DDL,
+    HIVE_TABLE_DDL;
 
     public String getName() {
         return name().toLowerCase();

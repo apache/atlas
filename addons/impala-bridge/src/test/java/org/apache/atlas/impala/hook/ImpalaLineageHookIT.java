@@ -34,9 +34,13 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_DDL_QUERIES;
 import static org.testng.Assert.assertFalse;
 
 public class ImpalaLineageHookIT extends ImpalaLineageITBase {
@@ -138,19 +142,24 @@ public class ImpalaLineageHookIT extends ImpalaLineageITBase {
 
             processQFName = processQFName.toLowerCase();
 
+            // check process and process execution entities
             AtlasEntity processEntity1 = validateProcess(processQFName, queryObj.getQueryText());
             AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryObj.getQueryText());
             AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
                 BaseImpalaEvent.ATTRIBUTE_PROCESS));
             Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
             Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+
+            // check DDL entity
+            String viewId = assertTableIsRegistered(viewName);
+            AtlasEntity entity  = atlasClientV2.getEntityByGuid(viewId).getEntity();
+            List        ddlQueries = (List) entity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+            assertNotNull(ddlQueries);
+            assertEquals(ddlQueries.size(), 1);
         } catch (Exception ex) {
             LOG.error("process create_view failed: ", ex);
             assertFalse(true);
         }
     }
-
-
-
-
 }

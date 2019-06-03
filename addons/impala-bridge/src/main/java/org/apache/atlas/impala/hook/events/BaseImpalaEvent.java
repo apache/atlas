@@ -47,6 +47,7 @@ import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.type.AtlasTypeUtil;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,10 +89,10 @@ public abstract class BaseImpalaEvent {
     public static final String ATTRIBUTE_DEPENDENCY_TYPE           = "dependencyType";
     public static final String ATTRIBUTE_HOSTNAME                  = "hostName";
     public static final String EMPTY_ATTRIBUTE_VALUE               = "";
-
+    public static final String ATTRIBUTE_EXEC_TIME                 = "execTime";
+    public static final String ATTRIBUTE_DDL_QUERIES               = "ddlQueries";
+    public static final String ATTRIBUTE_SERVICE_TYPE              = "serviceType";
     public static final long   MILLIS_CONVERT_FACTOR               = 1000;
-
-
 
     protected final AtlasImpalaHookContext context;
     protected final Map<String, ImpalaNode> vertexNameMap;
@@ -555,8 +556,8 @@ public abstract class BaseImpalaEvent {
             queryStr = queryStr.toLowerCase().trim();
         }
 
-        Long startTime = context.getLineageQuery().getTimestamp() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
-        Long endTime = context.getLineageQuery().getEndTime() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
+        Long startTime = getQueryStartTime();
+        Long endTime = getQueryEndTime();
 
         ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, impalaProcess.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString() +
             QNAME_SEP_PROCESS + startTime.toString() +
@@ -572,6 +573,14 @@ public abstract class BaseImpalaEvent {
         ret.setRelationshipAttribute(ATTRIBUTE_PROCESS, AtlasTypeUtil.toAtlasRelatedObjectId(impalaProcess));
 
         return ret;
+    }
+
+    protected Long getQueryStartTime() {
+        return context.getLineageQuery().getTimestamp() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
+    }
+
+    protected Long getQueryEndTime() {
+        return context.getLineageQuery().getEndTime() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
     }
 
     protected void addProcessedEntities(AtlasEntitiesWithExtInfo entitiesWithExtInfo) {
@@ -613,5 +622,41 @@ public abstract class BaseImpalaEvent {
         tableVertex.setVertexId(tableName);
         tableVertex.setCreateTime(createTime);
         return new ImpalaNode(tableVertex);
+    }
+
+    protected AtlasEntity createHiveDDLEntity(AtlasEntity dbOrTable) {
+        return createHiveDDLEntity(dbOrTable, true);
+    }
+
+    protected AtlasEntity createHiveDDLEntity(AtlasEntity dbOrTable, boolean excludeEntityGuid) {
+        AtlasObjectId objId   = BaseImpalaEvent.getObjectId(dbOrTable);
+        AtlasEntity   hiveDDL = null;
+
+        if (excludeEntityGuid) {
+            objId.setGuid(null);
+        }
+
+        if (StringUtils.equals(objId.getTypeName(), HIVE_TYPE_DB)) {
+            hiveDDL = new AtlasEntity(ImpalaDataType.HIVE_DB_DDL.getName(), ATTRIBUTE_DB, objId);
+        } else if (StringUtils.equals(objId.getTypeName(), HIVE_TYPE_TABLE)) {
+            hiveDDL = new AtlasEntity(ImpalaDataType.HIVE_TABLE_DDL.getName(), ATTRIBUTE_TABLE, objId);
+        }
+
+        if (hiveDDL != null) {
+            hiveDDL.setAttribute(ATTRIBUTE_SERVICE_TYPE, "impala");
+            hiveDDL.setAttribute(ATTRIBUTE_EXEC_TIME, getQueryStartTime());
+            hiveDDL.setAttribute(ATTRIBUTE_QUERY_TEXT, context.getQueryStr());
+            hiveDDL.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
+            hiveDDL.setAttribute(ATTRIBUTE_NAME, context.getQueryStr() + QNAME_SEP_PROCESS + getQueryStartTime().toString());
+            hiveDDL.setAttribute(ATTRIBUTE_QUALIFIED_NAME, hiveDDL.getAttribute(ATTRIBUTE_NAME));
+        }
+
+        return hiveDDL;
+    }
+
+    protected boolean isDdlOperation() {
+        return (context.getImpalaOperationType().equals(ImpalaOperationType.CREATEVIEW)
+            || context.getImpalaOperationType().equals(ImpalaOperationType.ALTERVIEW_AS)
+            || context.getImpalaOperationType().equals(ImpalaOperationType.CREATETABLE_AS_SELECT));
     }
 }
