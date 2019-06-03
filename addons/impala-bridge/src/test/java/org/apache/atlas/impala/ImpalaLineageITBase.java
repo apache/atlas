@@ -22,6 +22,7 @@ import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_QUAL
 import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_QUERY_TEXT;
 import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_RECENT_QUERIES;
 import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.HIVE_TYPE_DB;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.HIVE_TYPE_TABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
@@ -298,6 +299,32 @@ public class ImpalaLineageITBase {
         dbQualifiedName = dbQualifiedName.toLowerCase();
 
         return assertEntityIsRegistered(HIVE_TYPE_DB, REFERENCEABLE_ATTRIBUTE_NAME, dbQualifiedName, assertPredicate);
+    }
+
+    protected String assertTableIsRegistered(String dbName, String tableName) throws Exception {
+        return assertTableIsRegistered(dbName, tableName, null, false);
+    }
+
+    protected String assertTableIsRegistered(String fullTableName) throws Exception {
+        return assertTableIsRegistered(fullTableName, null, false);
+    }
+
+    protected String assertTableIsRegistered(String dbName, String tableName, AssertPredicate assertPredicate, boolean isTemporary) throws Exception {
+        LOG.debug("Searching for table {}.{}", dbName, tableName);
+
+        String fullTableName = dbName + AtlasImpalaHookContext.QNAME_SEP_ENTITY_NAME + tableName;
+
+        return assertTableIsRegistered(fullTableName, assertPredicate, isTemporary);
+    }
+
+    protected String assertTableIsRegistered(String fullTableName, AssertPredicate assertPredicate, boolean isTemporary) throws Exception {
+        LOG.debug("Searching for table {}", fullTableName);
+
+        String tableQualifiedName = (fullTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME).toLowerCase() +
+            CLUSTER_NAME;
+
+        return assertEntityIsRegistered(HIVE_TYPE_TABLE, REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName,
+            assertPredicate);
     }
 
     protected String createDatabase() throws Exception {
