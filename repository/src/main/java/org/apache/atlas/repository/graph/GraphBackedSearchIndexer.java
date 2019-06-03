@@ -511,7 +511,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
 
         if (typeDef instanceof AtlasStructDef) {
-            AtlasStructDef structDef = (AtlasStructDef) typeDef;
+            AtlasStructDef          structDef     = (AtlasStructDef) typeDef;
             List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
 
             if (CollectionUtils.isNotEmpty(attributeDefs)) {

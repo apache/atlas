@@ -136,9 +136,9 @@ public class Publisher implements Runnable {
             FileLockedReadWrite fileLockedRead = new FileLockedReadWrite(source);
 
             try {
-                DataInput dataInput = fileLockedRead.getInput(new File(record.getPath()));
-                int lineInSpoolFile = 0;
-                List<String> messages = new ArrayList<>();
+                DataInput    dataInput       = fileLockedRead.getInput(new File(record.getPath()));
+                int          lineInSpoolFile = 0;
+                List<String> messages        = new ArrayList<>();
 
                 for (String message = dataInput.readLine(); message != null; message = dataInput.readLine()) {
                     lineInSpoolFile++;

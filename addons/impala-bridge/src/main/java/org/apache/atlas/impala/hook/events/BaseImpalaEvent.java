@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -580,13 +579,7 @@ public abstract class BaseImpalaEvent {
     }
 
     protected Long getQueryStartTime() {
-        Long startTime = null;
-        if (context.getLineageQuery() == null || context.getLineageQuery().getTimestamp() == null) {
-            startTime = System.currentTimeMillis();
-        } else {
-            startTime = context.getLineageQuery().getTimestamp() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
-        }
-        return startTime;
+        return context.getLineageQuery().getTimestamp() * BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
     }
 
     protected Long getQueryEndTime() {
@@ -652,16 +645,13 @@ public abstract class BaseImpalaEvent {
             hiveDDL = new AtlasEntity(ImpalaDataType.HIVE_TABLE_DDL.getName(), ATTRIBUTE_TABLE, objId);
         }
 
-        Long startTime = getQueryStartTime();
-
         if (hiveDDL != null) {
             hiveDDL.setAttribute(ATTRIBUTE_SERVICE_TYPE, "impala");
-            hiveDDL.setAttribute(ATTRIBUTE_EXEC_TIME, startTime);
+            hiveDDL.setAttribute(ATTRIBUTE_EXEC_TIME, getQueryStartTime());
             hiveDDL.setAttribute(ATTRIBUTE_QUERY_TEXT, context.getQueryStr());
             hiveDDL.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
-            hiveDDL.setAttribute(ATTRIBUTE_NAME, context.getQueryStr());
-            hiveDDL.setAttribute(ATTRIBUTE_QUALIFIED_NAME, dbOrTable.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString()
-                + QNAME_SEP_PROCESS + startTime.toString());
+            hiveDDL.setAttribute(ATTRIBUTE_NAME, context.getQueryStr() + QNAME_SEP_PROCESS + getQueryStartTime().toString());
+            hiveDDL.setAttribute(ATTRIBUTE_QUALIFIED_NAME, hiveDDL.getAttribute(ATTRIBUTE_NAME));
         }
 
         return hiveDDL;
