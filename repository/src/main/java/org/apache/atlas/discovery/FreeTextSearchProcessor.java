@@ -25,6 +25,7 @@ import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.common.params.CommonParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ import java.util.*;
 public class FreeTextSearchProcessor extends SearchProcessor {
     private static final Logger LOG                         = LoggerFactory.getLogger(FreeTextSearchProcessor.class);
     private static final Logger PERF_LOG                    = AtlasPerfTracer.getPerfLogger("FreeTextSearchProcessor");
-    public  static final String SOLR_QT_PARAMETER           = "qt";
+    public  static final String SOLR_QT_PARAMETER           = CommonParams.QT;
     public  static final String SOLR_REQUEST_HANDLER_NAME   = "/freetext";
 
     private final AtlasIndexQuery indexQuery;

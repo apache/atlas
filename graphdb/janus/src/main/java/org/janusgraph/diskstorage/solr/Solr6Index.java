@@ -235,16 +235,21 @@ public class Solr6Index implements IndexProvider {
             if (solrClient != null) {
                 try {
                     solrClient.close();
+
+                    if(logger.isDebugEnabled()) {
+                        logger.debug("Closed the solr client successfully.");
+                    }
                 } catch (IOException excp) {
-                    logger.warn("Failed to close SolrClient", excp);
+                    logger.warn("Failed to close SolrClient.", excp);
                 }
             }
-            logger.debug("Closed the solr client successfully.");
         } else {
-            logger.debug("Ignoring the closing of solr client as it is owned by Solr6Index.");
-            return;
+            if(logger.isDebugEnabled()) {
+                logger.debug("Ignoring the closing of solr client as it is owned by Solr6Index.");
+            }
         }
     }
+
     private SolrClient createSolrClient() {
         final ModifiableSolrParams clientParams = new ModifiableSolrParams();
         SolrClient solrClient = null;

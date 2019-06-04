@@ -40,11 +40,15 @@ public final class Constants {
     public static final String RELATIONSHIP_GUID_PROPERTY_KEY   = encodePropertyKey(RELATIONSHIP_PROPERTY_KEY_PREFIX + GUID_PROPERTY_KEY);
     public static final String HISTORICAL_GUID_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "historicalGuids");
     public static final String FREETEXT_REQUEST_HANDLER = "/freetext";
+    public static final String TERMS_REQUEST_HANDLER = "/terms";
+
     /**
      * Entity type name property key.
      */
     public static final String ENTITY_TYPE_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "typeName");
     public static final String TYPE_NAME_INTERNAL       = INTERNAL_PROPERTY_KEY_PREFIX + "internal";
+    public static final String ASSET_OWNER_PROPERTY_KEY = "Asset.owner";
+
 
     /**
      * Entity type's super types property key.

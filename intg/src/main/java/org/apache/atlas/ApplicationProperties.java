@@ -51,6 +51,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  SOLR_WAIT_SEARCHER_CONF         = "atlas.graph.index.search.solr.wait-searcher";
     public static final String  ENABLE_FULLTEXT_SEARCH_CONF     = "atlas.search.fulltext.enable";
     public static final String  ENABLE_FREETEXT_SEARCH_CONF     = "atlas.search.freetext.enable";
+    public static final String  ATLAS_RUN_MODE                  = "atlas.run.mode";
     public static final String  GRAPHBD_BACKEND_JANUS           = "janus";
     public static final String  STORAGE_BACKEND_HBASE           = "hbase";
     public static final String  STORAGE_BACKEND_HBASE2          = "hbase2";
@@ -58,6 +59,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  DEFAULT_GRAPHDB_BACKEND         = GRAPHBD_BACKEND_JANUS;
     public static final boolean DEFAULT_SOLR_WAIT_SEARCHER      = true;
     public static final boolean DEFAULT_INDEX_MAP_NAME          = false;
+    public static final AtlasRunMode DEFAULT_ATLAS_RUN_MODE     = AtlasRunMode.PROD;
 
     public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
     public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");
@@ -66,6 +68,11 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final SimpleEntry<String, String> DB_CACHE_TX_DIRTY_SIZE_CONF = new SimpleEntry<>("atlas.graph.cache.tx-dirty-size", "120");
 
     private static volatile Configuration instance = null;
+
+    public enum AtlasRunMode {
+        PROD,
+        DEV
+    }
 
     private ApplicationProperties(URL url) throws ConfigurationException {
         super(url);
@@ -263,6 +270,8 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     }
 
     private void setDefaults() {
+        AtlasRunMode runMode = AtlasRunMode.valueOf(getString(ATLAS_RUN_MODE, DEFAULT_ATLAS_RUN_MODE.name()));
+
         // setting value for 'atlas.graphdb.backend' (default = 'janus')
         String graphDbBackend = getString(GRAPHDB_BACKEND_CONF);
 
@@ -298,13 +307,18 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
         // set the following if indexing backend is 'solr'
         if (indexBackend.equalsIgnoreCase(INDEX_BACKEND_SOLR)) {
-            clearPropertyDirect(SOLR_WAIT_SEARCHER_CONF);
-            addPropertyDirect(SOLR_WAIT_SEARCHER_CONF, DEFAULT_SOLR_WAIT_SEARCHER);
-            LOG.info("Setting solr-wait-searcher property '" + DEFAULT_SOLR_WAIT_SEARCHER + "'");
+            LOG.info("Atlas is running in MODE: {}.", runMode.name());
 
-            clearPropertyDirect(INDEX_MAP_NAME_CONF);
-            addPropertyDirect(INDEX_MAP_NAME_CONF, DEFAULT_INDEX_MAP_NAME);
-            LOG.info("Setting index.search.map-name property '" + DEFAULT_INDEX_MAP_NAME + "'");
+            if(runMode == AtlasRunMode.PROD) {
+                //we do not want these configurations to be over written in Production mode.
+                clearPropertyDirect(SOLR_WAIT_SEARCHER_CONF);
+                addPropertyDirect(SOLR_WAIT_SEARCHER_CONF, DEFAULT_SOLR_WAIT_SEARCHER);
+                LOG.info("Setting solr-wait-searcher property '" + DEFAULT_SOLR_WAIT_SEARCHER + "'");
+
+                clearPropertyDirect(INDEX_MAP_NAME_CONF);
+                addPropertyDirect(INDEX_MAP_NAME_CONF, DEFAULT_INDEX_MAP_NAME);
+                LOG.info("Setting index.search.map-name property '" + DEFAULT_INDEX_MAP_NAME + "'");
+            }
         }
 
         setDbCacheConfDefaults();
