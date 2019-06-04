@@ -17,7 +17,11 @@
  */
 package org.apache.atlas.repository.graphdb;
 
+import org.apache.atlas.model.discovery.AtlasAggregationEntry;
+
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents a graph client work with indices used by Jansgraph.
@@ -25,10 +29,31 @@ import java.util.Map;
 public interface AtlasGraphIndexClient {
 
     /**
-     *  The implementers should apply the search weights for the passed in attributes.
-     *  @param collectionName                the name of the collection for which the search weight needs to be applied
-     *  @param attributeName2SearchWeightMap the map containing search weights from attribute name to search weights.
+     * Gets aggregated metrics for the given query string and aggregation field names.
+     * @param queryString the query string whose aggregation metrics need to be retrieved.
+     * @param propertyKeyNames the set of aggregation fields.
+     * @return A map of aggregation field to value-count pairs.
      */
-    void applySearchWeight(String collectionName, Map<String, Integer> attributeName2SearchWeightMap);
+    Map<String, List<AtlasAggregationEntry>> getAggregatedMetrics(String queryString, Set<String> propertyKeyNames);
 
+    /**
+     * Returns top 5 suggestions for the given prefix string.
+     * @param prefixString the prefix string whose value needs to be retrieved.
+     * @return top 5 suggestion strings with prefix String
+     */
+    List<String> getSuggestions(String prefixString);
+
+    /**
+     *  The implementers should apply the search weights for the passed in properties.
+     *  @param collectionName                the name of the collection for which the search weight needs to be applied
+     *  @param propertyName2SearchWeightMap the map containing search weights from property name to search weights.
+     */
+    void applySearchWeight(String collectionName, Map<String, Integer> propertyName2SearchWeightMap);
+
+    /**
+     * The implementors should take the passed in list of suggestion properties for suggestions functionality.
+     * @param collectionName the name of the collection to which the suggestions properties should be applied to.
+     * @param suggestionProperties the list of suggestion properties.
+     */
+    void applySuggestionFields(String collectionName, List<String> suggestionProperties);
 }

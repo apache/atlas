@@ -22,7 +22,9 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
@@ -554,6 +556,60 @@ public class DiscoveryREST {
             AtlasUserSavedSearch savedSearch = atlasDiscoveryService.getSavedSearchByGuid(Servlets.getUserName(httpServletRequest), searchGuid);
 
             return executeSavedSearch(savedSearch);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Attribute based search for entities satisfying the search parameters
+     *@return Atlas search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     * @HTTP 400 Tag/Entity doesn't exist or Tag/entity filter is present without tag/type name
+     */
+    @Path("/quick")
+    @GET
+    public AtlasQuickSearchResult searchUsingFreeText(@QueryParam("query")                  String  query,
+                                                      @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
+                                                      @QueryParam("limit")                  int     limit,
+                                                      @QueryParam("offset")                 int     offset) throws AtlasBaseException {
+        if (StringUtils.isNotEmpty(query) && query.length() > maxFullTextQueryLength) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
+        }
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.quick(" + query + "," +
+                        "excludeDeletedEntities:" + excludeDeletedEntities + "," + limit + "," + offset + ")");
+            }
+
+            SearchParameters searchParameters = new SearchParameters();
+
+            searchParameters.setQuery(query);
+            searchParameters.setExcludeDeletedEntities(excludeDeletedEntities);
+            searchParameters.setLimit(limit);
+            searchParameters.setOffset(offset);
+
+            return atlasDiscoveryService.quickSearchWithParameters(searchParameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @Path("suggestions")
+    @GET
+    public AtlasSuggestionsResult getSuggestions(@QueryParam("prefixString") String prefixString) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.getSuggestions(" + prefixString + ")");
+            }
+
+            return atlasDiscoveryService.getSuggestions(prefixString);
         } finally {
             AtlasPerfTracer.log(perf);
         }
