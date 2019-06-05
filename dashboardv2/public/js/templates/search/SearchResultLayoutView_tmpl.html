@@ -23,6 +23,19 @@
     <div class="ellipsis" style="display: none;"><span class="searchResult" style=" font-size: 16px;"></span>
     </div>
     <div class="searchTable">
+        <div class="row no-data" style="display: none;">
+            <div class="position-relative thick-border">
+                <div style="padding-top: 20px; " class="table-responsive tableBorder">
+                    <table class="table table-hover backgrid table-quickMenu">
+                        <tbody>
+                            <tr class="empty">
+                                <td colspan="16"><span>No Records found!</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
         <div class="{{#unless isGlossaryView}}row well{{/unless}}" style="padding-top: 0px;">
             <div class="row form-group pagination-box filter-box" style="display: none;">
                 <div class="col-sm-3">
