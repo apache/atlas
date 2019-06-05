@@ -70,7 +70,8 @@ define(['require',
                 showPage: "[data-id='showPage']",
                 gotoPage: "[data-id='gotoPage']",
                 gotoPagebtn: "[data-id='gotoPagebtn']",
-                activePage: "[data-id='activePage']"
+                activePage: "[data-id='activePage']",
+                rowData: ".row"
             },
             templateHelpers: function() {
                 return {
@@ -561,6 +562,10 @@ define(['require',
                 var table = new TableLayout(_.extend({}, that.commonTableOptions, {
                     columns: columns
                 }));
+                if (table.collection.length === 0) {
+                    this.hideIrreleventElements();
+                    return;
+                }
                 if (!that.REntityTableLayoutView) {
                     return;
                 }
@@ -791,6 +796,10 @@ define(['require',
                     }
                 }
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
+            },
+            hideIrreleventElements: function() {
+                this.ui.rowData.siblings('.well').hide();
+                this.ui.rowData.siblings('.no-data').show();
             },
             getDaynamicColumns: function(valueObj) {
                 var that = this,
