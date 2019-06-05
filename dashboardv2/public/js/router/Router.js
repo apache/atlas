@@ -104,6 +104,7 @@ define([
             this.postRouteExecute();
         },
         preRouteExecute: function() {
+            $(".tooltip").tooltip("hide");
             // console.log("Pre-Route Change Operations can be performed here !!");
         },
         postRouteExecute: function(name, args) {

@@ -336,9 +336,9 @@ define(['require',
                 _.each(tagObject, function(val) {
                     var checkTagOrTerm = Utils.checkTagOrTerm(val);
                     if (checkTagOrTerm.term) {
-                        termData += '<span class="btn btn-action btn-sm btn-blue btn-icon term" data-id="tagClick" data-href="' + val.typeName + '"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="term"></i></span>';
+                        termData += '<span class="btn btn-action btn-sm btn-blue btn-icon term" data-id="tagClick" data-href="' + val.typeName + '"><span title="' + val.typeName + '">' + val.typeName + '</span><i class="fa fa-close" title="Delete Term" data-id="deleteTag" data-type="term"></i></span>';
                     } else {
-                        tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span>' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
+                        tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span title="' + val.typeName + '">' + val.typeName + '</span><i class="fa fa-close" title="Delete Tag" data-id="deleteTag" data-type="tag"></i></span>';
                     }
                 });
                 this.ui.tagList.find("span.btn").remove();
