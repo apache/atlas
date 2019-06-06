@@ -20,13 +20,16 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+
 
 /**
  * This class is equivalent to legacy FullTextSearchProcessor--except that it uses a better search techniques using SOLR
@@ -37,7 +40,6 @@ public class FreeTextSearchProcessor extends SearchProcessor {
     private static final Logger PERF_LOG                    = AtlasPerfTracer.getPerfLogger("FreeTextSearchProcessor");
     public  static final String SOLR_QT_PARAMETER           = "qt";
     public  static final String SOLR_REQUEST_HANDLER_NAME   = "/freetext";
-    private static final int    MAX_TYPES_STRING_SIZE       = 1000;
 
     private final AtlasIndexQuery indexQuery;
 
@@ -49,50 +51,32 @@ public class FreeTextSearchProcessor extends SearchProcessor {
 
         queryString.append(searchParameters.getQuery());
 
-        String queryFields = null;
-        // if search includes entity-type criteria, adding a filter here can help avoid unnecessary
-        // processing (and rejection) by subsequent EntitySearchProcessor
-        if (context.getEntityType() != null) {
-            String typeString = context.getEntityType().getTypeAndAllSubTypesQryStr();
-            if (typeString.length() > MAX_TYPES_STRING_SIZE) {
-                LOG.info("Dropping the use of types string optimization as there are too many types {} for select type {}.", typeString, context.getEntityType().getTypeName());
-            } else {
-                LOG.debug("Using the use of types string optimization as there are too many types {} for select type {}.", typeString, context.getEntityType().getTypeName());
-
-                final Set<String> types = context.getEntityType().getTypeAndAllSubTypes();
-                final AtlasGraphManagement managementSystem = context.getGraph().getManagementSystem();
-                AtlasPropertyKey entityTypeNamePropertyKey = managementSystem.getPropertyKey(AtlasGraphUtilsV2.encodePropertyKey(Constants.ENTITY_TYPE_PROPERTY_KEY));
-                String encodedPropertyName = managementSystem.getIndexFieldName(Constants.VERTEX_INDEX, entityTypeNamePropertyKey);
-
-
-
-                StringBuilder typesStringBuilder = new StringBuilder();
-                for(String typeName: types) {
-                    typesStringBuilder.append(" ").append(typeName);
-                }
-                //append the query with type and substypes listed in it
-                String typesString = typesStringBuilder.toString();
-                queryString.append(" AND +").append(encodedPropertyName).append(":[");
-                queryString.append(typesStringBuilder.toString());
-                queryString.append("]");
-            }
+        if (StringUtils.isNotEmpty(context.getEntityTypesQryStr()) && context.getEntityTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+            queryString.append(AND_STR).append(context.getEntityTypesQryStr());
         }
 
-        //just use the query string as is
+        if (StringUtils.isNotEmpty(context.getClassificationTypesQryStr()) && context.getClassificationTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+            queryString.append(AND_STR).append(context.getClassificationTypesQryStr());
+        }
+
+        // just use the query string as is
         LOG.debug("Using query string  '{}'.", queryString);
+
         indexQuery = context.getGraph().indexQuery(prepareGraphIndexQueryParameters(context, queryString));
     }
 
     private GraphIndexQueryParameters prepareGraphIndexQueryParameters(SearchContext context, StringBuilder queryString) {
-        List<AtlasIndexQueryParameter> parameters = new ArrayList<AtlasIndexQueryParameter>();
+        List<AtlasIndexQueryParameter> parameters = new ArrayList<>();
+
         parameters.add(context.getGraph().indexQueryParameter(SOLR_QT_PARAMETER, SOLR_REQUEST_HANDLER_NAME));
+
         return new GraphIndexQueryParameters(Constants.VERTEX_INDEX, queryString.toString(), 0, parameters);
     }
 
     @Override
     public List<AtlasVertex> execute() {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> FullTextSearchProcessorUsingFreeText.execute({})", context);
+            LOG.debug("==> FreeTextSearchProcessor.execute({})", context);
         }
 
         List<AtlasVertex> ret = new ArrayList<>();
@@ -100,7 +84,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
         AtlasPerfTracer perf = null;
 
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "FullTextSearchProcessorUsingFreeText.execute(" + context +  ")");
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "FreeTextSearchProcessor.execute(" + context +  ")");
         }
 
         try {
@@ -136,17 +120,31 @@ public class FreeTextSearchProcessor extends SearchProcessor {
 
                         resultCount++;
 
+                        String entityTypeName = AtlasGraphUtilsV2.getTypeName(vertex);
+
                         // skip non-entity vertices
-                        if (!AtlasGraphUtilsV2.isEntityVertex(vertex)) {
+                        if (StringUtils.isEmpty(entityTypeName) || StringUtils.isEmpty(AtlasGraphUtilsV2.getIdFromVertex(vertex))) {
                             if (LOG.isDebugEnabled()) {
-                                LOG.debug("FullTextSearchProcessor.execute(): ignoring non-entity vertex (id={})", vertex.getId());
+                                LOG.debug("FreeTextSearchProcessor.execute(): ignoring non-entity vertex (id={})", vertex.getId());
                             }
 
                             continue;
                         }
 
+                        if (!context.includeEntityType(entityTypeName)) {
+                            continue;
+                        }
+
                         if (activeOnly && AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
                             continue;
+                        }
+
+                        if (context.getClassificationType() != null) {
+                            List<String> entityClassifications = GraphHelper.getAllTraitNames(vertex);
+
+                            if (!context.includeClassificationTypes(entityClassifications)) {
+                                continue;
+                            }
                         }
 
                         entityVertices.add(vertex);
@@ -170,7 +168,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== FullTextSearchProcessor.execute({}): ret.size()={}", context, ret.size());
+            LOG.debug("<== FreeTextSearchProcessor.execute({}): ret.size()={}", context, ret.size());
         }
 
         return ret;

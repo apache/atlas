@@ -48,8 +48,9 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  STORAGE_BACKEND_CONF            = "atlas.graph.storage.backend";
     public static final String  INDEX_BACKEND_CONF              = "atlas.graph.index.search.backend";
     public static final String  INDEX_MAP_NAME_CONF             = "atlas.graph.index.search.map-name";
-    public static final String  FREE_TEXT_INDEX_ENABLED         = "atlas.freetext.index.enabled";
     public static final String  SOLR_WAIT_SEARCHER_CONF         = "atlas.graph.index.search.solr.wait-searcher";
+    public static final String  ENABLE_FULLTEXT_SEARCH_CONF     = "atlas.search.fulltext.enable";
+    public static final String  ENABLE_FREETEXT_SEARCH_CONF     = "atlas.search.freetext.enable";
     public static final String  GRAPHBD_BACKEND_JANUS           = "janus";
     public static final String  STORAGE_BACKEND_HBASE           = "hbase";
     public static final String  STORAGE_BACKEND_HBASE2          = "hbase2";
@@ -57,7 +58,6 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  DEFAULT_GRAPHDB_BACKEND         = GRAPHBD_BACKEND_JANUS;
     public static final boolean DEFAULT_SOLR_WAIT_SEARCHER      = true;
     public static final boolean DEFAULT_INDEX_MAP_NAME          = false;
-    public static final boolean DEFAULT_FREE_TEXT_INDEX_ENABLED = false;
 
     public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
     public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");

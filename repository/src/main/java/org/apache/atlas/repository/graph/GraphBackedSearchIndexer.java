@@ -165,13 +165,15 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         if (LOG.isDebugEnabled()) {
             LOG.debug("Processing changed typedefs {}", changedTypeDefs);
         }
+
         AtlasGraphManagement management = null;
+
         try {
             management = provider.get().getManagementSystem();
 
             // Update index for newly created types
-            if (CollectionUtils.isNotEmpty(changedTypeDefs.getCreateTypeDefs())) {
-                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getCreateTypeDefs()) {
+            if (CollectionUtils.isNotEmpty(changedTypeDefs.getCreatedTypeDefs())) {
+                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getCreatedTypeDefs()) {
                     updateIndexForTypeDef(management, typeDef);
                 }
             }
@@ -196,7 +198,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             LOG.error("Failed to update indexes for changed typedefs", e);
             attemptRollback(changedTypeDefs, management);
         }
-        notifyChangeListeners();
+
+        notifyChangeListeners(changedTypeDefs);
     }
 
     public Set<String> getVertexIndexKeys() {
@@ -805,10 +808,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         LOG.info("Index creation for type {} complete", typeDef.getName());
     }
 
-    private void notifyChangeListeners() {
+    private void notifyChangeListeners(ChangedTypeDefs changedTypeDefs) {
         for (IndexChangeListener indexChangeListener : indexChangeListeners) {
             try {
-                indexChangeListener.onChange();
+                indexChangeListener.onChange(changedTypeDefs);
             } catch (Throwable t) {
                 LOG.error("Error encountered in notifying the index change listener {}.", indexChangeListener.getClass().getName(), t);
                 //we need to throw exception if any of the listeners throw execption.

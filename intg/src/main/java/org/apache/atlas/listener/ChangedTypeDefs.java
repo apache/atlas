@@ -18,35 +18,37 @@
 package org.apache.atlas.listener;
 
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ChangedTypeDefs {
-    private List<? extends AtlasBaseTypeDef> createTypeDefs;
+    private List<? extends AtlasBaseTypeDef> createdTypeDefs;
     private List<? extends AtlasBaseTypeDef> updatedTypeDefs;
     private List<? extends AtlasBaseTypeDef> deletedTypeDefs;
 
-    public ChangedTypeDefs(List<? extends AtlasBaseTypeDef> createTypeDefs,
+    public ChangedTypeDefs(List<? extends AtlasBaseTypeDef> createdTypeDefs,
                            List<? extends AtlasBaseTypeDef> updatedTypeDefs,
                            List<? extends AtlasBaseTypeDef> deletedTypeDefs) {
-        this.createTypeDefs = createTypeDefs;
+        this.createdTypeDefs = createdTypeDefs;
         this.updatedTypeDefs = updatedTypeDefs;
         this.deletedTypeDefs = deletedTypeDefs;
     }
 
     public ChangedTypeDefs() {
-        createTypeDefs = new ArrayList<>();
+        createdTypeDefs = new ArrayList<>();
         updatedTypeDefs = new ArrayList<>();
         deletedTypeDefs = new ArrayList<>();
     }
 
-    public List<? extends AtlasBaseTypeDef> getCreateTypeDefs() {
-        return createTypeDefs;
+    public List<? extends AtlasBaseTypeDef> getCreatedTypeDefs() {
+        return createdTypeDefs;
     }
 
-    public ChangedTypeDefs setCreateTypeDefs(List<? extends AtlasBaseTypeDef> createTypeDefs) {
-        this.createTypeDefs = createTypeDefs;
+    public ChangedTypeDefs setCreatedTypeDefs(List<? extends AtlasBaseTypeDef> createdTypeDefs) {
+        this.createdTypeDefs = createdTypeDefs;
         return this;
     }
 
@@ -66,5 +68,25 @@ public class ChangedTypeDefs {
     public ChangedTypeDefs setDeletedTypeDefs(List<? extends AtlasBaseTypeDef> deletedTypeDefs) {
         this.deletedTypeDefs = deletedTypeDefs;
         return this;
+    }
+
+    public boolean hasEntityDef() {
+        return hasEntityDef(createdTypeDefs) || hasEntityDef(updatedTypeDefs) || hasEntityDef(deletedTypeDefs);
+    }
+
+    private boolean hasEntityDef(List<? extends AtlasBaseTypeDef> typeDefs) {
+        boolean ret = false;
+
+        if (CollectionUtils.isNotEmpty(typeDefs)) {
+            for (AtlasBaseTypeDef typeDef : typeDefs) {
+                if (typeDef instanceof AtlasEntityDef) {
+                    ret = true;
+
+                    break;
+                }
+            }
+        }
+
+        return ret;
     }
 }
