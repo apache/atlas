@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -65,32 +64,17 @@ public class EntitySearchProcessor extends SearchProcessor {
         final Set<String>     indexAttributes = new HashSet<>();
         final Set<String>     graphAttributes = new HashSet<>();
         final Set<String>     allAttributes   = new HashSet<>();
-        final Set<String>     typeAndSubTypes;
-        final String          typeAndSubTypesQryStr;
+        final Set<String>     typeAndSubTypes       = context.getEntityTypes();
+        final String          typeAndSubTypesQryStr = context.getEntityTypesQryStr();
 
-        if (context.getSearchParameters().getIncludeSubTypes()) {
-            typeAndSubTypes       = entityType.getTypeAndAllSubTypes();
-            typeAndSubTypesQryStr = entityType.getTypeAndAllSubTypesQryStr();
-        } else {
-            typeAndSubTypes       = Collections.singleton(entityType.getTypeName());
-            typeAndSubTypesQryStr = entityType.getTypeQryStr();
-        }
-
-        final AtlasClassificationType classificationType = context.getClassificationType();
+        final AtlasClassificationType classificationType            = context.getClassificationType();
+        final Set<String>             classificationTypeAndSubTypes = context.getClassificationTypes();
         final boolean                 filterClassification;
-        final Set<String>             classificationTypeAndSubTypes;
 
         if (classificationType != null) {
             filterClassification = !context.needClassificationProcessor();
-
-            if (context.getSearchParameters().getIncludeSubClassifications()) {
-                classificationTypeAndSubTypes = classificationType.getTypeAndAllSubTypes();
-            } else {
-                classificationTypeAndSubTypes = Collections.singleton(classificationType.getTypeName());
-            }
         } else {
-            filterClassification          = false;
-            classificationTypeAndSubTypes = Collections.emptySet();
+            filterClassification = false;
         }
 
         final Predicate typeNamePredicate = SearchPredicateUtil.getINPredicateGenerator()

@@ -51,7 +51,8 @@ public class AtlasPatchManager {
     public void applyAll() {
         final AtlasPatchHandler handlers[] = {
                 new UniqueAttributePatch(context),
-                new ClassificationTextPatch(context)
+                new ClassificationTextPatch(context),
+                new FreeTextRequestHandlerPatch(context)
         };
 
         try {

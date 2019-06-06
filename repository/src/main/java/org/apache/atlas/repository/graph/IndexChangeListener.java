@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.graph;
 
+import org.apache.atlas.listener.ChangedTypeDefs;
+
 public interface IndexChangeListener {
-    void onChange();
+    void onChange(ChangedTypeDefs changedTypeDefs);
 }

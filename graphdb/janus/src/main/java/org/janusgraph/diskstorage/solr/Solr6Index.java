@@ -137,7 +137,8 @@ public class Solr6Index implements IndexProvider {
 
     private static final String DEFAULT_ID_FIELD  = "id";
     private static final char   CHROOT_START_CHAR = '/';
-    private static Configuration config;
+
+    private static Solr6Index instance = null;
 
     private enum Mode {
         HTTP, CLOUD;
@@ -181,7 +182,7 @@ public class Solr6Index implements IndexProvider {
     public Solr6Index(final Configuration config) throws BackendException {
         // Add Kerberos-enabled SolrHttpClientBuilder
         HttpClientUtil.setHttpClientBuilder(new Krb5HttpClientBuilder().getBuilder());
-        initConfiguration(config);
+
         Preconditions.checkArgument(config!=null);
         configuration = config;
         mode = Mode.parse(config.get(SOLR_MODE));
@@ -200,34 +201,39 @@ public class Solr6Index implements IndexProvider {
             logger.debug("KERBEROS_ENABLED name is " + KERBEROS_ENABLED.getName() + " and it is" + (KERBEROS_ENABLED.isOption() ? " " : " not") + " an option.");
             logger.debug("KERBEROS_ENABLED type is " + KERBEROS_ENABLED.getType().name());
         }
-        solrClient = getSolrClient();
 
-    }
+        solrClient = createSolrClient();
 
-    private static void initConfiguration(Configuration config) {
-        if(Solr6Index.config == null) {
-            Solr6Index.config = config;
-        }
+        Solr6Index.instance = this;
     }
 
     public static SolrClient getSolrClient() {
+        return Solr6Index.instance != null ? Solr6Index.instance.createSolrClient() : null;
+    }
+
+    public static void releaseSolrClient(SolrClient solrClient) {
+        if (solrClient != null) {
+            try {
+                solrClient.close();
+            } catch (IOException excp) {
+                logger.warn("Failed to close SolrClient", excp);
+            }
+        }
+    }
+    private SolrClient createSolrClient() {
         final ModifiableSolrParams clientParams = new ModifiableSolrParams();
         SolrClient solrClient = null;
-        if(Solr6Index.config == null) {
-            logger.error("The solr client is not being used for the indexing purposes.");
-            return null;
-        }
-        Configuration config = Solr6Index.config;
-        Mode mode = Mode.parse(config.get(SOLR_MODE));
+
+        Mode mode = Mode.parse(configuration.get(SOLR_MODE));
         switch (mode) {
             case CLOUD:
                 final CloudSolrClient cloudServer = new CloudSolrClient.Builder()
                         .withLBHttpSolrClientBuilder(
                                 new LBHttpSolrClient.Builder()
                                         .withHttpSolrClientBuilder(new HttpSolrClient.Builder().withInvariantParams(clientParams))
-                                        .withBaseSolrUrls(config.get(HTTP_URLS))
+                                        .withBaseSolrUrls(configuration.get(HTTP_URLS))
                         )
-                        .withZkHost(getZookeeperURLs(config))
+                        .withZkHost(getZookeeperURLs(configuration))
                         .sendUpdatesOnlyToShardLeaders()
                         .build();
                 cloudServer.connect();
@@ -235,14 +241,14 @@ public class Solr6Index implements IndexProvider {
                 logger.info("Created solr client using Cloud based configuration.");
                 break;
             case HTTP:
-                clientParams.add(HttpClientUtil.PROP_ALLOW_COMPRESSION, config.get(HTTP_ALLOW_COMPRESSION).toString());
-                clientParams.add(HttpClientUtil.PROP_CONNECTION_TIMEOUT, config.get(HTTP_CONNECTION_TIMEOUT).toString());
-                clientParams.add(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, config.get(HTTP_MAX_CONNECTIONS_PER_HOST).toString());
-                clientParams.add(HttpClientUtil.PROP_MAX_CONNECTIONS, config.get(HTTP_GLOBAL_MAX_CONNECTIONS).toString());
+                clientParams.add(HttpClientUtil.PROP_ALLOW_COMPRESSION, configuration.get(HTTP_ALLOW_COMPRESSION).toString());
+                clientParams.add(HttpClientUtil.PROP_CONNECTION_TIMEOUT, configuration.get(HTTP_CONNECTION_TIMEOUT).toString());
+                clientParams.add(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, configuration.get(HTTP_MAX_CONNECTIONS_PER_HOST).toString());
+                clientParams.add(HttpClientUtil.PROP_MAX_CONNECTIONS, configuration.get(HTTP_GLOBAL_MAX_CONNECTIONS).toString());
                 final HttpClient client = HttpClientUtil.createClient(clientParams);
                 solrClient = new LBHttpSolrClient.Builder()
                         .withHttpClient(client)
-                        .withBaseSolrUrls(config.get(HTTP_URLS))
+                        .withBaseSolrUrls(configuration.get(HTTP_URLS))
                         .build();
                 logger.info("Created solr client using HTTP based configuration.");
                 break;

@@ -48,7 +48,6 @@ public class AtlasRepositoryConfiguration {
 
     private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = Integer.valueOf(15);
     private static final String  CONFIG_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS  = "atlas.server.type.update.lock.max.wait.time.seconds";
-    private static final String  ENABLE_FULLTEXT_SEARCH_PROPERTY                   = "atlas.search.fulltext.enable";
     private static final String  JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS         = "org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase";
     private static final String  DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS       = JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS;
 
@@ -56,13 +55,25 @@ public class AtlasRepositoryConfiguration {
     private static List<String>  skippedOperations                  = null;
     private static final String ENTITY_NOTIFICATION_VERSION_PROPERTY = "atlas.notification.entity.version";
 
+    private static boolean isInitialized           = false;
+    private static boolean isFullTextSearchEnabled = true;
+    private static boolean isFreeTextSearchEnabled = true;
+
     /**
      * Configures whether the full text vertex property is populated.  Turning this off
      * effectively disables full text searches, since all no entities created or updated after
      * turning this off will match full text searches.
      */
-    public static boolean isFullTextSearchEnabled() throws AtlasException {
-        return ApplicationProperties.get().getBoolean(ENABLE_FULLTEXT_SEARCH_PROPERTY, true);
+    public static boolean isFullTextSearchEnabled() {
+        initialize();
+
+        return isFullTextSearchEnabled;
+    }
+
+    public static boolean isFreeTextSearchEnabled() {
+        initialize();
+
+        return isFreeTextSearchEnabled;
     }
 
     public static boolean isV2EntityNotificationEnabled() {
@@ -235,5 +246,27 @@ public class AtlasRepositoryConfiguration {
         }
 
         return ret == null ? DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS : ret;
+    }
+
+    private static void initialize() {
+        if (!isInitialized) {
+            try {
+                isFreeTextSearchEnabled = ApplicationProperties.get().getBoolean(ApplicationProperties.ENABLE_FREETEXT_SEARCH_CONF, true);
+
+                if (isFreeTextSearchEnabled) { // currently free-text is supported only for Solr
+                    isFreeTextSearchEnabled = ApplicationProperties.INDEX_BACKEND_SOLR.equalsIgnoreCase(ApplicationProperties.get().getString(ApplicationProperties.INDEX_BACKEND_CONF));
+                }
+
+                if (isFreeTextSearchEnabled) { // if free-text is enabled, disable full-text - to avoid performance penalty
+                    isFullTextSearchEnabled = false;
+                } else {
+                    isFullTextSearchEnabled = ApplicationProperties.get().getBoolean(ApplicationProperties.ENABLE_FULLTEXT_SEARCH_CONF, true);
+                }
+
+                isInitialized = true;
+            } catch (AtlasException excp) {
+                LOG.error("Failed to initialize. isFullTextSearchEnabled={}, isFreeTextSearchEnabled={}", isFullTextSearchEnabled, isFreeTextSearchEnabled, excp);
+            }
+        }
     }
 }

@@ -481,16 +481,12 @@ public class AtlasEntityChangeNotifier {
     }
 
     private void doFullTextMapping(List<AtlasEntityHeader> entityHeaders) {
-        if (CollectionUtils.isEmpty(entityHeaders)) {
+        if(AtlasRepositoryConfiguration.isFreeTextSearchEnabled() || !AtlasRepositoryConfiguration.isFullTextSearchEnabled()) {
             return;
         }
 
-        try {
-            if(!AtlasRepositoryConfiguration.isFullTextSearchEnabled()) {
-                return;
-            }
-        } catch (AtlasException e) {
-            LOG.warn("Unable to determine if FullText is disabled. Proceeding with FullText mapping");
+        if (CollectionUtils.isEmpty(entityHeaders)) {
+            return;
         }
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("fullTextMapping");
@@ -520,12 +516,8 @@ public class AtlasEntityChangeNotifier {
     }
 
     private void updateFullTextMapping(String entityId, List<AtlasClassification> classifications) {
-        try {
-            if(!AtlasRepositoryConfiguration.isFullTextSearchEnabled()) {
-                return;
-            }
-        } catch (AtlasException e) {
-            LOG.warn("Unable to determine if FullText is disabled. Proceeding with FullText mapping");
+        if(AtlasRepositoryConfiguration.isFreeTextSearchEnabled() || !AtlasRepositoryConfiguration.isFullTextSearchEnabled()) {
+            return;
         }
 
         if (StringUtils.isEmpty(entityId) || CollectionUtils.isEmpty(classifications)) {

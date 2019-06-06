@@ -18,9 +18,7 @@
 package org.apache.atlas.discovery;
 
 
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
@@ -39,16 +37,13 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATIONS;
 import static org.apache.atlas.model.discovery.SearchParameters.NO_CLASSIFICATIONS;
@@ -70,21 +65,16 @@ public class SearchContext {
     private final AtlasClassificationType classificationType;
     private       SearchProcessor         searchProcessor;
     private       boolean                 terminateSearch = false;
-    private static boolean          isIndexSolrBased = false;
+    private final Set<String>             typeAndSubTypes;
+    private final Set<String>             classificationTypeAndSubTypes;
+    private final String                  typeAndSubTypesQryStr;
+    private final String                  classificationTypeAndSubTypesQryStr;
 
     public final static AtlasClassificationType MATCH_ALL_WILDCARD_CLASSIFICATION = new AtlasClassificationType(new AtlasClassificationDef(WILDCARD_CLASSIFICATIONS));
     public final static AtlasClassificationType MATCH_ALL_CLASSIFIED              = new AtlasClassificationType(new AtlasClassificationDef(ALL_CLASSIFICATIONS));
     public final static AtlasClassificationType MATCH_ALL_NOT_CLASSIFIED          = new AtlasClassificationType(new AtlasClassificationDef(NO_CLASSIFICATIONS));
 
-    static {
-        try {
-            isIndexSolrBased = ApplicationProperties.INDEX_BACKEND_SOLR.equalsIgnoreCase(ApplicationProperties.get().getString(ApplicationProperties.INDEX_BACKEND_CONF));
-        } catch (AtlasException e) {
-            String msg = String.format("Error encountered in verifying the backend index mode.");
-            LOG.error(msg, e);
-            throw new RuntimeException(msg, e);
-        };
-    }
+
     public SearchContext(SearchParameters searchParameters, AtlasTypeRegistry typeRegistry, AtlasGraph graph, Set<String> indexedKeys) throws AtlasBaseException {
         String classificationName = searchParameters.getClassification();
 
@@ -119,17 +109,48 @@ public class SearchContext {
         // Invalid attributes will raise an exception with 400 error code
         validateAttributes(classificationType, searchParameters.getTagFilters());
 
+        if (entityType != null) {
+            if (searchParameters.getIncludeSubTypes()) {
+                typeAndSubTypes       = entityType.getTypeAndAllSubTypes();
+                typeAndSubTypesQryStr = entityType.getTypeAndAllSubTypesQryStr();
+            } else {
+                typeAndSubTypes       = Collections.singleton(entityType.getTypeName());
+                typeAndSubTypesQryStr = entityType.getTypeQryStr();
+            }
+        } else {
+            typeAndSubTypes       = Collections.emptySet();
+            typeAndSubTypesQryStr = "";
+        }
+
+        if (classificationType != null) {
+            if (classificationType == MATCH_ALL_CLASSIFIED || classificationType == MATCH_ALL_NOT_CLASSIFIED || classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION) {
+                classificationTypeAndSubTypes       = Collections.emptySet();
+                classificationTypeAndSubTypesQryStr = "";
+            } else if (searchParameters.getIncludeSubClassifications()) {
+                classificationTypeAndSubTypes       = classificationType.getTypeAndAllSubTypes();
+                classificationTypeAndSubTypesQryStr = classificationType.getTypeAndAllSubTypesQryStr();
+            } else {
+                classificationTypeAndSubTypes       = Collections.singleton(classificationType.getTypeName());
+                classificationTypeAndSubTypesQryStr = classificationType.getTypeQryStr();
+            }
+        } else {
+            classificationTypeAndSubTypes       = Collections.emptySet();
+            classificationTypeAndSubTypesQryStr = "";
+        }
+
         if (glossaryTermVertex != null) {
             addProcessor(new TermSearchProcessor(this, getAssignedEntities(glossaryTermVertex)));
         }
 
         if (needFullTextProcessor()) {
-            if(!isFreeTextIndexEnabled()) {
-                LOG.info("Using Full Text index based search.");
-                addProcessor(new FullTextSearchProcessor(this));
-            }else {
-                LOG.info("Using Free Text index based search.");
+            if (AtlasRepositoryConfiguration.isFreeTextSearchEnabled()) {
+                LOG.debug("Using Free Text index based search.");
+
                 addProcessor(new FreeTextSearchProcessor(this));
+            } else {
+                LOG.debug("Using Full Text index based search.");
+
+                addProcessor(new FullTextSearchProcessor(this));
             }
         }
 
@@ -157,7 +178,35 @@ public class SearchContext {
 
     public AtlasClassificationType getClassificationType() { return classificationType; }
 
+    public Set<String> getEntityTypes() { return typeAndSubTypes; }
+
+    public Set<String> getClassificationTypes() { return classificationTypeAndSubTypes; }
+
+    public String getEntityTypesQryStr() { return typeAndSubTypesQryStr; }
+
+    public String getClassificationTypesQryStr() { return classificationTypeAndSubTypesQryStr; }
+
     public SearchProcessor getSearchProcessor() { return searchProcessor; }
+
+    public boolean includeEntityType(String entityType) {
+        return typeAndSubTypes.isEmpty() || typeAndSubTypes.contains(entityType);
+    }
+
+    public boolean includeClassificationTypes(Collection<String> classificationTypes) {
+        final boolean ret;
+
+        if (classificationType == null) {
+            ret = true;
+        } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
+            ret = CollectionUtils.isEmpty(classificationTypes);
+        } else if (classificationType == MATCH_ALL_CLASSIFIED || classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION) {
+            ret = CollectionUtils.isNotEmpty(classificationTypes);
+        } else {
+            ret = CollectionUtils.containsAny(classificationTypeAndSubTypes, classificationTypes);
+        }
+
+        return ret;
+    }
 
     public boolean terminateSearch() { return terminateSearch; }
 
@@ -283,19 +332,5 @@ public class SearchContext {
 
     private AtlasEntityType getTermEntityType() {
         return typeRegistry.getEntityTypeByName(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
-    }
-
-    public static boolean isFreeTextIndexEnabled() {
-        try {
-            return isIndexSolrBased() && ApplicationProperties.get().getBoolean(ApplicationProperties.FREE_TEXT_INDEX_ENABLED, ApplicationProperties.DEFAULT_FREE_TEXT_INDEX_ENABLED);
-        } catch (AtlasException e) {
-            String msg = String.format("Error encountered in fetching the configuration %s.", ApplicationProperties.FREE_TEXT_INDEX_ENABLED);
-            LOG.error(msg, e);
-            throw new RuntimeException(msg, e);
-        }
-    }
-
-    public static boolean isIndexSolrBased() {
-        return isIndexSolrBased;
     }
 }

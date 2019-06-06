@@ -18,13 +18,14 @@
 package org.apache.atlas.repository.graph;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.discovery.SearchContext;
+import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ import java.util.Map;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.DEFAULT_SEARCHWEIGHT;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 
 /**
  This is a component that will go through all entity type definitions and create free text index
@@ -45,6 +47,8 @@ public class SolrIndexHelper implements IndexChangeListener {
     private static final Logger LOG = LoggerFactory.getLogger(SolrIndexHelper.class);
 
     public static final int DEFAULT_SEARCHWEIGHT_FOR_STRINGS = 3;
+    public static final int SEARCHWEIGHT_FOR_CLASSIFICATIONS = 10;
+    public static final int SEARCHWEIGHT_FOR_TYPENAME        = 1;
 
     private final AtlasTypeRegistry typeRegistry;
 
@@ -54,12 +58,9 @@ public class SolrIndexHelper implements IndexChangeListener {
     }
 
     @Override
-    public void onChange() {
-        LOG.info("SolrIndexHelper.onChange()");
-
-        if(!SearchContext.isIndexSolrBased()) {
-            LOG.warn("Not a Solr based index store. Free text search is not supported");
-
+    public void onChange(ChangedTypeDefs changedTypeDefs) {
+        if (!AtlasRepositoryConfiguration.isFreeTextSearchEnabled() ||
+            changedTypeDefs == null || !changedTypeDefs.hasEntityDef()) { // nothing to do if there are no changes to entity-defs
             return;
         }
 
@@ -79,7 +80,8 @@ public class SolrIndexHelper implements IndexChangeListener {
         Map<String, Integer>       attributesWithSearchWeights = new HashMap<>();
         Collection<AtlasEntityDef> allEntityDefs               = typeRegistry.getAllEntityDefs();
 
-        attributesWithSearchWeights.put(CLASSIFICATION_TEXT_KEY,10);
+        attributesWithSearchWeights.put(CLASSIFICATION_TEXT_KEY, SEARCHWEIGHT_FOR_CLASSIFICATIONS);
+        attributesWithSearchWeights.put(TYPE_NAME_PROPERTY_KEY, SEARCHWEIGHT_FOR_TYPENAME);
 
         if (CollectionUtils.isNotEmpty(allEntityDefs)) {
             for (AtlasEntityDef entityDef : allEntityDefs) {
@@ -106,14 +108,14 @@ public class SolrIndexHelper implements IndexChangeListener {
                 //this will make the string data searchable like in FullTextIndex Searcher using Free Text searcher.
                 searchWeight = DEFAULT_SEARCHWEIGHT_FOR_STRINGS;
             } else if (!GraphBackedSearchIndexer.isValidSearchWeight(searchWeight)) { //validate the value provided in the model.
-                String msg = String.format("Invalid search weight '%d' for attribute %s.%s", searchWeight, entityDef.getName(), attributeName);
+                LOG.warn("Invalid search weight {} for attribute {}.{}. Will use default {}", searchWeight, entityDef.getName(), attributeName, DEFAULT_SEARCHWEIGHT_FOR_STRINGS);
 
-                LOG.error(msg);
-
-                throw new RuntimeException(msg);
+                searchWeight = DEFAULT_SEARCHWEIGHT_FOR_STRINGS;
             }
 
-            LOG.info("Applying search weight {} for attribute {}.{}", searchWeight, entityDef.getName(), attributeName);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Applying search weight {} for attribute {}.{}", searchWeight, entityDef.getName(), attributeName);
+            }
 
             attributesWithSearchWeights.put(attributeName, searchWeight);
         }
