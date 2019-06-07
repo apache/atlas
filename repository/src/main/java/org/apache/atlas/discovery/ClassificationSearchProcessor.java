@@ -176,8 +176,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
 
                 entityGraphQueryTraitNames = graph.query().or(orConditions);
                 entityPredicateTraitNames  = PredicateUtils.andPredicate(
-                        SearchPredicateUtil.getIsNullPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
-                        SearchPredicateUtil.getIsNullPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
+                        SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
+                        SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
             } else {
                 orConditions.add(graph.query().createChildQuery().in(TRAIT_NAMES_PROPERTY_KEY, typeAndSubTypes));
                 orConditions.add(graph.query().createChildQuery().in(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, typeAndSubTypes));
