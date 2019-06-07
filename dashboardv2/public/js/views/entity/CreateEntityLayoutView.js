@@ -103,6 +103,7 @@ define(['require',
                 }).open();
                 this.modal.$el.find('button.ok').attr("disabled", true);
                 this.modal.on('ok', function(e) {
+                    that.modal.$el.find('button.ok, button.cancel').attr("disabled", true);
                     that.okButton();
                 });
                 this.modal.on('closeModal', function() {
@@ -782,6 +783,7 @@ define(['require',
                             that.hideLoader({
                                 editVisiblityOfEntitySelectionBox: true
                             });
+                            that.modal.$el.find('button.ok, button.cancel').attr("disabled", false);
                         }
                     });
 
