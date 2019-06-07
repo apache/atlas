@@ -650,6 +650,50 @@ public class SearchPredicateUtil {
         return ret;
     }
 
+    public static VertexAttributePredicateGenerator getIsNullOrEmptyPredicateGenerator() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getIsNullOrEmptyPredicateGenerator");
+        }
+
+        VertexAttributePredicateGenerator ret = new VertexAttributePredicateGenerator() {
+            @Override
+            public Predicate generatePredicate(final String attrName, final Object attrVal, final Class attrClass) {
+                final Predicate ret;
+
+                if (attrName == null || attrClass == null) {
+                    ret = ALWAYS_FALSE;
+                } else {
+                    ret = new VertexAttributePredicate(attrName, attrClass, true) {
+                        @Override
+                        protected boolean compareValue(final Object vertexAttrVal) {
+                            final boolean ret;
+
+                            if (vertexAttrVal == null) {
+                                ret = true;
+                            } else if (vertexAttrVal instanceof Collection) {
+                                ret = CollectionUtils.isEmpty((Collection) vertexAttrVal);
+                            } else if (vertexAttrVal instanceof String) {
+                                ret = StringUtils.isEmpty((String) vertexAttrVal);
+                            } else {
+                                ret = false;
+                            }
+
+                            return ret;
+                        }
+                    };
+                }
+
+                return ret;
+            }
+        };
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getIsNullOrEmptyPredicateGenerator");
+        }
+
+        return ret;
+    }
+
     public interface VertexAttributePredicateGenerator {
         Predicate generatePredicate(String attrName, Object attrVal, Class attrClass);
     }
