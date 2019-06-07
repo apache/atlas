@@ -111,6 +111,10 @@ The following property is used to toggle the SSL feature.
 atlas.enableTLS=false
 </verbatim>
 
+---+++ Kafka message principal
+The following property enables passing user name from kafka lineage message to NotificationHookConsumer for Ranger Authorizer
+atlas.authentication.method.kafka.message.principal=false|true
+
 ---++ High Availability Properties
 The following properties describe High Availability related configuration options:
 

@@ -77,6 +77,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -97,6 +103,7 @@ import java.util.regex.Pattern;
 
 import static org.apache.atlas.model.instance.AtlasObjectId.*;
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
+import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
 
 
 /**
@@ -477,6 +484,31 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             }
         }
 
+        private void setMessagePrincipal(String messageUser) throws AtlasException {
+            Configuration configuration = ApplicationProperties.get();
+            boolean msgPrincipalEnabled = configuration.getBoolean("atlas.authentication.method.kafka.message.principal", false);
+
+            if(msgPrincipalEnabled) {
+                if (!StringUtils.isEmpty(messageUser)) {
+                    List<GrantedAuthority> grantedAuths = getAuthoritiesFromUGI(messageUser);
+                    UserDetails principal;
+
+                    if (grantedAuths.isEmpty()) {
+                        principal = new User(messageUser, "", new HashSet<>());
+                    } else {
+                        principal = new User(messageUser, "", grantedAuths);
+                    }
+
+                    Authentication finalAuthentication = new UsernamePasswordAuthenticationToken(principal, "");
+                    SecurityContextHolder.getContext().setAuthentication(finalAuthentication);
+
+                    LOG.info("Kafka user authenticated into Atlas as = {}", messageUser);
+                } else {
+                    LOG.info("Failed to set principal from kafka, user string empty");
+                }
+            }
+        }
+
         @VisibleForTesting
         void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) throws AtlasServiceException, AtlasException {
             AtlasPerfTracer  perf           = null;
@@ -485,6 +517,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             long             startTime      = System.currentTimeMillis();
             NotificationStat stats          = new NotificationStat();
             AuditLog         auditLog       = null;
+
+            setMessagePrincipal(messageUser);
 
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, message.getType().name());
