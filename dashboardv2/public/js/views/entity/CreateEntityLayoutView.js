@@ -499,7 +499,7 @@ define(['require',
                     entityLabel = this.capitalize(value.name);
 
                 return '<div class=" row ' + value.isOptional + '"><span class="col-sm-3">' +
-                    '<label><span class="' + (value.isOptional ? 'true' : 'false required') + '">' + entityLabel + '</span><span class="center-block ellipsis text-gray" title="Data Type : ' + value.typeName + '">' + '(' + Utils.escapeHtml(value.typeName) + ')' + '</span></label></span>' +
+                    '<label><span class="' + (value.isOptional ? 'true' : 'false required') + '">' + entityLabel + '</span><span class="center-block ellipsis-with-margin text-gray" title="Data Type : ' + value.typeName + '">' + '(' + Utils.escapeHtml(value.typeName) + ')' + '</span></label></span>' +
                     '<span class="col-sm-9">' + (this.getElement(object)) +
                     '</input></span></div>';
             },

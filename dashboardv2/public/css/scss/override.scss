@@ -90,7 +90,6 @@
     overflow: scroll !important;
     max-height: 500px;
     width: 100%;
-    table-layout: fixed;
 
     .resizeHandler {
         &.grid-draggable {
@@ -351,12 +350,12 @@ td {
             .group-conditions {
                 .btn-primary {
                     color: #333 !important;
-                    background-color: #fff !important;
+                    background-color: $white !important;
                     border-color: #ccc !important;
                 }
 
                 .active {
-                    color: #fff !important;
+                    color: $white !important;
                     background-color: #5bc0de !important;
                     border-color: #46b8da !important;
                 }
@@ -375,8 +374,8 @@ div.columnmanager-visibilitycontrol {
     margin-bottom: 5px;
 
     &.open .btn-action {
-        background-color: #37bb9b;
-        color: #fff;
+        background-color: $color_keppel_approx;
+        color: $white;
     }
 }
 

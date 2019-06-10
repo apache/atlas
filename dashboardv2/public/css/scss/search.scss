@@ -221,30 +221,6 @@ ul.type-filter-ul {
     color: black;
 }
 
-.type-filter-dropdown {
-    position: absolute;
-    top: 5px;
-    background-color: #323544;
-}
-
-.filter-sticky-div {
-    text-align: center;
-    position: sticky;
-    position: -webkit-sticky;
-    top: 0px;
-    background-color: white;
-    padding-top: 8px;
-
-    & .row {
-        margin-right: -10px;
-        margin-left: -10px;
-    }
-
-    & input.form-control {
-        border: 1px #c9c9c9 solid;
-    }
-}
-
 hr.hr-filter {
     margin-top: 7px;
     margin-bottom: 7px;
