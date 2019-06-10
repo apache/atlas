@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 /* form.scss */
 
 .form-horizontal {
@@ -39,7 +38,7 @@
     .required:after {
         content: "*";
         padding-left: 1%;
-        color: $red
+        color: $red;
     }
 
     .control-label {
@@ -73,7 +72,7 @@
 
     .form-group span[class^="select2-selection select2-selection--"],
     .form-control {
-        background-color: #e8e8e8 !important;
+        background-color: $color_form_control !important;
     }
 }
 
@@ -216,7 +215,7 @@ button:focus {
     margin-bottom: 10px;
     border: 1px $color_keppel_approx solid; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
     border-radius: 4px; //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
-    transition: all .3s ease;
+    transition: all 0.3s ease;
     margin: 2px;
 
     &:hover {
@@ -455,8 +454,51 @@ button:focus {
     list-style: disc;
 }
 
-.create-entity-form {
+.has-feedback.align-left {
+    .form-control {
+        padding-left: 32.5px;
+        padding-right: 12px;
+    }
 
+    .form-control-feedback {
+        top: 10px;
+        left: 0px;
+        height: 14px
+    }
+}
+
+.has-feedback.align-left-right-icon {
+    position: relative;
+
+    .form-control {
+        padding-left: 32.5px;
+        padding-right: 32.5px;
+    }
+
+    .form-control-feedback {
+        top: 10px;
+        height: 14px;
+
+        &:first-child {
+            left: 0;
+        }
+
+        &.clearable:last-child {
+            right: 0;
+            overflow: hidden;
+            padding-left: 33px;
+            transition: padding 0.4s;
+            pointer-events: all;
+            cursor: pointer;
+
+            &.in {
+                padding-left: 0;
+            }
+        }
+    }
+}
+
+.create-entity-form {
     &.all {
         .attribute-dash-box {
             &.alloptional {
@@ -470,7 +512,7 @@ button:focus {
         border-width: 2px;
         border-spacing: 8px;
         border-radius: 12px;
-        border-color: #cbcbcb;
+        border-color: $attribute-dash-box;
         position: relative;
         padding: 18px 10px 0px 10px;
         margin-top: 25px;
@@ -478,7 +520,7 @@ button:focus {
         span.required:after {
             content: "*";
             padding-left: 1%;
-            color: $red
+            color: $red;
         }
 
         &.alloptional {

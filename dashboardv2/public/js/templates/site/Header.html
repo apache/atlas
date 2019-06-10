@@ -14,14 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<header class="clearfix">
+<header class="clearfix atlas-header">
     <ul class="nav navbar-nav">
         <li>
             <a href="javascript:void(0);" data-id="menuHamburger"><i class="fa fa-bars"></i></a>
         </li>
         <li class="details-backbutton"><a href="javascript:void(0);" data-id="backButton"><i class="fa fa-chevron-left"></i> Back To Results</a></li>
     </ul>
-    <div class="btn-group pull-right header-menu ">
+    <div class="form-group has-feedback align-left-right-icon search-box pull-left global-search-container">
+        <span class="fa fa-search form-control-feedback"></span>
+        <input type="text" class="form-control global-search" name="global search" placeholder="Search entities" data-id="globalSearch" />
+        <span class="fa fa-times form-control-feedback clearable" data-id="clearGlobalSearch"></span>
+    </div>
+    <div class="btn-group pull-right header-menu">
         <a class="show-stat" href="javascript:void(0);" title="Statistics"><i class="fa fa-bar-chart"></i></a>
         <a target="_blank" href="http://atlas.apache.org/"><i class="fa  fa-question-circle"></i></a>
         <a href="javascript:void(0);" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="user-dropdown"><i class="fa fa-user user-circle "></i><span class="userName"></span></a>

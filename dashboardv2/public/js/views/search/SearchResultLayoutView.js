@@ -575,7 +575,7 @@ define(['require',
                 } else {
                     that.ui.containerCheckBox.hide();
                 }
-                that.$(".ellipsis .inputAssignTag").hide();
+                that.$(".ellipsis-with-margin .inputAssignTag").hide();
                 table.trigger("grid:refresh"); /*Event fire when table rendered*/
                 // that.REntityTableLayoutView.$el.find('.colSort thead tr th:not(:first)').addClass('dragHandler');
                 if (that.isTableDropDisable !== true) {
@@ -956,7 +956,7 @@ define(['require',
             },
             hideLoader: function(options) {
                 this.$('.fontLoader:not(.for-ignore)').removeClass('show');
-                options && options.type === 'error' ? this.$('.ellipsis,.pagination-box').hide() : this.$('.ellipsis,.pagination-box').show(); // only show for first time and hide when type is error
+                options && options.type === 'error' ? this.$('.ellipsis-with-margin,.pagination-box').hide() : this.$('.ellipsis-with-margin,.pagination-box').show(); // only show for first time and hide when type is error
                 this.$('.tableOverlay').removeClass('show');
             },
             checkedValue: function(e) {
@@ -995,7 +995,7 @@ define(['require',
                     tagName: tagName,
                     guid: guid,
                     associatedGuid: guid != entityGuid ? entityGuid : null,
-                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(tagName) + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
                     titleMessage: Messages.removeTag,
                     okText: "Remove",
                     showLoader: that.showLoader.bind(that),
@@ -1022,7 +1022,7 @@ define(['require',
                         relationshipGuid: termObj.relationGuid
                     },
                     collection: that.glossaryCollection,
-                    msg: "<div class='ellipsis'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from" + " " + "<b>" + assetname + "?</b></div>",
+                    msg: "<div class='ellipsis-with-margin'>Remove: " + "<b>" + _.escape(termName) + "</b> assignment from" + " " + "<b>" + assetname + "?</b></div>",
                     titleMessage: Messages.glossary.removeTermfromEntity,
                     isEntityView: true,
                     buttonText: "Remove",
