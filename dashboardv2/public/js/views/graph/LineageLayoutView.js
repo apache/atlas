@@ -774,11 +774,18 @@ define(['require',
                             clearTimeout(waitForDoubleClick)
                             waitForDoubleClick = null;
                             tooltip.hide(d);
-                            Utils.setUrl({
-                                url: '#!/detailPage/' + d + '?tabActive=lineage',
-                                mergeBrowserUrl: false,
-                                trigger: true
-                            });
+                            if (that.guid == d) {
+                                Utils.notifyInfo({
+                                    html: true,
+                                    content: "You are already on " + "<b>" + that.entityName + "</b> detail page."
+                                });
+                            } else {
+                                Utils.setUrl({
+                                    url: '#!/detailPage/' + d + '?tabActive=lineage',
+                                    mergeBrowserUrl: false,
+                                    trigger: true
+                                });
+                            }
                         } else {
                             var currentEvent = d3.event
                             waitForDoubleClick = setTimeout(function() {
@@ -787,7 +794,7 @@ define(['require',
                                 $(el).find('circle').addClass('node-detail-highlight');
                                 that.updateRelationshipDetails({ guid: d });
                                 waitForDoubleClick = null;
-                            }, 150)
+                            }, 170)
                         }
                     });
 
@@ -996,7 +1003,7 @@ define(['require',
                         try {
                             var a = document.createElement("a"),
                                 entityAttributes = that.entity && that.entity.attributes;
-                            a.download = ((entityAttributes && entityAttributes.qualifiedName) || "lineage_export") + ".png";
+                            a.download = ((entityAttributes && (entityAttributes.qualifiedName || entityAttributes.name) || "lineage_export") + ".png");
                             document.body.appendChild(a);
                             ctx.drawImage(img, 50, 50, canvas.width, canvas.height);
                             canvas.toBlob(function(blob) {
