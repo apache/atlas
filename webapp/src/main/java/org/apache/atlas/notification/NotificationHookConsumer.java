@@ -486,7 +486,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         private void setMessagePrincipal(String messageUser) throws AtlasException {
             Configuration configuration = ApplicationProperties.get();
-            boolean msgPrincipalEnabled = configuration.getBoolean("atlas.authentication.method.kafka.message.principal", false);
+            boolean msgPrincipalEnabled = configuration.getBoolean("atlas.notification.authorize.using.message.user", false);
 
             if(msgPrincipalEnabled) {
                 if (!StringUtils.isEmpty(messageUser)) {

@@ -113,7 +113,7 @@ atlas.enableTLS=false
 
 ---+++ Kafka message principal
 The following property enables passing user name from kafka lineage message to NotificationHookConsumer for Ranger Authorizer
-atlas.authentication.method.kafka.message.principal=false|true
+atlas.notification.authorize.using.message.user=false|true
 
 ---++ High Availability Properties
 The following properties describe High Availability related configuration options:
