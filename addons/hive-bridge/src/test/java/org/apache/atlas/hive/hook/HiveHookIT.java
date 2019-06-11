@@ -1307,7 +1307,7 @@ public class HiveHookIT extends HiveITBase {
         Map<String, AtlasEntityHeader> entityMap             = atlasLineageInfoInput.getGuidEntityMap();
 
         //Below should be assertTrue - Fix https://issues.apache.org/jira/browse/ATLAS-653
-        Assert.assertFalse(entityMap.containsKey(tableId));
+        Assert.assertTrue(entityMap.containsKey(tableId));
     }
 
     @Test
