@@ -55,14 +55,6 @@
                     "isUnique": false
                 },
                 {
-                    "name": "stored-in",
-                    "typeName": "falcon_cluster",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional": false,
-                    "isUnique": false
-                },
-                {
                     "name": "groups",
                     "typeName": "string",
                     "cardinality": "SINGLE",
@@ -93,14 +85,6 @@
                     "typeName": "string",
                     "cardinality": "SINGLE",
                     "isIndexable": false,
-                    "isOptional": false,
-                    "isUnique": false
-                },
-                {
-                    "name": "runs-on",
-                    "typeName": "falcon_cluster",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
                     "isOptional": false,
                     "isUnique": false
                 },
@@ -137,16 +121,7 @@
             ],
             "serviceType": "falcon",
             "typeVersion": "1.0",
-            "attributeDefs": [
-                {
-                    "name": "stored-in",
-                    "typeName": "falcon_cluster",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional": false,
-                    "isUnique": false
-                }
-            ]
+            "attributeDefs": []
         }
     ],
     "relationshipDefs": [
@@ -155,6 +130,7 @@
             "serviceType": "falcon",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__falcon_feed.stored-in",
             "endDef1": {
                 "type": "falcon_feed",
                 "name": "stored-in",
@@ -175,6 +151,7 @@
             "serviceType": "falcon",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__falcon_cluster.processes",
             "endDef1": {
                 "type": "falcon_cluster",
                 "name": "processes",
@@ -195,6 +172,7 @@
             "serviceType": "falcon",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__falcon_cluster.feedCreations",
             "endDef1": {
                 "type": "falcon_cluster",
                 "name": "feedCreations",

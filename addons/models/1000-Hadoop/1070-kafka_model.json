@@ -29,14 +29,6 @@
                     "isUnique": false
                 },
                 {
-                    "name": "avroSchema",
-                    "typeName": "array<avro_type>",
-                    "isOptional": true,
-                    "cardinality": "LIST",
-                    "isUnique": false,
-                    "isIndexable": true
-                },
-                {
                     "name": "replicationFactorNational",
                     "typeName": "int",
                     "isOptional": true,
@@ -207,6 +199,7 @@
             "serviceType": "kafka",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__kafka_topic.avroSchema",
             "endDef1": {
                 "type": "kafka_topic",
                 "name": "avroSchema",

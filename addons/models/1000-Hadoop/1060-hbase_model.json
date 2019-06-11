@@ -55,32 +55,11 @@
             "typeVersion": "1.1",
             "attributeDefs": [
                 {
-                    "name": "namespace",
-                    "typeName": "hbase_namespace",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                },
-                {
                     "name": "uri",
                     "typeName": "string",
                     "cardinality": "SINGLE",
                     "isIndexable": false,
                     "isOptional": false,
-                    "isUnique": false
-                },
-                {
-                    "name": "column_families",
-                    "typeName": "array<hbase_column_family>",
-                    "cardinality": "SET",
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ],
-                    "isIndexable": false,
-                    "isOptional": true,
                     "isUnique": false
                 }
             ]
@@ -90,65 +69,18 @@
             "superTypes": [
                 "DataSet"
             ],
-            "attributeDefs": [
-                {
-                    "name": "table",
-                    "typeName": "hbase_table",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": false,
-                    "isUnique": false,
-                    "constraints": [
-                        {
-                            "type": "inverseRef",
-                            "params": {
-                                "attribute": "column_families"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "name": "columns",
-                    "typeName": "array<hbase_column>",
-                    "cardinality": "SET",
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ],
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                }
-            ],
             "serviceType": "hbase",
-            "typeVersion": "1.0"
+            "typeVersion": "1.0",
+            "attributeDefs": []
         },
         {
             "name": "hbase_column",
             "superTypes": [
                 "DataSet"
             ],
-            "attributeDefs": [
-                {
-                    "name": "column_family",
-                    "typeName": "hbase_column_family",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": false,
-                    "isUnique": false,
-                    "constraints": [
-                        {
-                            "type": "inverseRef",
-                            "params": {
-                                "attribute": "columns"
-                            }
-                        }
-                    ]
-                }
-            ],
             "serviceType": "hbase",
-            "typeVersion": "1.0"
+            "typeVersion": "1.0",
+            "attributeDefs": []
         }
     ],
     "relationshipDefs": [
@@ -157,6 +89,7 @@
             "serviceType": "hbase",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__hbase_table.namespace",
             "endDef1": {
                 "type": "hbase_table",
                 "name": "namespace",
@@ -177,6 +110,7 @@
             "serviceType": "hbase",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__hbase_table.column_families",
             "endDef1": {
                 "type": "hbase_table",
                 "name": "column_families",
@@ -198,6 +132,7 @@
             "serviceType": "hbase",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__hbase_column_family.columns",
             "endDef1": {
                 "type": "hbase_column_family",
                 "name": "columns",
