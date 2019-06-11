@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -27,6 +28,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.common.util.NamedList;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +86,6 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                     LOG.info("Attempting to update free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
 
                     updateFreeTextRequestHandler(solrClient, collectionName, attributeName2SearchWeightMap);
-
                     LOG.info("Successfully updated free text request handler {} for collection {}..", FREETEXT_REQUEST_HANDLER, collectionName);
 
                     return;
@@ -97,7 +99,6 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                     LOG.info("Attempting to create free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
 
                     createFreeTextRequestHandler(solrClient, collectionName, attributeName2SearchWeightMap);
-
                     LOG.info("Successfully created free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
 
                     return;
@@ -112,22 +113,53 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
             throw lastExcp != null ? new RuntimeException(msg, lastExcp) : new RuntimeException(msg);
         } finally {
+            LOG.debug("Releasing the solr client from usage.");
             Solr6Index.releaseSolrClient(solrClient);
         }
     }
 
-    private void updateFreeTextRequestHandler(SolrClient solrClient, String collectionName, Map<String, Integer> attributeName2SearchWeightMap) throws IOException, SolrServerException {
+    private V2Response validateResponseForSuccess(V2Response v2Response) throws AtlasBaseException {
+        if(v2Response == null) {
+            String msg = "Received in valid response .";
+            LOG.error(msg);
+            throw new AtlasBaseException(msg);
+        }
+        if(LOG.isDebugEnabled()) {
+            LOG.debug("V2 Response is {}", v2Response.toString());
+        }
+        NamedList<Object> response = v2Response.getResponse();
+        Object errorMessages = response.get("errorMessages");
+        if(errorMessages != null) {
+            LOG.error("Error encountered in performing response handler action.");
+            List<Object> errorObjects = (List<Object>) errorMessages;
+            Map<Object, Object> errObject = (Map<Object, Object>) errorObjects.get(0);
+            List<String> msgs = (List<String>) errObject.get("errorMessages");
+            StringBuilder sb = new StringBuilder();
+            for(String msg: msgs) {
+                sb.append(msg);
+            }
+            String errors = sb.toString();
+            String msg = String.format("Error encountered in performing response handler action. %s.", errors);
+            LOG.error(msg);
+            throw new AtlasBaseException(msg);
+        } else {
+            LOG.debug("Successfully performed response handler action. V2 Response is {}", v2Response.toString());
+        }
+        return v2Response;
+    }
+
+    private V2Response updateFreeTextRequestHandler(SolrClient solrClient, String collectionName, Map<String, Integer> attributeName2SearchWeightMap) throws IOException, SolrServerException, AtlasBaseException {
         String searchWeightString = generateSearchWeightString(graph.getManagementSystem(), collectionName, attributeName2SearchWeightMap);
         String payLoadString      = generatePayLoadForFreeText("update-requesthandler", FREETEXT_REQUEST_HANDLER, searchWeightString);
 
-        performRequestHandlerAction(collectionName, solrClient, payLoadString);
+        return performRequestHandlerAction(collectionName, solrClient, payLoadString);
     }
 
-    private void createFreeTextRequestHandler(SolrClient solrClient, String collectionName, Map<String, Integer> attributeName2SearchWeightMap) throws IOException, SolrServerException {
+    private V2Response createFreeTextRequestHandler(SolrClient solrClient, String collectionName, Map<String, Integer> attributeName2SearchWeightMap) throws IOException, SolrServerException, AtlasBaseException {
         String searchWeightString = generateSearchWeightString(graph.getManagementSystem(), collectionName, attributeName2SearchWeightMap);
         String payLoadString      = generatePayLoadForFreeText("create-requesthandler", FREETEXT_REQUEST_HANDLER, searchWeightString);
 
-        performRequestHandlerAction(collectionName, solrClient, payLoadString);
+        return performRequestHandlerAction(collectionName, solrClient, payLoadString);
     }
 
     private String generateSearchWeightString(AtlasGraphManagement management, String indexName, Map<String, Integer> searchWeightsMap) {
@@ -167,12 +199,12 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 "}", action, handlerName, qfValue);
     }
 
-    private void performRequestHandlerAction(String collectionName, SolrClient solrClient,
-                                             String actionPayLoad) throws IOException, SolrServerException {
+    private V2Response performRequestHandlerAction(String collectionName, SolrClient solrClient,
+                                             String actionPayLoad) throws IOException, SolrServerException, AtlasBaseException {
         V2Request v2Request = new V2Request.Builder(String.format("/collections/%s/config", collectionName))
                 .withMethod(SolrRequest.METHOD.POST)
                 .withPayload(actionPayLoad)
                 .build();
-        v2Request.process(solrClient);
+        return validateResponseForSuccess(v2Request.process(solrClient));
     }
 }
