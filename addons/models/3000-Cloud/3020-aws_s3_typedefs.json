@@ -60,32 +60,8 @@
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
-                    "name":        "pseudoDirectory",
-                    "typeName":    "aws_s3_pseudo_dir",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  false,
-                    "isUnique":    false,
-                    "constraints": [
-                        {
-                            "type": "inverseRef",
-                            "params": {
-                                "attribute": "s3Objects"
-                            }
-                        }
-                    ]
-                },
-                {
                     "name":        "dataType",
                     "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "avroSchema",
-                    "typeName":    "avro_schema",
                     "cardinality": "SINGLE",
                     "isIndexable": true,
                     "isOptional":  true,
@@ -131,43 +107,6 @@
                     "isIndexable": true,
                     "isOptional":  false,
                     "isUnique":    true
-                },
-                {
-                    "name":        "bucket",
-                    "typeName":    "aws_s3_bucket",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  false,
-                    "isUnique":    false,
-                    "constraints": [
-                        {
-                            "type": "inverseRef",
-                            "params": {
-                                "attribute": "pseudoDirectories"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "name":        "s3Objects",
-                    "typeName":    "array<aws_s3_object>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false,
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ]
-                },
-                {
-                    "name":        "avroSchemas",
-                    "typeName":    "array<avro_schema>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
                 },
                 {
                     "name":        "subdomain",
@@ -243,19 +182,6 @@
                     "isUnique":    false
                 },
                 {
-                    "name":        "pseudoDirectories",
-                    "typeName":    "array<aws_s3_pseudo_dir>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false,
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ]
-                },
-                {
                     "name":        "region",
                     "typeName":    "string",
                     "cardinality": "SINGLE",
@@ -328,6 +254,7 @@
             "serviceType":          "aws",
             "typeVersion":          "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel":    "__aws_s3_bucket.pseudoDirectories",
             "endDef1": {
                 "type":              "aws_s3_bucket",
                 "name":              "pseudoDirectories",
@@ -349,6 +276,7 @@
             "serviceType":          "aws",
             "typeVersion":          "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel":    "__aws_s3_pseudo_dir.s3Objects",
             "endDef1": {
                 "type":              "aws_s3_pseudo_dir",
                 "name":              "s3Objects",
@@ -370,6 +298,7 @@
             "serviceType":          "aws",
             "typeVersion":          "1.0",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel":    "__aws_s3_object.avroSchema",
             "endDef1": {
                 "type":              "aws_s3_object",
                 "name":              "avroSchema",
@@ -390,6 +319,7 @@
             "serviceType":          "aws",
             "typeVersion":          "1.0",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel":    "__aws_s3_pseudo_dir.avroSchemas",
             "endDef1": {
                 "type":              "aws_s3_pseudo_dir",
                 "name":              "avroSchemas",

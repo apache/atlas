@@ -51,15 +51,6 @@
                     "isOptional": true,
                     "includeInNotification": true,
                     "isUnique": false
-                },
-                {
-                    "name": "nodes",
-                    "typeName": "array<storm_node>",
-                    "cardinality": "LIST",
-                    "constraints": [],
-                    "isIndexable": false,
-                    "isOptional": false,
-                    "isUnique": false
                 }
             ]
         },
@@ -154,6 +145,7 @@
             "serviceType": "storm",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__storm_topology.nodes",
             "endDef1": {
                 "type": "storm_topology",
                 "name": "nodes",

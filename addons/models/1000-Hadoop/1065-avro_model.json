@@ -24,14 +24,6 @@
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
-                    "name": "type",
-                    "typeName": "array<avro_type>",
-                    "cardinality": "LIST",
-                    "isIndexable": true,
-                    "isOptional": false,
-                    "isUnique": false
-                },
-                {
                     "name": "doc",
                     "typeName": "string",
                     "cardinality": "SINGLE",
@@ -73,19 +65,6 @@
                     "isIndexable": true,
                     "isOptional": true,
                     "isUnique": false
-                },
-                {
-                    "name": "fields",
-                    "typeName": "array<avro_field>",
-                    "cardinality": "LIST",
-                    "isIndexable": true,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ]
                 },
                 {
                     "name": "avro_notation",
@@ -137,15 +116,7 @@
                     "isIndexable": true,
                     "isOptional": false,
                     "isUnique": false
-                },
-                {
-                    "name": "associatedEntities",
-                    "typeName": "array<DataSet>",
-                    "cardinality": "LIST",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                }            
+                }
             ]
         },
         {
@@ -156,8 +127,7 @@
             ],
             "serviceType": "avro",
             "typeVersion": "1.0",
-            "attributeDefs": [
-            ]
+            "attributeDefs": []
         },
         {
             "name": "avro_fixed",
@@ -167,8 +137,7 @@
             ],
             "serviceType": "avro",
             "typeVersion": "1.0",
-            "attributeDefs": [
-            ]
+            "attributeDefs": []
         },
         {
             "name": "avro_enum",
@@ -231,6 +200,7 @@
             "serviceType": "avro",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__avro_schema.associatedEntities",
             "endDef1": {
                 "type": "avro_schema",
                 "name": "associatedEntities",
@@ -251,6 +221,7 @@
             "serviceType": "avro",
             "typeVersion": "1.0",
             "relationshipCategory": "AGGREGATION",
+            "relationshipLabel": "__avro_record.fields",
             "endDef1": {
                 "type": "avro_record",
                 "name": "fields",
@@ -271,6 +242,7 @@
             "serviceType": "avro",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__avro_field.type",
             "endDef1": {
                 "type": "avro_field",
                 "name": "type",
