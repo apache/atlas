@@ -7,6 +7,8 @@ The table below lists release artifacts and their associated signatures and hash
 artifacts can be found in our published [[https://www.apache.org/dist/atlas/KEYS][KEYS file]].
 
 | *Version* | *Release Date* | *Tarball* | *GPG* | *Hash* |
+| 1.2.0 | 2019-06-06 | [[https://www.apache.org/dyn/closer.cgi/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.sha512][SHA512]] |
+| 1.1.0 | 2018-09-17 | [[https://www.apache.org/dyn/closer.cgi/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz.sha512][SHA512]] |
 | 1.0.0 | 2018-06-02 | [[https://www.apache.org/dyn/closer.cgi/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.sha512][SHA512]] |
 | 0.8.2 | 2018-02-05 | [[https://www.apache.org/dyn/closer.cgi/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.sha512][SHA512]] |
 | 0.8.1 | 2017-08-29 | [[https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz][source]] | [[https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.sha512][SHA512]] |
@@ -46,10 +48,35 @@ or
 
 ---++ Release Notes
 
+*[[../1.2.0/index][Atlas 1.2.0]] (Released on 2019/06/06)*
+
+
+   * Lineage UI Improvements and changes.
+   * Show entity specific icon for the lineage node.
+   * Atlas authentication to support proxy-user.
+   * Update model files to include service-type for each entityDef.
+   * Update !JanusGraph version to 0.3.1
+   * New Transform Framework
+   * Atlas Import Transform Handler Implementation.
+   * !BugFixes, Optimizations & UI Improvements.
+   * [[https://issues.apache.org/jira/issues/?jql=project%3DATLAS%20AND%20resolution%3DFixed%20AND%20fixVersion%3D1.2.0%20ORDER%20BY%20key%20DESC][List of JIRAs resolved in Apache Atlas 1.2.0 release]]
+
+
+*[[../1.1.0/index][Atlas 1.1.0]] (Released on 2018/09/17)*
+
+
+   * Updated authorization model to support access control on relationship operations
+   * Added support for AWS S3 datatypes, in Atlas server and Hive hook
+   * Updated !JanusGraph version from 0.2.0 to 0.3.0
+   * Updated hooks to send Kafka notifications asynchronously
+   * Enhanced classification-propagation with options to handle entity-deletes
+   * !BugFixes and Optimizations
+
+
 *[[../1.0.0/index][Atlas 1.0.0]] (Released on 2018/06/02)*
 
    * Core model enhancement to support Relationship as first-class construct
-   * Support for JanusGraph graph database
+   * Support for !JanusGraph graph database
    * New DSL implementation, using ANTLR instead of Scala
    * Removal of older type system implementation in atlas-typesystem library
    * Metadata security - fine grained authorization
