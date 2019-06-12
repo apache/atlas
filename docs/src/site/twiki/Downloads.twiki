@@ -7,6 +7,7 @@ The table below lists release artifacts and their associated signatures and hash
 artifacts can be found in our published [[https://www.apache.org/dist/atlas/KEYS][KEYS file]].
 
 | *Version* | *Release Date* | *Tarball* | *GPG* | *Hash* |
+| 1.2.0 | 2019-06-06 | [[https://www.apache.org/dyn/closer.cgi/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/1.2.0/apache-atlas-1.2.0-sources.tar.gz.sha512][SHA512]] |
 | 2.0.0 | 2019-05-14 | [[https://www.apache.org/dyn/closer.cgi/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/2.0.0/apache-atlas-2.0.0-sources.tar.gz.sha512][SHA512]] |
 | 1.1.0 | 2018-09-17 | [[https://www.apache.org/dyn/closer.cgi/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/1.1.0/apache-atlas-1.1.0-sources.tar.gz.sha512][SHA512]] |
 | 1.0.0 | 2018-06-02 | [[https://www.apache.org/dyn/closer.cgi/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/1.0.0/apache-atlas-1.0.0-sources.tar.gz.sha512][SHA512]] |
@@ -47,6 +48,20 @@ or
 % pgp downloaded_file.asc</verbatim>
 
 ---++ Release Notes
+*[[../1.2.0/index][Atlas 1.2.0]] (Released on 2019/06/06)*
+
+
+   * Lineage UI Improvements and changes.
+   * Show entity specific icon for the lineage node.
+   * Atlas authentication to support proxy-user.
+   * Update model files to include service-type for each entityDef.
+   * Update !JanusGraph version to 0.3.1
+   * New Transform Framework
+   * Atlas Import Transform Handler Implementation.
+   * !BugFixes, Optimizations & UI Improvements.
+   * [[https://issues.apache.org/jira/issues/?jql=project%3DATLAS%20AND%20resolution%3DFixed%20AND%20fixVersion%3D1.2.0%20ORDER%20BY%20key%20DESC][List of JIRAs resolved in Apache Atlas 1.2.0 release]]
+
+
 *[[../2.0.0/index][Atlas 2.0.0]] (Released on 2019/05/14)*
    * Soft-reference attribute implementation.
    * Unique-attributes constraints at graph store-level
