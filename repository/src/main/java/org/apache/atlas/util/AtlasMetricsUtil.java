@@ -165,10 +165,15 @@ public class AtlasMetricsUtil {
                 @Override
                 public void run() {
                     graph.query().has(TYPE_NAME_PROPERTY_KEY, TYPE_NAME_INTERNAL).vertices(1);
+
+                    graphCommit();
                 }
             }, 10, TimeUnit.SECONDS);
         } catch (Exception e) {
             LOG.error(e.getMessage());
+
+            graphRollback();
+
             return false;
         }
 
@@ -183,10 +188,15 @@ public class AtlasMetricsUtil {
                 @Override
                 public void run() {
                     graph.indexQuery(Constants.VERTEX_INDEX, query).vertices(0, 1);
+
+                    graphCommit();
                 }
             }, 10, TimeUnit.SECONDS);
         } catch (Exception e) {
             LOG.error(e.getMessage());
+
+            graphRollback();
+
             return false;
         }
 
@@ -225,6 +235,24 @@ public class AtlasMetricsUtil {
             } else {
                 throw new IllegalStateException(t);
             }
+        }
+    }
+
+    private void graphCommit() {
+        try {
+            graph.commit();
+        } catch (Exception ex) {
+            LOG.warn("Graph transaction commit failed: {}; attempting to rollback graph transaction.", ex);
+
+            graphRollback();
+        }
+    }
+
+    private void graphRollback() {
+        try {
+            graph.rollback();
+        } catch (Exception ex) {
+            LOG.warn("Graph transaction rollback failed: {}", ex);
         }
     }
 
