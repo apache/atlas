@@ -18,6 +18,7 @@
 package org.apache.atlas.services;
 
 import org.apache.atlas.annotation.AtlasService;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -74,6 +75,7 @@ public class MetricsService {
     }
 
     @SuppressWarnings("unchecked")
+    @GraphTransaction
     public AtlasMetrics getMetrics() {
         Collection<String> entityDefNames         = typeRegistry.getAllEntityDefNames();
         Collection<String> classificationDefNames = typeRegistry.getAllClassificationDefNames();
