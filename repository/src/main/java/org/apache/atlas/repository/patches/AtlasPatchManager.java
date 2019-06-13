@@ -52,7 +52,8 @@ public class AtlasPatchManager {
         final AtlasPatchHandler handlers[] = {
                 new UniqueAttributePatch(context),
                 new ClassificationTextPatch(context),
-                new FreeTextRequestHandlerPatch(context)
+                new FreeTextRequestHandlerPatch(context),
+                new SuggestionsRequestHandlerPatch(context)
         };
 
         try {

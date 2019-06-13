@@ -31,19 +31,20 @@ import java.util.Collection;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 
-/**
- * This patch handler installs free text request handlers for already running Atlas instances.
- * --instances that were deployed with older versions.
- */
-public class FreeTextRequestHandlerPatch extends AtlasPatchHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(FreeTextRequestHandlerPatch.class);
 
-    private static final String PATCH_ID          = "JAVA_PATCH_0000_003";
-    private static final String PATCH_DESCRIPTION = "Creates Solr request handler for use in free-text searches";
+/**
+ * This patch handler installs suggestions request handlers for already running Atlas instances.
+ * Basically, for instances that were deployed with older versions.
+ */
+public class SuggestionsRequestHandlerPatch extends AtlasPatchHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(SuggestionsRequestHandlerPatch.class);
+
+    private static final String PATCH_ID          = "JAVA_PATCH_0000_004";
+    private static final String PATCH_DESCRIPTION = "Creates Solr request handler for use in suggestions.";
 
     private final PatchContext context;
 
-    public FreeTextRequestHandlerPatch(PatchContext context) {
+    public SuggestionsRequestHandlerPatch(PatchContext context) {
         super(context.getPatchRegistry(), PATCH_ID, PATCH_DESCRIPTION);
 
         this.context = context;
@@ -63,6 +64,6 @@ public class FreeTextRequestHandlerPatch extends AtlasPatchHandler {
 
         setStatus(APPLIED);
 
-        LOG.info("FreeTextRequestHandlerPatch.apply(): patchId={}, status={}", getPatchId(), getStatus());
+        LOG.info("SuggestionsRequestHandlerPatch.apply(): patchId={}, status={}", getPatchId(), getStatus());
     }
 }
