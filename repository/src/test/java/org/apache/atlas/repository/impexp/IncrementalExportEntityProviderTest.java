@@ -63,7 +63,7 @@ public class IncrementalExportEntityProviderTest extends ExportImportTestBase {
         verifyCreatedEntities(entityStore, entityGuids, 2);
 
         gremlinScriptEngine = atlasGraph.getGremlinScriptEngine();
-        incrementalExportEntityProvider = new IncrementalExportEntityProvider(atlasGraph, gremlinScriptEngine);
+        incrementalExportEntityProvider = new IncrementalExportEntityProvider(atlasGraph);
     }
 
     @AfterClass
