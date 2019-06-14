@@ -18,6 +18,8 @@
 
 package org.apache.atlas.repository.impexp;
 
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.util.UniqueList;
 import org.slf4j.Logger;
@@ -28,11 +30,10 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class IncrementalExportEntityProvider {
+public class IncrementalExportEntityProvider implements ExtractStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalExportEntityProvider.class);
 
     private static final String QUERY_PARAMETER_START_GUID = "startGuid";
@@ -50,9 +51,23 @@ public class IncrementalExportEntityProvider {
     private ScriptEngine scriptEngine;
 
     @Inject
-    public IncrementalExportEntityProvider(AtlasGraph atlasGraph, ScriptEngine scriptEngine) {
+    public IncrementalExportEntityProvider(AtlasGraph atlasGraph) {
         this.atlasGraph = atlasGraph;
-        this.scriptEngine = scriptEngine;
+        try {
+            this.scriptEngine = atlasGraph.getGremlinScriptEngine();
+        } catch (AtlasBaseException e) {
+            LOG.error("Error instantiating script engine.", e);
+        }
+    }
+
+    @Override
+    public void fullFetch(AtlasEntity entity, ExportService.ExportContext context) {
+        populate(entity.getGuid(), context.changeMarker, context.guidsToProcess);
+    }
+
+    @Override
+    public void connectedFetch(AtlasEntity entity, ExportService.ExportContext context) {
+
     }
 
     public void populate(String dbEntityGuid, long timeStamp, UniqueList<String> guidsToProcess) {
@@ -60,6 +75,13 @@ public class IncrementalExportEntityProvider {
             full(dbEntityGuid, guidsToProcess);
         } else {
             partial(dbEntityGuid, timeStamp, guidsToProcess);
+        }
+    }
+
+    @Override
+    public void close() {
+        if (scriptEngine != null) {
+            atlasGraph.releaseGremlinScriptEngine(scriptEngine);
         }
     }
 
@@ -98,7 +120,7 @@ public class IncrementalExportEntityProvider {
             }
 
             for (Map<String, Object> item : result) {
-                guids.add((String) item.get(ExportService.PROPERTY_GUID));
+                guids.add((String) item.get(EntitiesExtractor.PROPERTY_GUID));
             }
 
             return guids;
