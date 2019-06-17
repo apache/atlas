@@ -19,6 +19,7 @@
 
 package org.apache.atlas.repository.impexp;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -58,6 +59,7 @@ public class IncrementalExportEntityProviderTest extends ExportImportTestBase {
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
         basicSetup(typeDefStore, typeRegistry);
+        RequestContext.get().setImportInProgress(true);
         createEntities(entityStore, ENTITIES_SUB_DIR, new String[] { "db", "table-columns"});
         final String[] entityGuids = {DB_GUID, TABLE_GUID};
         verifyCreatedEntities(entityStore, entityGuids, 2);

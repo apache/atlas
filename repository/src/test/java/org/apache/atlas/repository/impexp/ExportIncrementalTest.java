@@ -66,11 +66,15 @@ public class ExportIncrementalTest extends ExportImportTestBase {
 
     private final String EXPORT_REQUEST_INCREMENTAL = "export-incremental";
     private final String EXPORT_REQUEST_CONNECTED = "export-connected";
+    private AtlasClassificationType classificationTypeT1;
     private long nextTimestamp;
 
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
         basicSetup(typeDefStore, typeRegistry);
+        RequestContext.get().setImportInProgress(true);
+        classificationTypeT1 = createNewClassification();
+
         createEntities(entityStore, ENTITIES_SUB_DIR, new String[] { "db", "table-columns"});
         final String[] entityGuids = {DB_GUID, TABLE_GUID};
         verifyCreatedEntities(entityStore, entityGuids, 2);
@@ -108,8 +112,7 @@ public class ExportIncrementalTest extends ExportImportTestBase {
     public void atT1_NewClassificationAttachedToTable_ReturnsChangedTable() throws AtlasBaseException {
         final int expectedEntityCount = 1;
 
-        AtlasClassificationType ct = createNewClassification();
-        entityStore.addClassifications(TABLE_GUID, ImmutableList.of(ct.createDefaultValue()));
+        entityStore.addClassifications(TABLE_GUID, ImmutableList.of(classificationTypeT1.createDefaultValue()));
 
         AtlasExportRequest request = getIncrementalRequest(nextTimestamp);
         ZipSource source = runExportWithParameters(exportService, request);
@@ -127,7 +130,7 @@ public class ExportIncrementalTest extends ExportImportTestBase {
     }
 
     private AtlasClassificationType createNewClassification() {
-        createTypes(typeDefStore, ENTITIES_SUB_DIR,"typesDef-new-classification");
+        createTypes(typeDefStore, ENTITIES_SUB_DIR,"typesdef-new-classification");
         return typeRegistry.getClassificationTypeByName("T1");
     }
 
@@ -151,7 +154,6 @@ public class ExportIncrementalTest extends ExportImportTestBase {
 
         long postUpdateTableEntityTimestamp = tableEntity.getEntity().getUpdateTime().getTime();
         assertEquals(preExportTableEntityTimestamp, postUpdateTableEntityTimestamp);
-        nextTimestamp = updateTimesampForNextIncrementalExport(source);
     }
 
     @Test(dependsOnMethods = "atT2_NewClassificationAttachedToColumn_ReturnsChangedColumn")
@@ -179,7 +181,7 @@ public class ExportIncrementalTest extends ExportImportTestBase {
 
             return request;
         } catch (IOException e) {
-            throw new SkipException(String.format("getIncrementalRequest: '%s' could not be laoded.", EXPORT_REQUEST_INCREMENTAL));
+            throw new SkipException(String.format("getIncrementalRequest: '%s' could not be loaded.", EXPORT_REQUEST_INCREMENTAL));
         }
     }
 
@@ -187,7 +189,7 @@ public class ExportIncrementalTest extends ExportImportTestBase {
         try {
             return TestResourceFileUtils.readObjectFromJson(ENTITIES_SUB_DIR, EXPORT_REQUEST_CONNECTED, AtlasExportRequest.class);
         } catch (IOException e) {
-            throw new SkipException(String.format("getIncrementalRequest: '%s' could not be laoded.", EXPORT_REQUEST_CONNECTED));
+            throw new SkipException(String.format("getIncrementalRequest: '%s' could not be loaded.", EXPORT_REQUEST_CONNECTED));
         }
     }
 

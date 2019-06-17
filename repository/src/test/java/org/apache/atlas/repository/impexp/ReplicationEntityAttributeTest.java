@@ -193,7 +193,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
             REPLICATED_TO_CLUSTER_NAME = (String) request.getOptions().get(OPTION_KEY_REPLICATED_TO);
             return request;
         } catch (IOException e) {
-            throw new SkipException(String.format("getExportRequestWithReplicationOption: '%s' could not be laoded.", EXPORT_REQUEST_FILE));
+            throw new SkipException(String.format("getExportRequestWithReplicationOption: '%s' could not be loaded.", EXPORT_REQUEST_FILE));
         }
     }
 
@@ -203,7 +203,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
             REPLICATED_FROM_CLUSTER_NAME = request.getOptions().get(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
             return request;
         } catch (IOException e) {
-            throw new SkipException(String.format("getExportRequestWithReplicationOption: '%s' could not be laoded.", IMPORT_REQUEST_FILE));
+            throw new SkipException(String.format("getExportRequestWithReplicationOption: '%s' could not be loaded.", IMPORT_REQUEST_FILE));
         }
     }
 }

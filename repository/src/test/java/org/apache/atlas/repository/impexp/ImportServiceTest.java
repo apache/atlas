@@ -458,10 +458,6 @@ public class ImportServiceTest extends ExportImportTestBase {
         assertEquals(importTransforms.getTransforms().get("hive_table").get("qualifiedName").size(), 2);
     }
 
-    @Test(dataProvider = "empty-zip", expectedExceptions = AtlasBaseException.class)
-    public void importEmptyZip(ZipSource zipSource) {
-
-    }
 
     @Test(expectedExceptions = AtlasBaseException.class)
     public void importEmptyZip() throws IOException, AtlasBaseException {
