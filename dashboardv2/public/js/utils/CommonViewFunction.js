@@ -688,7 +688,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 collection = options.collection,
                 isGlossaryView = options.isGlossaryView,
                 data = ref.ui[(isGlossaryView ? "glossaryForm" : "categoryTermForm")].serializeArray().reduce(function(obj, item) {
-                    obj[item.name] = item.value;
+                    obj[item.name] = item.value.trim();
                     return obj;
                 }, {}),
                 newModel = new options.collection.model(),
