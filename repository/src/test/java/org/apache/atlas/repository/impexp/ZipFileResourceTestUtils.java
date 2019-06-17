@@ -192,7 +192,7 @@ public class ZipFileResourceTestUtils {
         try {
             return TestResourceFileUtils.readObjectFromJson(entitiesSubDir, fileName, AtlasTypesDef.class);
         } catch (IOException e) {
-            throw new SkipException(String.format("createTypes: '%s' could not be laoded.", fileName));
+            throw new SkipException(String.format("createTypes: '%s' could not be loaded.", fileName));
         }
     }
 
@@ -201,7 +201,7 @@ public class ZipFileResourceTestUtils {
         try {
             return TestResourceFileUtils.readObjectFromJson(entitiesSubDir, fileName, AtlasEntity.AtlasEntityWithExtInfo.class);
         } catch (IOException e) {
-            throw new SkipException(String.format("createTypes: '%s' could not be laoded.", fileName));
+            throw new SkipException(String.format("createTypes: '%s' could not be loaded.", fileName));
         }
     }
 
@@ -220,7 +220,7 @@ public class ZipFileResourceTestUtils {
             assertTrue((response.getCreatedEntities() != null && response.getCreatedEntities().size() > 0) ||
                     (response.getMutatedEntities() != null && response.getMutatedEntities().size() > 0));
         } catch (AtlasBaseException e) {
-            throw new SkipException(String.format("createAtlasEntity: could not load '%s'.", atlasEntity.getEntity().getTypeName()));
+            throw new SkipException(String.format("createAtlasEntity: could not loaded '%s'.", atlasEntity.getEntity().getTypeName()));
         }
     }
 
