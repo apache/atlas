@@ -25,50 +25,36 @@ body {
     overflow-x: hidden;
 }
 
-.detail-page {
-    header.atlas-header {
-        .nav.navbar-nav {
-            width: 16%;
-
-            @media screen and (max-width: 1024px) {
-                width: 24%;
-            }
-        }
-
-        .global-search-container {
-            width: 65%;
-
-            @media screen and (max-width: 1024px) {
-                width: 45%;
-            }
-        }
-    }
-}
-
 header.atlas-header {
     background-color: $white;
     border-bottom: 1px $color_mystic_approx solid;
 
-    .nav.navbar-nav {
-        width: 5%;
+    .navbar-nav {
+        display: table;
+
+        li {
+            float: none;
+            display: table-cell;
+            padding: 0px 5px;
+
+        }
     }
 
-    .global-search-container {
-        top: 8px;
-        width: 76%;
+    &>table {
+        td {
+            padding: 3px 2px;
+            position: relative;
+            transition: width 0.3s !important;
 
-        @media screen and (max-width: 1024px) {
-            width: 65%;
+            .global-search-container {
+                width: input {
+                    width: 100%;
+                }
+            }
         }
     }
 
     .header-menu {
-        width: 18%;
-
-        @media screen and (max-width: 1024px) {
-            width: 30%;
-        }
-
         .dropdown-menu>li>a {
             color: $color_ironside_gray_approx;
 
@@ -81,7 +67,7 @@ header.atlas-header {
             }
         }
 
-        >a {
+        td>a {
             display: inline-block;
             color: $color_ironside_gray_approx;
             padding: 15px 14px;
@@ -149,7 +135,7 @@ header.atlas-header {
 
 .page-title {
     background-color: $color_white_lilac_approx;
-    padding: 10px 15px 0px 15px;
+    padding: 15px 15px 0px 15px;
 
     .title {
         padding-top: 0;
@@ -480,6 +466,25 @@ hr[size="10"] {
 .ui-menu.ui-widget-content.ui-autocomplete {
     box-shadow: 0px 11px 30px -8px grey;
     max-width: 60% !important;
+    max-height: 70vh;
+    overflow-y: auto;
+    /* prevent horizontal scrollbar */
+    overflow-x: hidden;
+
+    .ui-autocomplete-category {
+        padding: 10px;
+        color: #acacac;
+        text-transform: capitalize;
+    }
+
+    li.empty {
+        padding: 5px 2px;
+        line-height: 45px;
+
+        span.empty-message {
+            padding: 10px;
+        }
+    }
 
     .ui-menu-item {
         padding: 5px 2px;
@@ -496,17 +501,9 @@ hr[size="10"] {
 
         .ui-state-active {
             margin: 0px;
-
-            &.empty {
-                background: transparent;
-                color: inherit !important;
-                cursor: default;
-            }
-
             border: none;
             background: #cee0fa;
             color: $black !important;
-            //color: #686868 !important;
         }
 
         a,

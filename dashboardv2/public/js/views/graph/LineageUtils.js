@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', ''], function(require) {
+define(['require'], function(require) {
     'use strict';
     var LinegaeUtils = {};
     LinegaeUtils.DragNode = function(options) {

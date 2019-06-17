@@ -61,13 +61,35 @@ define(['require',
                 this.ui.clearGlobalSearch.removeClass("in");
             };
             events['click ' + this.ui.menuHamburger] = function() {
+                this.setSearchBoxWidth({
+                    updateWidth: function(atlasHeaderWidth) {
+                        return $('body').hasClass('full-screen') ? atlasHeaderWidth - 350 : atlasHeaderWidth + 350
+                    }
+                });
                 $('body').toggleClass("full-screen");
             };
             return events;
 
         },
-        initialize: function(options) {},
-
+        initialize: function(options) {
+            this.bindEvent();
+        },
+        setSearchBoxWidth: function(options) {
+            var atlasHeaderWidth = this.$el.find(".atlas-header").width(),
+                minusWidth = Utils.getUrlState.isDetailPage() ? 400 : 250;
+            if (options && options.updateWidth) {
+                atlasHeaderWidth = options.updateWidth(atlasHeaderWidth);
+            }
+            if (atlasHeaderWidth > minusWidth) {
+                this.$el.find(".global-search-container").width(atlasHeaderWidth - minusWidth);
+            }
+        },
+        bindEvent: function() {
+            var that = this;
+            $(window).resize(function() {
+                that.setSearchBoxWidth()
+            });
+        },
         onRender: function() {
             var that = this;
             if (Globals.userLogedIn.status) {
@@ -75,23 +97,53 @@ define(['require',
             }
             this.initializeGlobalSearch();
         },
-        getSearchUrlQueryParam: function(request) {
-            var term = request.term;
-            return {
-                "excludeDeletedEntities": true,
-                "includeSubClassifications": true,
-                "includeSubTypes": true,
-                "includeClassificationAttributes": true,
-                "entityFilters": null,
-                "tagFilters": null,
-                "attributes": null,
-                "query": this.getSearchString(term),
-                "limit": 5,
-                "offset": 0,
-                "typeName": null,
-                "classification": null,
-                "termName": null
-            }
+        onShow: function() {
+            this.setSearchBoxWidth();
+        },
+        onBeforeDestroy: function() {
+            this.ui.globalSearch.atlasAutoComplete("destroy");
+        },
+        fetchSearchData: function(options) {
+            var that = this,
+                request = options.request,
+                response = options.response,
+                term = request.term,
+                sendResponse = function() {
+                    var query = that.cache[term].query,
+                        suggestions = that.cache[term].suggestions;
+                    if (query !== undefined && suggestions !== undefined) {
+                        response(that.cache[term]);
+                    }
+                };
+            $.ajax({
+                url: UrlLinks.searchApiUrl('quick'),
+                contentType: 'application/json',
+                data: {
+                    "query": this.getSearchString(term),
+                    "limit": 5,
+                    "offset": 0
+                },
+                cache: true,
+                success: function(data) {
+                    var data = data.searchResults.entities || [];
+                    that.cache[term] = _.extend({}, that.cache[term], { query: { category: "entities", data: data, order: 1 } });
+                    sendResponse();
+                }
+            });
+
+            $.ajax({
+                url: UrlLinks.searchApiUrl('suggestions'),
+                contentType: 'application/json',
+                data: {
+                    "prefixString": term
+                },
+                cache: true,
+                success: function(data) {
+                    var data = data.suggestions || [];
+                    that.cache[term] = _.extend({}, that.cache[term], { suggestions: { category: "suggestions", data: data, order: 2 } });
+                    sendResponse(data);
+                }
+            });
         },
         getSearchString: function(str) {
             if (str && str.length) {
@@ -103,86 +155,106 @@ define(['require',
         initializeGlobalSearch: function() {
             var that = this;
             this.cache = {};
-            this.ui.globalSearch.autocomplete({
+            this.ui.globalSearch.atlasAutoComplete({
                 minLength: 1,
                 autoFocus: false,
                 search: function() {
                     $(this).siblings('span.fa-search').removeClass("fa-search").addClass("fa-refresh fa-spin-custom");
                 },
                 focus: function(event, ui) {
-                    //$(this).val(ui.item.itemText);
                     return false;
                 },
                 open: function() {
                     $(this).siblings('span.fa-refresh').removeClass("fa-refresh fa-spin-custom").addClass("fa-search");
                 },
                 select: function(event, ui) {
-                    if (ui && ui.item && ui.item.value == "Empty") {
-                        return false
-                    } else {
+                    var item = ui && ui.item;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (_.isString(item)) {
+                        var $el = $(this);
+                        $el.val(item);
+                        $el.data("valSelected", true);
+                        setTimeout(function() {
+                            $el.atlasAutoComplete("search");
+                        }, 10);
+                    } else if (_.isObject(item) && item.guid) {
                         Utils.setUrl({
-                            url: '#!/detailPage/' + ui.item.guid,
+                            url: '#!/detailPage/' + item.guid,
                             mergeBrowserUrl: false,
                             trigger: true
                         });
-                        return true
                     }
+                    return true;
                 },
                 source: function(request, response) {
                     var term = request.term;
-                    if (term in that.cache) {
+                    if (that.cache && that.cache[term]) {
                         response(that.cache[term]);
                         return;
                     }
-
-                    $.ajax({
-                        type: 'POST',
-                        url: UrlLinks.searchApiUrl('basic'),
-                        contentType: 'application/json',
-                        data: JSON.stringify(that.getSearchUrlQueryParam(request)),
-                        cache: true,
-                        success: function(data) {
-                            var data = data.entities;
-                            if (data === undefined) {
-                                data = ["Empty"];
-                            }
-                            that.cache[term] = data;
-                            response(data);
-                        }
+                    that.fetchSearchData({
+                        request: request,
+                        response: response
                     });
                 }
             }).focus(function() {
-                $(this).autocomplete("search");
+                $(this).atlasAutoComplete("search");
             }).keyup(function(event) {
                 if ($(this).val().trim() === "") {
                     that.ui.clearGlobalSearch.removeClass("in");
                 } else {
                     that.ui.clearGlobalSearch.addClass("in");
                     if (event.keyCode == 13) {
-                        Utils.setUrl({
-                            url: '#!/search/searchResult?query=' + encodeURIComponent(that.getSearchString($(this).val())) + '&searchType=basic',
-                            mergeBrowserUrl: false,
-                            trigger: true
-                        });
+                        if ($(this).data("valSelected") !== true) {
+                            Utils.setUrl({
+                                url: '#!/search/searchResult?query=' + encodeURIComponent(that.getSearchString($(this).val())) + '&searchType=basic',
+                                mergeBrowserUrl: false,
+                                trigger: true
+                            });
+                        } else {
+                            $(this).data("valSelected", false);
+                        }
                     }
                 }
-            }).autocomplete("instance")._renderItem = function(ul, item) {
-                if (item && item.value == "Empty") {
-                    return $("<li>")
-                        .append("<span class='empty'>No record found</span>")
-                        .appendTo(ul);
+            }).atlasAutoComplete("instance")._renderItem = function(ul, searchItem) {
+                if (searchItem) {
+                    var data = searchItem.data;
+                    if (data) {
+                        if (data.length == 0) {
+                            return $("<li class='empty'></li>")
+                                .append("<span class='empty-message'>No " + searchItem.category + " found</span>")
+                                .appendTo(ul);
+                        } else {
+                            var items = [];
+                            _.each(data, function(item) {
+                                var li = null;
+                                if (_.isObject(item)) {
+                                    item.itemText = Utils.getName(item) + " (" + item.typeName + ")";
+                                    var options = {},
+                                        table = '';
+                                    options.entityData = item;
+                                    var img = $('<img src="' + Utils.getEntityIconPath(options) + '">').on('error', function(error, s) {
+                                        this.src = Utils.getEntityIconPath(_.extend(options, { errorUrl: this.src }));
+                                    });
+                                    var span = $("<span>" + item.itemText + "</span>")
+                                        .prepend(img);
+                                    li = $("<li class='with-icon'>")
+                                        .append(span);
+                                    li.data("ui-autocomplete-item", item);
+                                } else {
+                                    li = $("<li>")
+                                        .append("<span>" + item + "</span>")
+                                    li.data("ui-autocomplete-item", item);
+                                }
+                                if (searchItem.category) {
+                                    items.push(li.attr("aria-label", searchItem.category + " : " + (_.isObject(item) ? item.itemText : item)));
+                                }
+                            });
+                            return ul.append(items);
+                        }
+                    }
                 }
-                item.itemText = Utils.getName(item) + " (" + item.typeName + ")";
-                var options = {},
-                    table = '';
-                options.entityData = item;
-                var img = $('<img src="' + Utils.getEntityIconPath(options) + '">').on('error', function(error, s) {
-                    this.src = Utils.getEntityIconPath(_.extend(options, { errorUrl: this.src }));
-                });
-                var link = $("<a class='search-entity-anchor ellipsis' href='#!/detailPage/" + item.guid + "'>" + item.itemText + "</a>").prepend(img);
-                return $("<li class='with-icon'>")
-                    .append(link)
-                    .appendTo(ul);
             };
         }
     });

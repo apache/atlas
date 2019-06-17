@@ -18,7 +18,8 @@
 define(['require',
     'utils/Utils',
     'd3',
-    'marionette'
+    'marionette',
+    'jquery-ui'
 ], function(require, Utils, d3) {
     'use strict';
     _.mixin({
@@ -200,6 +201,29 @@ define(['require',
 
             return adapter;
         });
+
+    $.widget("custom.atlasAutoComplete", $.ui.autocomplete, {
+        _create: function() {
+            this._super();
+            this.widget().menu("option", "items", "> :not(.ui-autocomplete-category,.empty)");
+        },
+        _renderMenu: function(ul, items) {
+            var that = this,
+                currentCategory = "";
+            items = _.sortBy(items, 'order');
+            $.each(items, function(index, item) {
+                var li;
+                if (item.category != currentCategory) {
+                    ul.append("<li class='ui-autocomplete-category'>" + item.category + "</li>");
+                    currentCategory = item.category;
+                }
+                that._renderItemData(ul, item);
+            });
+        },
+        _renderItemData: function(ul, item) {
+            return this._renderItem(ul, item);
+        }
+    });
 
     // For placeholder support 
     if (!('placeholder' in HTMLInputElement.prototype)) {
