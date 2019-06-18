@@ -57,7 +57,9 @@ for i in "${BASEDIR}/hook/kafka/atlas-kafka-plugin-impl/"*.jar; do
   ATLASCPPATH="${ATLASCPPATH}:$i"
 done
 
-ATLAS_CONF_DIR=/etc/atlas/conf
+if [ -z "${ATLAS_CONF_DIR}" ] && [ -e /etc/atlas/conf ];then
+    ATLAS_CONF_DIR=/etc/atlas/conf
+fi
 ATLASCPPATH=${ATLASCPPATH}:${ATLAS_CONF_DIR}
 
 # log dir for applications

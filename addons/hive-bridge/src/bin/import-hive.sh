@@ -50,6 +50,11 @@ for i in "${BASEDIR}/hook/hive/atlas-hive-plugin-impl/"*.jar; do
   ATLASCPPATH="${ATLASCPPATH}:$i"
 done
 
+if [ -z "${ATLAS_CONF_DIR}" ] && [ -e /etc/atlas/conf ];then
+    ATLAS_CONF_DIR=/etc/atlas/conf
+fi
+ATLASCPPATH=${ATLASCPPATH}:${ATLAS_CONF_DIR}
+
 # log dir for applications
 ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-$BASEDIR/logs}"
 export ATLAS_LOG_DIR

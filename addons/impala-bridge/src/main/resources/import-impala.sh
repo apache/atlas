@@ -81,6 +81,11 @@ for i in "${BASEDIR}/"*.jar; do
   ATLASCPPATH="${ATLASCPPATH}:$i"
 done
 
+if [ -z "${ATLAS_CONF_DIR}" ] && [ -e /etc/atlas/conf ];then
+    ATLAS_CONF_DIR=/etc/atlas/conf
+fi
+ATLASCPPATH=${ATLASCPPATH}:${ATLAS_CONF_DIR}
+
 echo "Logging: ${ATLAS_LOG_DIR}/${ATLAS_LOG_FILE}"
 echo "Log config: ${LOG_CONFIG}"
 
