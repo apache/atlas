@@ -340,13 +340,6 @@ public interface AtlasGraph<V, E> {
     boolean isMultiProperty(String name);
 
     /**
-     * return the encoded name used for the attribute identified by property key and index name.
-     * @param propertyKey the property key of attributed
-     * @param indexName the name of the index containing the property.
-     * @return the encoded name of the property.
-     */
-    String getIndexFieldName(AtlasPropertyKey propertyKey, String indexName);
-    /**
      * Create Index query parameter for use with atlas graph.
      * @param parameterName the name of the parameter that needs to be passed to index layer.
      * @param parameterValue the value of the paratemeter that needs to be passed to the index layer.

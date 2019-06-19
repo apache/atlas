@@ -21,4 +21,5 @@ import org.apache.atlas.exception.AtlasBaseException;
 
 public interface TypeDefChangeListener {
     void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException;
+    void onLoadCompletion() throws AtlasBaseException;
 }

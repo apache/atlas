@@ -19,10 +19,15 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AggregationContext;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,31 +39,66 @@ public class SearchAggregatorImpl implements SearchAggregator {
     private final SearchContext searchContext;
 
 
+
     public SearchAggregatorImpl(SearchContext searchContext) {
         this.searchContext = searchContext;
     }
 
-    public Map<String, List<AtlasAggregationEntry>> getAggregatedMetrics() {
-        String              queryString       = searchContext.getSearchParameters().getQuery();
-        AtlasGraph          atlasGraph        = searchContext.getGraph();
-        Set<String>         aggregationFields = new HashSet<>();
-        List<PostProcessor> postProcessors    = new ArrayList<>();
-
-        aggregationFields.add(Constants.ENTITY_TYPE_PROPERTY_KEY);
-        aggregationFields.add(Constants.ASSET_OWNER_PROPERTY_KEY);
+    public Map<String, List<AtlasAggregationEntry>> getAggregatedMetrics(Set<String> aggregationFields,
+                                                                         Set<AtlasAttribute> aggregationAttributes) {
+        SearchParameters    searchParameters   = searchContext.getSearchParameters();
+        AtlasGraph          graph              = searchContext.getGraph();
+        AtlasTypeRegistry   typeRegistry       = searchContext.getTypeRegistry();
+        String              queryString        = searchParameters.getQuery();
+        List<PostProcessor> postProcessors     = new ArrayList<>();
 
         postProcessors.add(new ServiceTypeAggregator(searchContext.getTypeRegistry()));
 
         try {
-            Map<String, List<AtlasAggregationEntry>> aggregatedMetrics      = atlasGraph.getGraphIndexClient().getAggregatedMetrics(queryString, aggregationFields);
-            Set<String>                              aggregationMetricNames = aggregatedMetrics.keySet();
+            AtlasGraphIndexClient graphIndexClient    = graph.getGraphIndexClient();
+            String                searchedOnTypeName  = searchParameters.getTypeName();
+            AtlasEntityType       searchForEntityType = null;
 
-            for(String aggregationMetricName: aggregationMetricNames) {
-                for(PostProcessor postProcessor: postProcessors) {
-                    if(postProcessor.needsProcessing(aggregationMetricName)) {
+            if (searchedOnTypeName != null) {
+                searchForEntityType = typeRegistry.getEntityTypeByName(searchedOnTypeName);
+            }
+
+            Map<String, String> indexFieldNameCache = new HashMap<>();
+
+            for (String fieldName: aggregationFields) {
+                String indexFieldName = getIndexFieldNameForCommonFieldName(typeRegistry, fieldName);
+
+                indexFieldNameCache.put(fieldName, indexFieldName);
+            }
+
+            for (AtlasAttribute attribute: aggregationAttributes) {
+                String indexFieldName = attribute.getIndexFieldName();
+
+                if (indexFieldName == null) {
+                    //there is no index field name.
+                    indexFieldName = attribute.getQualifiedName();
+                }
+
+                indexFieldNameCache.put(attribute.getQualifiedName(), indexFieldName);
+            }
+
+            AggregationContext aggregatorContext = new AggregationContext(queryString,
+                                                                          searchParameters.getEntityFilters(),
+                                                                          searchForEntityType,
+                                                                          aggregationFields,
+                                                                          aggregationAttributes,
+                                                                          indexFieldNameCache,
+                                                                          searchParameters.getExcludeDeletedEntities(),
+                                                                          searchParameters.getIncludeSubTypes());
+
+            Map<String, List<AtlasAggregationEntry>> aggregatedMetrics = graphIndexClient.getAggregatedMetrics(aggregatorContext);
+
+            for (String aggregationMetricName: aggregatedMetrics.keySet()) {
+                for (PostProcessor postProcessor: postProcessors) {
+                    if (postProcessor.needsProcessing(aggregationMetricName)) {
                         postProcessor.prepareForMetric(aggregationMetricName);
 
-                        for(AtlasAggregationEntry aggregationEntry: aggregatedMetrics.get(aggregationMetricName)) {
+                        for (AtlasAggregationEntry aggregationEntry: aggregatedMetrics.get(aggregationMetricName)) {
                             postProcessor.process(aggregationEntry);
                         }
 
@@ -67,19 +107,8 @@ public class SearchAggregatorImpl implements SearchAggregator {
                 }
             }
 
-            for(PostProcessor postProcessor: postProcessors) {
+            for (PostProcessor postProcessor: postProcessors) {
                 postProcessor.handleCompletion(aggregatedMetrics);
-            }
-
-            // remove entries with 0 counts
-            for (List<AtlasAggregationEntry> entries : aggregatedMetrics.values()) {
-                for (ListIterator<AtlasAggregationEntry> iter = entries.listIterator(); iter.hasNext(); ) {
-                    AtlasAggregationEntry entry = iter.next();
-
-                    if (entry.getCount() <= 0) {
-                        iter.remove();
-                    }
-                }
             }
 
             return aggregatedMetrics;
@@ -88,6 +117,20 @@ public class SearchAggregatorImpl implements SearchAggregator {
 
             return Collections.EMPTY_MAP;
         }
+    }
+
+    private String getIndexFieldNameForCommonFieldName(AtlasTypeRegistry typeRegistry, String fieldName) {
+        String indexFieldName = typeRegistry.getIndexFieldName(fieldName);
+
+        if(indexFieldName != null) {
+            return indexFieldName;
+        }
+
+        if(LOG.isDebugEnabled()) {
+            LOG.debug("Could not find index field name from type registry for attribute {}. Will use use the field name as is.", fieldName);
+        }
+
+        return fieldName;
     }
 
     static interface PostProcessor {
@@ -102,8 +145,8 @@ public class SearchAggregatorImpl implements SearchAggregator {
         private static final String SERVICE_TYPE = "ServiceType";
 
         private final AtlasTypeRegistry                  typeRegistry;
-        private       List<AtlasAggregationEntry>        entries;
-        private       Map<String, AtlasAggregationEntry> entityType2MetricsMap;
+        private final List<AtlasAggregationEntry>        entries               = new ArrayList<>();;
+        private final Map<String, AtlasAggregationEntry> entityType2MetricsMap = new HashMap<>();
 
         public ServiceTypeAggregator(AtlasTypeRegistry typeRegistry) {
             this.typeRegistry = typeRegistry;
@@ -118,8 +161,6 @@ public class SearchAggregatorImpl implements SearchAggregator {
         public void prepareForMetric(String metricName) {
             Map<String, AtlasAggregationEntry> serviceName2MetricsMap = new HashMap<>();
 
-            entries = new ArrayList<>();
-
             //prepare the service map to aggregations
             for(String serviceName: typeRegistry.getAllServiceTypes()) {
                 AtlasAggregationEntry serviceMetrics = new AtlasAggregationEntry(serviceName, 0);
@@ -130,8 +171,6 @@ public class SearchAggregatorImpl implements SearchAggregator {
             }
 
             //prepare the map from entity type to aggregations
-            entityType2MetricsMap = new HashMap<>();
-
             for(AtlasEntityType entityType: typeRegistry.getAllEntityTypes()) {
                 String serviceName = entityType.getServiceType();
 
@@ -157,7 +196,16 @@ public class SearchAggregatorImpl implements SearchAggregator {
 
         @Override
         public void handleCompletion(Map<String, List<AtlasAggregationEntry>> aggregatedMetrics) {
-            aggregatedMetrics.put(SERVICE_TYPE, entries);
+            //remove all zero count entries.
+            for (int i = entries.size() - 1; i >= 0; i--) {
+                if (entries.get(i).getCount() == 0) {
+                    entries.remove(i);
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(entries)) {
+                aggregatedMetrics.put(SERVICE_TYPE, entries);
+            }
         }
     }
 }

@@ -18,6 +18,8 @@
 package org.apache.atlas.repository.graphdb;
 
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
+import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.type.AtlasEntityType;
 
 import java.util.List;
 import java.util.Map;
@@ -30,11 +32,9 @@ public interface AtlasGraphIndexClient {
 
     /**
      * Gets aggregated metrics for the given query string and aggregation field names.
-     * @param queryString the query string whose aggregation metrics need to be retrieved.
-     * @param propertyKeyNames the set of aggregation fields.
      * @return A map of aggregation field to value-count pairs.
      */
-    Map<String, List<AtlasAggregationEntry>> getAggregatedMetrics(String queryString, Set<String> propertyKeyNames);
+    Map<String, List<AtlasAggregationEntry>> getAggregatedMetrics(AggregationContext aggregationContext);
 
     /**
      * Returns top 5 suggestions for the given prefix string.
@@ -46,9 +46,9 @@ public interface AtlasGraphIndexClient {
     /**
      *  The implementers should apply the search weights for the passed in properties.
      *  @param collectionName                the name of the collection for which the search weight needs to be applied
-     *  @param propertyName2SearchWeightMap the map containing search weights from property name to search weights.
+     *  @param indexFieldName2SearchWeightMap the map containing search weights from index field name to search weights.
      */
-    void applySearchWeight(String collectionName, Map<String, Integer> propertyName2SearchWeightMap);
+    void applySearchWeight(String collectionName, Map<String, Integer> indexFieldName2SearchWeightMap);
 
     /**
      * The implementors should take the passed in list of suggestion properties for suggestions functionality.
