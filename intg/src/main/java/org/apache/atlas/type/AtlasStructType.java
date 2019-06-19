@@ -33,10 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.apache.atlas.model.TypeCategory.*;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
+import static org.apache.atlas.model.TypeCategory.OBJECT_ID_TYPE;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.*;
 
 /**
  * class that implements behaviour of a struct-type.
@@ -710,6 +708,7 @@ public class AtlasStructType extends AtlasType {
         private String                         relationshipEdgeLabel;
         private AtlasRelationshipEdgeDirection relationshipEdgeDirection;
         private boolean                        isLegacyAttribute;
+        private String                         indexFieldName;
 
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType, String relationshipName, String relationshipLabel) {
             this.definedInType            = definedInType;
@@ -820,6 +819,13 @@ public class AtlasStructType extends AtlasType {
         public boolean isLegacyAttribute() { return isLegacyAttribute; }
 
         public void setLegacyAttribute(boolean legacyAttribute) { isLegacyAttribute = legacyAttribute; }
+
+        public String getIndexFieldName() { return indexFieldName; }
+
+        public void setIndexFieldName(String indexFieldName) { this.indexFieldName = indexFieldName; }
+
+        public int getSearchWeight() { return attributeDef.getSearchWeight(); }
+
 
         public static String getEdgeLabel(String property) {
             return "__" + property;

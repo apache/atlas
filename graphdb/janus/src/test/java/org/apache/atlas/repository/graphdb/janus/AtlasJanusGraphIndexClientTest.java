@@ -20,6 +20,7 @@ package org.apache.atlas.repository.graphdb.janus;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,81 +28,99 @@ import java.util.Map;
 public class AtlasJanusGraphIndexClientTest {
 
     @Test
-    public void testGetTop5TermsAsendingInput() {
+    public void testGetTopTermsAsendingInput() {
         Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = generateTerms( 10, 12, 15);
         List<String> top5Terms = AtlasJanusGraphIndexClient.getTopTerms(terms);
-        validateOrder(top5Terms, 2,1,0);
+        assertOrder(top5Terms, 2,1,0);
     }
 
     @Test
-    public void testGetTop5TermsAsendingInput2() {
+    public void testGetTopTermsAsendingInput2() {
         Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = generateTerms( 10, 12, 15, 20, 25, 26, 30, 40);
         List<String> top5Terms = AtlasJanusGraphIndexClient.getTopTerms(terms);
-        validateOrder(top5Terms, 7, 6, 5, 4, 3);
+        assertOrder(top5Terms, 7, 6, 5, 4, 3);
     }
 
     @Test
-    public void testGetTop5TermsDescendingInput() {
+    public void testGetTopTermsDescendingInput() {
         Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = generateTerms( 10, 9, 8);
         List<String> top5Terms = AtlasJanusGraphIndexClient.getTopTerms(terms);
-        validateOrder(top5Terms, 0, 1, 2);
+        assertOrder(top5Terms, 0, 1, 2);
     }
 
     @Test
-    public void testGetTop5TermsDescendingInput2() {
+    public void testGetTopTermsDescendingInput2() {
         Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = generateTerms( 10, 9, 8, 7, 6, 5, 4, 3, 2);
         List<String> top5Terms = AtlasJanusGraphIndexClient.getTopTerms(terms);
-        validateOrder(top5Terms, 0, 1, 2, 3, 4);
+        assertOrder(top5Terms, 0, 1, 2, 3, 4);
     }
 
     @Test
-    public void testGetTop5TermsRandom() {
+    public void testGetTopTermsRandom() {
         Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = generateTerms( 10, 19, 28, 27, 16, 1, 30, 3, 36);
         List<String> top5Terms = AtlasJanusGraphIndexClient.getTopTerms(terms);
         //10, 19, 28, 27, 16, 1, 30, 3, 36
         //0,  1,  2,   3,  4, 5, 6,  7,  8
-        validateOrder(top5Terms, 8, 6, 2, 3, 1);
+        assertOrder(top5Terms, 8, 6, 2, 3, 1);
     }
 
     @Test
-    public void testGetTop5TermsRandom2() {
+    public void testGetTopTermsRandom2() {
         Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = generateTerms( 36, 19, 28, 27, 16, 1, 30, 3, 10);
         List<String> top5Terms = AtlasJanusGraphIndexClient.getTopTerms(terms);
         //36, 19, 28, 27, 16, 1, 30, 3, 10
         //0,  1,  2,   3,  4, 5, 6,  7,  8
-        validateOrder(top5Terms, 0, 6, 2, 3, 1);
+        assertOrder(top5Terms, 0, 6, 2, 3, 1);
     }
 
     @Test
-    public void testGetTop5TermsRandom3() {
+    public void testGetTopTermsRandom3() {
         Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = generateTerms( 36, 36, 28, 27, 16, 1, 30, 3, 10);
         List<String> top5Terms = AtlasJanusGraphIndexClient.getTopTerms(terms);
         //36, 36, 28, 27, 16, 1, 30, 3, 10
         //0,  1,  2,   3,  4, 5, 6,  7,  8
-        validateOrder(top5Terms, 0, 1, 6, 2, 3);
+        assertOrder(top5Terms, 0, 1, 6, 2, 3);
     }
 
     @Test
-    public void testGetTop5TermsRandom4() {
+    public void testGetTopTermsRandom4() {
         Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = generateTerms( 10, 10, 28, 27, 16, 1, 30, 36, 36);
         List<String> top5Terms = AtlasJanusGraphIndexClient.getTopTerms(terms);
         //10, 10, 28, 27, 16, 1, 30, 36, 36
         //0,  1,  2,   3,  4, 5, 6,  7,  8
-        validateOrder(top5Terms, 7, 8, 6, 2, 3);
+        assertOrder(top5Terms, 7, 8, 6, 2, 3);
     }
 
     @Test
-    public void testGetTop5TermsRandom5() {
+    public void testGetTopTermsRandom5() {
         Map<String, AtlasJanusGraphIndexClient.TermFreq> terms = generateTerms( 36, 10, 28, 27, 16, 1, 30, 36, 36);
         List<String> top5Terms = AtlasJanusGraphIndexClient.getTopTerms(terms);
         //36, 10, 28, 27, 16, 1, 30, 36, 36
         //0,  1,  2,   3,  4, 5, 6,  7,  8
-        validateOrder(top5Terms, 0, 7, 8, 6, 2);
+        assertOrder(top5Terms, 0, 7, 8, 6, 2);
     }
 
+    @Test
+    public void testGenerateSuggestionString() {
+        List<String> fields = new ArrayList<>();
+        fields.add("one");
+        fields.add("two");
+        fields.add("three");
+        String generatedString = AtlasJanusGraphIndexClient.generateSuggestionsString(fields);
+        Assert.assertEquals(generatedString, "'one', 'two', 'three'");
+    }
 
+    @Test
+    public void testGenerateSearchWeightString() {
+        Map<String, Integer> fields = new HashMap<>();
+        fields.put("one", 10);
+        fields.put("two", 1);
+        fields.put("three", 15);
+        String generatedString = AtlasJanusGraphIndexClient.generateSearchWeightString(fields);
+        Assert.assertEquals(generatedString, " one^10 two^1 three^15");
+    }
 
-    private void validateOrder(List<String> topTerms, int ... indices) {
+    private void assertOrder(List<String> topTerms, int ... indices) {
         Assert.assertEquals(topTerms.size(), indices.length);
         int i = 0;
         for(String term: topTerms) {

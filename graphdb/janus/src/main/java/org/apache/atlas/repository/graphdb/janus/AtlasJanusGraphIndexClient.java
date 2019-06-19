@@ -21,10 +21,10 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AggregationContext;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
-import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -54,18 +54,17 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
     private static final FreqComparator FREQ_COMPARATOR          = new FreqComparator();
     private static final int            DEFAULT_SUGGESTION_COUNT = 5;
+    private static final int            MIN_FACET_COUNT_REQUIRED = 1;
 
-    private final AtlasGraph    graph;
     private final Configuration configuration;
 
 
-    public AtlasJanusGraphIndexClient(AtlasGraph graph, Configuration configuration) {
-        this.graph         = graph;
+    public AtlasJanusGraphIndexClient(Configuration configuration) {
         this.configuration = configuration;
     }
 
     @Override
-    public void applySearchWeight(String collectionName, Map<String, Integer> propertyName2SearchWeightMap) {
+    public void applySearchWeight(String collectionName, Map<String, Integer> indexFieldName2SearchWeightMap) {
         SolrClient solrClient = null;
 
         try {
@@ -98,7 +97,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 try {
                     LOG.info("Attempting to update free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
 
-                    updateFreeTextRequestHandler(solrClient, collectionName, propertyName2SearchWeightMap);
+                    updateFreeTextRequestHandler(solrClient, collectionName, indexFieldName2SearchWeightMap);
 
                     LOG.info("Successfully updated free text request handler {} for collection {}..", FREETEXT_REQUEST_HANDLER, collectionName);
 
@@ -112,7 +111,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 try {
                     LOG.info("Attempting to create free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
 
-                    createFreeTextRequestHandler(solrClient, collectionName, propertyName2SearchWeightMap);
+                    createFreeTextRequestHandler(solrClient, collectionName, indexFieldName2SearchWeightMap);
                     LOG.info("Successfully created free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
 
                     return;
@@ -133,10 +132,10 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         }
     }
 
+
     @Override
-    public Map<String, List<AtlasAggregationEntry>> getAggregatedMetrics(String queryString, Set<String> propertyKeyNames) {
-        SolrClient           solrClient = null;
-        AtlasGraphManagement management = graph.getManagementSystem();
+    public Map<String, List<AtlasAggregationEntry>> getAggregatedMetrics(AggregationContext aggregationContext) {
+        SolrClient solrClient = null;
 
         try {
             solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
@@ -147,28 +146,69 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 return Collections.EMPTY_MAP;
             }
 
-            if (propertyKeyNames.size() <= 0) {
-                LOG.warn("There no fields provided for aggregation purpose.");
+            Set<String>         aggregationCommonFields = aggregationContext.getAggregationFieldNames();
+            Set<AtlasAttribute> aggregationAttributes   = aggregationContext.getAggregationAttributes();
+            Map<String, String> indexFieldNameCache     = aggregationContext.getIndexFieldNameCache();
 
-                return Collections.EMPTY_MAP;
+            if (CollectionUtils.isEmpty(aggregationCommonFields)) {
+                LOG.warn("There are no fields provided for aggregation purpose.");
+
+                if (CollectionUtils.isEmpty(aggregationAttributes)) {
+                    LOG.warn("There are no aggregation fields or attributes are provided. Will return empty metrics.");
+
+                    return Collections.EMPTY_MAP;
+                }
             }
 
-            SolrQuery            solrQuery                         = new SolrQuery();
-            Map<String, String>  indexFieldName2PropertyKeyNameMap = new HashMap<>();
+            if (CollectionUtils.isEmpty(aggregationAttributes)) {
+                LOG.warn("There no attributes provided for aggregation purpose.");
+            }
 
-            solrQuery.setQuery(queryString);
+            Map<String, String>   indexFieldName2PropertyKeyNameMap = new HashMap<>();
+            AtlasSolrQueryBuilder solrQueryBuilder                  = new AtlasSolrQueryBuilder();
+
+            solrQueryBuilder.withEntityType(aggregationContext.getSearchForEntityType())
+                            .withQueryString(aggregationContext.getQueryString())
+                            .withCriteria(aggregationContext.getFilterCriteria())
+                            .withExcludedDeletedEntities(aggregationContext.isExcludeDeletedEntities())
+                            .withIncludeSubTypes(aggregationContext.isIncludeSubTypes())
+                            .withCommonIndexFieldNames(indexFieldNameCache);
+
+
+            SolrQuery solrQuery      = new SolrQuery();
+            String    finalSolrQuery = solrQueryBuilder.build();
+
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("Final query string prepared is {}", finalSolrQuery);
+            }
+
+            solrQuery.setQuery(finalSolrQuery);
             solrQuery.setRequestHandler(FREETEXT_REQUEST_HANDLER);
 
-            for (String propertyName : propertyKeyNames) {
-                AtlasPropertyKey propertyKey    = management.getPropertyKey(propertyName);
-                String           indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey);
+            if (CollectionUtils.isNotEmpty(aggregationCommonFields)) {
+                for (String propertyName : aggregationCommonFields) {
+                    // resolve index field names for aggregation fields.
+                    String indexFieldName = indexFieldNameCache.get(propertyName);
 
-                indexFieldName2PropertyKeyNameMap.put(indexFieldName, propertyName);
+                    indexFieldName2PropertyKeyNameMap.put(indexFieldName, propertyName);
 
-                solrQuery.addFacetField(indexFieldName);
+                    solrQuery.addFacetField(indexFieldName);
+                }
             }
 
-            QueryResponse    queryResponse = solrClient.query(VERTEX_INDEX, solrQuery);
+            if (CollectionUtils.isNotEmpty(aggregationAttributes)) {
+                for (AtlasAttribute attribute : aggregationAttributes) {
+                    String indexFieldName = attribute.getIndexFieldName();
+
+                    indexFieldName2PropertyKeyNameMap.put(indexFieldName, attribute.getQualifiedName());
+
+                    solrQuery.addFacetField(indexFieldName);
+                }
+            }
+
+            solrQuery.setFacetMinCount(MIN_FACET_COUNT_REQUIRED);
+
+            QueryResponse    queryResponse = solrClient.query(VERTEX_INDEX, solrQuery, SolrRequest.METHOD.POST);
             List<FacetField> facetFields   = queryResponse == null ? null : queryResponse.getFacetFields();
 
             if (CollectionUtils.isNotEmpty(facetFields)) {
@@ -183,6 +223,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                         entries.add(new AtlasAggregationEntry(count.getName(), count.getCount()));
                     }
 
+                    //get the original propertyName from the index field name.
                     String propertyKeyName = indexFieldName2PropertyKeyNameMap.get(indexFieldName);
 
                     ret.put(propertyKeyName, entries);
@@ -191,10 +232,8 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 return ret;
             }
         } catch (Exception e) {
-            LOG.error("Error enocunted in getting the aggregation metrics. Will return empty agregation.", e);
+            LOG.error("Error encountered in getting the aggregation metrics. Will return empty aggregation.", e);
         } finally {
-            graphManagementCommit(management);
-
             Solr6Index.releaseSolrClient(solrClient);
         }
 
@@ -215,8 +254,9 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             }
 
             //update the request handler
-            performRequestHandlerAction(collectionName, solrClient,
-                                        generatePayLoadForSuggestions(generateSuggestionsString(collectionName, suggestionProperties)));
+            performRequestHandlerAction(collectionName,
+                                        solrClient,
+                                        generatePayLoadForSuggestions(generateSuggestionsString(suggestionProperties)));
         } catch (Throwable t) {
             String msg = String.format("Error encountered in creating the request handler '%s' for collection '%s'", Constants.TERMS_REQUEST_HANDLER, collectionName);
 
@@ -373,61 +413,55 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
     }
 
-    private String generateSearchWeightString(String indexName, Map<String, Integer> propertyName2SearchWeightMap) {
-        StringBuilder        searchWeightBuilder = new StringBuilder();
-        AtlasGraphManagement management          = graph.getManagementSystem();
+    @VisibleForTesting
+    protected static String generateSearchWeightString(Map<String, Integer> indexFieldName2SearchWeightMap) {
+        StringBuilder searchWeightBuilder = new StringBuilder();
 
-        try {
-            for (Map.Entry<String, Integer> entry : propertyName2SearchWeightMap.entrySet()) {
-                AtlasPropertyKey propertyKey    = management.getPropertyKey(entry.getKey());
-                String           indexFieldName = management.getIndexFieldName(indexName, propertyKey);
-
-                searchWeightBuilder.append(" ")
-                        .append(indexFieldName)
-                        .append("^")
-                        .append(entry.getValue().intValue());
-            }
-        } finally {
-            graphManagementCommit(management);
+        for (Map.Entry<String, Integer> entry : indexFieldName2SearchWeightMap.entrySet()) {
+            searchWeightBuilder.append(" ")
+                               .append(entry.getKey())
+                               .append("^")
+                               .append(entry.getValue().intValue());
         }
 
         return searchWeightBuilder.toString();
     }
 
-    private String generateSuggestionsString(String collectionName, List<String> suggestionProperties) {
-        StringBuilder        ret        = new StringBuilder();
-        AtlasGraphManagement management = graph.getManagementSystem();
+    @VisibleForTesting
+    protected static String generateSuggestionsString(List<String> suggestionIndexFieldNames) {
+        StringBuilder    ret      = new StringBuilder();
+        Iterator<String> iterator = suggestionIndexFieldNames.iterator();
 
-        try {
-            for (String propertyName : suggestionProperties) {
-                AtlasPropertyKey propertyKey    = management.getPropertyKey(propertyName);
-                String           indexFieldName = management.getIndexFieldName(collectionName, propertyKey);
+        while(iterator.hasNext()) {
+            ret.append("'").append(iterator.next()).append("'");
 
-                ret.append("'").append(indexFieldName).append("', ");
+            if(iterator.hasNext()) {
+                ret.append(", ");
             }
-        } finally {
-            graphManagementCommit(management);
         }
 
         return ret.toString();
     }
 
-    private V2Response updateFreeTextRequestHandler(SolrClient solrClient, String collectionName, Map<String, Integer> propertyName2SearchWeightMap) throws IOException, SolrServerException, AtlasBaseException {
-        String searchWeightString = generateSearchWeightString(collectionName, propertyName2SearchWeightMap);
+    private V2Response updateFreeTextRequestHandler(SolrClient solrClient, String collectionName,
+                                                    Map<String, Integer> indexFieldName2SearchWeightMap) throws IOException, SolrServerException, AtlasBaseException {
+        String searchWeightString = generateSearchWeightString(indexFieldName2SearchWeightMap);
         String payLoadString      = generatePayLoadForFreeText("update-requesthandler", searchWeightString);
 
         return performRequestHandlerAction(collectionName, solrClient, payLoadString);
     }
 
-    private V2Response createFreeTextRequestHandler(SolrClient solrClient, String collectionName, Map<String, Integer> propertyName2SearchWeightMap) throws IOException, SolrServerException, AtlasBaseException {
-        String searchWeightString = generateSearchWeightString(collectionName, propertyName2SearchWeightMap);
+    private V2Response createFreeTextRequestHandler(SolrClient solrClient, String collectionName,
+                                                    Map<String, Integer> indexFieldName2SearchWeightMap) throws IOException, SolrServerException, AtlasBaseException {
+        String searchWeightString = generateSearchWeightString(indexFieldName2SearchWeightMap);
         String payLoadString      = generatePayLoadForFreeText("create-requesthandler", searchWeightString);
 
         return performRequestHandlerAction(collectionName, solrClient, payLoadString);
     }
 
-    private V2Response performRequestHandlerAction(String collectionName, SolrClient solrClient, String actionPayLoad)
-                                                           throws IOException, SolrServerException, AtlasBaseException {
+    private V2Response performRequestHandlerAction(String collectionName,
+                                                   SolrClient solrClient,
+                                                   String actionPayLoad) throws IOException, SolrServerException, AtlasBaseException {
         V2Request v2Request = new V2Request.Builder(String.format("/collections/%s/config", collectionName))
                                                     .withMethod(SolrRequest.METHOD.POST)
                                                     .withPayload(actionPayLoad)
@@ -487,7 +521,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         return v2Response;
     }
 
-    static final class TermFreq {
+        static final class TermFreq {
         private final String term;
         private       long   freq;
 

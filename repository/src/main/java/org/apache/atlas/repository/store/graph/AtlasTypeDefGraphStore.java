@@ -1006,6 +1006,17 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     }
 
+    @Override
+    public void notifyLoadCompletion(){
+        for (TypeDefChangeListener changeListener : typeDefChangeListeners) {
+            try {
+                changeListener.onLoadCompletion();
+            } catch (Throwable t) {
+                LOG.error("OnLoadCompletion failed for listener {}", changeListener.getClass().getName(), t);
+            }
+        }
+    }
+
     private void tryUpdateByName(String name, AtlasBaseTypeDef typeDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
         try {
             ttr.updateTypeByName(name, typeDef);

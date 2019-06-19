@@ -75,12 +75,13 @@ import static org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase.
  */
 public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraph.class);
-    private static Configuration APPLICATION_PROPERTIES = null;
+
+    private static final Parameter[]   EMPTY_PARAMETER_ARRAY  = new Parameter[0];
+    private static       Configuration APPLICATION_PROPERTIES = null;
 
     private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
     private final Set<String>                 multiProperties                   = new HashSet<>();
     private final StandardJanusGraph          janusGraph;
-    private final Parameter[] EMPTY_PARAMETER_ARRAY = new Parameter[0];
 
     public AtlasJanusGraph() {
         this(getGraphInstance());
@@ -198,7 +199,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         try {
             initApplicationProperties();
 
-            return new AtlasJanusGraphIndexClient(this, APPLICATION_PROPERTIES);
+            return new AtlasJanusGraphIndexClient(APPLICATION_PROPERTIES);
         } catch (Exception e) {
             LOG.error("Error encountered in creating Graph Index Client.", e);
             throw new AtlasException(e);
@@ -417,6 +418,13 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
 
+    String getIndexFieldName(AtlasPropertyKey propertyKey, JanusGraphIndex graphIndex) {
+        PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
+
+        return janusGraph.getIndexSerializer().getDefaultFieldName(janusKey, EMPTY_PARAMETER_ARRAY, graphIndex.getBackingIndex());
+    }
+
+
     private String getIndexQueryPrefix() {
         final String ret;
 
@@ -523,10 +531,5 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         public Object apply(Object input) {
             return convertGremlinValue(input);
         }
-    }
-
-    public String getIndexFieldName(AtlasPropertyKey propertyKey, String indexName) {
-        PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
-        return  janusGraph.getIndexSerializer().getDefaultFieldName(janusKey, EMPTY_PARAMETER_ARRAY, indexName);
     }
 }
