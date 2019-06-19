@@ -124,7 +124,7 @@ public class ImpalaLineageHook extends AtlasHook {
         } catch (Throwable t) {
 
             LOG.error("ImpalaLineageHook.process(): failed to process query {}",
-                lineageQuery.getQueryText(), t);
+                AtlasType.toJson(lineageQuery), t);
         }
 
         if (LOG.isDebugEnabled()) {

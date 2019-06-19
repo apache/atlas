@@ -418,4 +418,60 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         assertNotNull(ddlQueries);
         assertEquals(ddlQueries.size(), 0);
     }
+
+    /**
+     * This tests
+     * 1) ImpalaLineageTool can parse one lineage file that contains "create table as select" command lineage,
+     *    there is table vertex with createTime. The target vertex's vertexId does not contain db name and table name
+     * 2) Lineage is sent to Atlas
+     * 3) Atlas can get this lineage from Atlas
+     */
+    @Test
+    public void testCreateTableAsSelectVertexIdNoTableNameFromFile() throws Exception {
+        String IMPALA = dir + "impalaCreateTableAsSelectVertexIdNoTableName.json";
+        String IMPALA_WAL = dir + "WALimpala.wal";
+
+        ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
+
+        // create database and tables to simulate Impala behavior that Impala updates metadata
+        // to HMS and HMSHook sends the metadata to Atlas, which has to happen before
+        // Atlas can handle lineage notification
+        String dbName = "sales_db";
+        createDatabase(dbName);
+
+        String sourceTableName = "sales_asia";
+        createTable(dbName, sourceTableName,"(id string, name string)", false);
+
+        String targetTableName = "sales_china";
+        createTable(dbName, targetTableName,"(id string, name string)", false);
+
+        // process lineage record, and send corresponding notification to Atlas
+        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
+        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+
+        // verify the process is saved in Atlas
+        // the value is from info in IMPALA_4.
+        String createTime = new Long((long)1560885039*1000).toString();
+        String processQFName =
+            dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+                CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
+
+        processQFName = processQFName.toLowerCase();
+
+        String queryString = "create table " + targetTableName + " as select * from " + sourceTableName;
+        AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
+        AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+        AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
+            BaseImpalaEvent.ATTRIBUTE_PROCESS));
+        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
+        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+
+        String      guid       = assertTableIsRegistered(dbName, targetTableName);
+        AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
+        List        ddlQueries = (List) entity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        assertNotNull(ddlQueries);
+        assertEquals(ddlQueries.size(), 1);
+    }
 }

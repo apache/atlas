@@ -161,7 +161,7 @@ public abstract class BaseImpalaEvent {
                 return context.getQualifiedNameForTable(node.getVertexId());
 
             case COLUMN:
-                return context.getQualifiedNameForColumn(node.getVertexId());
+                return context.getQualifiedNameForColumn(node);
 
             default:
                 LOG.warn("null qualified name for type: {} and name: {}", nodeType, node.getVertexId());
