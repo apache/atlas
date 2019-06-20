@@ -76,7 +76,7 @@ tr.empty {
 
     th.renderable.html-cell,
     td.renderable.html-cell {
-        max-width: 250px;
+        min-width: 250px;
     }
 
     .select-all-header-cell,
@@ -164,4 +164,9 @@ tr.empty {
             background: $color_jungle_green_light !important;
         }
     }
+}
+
+.toggleList.semi-collapsed div:nth-child(n+2) {
+    display: none;
+
 }

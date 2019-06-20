@@ -87,6 +87,7 @@ define(['require',
                     includeFooterRecords: true,
                     includePageSize: true,
                     includeGotoPage: true,
+                    includeAtlasTableSorting: true,
                     gridOpts: {
                         className: "table table-hover backgrid table-quickMenu",
                         emptyText: 'No records found!'
@@ -119,7 +120,6 @@ define(['require',
                             label: "Classification",
                             cell: "html",
                             editable: false,
-                            sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
                                     if (that.guid !== model.get('entityGuid')) {

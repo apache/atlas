@@ -185,6 +185,7 @@ define(['require',
             },
             bindEvents: function() {
                 var that = this;
+                this.onClickLoadMore();
                 this.listenTo(this.searchCollection, 'backgrid:selected', function(model, checked) {
                     this.arr = [];
                     if (checked === true) {
@@ -263,7 +264,7 @@ define(['require',
                             saveState: false
                         },
                         visibilityControlOpts: {
-                            buttonTemplate: _.template("<button class='btn btn-action btn-sm pull-right'>Columns&nbsp<i class='fa fa-caret-down'></i></button>")
+                            buttonTemplate: _.template("<button class='btn btn-action btn-sm pull-right'>Attributes&nbsp<i class='fa fa-caret-down'></i></button>")
                         },
                         el: this.ui.colManager
                     },
@@ -761,7 +762,8 @@ define(['require',
                             var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
                             _.each(attrObj, function(obj, key) {
                                 var key = obj.name,
-                                    isRenderable = _.contains(columnToShow, key)
+                                    isRenderable = _.contains(columnToShow, key),
+                                    isSortable = obj.typeName.search(/(array|map)/i) == -1;
                                 if (key == "name" || key == "description" || key == "owner") {
                                     if (columnToShow) {
                                         col[key].renderable = isRenderable;
@@ -774,6 +776,7 @@ define(['require',
                                     editable: false,
                                     resizeable: true,
                                     orderable: true,
+                                    sortable: isSortable,
                                     renderable: isRenderable,
                                     formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                         fromRaw: function(rawValue, model) {
@@ -786,7 +789,15 @@ define(['require',
                                                     'isTable': false
                                                 };
                                                 tempObj.valueObject[key] = modelObj.attributes[key];
-                                                return CommonViewFunction.propertyTable(tempObj);
+                                                var tablecolumn = CommonViewFunction.propertyTable(tempObj);
+                                                if (_.isArray(modelObj.attributes[key])) {
+                                                    var column = $("<div>" + tablecolumn + "</div>")
+                                                    if (tempObj.valueObject[key].length > 2) {
+                                                        column.addClass("toggleList semi-collapsed").append("<span><a data-id='load-more-columns'>Show More</a></span>");
+                                                    }
+                                                    return column;
+                                                }
+                                                return tablecolumn;
                                             }
                                         }
                                     })
@@ -796,6 +807,24 @@ define(['require',
                     }
                 }
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
+            },
+            onClickLoadMore: function() {
+                var that = this;
+                this.$el.on('click', "[data-id='load-more-columns']", function(event) {
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                    var $this = $(this),
+                        $toggleList = $(this).parents('.toggleList');
+                    if ($toggleList.length) {
+                        if ($toggleList.hasClass('semi-collapsed')) {
+                            $toggleList.removeClass('semi-collapsed');
+                            $this.text("Show Less");
+                        } else {
+                            $toggleList.addClass('semi-collapsed');
+                            $this.text("Show More");
+                        }
+                    }
+                });
             },
             hideIrreleventElements: function() {
                 this.ui.rowData.siblings('.well').hide();
