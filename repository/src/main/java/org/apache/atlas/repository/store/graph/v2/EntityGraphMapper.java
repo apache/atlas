@@ -195,7 +195,8 @@ public class EntityGraphMapper {
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
-        EntityMutationResponse resp = new EntityMutationResponse();
+        EntityMutationResponse resp       = new EntityMutationResponse();
+        RequestContext         reqContext = RequestContext.get();
 
         Collection<AtlasEntity> createdEntities = context.getCreatedEntities();
         Collection<AtlasEntity> updatedEntities = context.getUpdatedEntities();
@@ -212,6 +213,8 @@ public class EntityGraphMapper {
 
                 resp.addEntity(CREATE, constructHeader(createdEntity, entityType, vertex));
                 addClassifications(context, guid, createdEntity.getClassifications());
+
+                reqContext.cache(createdEntity);
             }
         }
 
@@ -231,10 +234,12 @@ public class EntityGraphMapper {
                     resp.addEntity(UPDATE, constructHeader(updatedEntity, entityType, vertex));
                 }
 
-                if ( replaceClassifications ) {
+                if (replaceClassifications) {
                     deleteClassifications(guid);
                     addClassifications(context, guid, updatedEntity.getClassifications());
                 }
+
+                reqContext.cache(updatedEntity);
             }
         }
 
