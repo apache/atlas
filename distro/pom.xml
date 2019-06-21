@@ -68,7 +68,7 @@ atlas.graph.index.search.solr.wait-searcher=true
 #
 # Alternatively, the JanusGraph documentation provides some tips on how to secure Elasticsearch without additional
 # plugins: https://docs.janusgraph.org/latest/elasticsearch.html
-#atlas.graph.index.hostname=localhost
+#atlas.graph.index.search.hostname=localhost
 #atlas.graph.index.search.elasticsearch.client-only=true
         </graph.index.properties>
         <hbase.embedded>false</hbase.embedded>
@@ -165,7 +165,7 @@ atlas.graph.storage.lock.wait-time=300
                 </graph.storage.properties>
                 <graph.index.backend>elasticsearch</graph.index.backend>
                 <graph.index.properties>#ElasticSearch
-atlas.graph.index.hostname=localhost
+atlas.graph.index.search.hostname=localhost
 atlas.graph.index.search.elasticsearch.client-only=true
                 </graph.index.properties>
 		        <entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
