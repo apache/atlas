@@ -38,7 +38,7 @@
     </appender>
 
     <appender name="LARGE_MESSAGES" class="org.apache.log4j.RollingFileAppender">
-        <param name="File" value="{{log_dir}}/large_messages.log"/>
+        <param name="File" value="${atlas.log.dir}/large_messages.log"/>
         <param name="Append" value="true"/>
         <param name="MaxFileSize" value="100MB" />
         <param name="MaxBackupIndex" value="20" />
