@@ -151,13 +151,7 @@ atlas.client.ha.retries=4
 atlas.client.ha.sleep.interval.ms=5000`}
 </SyntaxHighlighter>
 
-## Server Properties
-<SyntaxHighlighter wrapLines={true} language="bash" style={theme.dark}>
-{`# Set the following property to true, to enable the setup steps to run on each server start. Default = false.
-atlas.server.run.setup.on.start=false`}
-</SyntaxHighlighter>
-
-## Performance configuration items
+---++ Performance configuration items
 The following properties can be used to tune performance of Atlas under specific circumstances:
 
 <SyntaxHighlighter wrapLines={true} language="bash" style={theme.dark}>
