@@ -228,6 +228,9 @@ define(['require',
                     skipDefaultError: true,
                     queryParam: queryParam,
                     success: function(data) {
+                        if (that.isDestroyed) {
+                            return;
+                        }
                         if (data.relations.length) {
                             that.lineageData = $.extend(true, {}, data);
                             that.relationshipMap = that.crateLineageRelationshipHashMap(data);
@@ -864,7 +867,7 @@ define(['require',
                         typeStr += '<option value="' + obj.guid + '">' + obj.attributes.name + '</option>';
                     });
                 }
-                that.ui.lineageTypeSearch.html(typeStr);
+                this.ui.lineageTypeSearch.html(typeStr);
                 this.initilizelineageTypeSearch();
             },
             initilizelineageTypeSearch: function() {

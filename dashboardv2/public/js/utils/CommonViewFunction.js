@@ -80,15 +80,29 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             attributeDefs = options.attributeDefs,
             formatIntVal = options.formatIntVal,
             showListCount = options.showListCount || true,
+            highlightString = options.highlightString,
             numberFormat = options.numberFormat || _.numberFormatWithComa;
 
         var table = "",
+            getHighlightedString = function(resultStr) {
+                if (highlightString && highlightString.length) {
+                    try {
+                        return resultStr.replace(new RegExp(highlightString, "gi"), function(foundStr) {
+                            return "<span class='searched-term-highlight'>" + foundStr + "</span>"
+                        });
+                    } catch (error) {
+                        return resultStr;
+                    }
+                } else {
+                    return resultStr;
+                }
+            },
             getValue = function(val) {
                 if (val) {
                     if ((_.isNumber(val) || !_.isNaN(parseInt(val))) && formatIntVal) {
                         return numberFormat(val);
                     } else {
-                        return val;
+                        return getHighlightedString(val);
                     }
                 } else {
                     return "N/A";
@@ -180,9 +194,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                     }
                                 }
                             });
-                            valueOfArray.push(Utils.JSONPrettyPrint(newAttributesList));
+                            valueOfArray.push(Utils.JSONPrettyPrint(newAttributesList, getValue));
                         } else {
-                            valueOfArray.push(Utils.JSONPrettyPrint(attributesList));
+                            valueOfArray.push(Utils.JSONPrettyPrint(attributesList, getValue));
                         }
                     }
                     if (id && inputOutputField) {
@@ -193,7 +207,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             fetchInputOutputValue(fetchId, defEntity);
                             tempLink += '<div data-id="' + fetchId + '"><div class="value-loader"></div></div>';
                         } else {
-                            tempLink += '<a href="#!/detailPage/' + id + '">' + name + '</a>'
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + getValue(name) + '</a>'
                         }
                     }
                     if (readOnly) {
@@ -247,14 +261,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             if (_.isObject(valueObject[key])) {
                 val = keyValue
             } else if (Utils.isUrl(keyValue)) {
-                val = '<a target="_blank" class="blue-link" href="' + keyValue + '">' + keyValue + '</a>';
+                val = '<a target="_blank" class="blue-link" href="' + keyValue + '">' + getValue(keyValue) + '</a>';
             } else if (key === 'guid' || key === "__guid") {
-                val = '<a title="' + key + '" href="#!/detailPage/' + keyValue + '">' + keyValue + '</a>';
+                val = '<a title="' + key + '" href="#!/detailPage/' + keyValue + '">' + getValue(keyValue) + '</a>';
             } else {
-                val = _.escape(keyValue);
+                val = getValue(_.escape(keyValue));
             }
             if (isTable) {
-                var value = getValue(val),
+                var value = val,
                     appendClass = (value == "N/A" ? "hide-row" : ""),
                     htmlTag = '<div class="scroll-y">' + value + '</div>';
                 if (_.isObject(valueObject[key]) && !_.isEmpty(valueObject[key])) {
