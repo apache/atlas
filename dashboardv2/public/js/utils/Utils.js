@@ -816,7 +816,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         return regexp.test(url);
     }
 
-    Utils.JSONPrettyPrint = function(obj) {
+    Utils.JSONPrettyPrint = function(obj, getValue) {
         var replacer = function(match, pIndent, pKey, pVal, pEnd) {
                 var key = '<span class=json-key>';
                 var val = '<span class=json-value>';
@@ -825,7 +825,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 if (pKey)
                     r = r + key + pKey.replace(/[": ]/g, '') + '</span>: ';
                 if (pVal)
-                    r = r + (pVal[0] == '"' ? str : val) + pVal + '</span>';
+                    r = r + (pVal[0] == '"' ? str : val) + getValue(pVal) + '</span>';
                 return r + (pEnd || '');
             },
             jsonLine = /^( *)("[\w]+": )?("[^"]*"|[\w.+-]*)?([,[{])?$/mg;

@@ -64,12 +64,22 @@ define(['require',
                 this.entityTableGenerate();
             },
             entityTableGenerate: function() {
-                var table = CommonViewFunction.propertyTable({ scope: this, valueObject: this.entity.attributes, attributeDefs: this.attributeDefs });
+                var that = this,
+                    highlightString = $(".atlas-header .global-search-container input.global-search").val(),
+                    table = CommonViewFunction.propertyTable({
+                        scope: this,
+                        valueObject: this.entity.attributes,
+                        attributeDefs: this.attributeDefs,
+                        highlightString: highlightString
+                    });
                 this.ui.detailValue.append(table);
                 Utils.togglePropertyRelationshipTableEmptyValues({
                     "inputType": this.ui.noValueToggle,
                     "tableEl": this.ui.detailValue
                 });
+                setTimeout(function() {
+                    that.$el.find(".searched-term-highlight").addClass("bold");
+                }, 5000)
             }
         });
     return EntityDetailTableLayoutView;

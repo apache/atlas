@@ -45,12 +45,6 @@ header.atlas-header {
             padding: 3px 2px;
             position: relative;
             transition: width 0.3s !important;
-
-            .global-search-container {
-                width: input {
-                    width: 100%;
-                }
-            }
         }
     }
 
@@ -497,6 +491,13 @@ hr[size="10"] {
                 margin-right: 10px;
                 background: none;
             }
+        }
+
+        span.searched-term {
+            display: inline-block;
+            padding: 0;
+            font-weight: bold;
+            color: $black !important;
         }
 
         .ui-state-active {

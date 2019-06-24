@@ -76,7 +76,7 @@ define(['require',
         },
         setSearchBoxWidth: function(options) {
             var atlasHeaderWidth = this.$el.find(".atlas-header").width(),
-                minusWidth = Utils.getUrlState.isDetailPage() ? 400 : 250;
+                minusWidth = Utils.getUrlState.isDetailPage() ? 413 : 263;
             if (options && options.updateWidth) {
                 atlasHeaderWidth = options.updateWidth(atlasHeaderWidth);
             }
@@ -87,7 +87,7 @@ define(['require',
         bindEvent: function() {
             var that = this;
             $(window).resize(function() {
-                that.setSearchBoxWidth()
+                that.setSearchBoxWidth();
             });
         },
         onRender: function() {
@@ -103,16 +103,20 @@ define(['require',
         onBeforeDestroy: function() {
             this.ui.globalSearch.atlasAutoComplete("destroy");
         },
+        manualRender: function() {
+            this.setSearchBoxWidth();
+        },
         fetchSearchData: function(options) {
             var that = this,
                 request = options.request,
                 response = options.response,
                 term = request.term,
+                data = {},
                 sendResponse = function() {
-                    var query = that.cache[term].query,
-                        suggestions = that.cache[term].suggestions;
+                    var query = data.query,
+                        suggestions = data.suggestions;
                     if (query !== undefined && suggestions !== undefined) {
-                        response(that.cache[term]);
+                        response(data);
                     }
                 };
             $.ajax({
@@ -124,9 +128,9 @@ define(['require',
                     "offset": 0
                 },
                 cache: true,
-                success: function(data) {
-                    var data = data.searchResults.entities || [];
-                    that.cache[term] = _.extend({}, that.cache[term], { query: { category: "entities", data: data, order: 1 } });
+                success: function(response) {
+                    var rData = response.searchResults.entities || [];
+                    data.query = { category: "entities", data: rData, order: 1 };
                     sendResponse();
                 }
             });
@@ -138,10 +142,10 @@ define(['require',
                     "prefixString": term
                 },
                 cache: true,
-                success: function(data) {
-                    var data = data.suggestions || [];
-                    that.cache[term] = _.extend({}, that.cache[term], { suggestions: { category: "suggestions", data: data, order: 2 } });
-                    sendResponse(data);
+                success: function(response) {
+                    var rData = response.suggestions || [];
+                    data.suggestions = { category: "suggestions", data: rData, order: 2 };
+                    sendResponse();
                 }
             });
         },
@@ -152,9 +156,16 @@ define(['require',
                 return str;
             }
         },
+        triggerBuasicSearch: function(query) {
+            Utils.setUrl({
+                url: '#!/search/searchResult?query=' + encodeURIComponent(query) + '&searchType=basic',
+                mergeBrowserUrl: false,
+                trigger: true,
+                updateTabState: true
+            });
+        },
         initializeGlobalSearch: function() {
             var that = this;
-            this.cache = {};
             this.ui.globalSearch.atlasAutoComplete({
                 minLength: 1,
                 autoFocus: false,
@@ -171,13 +182,11 @@ define(['require',
                     var item = ui && ui.item;
                     event.preventDefault();
                     event.stopPropagation();
+                    var $el = $(this);
                     if (_.isString(item)) {
-                        var $el = $(this);
                         $el.val(item);
                         $el.data("valSelected", true);
-                        setTimeout(function() {
-                            $el.atlasAutoComplete("search");
-                        }, 10);
+                        that.triggerBuasicSearch(item);
                     } else if (_.isObject(item) && item.guid) {
                         Utils.setUrl({
                             url: '#!/detailPage/' + item.guid,
@@ -185,14 +194,10 @@ define(['require',
                             trigger: true
                         });
                     }
+                    $el.blur();
                     return true;
                 },
                 source: function(request, response) {
-                    var term = request.term;
-                    if (that.cache && that.cache[term]) {
-                        response(that.cache[term]);
-                        return;
-                    }
                     that.fetchSearchData({
                         request: request,
                         response: response
@@ -207,19 +212,26 @@ define(['require',
                     that.ui.clearGlobalSearch.addClass("in");
                     if (event.keyCode == 13) {
                         if ($(this).data("valSelected") !== true) {
-                            Utils.setUrl({
-                                url: '#!/search/searchResult?query=' + encodeURIComponent(that.getSearchString($(this).val())) + '&searchType=basic',
-                                mergeBrowserUrl: false,
-                                trigger: true
-                            });
+                            that.triggerBuasicSearch(that.getSearchString($(this).val()));
                         } else {
                             $(this).data("valSelected", false);
                         }
                     }
                 }
             }).atlasAutoComplete("instance")._renderItem = function(ul, searchItem) {
+
                 if (searchItem) {
-                    var data = searchItem.data;
+                    var data = searchItem.data,
+                        searchTerm = this.term,
+                        getHighlightedTerm = function(resultStr) {
+                            try {
+                                return resultStr.replace(new RegExp(searchTerm, "gi"), function(foundStr) {
+                                    return "<span class='searched-term'>" + foundStr + "</span>";
+                                });
+                            } catch (error) {
+                                return resultStr;
+                            }
+                        }
                     if (data) {
                         if (data.length == 0) {
                             return $("<li class='empty'></li>")
@@ -237,16 +249,15 @@ define(['require',
                                     var img = $('<img src="' + Utils.getEntityIconPath(options) + '">').on('error', function(error, s) {
                                         this.src = Utils.getEntityIconPath(_.extend(options, { errorUrl: this.src }));
                                     });
-                                    var span = $("<span>" + item.itemText + "</span>")
+                                    var span = $("<span>" + (getHighlightedTerm(item.itemText)) + "</span>")
                                         .prepend(img);
                                     li = $("<li class='with-icon'>")
                                         .append(span);
-                                    li.data("ui-autocomplete-item", item);
                                 } else {
                                     li = $("<li>")
-                                        .append("<span>" + item + "</span>")
-                                    li.data("ui-autocomplete-item", item);
+                                        .append("<span>" + (getHighlightedTerm(item)) + "</span>");
                                 }
+                                li.data("ui-autocomplete-item", item);
                                 if (searchItem.category) {
                                     items.push(li.attr("aria-label", searchItem.category + " : " + (_.isObject(item) ? item.itemText : item)));
                                 }
