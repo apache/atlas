@@ -17,94 +17,69 @@
  */
 package org.apache.atlas.authorize;
 
-import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class AtlasAccessRequest {
-
     private static Logger LOG = LoggerFactory.getLogger(AtlasAccessRequest.class);
-    private static boolean isDebugEnabled = LOG.isDebugEnabled();
-    private Set<AtlasResourceTypes> resourceType = null;
-    private String resource = null;
-    private AtlasActionTypes action = null;
-    private String user = null;
-    private Set<String> userGroups = null;
-    private Date accessTime = null;
-    private String clientIPAddress = null;
 
-    public AtlasAccessRequest(HttpServletRequest request, String user, Set<String> userGroups) {
-        // Spring Security 4 Change => request.getServletPath() -> request.getPathInfo()
-        this(AtlasAuthorizationUtils.getAtlasResourceType(request.getPathInfo()), "*", AtlasAuthorizationUtils
-            .getAtlasAction(request.getMethod()), user, userGroups,AtlasAuthorizationUtils.getRequestIpAddress(request));
+    private static final String DEFAULT_ENTITY_ID_ATTRIBUTE = "qualifiedName";
+
+    private final AtlasPrivilege action;
+    private final Date           accessTime;
+    private       String         user            = null;
+    private       Set<String>    userGroups      = null;
+    private       String         clientIPAddress = null;
+
+
+    protected AtlasAccessRequest(AtlasPrivilege action) {
+        this(action, null, null, new Date(), null);
     }
 
-    public AtlasAccessRequest(Set<AtlasResourceTypes> resourceType, String resource, AtlasActionTypes action,
-        String user, Set<String> userGroups, String clientIPAddress) {
-        if (isDebugEnabled) {
-            LOG.debug("==> AtlasAccessRequestImpl-- Initializing AtlasAccessRequest");
-        }
-        setResource(resource);
-        setAction(action);
-        setUser(user);
-        setUserGroups(userGroups);
-        setResourceType(resourceType);
-
-        // set remaining fields to default value
-        setAccessTime(null);
-        setClientIPAddress(clientIPAddress);
+    protected AtlasAccessRequest(AtlasPrivilege action, String user, Set<String> userGroups) {
+        this(action, user, userGroups, new Date(), null);
     }
 
-    public Set<AtlasResourceTypes> getResourceTypes() {
-        return resourceType;
+    protected AtlasAccessRequest(AtlasPrivilege action, String user, Set<String> userGroups, Date accessTime, String clientIPAddress) {
+        this.action          = action;
+        this.user            = user;
+        this.userGroups      = userGroups;
+        this.accessTime      = accessTime;
+        this.clientIPAddress = clientIPAddress;
     }
 
-    public void setResourceType(Set<AtlasResourceTypes> resourceType) {
-        this.resourceType = resourceType;
-    }
-
-    public String getResource() {
-        return resource;
-    }
-
-    public void setResource(String resource) {
-        this.resource = resource;
-    }
-
-    public AtlasActionTypes getAction() {
+    public AtlasPrivilege getAction() {
         return action;
-    }
-
-    public void setAction(AtlasActionTypes action) {
-        this.action = action;
-    }
-
-    public String getUser() {
-        return user;
-    }
-
-    public void setUser(String user) {
-        this.user = user;
-    }
-
-    public void setUserGroups(Set<String> userGroups) {
-        this.userGroups = userGroups;
-    }
-
-    public Set<String> getUserGroups() {
-        return userGroups;
     }
 
     public Date getAccessTime() {
         return accessTime;
     }
 
-    public void setAccessTime(Date accessTime) {
-        this.accessTime = accessTime;
+    public String getUser() {
+        return user;
+    }
+
+    public Set<String> getUserGroups() {
+        return userGroups;
+    }
+
+    public void setUser(String user, Set<String> userGroups) {
+        this.user       = user;
+        this.userGroups = userGroups;
     }
 
     public String getClientIPAddress() {
@@ -115,11 +90,85 @@ public class AtlasAccessRequest {
         this.clientIPAddress = clientIPAddress;
     }
 
-    @Override
-    public String toString() {
-        return "AtlasAccessRequest [resourceType=" + resourceType + ", resource=" + resource + ", action=" + action
-            + ", user=" + user + ", userGroups=" + userGroups + ", accessTime=" + accessTime + ", clientIPAddress="
-            + clientIPAddress + "]";
+    public Set<String> getEntityTypeAndAllSuperTypes(String entityType, AtlasTypeRegistry typeRegistry) {
+        final Set<String> ret;
+
+        if (entityType == null) {
+            ret = Collections.emptySet();
+        } else if (typeRegistry == null) {
+            ret = Collections.singleton(entityType);
+        } else {
+            AtlasEntityType entType = typeRegistry.getEntityTypeByName(entityType);
+
+            ret = entType != null ? entType.getTypeAndAllSuperTypes() : Collections.singleton(entityType);
+        }
+
+        return ret;
     }
 
+    public Set<String> getClassificationTypeAndAllSuperTypes(String classificationName, AtlasTypeRegistry typeRegistry) {
+        final Set<String> ret;
+
+        if (classificationName == null) {
+            ret = Collections.emptySet();
+        } else if (typeRegistry == null) {
+            ret = Collections.singleton(classificationName);
+        } else {
+            AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classificationName);
+
+            return classificationType != null ? classificationType.getTypeAndAllSuperTypes() : Collections.singleton(classificationName);
+        }
+
+        return ret;
+    }
+
+    public String getEntityId(AtlasEntityHeader entity) {
+        return getEntityId(entity, null);
+    }
+
+    public String getEntityId(AtlasEntityHeader entity, AtlasTypeRegistry typeRegistry) {
+        Object ret = null;
+
+        if (entity != null) {
+            AtlasEntityType             entityType     = typeRegistry == null ? null : typeRegistry.getEntityTypeByName(entity.getTypeName());
+            Map<String, AtlasAttribute> uniqAttributes = entityType == null ? null : entityType.getUniqAttributes();
+
+            if (MapUtils.isEmpty(uniqAttributes)) {
+                ret = entity.getAttribute(DEFAULT_ENTITY_ID_ATTRIBUTE);
+            } else {
+                for (AtlasAttribute uniqAttribute : uniqAttributes.values()) {
+                    ret = entity.getAttribute(uniqAttribute.getName());
+
+                    if (ret != null) {
+                        break;
+                    }
+                }
+
+            }
+        }
+
+        return ret == null ? "" : ret.toString();
+    }
+
+    public Set<String> getClassificationNames(AtlasEntityHeader entity) {
+        final Set<String> ret;
+
+        if (entity == null || entity.getClassifications() == null) {
+            ret = Collections.emptySet();
+        } else {
+            ret = new HashSet<>();
+
+            for (AtlasClassification classify : entity.getClassifications()) {
+                ret.add(classify.getTypeName());
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
+    public String toString() {
+        return "AtlasAccessRequest[action=" + action + ", accessTime=" + accessTime + ", user=" + user +
+                                   ", userGroups=" + userGroups + ", clientIPAddress=" + clientIPAddress + "]";
+    }
 }

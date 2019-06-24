@@ -14,13 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<table class="table table-quickMenu">
-    <thead>
-        <tr>
-            <th>Key</th>
-            <th>Value</th>
-        </tr>
-    </thead>
-    <tbody data-id="detailValue">
-    </tbody>
-</table>
+<div class="entity-detail-table">
+    <div class="entity-detail-table-toggle">
+        <div class="pretty p-switch p-fill">
+            <input type="checkbox" data-id="noValueToggle" />
+            <div class="state p-primary">
+                <label>Show Empty Values</label>
+            </div>
+        </div>
+    </div>
+    <table class="table table-quickMenu">
+        <thead>
+            <tr>
+                <th>Key</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody data-id="detailValue" class="hide-empty-value">
+        </tbody>
+    </table>
+</div>

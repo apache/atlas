@@ -17,12 +17,12 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>apache-atlas</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>atlas-docs</artifactId>
     <description>Apache Atlas Documentation</description>
@@ -47,7 +47,7 @@
                     <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
                     <webAccessUrl>https://github.com/apache/atlas.git</webAccessUrl>
                     <anonymousConnection>scm:git://git.apache.org/atlas.git</anonymousConnection>
-                    <developerConnection>scm:https://git-wip-us.apache.org/repos/asf/atlas.git</developerConnection>
+                    <developerConnection>scm:https://gitbox.apache.org/repos/asf/atlas.git</developerConnection>
                 </configuration>
                 <reportSets>
                     <reportSet>
@@ -74,9 +74,27 @@
                     <dependency>
                         <groupId>org.apache.maven.doxia</groupId>
                         <artifactId>doxia-module-twiki</artifactId>
-                        <version>1.6</version>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-module-markdown</artifactId>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-module-markdown</artifactId>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-core</artifactId>
+                        <version>${doxia.version}</version>
                     </dependency>
                 </dependencies>
+                <configuration>
+				    <port>8888</port>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

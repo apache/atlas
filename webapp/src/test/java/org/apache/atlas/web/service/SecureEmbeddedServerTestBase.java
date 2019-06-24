@@ -25,7 +25,6 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.TestUtils;
 import org.apache.atlas.web.integration.AdminJerseyResourceIT;
 import org.apache.atlas.web.integration.EntityJerseyResourceIT;
-import org.apache.atlas.web.integration.MetadataDiscoveryJerseyResourceIT;
 import org.apache.atlas.web.integration.TypesJerseyResourceIT;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
@@ -173,7 +172,6 @@ public class SecureEmbeddedServerTestBase {
             TestListenerAdapter tla = new TestListenerAdapter();
             TestNG testng = new TestNG();
             testng.setTestClasses(new Class[]{AdminJerseyResourceIT.class, EntityJerseyResourceIT.class,
-                    MetadataDiscoveryJerseyResourceIT.class,
                     TypesJerseyResourceIT.class});
             testng.addListener(tla);
             testng.run();

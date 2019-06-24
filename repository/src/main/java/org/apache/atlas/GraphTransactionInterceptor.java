@@ -20,17 +20,22 @@ package org.apache.atlas;
 import com.google.common.annotations.VisibleForTesting;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.exception.NotFoundException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.typesystem.exception.NotFoundException;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,8 +46,11 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final Logger LOG = LoggerFactory.getLogger(GraphTransactionInterceptor.class);
 
     @VisibleForTesting
-    private static final ObjectUpdateSynchronizer OBJECT_UPDATE_SYNCHRONIZER = new ObjectUpdateSynchronizer();
-    private static final ThreadLocal<List<PostTransactionHook>> postTransactionHooks = new ThreadLocal<>();
+    private static final ObjectUpdateSynchronizer               OBJECT_UPDATE_SYNCHRONIZER = new ObjectUpdateSynchronizer();
+    private static final ThreadLocal<List<PostTransactionHook>> postTransactionHooks       = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean>                   isTxnOpen                  = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private static final ThreadLocal<Boolean>                   innerFailure               = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private static final ThreadLocal<Map<String, AtlasVertex>>  guidVertexCache            = ThreadLocal.withInitial(() -> new HashMap<>());
 
     private final AtlasGraph graph;
 
@@ -53,39 +61,79 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
+        Method        method            = invocation.getMethod();
+        String        invokingClass     = method.getDeclaringClass().getSimpleName();
+        String        invokedMethodName = method.getName();
+        boolean       logRollback       = method.getAnnotation(GraphTransaction.class).logRollback();
+
+        boolean isInnerTxn = isTxnOpen.get();
+        // Outermost txn marks any subsequent transaction as inner
+        isTxnOpen.set(Boolean.TRUE);
+
+        if (LOG.isDebugEnabled() && isInnerTxn) {
+            LOG.debug("Txn entry-point {}.{} is inner txn. Commit/Rollback will be ignored", invokingClass, invokedMethodName);
+        }
+
         boolean isSuccess = false;
+        MetricRecorder metric = null;
 
         try {
             try {
                 Object response = invocation.proceed();
-                graph.commit();
-                isSuccess = true;
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("graph commit");
+                if (isInnerTxn) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Ignoring commit for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
+                    }
+                } else {
+                    metric = RequestContext.get().startMetricRecord("graphCommit");
+
+                    doCommitOrRollback(invokingClass, invokedMethodName);
                 }
+
+                isSuccess = !innerFailure.get();
 
                 return response;
             } catch (Throwable t) {
-                if (logException(t)) {
-                    LOG.error("graph rollback due to exception ", t);
+                if (isInnerTxn) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Ignoring rollback for nested/inner transaction {}.{}", invokingClass, invokedMethodName);
+                    }
+                    innerFailure.set(true);
                 } else {
-                    LOG.error("graph rollback due to exception {}:{}", t.getClass().getSimpleName(), t.getMessage());
+                    doRollback(logRollback, t);
                 }
-                graph.rollback();
                 throw t;
             }
         } finally {
-            List<PostTransactionHook> trxHooks = postTransactionHooks.get();
+            RequestContext.get().endMetricRecord(metric);
 
-            if (trxHooks != null) {
-                postTransactionHooks.remove();
+            // Only outer txn can mark as closed
+            if (!isInnerTxn) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Closing outer txn");
+                }
 
-                for (PostTransactionHook trxHook : trxHooks) {
-                    try {
-                        trxHook.onComplete(isSuccess);
-                    } catch (Throwable t) {
-                        LOG.error("postTransactionHook failed", t);
+                // Reset the boolean flags
+                isTxnOpen.set(Boolean.FALSE);
+                innerFailure.set(Boolean.FALSE);
+                guidVertexCache.get().clear();
+
+                List<PostTransactionHook> trxHooks = postTransactionHooks.get();
+
+                if (trxHooks != null) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Processing post-txn hooks");
+                    }
+
+                    postTransactionHooks.remove();
+
+                    for (PostTransactionHook trxHook : trxHooks) {
+                        try {
+                            trxHook.onComplete(isSuccess);
+                        } catch (Throwable t) {
+                            LOG.error("postTransactionHook failed", t);
+                        }
                     }
                 }
             }
@@ -94,12 +142,61 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         }
     }
 
+    private void doCommitOrRollback(final String invokingClass, final String invokedMethodName) {
+        if (innerFailure.get()) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Inner/Nested call threw exception. Rollback on txn entry-point, {}.{}", invokingClass, invokedMethodName);
+            }
+            graph.rollback();
+        } else {
+            doCommit(invokingClass, invokedMethodName);
+        }
+    }
+
+    private void doCommit(final String invokingClass, final String invokedMethodName) {
+        graph.commit();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Graph commit txn {}.{}", invokingClass, invokedMethodName);
+        }
+    }
+
+    private void doRollback(boolean logRollback, final Throwable t) {
+        if (logRollback) {
+            if (logException(t)) {
+                LOG.error("graph rollback due to exception ", t);
+            } else {
+                LOG.error("graph rollback due to exception {}:{}", t.getClass().getSimpleName(), t.getMessage());
+            }
+        }
+
+        graph.rollback();
+    }
+
     public static void lockObjectAndReleasePostCommit(final String guid) {
         OBJECT_UPDATE_SYNCHRONIZER.lockObject(guid);
     }
 
     public static void lockObjectAndReleasePostCommit(final List<String> guids) {
         OBJECT_UPDATE_SYNCHRONIZER.lockObject(guids);
+    }
+
+    public static void addToVertexCache(String guid, AtlasVertex vertex) {
+        Map<String, AtlasVertex> cache = guidVertexCache.get();
+
+        cache.put(guid, vertex);
+    }
+
+    public static void removeFromVertexCache(String guid) {
+        Map<String, AtlasVertex> cache = guidVertexCache.get();
+
+        cache.remove(guid);
+    }
+
+    public static AtlasVertex getVertexFromCache(String guid) {
+        Map<String, AtlasVertex> cache = guidVertexCache.get();
+
+        return cache.get(guid);
     }
 
     boolean logException(Throwable t) {

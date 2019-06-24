@@ -1,0 +1,74 @@
+{
+  "roles": {
+    "ROLE_ADMIN": {
+      "adminPermissions": [
+        {
+          "privileges": [ ".*" ]
+        }
+      ],
+
+      "entityPermissions": [
+        {
+          "privileges":      [ ".*" ],
+          "entityTypes":     [ ".*" ],
+          "entityIds":       [ ".*" ],
+          "classifications": [ ".*" ]
+        }
+      ],
+
+      "typePermissions": [
+        {
+          "privileges":     [ ".*" ],
+          "typeCategories": [ ".*" ],
+          "typeNames":      [ ".*" ]
+        }
+      ],
+      "relationshipPermissions": [
+        {
+          "privileges":     [ ".*" ],
+          "relationshipTypes": [ ".*" ],
+          "endOneEntityType":      [ ".*" ],
+          "endOneEntityId":      [ ".*" ],
+          "endOneEntityClassification":      [ ".*" ],
+          "endTwoEntityType":      [ ".*" ],
+          "endTwoEntityId":      [ ".*" ],
+          "endTwoEntityClassification":      [ ".*" ]
+        }
+      ]
+    },
+
+    "DATA_SCIENTIST": {
+      "entityPermissions": [
+        {
+          "privileges":      [ "entity-read", "entity-read-classification" ],
+          "entityTypes":     [ ".*" ],
+          "entityIds":       [ ".*" ],
+          "classifications": [ ".*" ]
+        }
+      ]
+    },
+
+    "DATA_STEWARD": {
+      "entityPermissions": [
+        {
+          "privileges":      [ "entity-read", "entity-create", "entity-update", "entity-read-classification", "entity-add-classification", "entity-update-classification", "entity-remove-classification" ],
+          "entityTypes":     [ ".*" ],
+          "entityIds":       [ ".*" ],
+          "classifications": [ ".*" ]
+        }
+      ]
+    }
+  },
+
+  "userRoles": {
+    "admin": [ "ROLE_ADMIN" ],
+    "rangertagsync": [ "DATA_SCIENTIST" ]
+  },
+
+  "groupRoles": {
+    "ROLE_ADMIN":      [ "ROLE_ADMIN" ],
+    "hadoop":          [ "DATA_STEWARD" ],
+    "DATA_STEWARD":    [ "DATA_STEWARD" ],
+    "RANGER_TAG_SYNC": [ "DATA_SCIENTIST" ]
+  }
+}

@@ -23,7 +23,7 @@
 
 <suppressions>
     <suppress checks="JavadocType" files="[/\\]src[/\\]test[/\\]java[/\\]"/>
-    
+
     <!-- skip checks on customized titan 0.5.4 files -->
     <suppress checks="[a-zA-Z0-9]*" files="[/\\]com[/\\]thinkaurelius[/\\]titan[/\\]"/>
 </suppressions>

@@ -18,17 +18,17 @@
 
 package org.apache.atlas.storm.hook;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.storm.model.StormDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.storm.ILocalCluster;
 import org.apache.storm.generated.StormTopology;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -70,6 +70,7 @@ public class StormAtlasHookIT {
         atlasClient = null;
     }
 
+    @Test
     public void testAddEntities() throws Exception {
         StormTopology stormTopology = StormTestUtil.createTestTopology();
         StormTestUtil.submitTopology(stormCluster, TOPOLOGY_NAME, stormTopology);
@@ -89,9 +90,9 @@ public class StormAtlasHookIT {
         String query = String.format("from %s where name = \"%s\"",
                 StormDataTypes.STORM_TOPOLOGY.getName(), TOPOLOGY_NAME);
 
-        JSONArray results = atlasClient.search(query, 10, 0);
-        JSONObject row = results.getJSONObject(0);
+        JsonNode results = atlasClient.search(query, 10, 0);
+        JsonNode  row    = results.get(0);
 
-        return row.has("$id$") ? row.getJSONObject("$id$").getString("id"): null;
+        return row.has("$id$") ? row.get("$id$").get("id").asText() : null;
     }
 }

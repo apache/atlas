@@ -26,55 +26,55 @@ import com.google.inject.multibindings.Multibinder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.discovery.AtlasLineageService;
-import org.apache.atlas.discovery.DataSetLineageService;
-import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.discovery.EntityLineageService;
-import org.apache.atlas.discovery.LineageService;
-import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.listener.TypeDefChangeListener;
-import org.apache.atlas.listener.TypesChangeListener;
-import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.audit.EntityAuditListener;
+import org.apache.atlas.repository.audit.EntityAuditListenerV2;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
-import org.apache.atlas.repository.graph.DeleteHandler;
-import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
-import org.apache.atlas.repository.graph.HardDeleteHandler;
-import org.apache.atlas.repository.graph.SoftDeleteHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.GraphDBMigrator;
+import org.apache.atlas.repository.graphdb.janus.migration.GraphDBGraphSONMigrator;
 import org.apache.atlas.repository.impexp.ExportService;
+import org.apache.atlas.repository.ogm.AtlasServerDTO;
+import org.apache.atlas.repository.ogm.ExportImportAuditEntryDTO;
+import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
+import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
+import org.apache.atlas.repository.ogm.DTORegistry;
+import org.apache.atlas.repository.ogm.DataAccess;
+import org.apache.atlas.repository.ogm.DataTransferObject;
+import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryCategoryDTO;
+import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryDTO;
+import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryTermDTO;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.BulkImporter;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasRelationshipStoreV1;
-import org.apache.atlas.repository.store.graph.v1.BulkImporterImpl;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
-import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
-import org.apache.atlas.repository.typestore.GraphBackedTypeStore;
-import org.apache.atlas.repository.typestore.ITypeStore;
-import org.apache.atlas.repository.typestore.StoreBackedTypeCache;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2;
+import org.apache.atlas.repository.store.graph.v2.BulkImporterImpl;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.service.Service;
-import org.apache.atlas.services.DefaultMetadataService;
-import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.util.SearchTracker;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.Test;
 
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
+
+@Test(enabled = false)
 public class TestModules {
 
     static class MockNotifier implements Provider<AtlasEntityChangeNotifier> {
@@ -88,13 +88,6 @@ public class TestModules {
     public static class TestOnlyModule extends AbstractModule {
 
         private static final Logger LOG = LoggerFactory.getLogger(TestOnlyModule.class);
-
-        static class TypeSystemProvider implements Provider<TypeSystem> {
-            @Override
-            public TypeSystem get() {
-                return TypeSystem.getInstance();
-            }
-        }
 
         static class AtlasConfigurationProvider implements Provider<Configuration> {
 
@@ -117,78 +110,75 @@ public class TestModules {
 
         @Override
         protected void configure() {
+            if (useLocalSolr()) {
+                try {
+                    LocalSolrRunner.start();
+                } catch (Exception e) {
+                    //ignore
+                }
+            }
 
             GraphSandboxUtil.create();
 
             bindAuditRepository(binder());
 
-            bindDeleteHandler(binder());
-
             bind(AtlasGraph.class).toProvider(AtlasGraphProvider.class);
 
-            // allow for dynamic binding of the metadata repo & graph service
-            // bind the MetadataRepositoryService interface to an implementation
-            bind(MetadataRepository.class).to(GraphBackedMetadataRepository.class).asEagerSingleton();
-
-            bind(TypeSystem.class).toProvider(TypeSystemProvider.class).in(Singleton.class);
+            // allow for dynamic binding of graph service
             bind(Configuration.class).toProvider(AtlasConfigurationProvider.class).in(Singleton.class);
 
-            // bind the ITypeStore interface to an implementation
-            bind(ITypeStore.class).to(GraphBackedTypeStore.class).asEagerSingleton();
-            bind(AtlasTypeDefStore.class).to(AtlasTypeDefGraphStoreV1.class).asEagerSingleton();
+            // bind the AtlasTypeDefStore interface to an implementation
+            bind(AtlasTypeDefStore.class).to(AtlasTypeDefGraphStoreV2.class).asEagerSingleton();
 
             bind(AtlasTypeRegistry.class).asEagerSingleton();
             bind(EntityGraphMapper.class).asEagerSingleton();
             bind(ExportService.class).asEagerSingleton();
 
-            //GraphBackedSearchIndexer must be an eager singleton to force the search index creation to happen before
-            //we try to restore the type system (otherwise we'll end up running queries
-            //before we have any indices during the initial graph setup)
-            Multibinder<TypesChangeListener> typesChangeListenerBinder =
-                    Multibinder.newSetBinder(binder(), TypesChangeListener.class);
-            typesChangeListenerBinder.addBinding().to(GraphBackedSearchIndexer.class).asEagerSingleton();
-
             // New typesdef/instance change listener should also be bound to the corresponding implementation
             Multibinder<TypeDefChangeListener> typeDefChangeListenerMultibinder =
                     Multibinder.newSetBinder(binder(), TypeDefChangeListener.class);
-            typeDefChangeListenerMultibinder.addBinding().to(DefaultMetadataService.class);
             typeDefChangeListenerMultibinder.addBinding().to(GraphBackedSearchIndexer.class).asEagerSingleton();
 
             bind(SearchTracker.class).asEagerSingleton();
 
-            bind(AtlasEntityStore.class).to(AtlasEntityStoreV1.class);
-            bind(AtlasRelationshipStore.class).to(AtlasRelationshipStoreV1.class);
-
-            // bind the MetadataService interface to an implementation
-            bind(MetadataService.class).to(DefaultMetadataService.class).asEagerSingleton();
+            bind(AtlasEntityStore.class).to(AtlasEntityStoreV2.class);
+            bind(AtlasRelationshipStore.class).to(AtlasRelationshipStoreV2.class);
 
             // bind the DiscoveryService interface to an implementation
-            bind(DiscoveryService.class).to(GraphBackedDiscoveryService.class).asEagerSingleton();
             bind(AtlasDiscoveryService.class).to(EntityDiscoveryService.class).asEagerSingleton();
 
-            bind(LineageService.class).to(DataSetLineageService.class).asEagerSingleton();
             bind(AtlasLineageService.class).to(EntityLineageService.class).asEagerSingleton();
             bind(BulkImporter.class).to(BulkImporterImpl.class).asEagerSingleton();
-
-            bindTypeCache();
+            bind(GraphDBMigrator.class).to(GraphDBGraphSONMigrator.class).asEagerSingleton();
 
             //Add EntityAuditListener as EntityChangeListener
             Multibinder<EntityChangeListener> entityChangeListenerBinder =
                     Multibinder.newSetBinder(binder(), EntityChangeListener.class);
             entityChangeListenerBinder.addBinding().to(EntityAuditListener.class);
 
+            Multibinder<EntityChangeListenerV2> entityChangeListenerV2Binder =
+                    Multibinder.newSetBinder(binder(), EntityChangeListenerV2.class);
+            entityChangeListenerV2Binder.addBinding().to(EntityAuditListenerV2.class);
+
+            // OGM related mappings
+            Multibinder<DataTransferObject> availableDTOs = Multibinder.newSetBinder(binder(), DataTransferObject.class);
+            availableDTOs.addBinding().to(AtlasUserProfileDTO.class);
+            availableDTOs.addBinding().to(AtlasSavedSearchDTO.class);
+            availableDTOs.addBinding().to(AtlasGlossaryDTO.class);
+            availableDTOs.addBinding().to(AtlasGlossaryTermDTO.class);
+            availableDTOs.addBinding().to(AtlasGlossaryCategoryDTO.class);
+            availableDTOs.addBinding().to(AtlasServerDTO.class);
+            availableDTOs.addBinding().to(ExportImportAuditEntryDTO.class);
+
+            bind(DTORegistry.class).asEagerSingleton();
+            bind(DataAccess.class).asEagerSingleton();
+
+            // Glossary related bindings
+            bind(GlossaryService.class).asEagerSingleton();
+
             final GraphTransactionInterceptor graphTransactionInterceptor = new GraphTransactionInterceptor(new AtlasGraphProvider().get());
             requestInjection(graphTransactionInterceptor);
             bindInterceptor(Matchers.any(), Matchers.annotatedWith(GraphTransaction.class), graphTransactionInterceptor);
-        }
-
-        protected void bindTypeCache() {
-            bind(TypeCache.class).to(AtlasRepositoryConfiguration.getTypeCache()).asEagerSingleton();
-        }
-
-        protected void bindDeleteHandler(Binder binder) {
-            binder.bind(DeleteHandler.class).to(AtlasRepositoryConfiguration.getDeleteHandlerImpl()).asEagerSingleton();
-            binder.bind(DeleteHandlerV1.class).to(AtlasRepositoryConfiguration.getDeleteHandlerV1Impl()).asEagerSingleton();
         }
 
         protected void bindAuditRepository(Binder binder) {
@@ -204,35 +194,6 @@ public class TestModules {
                 Multibinder<Service> serviceBinder = Multibinder.newSetBinder(binder, Service.class);
                 serviceBinder.addBinding().to(auditRepoService);
             }
-        }
-    }
-
-    public static class SoftDeleteModule extends TestOnlyModule {
-        @Override
-        protected void bindDeleteHandler(Binder binder) {
-            bind(DeleteHandler.class).to(SoftDeleteHandler.class).asEagerSingleton();
-            bind(DeleteHandlerV1.class).to(SoftDeleteHandlerV1.class).asEagerSingleton();
-            bind(AtlasEntityChangeNotifier.class).toProvider(MockNotifier.class);
-        }
-    }
-
-    public static class HardDeleteModule extends TestOnlyModule {
-        @Override
-        protected void bindDeleteHandler(Binder binder) {
-            bind(DeleteHandler.class).to(HardDeleteHandler.class).asEagerSingleton();
-            bind(DeleteHandlerV1.class).to(HardDeleteHandlerV1.class).asEagerSingleton();
-            bind(AtlasEntityChangeNotifier.class).toProvider(MockNotifier.class);
-        }
-    }
-
-    /**
-     * Guice module which sets TypeCache implementation class configuration property to {@link StoreBackedTypeCache}.
-     *
-     */
-    public static class StoreBackedTypeCacheTestModule extends TestOnlyModule {
-        @Override
-        protected void bindTypeCache() {
-            bind(TypeCache.class).to(StoreBackedTypeCache.class).asEagerSingleton();
         }
     }
 }

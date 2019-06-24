@@ -19,6 +19,10 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+
 
 /**
  * Persistence/Retrieval API for AtlasRelationship
@@ -46,6 +50,20 @@ public interface AtlasRelationshipStore {
     AtlasRelationship getById(String guid) throws AtlasBaseException;
 
     /**
+     * Retrieve a relationship instance and its referred entities using guid.
+     * @param guid relationship instance guid
+     * @return AtlasRelationship
+     */
+    AtlasRelationshipWithExtInfo getExtInfoById(String guid) throws AtlasBaseException;
+
+
+    AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
+
+    AtlasEdge getRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
+
+    AtlasEdge createRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
+
+    /**
      * Retrieve a relationship if it exists or creates a new relationship instance.
      * @param relationship relationship instance definition
      * @return AtlasRelationship
@@ -57,4 +75,11 @@ public interface AtlasRelationshipStore {
      * @param guid relationship instance guid
      */
     void deleteById(String guid) throws AtlasBaseException;
+
+    /**
+     * Delete a relationship instance using guid.
+     * @param guid relationship instance guid
+     * @param forceDelete force delete the relationship edge
+     */
+    void deleteById(String guid, boolean forceDelete) throws AtlasBaseException;
 }

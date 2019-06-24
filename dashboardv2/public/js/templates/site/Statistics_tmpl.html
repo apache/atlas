@@ -1,0 +1,93 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<div class="panel-group server-stats-container statsContainer hide" id="accordion">
+    <div class="panel panel-default expand_collapse_panel-icon" data-id="entity">
+        <div class="panel-heading" data-toggle="collapse" href="#collapse1" aria-expanded="true">
+            <h4 class="panel-title">
+                <a>Entities <span class="count">(0)</span></a>
+            </h4>
+            <div class="btn-group pull-right">
+                <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+            </div>
+        </div>
+        <div id="collapse1" class="panel-collapse collapse in">
+            <div class="panel-body">
+                <table class="table stat-table entityTable" data-id="entity-card">
+                    <tbody>
+                        <tr class="empty text-center">
+                            <td colspan="3"><span>No records found!</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="panel panel-default expand_collapse_panel-icon" data-id="stats">
+        <div class="panel-heading" data-toggle="collapse" href="#collapse3" aria-expanded="true">
+            <h4 class="panel-title">
+                <a>Server Statistics </a>
+            </h4>
+            <div class="btn-group pull-right">
+                <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+            </div>
+        </div>
+        <div id="collapse3" class="panel-collapse collapse in">
+            <div class="panel-body">
+                <div class="col-sm-12">
+                    <div class="card-container panel panel-primary">
+                        <div class="panel-heading">Server Details</div>
+                        <div class="panel-body">
+                            <table class="table stat-table">
+                                <tbody data-id="server-card">
+                                    <tr class="empty text-center">
+                                        <td colspan="2"><span>No records found!</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-12">
+                    <div class="card-container panel panel-primary">
+                        <div class="panel-heading">Notification Details</div>
+                        <div class="panel-body">
+                            <table class="table stat-table">
+                                <tbody data-id="notification-small-card">
+                                    <tr class="empty text-center">
+                                        <td colspan="2"><span>No records found!</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <hr>
+                            </hr>
+                            <table data-id="notification-card" class="table stat-table notification-table table-striped ">
+                                <tbody>
+                                    <tr class="empty text-center">
+                                        <td colspan="2"><span>No records found!</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="fontLoader-relative statsLoader show">
+    <i class="fa fa-refresh fa-spin-custom"></i>
+</div>

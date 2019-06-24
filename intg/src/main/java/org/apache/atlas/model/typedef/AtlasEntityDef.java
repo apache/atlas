@@ -17,26 +17,30 @@
  */
 package org.apache.atlas.model.typedef;
 
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -52,31 +56,53 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
     private Set<String> superTypes;
 
+    // this is a read-only field, any value provided during create & update operation is ignored
+    // the value of this field is derived from 'superTypes' specified in all AtlasEntityDef
+    private Set<String> subTypes;
+
+    // this is a read-only field, any value provided during create & update operation is ignored
+    // the value of this field is derived from all the relationshipDefs this entityType is referenced in
+    private List<AtlasRelationshipAttributeDef> relationshipAttributeDefs;
 
     public AtlasEntityDef() {
-        this(null, null, null, null, null, null);
+        this(null, null, null, null, null, null, null);
     }
 
     public AtlasEntityDef(String name) {
-        this(name, null, null, null, null, null);
+        this(name, null, null, null, null, null, null);
     }
 
     public AtlasEntityDef(String name, String description) {
-        this(name, description, null, null, null, null);
+        this(name, description, null, null, null, null, null);
     }
 
     public AtlasEntityDef(String name, String description, String typeVersion) {
-        this(name, description, typeVersion, null, null, null);
+        this(name, description, typeVersion, null, null, null, null);
+    }
+    
+    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType) {
+        this(name, description, typeVersion, serviceType, null, null, null);
     }
 
+
     public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
-        this(name, description, typeVersion, attributeDefs, null, null);
+        this(name, description, typeVersion, attributeDefs, null);
+    }
+    
+    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs) {
+        this(name, description, typeVersion, serviceType, attributeDefs, null, null);
     }
 
     public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs,
                           Set<String> superTypes) {
         this(name, description, typeVersion, attributeDefs, superTypes, null);
     }
+    
+    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs,
+            Set<String> superTypes) {
+    	this(name, description, typeVersion, serviceType, attributeDefs, superTypes, null);
+    }
+
 
     public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs,
                           Set<String> superTypes, Map<String, String> options) {
@@ -84,6 +110,14 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
         setSuperTypes(superTypes);
     }
+    
+    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs,
+            Set<String> superTypes, Map<String, String> options) {
+    	super(TypeCategory.ENTITY, name, description, typeVersion, attributeDefs, serviceType, options);
+
+		setSuperTypes(superTypes);
+	}
+
 
     public AtlasEntityDef(AtlasEntityDef other) {
         super(other);
@@ -91,7 +125,10 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         setSuperTypes(other != null ? other.getSuperTypes() : null);
     }
 
-    public Set<String> getSuperTypes() {
+
+
+
+	public Set<String> getSuperTypes() {
         return superTypes;
     }
 
@@ -105,6 +142,22 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         } else {
             this.superTypes = new HashSet<>(superTypes);
         }
+    }
+
+    public Set<String> getSubTypes() {
+        return subTypes;
+    }
+
+    public void setSubTypes(Set<String> subTypes) {
+        this.subTypes = subTypes;
+    }
+
+    public List<AtlasRelationshipAttributeDef> getRelationshipAttributeDefs() {
+        return relationshipAttributeDefs;
+    }
+
+    public void setRelationshipAttributeDefs(List<AtlasRelationshipAttributeDef> relationshipAttributeDefs) {
+        this.relationshipAttributeDefs = relationshipAttributeDefs;
     }
 
     public boolean hasSuperType(String typeName) {
@@ -150,6 +203,18 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         sb.append(", superTypes=[");
         dumpObjects(superTypes, sb);
         sb.append("]");
+        sb.append(", relationshipAttributeDefs=[");
+        if (CollectionUtils.isNotEmpty(relationshipAttributeDefs)) {
+            int i = 0;
+            for (AtlasRelationshipAttributeDef attributeDef : relationshipAttributeDefs) {
+                attributeDef.toString(sb);
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                i++;
+            }
+        }
+        sb.append(']');
         sb.append('}');
 
         return sb;
@@ -173,6 +238,83 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+    /**
+     * class that captures details of a struct-attribute.
+     */
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include= JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
+    public static class AtlasRelationshipAttributeDef extends AtlasAttributeDef implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private String  relationshipTypeName;
+        private boolean isLegacyAttribute;
+
+        public AtlasRelationshipAttributeDef() { }
+
+        public AtlasRelationshipAttributeDef(String relationshipTypeName, boolean isLegacyAttribute, AtlasAttributeDef attributeDef) {
+            super(attributeDef);
+
+            this.relationshipTypeName = relationshipTypeName;
+            this.isLegacyAttribute    = isLegacyAttribute;
+        }
+
+        public String getRelationshipTypeName() {
+            return relationshipTypeName;
+        }
+
+        public void setRelationshipTypeName(String relationshipTypeName) {
+            this.relationshipTypeName = relationshipTypeName;
+        }
+
+        public boolean getIsLegacyAttribute() {
+            return isLegacyAttribute;
+        }
+
+        public void setIsLegacyAttribute(boolean isLegacyAttribute) {
+            this.isLegacyAttribute = isLegacyAttribute;
+        }
+
+        public StringBuilder toString(StringBuilder sb) {
+            if (sb == null) {
+                sb = new StringBuilder();
+            }
+
+            sb.append("AtlasRelationshipAttributeDef{");
+            super.toString(sb);
+            sb.append(", relationshipTypeName='").append(relationshipTypeName).append('\'');
+            sb.append(", isLegacyAttribute='").append(isLegacyAttribute).append('\'');
+            sb.append('}');
+
+            return sb;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+
+            if (o == null || getClass() != o.getClass()) return false;
+
+            AtlasRelationshipAttributeDef that = (AtlasRelationshipAttributeDef) o;
+
+            return super.equals(that) &&
+                   isLegacyAttribute == that.isLegacyAttribute &&
+                   Objects.equals(relationshipTypeName, that.relationshipTypeName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), relationshipTypeName, isLegacyAttribute);
+        }
+
+        @Override
+        public String toString() {
+            return toString(new StringBuilder()).toString();
+        }
     }
 
 

@@ -17,6 +17,11 @@
  */
 package org.apache.atlas.model.instance;
 
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -34,13 +39,12 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -54,7 +58,11 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 public class AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    public static final String KEY_TYPENAME   = "typeName";
+    public static final String KEY_ATTRIBUTES = "attributes";
+
     public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyyMMdd-HH:mm:ss.SSS-Z";
+    @Deprecated
     public static final DateFormat DATE_FORMATTER             = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
 
     private String              typeName;
@@ -76,6 +84,19 @@ public class AtlasStruct implements Serializable {
     public AtlasStruct(String typeName, String attrName, Object attrValue) {
         setTypeName(typeName);
         setAttribute(attrName, attrValue);
+    }
+
+    public AtlasStruct(Map map) {
+        if (map != null) {
+            Object typeName   = map.get(KEY_TYPENAME);
+            Map    attributes = (map.get(KEY_ATTRIBUTES) instanceof Map) ? (Map) map.get(KEY_ATTRIBUTES) : map;
+
+            if (typeName != null) {
+                setTypeName(typeName.toString());
+            }
+
+            setAttributes(new HashMap<>(attributes));
+        }
     }
 
     public AtlasStruct(AtlasStruct other) {
@@ -126,12 +147,10 @@ public class AtlasStruct implements Serializable {
         }
     }
 
-    public void removeAttribute(String name) {
+    public Object removeAttribute(String name) {
         Map<String, Object> a = this.attributes;
 
-        if (a != null && a.containsKey(name)) {
-            a.remove(name);
-        }
+        return a != null ? a.remove(name) : null;
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -263,7 +282,7 @@ public class AtlasStruct implements Serializable {
         if (value == null) {
             sb.append(value);
         } else {
-            sb.append(DATE_FORMATTER.format(value));
+            sb.append(AtlasBaseTypeDef.getDateFormatter().format(value));
         }
 
         return sb;

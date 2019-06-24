@@ -42,7 +42,7 @@
     <link rel="stylesheet" href="js/libs/backgrid-paginator/css/backgrid-paginator.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/backgrid-orderable-columns/css/backgrid-orderable-columns.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/backgrid-sizeable-columns/css/backgrid-sizeable-columns.css?bust=<%- bust %>">
-    <link rel="stylesheet" href="js/libs/backgrid-columnmanager/css/Backgrid.ColumnManager.css?bust=<%- bust %>">
+    <link rel="stylesheet" href="js/external_lib/backgrid-columnmanager/css/Backgrid.ColumnManager.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/select2/css/select2.min.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/bootstrap/css/bootstrap.min.css?bust=<%- bust %>">
     <link rel="stylesheet" href="js/libs/jquery-asBreadcrumbs/css/asBreadcrumbs.min.css?bust=<%- bust %>">
@@ -54,6 +54,9 @@
     <link href="js/libs/jQueryQueryBuilder/css/query-builder.default.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/bootstrap-daterangepicker/css/daterangepicker.css?bust=<%- bust %>" rel="stylesheet">
     <link rel="stylesheet" href="js/libs/nvd3/css/nv.d3.min.css?bust=<%- bust %>">
+    <link href="js/libs/jstree/css/default-dark/default-dark-theme.min.css?bust=<%- bust %>" rel="stylesheet">
+    <link href="js/libs/pretty-checkbox/css/pretty-checkbox.min.css?bust=<%- bust %>" rel="stylesheet">
+    <link href="js/libs/jstree/css/default/default-theme.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="css/style.css?bust=<%- bust %>" rel="stylesheet">
 </head>
 
@@ -66,7 +69,7 @@
             <header id="new-header" class="clearfix"></header>
             <div id="new-page-wrapper">
                 <div>
-                    <img class="initialLoading" src="img/ring.gif">
+                    <div class="initialLoading"></div>
                 </div>
             </div>
         </div>

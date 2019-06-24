@@ -17,10 +17,10 @@
  */
 package org.apache.atlas.web.adapters;
 
-import org.apache.atlas.TestModules;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -45,6 +45,7 @@ import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +79,6 @@ public class TestEntityREST {
     @AfterMethod
     public void cleanup() throws Exception {
         RequestContext.clear();
-        RequestContextV1.clear();
     }
 
     private void createTestEntity() throws Exception {
@@ -100,7 +100,7 @@ public class TestEntityREST {
     @Test
     public void testGetEntityById() throws Exception {
         createTestEntity();
-        AtlasEntityWithExtInfo response = entityREST.getById(dbEntity.getGuid());
+        AtlasEntityWithExtInfo response = entityREST.getById(dbEntity.getGuid(), false, false);
 
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.getEntity());
@@ -166,7 +166,7 @@ public class TestEntityREST {
             put("tag", "tagName_updated");
         }});
 
-        entityREST.updateClassification(dbEntity.getGuid(), new ArrayList<>(Arrays.asList(phiClassification, testClassification)));
+        entityREST.updateClassifications(dbEntity.getGuid(), new ArrayList<>(Arrays.asList(phiClassification, testClassification)));
 
         AtlasClassification updatedClassification = entityREST.getClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
         Assert.assertNotNull(updatedClassification);
@@ -178,13 +178,13 @@ public class TestEntityREST {
         Assert.assertNotNull(updatedClassification);
         Assert.assertEquals(updatedClassification.getAttribute("tag"), testClassification.getAttribute("tag"));
 
-        entityREST.deleteClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
+        deleteClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
     }
 
     @Test(dependsOnMethods = "testAddAndGetClassification")
     public void  testGetEntityWithAssociations() throws Exception {
 
-        AtlasEntityWithExtInfo entity = entityREST.getById(dbEntity.getGuid());
+        AtlasEntityWithExtInfo entity = entityREST.getById(dbEntity.getGuid(), false, false);
         final List<AtlasClassification> retrievedClassifications = entity.getEntity().getClassifications();
 
         Assert.assertNotNull(retrievedClassifications);
@@ -194,7 +194,7 @@ public class TestEntityREST {
     @Test(dependsOnMethods = "testGetEntityWithAssociations")
     public void  testDeleteClassification() throws Exception {
 
-        entityREST.deleteClassification(dbEntity.getGuid(), TestUtilsV2.CLASSIFICATION);
+        deleteClassification(dbEntity.getGuid(), TestUtilsV2.CLASSIFICATION);
         final AtlasClassification.AtlasClassifications retrievedClassifications = entityREST.getClassifications(dbEntity.getGuid());
 
         Assert.assertNotNull(retrievedClassifications);
@@ -202,6 +202,88 @@ public class TestEntityREST {
     }
 
     @Test(dependsOnMethods = "testDeleteClassification")
+    public void testAddClassificationByUniqueAttribute() throws Exception {
+        testClassification = new AtlasClassification(TestUtilsV2.CLASSIFICATION, Collections.singletonMap("tag", "tagName"));
+
+        List<AtlasClassification> classifications = Collections.singletonList(testClassification);
+
+        entityREST.addClassificationsByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, (String) dbEntity.getAttribute(TestUtilsV2.NAME)), classifications);
+
+        final AtlasClassification.AtlasClassifications retrievedClassifications = entityREST.getClassifications(dbEntity.getGuid());
+
+        Assert.assertNotNull(retrievedClassifications);
+
+        final List<AtlasClassification> retrievedClassificationsList = retrievedClassifications.getList();
+
+        Assert.assertNotNull(retrievedClassificationsList);
+
+        Assert.assertEquals(classifications, retrievedClassificationsList);
+
+        final AtlasClassification retrievedClassification = entityREST.getClassification(dbEntity.getGuid(), TestUtilsV2.CLASSIFICATION);
+
+        Assert.assertNotNull(retrievedClassification);
+        Assert.assertEquals(retrievedClassification, testClassification);
+    }
+
+    @Test(dependsOnMethods = "testAddClassificationByUniqueAttribute" )
+    public void testUpdateClassificationByUniqueAttribute() throws Exception{
+        testClassification = new AtlasClassification(TestUtilsV2.CLASSIFICATION, Collections.singletonMap("tag", "tagName"));
+        phiClassification  = new AtlasClassification(TestUtilsV2.PHI, new HashMap<String, Object>() {{
+            put("stringAttr", "sample_string");
+            put("booleanAttr", true);
+            put("integerAttr", 100);
+        }});
+
+        entityREST.addClassificationsByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, (String) dbEntity.getAttribute(TestUtilsV2.NAME)), Arrays.asList(testClassification, phiClassification));
+
+        final AtlasClassifications retrievedClassifications = entityREST.getClassifications(dbEntity.getGuid());
+
+        Assert.assertNotNull(retrievedClassifications);
+
+        final List<AtlasClassification> retrievedClassificationsList = retrievedClassifications.getList();
+
+        Assert.assertNotNull(retrievedClassificationsList);
+
+        final AtlasClassification retrievedClassification = entityREST.getClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
+
+        Assert.assertNotNull(retrievedClassification);
+        Assert.assertEquals(retrievedClassification, phiClassification);
+
+        for (String attrName : retrievedClassification.getAttributes().keySet()) {
+            Assert.assertEquals(retrievedClassification.getAttribute(attrName), phiClassification.getAttribute(attrName));
+        }
+
+        // update multiple tags attributes
+        phiClassification = new AtlasClassification(TestUtilsV2.PHI, new HashMap<String, Object>() {{
+            put("stringAttr", "sample_string_v2");
+            put("integerAttr", 200);
+        }});
+
+        entityREST.updateClassificationsByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, (String) dbEntity.getAttribute(TestUtilsV2.NAME)), Collections.singletonList(phiClassification));
+
+        AtlasClassification updatedClassification = entityREST.getClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
+        Assert.assertNotNull(updatedClassification);
+        Assert.assertEquals(updatedClassification.getAttribute("stringAttr"), "sample_string_v2");
+        Assert.assertEquals(updatedClassification.getAttribute("integerAttr"), 200);
+        Assert.assertEquals(updatedClassification.getAttribute("booleanAttr"), true);
+
+        updatedClassification = entityREST.getClassification(dbEntity.getGuid(), TestUtilsV2.CLASSIFICATION);
+        Assert.assertNotNull(updatedClassification);
+        Assert.assertEquals(updatedClassification.getAttribute("tag"), testClassification.getAttribute("tag"));
+    }
+
+    @Test(dependsOnMethods = "testUpdateClassificationByUniqueAttribute" )
+    public void testDeleteClassificationByUniqueAttribute() throws Exception {
+        entityREST.deleteClassificationByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, (String) dbEntity.getAttribute(TestUtilsV2.NAME)), TestUtilsV2.CLASSIFICATION);
+        entityREST.deleteClassificationByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, (String) dbEntity.getAttribute(TestUtilsV2.NAME)), TestUtilsV2.PHI);
+
+        final AtlasClassification.AtlasClassifications retrievedClassifications = entityREST.getClassifications(dbEntity.getGuid());
+
+        Assert.assertNotNull(retrievedClassifications);
+        Assert.assertEquals(retrievedClassifications.getList().size(), 0);
+    }
+
+    @Test(dependsOnMethods = "testDeleteClassificationByUniqueAttribute")
     public void  testDeleteEntityById() throws Exception {
 
         EntityMutationResponse response = entityREST.deleteByGuid(dbEntity.getGuid());
@@ -234,7 +316,7 @@ public class TestEntityREST {
         Assert.assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.PARTIAL_UPDATE).get(0).getGuid(), dbGuid);
 
         //Get By unique attribute
-        AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
+        AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, false, false, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
         Assert.assertNotNull(entity);
         Assert.assertNotNull(entity.getEntity().getGuid());
         Assert.assertEquals(entity.getEntity().getGuid(), dbGuid);
@@ -259,7 +341,7 @@ public class TestEntityREST {
         Assert.assertEquals(response.getEntitiesByOperation(EntityMutations.EntityOperation.PARTIAL_UPDATE).get(0).getGuid(), dbGuid);
 
         //Get By unique attribute
-        AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
+        AtlasEntityWithExtInfo entity = entityREST.getByUniqueAttributes(TestUtilsV2.DATABASE_TYPE, false, false, toHttpServletRequest(TestUtilsV2.NAME, updatedDBName));
         Assert.assertNotNull(entity);
         Assert.assertNotNull(entity.getEntity().getGuid());
         Assert.assertEquals(entity.getEntity().getGuid(), dbGuid);
@@ -285,5 +367,9 @@ public class TestEntityREST {
         return new HashMap<String, String[]>() {{
             put(name, new String[] { value });
         }};
+    }
+
+    private void deleteClassification(String guid, String classificationName) throws AtlasBaseException {
+        entityREST.deleteClassification(guid, classificationName, null);
     }
 }

@@ -18,9 +18,9 @@
 package org.apache.atlas.model;
 
 import com.sun.jersey.core.util.MultivaluedMapImpl;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -28,8 +28,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * Generic filter, to specify search criteria using name/value pairs.
@@ -40,11 +40,13 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class SearchFilter {
-    public static final String PARAM_TYPE = "type";
-    public static final String PARAM_NAME = "name";
-    public static final String PARAM_SUPERTYPE = "supertype";
-    public static final String PARAM_NOT_SUPERTYPE = "notsupertype";
-    public static final String PARAM_NOT_NAME      = "notname";
+    public static final String PARAM_TYPE            = "type";
+    public static final String PARAM_NAME            = "name";
+    public static final String PARAM_SUPERTYPE       = "supertype";
+    public static final String PARAM_SERVICETYPE     = "servicetype";
+    public static final String PARAM_NOT_SUPERTYPE   = "notsupertype";
+    public static final String PARAM_NOT_SERVICETYPE = "notservicetype";
+    public static final String PARAM_NOT_NAME        = "notname";
 
     /**
      * to specify whether the result should be sorted? If yes, whether asc or desc.

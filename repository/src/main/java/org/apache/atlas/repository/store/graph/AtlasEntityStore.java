@@ -18,11 +18,16 @@
 package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasCheckStateRequest;
+import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasEntityHeaders;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.repository.store.graph.v1.EntityStream;
+import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
 
 import java.util.List;
@@ -32,6 +37,15 @@ import java.util.Map;
  * Persistence/Retrieval API for AtlasEntity
  */
 public interface AtlasEntityStore {
+
+    /**
+     * List all the entity guids for a given typename
+     * @param typename
+     * @return
+     * @throws AtlasBaseException
+     */
+    List<String> getEntityGUIDS(String typename) throws AtlasBaseException;
+
     /**
      *
      * Get entity definition by its guid
@@ -39,6 +53,23 @@ public interface AtlasEntityStore {
      * @return AtlasEntity
      */
     AtlasEntityWithExtInfo getById(String guid) throws AtlasBaseException;
+
+    /**
+     *
+     * Get entity definition by its guid
+     * @param guid
+     * @param isMinExtInfo
+     * @return AtlasEntity
+     */
+    AtlasEntityWithExtInfo getById(String guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
+
+    /**
+     * Get entity header for the given GUID
+     * @param guid
+     * @return
+     * @throws AtlasBaseException
+     */
+    AtlasEntityHeader getHeaderById(String guid) throws AtlasBaseException;
 
     /**
      * Batch GET to retrieve entities by their ID
@@ -49,6 +80,26 @@ public interface AtlasEntityStore {
     AtlasEntitiesWithExtInfo getByIds(List<String> guid) throws AtlasBaseException;
 
     /**
+     * Batch GET to retrieve entities by their ID
+     * @param guid
+     * @param isMinExtInfo
+     * @return
+     * @throws AtlasBaseException
+     */
+    AtlasEntitiesWithExtInfo getByIds(List<String> guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
+
+    /**
+     * Batch GET to retrieve entities by their uniqueIds
+     * @param entityType
+     * @param uniqueAttributes
+     * @param isMinExtInfo
+     * @param ignoreRelationships
+     * @return
+     * @throws AtlasBaseException
+     */
+    AtlasEntitiesWithExtInfo getEntitiesByUniqueAttributes(AtlasEntityType entityType, List<Map<String, Object>> uniqueAttributes, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
+
+    /**
      *
      * Get an eneity by its unique attribute
      * @param entityType     type of the entity
@@ -57,6 +108,26 @@ public interface AtlasEntityStore {
      */
     AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
             throws AtlasBaseException;
+
+    /**
+     *
+     * Get an eneity by its unique attribute
+     * @param entityType     type of the entity
+     * @param uniqAttributes Attributes that uniquely identify the entity
+     * @param isMinExtInfo
+     * @param ignoreRelationships ignore relationship attributes
+     * @return EntityMutationResponse details of the updates performed by this call
+     */
+    AtlasEntityWithExtInfo getByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes, boolean isMinExtInfo, boolean ignoreRelationships)
+            throws AtlasBaseException;
+
+    /**
+     * Check state of entities in the store
+     * @param request AtlasCheckStateRequest
+     * @return AtlasCheckStateResult
+     * @throws AtlasBaseException
+     */
+    AtlasCheckStateResult checkState(AtlasCheckStateRequest request) throws AtlasBaseException;
 
     /**
      * Create or update  entities in the stream
@@ -73,6 +144,16 @@ public interface AtlasEntityStore {
      * @throws AtlasBaseException
      */
     EntityMutationResponse createOrUpdateForImport(EntityStream entityStream) throws AtlasBaseException;
+
+    /**
+     * Update a single entity
+     * @param objectId     ID of the entity
+     * @param updatedEntityInfo updated entity information
+     * @return EntityMutationResponse details of the updates performed by this call
+     * @throws AtlasBaseException
+     *
+     */
+    EntityMutationResponse updateEntity(AtlasObjectId objectId, AtlasEntityWithExtInfo updatedEntityInfo, boolean isPartialUpdate) throws AtlasBaseException;
 
     /**
      * Update a single entity
@@ -110,8 +191,17 @@ public interface AtlasEntityStore {
      * @throws AtlasBaseException
      */
     EntityMutationResponse deleteByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
-                                                                                             throws AtlasBaseException;
+            throws AtlasBaseException;
+    /**
+     *
+     * Get an entity guid by its unique attributes
+     * @param entityType     type of the entity
+     * @param uniqAttributes Attributes that uniquely identify the entity
+     * @return String entity guid
+     * @throws AtlasBaseException
+     */
 
+    String getGuidByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException;
     /*
      * Return list of deleted entity guids
      */
@@ -130,11 +220,15 @@ public interface AtlasEntityStore {
     void addClassification(List<String> guids, AtlasClassification classification) throws AtlasBaseException;
 
     /**
-     * Delete classification(s)
+     * Delete classification
      */
-    void deleteClassifications(String guid, List<String> classificationNames) throws AtlasBaseException;
+    void deleteClassification(String guid, String classificationName) throws AtlasBaseException;
+
+    void deleteClassification(String guid, String classificationName, String associatedEntityGuid) throws AtlasBaseException;
 
     List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException;
 
     AtlasClassification getClassification(String guid, String classificationName) throws AtlasBaseException;
+
+    String setClassifications(AtlasEntityHeaders entityHeaders);
 }

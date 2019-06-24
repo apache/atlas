@@ -154,7 +154,7 @@ define(['require',
                         mergeBrowserUrl: false,
                         trigger: true,
                         urlParams: {
-                            'profile': true
+                            tabActive: 'profile'
                         }
                     });
                 });

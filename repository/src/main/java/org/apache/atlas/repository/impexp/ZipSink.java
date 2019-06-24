@@ -22,6 +22,7 @@ import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +37,10 @@ import java.util.zip.ZipOutputStream;
 public class ZipSink {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSink.class);
 
+    private static String FILE_EXTENSION_JSON = ".json";
+
     private ZipOutputStream zipOutputStream;
     final Set<String>       guids = new HashSet<>();
-
 
     public ZipSink(OutputStream outputStream) {
         zipOutputStream = new ZipOutputStream(outputStream);
@@ -92,7 +94,7 @@ public class ZipSink {
 
     private void saveToZip(String fileName, String jsonData) throws AtlasBaseException {
         try {
-            addToZipStream(fileName.toString() + ".json", jsonData);
+            addToZipStream(fileName.toString() + FILE_EXTENSION_JSON, jsonData);
         } catch (IOException e) {
             throw new AtlasBaseException(String.format("Error writing file %s.", fileName), e);
         }
@@ -102,9 +104,29 @@ public class ZipSink {
 
         ZipEntry e = new ZipEntry(entryName);
         zipOutputStream.putNextEntry(e);
-
-        zipOutputStream.write(payload.getBytes());
+        writeBytes(payload);
         zipOutputStream.closeEntry();
+    }
+
+    private void writeBytes(String payload) throws IOException {
+        splitAndWriteBytes(payload, 10 * 1024 * 1024, zipOutputStream);
+    }
+
+    static void splitAndWriteBytes(String msg, int bufferSize, OutputStream os) throws IOException {
+        int numberOfSplits = (int) Math.ceil(((float) msg.length()) / bufferSize);
+        if (numberOfSplits == 0) {
+            numberOfSplits = 1;
+        } else {
+            if (LOG.isDebugEnabled()) {
+                LOG.info("ZipSink: number of splits: {}", numberOfSplits);
+            }
+        }
+
+        for (int i = 0, start = 0; i < numberOfSplits; i++, start += bufferSize) {
+            int end = bufferSize + start;
+            String s = StringUtils.substring(msg, start, end);
+            os.write(s.getBytes());
+        }
     }
 
     public boolean hasEntity(String guid) {

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,65 +19,113 @@
 package org.apache.atlas.discovery;
 
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
-import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
+import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
+import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
+import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
+import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.BOTH;
+import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.INPUT;
+import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.OUTPUT;
+import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.FULL_LINEAGE_DATASET;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.FULL_LINEAGE_PROCESS;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.PARTIAL_LINEAGE_DATASET;
+import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.PARTIAL_LINEAGE_PROCESS;
 
 @Service
 public class EntityLineageService implements AtlasLineageService {
-    private static final String INPUT_PROCESS_EDGE      =  "__Process.inputs";
-    private static final String OUTPUT_PROCESS_EDGE     =  "__Process.outputs";
+    private static final Logger LOG = LoggerFactory.getLogger(EntityLineageService.class);
+
+    private static final String PROCESS_INPUTS_EDGE  = "__Process.inputs";
+    private static final String PROCESS_OUTPUTS_EDGE = "__Process.outputs";
+    private static final String COLUMNS              = "columns";
 
     private final AtlasGraph                graph;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
     private final EntityGraphRetriever      entityRetriever;
+    private final AtlasTypeRegistry         atlasTypeRegistry;
 
     @Inject
-    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) throws DiscoveryException {
-        this.graph                = atlasGraph;
+    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) {
+        this.graph = atlasGraph;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
-        this.entityRetriever      = new EntityGraphRetriever(typeRegistry);
+        this.entityRetriever = new EntityGraphRetriever(typeRegistry);
+        this.atlasTypeRegistry = typeRegistry;
     }
 
     @Override
     @GraphTransaction
     public AtlasLineageInfo getAtlasLineageInfo(String guid, LineageDirection direction, int depth) throws AtlasBaseException {
-        AtlasLineageInfo lineageInfo;
+        AtlasLineageInfo ret;
 
-        if (!entityExists(guid)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, entity), "read entity lineage: guid=", guid);
+
+        AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (entityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, entity.getTypeName());
+        }
+
+        boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
+
+        if (!isDataSet) {
+            boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
+
+            if (!isProcess) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, entity.getTypeName());
+            }
+
         }
 
         if (direction != null) {
-            if (direction.equals(LineageDirection.INPUT)) {
-                lineageInfo = getLineageInfo(guid, LineageDirection.INPUT, depth);
-            } else if (direction.equals(LineageDirection.OUTPUT)) {
-                lineageInfo = getLineageInfo(guid, LineageDirection.OUTPUT, depth);
-            } else if (direction.equals(LineageDirection.BOTH)) {
-                lineageInfo = getBothLineageInfo(guid, depth);
+            if (direction.equals(INPUT)) {
+                ret = getLineageInfo(guid, INPUT, depth, isDataSet);
+            } else if (direction.equals(OUTPUT)) {
+                ret = getLineageInfo(guid, OUTPUT, depth, isDataSet);
+            } else if (direction.equals(BOTH)) {
+                ret = getBothLineageInfo(guid, depth, isDataSet);
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_LINEAGE_INVALID_PARAMS, "direction", direction.toString());
             }
@@ -85,45 +133,107 @@ public class EntityLineageService implements AtlasLineageService {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_LINEAGE_INVALID_PARAMS, "direction", null);
         }
 
-        return lineageInfo;
+        return ret;
     }
 
-    private AtlasLineageInfo getLineageInfo(String guid, LineageDirection direction, int depth) throws AtlasBaseException {
+    @Override
+    @GraphTransaction
+    public SchemaDetails getSchemaForHiveTableByName(final String datasetName) throws AtlasBaseException {
+        if (StringUtils.isEmpty(datasetName)) {
+            // TODO: Complete error handling here
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST);
+        }
+
+        AtlasEntityType hive_table = atlasTypeRegistry.getEntityTypeByName("hive_table");
+
+        Map<String, Object> lookupAttributes = new HashMap<>();
+        lookupAttributes.put("qualifiedName", datasetName);
+        String guid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(hive_table, lookupAttributes);
+
+        return getSchemaForHiveTableByGuid(guid);
+    }
+
+    @Override
+    @GraphTransaction
+    public SchemaDetails getSchemaForHiveTableByGuid(final String guid) throws AtlasBaseException {
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST);
+        }
+        SchemaDetails ret = new SchemaDetails();
+        AtlasEntityType hive_column = atlasTypeRegistry.getEntityTypeByName("hive_column");
+
+        ret.setDataType(AtlasTypeUtil.toClassTypeDefinition(hive_column));
+
+        AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(guid);
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)),
+                                             "read entity schema: guid=", guid);
+
+        Map<String, AtlasEntity> referredEntities = entityWithExtInfo.getReferredEntities();
+        List<String>             columnIds        = getColumnIds(entity);
+
+        if (MapUtils.isNotEmpty(referredEntities)) {
+            List<Map<String, Object>> rows = referredEntities.entrySet()
+                                                             .stream()
+                                                             .filter(e -> isColumn(columnIds, e))
+                                                             .map(e -> AtlasTypeUtil.toMap(e.getValue()))
+                                                             .collect(Collectors.toList());
+            ret.setRows(rows);
+        }
+
+        return ret;
+    }
+
+    private List<String> getColumnIds(AtlasEntity entity) {
+        List<String> ret        = new ArrayList<>();
+        Object       columnObjs = entity.getAttribute(COLUMNS);
+
+        if (columnObjs instanceof List) {
+            for (Object pkObj : (List) columnObjs) {
+                if (pkObj instanceof AtlasObjectId) {
+                    ret.add(((AtlasObjectId) pkObj).getGuid());
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private boolean isColumn(List<String> columnIds, Map.Entry<String, AtlasEntity> e) {
+        return columnIds.contains(e.getValue().getGuid());
+    }
+
+    private AtlasLineageInfo getLineageInfo(String guid, LineageDirection direction, int depth, boolean isDataSet) throws AtlasBaseException {
+        final Map<String, Object>      bindings     = new HashMap<>();
+        String                         lineageQuery = getLineageQuery(guid, direction, depth, isDataSet, bindings);
+        List                           results      = executeGremlinScript(bindings, lineageQuery);
         Map<String, AtlasEntityHeader> entities     = new HashMap<>();
         Set<LineageRelation>           relations    = new HashSet<>();
-        String                         lineageQuery = getLineageQuery(guid, direction, depth);
 
-        List paths = (List) graph.executeGremlinScript(lineageQuery, true);
+        if (CollectionUtils.isNotEmpty(results)) {
+            for (Object result : results) {
+                if (result instanceof Map) {
+                    for (final Object o : ((Map) result).entrySet()) {
+                        final Map.Entry entry = (Map.Entry) o;
+                        Object          value = entry.getValue();
 
-        if (CollectionUtils.isNotEmpty(paths)) {
-            for (Object path : paths) {
-                if (path instanceof List) {
-                    List vertices = (List) path;
-
-                    if (CollectionUtils.isNotEmpty(vertices)) {
-                        AtlasEntityHeader prev = null;
-
-                        for (Object vertex : vertices) {
-                            if (!(vertex instanceof AtlasVertex)) {
-                                continue;
-                            }
-
-                            AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader((AtlasVertex)vertex);
-
-                            if (!entities.containsKey(entity.getGuid())) {
-                                entities.put(entity.getGuid(), entity);
-                            }
-
-                            if (prev != null) {
-                                if (direction.equals(LineageDirection.INPUT)) {
-                                    relations.add(new LineageRelation(entity.getGuid(), prev.getGuid()));
-                                } else if (direction.equals(LineageDirection.OUTPUT)) {
-                                    relations.add(new LineageRelation(prev.getGuid(), entity.getGuid()));
+                        if (value instanceof List) {
+                            for (Object elem : (List) value) {
+                                if (elem instanceof AtlasEdge) {
+                                    processEdge((AtlasEdge) elem, entities, relations);
+                                } else {
+                                    LOG.warn("Invalid value of type {} found, ignoring", (elem != null ? elem.getClass().getSimpleName() : "null"));
                                 }
                             }
-                            prev = entity;
+                        } else if (value instanceof AtlasEdge) {
+                            processEdge((AtlasEdge) value, entities, relations);
+                        } else {
+                            LOG.warn("Invalid value of type {} found, ignoring", (value != null ? value.getClass().getSimpleName() : "null"));
                         }
                     }
+                } else if (result instanceof AtlasEdge) {
+                    processEdge((AtlasEdge) result, entities, relations);
                 }
             }
         }
@@ -131,54 +241,83 @@ public class EntityLineageService implements AtlasLineageService {
         return new AtlasLineageInfo(guid, entities, relations, direction, depth);
     }
 
-    private AtlasLineageInfo getBothLineageInfo(String guid, int depth) throws AtlasBaseException {
-        AtlasLineageInfo inputLineage  = getLineageInfo(guid, LineageDirection.INPUT, depth);
-        AtlasLineageInfo outputLineage = getLineageInfo(guid, LineageDirection.OUTPUT, depth);
-        AtlasLineageInfo ret           = inputLineage;
+    private List executeGremlinScript(Map<String, Object> bindings, String lineageQuery) throws AtlasBaseException {
+        List         ret;
+        ScriptEngine engine = graph.getGremlinScriptEngine();
 
-        ret.getRelations().addAll(outputLineage.getRelations());
-        ret.getGuidEntityMap().putAll(outputLineage.getGuidEntityMap());
-        ret.setLineageDirection(LineageDirection.BOTH);
+        try {
+            ret = (List) graph.executeGremlinScript(engine, bindings, lineageQuery, false);
+        } catch (ScriptException e) {
+            throw new AtlasBaseException(INSTANCE_LINEAGE_QUERY_FAILED, lineageQuery);
+        } finally {
+            graph.releaseGremlinScriptEngine(engine);
+        }
 
         return ret;
     }
 
-    private String getLineageQuery(String entityGuid, LineageDirection direction, int depth) throws AtlasBaseException {
-        String lineageQuery = null;
+    private void processEdge(final AtlasEdge edge, final Map<String, AtlasEntityHeader> entities, final Set<LineageRelation> relations) throws AtlasBaseException {
+        AtlasVertex inVertex     = edge.getInVertex();
+        AtlasVertex outVertex    = edge.getOutVertex();
+        String      inGuid       = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
+        String      outGuid      = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
+        String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
+        boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
-        if (direction.equals(LineageDirection.INPUT)) {
-            lineageQuery = generateLineageQuery(entityGuid, depth, OUTPUT_PROCESS_EDGE, INPUT_PROCESS_EDGE);
-
-        } else if (direction.equals(LineageDirection.OUTPUT)) {
-            lineageQuery = generateLineageQuery(entityGuid, depth, INPUT_PROCESS_EDGE, OUTPUT_PROCESS_EDGE);
+        if (!entities.containsKey(inGuid)) {
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(inVertex);
+            entities.put(inGuid, entityHeader);
         }
 
-        return lineageQuery;
-    }
+        if (!entities.containsKey(outGuid)) {
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(outVertex);
+            entities.put(outGuid, entityHeader);
+        }
 
-    private String generateLineageQuery(String entityGuid, int depth, String incomingFrom, String outgoingTo) {
-        String lineageQuery;
-        if (depth < 1) {
-            String query = gremlinQueryProvider.getQuery(AtlasGremlinQuery.FULL_LINEAGE);
-            lineageQuery = String.format(query, entityGuid, incomingFrom, outgoingTo);
+        if (isInputEdge) {
+            relations.add(new LineageRelation(inGuid, outGuid, relationGuid));
         } else {
-            String query = gremlinQueryProvider.getQuery(AtlasGremlinQuery.PARTIAL_LINEAGE);
-            lineageQuery = String.format(query, entityGuid, incomingFrom, outgoingTo, depth);
+            relations.add(new LineageRelation(outGuid, inGuid, relationGuid));
         }
-        return lineageQuery;
     }
 
-    private boolean entityExists(String guid) {
-        boolean               ret     = false;
-        Iterator<AtlasVertex> results = graph.query()
-                                        .has(Constants.GUID_PROPERTY_KEY, guid)
-                                        .vertices().iterator();
+    private AtlasLineageInfo getBothLineageInfo(String guid, int depth, boolean isDataSet) throws AtlasBaseException {
+        AtlasLineageInfo inputLineage  = getLineageInfo(guid, INPUT, depth, isDataSet);
+        AtlasLineageInfo outputLineage = getLineageInfo(guid, OUTPUT, depth, isDataSet);
+        AtlasLineageInfo ret           = inputLineage;
 
-        while (results.hasNext()) {
-            AtlasVertex  entityVertex = results.next();
-            List<String> superTypes   = GraphHelper.getSuperTypeNames(entityVertex);
+        ret.getRelations().addAll(outputLineage.getRelations());
+        ret.getGuidEntityMap().putAll(outputLineage.getGuidEntityMap());
+        ret.setLineageDirection(BOTH);
 
-            ret = (CollectionUtils.isNotEmpty(superTypes)) ? superTypes.contains(AtlasClient.DATA_SET_SUPER_TYPE) : false;
+        return ret;
+    }
+
+    private String getLineageQuery(String entityGuid, LineageDirection direction, int depth, boolean isDataSet, Map<String, Object> bindings) {
+        String incomingFrom = null;
+        String outgoingTo   = null;
+        String ret;
+
+        if (direction.equals(INPUT)) {
+            incomingFrom = PROCESS_OUTPUTS_EDGE;
+            outgoingTo   = PROCESS_INPUTS_EDGE;
+        } else if (direction.equals(OUTPUT)) {
+            incomingFrom = PROCESS_INPUTS_EDGE;
+            outgoingTo   = PROCESS_OUTPUTS_EDGE;
+        }
+
+        bindings.put("guid", entityGuid);
+        bindings.put("incomingEdgeLabel", incomingFrom);
+        bindings.put("outgoingEdgeLabel", outgoingTo);
+        bindings.put("dataSetDepth", depth);
+        bindings.put("processDepth", depth - 1);
+
+        if (depth < 1) {
+            ret = isDataSet ? gremlinQueryProvider.getQuery(FULL_LINEAGE_DATASET) :
+                              gremlinQueryProvider.getQuery(FULL_LINEAGE_PROCESS);
+        } else {
+            ret = isDataSet ? gremlinQueryProvider.getQuery(PARTIAL_LINEAGE_DATASET) :
+                              gremlinQueryProvider.getQuery(PARTIAL_LINEAGE_PROCESS);
         }
 
         return ret;

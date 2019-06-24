@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,42 +17,49 @@
  */
 package org.apache.atlas.model.instance;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.commons.collections.CollectionUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-import org.apache.atlas.model.PList;
-import org.apache.atlas.model.SearchFilter.SortType;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
  * An instance of an entity - like hive_table, hive_database.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String             guid                = null;
-    private AtlasEntity.Status status              = AtlasEntity.Status.ACTIVE;
-    private String             displayText         = null;
-    private List<String>       classificationNames = null;
+    private String                          guid                = null;
+    private AtlasEntity.Status              status              = AtlasEntity.Status.ACTIVE;
+    private String                          displayText         = null;
+    private List<String>                    classificationNames = null;
+    private List<AtlasClassification>       classifications     = null;
+    private List<String>                    meaningNames        = null;
+    private List<AtlasTermAssignmentHeader> meanings            = null;
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -70,13 +77,15 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         super(typeName, attributes);
 
         setClassificationNames(null);
+        setClassifications(null);
     }
 
 
-    public AtlasEntityHeader(String typeName, String guid,  Map<String, Object> attributes) {
+    public AtlasEntityHeader(String typeName, String guid, Map<String, Object> attributes) {
         super(typeName, attributes);
         setGuid(guid);
         setClassificationNames(null);
+        setClassifications(null);
     }
 
 
@@ -88,6 +97,22 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             setStatus(other.getStatus());
             setDisplayText(other.getDisplayText());
             setClassificationNames(other.getClassificationNames());
+            setClassifications(other.getClassifications());
+        }
+    }
+
+    public AtlasEntityHeader(AtlasEntity entity) {
+        super(entity.getTypeName(), entity.getAttributes());
+        setGuid(entity.getGuid());
+        setStatus(entity.getStatus());
+        setClassifications(entity.getClassifications());
+
+        if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
+            this.classificationNames = new ArrayList<>(entity.getClassifications().size());
+
+            for (AtlasClassification classification : entity.getClassifications()) {
+                this.classificationNames.add(classification.getTypeName());
+            }
         }
     }
 
@@ -115,12 +140,20 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         this.displayText = displayText;
     }
 
-    public List<String> getClassificationNames(){
+    public List<String> getClassificationNames() {
         return classificationNames;
     }
 
     public void setClassificationNames(List<String> classificationNames) {
         this.classificationNames = classificationNames;
+    }
+
+    public List<AtlasClassification> getClassifications() {
+        return classifications;
+    }
+
+    public void setClassifications(List<AtlasClassification> classifications) {
+        this.classifications = classifications;
     }
 
     @Override
@@ -135,8 +168,10 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         sb.append(", displayText=").append(displayText);
         sb.append(", classificationNames=[");
         dumpObjects(classificationNames, sb);
-        sb.append("],");
-        sb.append(", ");
+        sb.append("], ");
+        sb.append("classifications=[");
+        AtlasBaseTypeDef.dumpObjects(classifications, sb);
+        sb.append("], ");
         super.toString(sb);
         sb.append('}');
 
@@ -150,14 +185,17 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         if (!super.equals(o)) return false;
         AtlasEntityHeader that = (AtlasEntityHeader) o;
         return Objects.equals(guid, that.guid) &&
-                status == that.status &&
-                Objects.equals(displayText, that.displayText) &&
-                Objects.equals(classificationNames, that.classificationNames);
+                       status == that.status &&
+                       Objects.equals(displayText, that.displayText) &&
+                       Objects.equals(classificationNames, that.classificationNames) &&
+                       Objects.equals(meaningNames, that.classificationNames) &&
+                       Objects.equals(classifications, that.classifications) &&
+                       Objects.equals(meanings, that.meanings);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, status, displayText, classificationNames);
+        return Objects.hash(super.hashCode(), guid, status, displayText, classificationNames, classifications, meaningNames, meanings);
     }
 
     @Override
@@ -165,12 +203,28 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         return toString(new StringBuilder()).toString();
     }
 
+    public List<String> getMeaningNames() {
+        return meaningNames;
+    }
+
+    public void setMeaningNames(final List<String> meaningNames) {
+        this.meaningNames = meaningNames;
+    }
+
+    public List<AtlasTermAssignmentHeader> getMeanings() {
+        return meanings;
+    }
+
+    public void setMeanings(final List<AtlasTermAssignmentHeader> meanings) {
+        this.meanings = meanings;
+    }
+
     /**
      * REST serialization friendly list.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasEntity.class)
@@ -186,7 +240,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         }
 
         public AtlasEntityHeaders(List list, long startIndex, int pageSize, long totalCount,
-            SortType sortType, String sortBy) {
+                                  SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }

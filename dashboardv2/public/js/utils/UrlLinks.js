@@ -16,12 +16,15 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Enums'], function(require, Enums) {
+define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require, Enums, Utils) {
     'use strict';
 
     var UrlLinks = {
-        baseUrl: 'api/atlas',
-        baseUrlV2: 'api/atlas/v2',
+        apiBaseUrl: Utils.getBaseUrl(window.location.pathname)
+    };
+    _.extend(UrlLinks, {
+        baseUrl: UrlLinks.apiBaseUrl + '/api/atlas',
+        baseUrlV2: UrlLinks.apiBaseUrl + '/api/atlas/v2',
         typedefsUrl: function() {
             return {
                 defs: this.baseUrlV2 + '/types/typedefs',
@@ -37,29 +40,46 @@ define(['require', 'utils/Enums'], function(require, Enums) {
         enumDefApiUrl: function(name) {
             return this.getDefApiUrl('enum', name);
         },
+        entityCountApi: function(){
+            return this.baseUrl + '/admin/metrics'
+        },
         getDefApiUrl: function(type, name) {
-            var defApiUrl = this.typedefsUrl();
+            var defApiUrl = this.typedefsUrl(), defUrl;
             if (name) {
-                return defApiUrl.def + '/name/' + name + '?type=' + type;
+                defUrl = defApiUrl.def + '/name/' + name;
             } else {
-                return defApiUrl.defs + '?type=' + type;
+                defUrl = defApiUrl.defs;
+            }
+            if (type) {
+                return defUrl += '?type=' + type;
+            } else {
+                return defUrl;
             }
         },
-        taxonomiesApiUrl: function() {
-            return this.baseUrl + '/v1/taxonomies';
-        },
-        taxonomiesTermsApiUrl: function(name) {
-            return this.baseUrl + '/v1/taxonomies' + '/' + name + '/terms';
-        },
-        entitiesApiUrl: function(guid, name) {
+        entitiesApiUrl: function(options) {
             var entitiesUrl = this.baseUrlV2 + '/entity';
-            if (guid && name) {
-                return entitiesUrl + '/guid/' + guid + '/classification/' + name;
-            } else if (guid && !name) {
-                return entitiesUrl + '/guid/' + guid;
-            } else {
-                return entitiesUrl;
+            if (options) {
+                var guid = options.guid,
+                    associatedGuid = options.associatedGuid,
+                    name = options.name,
+                    minExtInfo = options.minExtInfo;
+                if (guid && name && associatedGuid) {
+                    return entitiesUrl + '/guid/' + guid + '/classification/' + name + '?associatedEntityGuid=' + associatedGuid;
+                } else if (guid && name) {
+                    entitiesUrl += '/guid/' + guid + '/classification/' + name;
+                } else if (guid && !name) {
+                    entitiesUrl += '/guid/' + guid;
+                }
             }
+
+            if (!minExtInfo) {
+                return entitiesUrl;
+            } else {
+                return entitiesUrl += '?minExtInfo=' + (minExtInfo);
+            }
+        },
+        entityHeaderApiUrl: function(guid) {
+            return this.entitiesApiUrl({ guid: guid }) + "/header"
         },
         entitiesTraitsApiUrl: function(token) {
             if (token) {
@@ -70,7 +90,30 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             }
         },
         entityCollectionaudit: function(guid) {
-            return this.baseUrl + '/entities/' + guid + '/audit';
+            return this.baseUrlV2 + '/entity/' + guid + '/audit';
+        },
+        expimpAudit: function(options) {
+            var url = this.baseUrl + '/admin/expimp/audit',
+                queryParam = [];
+            if (options) {
+                var serverName = options.serverName,
+                    limit = options.limit,
+                    offset = options.offset;
+            }
+
+            if (serverName) {
+                queryParam.push("serverName=" + serverName);
+            }
+            if (limit) {
+                queryParam.push("limit=" + limit);
+            }
+            if (offset) {
+                queryParam.push("offset=" + offset);
+            }
+            if (queryParam.length > 0) {
+                url = url + "?" + queryParam.join("&");
+            }
+            return url;
         },
         classicationApiUrl: function(name, guid) {
             var typeUrl = this.typedefsUrl();
@@ -81,7 +124,7 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             }
         },
         typesApiUrl: function() {
-            return this.typedefsUrl().defs + '/headers'
+            return this.typedefsUrl().defs + '/headers?excludeInternalTypesAndReferences=true'
         },
         lineageApiUrl: function(guid) {
             var lineageUrl = this.baseUrlV2 + '/lineage';
@@ -89,6 +132,14 @@ define(['require', 'utils/Enums'], function(require, Enums) {
                 return lineageUrl + '/' + guid;
             } else {
                 return lineageUrl
+            }
+        },
+        relationshipApiUrl: function(guid) {
+            var relationshipUrl = this.baseUrlV2 + '/relationship';
+            if (guid) {
+                return relationshipUrl + '/guid/' + guid + '?extendedInfo=true';
+            } else {
+                return relationshipUrl
             }
         },
         schemaApiUrl: function(guid) {
@@ -115,6 +166,51 @@ define(['require', 'utils/Enums'], function(require, Enums) {
                 return saveSearchUrl;
             }
         },
+        glossaryApiUrl: function(options) {
+            var guid = options && options.guid,
+                glossaryUrl = this.baseUrlV2 + '/glossary';
+            if (guid) {
+                return glossaryUrl + '/' + guid;
+            } else {
+                return glossaryUrl;
+            }
+        },
+        categoryApiUrl: function(options) {
+            var guid = options && options.guid,
+                list = options && options.list,
+                related = options && options.related,
+                categoryUrl = this.glossaryApiUrl() + '/' + (list ? 'categories' : 'category');
+            if (guid) {
+                if (related) {
+                    return categoryUrl + '/' + guid + "/related";
+                } else {
+                    return categoryUrl + '/' + guid;
+                }
+            } else {
+                return categoryUrl;
+            }
+        },
+        termApiUrl: function(options) {
+            var guid = options && options.guid,
+                list = options && options.list,
+                related = options && options.related,
+                termUrl = this.glossaryApiUrl() + '/' + (list ? 'terms' : 'term');
+            if (guid) {
+                if (related) {
+                    return termUrl + '/' + guid + "/related";
+                } else {
+                    return termUrl + '/' + guid;
+                }
+            } else {
+                return termUrl;
+            }
+        },
+        termToEntityApiUrl: function(guid) {
+            var termUrl = this.termApiUrl({ list: true });
+            if (guid) {
+                return termUrl + '/' + guid + '/assignedEntities';
+            }
+        },
         versionApiUrl: function() {
             return this.baseUrl + '/admin/version';
         },
@@ -122,7 +218,7 @@ define(['require', 'utils/Enums'], function(require, Enums) {
             return this.baseUrl + '/admin/session';
         }
 
-    };
+    });
 
     return UrlLinks;
 });

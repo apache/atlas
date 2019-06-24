@@ -23,33 +23,36 @@ define(['require'], function(require) {
         defaultErrorMessage: "Something went wrong",
         addSuccessMessage: " has been created successfully",
         addErrorMessage: " could not be Created",
-        addTermToEntitySuccessMessage: " has been added to entity",
-        deleteTerm: "Delete Term",
-        removeTag: "Remove Tag Assignment",
-        removeTerm: "Remove Term Assignment",
+        removeTag: "Remove Classification Assignment",
         deleteSuccessMessage: " has been deleted successfully",
         deleteErrorMessage: " could not be deleted",
         removeSuccessMessage: " has been removed successfully",
         removeErrorMessage: " could not be removed",
         editSuccessMessage: " has been updated successfully",
-        assignDeletedEntity: " is deleted, tag cannot be assigned",
+        assignDeletedEntity: " is deleted, Classification cannot be assigned",
         conformation: {
             deleteMessage: "Are you sure you want to delete "
         },
         search: {
             noRecordForPage: "No record found at ",
             onSamePage: "You are on the same page!",
+            notExists: "Invalid Expression or Classification/Type has been deleted.",
             favoriteSearch: {
                 save: "Do you want to overwrite ",
                 notSelectedFavoriteElement: "Please select any one favorite search",
-                notSelectedSearchFilter:"Please select at least one filter"
+                notSelectedSearchFilter: "Please select at least one filter"
             }
         },
         tag: {
-            addAttributeSuccessMessage: "Tag attribute is added successfully",
-            updateTagDescriptionMessage: "Tag description is updated successfully",
-            updateTermDescriptionMessage: "Term description is updated successfully"
+            addAttributeSuccessMessage: "Classification attribute is added successfully",
+            updateTagDescriptionMessage: "Classification description is updated successfully"
+        },
+        glossary: {
+            removeTermfromCategory: "Remove Term Assignment",
+            removeTermfromEntity: "Remove Term Assignment",
+            removeCategoryfromTerm: "Remove Category Assignment"
         }
+
     };
     return Messages;
 });

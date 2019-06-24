@@ -16,8 +16,7 @@
   ~ limitations under the License.
   -->
 
-<enunciate xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:noNamespaceSchemaLocation="http://enunciate.webcohesion.com/schemas/enunciate-2.8.0.xsd">
+<enunciate xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://enunciate.webcohesion.com/schemas/enunciate-2.11.0.xsd">
     <title>Atlas REST API</title>
     <description> Atlas exposes a variety of REST endpoints to work with types, entities, lineage and data discovery.</description>
     <api-classes>
@@ -26,8 +25,9 @@
     </api-classes>
 
     <modules>
-        <swagger/>
-        <jackson/>
+        <swagger host="localhost:21000" basePath="/api/atlas/"/>
+        <jackson datatype-detection="aggressive" propertiesAlphabetical="true" honorJaxb="false"/>
+        <jaxrs datatype-detection="aggressive"/>
         <jackson1 disabled="true"/>
         <c-xml-client disabled="true"/>
         <java-json-client disabled="true"/>

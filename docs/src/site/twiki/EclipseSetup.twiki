@@ -92,7 +92,7 @@ export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_101.jdk/Contents/Hom
 export M2_HOME=/Applications/apache-maven-3.3.9 # Git is installed in the system path
 export PYTHON_HOME='/Applications/Python 2.7'
 export PATH=$PYTHON_HOME:$M2_HOME/bin:$JAVA_HOME/bin:$PATH
-export MAVEN_OPTS="-Xmx1536m -Drat.numUnapprovedLicenses=100 -XX:MaxPermSize=256m"
+export MAVEN_OPTS="-Xmx1536m -Drat.numUnapprovedLicenses=100"
 </verbatim>
 
    * If you do  not want to set Java 8 as your system java, you can use this  bash script to setup the environment and run Eclipse (which you can drop in Applications and rename to neon).

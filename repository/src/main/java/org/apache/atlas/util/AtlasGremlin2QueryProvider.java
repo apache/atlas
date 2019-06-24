@@ -21,28 +21,19 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
     @Override
     public String getQuery(final AtlasGremlinQuery gremlinQuery) {
         switch (gremlinQuery) {
-            case TYPE_COUNT_METRIC:
-                return "g.V().has('__type', 'typeSystem').filter({!it.'__type.category'.name().matches('TRAIT')}).count()";
-            case TYPE_UNUSED_COUNT_METRIC:
-                return "g.V('__type', 'typeSystem').filter({ !it.getProperty('__type.category').name().matches('TRAIT') && it.inE().count() == 0}).count()";
-            case ENTITY_COUNT_METRIC:
-                return "g.V().has('__superTypeNames', T.in, ['Referenceable']).count()";
-            case TAG_COUNT_METRIC:
-                return "g.V().has('__type', 'typeSystem').filter({it.getProperty('__type.category').name().matches('TRAIT')}).count()";
+            case ENTITY_ACTIVE_METRIC:
+                return "g.V().has('__typeName', T.in, [%s]).has('__state', 'ACTIVE').groupCount{it.getProperty('__typeName')}.cap.toList()";
             case ENTITY_DELETED_METRIC:
-                return "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter{it.getProperty('__type.category').name().matches('CLASS')}.'__type.name'.toSet()).has('__status', 'DELETED').count()";
-            case ENTITIES_PER_TYPE_METRIC:
-                return "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter{it.getProperty('__type.category').name() == 'CLASS'}.'__type.name'.toSet()).groupCount{it.getProperty('__typeName')}.cap.toList()";
-            case TAGGED_ENTITIES_METRIC:
-                return "g.V().has('__traitNames', T.in, g.V().has('__type', 'typeSystem').filter{it.getProperty('__type.category').name() == 'TRAIT'}.'__type.name'.toSet()).count()";
-            case ENTITIES_FOR_TAG_METRIC:
-                return "g.V().has('__typeName', T.in, g.V().has('__type', 'typeSystem').filter{it.getProperty('__type.category').name() == 'TRAIT'}.'__type.name'.toSet()).groupCount{it.getProperty('__typeName')}.cap.toList()";
-            case EXPORT_BY_GUID_FULL:
+                return "g.V().has('__typeName', T.in, [%s]).has('__state', 'DELETED').groupCount{it.getProperty('__typeName')}.cap.toList()";
+
+                case EXPORT_BY_GUID_FULL:
                 return "g.V('__guid', startGuid).bothE().bothV().has('__guid').transform{[__guid:it.__guid,isProcess:(it.__superTypeNames != null) ? it.__superTypeNames.contains('Process') : false ]}.dedup().toList()";
             case EXPORT_BY_GUID_CONNECTED_IN_EDGE:
                 return "g.V('__guid', startGuid).inE().outV().has('__guid').transform{[__guid:it.__guid,isProcess:(it.__superTypeNames != null) ? it.__superTypeNames.contains('Process') : false ]}.dedup().toList()";
             case EXPORT_BY_GUID_CONNECTED_OUT_EDGE:
                 return "g.V('__guid', startGuid).outE().inV().has('__guid').transform{[__guid:it.__guid,isProcess:(it.__superTypeNames != null) ? it.__superTypeNames.contains('Process') : false ]}.dedup().toList()";
+            case EXPORT_TYPE_ALL_FOR_TYPE:
+                return "g.V().has('__typeName',T.in,typeName).has('__guid').__guid.toList()";
             case EXPORT_TYPE_STARTS_WITH:
                 return "g.V().has('__typeName',typeName).filter({it.getProperty(attrName).startsWith(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_ENDS_WITH:
@@ -53,13 +44,13 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return "g.V().has('__typeName',typeName).filter({it.getProperty(attrName).matches(attrValue)}).has('__guid').__guid.toList()";
             case EXPORT_TYPE_DEFAULT:
                 return "g.V().has('__typeName',typeName).has(attrName, attrValue).has('__guid').__guid.toList()";
-            case FULL_LINEAGE:
+            case FULL_LINEAGE_DATASET:
                 return "g.V('__guid', '%s').as('src').in('%s').out('%s')." +
                         "loop('src', {((it.path.contains(it.object)) ? false : true)}, " +
                         "{((it.object.'__superTypeNames') ? " +
                         "(it.object.'__superTypeNames'.contains('DataSet')) : false)})." +
                         "path().toList()";
-            case PARTIAL_LINEAGE:
+            case PARTIAL_LINEAGE_DATASET:
                 return "g.V('__guid', '%s').as('src').in('%s').out('%s')." +
                         "loop('src', {it.loops <= %s}, {((it.object.'__superTypeNames') ? " +
                         "(it.object.'__superTypeNames'.contains('DataSet')) : false)})." +
@@ -68,7 +59,7 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
             case BASIC_SEARCH_TYPE_FILTER:
                 return ".has('__typeName', T.in, typeNames)";
             case BASIC_SEARCH_CLASSIFICATION_FILTER:
-                return ".has('__traitNames', T.in, traitNames)";
+                return ".or(has('__traitNames', T.in, traitNames), has('__propagatedTraitNames', T.in, traitNames))";
             case BASIC_SEARCH_STATE_FILTER:
                 return ".has('__state', state)";
             case TO_RANGE_LIST:
@@ -95,12 +86,20 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                 return ".filter({it.getProperty('%s').endsWith(%s)})";
             case COMPARE_CONTAINS:
                 return ".filter({it.getProperty('%s').contains(%s)})";
+            case COMPARE_IS_NULL:
+                return ".hasNot('%s')";
+            case COMPARE_NOT_NULL:
+                return ".has('%s')";
             case RELATIONSHIP_SEARCH:
                 return "g.V('__guid', guid).both(relation).has('__state', T.in, states)";
             case RELATIONSHIP_SEARCH_ASCENDING_SORT:
                 return ".order{it.a.getProperty(sortAttributeName) <=> it.b.getProperty(sortAttributeName)}";
             case RELATIONSHIP_SEARCH_DESCENDING_SORT:
                 return ".order{it.b.getProperty(sortAttributeName) <=> it.a.getProperty(sortAttributeName)}";
+            case GREMLIN_SEARCH_RETURNS_VERTEX_ID:
+                return "g.V.range(0,0).collect()";
+            case GREMLIN_SEARCH_RETURNS_EDGE_ID:
+                return "g.E.range(0,0).collect()";
         }
         // Should never reach this point
         return null;

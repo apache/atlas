@@ -24,7 +24,7 @@ import org.apache.atlas.falcon.Util.EventUtil;
 import org.apache.atlas.falcon.model.FalconDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.falcon.FalconException;
@@ -68,6 +68,7 @@ public class FalconBridge {
     public static final String RUNSON = "runs-on";
     public static final String STOREDIN = "stored-in";
     public static final String FREQUENCY = "frequency";
+    public static final String ATTRIBUTE_DB = "db";
 
     /**
      * Creates cluster entity
@@ -204,8 +205,6 @@ public class FalconBridge {
      * 
      * @param process process entity
      * @param falconStore config store
-     * @param user falcon user
-     * @param timestamp timestamp of entity
      * @return process instance reference
      *
      * @throws FalconException if retrieving from the configuration store fail
@@ -359,7 +358,7 @@ public class FalconBridge {
         tableRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tableName));
         tableRef.set(AtlasClient.NAME, tableName.toLowerCase());
-        tableRef.set(HiveMetaStoreBridge.DB, dbRef);
+        tableRef.set(ATTRIBUTE_DB, dbRef);
         entities.add(tableRef);
 
         return entities;

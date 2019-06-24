@@ -17,17 +17,17 @@
  */
 package org.apache.atlas.repository.graphdb;
 
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.groovy.GroovyExpression;
+import org.apache.atlas.type.AtlasType;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptException;
-
-import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.groovy.GroovyExpression;
-import org.apache.atlas.typesystem.types.IDataType;
 
 /**
  * Represents a graph.
@@ -110,7 +110,6 @@ public interface AtlasGraph<V, E> {
      * Gets the names of the indexes on edges
      * type.
      *
-     * @param type
      * @return
      */
     Set<String> getEdgeIndexKeys();
@@ -120,7 +119,6 @@ public interface AtlasGraph<V, E> {
      * Gets the names of the indexes on vertices.
      * type.
      *
-     * @param type
      * @return
      */
     Set<String> getVertexIndexKeys();
@@ -144,6 +142,14 @@ public interface AtlasGraph<V, E> {
      * @return
      */
     AtlasGraphQuery<V, E> query();
+
+    /**
+     * Start a graph traversal
+     * @return
+     */
+    AtlasGraphTraversal<AtlasVertex, AtlasEdge> V(Object ... vertexIds);
+
+    AtlasGraphTraversal<AtlasVertex, AtlasEdge> E(Object ... edgeIds);
 
     /**
      * Creates an index query.
@@ -170,6 +176,14 @@ public interface AtlasGraph<V, E> {
      * Elastic Search Reference</a> for query syntax
      */
     AtlasIndexQuery<V, E> indexQuery(String indexName, String queryString, int offset);
+
+    /**
+     * Creates an index query.
+     *
+     * @param indexQueryParameters the parameterObject containing the information needed for creating the index.
+     *
+     */
+    AtlasIndexQuery<V, E> indexQuery(GraphIndexQueryParameters indexQueryParameters);
 
     /**
      * Gets the management object associated with this graph and opens a transaction
@@ -203,6 +217,11 @@ public interface AtlasGraph<V, E> {
     void clear();
 
     /**
+     * Gets all open transactions.
+     */
+    Set getOpenTransactions();
+
+    /**
      * Converts the graph to gson and writes it to the specified stream.
      *
      * @param os
@@ -218,11 +237,11 @@ public interface AtlasGraph<V, E> {
      * convert property values from the value that is stored in the graph
      * to the value/type that the user expects to get back.
      *
-     * @param expr - gremlin expr that represents the persistent property value
+     * @param valueExpr - gremlin expr that represents the persistent property value
      * @param type
      * @return
      */
-    GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression valueExpr, IDataType<?> type);
+    GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression valueExpr, AtlasType type);
 
     /**
      * Indicates whether or not stored values with the specified type need to be converted
@@ -234,7 +253,7 @@ public interface AtlasGraph<V, E> {
      * gremlin expression with the converted value.  In addition, this cause the gremlin
      * 'filter' step to be used to compare the values instead of a 'has' step.
      */
-    boolean isPropertyValueConversionNeeded(IDataType<?> type);
+    boolean isPropertyValueConversionNeeded(AtlasType type);
 
     /**
      * Gets the version of Gremlin that this graph uses.
@@ -286,7 +305,7 @@ public interface AtlasGraph<V, E> {
     /**
      * Executes a Gremlin script, returns an object with the result.
      *
-     * @param gremlinQuery
+     * @param query
      * @param isPath whether this is a path query
      *
      * @return the result from executing the script
@@ -319,4 +338,26 @@ public interface AtlasGraph<V, E> {
      * @return
      */
     boolean isMultiProperty(String name);
+
+    /**
+     * return the encoded name used for the attribute identified by property key and index name.
+     * @param propertyKey the property key of attributed
+     * @param indexName the name of the index containing the property.
+     * @return the encoded name of the property.
+     */
+    String getIndexFieldName(AtlasPropertyKey propertyKey, String indexName);
+    /**
+     * Create Index query parameter for use with atlas graph.
+     * @param parameterName the name of the parameter that needs to be passed to index layer.
+     * @param parameterValue the value of the paratemeter that needs to be passed to the index layer.
+     * @return
+     */
+    AtlasIndexQueryParameter indexQueryParameter(String parameterName, String parameterValue);
+
+    /**
+     * Implementors should return graph index client.
+     * @return the graph index client
+     * @throws AtlasException when error encountered in creating the client.
+     */
+    AtlasGraphIndexClient getGraphIndexClient()throws AtlasException;
 }

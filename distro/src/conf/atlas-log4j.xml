@@ -37,6 +37,16 @@
         </layout>
     </appender>
 
+    <appender name="LARGE_MESSAGES" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="${atlas.log.dir}/large_messages.log"/>
+        <param name="Append" value="true"/>
+        <param name="MaxFileSize" value="100MB" />
+        <param name="MaxBackupIndex" value="20" />
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d %m%n"/>
+        </layout>
+    </appender>
+
     <appender name="AUDIT" class="org.apache.log4j.RollingFileAppender">
         <param name="File" value="${atlas.log.dir}/audit.log"/>
         <param name="Append" value="true"/>
@@ -60,7 +70,7 @@
         <param name="File" value="${atlas.log.dir}/failed.log"/>
         <param name="Append" value="true"/>
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="%d %m"/>
+            <param name="ConversionPattern" value="%d %m%n"/>
             <param name="maxFileSize" value="100MB" />
             <param name="maxBackupIndex" value="20" />
         </layout>
@@ -88,7 +98,7 @@
         <appender-ref ref="FILE"/>
     </logger>
 
-    <logger name="com.thinkaurelius.titan" additivity="false">
+    <logger name="org.janusgraph" additivity="false">
         <level value="warn"/>
         <appender-ref ref="FILE"/>
     </logger>
@@ -119,6 +129,11 @@
         <appender-ref ref="AUDIT"/>
     </logger>
 
+    <logger name="LARGE_MESSAGES" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="LARGE_MESSAGES"/>
+    </logger>
+
     <logger name="METRICS" additivity="false">
         <level value="debug"/>
         <appender-ref ref="METRICS"/>
@@ -126,7 +141,7 @@
 
     <logger name="FAILED" additivity="false">
         <level value="info"/>
-        <appender-ref ref="AUDIT"/>
+        <appender-ref ref="FAILED"/>
     </logger>
 
     <root>

@@ -18,11 +18,9 @@
 
 package org.apache.atlas.discovery;
 
-import org.apache.atlas.listener.TypesChangeListener;
-
 
 /**
  * Interface for indexing types.
  */
-public interface SearchIndexer extends TypesChangeListener {
+public interface SearchIndexer {
 }

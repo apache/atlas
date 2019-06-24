@@ -29,4 +29,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 public interface IAtlasGraphProvider {
     
     AtlasGraph get() throws RepositoryException;
+
+    AtlasGraph getBulkLoading() throws RepositoryException;
 }

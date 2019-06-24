@@ -24,11 +24,15 @@ import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.profile.AtlasUserProfile;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.util.FilterUtil;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -36,10 +40,15 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.model.profile.AtlasUserSavedSearch.SavedSearchType.BASIC;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class UserProfileServiceTest {
@@ -57,17 +66,24 @@ public class UserProfileServiceTest {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
     }
 
+    @AfterClass
+    public void clear() throws Exception {
+        AtlasGraphProvider.cleanup();
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
+    }
+
     @Test
     public void filterInternalType() throws AtlasBaseException {
         SearchFilter searchFilter = new SearchFilter();
-        AtlasTypesDef filteredTypeDefs = typeDefStore.searchTypesDef(searchFilter);
-        int maxTypeDefs = filteredTypeDefs.getEntityDefs().size();
-
         FilterUtil.addParamsToHideInternalType(searchFilter);
-        filteredTypeDefs = typeDefStore.searchTypesDef(searchFilter);
+        AtlasTypesDef filteredTypeDefs = typeDefStore.searchTypesDef(searchFilter);
 
         assertNotNull(filteredTypeDefs);
-        assertEquals(filteredTypeDefs.getEntityDefs().size(), maxTypeDefs - 3);
+        Optional<AtlasEntityDef> anyInternal = filteredTypeDefs.getEntityDefs().stream().filter(e -> e.getSuperTypes().contains("__internal")).findAny();
+        assertFalse(anyInternal.isPresent());
     }
 
     @Test
@@ -179,7 +195,7 @@ public class UserProfileServiceTest {
         }
     }
 
-    @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser"}, enabled = false)
+    @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser"})
     public void verifyQueryConversionFromJSON() throws AtlasBaseException {
         List<AtlasUserSavedSearch> list = userProfileService.getSavedSearches("first-0");
 
@@ -190,7 +206,7 @@ public class UserProfileServiceTest {
         }
     }
 
-    @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser"})
+    @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser", "verifyQueryConversionFromJSON"})
     public void updateSearch() throws AtlasBaseException {
         final String queryName = getIndexBasedQueryName(0);
         String userName = getIndexBasedUserName(0);
@@ -232,7 +248,6 @@ public class UserProfileServiceTest {
         List<AtlasUserSavedSearch> savedSearchList = userProfileService.getSavedSearches(userName);
         assertEquals(savedSearchList.size(), new_max_searches - 1);
     }
-
     @Test(dependsOnMethods = {"createsNewProfile", "savesMultipleQueriesForUser", "verifyQueryNameListForUser"})
     void deleteUser() throws AtlasBaseException {
         String userName = getIndexBasedUserName(1);

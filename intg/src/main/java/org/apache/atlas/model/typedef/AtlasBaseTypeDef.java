@@ -17,13 +17,12 @@
  */
 package org.apache.atlas.model.typedef;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -37,8 +36,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -124,12 +123,30 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         ATLAS_TYPE_OBJECT_ID,
     };
 
+    public static final String     SERVICE_TYPE_ATLAS_CORE    = "atlas_core";
     public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+
+    @Deprecated
     public static final DateFormat DATE_FORMATTER             = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
 
     static {
         DATE_FORMATTER.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
+
+    public static DateFormat getDateFormatter() {
+        return THREAD_LOCAL_DATE_FORMAT.get();
+    }
+
+    private static final ThreadLocal<DateFormat> THREAD_LOCAL_DATE_FORMAT = new ThreadLocal<DateFormat>() {
+        @Override
+        public DateFormat initialValue() {
+            DateFormat ret = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
+
+            ret.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+            return ret;
+        }
+    };
 
     private final TypeCategory category;
     private String  guid       = null;
@@ -141,10 +158,11 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     private String  name;
     private String  description;
     private String  typeVersion;
+    private String  serviceType;
     private Map<String, String> options;
 
     protected AtlasBaseTypeDef(TypeCategory category, String name, String description, String typeVersion,
-                               Map<String, String> options) {
+                               String serviceType, Map<String, String> options) {
         super();
 
         this.category = category;
@@ -158,6 +176,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         setName(name);
         setDescription(description);
         setTypeVersion(typeVersion);
+        setServiceType(serviceType);
         setOptions(options);
     }
 
@@ -172,6 +191,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
             setUpdateTime(other.getUpdateTime());
             setVersion(other.getVersion());
             setName(other.getName());
+            setServiceType(other.getServiceType());
             setDescription(other.getDescription());
             setTypeVersion(other.getTypeVersion());
             setOptions(other.getOptions());
@@ -185,6 +205,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
             setUpdateTime(null);
             setVersion(null);
             setName(null);
+            setServiceType(null);
             setDescription(null);
             setTypeVersion(null);
             setOptions(null);
@@ -266,6 +287,14 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         this.typeVersion = typeVersion;
     }
 
+    public String getServiceType() {
+        return serviceType;
+    }
+
+    public void setServiceType(String serviceType) {
+        this.serviceType = serviceType;
+    }
+
     public Map<String, String> getOptions() {
         return options;
     }
@@ -294,6 +323,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", typeVersion='").append(typeVersion).append('\'');
+        sb.append(", serviceType='").append(serviceType).append('\'');
         sb.append(", options='").append(options).append('\'');
         sb.append('}');
 
@@ -316,8 +346,9 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
                 Objects.equals(version, that.version) &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(description, that.description) &&
-                Objects.equals(typeVersion, that.typeVersion);
-
+                Objects.equals(typeVersion, that.typeVersion) &&
+                Objects.equals(serviceType, that.serviceType) &&
+                Objects.equals(options, that.options);
     }
 
     @Override
@@ -332,6 +363,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         result = 31 * result + (name != null ? name.hashCode() : 0);
         result = 31 * result + (description != null ? description.hashCode() : 0);
         result = 31 * result + (typeVersion != null ? typeVersion.hashCode() : 0);
+        result = 31 * result + (serviceType != null ? serviceType.hashCode() : 0);
         result = 31 * result + (options != null ? options.hashCode() : 0);
         return result;
     }
@@ -391,7 +423,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         if (value == null) {
             sb.append(value);
         } else {
-            sb.append(DATE_FORMATTER.format(value));
+            sb.append(getDateFormatter().format(value));
         }
 
         return sb;

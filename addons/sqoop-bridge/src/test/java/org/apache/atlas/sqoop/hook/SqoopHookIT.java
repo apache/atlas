@@ -24,15 +24,18 @@ import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.sqoop.model.SqoopDataTypes;
 import org.apache.atlas.utils.AuthenticationUtil;
+import org.apache.atlas.utils.ParamChecker;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.configuration.Configuration;
 import org.apache.sqoop.SqoopJobDataPublisher;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.Properties;
+
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.fail;
 
 public class SqoopHookIT {
     public static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SqoopHookIT.class);
@@ -84,64 +87,58 @@ public class SqoopHookIT {
 
     private String assertDBStoreIsRegistered(String storeName) throws Exception {
         LOG.debug("Searching for db store {}",  storeName);
-        String query = String.format(
-                "%s as t where " + AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME + " = '%s'" + " select t",
-                SqoopDataTypes.SQOOP_DBDATASTORE.getName(), storeName);
-        return assertEntityIsRegistered(query);
+        return assertEntityIsRegistered(SqoopDataTypes.SQOOP_DBDATASTORE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, storeName, null);
     }
 
     private String assertHiveTableIsRegistered(String dbName, String tableName) throws Exception {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
-        String query = String.format(
-                "%s as t where " + AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME + " = '%s',  db where " + AtlasClient.NAME + " = '%s' and clusterName = '%s'" + " select t",
-                HiveDataTypes.HIVE_TABLE.getName(), HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName), dbName.toLowerCase(), CLUSTER_NAME);
-        return assertEntityIsRegistered(query);
+        return assertEntityIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName), null);
     }
 
     private String assertSqoopProcessIsRegistered(String processName) throws Exception {
         LOG.debug("Searching for sqoop process {}",  processName);
-        String query = String.format(
-                "%s as t where %s = '%s' select t",
-                SqoopDataTypes.SQOOP_PROCESS.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, processName);
-        return assertEntityIsRegistered(query);
+        return assertEntityIsRegistered(SqoopDataTypes.SQOOP_PROCESS.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, processName, null);
     }
 
-    private String assertEntityIsRegistered(final String query) throws Exception {
-        waitFor(MAX_WAIT_TIME, new Predicate() {
+    protected String assertEntityIsRegistered(final String typeName, final String property, final String value,
+                                              final AssertPredicate assertPredicate) throws Exception {
+        waitFor(80000, new Predicate() {
             @Override
-            public boolean evaluate() throws Exception {
-                JSONArray results = atlasClient.search(query, 10, 0);
-                return results.length() > 0;
+            public void evaluate() throws Exception {
+                Referenceable entity = atlasClient.getEntity(typeName, property, value);
+                assertNotNull(entity);
+                if (assertPredicate != null) {
+                    assertPredicate.assertOnEntity(entity);
+                }
             }
         });
-
-        JSONArray results = atlasClient.search(query, 10, 0);
-        JSONObject row = results.getJSONObject(0).getJSONObject("t");
-
-        return row.getString("id");
-    }
-
-    protected void waitFor(int timeout, Predicate predicate) throws Exception {
-        long mustEnd = System.currentTimeMillis() + timeout;
-
-        boolean eval;
-        while (!(eval = predicate.evaluate()) && System.currentTimeMillis() < mustEnd) {
-            LOG.info("Waiting up to {} msec", mustEnd - System.currentTimeMillis());
-            Thread.sleep(1000);
-        }
-        if (!eval) {
-            throw new Exception("Waiting timed out after " + timeout + " msec");
-        }
+        Referenceable entity = atlasClient.getEntity(typeName, property, value);
+        return entity.getId()._getId();
     }
 
     public interface Predicate {
-        /**
-         * Perform a predicate evaluation.
-         *
-         * @return the boolean result of the evaluation.
-         * @throws Exception thrown if the predicate evaluation could not evaluate.
-         */
-        boolean evaluate() throws Exception;
+        void evaluate() throws Exception;
     }
 
+    public interface AssertPredicate {
+        void assertOnEntity(Referenceable entity) throws Exception;
+    }
+
+    protected void waitFor(int timeout, Predicate predicate) throws Exception {
+        ParamChecker.notNull(predicate, "predicate");
+        long mustEnd = System.currentTimeMillis() + timeout;
+
+        while (true) {
+            try {
+                predicate.evaluate();
+                return;
+            } catch(Error | Exception e) {
+                if (System.currentTimeMillis() >= mustEnd) {
+                    fail("Assertions failed. Failing after waiting for timeout " + timeout + " msecs", e);
+                }
+                LOG.debug("Waiting up to {} msec as assertion failed", mustEnd - System.currentTimeMillis(), e);
+                Thread.sleep(5000);
+            }
+        }
+    }
 }

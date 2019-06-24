@@ -30,7 +30,8 @@ define(['require',
 
             model: VSearch,
 
-            initialize: function() {
+            initialize: function(options) {
+                _.extend(this, options);
                 this.modelName = 'VSearchList';
                 this.modelAttrName = '';
             },
@@ -39,18 +40,36 @@ define(['require',
                 this.queryText = resp.queryText;
                 this.referredEntities = resp.referredEntities;
                 if (resp.attributes) {
+                    this.dynamicTable = true;
                     var entities = [];
                     _.each(resp.attributes.values, function(obj) {
-                        var temp = { attributes: {} }
-                        _.each(obj, function(val, key) {
-                            temp.attributes[resp.attributes.name[key]] = val;
+                        var temp = {};
+                        _.each(obj, function(val, index) {
+                            var key = resp.attributes.name[index];
+                            if (key == "__guid") {
+                                key = "guid"
+                            }
+                            temp[key] = val;
                         });
                         entities.push(temp);
                     });
                     return entities;
-                } else {
+                } else if (resp.entities) {
+                    this.dynamicTable = false;
                     return resp.entities ? resp.entities : [];
+                } else {
+                    return [];
                 }
+            },
+            getExpimpAudit: function(params, options) {
+                var url = UrlLinks.expimpAudit(params);
+
+                options = _.extend({
+                    contentType: 'application/json',
+                    dataType: 'json',
+                }, options);
+
+                return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
             },
             getBasicRearchResult: function(options) {
                 var url = UrlLinks.searchApiUrl('basic');

@@ -1,0 +1,159 @@
+---+ Basic Search
+
+The basic search allows you to query using typename of an entity, associated classification/tag
+and has support for filtering on the entity attribute(s) as well as the classification/tag attributes.
+
+The entire query structure can be represented using the following JSON structure (called !SearchParameters)
+
+<verbatim>
+{
+  "typeName":               "hive_column",
+  "excludeDeletedEntities": true,
+  "classification":         "PII",
+  "query":                  "",
+  "offset":                 0,
+  "limit":                  25,
+  "entityFilters":          {  },
+  "tagFilters":             { },
+  "attributes":             [ "table", "qualifiedName"]
+}
+</verbatim>
+
+__Field description__
+
+<verbatim>
+   typeName:               the type of entity to look for
+   excludeDeletedEntities: should the search exclude deleted entities? (default: true)
+   classification:         only include entities with given classification
+   query:                  any free text occurrence that the entity should have (generic/wildcard queries might be slow)
+   offset:                 starting offset of the result set (useful for pagination)
+   limit:                  max number of results to fetch
+   entityFilters:          entity attribute filter(s)
+   tagFilters:             classification attribute filter(s)
+   attributes:             attributes to include in the search result
+</verbatim>
+
+<img src="images/twiki/search-basic-hive_column-PII.png" height="400" width="600"/>
+
+   Attribute based filtering can be done on multiple attributes with AND/OR conditions.
+
+__Examples of filtering (for hive_table attributes)__
+   * Single attribute
+   <verbatim>
+   {
+     "typeName":               "hive_table",
+     "excludeDeletedEntities": true,
+     "offset":                 0,
+     "limit":                  25,
+     "entityFilters": {
+        "attributeName":  "name",
+        "operator":       "contains",
+        "attributeValue": "customers"
+     },
+     "attributes": [ "db", "qualifiedName" ]
+   }
+   </verbatim>
+
+<img src="images/twiki/search-basic-hive_table-customers.png" height="400" width="600"/>
+
+   * Multi-attribute with OR
+   <verbatim>
+   {
+     "typeName":               "hive_table",
+     "excludeDeletedEntities": true,
+     "offset":                 0,
+     "limit":                  25,
+     "entityFilters": {
+        "condition": "OR",
+        "criterion": [
+           {
+              "attributeName":  "name",
+              "operator":       "contains",
+              "attributeValue": "customers"
+           },
+           {
+              "attributeName":  "name",
+              "operator":       "contains",
+              "attributeValue": "provider"
+           }
+        ]
+     },
+     "attributes": [ "db", "qualifiedName" ]
+   }
+   </verbatim>
+
+<img src="images/twiki/search-basic-hive_table-customers-or-provider.png" height="400" width="600"/>
+
+   * Multi-attribute with AND
+   <verbatim>
+   {
+     "typeName":               "hive_table",
+     "excludeDeletedEntities": true,
+     "offset":                 0,
+     "limit":                  25,
+     "entityFilters": {
+        "condition": "AND",
+        "criterion": [
+           {
+              "attributeName":  "name",
+              "operator":       "contains",
+              "attributeValue": "customers"
+           },
+           {
+              "attributeName":  "owner",
+              "operator":       "eq",
+              "attributeValue": "hive"
+           }
+        ]
+     },
+     "attributes": [ "db", "qualifiedName" ]
+  }
+   </verbatim>
+
+<img src="images/twiki/search-basic-hive_table-customers-owner_is_hive.png" height="400" width="600"/>
+
+__Supported operators for filtering__
+
+   * LT (symbols: <, lt) works with Numeric, Date attributes
+   * GT (symbols: >, gt) works with Numeric, Date attributes
+   * LTE (symbols: <=, lte) works with Numeric, Date attributes
+   * GTE (symbols: >=, gte) works with Numeric, Date attributes
+   * EQ (symbols: eq, =) works with Numeric, Date, String attributes
+   * NEQ (symbols: neq, !=) works with Numeric, Date, String attributes
+   * LIKE (symbols: like, LIKE) works with String attributes
+   * STARTS_WITH (symbols: startsWith, STARTSWITH) works with String attributes
+   * ENDS_WITH (symbols: endsWith, ENDSWITH) works with String attributes
+   * CONTAINS (symbols: contains, CONTAINS) works with String attributes
+
+__CURL Samples__
+
+<verbatim>
+    curl -sivk -g
+    -u <user>:<password>
+    -X POST
+    -d '{
+            "typeName":               "hive_table",
+            "excludeDeletedEntities": true,
+            "classification":         "",
+            "query":                  "",
+            "offset":                 0,
+            "limit":                  50,
+            "entityFilters": {
+               "condition": "AND",
+               "criterion": [
+                  {
+                     "attributeName":  "name",
+                     "operator":       "contains",
+                     "attributeValue": "customers"
+                  },
+                  {
+                     "attributeName":  "owner",
+                     "operator":       "eq",
+                     "attributeValue": "hive"
+                  }
+               ]
+            },
+            "attributes": [ "db", "qualifiedName" ]
+          }'
+    <protocol>://<atlas_host>:<atlas_port>/api/atlas/v2/search/basic
+</verbatim>

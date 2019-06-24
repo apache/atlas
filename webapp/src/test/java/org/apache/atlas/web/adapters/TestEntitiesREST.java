@@ -19,7 +19,6 @@ package org.apache.atlas.web.adapters;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -100,7 +99,6 @@ public class TestEntitiesREST {
     @AfterMethod
     public void cleanup() throws Exception {
         RequestContext.clear();
-        RequestContextV1.clear();
     }
 
     @Test
@@ -167,7 +165,7 @@ public class TestEntitiesREST {
     @Test(dependsOnMethods = "testCreateOrUpdateEntities")
     public void testGetEntities() throws Exception {
 
-        final AtlasEntitiesWithExtInfo response = entityREST.getByGuids(createdGuids);
+        final AtlasEntitiesWithExtInfo response = entityREST.getByGuids(createdGuids, false, false);
         final List<AtlasEntity> entities = response.getEntities();
 
         Assert.assertNotNull(entities);

@@ -1,0 +1,113 @@
+---++ Authentication in Apache Atlas.
+
+---+++ Authentication
+
+Atlas supports following authentication methods
+
+   * *File*
+   * *Kerberos*
+   * *LDAP*
+
+
+Following properties should be set true to enable the authentication of that type in =atlas-application.properties= file.
+
+
+<verbatim>
+atlas.authentication.method.kerberos=true|false
+atlas.authentication.method.ldap=true|false
+atlas.authentication.method.file=true|false
+</verbatim>
+
+If two or more authentication methods are set to true, then the authentication falls back to the latter method if the earlier one fails.
+For example if Kerberos authentication is set to true and ldap authentication is also set to true then, if for a request without kerberos principal and keytab LDAP authentication will be used as a fallback scenario.
+
+---++++FILE method.
+
+File authentication requires users' login details in users credentials file in the format specified below and
+the file path should set to property =atlas.authentication.method.file.filename= in =atlas-application.properties=.
+
+<verbatim>
+atlas.authentication.method.file=true
+atlas.authentication.method.file.filename=${sys:atlas.home}/conf/users-credentials.properties
+</verbatim>
+
+The users credentials file should have below format
+<verbatim>
+username=group::sha256-password
+</verbatim>
+
+For e.g.
+<verbatim>
+admin=ADMIN::e7cf3ef4f17c3999a94f2c6f612e8a888e5b1026878e4e19398b23bd38ec221a
+</verbatim>
+
+Users group can be either *ADMIN*, *DATA_STEWARD* OR *DATA_SCIENTIST*
+
+*Note*:-password is encoded with sha256 encoding method and can be generated using unix tool.
+
+For e.g.
+<verbatim>
+echo -n "Password" | sha256sum
+e7cf3ef4f17c3999a94f2c6f612e8a888e5b1026878e4e19398b23bd38ec221a  -
+</verbatim>
+
+---++++ Kerberos Method.
+
+To enable the authentication in Kerberos mode in Atlas, set the property =atlas.authentication.method.kerberos= to true in =atlas-application.properties=
+
+<verbatim>
+atlas.authentication.method.kerberos = true
+</verbatim>
+
+Also following properties should be set.
+
+<verbatim>
+atlas.authentication.method.kerberos.principal=<principal>/<fqdn>@EXAMPLE.COM
+atlas.authentication.method.kerberos.keytab = /<key tab filepath>.keytab
+atlas.authentication.method.kerberos.name.rules = RULE:[2:$1@$0](atlas@EXAMPLE.COM)s/.*/atlas/
+atlas.authentication.method.kerberos.token.validity = 3600 [ in Seconds (optional)]
+</verbatim>
+
+
+---++++ LDAP Method.
+
+To enable the authentication in LDAP mode in Atlas, set the property =atlas.authentication.method.ldap= to true and also set Ldap type to property =atlas.authentication.method.ldap.type= to LDAP or AD in =atlas-application.properties=.
+Use AD if connecting to Active Directory.
+
+<verbatim>
+atlas.authentication.method.ldap=true
+atlas.authentication.method.ldap.type=ldap|ad
+</verbatim>
+
+
+For LDAP or AD the following configuration needs to be set in atlas application properties.
+
+*Active Directory*
+
+<verbatim>
+atlas.authentication.method.ldap.ad.domain= example.com
+atlas.authentication.method.ldap.ad.url=ldap://<AD server ip>:389
+atlas.authentication.method.ldap.ad.base.dn=DC=example,DC=com
+atlas.authentication.method.ldap.ad.bind.dn=CN=Administrator,CN=Users,DC=example,DC=com
+atlas.authentication.method.ldap.ad.bind.password=<password>
+atlas.authentication.method.ldap.ad.referral=ignore
+atlas.authentication.method.ldap.ad.user.searchfilter=(sAMAccountName={0})
+atlas.authentication.method.ldap.ad.default.role=ROLE_USER
+</verbatim>
+
+*LDAP Directroy*
+
+<verbatim>
+atlas.authentication.method.ldap.url=ldap://<Ldap server ip>:389
+atlas.authentication.method.ldap.userDNpattern=uid={0],ou=users,dc=example,dc=com
+atlas.authentication.method.ldap.groupSearchBase=dc=example,dc=com
+atlas.authentication.method.ldap.groupSearchFilter=(member=cn={0},ou=users,dc=example,dc=com
+atlas.authentication.method.ldap.groupRoleAttribute=cn
+atlas.authentication.method.ldap.base.dn=dc=example,dc=com
+atlas.authentication.method.ldap.bind.dn=cn=Manager,dc=example,dc=com
+atlas.authentication.method.ldap.bind.password=<password>
+atlas.authentication.method.ldap.referral=ignore
+atlas.authentication.method.ldap.user.searchfilter=(uid={0})
+atlas.authentication.method.ldap.default.role=ROLE_USER
+</verbatim>
+

@@ -20,11 +20,11 @@ package org.apache.atlas.web.security;
 import org.apache.atlas.web.filters.ActiveServerFilter;
 import org.apache.atlas.web.filters.AtlasAuthenticationEntryPoint;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
-import org.apache.atlas.web.filters.AtlasAuthorizationFilter;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.web.filters.StaleTransactionCleanupFilter;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -35,16 +35,18 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 
 import javax.inject.Inject;
 import java.util.LinkedHashMap;
+
+import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
@@ -54,7 +56,6 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     private final AtlasAuthenticationProvider authenticationProvider;
     private final AtlasAuthenticationSuccessHandler successHandler;
     private final AtlasAuthenticationFailureHandler failureHandler;
-    private final AtlasAuthorizationFilter atlasAuthorizationFilter;
     private final AtlasKnoxSSOAuthenticationFilter ssoAuthenticationFilter;
     private final AtlasAuthenticationFilter atlasAuthenticationFilter;
     private final AtlasCSRFPreventionFilter csrfPreventionFilter;
@@ -72,7 +73,6 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                                AtlasAuthenticationProvider authenticationProvider,
                                AtlasAuthenticationSuccessHandler successHandler,
                                AtlasAuthenticationFailureHandler failureHandler,
-                               AtlasAuthorizationFilter atlasAuthorizationFilter,
                                AtlasAuthenticationEntryPoint atlasAuthenticationEntryPoint,
                                Configuration configuration,
                                StaleTransactionCleanupFilter staleTransactionCleanupFilter,
@@ -83,7 +83,6 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         this.authenticationProvider = authenticationProvider;
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
-        this.atlasAuthorizationFilter = atlasAuthorizationFilter;
         this.atlasAuthenticationEntryPoint = atlasAuthenticationEntryPoint;
         this.configuration = configuration;
         this.staleTransactionCleanupFilter = staleTransactionCleanupFilter;
@@ -128,7 +127,10 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         httpSecurity
                 .authorizeRequests().anyRequest().authenticated()
                 .and()
-                    .headers().disable()
+                    .headers()
+                        .addHeaderWriter(new StaticHeadersWriter("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:; connect-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline';font-src 'self' data:"))
+                        .addHeaderWriter(new StaticHeadersWriter("Server","Apache Atlas"))
+                .and()
                     .servletApi()
                 .and()
                     .csrf().disable()
@@ -156,15 +158,20 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
 
         //@formatter:on
 
-        if (configuration.getBoolean("atlas.server.ha.enabled", false)) {
-            LOG.info("Atlas is in HA Mode, enabling ActiveServerFilter");
+        boolean configMigrationEnabled = !StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME));
+        if (configuration.getBoolean("atlas.server.ha.enabled", false) ||
+                configMigrationEnabled) {
+            if(configMigrationEnabled) {
+                LOG.info("Atlas is in Migration Mode, enabling ActiveServerFilter");
+            } else {
+                LOG.info("Atlas is in HA Mode, enabling ActiveServerFilter");
+            }
             httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
         }
         httpSecurity
                 .addFilterAfter(staleTransactionCleanupFilter, BasicAuthenticationFilter.class)
                 .addFilterBefore(ssoAuthenticationFilter, BasicAuthenticationFilter.class)
                 .addFilterAfter(atlasAuthenticationFilter, SecurityContextHolderAwareRequestFilter.class)
-                .addFilterAfter(csrfPreventionFilter, AtlasAuthenticationFilter.class)
-                .addFilterAfter(atlasAuthorizationFilter, FilterSecurityInterceptor.class);
+                .addFilterAfter(csrfPreventionFilter, AtlasAuthenticationFilter.class);
     }
 }

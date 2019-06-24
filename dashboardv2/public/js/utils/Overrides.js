@@ -26,6 +26,14 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
     var oldBackboneSync = Backbone.sync;
     Backbone.sync = function(method, model, options) {
         var that = this;
+        if (options.queryParam) {
+            var generateQueryParam = $.param(options.queryParam);
+            if (options.url.indexOf('?') !== -1) {
+                options.url = options.url + "&" + generateQueryParam;
+            } else {
+                options.url = options.url + "?" + generateQueryParam;
+            }
+        }
         return oldBackboneSync.apply(this, [method, model,
             _.extend(options, {
                 error: function(response) {
@@ -39,55 +47,6 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
                 }
             })
         ]);
-    }
-    _.mixin({
-        isEmptyArray: function(val) {
-            if (val && _.isArray(val)) {
-                return _.isEmpty(val);
-            } else {
-                return false;
-            }
-        },
-        isUndefinedNull: function(val) {
-            if (_.isUndefined(val) || _.isNull(val)) {
-                return true
-            } else {
-                return false;
-            }
-        }
-    });
-    var getPopoverEl = function(e) {
-        return $(e.target).parent().data("bs.popover") || $(e.target).data("bs.popover") || $(e.target).parents('.popover').length;
-    }
-    $('body').on('click DOMMouseScroll mousewheel', function(e) {
-        if (e.originalEvent) {
-            // Do action if it is triggered by a human.
-            //e.isImmediatePropagationStopped();
-            var isPopOverEl = getPopoverEl(e)
-            if (!isPopOverEl) {
-                $('.popover').popover('hide');
-            }
-        }
-    });
-    $('body').on('hidden.bs.popover', function(e) {
-        $(e.target).data("bs.popover").inState = { click: false, hover: false, focus: false }
-    });
-    $('body').on('show.bs.popover', '[data-js="popover"]', function() {
-        $('.popover').not(this).popover('hide');
-    });
-    $('body').on('keypress', 'input.number-input,.number-input .select2-search__field', function(e) {
-        if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
-            return false;
-        }
-    });
-
-    // For placeholder support 
-    if (!('placeholder' in HTMLInputElement.prototype)) {
-        var originalRender = Backbone.Marionette.LayoutView.prototype.render;
-        Backbone.Marionette.LayoutView.prototype.render = function() {
-            originalRender.apply(this, arguments);
-            this.$('input, textarea').placeholder();
-        }
     }
 
     String.prototype.trunc = String.prototype.trunc ||
@@ -119,8 +78,24 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             var that = this;
             Backgrid.HeaderRow.__super__.render.apply(this, arguments);
             _.each(this.columns.models, function(modelValue) {
-                if (modelValue.get('width')) that.$el.find('.' + modelValue.get('name')).css('min-width', modelValue.get('width') + 'px')
-                if (modelValue.get('toolTip')) that.$el.find('.' + modelValue.get('name')).attr('title', modelValue.get('toolTip'))
+                var elAttr = modelValue.get('elAttr'),
+                    elAttrObj = null;
+                if (elAttr) {
+                    if (_.isFunction(elAttr)) {
+                        elAttrObj = elAttr(modelValue);
+                    } else if (_.isObject(elAttr)) {
+                        if (!_.isArray(elAttr)) {
+                            elAttrObj = [elAttr];
+                        } else {
+                            elAttrObj = elAttr;
+                        }
+                    }
+                    _.each(elAttrObj, function(val) {
+                        that.$el.find('.' + modelValue.get('name')).data(val);
+                    });
+                }
+                if (modelValue.get('width')) that.$el.find('.' + modelValue.get('name')).css('min-width', modelValue.get('width') + 'px');
+                if (modelValue.get('toolTip')) that.$el.find('.' + modelValue.get('name')).attr('title', modelValue.get('toolTip'));
             });
             return this;
         }

@@ -17,8 +17,8 @@
  */
 package org.apache.atlas.util;
 
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.typesystem.IReferenceableInstance;
 
 /**
  * Data structure that stores an IReferenceableInstance and its location within
@@ -28,16 +28,16 @@ import org.apache.atlas.typesystem.IReferenceableInstance;
  */
 public class IndexedInstance {
 
-    private final IReferenceableInstance instance_;
+    private final Referenceable instance_;
     private final int index_;
 
-    public IndexedInstance(IReferenceableInstance instance, int index) {
+    public IndexedInstance(Referenceable instance, int index) {
         super();
         this.instance_ = instance;
         this.index_ = index;
     }
 
-    public IReferenceableInstance getInstance() {
+    public Referenceable getInstance() {
         return instance_;
     }
 

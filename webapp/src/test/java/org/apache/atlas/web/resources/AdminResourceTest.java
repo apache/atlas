@@ -18,9 +18,10 @@
 
 package org.apache.atlas.web.resources;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.web.service.ServiceState;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -28,6 +29,8 @@ import org.testng.annotations.Test;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
+
+import java.io.IOException;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,27 +47,27 @@ public class AdminResourceTest {
     }
 
     @Test
-    public void testStatusOfActiveServerIsReturned() throws JSONException {
+    public void testStatusOfActiveServerIsReturned() throws IOException {
 
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
 
-        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null);
+        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null, null, null, null, null, null);
         Response response = adminResource.getStatus();
         assertEquals(response.getStatus(), HttpServletResponse.SC_OK);
-        JSONObject entity = (JSONObject) response.getEntity();
-        assertEquals(entity.get("Status"), "ACTIVE");
+        JsonNode entity = AtlasJson.parseToV1JsonNode((String) response.getEntity());
+        assertEquals(entity.get("Status").asText(), "ACTIVE");
     }
 
     @Test
-    public void testResourceGetsValueFromServiceState() throws JSONException {
+    public void testResourceGetsValueFromServiceState() throws IOException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
 
-        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null);
+        AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null, null, null, null, null, null);
         Response response = adminResource.getStatus();
 
         verify(serviceState).getState();
-        JSONObject entity = (JSONObject) response.getEntity();
-        assertEquals(entity.get("Status"), "PASSIVE");
+        JsonNode entity = AtlasJson.parseToV1JsonNode((String) response.getEntity());
+        assertEquals(entity.get("Status").asText(), "PASSIVE");
 
     }
 }

@@ -30,6 +30,8 @@ import java.util.List;
  */
 public interface AtlasGraphQuery<V, E> {
 
+    enum SortOrder { ASC, DESC }
+
     /**
      * Adds a predicate that the returned vertices must have the specified
      * property and that one of the values of the property must be the
@@ -52,18 +54,32 @@ public interface AtlasGraphQuery<V, E> {
      */
     AtlasGraphQuery<V, E> in(String propertyKey, Collection<?> values);
 
+    /**
+     * Executes the query and returns the matching edges.
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges();
+
+    /**
+     * Executes the query and returns the matching edges till the max limit
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges(int limit);
+
+    /**
+     * Executes the query and returns the matching edges from given offset till the max limit
+     * @param offset starting offset
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<AtlasEdge<V, E>> edges(int offset, int limit);
 
     /**
      * Executes the query and returns the matching vertices.
      * @return
      */
     Iterable<AtlasVertex<V, E>> vertices();
-
-    /**
-     * Executes the query and returns the matching edges.
-     * @return
-     */
-    Iterable<AtlasEdge<V, E>> edges();
 
     /**
      * Executes the query and returns the matching vertices from given offset till the max limit
@@ -80,6 +96,27 @@ public interface AtlasGraphQuery<V, E> {
      */
     Iterable<AtlasVertex<V, E>> vertices(int offset, int limit);
 
+    /**
+     * Executes the query and returns IDs of matching vertices.
+     * @return
+     */
+    Iterable<Object> vertexIds();
+
+    /**
+     * Executes the query and returns IDs of the matching vertices from given offset till the max limit
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<Object> vertexIds(int limit);
+
+    /**
+     * Executes the query and returns IDs of the matching vertices from given offset till the max limit
+     * @param offset starting offset
+     * @param limit max number of vertices
+     * @return
+     */
+    Iterable<Object> vertexIds(int offset, int limit);
+
 
     /**
      * Adds a predicate that the returned vertices must have the specified
@@ -91,6 +128,15 @@ public interface AtlasGraphQuery<V, E> {
      * @return
      */
     AtlasGraphQuery<V, E> has(String propertyKey, QueryOperator op, Object values);
+
+
+    /**
+     * Adds a sorting predicate
+     * @param propertyKey property key to sort on
+     * @param order ASC or DESC
+     * @return
+     */
+    AtlasGraphQuery<V, E> orderBy(String propertyKey, SortOrder order);
 
     /**
      * Adds a predicate that the vertices returned must satisfy the

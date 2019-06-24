@@ -19,48 +19,57 @@
 package org.apache.atlas.hook;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.kafka.NotificationProvider;
+import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.security.InMemoryJAASConfiguration;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.codehaus.jettison.json.JSONArray;
+import org.apache.hadoop.util.ShutdownHookManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.security.PrivilegedExceptionAction;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 /**
  * A base class for atlas hooks.
  */
 public abstract class AtlasHook {
-
     private static final Logger LOG = LoggerFactory.getLogger(AtlasHook.class);
 
-    protected static Configuration atlasProperties;
+    public static final String ATLAS_NOTIFICATION_ASYNCHRONOUS                    = "atlas.notification.hook.asynchronous";
+    public static final String ATLAS_NOTIFICATION_ASYNCHRONOUS_MIN_THREADS        = "atlas.notification.hook.asynchronous.minThreads";
+    public static final String ATLAS_NOTIFICATION_ASYNCHRONOUS_MAX_THREADS        = "atlas.notification.hook.asynchronous.maxThreads";
+    public static final String ATLAS_NOTIFICATION_ASYNCHRONOUS_KEEP_ALIVE_TIME_MS = "atlas.notification.hook.asynchronous.keepAliveTimeMs";
+    public static final String ATLAS_NOTIFICATION_ASYNCHRONOUS_QUEUE_SIZE         = "atlas.notification.hook.asynchronous.queueSize";
+    public static final String ATLAS_NOTIFICATION_MAX_RETRIES                     = "atlas.notification.hook.retry.maxRetries";
+    public static final String ATLAS_NOTIFICATION_RETRY_INTERVAL                  = "atlas.notification.hook.retry.interval";
+    public static final String ATLAS_NOTIFICATION_FAILED_MESSAGES_FILENAME_KEY    = "atlas.notification.failed.messages.filename";
+    public static final String ATLAS_NOTIFICATION_LOG_FAILED_MESSAGES_ENABLED_KEY = "atlas.notification.log.failed.messages";
+    public static final String ATLAS_HOOK_FAILED_MESSAGES_LOG_DEFAULT_NAME        = "atlas_hook_failed_messages.log";
 
+    protected static Configuration         atlasProperties;
     protected static NotificationInterface notificationInterface;
 
-    private static boolean logFailedMessages;
-    private static FailedMessagesLogger failedMessagesLogger;
-    private static int notificationRetryInterval;
-    public static final String ATLAS_NOTIFICATION_RETRY_INTERVAL = "atlas.notification.hook.retry.interval";
+    private static final int                  SHUTDOWN_HOOK_WAIT_TIME_MS = 3000;
+    private static final boolean              logFailedMessages;
+    private static final FailedMessagesLogger failedMessagesLogger;
+    private static final int                  notificationMaxRetries;
+    private static final int                  notificationRetryInterval;
+    private static       ExecutorService      executor = null;
 
-    public static final String ATLAS_NOTIFICATION_FAILED_MESSAGES_FILENAME_KEY =
-            "atlas.notification.failed.messages.filename";
-    public static final String ATLAS_HOOK_FAILED_MESSAGES_LOG_DEFAULT_NAME = "atlas_hook_failed_messages.log";
-    public static final String ATLAS_NOTIFICATION_LOG_FAILED_MESSAGES_ENABLED_KEY =
-            "atlas.notification.log.failed.messages";
 
     static {
         try {
@@ -69,12 +78,15 @@ public abstract class AtlasHook {
             LOG.info("Failed to load application properties", e);
         }
 
-        String failedMessageFile = atlasProperties.getString(ATLAS_NOTIFICATION_FAILED_MESSAGES_FILENAME_KEY,
-                ATLAS_HOOK_FAILED_MESSAGES_LOG_DEFAULT_NAME);
+        String failedMessageFile = atlasProperties.getString(ATLAS_NOTIFICATION_FAILED_MESSAGES_FILENAME_KEY, ATLAS_HOOK_FAILED_MESSAGES_LOG_DEFAULT_NAME);
+
         logFailedMessages = atlasProperties.getBoolean(ATLAS_NOTIFICATION_LOG_FAILED_MESSAGES_ENABLED_KEY, true);
+
         if (logFailedMessages) {
             failedMessagesLogger = new FailedMessagesLogger(failedMessageFile);
             failedMessagesLogger.init();
+        } else {
+            failedMessagesLogger = null;
         }
 
         if (!isLoginKeytabBased()) {
@@ -83,26 +95,51 @@ public abstract class AtlasHook {
             }
         }
 
+        notificationMaxRetries    = atlasProperties.getInt(ATLAS_NOTIFICATION_MAX_RETRIES, 3);
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
-        notificationInterface = NotificationProvider.get();
+        notificationInterface     = NotificationProvider.get();
 
-        LOG.info("Created Atlas Hook");
-    }
+        String currentUser = "";
 
-    protected abstract String getNumberOfRetriesPropertyKey();
-
-    protected void notifyEntities(String user, Collection<Referenceable> entities) {
-        JSONArray entitiesArray = new JSONArray();
-
-        for (Referenceable entity : entities) {
-            LOG.info("Adding entity for type: {}", entity.getTypeName());
-            final String entityJson = InstanceSerialization.toJson(entity, true);
-            entitiesArray.put(entityJson);
+        try {
+            currentUser = getUser();
+        } catch (Exception excp) {
+            LOG.warn("Error in determining current user", excp);
         }
 
-        List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
-        hookNotificationMessages.add(new HookNotification.EntityCreateRequest(user, entitiesArray));
-        notifyEntities(hookNotificationMessages);
+        notificationInterface.setCurrentUser(currentUser);
+
+        boolean isAsync = atlasProperties.getBoolean(ATLAS_NOTIFICATION_ASYNCHRONOUS, Boolean.TRUE);
+
+        if (isAsync) {
+            int  minThreads      = atlasProperties.getInt(ATLAS_NOTIFICATION_ASYNCHRONOUS_MIN_THREADS, 1);
+            int  maxThreads      = atlasProperties.getInt(ATLAS_NOTIFICATION_ASYNCHRONOUS_MAX_THREADS, 1);
+            long keepAliveTimeMs = atlasProperties.getLong(ATLAS_NOTIFICATION_ASYNCHRONOUS_KEEP_ALIVE_TIME_MS, 10000);
+            int  queueSize       = atlasProperties.getInt(ATLAS_NOTIFICATION_ASYNCHRONOUS_QUEUE_SIZE, 10000);
+
+            executor = new ThreadPoolExecutor(minThreads, maxThreads, keepAliveTimeMs, TimeUnit.MILLISECONDS,
+                                              new LinkedBlockingDeque<>(queueSize),
+                                              new ThreadFactoryBuilder().setNameFormat("Atlas Notifier %d").setDaemon(true).build());
+
+            ShutdownHookManager.get().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        LOG.info("==> Shutdown of Atlas Hook");
+
+                        executor.shutdown();
+                        executor.awaitTermination(SHUTDOWN_HOOK_WAIT_TIME_MS, TimeUnit.MILLISECONDS);
+                        executor = null;
+                    } catch (InterruptedException excp) {
+                        LOG.info("Interrupt received in shutdown.", excp);
+                    } finally {
+                        LOG.info("<== Shutdown of Atlas Hook");
+                    }
+                }
+            }, AtlasConstants.ATLAS_SHUTDOWN_HOOK_PRIORITY);
+        }
+
+        LOG.info("Created Atlas Hook");
     }
 
     /**
@@ -114,47 +151,78 @@ public abstract class AtlasHook {
      * @param messages   hook notification messages
      * @param maxRetries maximum number of retries while sending message to messaging system
      */
-    public static void notifyEntities(List<HookNotification.HookNotificationMessage> messages, int maxRetries) {
-        notifyEntitiesInternal(messages, maxRetries, notificationInterface, logFailedMessages, failedMessagesLogger);
+    public static void notifyEntities(List<HookNotification> messages, UserGroupInformation ugi, int maxRetries) {
+        if (executor == null) { // send synchronously
+            notifyEntitiesInternal(messages, maxRetries, ugi, notificationInterface, logFailedMessages, failedMessagesLogger);
+        } else {
+            executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    notifyEntitiesInternal(messages, maxRetries, ugi, notificationInterface, logFailedMessages, failedMessagesLogger);
+                }
+            });
+        }
     }
 
     @VisibleForTesting
-    static void notifyEntitiesInternal(List<HookNotification.HookNotificationMessage> messages, int maxRetries,
+    static void notifyEntitiesInternal(List<HookNotification> messages, int maxRetries, UserGroupInformation ugi,
                                        NotificationInterface notificationInterface,
                                        boolean shouldLogFailedMessages, FailedMessagesLogger logger) {
         if (messages == null || messages.isEmpty()) {
             return;
         }
 
-        final String message = messages.toString();
-        int numRetries = 0;
-        while (true) {
-            try {
-                notificationInterface.send(NotificationInterface.NotificationType.HOOK, messages);
-                return;
-            } catch (Exception e) {
-                numRetries++;
-                if (numRetries < maxRetries) {
-                    LOG.error("Failed to send notification - attempt #{}; error={}", numRetries, e.getMessage());
-                    try {
-                        LOG.debug("Sleeping for {} ms before retry", notificationRetryInterval);
-                        Thread.sleep(notificationRetryInterval);
-                    } catch (InterruptedException ie) {
-                        LOG.error("Notification hook thread sleep interrupted");
-                    }
+        final int maxAttempts         = maxRetries < 1 ? 1 : maxRetries;
+        Exception notificationFailure = null;
 
-                } else {
-                    if (shouldLogFailedMessages && e instanceof NotificationException) {
-                        List<String> failedMessages = ((NotificationException) e).getFailedMessages();
-                        for (String msg : failedMessages) {
-                            logger.log(msg);
-                        }
-                    }
-                    LOG.error("Failed to notify atlas for entity {} after {} retries. Quitting",
-                            message, maxRetries, e);
-                    return;
+        for (int numAttempt = 1; numAttempt <= maxAttempts; numAttempt++) {
+            if (numAttempt > 1) { // retry attempt
+                try {
+                    LOG.debug("Sleeping for {} ms before retry", notificationRetryInterval);
+
+                    Thread.sleep(notificationRetryInterval);
+                } catch (InterruptedException ie) {
+                    LOG.error("Notification hook thread sleep interrupted");
+
+                    break;
                 }
             }
+
+            try {
+                if (ugi == null) {
+                    notificationInterface.send(NotificationInterface.NotificationType.HOOK, messages);
+                } else {
+                    PrivilegedExceptionAction<Object> privilegedNotify = new PrivilegedExceptionAction<Object>() {
+                        @Override
+                        public Object run() throws Exception {
+                            notificationInterface.send(NotificationInterface.NotificationType.HOOK, messages);
+                            return messages;
+                        }
+                    };
+
+                    ugi.doAs(privilegedNotify);
+                }
+
+                notificationFailure = null; // notification sent successfully, reset error
+
+                break;
+            } catch (Exception e) {
+                notificationFailure = e;
+
+                LOG.error("Failed to send notification - attempt #{}; error={}", numAttempt, e.getMessage());
+            }
+        }
+
+        if (notificationFailure != null) {
+            if (shouldLogFailedMessages && notificationFailure instanceof NotificationException) {
+                final List<String> failedMessages = ((NotificationException) notificationFailure).getFailedMessages();
+
+                for (String msg : failedMessages) {
+                    logger.log(msg);
+                }
+            }
+
+            LOG.error("Giving up after {} failed attempts to send notification to Atlas: {}", maxAttempts, messages.toString(), notificationFailure);
         }
     }
 
@@ -166,9 +234,8 @@ public abstract class AtlasHook {
      *
      * @param messages hook notification messages
      */
-    protected void notifyEntities(List<HookNotification.HookNotificationMessage> messages) {
-        final int maxRetries = atlasProperties.getInt(getNumberOfRetriesPropertyKey(), 3);
-        notifyEntities(messages, maxRetries);
+    protected void notifyEntities(List<HookNotification> messages, UserGroupInformation ugi) {
+        notifyEntities(messages, ugi, notificationMaxRetries);
     }
 
     /**

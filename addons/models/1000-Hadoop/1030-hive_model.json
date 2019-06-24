@@ -2,6 +2,7 @@
     "enumDefs": [
         {
             "name": "hive_principal_type",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "elementDefs": [
                 {
@@ -22,6 +23,7 @@
     "structDefs": [
         {
             "name": "hive_order",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -44,6 +46,7 @@
         },
         {
             "name": "hive_serde",
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -80,6 +83,7 @@
             "superTypes": [
                 "Process"
             ],
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -141,7 +145,7 @@
                 {
                     "name": "recentQueries",
                     "typeName": "array<string>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "LIST",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -152,6 +156,7 @@
                     "cardinality": "SINGLE",
                     "isIndexable": false,
                     "isOptional": true,
+                    "includeInNotification": true,
                     "isUnique": false
                 },
                 {
@@ -169,16 +174,12 @@
             "superTypes": [
                 "DataSet"
             ],
-            "typeVersion": "1.0",
+            "serviceType": "hive",
+            "typeVersion": "1.1",
+            "options": {
+              "schemaElementsAttribute": "columns"
+            },
             "attributeDefs": [
-                {
-                    "name": "db",
-                    "typeName": "hive_db",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": false,
-                    "isUnique": false
-                },
                 {
                     "name": "createTime",
                     "typeName": "date",
@@ -212,48 +213,9 @@
                     "isUnique": false
                 },
                 {
-                    "name": "sd",
-                    "typeName": "hive_storagedesc",
-                    "cardinality": "SINGLE",
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ],
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                },
-                {
-                    "name": "partitionKeys",
-                    "typeName": "array<hive_column>",
-                    "cardinality": "SINGLE",
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ],
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                },
-                {
                     "name": "aliases",
                     "typeName": "array<string>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                },
-                {
-                    "name": "columns",
-                    "typeName": "array<hive_column>",
-                    "cardinality": "SINGLE",
-                    "constraints": [
-                        {
-                            "type": "ownedRef"
-                        }
-                    ],
+                    "cardinality": "SET",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -305,24 +267,9 @@
             "superTypes": [
                 "Referenceable"
             ],
+            "serviceType": "hive",
             "typeVersion": "1.0",
             "attributeDefs": [
-                {
-                    "name": "table",
-                    "typeName": "hive_table",
-                    "cardinality": "SINGLE",
-                    "constraints": [
-                        {
-                            "type": "inverseRef",
-                            "params": {
-                                "attribute": "sd"
-                            }
-                        }
-                    ],
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
-                },
                 {
                     "name": "location",
                     "typeName": "string",
@@ -374,7 +321,7 @@
                 {
                     "name": "bucketCols",
                     "typeName": "array<string>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -382,7 +329,7 @@
                 {
                     "name": "sortCols",
                     "typeName": "array<hive_order>",
-                    "cardinality": "SINGLE",
+                    "cardinality": "SET",
                     "isIndexable": false,
                     "isOptional": true,
                     "isUnique": false
@@ -408,10 +355,10 @@
         {
             "name": "hive_db",
             "superTypes": [
-                "Referenceable",
                 "Asset"
             ],
-            "typeVersion": "1.0",
+            "serviceType": "hive",
+            "typeVersion": "1.1",
             "attributeDefs": [
                 {
                     "name": "clusterName",
@@ -419,6 +366,7 @@
                     "cardinality": "SINGLE",
                     "isIndexable": true,
                     "isOptional": false,
+                    "includeInNotification": true,
                     "isUnique": false
                 },
                 {
@@ -452,7 +400,11 @@
             "superTypes": [
                 "DataSet"
             ],
-            "typeVersion": "1.0",
+            "serviceType": "hive",
+            "typeVersion": "1.3",
+            "options": {
+              "schemaAttributes": "[\"name\", \"description\", \"owner\", \"type\", \"comment\", \"position\"]"
+            },
             "attributeDefs": [
                 {
                     "name": "type",
@@ -471,20 +423,12 @@
                     "isUnique": false
                 },
                 {
-                    "name": "table",
-                    "typeName": "hive_table",
-                    "cardinality": "SINGLE",
-                    "constraints": [
-                        {
-                            "type": "inverseRef",
-                            "params": {
-                                "attribute": "columns"
-                            }
-                        }
-                    ],
-                    "isIndexable": false,
-                    "isOptional": true,
-                    "isUnique": false
+                  "name": "position",
+                  "typeName": "int",
+                  "cardinality": "SINGLE",
+                  "isIndexable": false,
+                  "isOptional": true,
+                  "isUnique": false
                 }
             ]
         },
@@ -493,16 +437,9 @@
             "superTypes" : [
                 "Process"
             ],
+            "serviceType": "hive",
             "typeVersion" : "1.0",
             "attributeDefs" : [
-                {
-                    "name": "query",
-                    "typeName": "hive_process",
-                    "cardinality" : "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": false,
-                    "isUnique": false
-                },
                 {
                     "name": "depenendencyType",
                     "typeName": "string",
@@ -520,32 +457,128 @@
                     "isUnique": false
                 }
             ]
+        },
+        {
+            "name" : "hive_process_execution",
+            "superTypes" : [
+                "ProcessExecution"
+            ],
+            "serviceType": "hive",
+            "typeVersion" : "1.0",
+            "attributeDefs" : [
+                {
+                    "name": "startTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "endTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "userName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryText",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryGraph",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryId",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryPlan",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "hostName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "hive_db_ddl",
+            "superTypes": [
+                "ddl"
+            ],
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "attributeDefs": []
+        },
+        {
+            "name": "hive_table_ddl",
+            "superTypes": [
+                "ddl"
+            ],
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "attributeDefs": []
         }
     ],
     "relationshipDefs": [
         {
-            "name": "hive_db_tables",
-            "typeVersion": "1.0",
-            "relationshipCategory": "COMPOSITION",
+            "name": "hive_table_db",
+            "serviceType": "hive",
+            "typeVersion": "1.2",
+            "relationshipCategory": "AGGREGATION",
+            "relationshipLabel": "__hive_table.db",
             "endDef1": {
-                "type": "hive_db",
-                "name": "tables",
-                "isContainer": true,
-                "cardinality": "SET"
-            },
-            "endDef2": {
                 "type": "hive_table",
                 "name": "db",
                 "isContainer": false,
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "endDef2": {
+                "type": "hive_db",
+                "name": "tables",
+                "isContainer": true,
+                "cardinality": "SET"
+            },
+            "propagateTags": "NONE"
         },
         {
             "name": "hive_table_columns",
-            "typeVersion": "1.0",
+            "serviceType": "hive",
+            "typeVersion": "1.2",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__hive_table.columns",
             "endDef1": {
                 "type": "hive_table",
                 "name": "columns",
@@ -560,12 +593,14 @@
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags": "NONE"
         },
         {
             "name": "hive_table_partitionkeys",
-            "typeVersion": "1.0",
+            "serviceType": "hive",
+            "typeVersion": "1.2",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__hive_table.partitionKeys",
             "endDef1": {
                 "type": "hive_table",
                 "name": "partitionKeys",
@@ -580,12 +615,14 @@
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags": "NONE"
         },
         {
             "name": "hive_table_storagedesc",
-            "typeVersion": "1.0",
+            "serviceType": "hive",
+            "typeVersion": "1.2",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__hive_table.sd",
             "endDef1": {
                 "type": "hive_table",
                 "name": "sd",
@@ -600,24 +637,82 @@
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
             },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags": "NONE"
         },
         {
             "name": "hive_process_column_lineage",
-            "typeVersion": "1.0",
+            "serviceType": "hive",
+            "typeVersion": "1.2",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__hive_column_lineage.query",
             "endDef1": {
-                "type": "hive_process",
-                "name": "columnLineages",
-                "isContainer": true,
-                "cardinality": "SET"
-            },
-            "endDef2": {
                 "type": "hive_column_lineage",
                 "name": "query",
                 "isContainer": false,
                 "cardinality": "SINGLE",
                 "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "hive_process",
+                "name": "columnLineages",
+                "isContainer": true,
+                "cardinality": "SET"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "hive_process_process_executions",
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_process",
+                "name": "processExecutions",
+                "cardinality": "SET",
+                "isContainer": true
+            },
+            "endDef2": {
+                "type": "hive_process_execution",
+                "name": "process",
+                "cardinality": "SINGLE"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "hive_table_ddl_queries",
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_table",
+                "name": "ddlQueries",
+                "isContainer": true,
+                "cardinality": "SET"
+            },
+            "endDef2": {
+                "type": "hive_table_ddl",
+                "name": "table",
+                "isContainer": false,
+                "cardinality": "SINGLE"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "hive_db_ddl_queries",
+            "serviceType": "hive",
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "hive_db",
+                "name": "ddlQueries",
+                "isContainer": true,
+                "cardinality": "SET"
+            },
+            "endDef2": {
+                "type": "hive_db_ddl",
+                "name": "db",
+                "isContainer": false,
+                "cardinality": "SINGLE"
             },
             "propagateTags": "NONE"
         }

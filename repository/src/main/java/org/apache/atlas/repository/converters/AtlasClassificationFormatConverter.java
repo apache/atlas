@@ -18,14 +18,13 @@
 package org.apache.atlas.repository.converters;
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.IStruct;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,19 +54,12 @@ public class AtlasClassificationFormatConverter extends AtlasStructFormatConvert
                 } else {
                     ret = new AtlasClassification(type.getTypeName());
                 }
-            } else if (v1Obj instanceof IStruct) {
-                IStruct             struct    = (IStruct) v1Obj;
-                Map<String, Object> v1Attribs = null;
+            } else if (v1Obj instanceof Struct) {
+                Struct struct = (Struct) v1Obj;
 
-                try {
-                    v1Attribs = struct.getValuesMap();
-                } catch (AtlasException excp) {
-                    LOG.error("IStruct.getValuesMap() failed", excp);
-                }
-
-                ret = new AtlasClassification(type.getTypeName(), fromV1ToV2(classificationType, v1Attribs, ctx));
+                ret = new AtlasClassification(type.getTypeName(), fromV1ToV2(classificationType, struct.getValues(), ctx));
             } else {
-                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "Map or IStruct",
+                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "Map or Struct",
                                              v1Obj.getClass().getCanonicalName());
             }
         }

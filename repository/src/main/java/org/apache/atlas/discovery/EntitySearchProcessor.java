@@ -33,11 +33,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
+import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.EQUAL;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
 
 public class EntitySearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(EntitySearchProcessor.class);
@@ -51,25 +59,40 @@ public class EntitySearchProcessor extends SearchProcessor {
     public EntitySearchProcessor(SearchContext context) {
         super(context);
 
-        final AtlasEntityType entityType            = context.getEntityType();
-        final FilterCriteria  filterCriteria        = context.getSearchParameters().getEntityFilters();
-        final Set<String>     typeAndSubTypes       = entityType.getTypeAndAllSubTypes();
-        final String          typeAndSubTypesQryStr = entityType.getTypeAndAllSubTypesQryStr();
-        final Set<String>     indexAttributes       = new HashSet<>();
-        final Set<String>     graphAttributes       = new HashSet<>();
-        final Set<String>     allAttributes         = new HashSet<>();
+        final AtlasEntityType entityType      = context.getEntityType();
+        final FilterCriteria  filterCriteria  = context.getSearchParameters().getEntityFilters();
+        final Set<String>     indexAttributes = new HashSet<>();
+        final Set<String>     graphAttributes = new HashSet<>();
+        final Set<String>     allAttributes   = new HashSet<>();
+        final Set<String>     typeAndSubTypes       = context.getEntityTypes();
+        final String          typeAndSubTypesQryStr = context.getEntityTypesQryStr();
 
         final AtlasClassificationType classificationType            = context.getClassificationType();
-        final boolean                 filterClassification          = classificationType != null && !context.needClassificationProcessor();
-        final Set<String>             classificationTypeAndSubTypes = classificationType != null ? classificationType.getTypeAndAllSubTypes() : Collections.EMPTY_SET;
+        final Set<String>             classificationTypeAndSubTypes = context.getClassificationTypes();
+        final boolean                 filterClassification;
 
+        if (classificationType != null) {
+            filterClassification = !context.needClassificationProcessor();
+        } else {
+            filterClassification = false;
+        }
 
         final Predicate typeNamePredicate = SearchPredicateUtil.getINPredicateGenerator()
                                                                .generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);
-        final Predicate traitPredicate    = SearchPredicateUtil.getContainsAnyPredicateGenerator()
-                                                               .generatePredicate(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class);
         final Predicate activePredicate   = SearchPredicateUtil.getEQPredicateGenerator()
                                                                .generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
+        final Predicate traitPredicate;
+
+        if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED) {
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
+                                                        SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
+        } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
+            traitPredicate = PredicateUtils.andPredicate(SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
+                                                         SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
+        } else {
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class),
+                                                        SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class));
+        }
 
         processSearchAttributes(entityType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
 
@@ -122,7 +145,20 @@ public class EntitySearchProcessor extends SearchProcessor {
 
             // If we need to filter on the trait names then we need to build the query and equivalent in-memory predicate
             if (filterClassification) {
-                query.in(Constants.TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes);
+                List<AtlasGraphQuery> orConditions = new LinkedList<>();
+
+                if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED) {
+                    orConditions.add(query.createChildQuery().has(TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
+                    orConditions.add(query.createChildQuery().has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
+                } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
+                    orConditions.add(query.createChildQuery().has(TRAIT_NAMES_PROPERTY_KEY, EQUAL, null)
+                                                             .has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, EQUAL, null));
+                } else {
+                    orConditions.add(query.createChildQuery().in(TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes));
+                    orConditions.add(query.createChildQuery().in(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes));
+                }
+
+                query.or(orConditions);
 
                 // Construct a parallel in-memory predicate
                 if (graphQueryPredicate != null) {
@@ -214,14 +250,14 @@ public class EntitySearchProcessor extends SearchProcessor {
                     break;
                 }
 
+                final boolean isLastResultPage;
+
                 if (indexQuery != null) {
                     Iterator<AtlasIndexQuery.Result> idxQueryResult = indexQuery.vertices(qryOffset, limit);
 
-                    if (!idxQueryResult.hasNext()) { // no more results from index query - end of search
-                        break;
-                    }
-
                     getVerticesFromIndexQueryResult(idxQueryResult, entityVertices);
+
+                    isLastResultPage = entityVertices.size() < limit;
 
                     // Do in-memory filtering before the graph query
                     CollectionUtils.filter(entityVertices, inMemoryPredicate);
@@ -232,16 +268,18 @@ public class EntitySearchProcessor extends SearchProcessor {
                 } else {
                     Iterator<AtlasVertex> queryResult = graphQuery.vertices(qryOffset, limit).iterator();
 
-                    if (!queryResult.hasNext()) { // no more results from query - end of search
-                        break;
-                    }
-
                     getVertices(queryResult, entityVertices);
+
+                    isLastResultPage = entityVertices.size() < limit;
                 }
 
                 super.filter(entityVertices);
 
                 resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
+
+                if (isLastResultPage) {
+                    break;
+                }
             }
         } finally {
             AtlasPerfTracer.log(perf);

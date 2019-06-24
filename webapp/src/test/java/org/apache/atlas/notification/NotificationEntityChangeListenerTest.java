@@ -18,11 +18,10 @@
 
 package org.apache.atlas.notification;
 
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
+import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -41,45 +40,45 @@ public class NotificationEntityChangeListenerTest {
     @Test
     public void testGetAllTraitsSuperTraits() throws Exception {
 
-        TypeSystem typeSystem = mock(TypeSystem.class);
+        AtlasTypeRegistry typeSystem = mock(AtlasTypeRegistry.class);
 
         String traitName = "MyTrait";
-        IStruct myTrait = new Struct(traitName);
+        Struct myTrait = new Struct(traitName);
 
         String superTraitName = "MySuperTrait";
 
-        TraitType traitDef = mock(TraitType.class);
+        AtlasClassificationType traitDef = mock(AtlasClassificationType.class);
         Set<String> superTypeNames = Collections.singleton(superTraitName);
 
-        TraitType superTraitDef = mock(TraitType.class);
+        AtlasClassificationType superTraitDef = mock(AtlasClassificationType.class);
         Set<String> superSuperTypeNames = Collections.emptySet();
 
         Referenceable entity = getEntity("id", myTrait);
 
-        when(typeSystem.getDataType(TraitType.class, traitName)).thenReturn(traitDef);
-        when(typeSystem.getDataType(TraitType.class, superTraitName)).thenReturn(superTraitDef);
+        when(typeSystem.getClassificationTypeByName(traitName)).thenReturn(traitDef);
+        when(typeSystem.getClassificationTypeByName(superTraitName)).thenReturn(superTraitDef);
 
-        when(traitDef.getAllSuperTypeNames()).thenReturn(superTypeNames);
-        when(superTraitDef.getAllSuperTypeNames()).thenReturn(superSuperTypeNames);
+        when(traitDef.getAllSuperTypes()).thenReturn(superTypeNames);
+        when(superTraitDef.getAllSuperTypes()).thenReturn(superSuperTypeNames);
 
-        List<IStruct> allTraits = NotificationEntityChangeListener.getAllTraits(entity, typeSystem);
+        List<Struct> allTraits = NotificationEntityChangeListener.getAllTraits(entity, typeSystem);
 
         assertEquals(2, allTraits.size());
 
-        for (IStruct trait : allTraits) {
+        for (Struct trait : allTraits) {
             String typeName = trait.getTypeName();
             assertTrue(typeName.equals(traitName) || typeName.equals(superTraitName));
         }
     }
 
-    private Referenceable getEntity(String id, IStruct... traits) {
+    private Referenceable getEntity(String id, Struct... traits) {
         String typeName = "typeName";
         Map<String, Object> values = new HashMap<>();
 
         List<String> traitNames = new LinkedList<>();
-        Map<String, IStruct> traitMap = new HashMap<>();
+        Map<String, Struct> traitMap = new HashMap<>();
 
-        for (IStruct trait : traits) {
+        for (Struct trait : traits) {
             String traitName = trait.getTypeName();
 
             traitNames.add(traitName);

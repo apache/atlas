@@ -19,24 +19,86 @@
 package org.apache.atlas.authorize;
 
 
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+
 public interface AtlasAuthorizer {
-
-
     /**
-     * This method will load the policy file and would initialize the required data-structures.
+     * initialization of authorizer implementation
      */
     void init();
 
     /**
-     * This method is responsible to perform the actual authorization for every REST API call. It will check if
-     * user can perform action on resource.
-     */
-    boolean isAccessAllowed(AtlasAccessRequest request) throws AtlasAuthorizationException;
-
-    /**
-     * This method is responsible to perform the cleanup and release activities. It must be called when you are done
-     * with the Authorization activity and once it's called a restart would be required. Try to invoke this while
-     * destroying the context.
+     * cleanup of authorizer implementation
      */
     void cleanUp();
+
+    /**
+     * authorize admin operations
+     * @param request
+     * @return
+     * @throws AtlasAuthorizationException
+     */
+    boolean isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException;
+
+    /**
+     * authorize operations on an entity
+     * @param request
+     * @return
+     * @throws AtlasAuthorizationException
+     */
+    boolean isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException;
+
+    /**
+     * authorize operations on a type
+     * @param request
+     * @return
+     * @throws AtlasAuthorizationException
+     */
+    boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException;
+
+    /**
+     * authorize relationship type
+     * @param request
+     * @return
+     * @throws AtlasAuthorizationException
+     */
+    default
+    boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
+        return true;
+    }
+
+    /**
+     * scrub search-results to handle entities for which the user doesn't have access
+     * @param request
+     * @return
+     * @throws AtlasAuthorizationException
+     */
+    default
+    void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
+    }
+
+    default
+    void scrubEntityHeader(AtlasEntityHeader entity) {
+        entity.setGuid("-1");
+
+        if(entity.getAttributes() != null) {
+            entity.getAttributes().clear();
+        }
+
+        if(entity.getClassifications() != null) {
+            entity.getClassifications().clear();
+        }
+
+        if(entity.getClassificationNames() != null) {
+            entity.getClassificationNames().clear();
+        }
+
+        if(entity.getMeanings() != null) {
+            entity.getMeanings().clear();
+        }
+
+        if(entity.getMeaningNames() != null) {
+            entity.getMeaningNames().clear();
+        }
+    }
 }

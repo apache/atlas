@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'backbone', 'hbs!tmpl/common/modal'], function(require, Backbone, template) {
+define(['require', 'backbone', 'hbs!tmpl/common/Modal'], function(require, Backbone, template) {
 
     var Modal = Backbone.View.extend({
 
@@ -138,6 +138,7 @@ define(['require', 'backbone', 'hbs!tmpl/common/modal'], function(require, Backb
          */
         open: function(cb) {
             if (!this.isRendered) this.render();
+            $(".tooltip").tooltip("hide");
 
             var self = this,
                 $el = this.$el;
@@ -201,6 +202,14 @@ define(['require', 'backbone', 'hbs!tmpl/common/modal'], function(require, Backb
             $el.one('shown.bs.modal', function() {
                 self.trigger('shownModal');
             });
+            $el.find('.header-button').on('click', 'button', function() {
+                var headerButtons = self.options.headerButtons,
+                    clickedButtonIndex = $(this).data("index"),
+                    clickedButtonObj = headerButtons && headerButtons[clickedButtonIndex];
+                if (clickedButtonObj && clickedButtonObj.onClick) {
+                    clickedButtonObj.onClick.apply(this, arguments);
+                }
+            });
             return this;
         },
 
@@ -216,6 +225,7 @@ define(['require', 'backbone', 'hbs!tmpl/common/modal'], function(require, Backb
                 this._preventClose = false;
                 return;
             }
+            $(".tooltip").tooltip("hide");
 
             $el.one('hidden.bs.modal', function onHidden(e) {
                 // Ignore events propagated from interior objects, like bootstrap tooltips

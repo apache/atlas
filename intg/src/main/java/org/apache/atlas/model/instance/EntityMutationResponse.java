@@ -18,8 +18,10 @@
 package org.apache.atlas.model.instance;
 
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,10 +37,9 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
@@ -190,7 +191,15 @@ public class EntityMutationResponse {
         return getFirstEntityByType(getEntitiesByOperation(EntityOperation.UPDATE), typeName);
     }
 
+    @JsonIgnore
     public void addEntity(EntityOperation op, AtlasEntityHeader header) {
+        // if an entity is already included in CREATE, ignore subsequent UPDATE, PARTIAL_UPDATE
+        if (op == EntityOperation.UPDATE || op == EntityOperation.PARTIAL_UPDATE) {
+            if (entityHeaderExists(getCreatedEntities(), header.getGuid())) {
+                return;
+            }
+        }
+
         if (mutatedEntities == null) {
             mutatedEntities = new HashMap<>();
         }
@@ -202,17 +211,17 @@ public class EntityMutationResponse {
             mutatedEntities.put(op, opEntities);
         }
 
-        if (!entityHeaderExists(opEntities, header)) {
+        if (!entityHeaderExists(opEntities, header.getGuid())) {
             opEntities.add(header);
         }
     }
 
-    private boolean entityHeaderExists(List<AtlasEntityHeader> entityHeaders, AtlasEntityHeader newEntityHeader) {
+    private boolean entityHeaderExists(List<AtlasEntityHeader> entityHeaders, String guid) {
         boolean ret = false;
 
-        if (CollectionUtils.isNotEmpty(entityHeaders) && newEntityHeader != null) {
+        if (CollectionUtils.isNotEmpty(entityHeaders) && guid != null) {
             for (AtlasEntityHeader entityHeader : entityHeaders) {
-                if (StringUtils.equals(entityHeader.getGuid(), newEntityHeader.getGuid())) {
+                if (StringUtils.equals(entityHeader.getGuid(), guid)) {
                     ret = true;
                     break;
                 }

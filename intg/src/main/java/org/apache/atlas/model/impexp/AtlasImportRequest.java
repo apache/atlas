@@ -17,19 +17,23 @@
  */
 package org.apache.atlas.model.impexp;
 
+
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.codehaus.jackson.annotate.JsonAnySetter;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
@@ -38,6 +42,8 @@ public class AtlasImportRequest implements Serializable {
     private static final long   serialVersionUID = 1L;
 
     public  static final String TRANSFORMS_KEY             = "transforms";
+    public  static final String TRANSFORMERS_KEY           = "transformers";
+    public  static final String OPTION_KEY_REPLICATED_FROM = "replicatedFrom";
     private static final String START_POSITION_KEY         = "startPosition";
     private static final String START_GUID_KEY             = "startGuid";
     private static final String FILE_NAME_KEY              = "fileName";
@@ -98,13 +104,24 @@ public class AtlasImportRequest implements Serializable {
     }
 
     private String getOptionForKey(String key) {
-        if (this.options == null || !this.options.containsKey(key)) {
+        if (MapUtils.isEmpty(this.options) || !this.options.containsKey(key)) {
             return null;
         }
 
         return (String) this.options.get(key);
     }
- @JsonAnySetter
+
+    @JsonIgnore
+    public boolean isReplicationOptionSet() {
+        return MapUtils.isNotEmpty(options) && options.containsKey(OPTION_KEY_REPLICATED_FROM);
+    }
+
+    @JsonIgnore
+    public String getOptionKeyReplicatedFrom() {
+        return isReplicationOptionSet() ? options.get(OPTION_KEY_REPLICATED_FROM) : StringUtils.EMPTY;
+    }
+
+    @JsonAnySetter
     public void setOption(String key, String value) {
         if (null == options) {
             options = new HashMap<>();

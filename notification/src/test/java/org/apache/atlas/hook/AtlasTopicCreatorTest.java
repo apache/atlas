@@ -19,6 +19,7 @@
 package org.apache.atlas.hook;
 
 import kafka.utils.ZkUtils;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.testng.annotations.Test;
 
@@ -33,6 +34,9 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class AtlasTopicCreatorTest {
+
+    private final String ATLAS_HOOK_TOPIC     = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
+    private final String ATLAS_ENTITIES_TOPIC = AtlasConfiguration.NOTIFICATION_ENTITIES_TOPIC_NAME.getString();
 
     @Test
     public void shouldNotCreateAtlasTopicIfNotConfiguredToDoSo() {
@@ -49,7 +53,7 @@ public class AtlasTopicCreatorTest {
                 return false;
             }
         };
-        atlasTopicCreator.createAtlasTopic(configuration, "ATLAS_HOOK");
+        atlasTopicCreator.createAtlasTopic(configuration, ATLAS_HOOK_TOPIC);
         assertFalse(topicExistsCalled[0]);
     }
 
@@ -80,7 +84,7 @@ public class AtlasTopicCreatorTest {
                 createTopicCalled[0] = true;
             }
         };
-        atlasTopicCreator.createAtlasTopic(configuration, "ATLAS_HOOK");
+        atlasTopicCreator.createAtlasTopic(configuration, ATLAS_HOOK_TOPIC);
         assertTrue(topicExistsCalled[0]);
         assertFalse(createTopicCalled[0]);
     }
@@ -111,7 +115,7 @@ public class AtlasTopicCreatorTest {
                 createdTopic[0] = true;
             }
         };
-        atlasTopicCreator.createAtlasTopic(configuration, "ATLAS_HOOK");
+        atlasTopicCreator.createAtlasTopic(configuration, ATLAS_HOOK_TOPIC);
         assertTrue(createdTopic[0]);
     }
 
@@ -141,7 +145,7 @@ public class AtlasTopicCreatorTest {
                 throw new RuntimeException("Simulating failure during creating topic");
             }
         };
-        atlasTopicCreator.createAtlasTopic(configuration, "ATLAS_HOOK");
+        atlasTopicCreator.createAtlasTopic(configuration, ATLAS_HOOK_TOPIC);
         assertTrue(createTopicCalled[0]);
     }
 
@@ -154,8 +158,8 @@ public class AtlasTopicCreatorTest {
         final ZkUtils zookeeperUtils = mock(ZkUtils.class);
 
         final Map<String, Boolean> createdTopics = new HashMap<>();
-        createdTopics.put("ATLAS_HOOK", false);
-        createdTopics.put("ATLAS_ENTITIES", false);
+        createdTopics.put(ATLAS_HOOK_TOPIC, false);
+        createdTopics.put(ATLAS_ENTITIES_TOPIC, false);
 
         AtlasTopicCreator atlasTopicCreator = new AtlasTopicCreator() {
 
@@ -174,9 +178,9 @@ public class AtlasTopicCreatorTest {
                 createdTopics.put(topicName, true);
             }
         };
-        atlasTopicCreator.createAtlasTopic(configuration, "ATLAS_HOOK", "ATLAS_ENTITIES");
-        assertTrue(createdTopics.get("ATLAS_HOOK"));
-        assertTrue(createdTopics.get("ATLAS_ENTITIES"));
+        atlasTopicCreator.createAtlasTopic(configuration, ATLAS_HOOK_TOPIC, ATLAS_ENTITIES_TOPIC);
+        assertTrue(createdTopics.get(ATLAS_HOOK_TOPIC));
+        assertTrue(createdTopics.get(ATLAS_ENTITIES_TOPIC));
     }
 
     @Test
@@ -188,7 +192,7 @@ public class AtlasTopicCreatorTest {
         final ZkUtils zookeeperUtils = mock(ZkUtils.class);
 
         final Map<String, Boolean> createdTopics = new HashMap<>();
-        createdTopics.put("ATLAS_ENTITIES", false);
+        createdTopics.put(ATLAS_ENTITIES_TOPIC, false);
 
         AtlasTopicCreator atlasTopicCreator = new AtlasTopicCreator() {
 
@@ -204,15 +208,15 @@ public class AtlasTopicCreatorTest {
 
             @Override
             protected void createTopic(Configuration atlasProperties, String topicName, ZkUtils zkUtils) {
-                if (topicName.equals("ATLAS_HOOK")) {
+                if (topicName.equals(ATLAS_HOOK_TOPIC)) {
                     throw new RuntimeException("Simulating failure when creating ATLAS_HOOK topic");
                 } else {
                     createdTopics.put(topicName, true);
                 }
             }
         };
-        atlasTopicCreator.createAtlasTopic(configuration, "ATLAS_HOOK", "ATLAS_ENTITIES");
-        assertTrue(createdTopics.get("ATLAS_ENTITIES"));
+        atlasTopicCreator.createAtlasTopic(configuration, ATLAS_HOOK_TOPIC, ATLAS_ENTITIES_TOPIC);
+        assertTrue(createdTopics.get(ATLAS_ENTITIES_TOPIC));
     }
 
     @Test
@@ -238,7 +242,7 @@ public class AtlasTopicCreatorTest {
             protected void createTopic(Configuration atlasProperties, String topicName, ZkUtils zkUtils) {
             }
         };
-        atlasTopicCreator.createAtlasTopic(configuration, "ATLAS_HOOK", "ATLAS_ENTITIES");
+        atlasTopicCreator.createAtlasTopic(configuration, ATLAS_HOOK_TOPIC, ATLAS_ENTITIES_TOPIC);
 
         verify(zookeeperUtils, times(1)).close();
     }
@@ -250,8 +254,8 @@ public class AtlasTopicCreatorTest {
                 thenReturn(true);
         final ZkUtils zookeeperUtils = mock(ZkUtils.class);
         final Map<String, Boolean> createdTopics = new HashMap<>();
-        createdTopics.put("ATLAS_HOOK", false);
-        createdTopics.put("ATLAS_ENTITIES", false);
+        createdTopics.put(ATLAS_HOOK_TOPIC, false);
+        createdTopics.put(ATLAS_ENTITIES_TOPIC, false);
 
         AtlasTopicCreator atlasTopicCreator = new AtlasTopicCreator() {
             @Override
@@ -274,8 +278,8 @@ public class AtlasTopicCreatorTest {
                 return false;
             }
         };
-        atlasTopicCreator.createAtlasTopic(configuration, "ATLAS_HOOK", "ATLAS_ENTITIES");
-        assertFalse(createdTopics.get("ATLAS_HOOK"));
-        assertFalse(createdTopics.get("ATLAS_ENTITIES"));
+        atlasTopicCreator.createAtlasTopic(configuration, ATLAS_HOOK_TOPIC, ATLAS_ENTITIES_TOPIC);
+        assertFalse(createdTopics.get(ATLAS_HOOK_TOPIC));
+        assertFalse(createdTopics.get(ATLAS_ENTITIES_TOPIC));
     }
 }

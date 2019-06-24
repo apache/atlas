@@ -20,18 +20,29 @@ package org.apache.atlas.repository.ogm;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.AtlasBaseModelObject;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 
 @Component
 public class DataAccess {
+    private static final Logger LOG      = LoggerFactory.getLogger(DataAccess.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("repository.DataAccess");
+
     private final AtlasEntityStore entityStore;
     private final DTORegistry      dtoRegistry;
 
@@ -42,27 +53,153 @@ public class DataAccess {
     }
 
     public <T extends AtlasBaseModelObject> T save(T obj) throws AtlasBaseException {
-        DataTransferObject<T> dto = (DataTransferObject<T>)dtoRegistry.get(obj.getClass());
-
-        AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
-        EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
-
-        if (hasError(entityMutationResponse)) {
-            throw new AtlasBaseException(AtlasErrorCode.DATA_ACCESS_SAVE_FAILED, obj.toString());
-        }
-
+        saveNoLoad(obj);
         return this.load(obj);
     }
 
+    public <T extends AtlasBaseModelObject> void saveNoLoad(T obj) throws AtlasBaseException {
+        Objects.requireNonNull(obj, "Can't save a null object");
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.save()");
+            }
+
+            DataTransferObject<T> dto = (DataTransferObject<T>) dtoRegistry.get(obj.getClass());
+
+            AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
+            EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
+
+            if (noEntityMutation(entityMutationResponse)) {
+                throw new AtlasBaseException(AtlasErrorCode.DATA_ACCESS_SAVE_FAILED, obj.toString());
+            }
+
+            // Update GUID assignment for newly created entity
+            if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {
+                String assignedGuid = entityMutationResponse.getGuidAssignments().get(obj.getGuid());
+                if (!obj.getGuid().equals(assignedGuid)) {
+                    obj.setGuid(assignedGuid);
+                }
+            }
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    public <T extends AtlasBaseModelObject> Iterable<T> save(Iterable<T> obj) throws AtlasBaseException {
+        Objects.requireNonNull(obj, "Can't save a null object");
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.multiSave()");
+            }
+
+            List<T> ret = new ArrayList<>();
+            for (T o : obj) {
+                ret.add(save(o));
+            }
+            return ret;
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    public <T extends AtlasBaseModelObject> Iterable<T> load(final Iterable<T> objects) throws AtlasBaseException {
+        Objects.requireNonNull(objects, "Objects to load");
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.multiLoad()");
+            }
+
+            List<AtlasBaseModelObject> ret = new ArrayList<>();
+
+            for (T object : objects) {
+                try {
+                    ret.add(load(object));
+                } catch (AtlasBaseException e) {
+                    // In case of bulk load, some entities might be in deleted state causing an exception to be thrown
+                    // by the single load API call
+                    LOG.warn("Bulk load encountered an error.", e);
+                }
+            }
+
+            return (Iterable<T>) ret;
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
     public <T extends AtlasBaseModelObject> T load(T obj) throws AtlasBaseException {
-        DataTransferObject<T>  dto = (DataTransferObject<T>)dtoRegistry.get(obj.getClass());
+        return load(obj, false);
+    }
 
-        AtlasEntityWithExtInfo entityWithExtInfo;
+    public <T extends AtlasBaseModelObject> T load(T obj, boolean loadDeleted) throws AtlasBaseException {
+        Objects.requireNonNull(obj, "Can't load a null object");
 
-        if (StringUtils.isNotEmpty(obj.getGuid())) {
-            entityWithExtInfo = entityStore.getById(obj.getGuid());
-        } else {
-            entityWithExtInfo = entityStore.getByUniqueAttributes(dto.getEntityType(), dto.getUniqueAttributes(obj));
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.load()");
+            }
+
+            DataTransferObject<T> dto = (DataTransferObject<T>) dtoRegistry.get(obj.getClass());
+
+            AtlasEntityWithExtInfo entityWithExtInfo;
+
+            String guid = obj.getGuid();
+            // GUID can be null/empty/-ve
+            if (StringUtils.isNotEmpty(guid) && guid.charAt(0) != '-') {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Load using GUID");
+                }
+                entityWithExtInfo = entityStore.getById(guid);
+            } else {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Load using unique attributes");
+                }
+                entityWithExtInfo = entityStore.getByUniqueAttributes(dto.getEntityType(), dto.getUniqueAttributes(obj));
+            }
+
+            // Since GUID alone can't be used to determine what ENTITY TYPE is loaded from the graph
+            String actualTypeName   = entityWithExtInfo.getEntity().getTypeName();
+            String expectedTypeName = dto.getEntityType().getTypeName();
+            if (!actualTypeName.equals(expectedTypeName)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, expectedTypeName, actualTypeName);
+            }
+
+            if (!loadDeleted && entityWithExtInfo.getEntity().getStatus() == AtlasEntity.Status.DELETED) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_DELETED, guid);
+            }
+
+            return dto.from(entityWithExtInfo);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
+    }
+
+    public <T extends AtlasBaseModelObject> T load(String guid, Class<? extends AtlasBaseModelObject> clazz) throws AtlasBaseException {
+        DataTransferObject<T>  dto = (DataTransferObject<T>)dtoRegistry.get(clazz);
+
+        AtlasEntityWithExtInfo entityWithExtInfo = null;
+
+        if (StringUtils.isNotEmpty(guid)) {
+            entityWithExtInfo = entityStore.getById(guid);
+        }
+
+        if(entityWithExtInfo == null) {
+            return null;
         }
 
         return dto.from(entityWithExtInfo);
@@ -72,19 +209,62 @@ public class DataAccess {
         entityStore.deleteById(guid);
     }
 
-    public <T extends AtlasBaseModelObject> void delete(T obj) throws AtlasBaseException {
-        T object = load(obj);
+    public void delete(String guid) throws AtlasBaseException {
+        Objects.requireNonNull(guid, "guid");
+        AtlasPerfTracer perf = null;
 
-        if (object != null) {
-            deleteUsingGuid(object.getGuid());
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.delete()");
+            }
+
+            entityStore.deleteById(guid);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 
-    private boolean hasError(EntityMutationResponse er) {
-        return (er == null ||
-                !((er.getCreatedEntities() != null && er.getCreatedEntities().size() > 0)
-                        || (er.getUpdatedEntities() != null && er.getUpdatedEntities().size() > 0)
-                )
-        );
+    public void delete(List<String> guids) throws AtlasBaseException {
+        Objects.requireNonNull(guids, "guids");
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.multiDelete()");
+            }
+
+            entityStore.deleteByIds(guids);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    public <T extends AtlasBaseModelObject> void delete(T obj) throws AtlasBaseException {
+        Objects.requireNonNull(obj, "Can't delete a null object");
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.delete()");
+            }
+
+            T object = load(obj);
+
+            if (object != null) {
+                delete(object.getGuid());
+            }
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    // Helper functions
+    private boolean noEntityMutation(EntityMutationResponse er) {
+        return er == null || (CollectionUtils.isEmpty(er.getCreatedEntities()) && CollectionUtils.isEmpty(er.getUpdatedEntities()));
     }
 }

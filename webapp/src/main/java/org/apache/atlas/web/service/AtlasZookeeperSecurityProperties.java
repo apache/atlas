@@ -41,7 +41,7 @@ public class AtlasZookeeperSecurityProperties {
     /**
      * Get an {@link ACL} by parsing input string.
      * @param aclString A string of the form scheme:id
-     * @return {@link ACL} with the perms set to {@link org.apache.zookeeper.ZooDefs.Perms#ALL} and scheme and id
+     * @return {@link ACL} with the perms set to {@link ZooDefs.Perms#ALL} and scheme and id
      *          taken from configuration values.
      */
     public static ACL parseAcl(String aclString) {

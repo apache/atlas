@@ -18,23 +18,22 @@
 
 package org.apache.atlas.web.integration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.utils.TypesUtil;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
+import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +47,11 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     private String salesFactTable;
     private String salesMonthlyTable;
     private String salesDBName;
+    private static String FACT      = "Fact_Tag";
+    private static String ETL       = "ETL_Tag";
+    private static String DIMENSION = "Dimension_Tag";
+    private static String METRIC    = "Metric_Tag";
+    private static String PII       = "pii_Tag";
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -59,16 +63,18 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testInputsGraph() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_INPUTS_GRAPH, null, salesMonthlyTable, "inputs", "graph");
+        String     tableId  = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LINEAGE_INPUTS_GRAPH, null, tableId, "/inputs/graph");
+
         Assert.assertNotNull(response);
         System.out.println("inputs graph = " + response);
 
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
+        JsonNode results = response.get(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
-        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
         Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
         Assert.assertEquals(vertices.size(), 4);
 
@@ -80,13 +86,24 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     public void testInputsGraphForEntity() throws Exception {
         String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 salesMonthlyTable).getId()._getId();
-        JSONObject results = atlasClientV1.getInputGraphForEntity(tableId);
+        ObjectNode results = atlasClientV1.getInputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
-        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
-        Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
+        Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
+        resultsInstance.normalize();
+
+        Map<String, Object> vertices = (Map<String, Object>) resultsInstance.get("vertices");
         Assert.assertEquals(vertices.size(), 4);
-        Struct vertex = vertices.get(tableId);
+
+        Object verticesObject = vertices.get(tableId);
+        Struct vertex         = null;
+
+        if (verticesObject instanceof Map) {
+            vertex  = new Struct ((Map)verticesObject);
+        } else if (verticesObject instanceof Struct) {
+            vertex = (Struct)verticesObject;
+        }
+
         assertEquals(((Struct) vertex.get("vertexId")).get("state"), Id.EntityState.ACTIVE.name());
 
         Map<String, Struct> edges = (Map<String, Struct>) resultsInstance.get("edges");
@@ -95,16 +112,18 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testOutputsGraph() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_OUTPUTS_GRAPH, null, salesFactTable, "outputs", "graph");
+        String     tableId  = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.LINEAGE_INPUTS_GRAPH, null, tableId, "/outputs/graph");
+
         Assert.assertNotNull(response);
         System.out.println("outputs graph= " + response);
 
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
+        JsonNode results = response.get(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
-        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
         Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
         Assert.assertEquals(vertices.size(), 3);
 
@@ -114,15 +133,23 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testOutputsGraphForEntity() throws Exception {
-        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                salesFactTable).getId()._getId();
-        JSONObject results = atlasClientV1.getOutputGraphForEntity(tableId);
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
+        ObjectNode results = atlasClientV1.getOutputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
-        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
-        Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
+        Struct resultsInstance = AtlasType.fromV1Json(results.toString(), Struct.class);
+        Map<String, Object> vertices = (Map<String, Object>) resultsInstance.get("vertices");
         Assert.assertEquals(vertices.size(), 3);
-        Struct vertex = vertices.get(tableId);
+
+        Object verticesObject = vertices.get(tableId);
+        Struct vertex         = null;
+
+        if (verticesObject instanceof Map) {
+            vertex  = new Struct ((Map)verticesObject);
+        } else if (verticesObject instanceof Struct) {
+            vertex = (Struct)verticesObject;
+        }
+
         assertEquals(((Struct) vertex.get("vertexId")).get("state"), Id.EntityState.ACTIVE.name());
 
         Map<String, Struct> edges = (Map<String, Struct>) resultsInstance.get("edges");
@@ -131,87 +158,51 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSchema() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, salesFactTable, "schema");
-
-        Assert.assertNotNull(response);
-        System.out.println("schema = " + response);
-
-        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
-
-        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
-        Assert.assertNotNull(results);
-
-        JSONArray rows = results.getJSONArray("rows");
-        Assert.assertEquals(rows.length(), 4);
-
-        for (int index = 0; index < rows.length(); index++) {
-            final JSONObject row = rows.getJSONObject(index);
-            LOG.info("JsonRow - {}", row);
-            Assert.assertNotNull(row.getString("name"));
-            Assert.assertNotNull(row.getString("comment"));
-            Assert.assertEquals(row.getString("$typeName$"), "hive_column_v1");
-        }
+        String     tableId  = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
+        ObjectNode response = atlasClientV1.getSchemaForEntity(tableId);
     }
 
     @Test
     public void testSchemaForEntity() throws Exception {
-        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
-        JSONObject results = atlasClientV1.getSchemaForEntity(tableId);
-        Assert.assertNotNull(results);
-
-        JSONArray rows = results.getJSONArray("rows");
-        Assert.assertEquals(rows.length(), 4);
-
-        for (int index = 0; index < rows.length(); index++) {
-            final JSONObject row = rows.getJSONObject(index);
-            LOG.info("JsonRow - {}", row);
-            Assert.assertNotNull(row.getString("name"));
-            Assert.assertNotNull(row.getString("comment"));
-            Assert.assertEquals(row.getString("$typeName$"), "hive_column_v1");
-        }
+        String     tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
+        ObjectNode results = atlasClientV1.getSchemaForEntity(tableId);
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testSchemaForInvalidTable() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, "blah", "schema");
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_SCHEMA, null, "blah", "schema");
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testSchemaForDB() throws Exception {
-        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, salesDBName, "schema");
+        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.NAME_LINEAGE_SCHEMA, null, salesDBName, "schema");
     }
 
     private void setupInstances() throws Exception {
-        HierarchicalTypeDefinition<TraitType> factTrait =
-                TypesUtil.createTraitTypeDef("Fact", ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> etlTrait =
-                TypesUtil.createTraitTypeDef("ETL", ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> dimensionTrait =
-                TypesUtil.createTraitTypeDef("Dimension", ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<TraitType> metricTrait =
-                TypesUtil.createTraitTypeDef("Metric", ImmutableSet.<String>of());
-        createType(getTypesDef(null, null,
-                        ImmutableList.of(factTrait, etlTrait, dimensionTrait, metricTrait), null));
+        TraitTypeDefinition factTrait      = TypesUtil.createTraitTypeDef(FACT, null, Collections.<String>emptySet());
+        TraitTypeDefinition etlTrait       = TypesUtil.createTraitTypeDef(ETL, null, Collections.<String>emptySet());
+        TraitTypeDefinition dimensionTrait = TypesUtil.createTraitTypeDef(DIMENSION, null, Collections.<String>emptySet());
+        TraitTypeDefinition metricTrait    = TypesUtil.createTraitTypeDef(METRIC, null, Collections.<String>emptySet());
+
+        createType(getTypesDef(null, null, Arrays.asList(factTrait, etlTrait, dimensionTrait, metricTrait), null));
 
         salesDBName = "Sales" + randomString();
         Id salesDB = database(salesDBName, "Sales Database", "John ETL",
                 "hdfs://host:8000/apps/warehouse/sales");
 
-        List<Referenceable> salesFactColumns = ImmutableList
-                .of(column("time_id", "int", "time id"), column("product_id", "int", "product id"),
-                        column("customer_id", "int", "customer id", "pii"),
-                        column("sales", "double", "product id", "Metric"));
+        List<Referenceable> salesFactColumns = Arrays.asList(column("time_id", "int", "time id"), column("product_id", "int", "product id"),
+                        column("customer_id", "int", "customer id", PII),
+                        column("sales", "double", "product id", METRIC));
 
         salesFactTable = "sales_fact" + randomString();
-        Id salesFact = table(salesFactTable, "sales fact table", salesDB, "Joe", "MANAGED", salesFactColumns, "Fact");
+        Id salesFact = table(salesFactTable, "sales fact table", salesDB, "Joe", "MANAGED", salesFactColumns, FACT);
 
-        List<Referenceable> timeDimColumns = ImmutableList
-                .of(column("time_id", "int", "time id"), column("dayOfYear", "int", "day Of Year"),
+        List<Referenceable> timeDimColumns = Arrays.asList(column("time_id", "int", "time id"), column("dayOfYear", "int", "day Of Year"),
                         column("weekDay", "int", "week Day"));
 
         Id timeDim =
                 table("time_dim" + randomString(), "time dimension table", salesDB, "John Doe", "EXTERNAL",
-                        timeDimColumns, "Dimension");
+                        timeDimColumns, DIMENSION);
 
         Id reportingDB =
                 database("Reporting" + randomString(), "reporting database", "Jane BI",
@@ -219,18 +210,18 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
         Id salesFactDaily =
                 table("sales_fact_daily_mv" + randomString(), "sales fact daily materialized view", reportingDB,
-                        "Joe BI", "MANAGED", salesFactColumns, "Metric");
+                        "Joe BI", "MANAGED", salesFactColumns, METRIC);
 
-        loadProcess("loadSalesDaily" + randomString(), "John ETL", ImmutableList.of(salesFact, timeDim),
-                ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL");
+        loadProcess("loadSalesDaily" + randomString(), "John ETL", Arrays.asList(salesFact, timeDim),
+                Collections.singletonList(salesFactDaily), "create table as select ", "plan", "id", "graph", ETL);
 
         salesMonthlyTable = "sales_fact_monthly_mv" + randomString();
         Id salesFactMonthly =
                 table(salesMonthlyTable, "sales fact monthly materialized view", reportingDB, "Jane BI",
-                        "MANAGED", salesFactColumns, "Metric");
+                        "MANAGED", salesFactColumns, METRIC);
 
-        loadProcess("loadSalesMonthly" + randomString(), "John ETL", ImmutableList.of(salesFactDaily),
-                ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
+        loadProcess("loadSalesMonthly" + randomString(), "John ETL", Collections.singletonList(salesFactDaily),
+                Collections.singletonList(salesFactMonthly), "create table as select ", "plan", "id", "graph", ETL);
     }
 
     Id database(String name, String description, String owner, String locationUri, String... traitNames)

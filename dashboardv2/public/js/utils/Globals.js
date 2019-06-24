@@ -27,8 +27,8 @@ define(['require'], function(require) {
         tabState: {
             stateChanged: false,
             tagUrl: "#!/tag",
-            taxonomyUrl: "#!/taxonomy",
-            searchUrl: "#!/search"
+            searchUrl: "#!/search",
+            glossaryUrl: "#!/glossary"
         },
         detailPageState: {}
     };
@@ -36,5 +36,6 @@ define(['require'], function(require) {
         status: false,
         response: {}
     }
+    Globals.entityImgPath = "/img/entity-icon/"
     return Globals;
 });

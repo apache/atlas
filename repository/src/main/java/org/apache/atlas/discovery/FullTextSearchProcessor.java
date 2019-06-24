@@ -22,7 +22,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +30,10 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
 
 
 public class FullTextSearchProcessor extends SearchProcessor {
@@ -44,7 +48,7 @@ public class FullTextSearchProcessor extends SearchProcessor {
         SearchParameters searchParameters = context.getSearchParameters();
         StringBuilder    queryString      = new StringBuilder();
 
-        queryString.append("v.\"").append(Constants.ENTITY_TEXT_PROPERTY_KEY).append("\":(").append(searchParameters.getQuery());
+        queryString.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.ENTITY_TEXT_PROPERTY_KEY).append("\":(").append(searchParameters.getQuery());
 
         // if search includes entity-type criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent EntitySearchProcessor
@@ -61,7 +65,9 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
         // if search includes classification criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent ClassificationSearchProcessor or EntitySearchProcessor
-        if (context.getClassificationType() != null) {
+        if (context.getClassificationType() != null && context.getClassificationType() != MATCH_ALL_WILDCARD_CLASSIFICATION &&
+                                                       context.getClassificationType() != MATCH_ALL_CLASSIFIED &&
+                                                       context.getClassificationType() != MATCH_ALL_NOT_CLASSIFIED) {
             String typeAndSubTypeNamesStr = context.getClassificationType().getTypeAndAllSubTypesQryStr();
 
             if (typeAndSubTypeNamesStr.length() <= MAX_QUERY_STR_LENGTH_TAGS) {
@@ -116,15 +122,16 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
                 Iterator<AtlasIndexQuery.Result> idxQueryResult = indexQuery.vertices(qryOffset, limit);
 
-                if (!idxQueryResult.hasNext()) { // no more results from solr - end of search
-                    break;
-                }
+                final boolean isLastResultPage;
+                int           resultCount = 0;
 
                 while (idxQueryResult.hasNext()) {
                     AtlasVertex vertex = idxQueryResult.next().getVertex();
 
+                    resultCount++;
+
                     // skip non-entity vertices
-                    if (!AtlasGraphUtilsV1.isEntityVertex(vertex)) {
+                    if (!AtlasGraphUtilsV2.isEntityVertex(vertex)) {
                         if (LOG.isDebugEnabled()) {
                             LOG.debug("FullTextSearchProcessor.execute(): ignoring non-entity vertex (id={})", vertex.getId());
                         }
@@ -132,16 +139,22 @@ public class FullTextSearchProcessor extends SearchProcessor {
                         continue;
                     }
 
-                    if (activeOnly && AtlasGraphUtilsV1.getState(vertex) != AtlasEntity.Status.ACTIVE) {
+                    if (activeOnly && AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
                         continue;
                     }
 
                     entityVertices.add(vertex);
                 }
 
+                isLastResultPage = resultCount < limit;
+
                 super.filter(entityVertices);
 
                 resultIdx = collectResultVertices(ret, startIdx, limit, resultIdx, entityVertices);
+
+                if (isLastResultPage) {
+                    break;
+                }
             }
         } finally {
             AtlasPerfTracer.log(perf);

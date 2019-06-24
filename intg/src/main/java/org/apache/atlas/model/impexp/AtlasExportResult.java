@@ -18,12 +18,13 @@
 package org.apache.atlas.model.impexp;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -34,8 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
@@ -49,7 +50,7 @@ public class AtlasExportResult implements Serializable {
     public final static String ENTITY_COUNT = "entityCount";
 
     public enum OperationStatus {
-        SUCCESS, PARTIAL_SUCCESS, FAIL
+        SUCCESS, PARTIAL_SUCCESS, INPROGRESS, FAIL
     }
 
     private AtlasExportRequest   request;
@@ -60,14 +61,16 @@ public class AtlasExportResult implements Serializable {
     private Map<String, Integer> metrics;
     private AtlasExportData      data;
     private OperationStatus      operationStatus;
-
+    private String               sourceClusterName;
+    private long                 changeMarker;
 
     public AtlasExportResult() {
-        this(null, null, null, null, System.currentTimeMillis());
+        this(null, null, null, null, System.currentTimeMillis(), 0L);
     }
 
     public AtlasExportResult(AtlasExportRequest request,
-                             String userName, String clientIpAddress, String hostName, long timeStamp) {
+                             String userName, String clientIpAddress, String hostName, long timeStamp,
+                              long changeMarker) {
         this.request         = request;
         this.userName        = userName;
         this.clientIpAddress = clientIpAddress;
@@ -76,6 +79,7 @@ public class AtlasExportResult implements Serializable {
         this.metrics         = new HashMap<>();
         this.operationStatus = OperationStatus.FAIL;
         this.data            = new AtlasExportData();
+        this.changeMarker    = changeMarker;
     }
 
     public AtlasExportRequest getRequest() {
@@ -134,6 +138,14 @@ public class AtlasExportResult implements Serializable {
         this.data = data;
     }
 
+    public void setChangeMarker(long changeMarker) {
+        this.changeMarker = changeMarker;
+    }
+
+    public long getChangeMarker() {
+        return this.changeMarker;
+    }
+
     public OperationStatus getOperationStatus() {
         return operationStatus;
     }
@@ -142,6 +154,16 @@ public class AtlasExportResult implements Serializable {
         this.operationStatus = operationStatus;
     }
 
+    public void setMetric(String key, int value) {
+        metrics.put(key, value);
+    }
+    public String getSourceClusterName() {
+        return sourceClusterName;
+    }
+
+    public void setSourceClusterName(String sourceClusterName) {
+        this.sourceClusterName = sourceClusterName;
+    }
 
     public void incrementMeticsCounter(String key) {
         incrementMeticsCounter(key, 1);
@@ -163,12 +185,13 @@ public class AtlasExportResult implements Serializable {
         sb.append(", userName='").append(userName).append("'");
         sb.append(", clientIpAddress='").append(clientIpAddress).append("'");
         sb.append(", hostName='").append(hostName).append("'");
+        sb.append(", changeMarker='").append(changeMarker).append("'");
+        sb.append(", sourceCluster='").append(sourceClusterName).append("'");
         sb.append(", timeStamp='").append(timeStamp).append("'");
         sb.append(", metrics={");
         AtlasBaseTypeDef.dumpObjects(metrics, sb);
         sb.append("}");
 
-        sb.append(", data='").append(data).append("'");
         sb.append(", operationStatus='").append(operationStatus).append("'");
         sb.append("}");
 
@@ -199,13 +222,11 @@ public class AtlasExportResult implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private AtlasTypesDef            typesDef;
-        private Map<String, AtlasEntity> entities;
         private List<String>             entityCreationOrder;
 
 
         public AtlasExportData() {
             typesDef            = new AtlasTypesDef();
-            entities            = new HashMap<>();
             entityCreationOrder = new ArrayList<>();
         }
 
@@ -213,26 +234,20 @@ public class AtlasExportResult implements Serializable {
 
         public void setTypesDef(AtlasTypesDef typesDef) { this.typesDef = typesDef; }
 
-        public Map<String, AtlasEntity> getEntities() { return entities; }
-
-        public void setEntities(Map<String, AtlasEntity> entities) { this.entities = entities; }
-
         public List<String> getEntityCreationOrder() { return entityCreationOrder; }
 
         public void setEntityCreationOrder(List<String> entityCreationOrder) { this.entityCreationOrder = entityCreationOrder; }
-
 
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
                 sb = new StringBuilder();
             }
 
-            sb.append("AtlasExportData{");
-            sb.append("typesDef={").append(typesDef).append("}");
-            sb.append("entities={");
-            AtlasBaseTypeDef.dumpObjects(entities, sb);
+            sb.append("AtlasExportData {");
+            sb.append(", typesDef={").append(typesDef).append("}");
+            sb.append(", entities={");
             sb.append("}");
-            sb.append("entityCreationOrder={");
+            sb.append(", entityCreationOrder={");
             AtlasBaseTypeDef.dumpObjects(entityCreationOrder, sb);
             sb.append("}");
             sb.append("}");

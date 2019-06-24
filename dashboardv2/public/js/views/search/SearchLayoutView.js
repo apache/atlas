@@ -15,16 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 define(['require',
     'backbone',
     'hbs!tmpl/search/SearchLayoutView_tmpl',
     'utils/Utils',
     'utils/UrlLinks',
     'utils/Globals',
+    'utils/Enums',
     'collection/VSearchList',
     'utils/CommonViewFunction'
-], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals, VSearchList, CommonViewFunction) {
+], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals, Enums, VSearchList, CommonViewFunction) {
     'use strict';
 
     var SearchLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -48,6 +48,7 @@ define(['require',
                 clearSearch: '[data-id="clearSearch"]',
                 typeLov: '[data-id="typeLOV"]',
                 tagLov: '[data-id="tagLOV"]',
+                termLov: '[data-id="termLOV"]',
                 refreshBtn: '[data-id="refreshBtn"]',
                 advancedInfoBtn: '[data-id="advancedInfo"]',
                 typeAttrFilter: '[data-id="typeAttrFilter"]',
@@ -61,6 +62,7 @@ define(['require',
                 events["keyup " + this.ui.searchInput] = function(e) {
                     var code = e.which;
                     this.value.query = e.currentTarget.value;
+                    this.query[this.type].query = this.value.query;
                     if (code == 13) {
                         that.findSearchResult();
                     }
@@ -71,6 +73,7 @@ define(['require',
                 events["click " + this.ui.clearSearch] = 'clearSearchData';
                 events["change " + this.ui.typeLov] = 'checkForButtonVisiblity';
                 events["change " + this.ui.tagLov] = 'checkForButtonVisiblity';
+                events["change " + this.ui.termLov] = 'checkForButtonVisiblity';
                 events["click " + this.ui.refreshBtn] = 'onRefreshButton';
                 events["click " + this.ui.advancedInfoBtn] = 'advancedInfo';
                 events["click " + this.ui.typeAttrFilter] = function() {
@@ -86,8 +89,10 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns', 'searchTableFilters'));
+                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns', 'searchTableFilters', 'entityCountCollection'));
                 this.type = "basic";
+                this.entityCountObj = _.first(this.entityCountCollection.toJSON());
+                this.filterTypeSelected = [];
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
                     dsl: {
@@ -100,12 +105,15 @@ define(['require',
                         query: null,
                         type: null,
                         tag: null,
+                        term: null,
                         attributes: null,
                         tagFilters: null,
                         pageOffset: null,
                         pageLimit: null,
                         entityFilters: null,
-                        includeDE: null
+                        includeDE: null,
+                        excludeST: null,
+                        excludeSC: null
                     }
                 };
                 if (!this.value) {
@@ -125,6 +133,12 @@ define(['require',
                         saveSearchAdvanceCollection = new VSearchList(),
                         saveSearchCollection = new VSearchList();
                     saveSearchCollection.url = UrlLinks.saveSearchApiUrl();
+                    saveSearchBaiscCollection.fullCollection.comparator = function(model) {
+                        return model.get('name').toLowerCase();
+                    }
+                    saveSearchAdvanceCollection.fullCollection.comparator = function(model) {
+                        return model.get('name').toLowerCase();
+                    }
                     var obj = {
                         value: that.value,
                         searchVent: that.searchVent,
@@ -139,23 +153,22 @@ define(['require',
                                 urlObj = Utils.getUrlState.getQueryParams();
                             if (urlObj) {
                                 // includeDE value in because we need to send "true","false" to the server.
-                                if (urlObj.includeDE == "true") {
-                                    urlObj.includeDE = true;
-                                } else {
-                                    urlObj.includeDE = false;
-                                }
+                                urlObj.includeDE = urlObj.includeDE == "true" ? true : false;
+                                urlObj.excludeSC = urlObj.excludeSC == "true" ? true : false;
+                                urlObj.excludeST = urlObj.excludeST == "true" ? true : false;
                             }
                             return _.extend({}, queryObj, urlObj, {
                                 'entityFilters': entityObj ? entityObj[queryObj.type] : null,
                                 'tagFilters': tagObj ? tagObj[queryObj.tag] : null,
                                 'type': queryObj.type,
                                 'query': queryObj.query,
+                                'term': queryObj.term,
                                 'tag': queryObj.tag
                             })
                         },
                         applyValue: function(model, searchType) {
                             that.manualRender(_.extend(searchType, CommonViewFunction.generateUrlFromSaveSearchObject({
-                                value: model.get('searchParameters'),
+                                value: { "searchParameters": model.get('searchParameters'), 'uiParameters': model.get('uiParameters') },
                                 classificationDefCollection: that.classificationDefCollection,
                                 entityDefCollection: that.entityDefCollection
                             })));
@@ -163,18 +176,18 @@ define(['require',
                     }
                     that.RSaveSearchBasic.show(new SaveSearchView(_.extend(obj, {
                         isBasic: true,
-                        collection: saveSearchBaiscCollection
+                        collection: saveSearchBaiscCollection.fullCollection
                     })));
                     that.RSaveSearchAdvance.show(new SaveSearchView(_.extend(obj, {
                         isBasic: false,
-                        collection: saveSearchAdvanceCollection
+                        collection: saveSearchAdvanceCollection.fullCollection
                     })));
 
                     function fetchSaveSearchCollection() {
                         saveSearchCollection.fetch({
                             success: function(collection, data) {
-                                saveSearchAdvanceCollection.reset(_.where(data, { "searchType": "ADVANCED" }));
-                                saveSearchBaiscCollection.reset(_.where(data, { "searchType": "BASIC" }));
+                                saveSearchAdvanceCollection.fullCollection.reset(_.where(data, { "searchType": "ADVANCED" }));
+                                saveSearchBaiscCollection.fullCollection.reset(_.where(data, { "searchType": "BASIC" }));
                             },
                             silent: true
                         });
@@ -184,18 +197,15 @@ define(['require',
             },
             bindEvents: function(param) {
                 this.listenTo(this.typeHeaders, "reset", function(value) {
-                    this.renderTypeTagList();
-                    this.setValues();
-                    this.ui.typeLov.select2({
-                        placeholder: "Select",
-                        allowClear: true
-                    });
-                    this.ui.tagLov.select2({
-                        placeholder: "Select",
-                        allowClear: true
-                    });
-                    this.checkForButtonVisiblity();
+                    this.initializeValues();
                 }, this);
+            },
+            initializeValues: function() {
+                this.renderTypeTagList();
+                this.renderTermList();
+                this.setValues();
+                this.checkForButtonVisiblity();
+                this.renderSaveSearch();
             },
             makeFilterButtonActive: function(filtertypeParam) {
                 var filtertype = ['entityFilters', 'tagFilters'],
@@ -221,7 +231,7 @@ define(['require',
                     }
                 }
                 var tagCheck = function(filterObj, type) {
-                    if (that.value.tag) {
+                    if (that.value.tag && !_.contains(Enums.addOnClassification, that.value.tag)) {
                         that.ui.tagAttrFilter.prop('disabled', false);
                         if (filterObj && filterObj.length) {
                             that.ui.tagAttrFilter.addClass('active');
@@ -244,14 +254,25 @@ define(['require',
                 });
             },
             checkForButtonVisiblity: function(e, options) {
-                if (this.type == "basic" && e && e.currentTarget) {
+                var that = this,
+                    isBasicSearch = (this.type == "basic");
+                if (e && e.currentTarget) {
                     var $el = $(e.currentTarget),
-                        isTagEl = $el.data('id') == "tagLOV" ? true : false;
-                    if (e.type == "change" && $el.select2('data')) {
-                        var value = $el.val(),
-                            key = (isTagEl ? 'tag' : 'type'),
-                            filterType = (isTagEl ? 'tagFilters' : 'entityFilters'),
-                            value = value.length ? value : null;
+                        isTagEl = $el.data('id') == "tagLOV",
+                        isTermEl = $el.data('id') == "termLOV",
+                        isTypeEl = $el.data('id') == "typeLOV",
+                        select2Data = $el.select2('data');
+                    if (e.type == "change" && select2Data) {
+                        var value = (_.isEmpty(select2Data) ? select2Data : _.first(select2Data).id),
+                            key = "tag",
+                            filterType = isBasicSearch ? 'tagFilters' : null,
+                            value = value && value.length ? value : null;
+                        if (!isTagEl) {
+                            key = (isTermEl ? "term" : "type");
+                            if (isBasicSearch) {
+                                filterType = (isTypeEl ? "entityFilters" : null);
+                            }
+                        }
                         if (this.value) {
                             //On Change handle
                             if (this.value[key] !== value || (!value && !this.value[key])) {
@@ -263,12 +284,15 @@ define(['require',
                                     this.value.pageOffset = 0;
                                 }
                                 _.extend(this.query[this.type], temp);
-                            } else {
+                            } else if (isBasicSearch) {
                                 // Initial loading handle.
-                                var filterObj = this.searchTableFilters[filterType];
-                                if (filterObj && this.value[key]) {
-                                    this.searchTableFilters[filterType][this.value[key]] = this.value[filterType] ? this.value[filterType] : null;
+                                if (filterType) {
+                                    var filterObj = this.searchTableFilters[filterType];
+                                    if (filterObj && this.value[key]) {
+                                        this.searchTableFilters[filterType][this.value[key]] = this.value[filterType] ? this.value[filterType] : null;
+                                    }
                                 }
+
                                 if (this.value.type) {
                                     if (this.value.attributes) {
                                         var attributes = _.sortBy(this.value.attributes.split(',')),
@@ -283,17 +307,20 @@ define(['require',
                                     }
                                 }
                             }
-                            this.makeFilterButtonActive(filterType);
-                        } else {
+                            if (isBasicSearch && filterType) {
+                                this.makeFilterButtonActive(filterType);
+                            }
+                        } else if (isBasicSearch) {
                             this.ui.tagAttrFilter.prop('disabled', true);
                             this.ui.typeAttrFilter.prop('disabled', true);
                         }
                     }
                 }
-                var that = this,
-                    value = this.ui.searchInput.val() || this.ui.typeLov.val();
-                if (!this.dsl && !value) {
-                    value = this.ui.tagLov.val();
+
+                var value = this.ui.searchInput.val() || _.first($(this.ui.typeLov).select2('data')).id;
+                if (!this.dsl && _.isEmpty(value)) {
+                    var termData = _.first($(this.ui.termLov).select2('data'));
+                    value = _.first($(this.ui.tagLov).select2('data')).id || (termData ? termData.id : "");
                 }
                 if (value && value.length) {
                     this.ui.searchBtn.removeAttr("disabled");
@@ -306,17 +333,7 @@ define(['require',
             },
             onRender: function() {
                 // array of tags which is coming from url
-                this.renderTypeTagList();
-                this.setValues();
-                this.ui.typeLov.select2({
-                    placeholder: "Select",
-                    allowClear: true
-                });
-                this.ui.tagLov.select2({
-                    placeholder: "Select",
-                    allowClear: true
-                });
-                this.renderSaveSearch();
+                this.initializeValues();
             },
             updateQueryObject: function(param) {
                 if (param && param.searchType) {
@@ -332,6 +349,7 @@ define(['require',
                         query: null,
                         type: null,
                         tag: null,
+                        term: null,
                         attributes: null,
                         tagFilters: null,
                         pageOffset: null,
@@ -345,7 +363,7 @@ define(['require',
             },
             onRefreshButton: function() {
                 this.fetchCollection();
-                //to check url query param contain type or not 
+                //to check url query param contain type or not
                 var checkURLValue = Utils.getUrlState.getQueryParams(this.url);
                 if (this.searchVent && (_.has(checkURLValue, "tag") || _.has(checkURLValue, "type") || _.has(checkURLValue, "query"))) {
                     this.searchVent.trigger('search:refresh');
@@ -391,19 +409,31 @@ define(['require',
             okAttrFilterButton: function(e) {
                 var isTag = this.attrModal.tag ? true : false,
                     filtertype = isTag ? 'tagFilters' : 'entityFilters',
-                    queryBuilderRef = this.attrModal.RQueryBuilder.currentView.ui.builder;
+                    queryBuilderRef = this.attrModal.RQueryBuilder.currentView.ui.builder,
+                    col = [];
+
+                function getIdFromRuleObject(rule) {
+                    _.map(rule.rules, function(obj, key) {
+                        if (_.has(obj, 'condition')) {
+                            return getIdFromRuleObject(obj);
+                        } else {
+                            return col.push(obj.id)
+                        }
+                    });
+                    return col;
+                }
                 if (queryBuilderRef.data('queryBuilder')) {
                     var rule = queryBuilderRef.queryBuilder('getRules');
                 }
                 if (rule) {
-                    var ruleUrl = CommonViewFunction.attributeFilter.generateUrl(rule.rules);
+                    var ruleUrl = CommonViewFunction.attributeFilter.generateUrl({ "value": rule, "formatedDateToLong": true });
                     this.searchTableFilters[filtertype][(isTag ? this.value.tag : this.value.type)] = ruleUrl;
                     this.makeFilterButtonActive(filtertype);
                     if (!isTag && this.value && this.value.type && this.searchTableColumns) {
                         if (!this.searchTableColumns[this.value.type]) {
                             this.searchTableColumns[this.value.type] = ["selected", "name", "owner", "description", "tag", "typeName"]
                         }
-                        this.searchTableColumns[this.value.type] = _.sortBy(_.union(this.searchTableColumns[this.value.type], _.pluck(rule.rules, 'id')));
+                        this.searchTableColumns[this.value.type] = _.sortBy(_.union(this.searchTableColumns[this.value.type], getIdFromRuleObject(rule)));
                     }
                     this.attrModal.modal.close();
                     if ($(e.currentTarget).hasClass('search')) {
@@ -415,28 +445,118 @@ define(['require',
                 this.updateQueryObject(paramObj);
                 this.setValues(paramObj);
             },
-            renderTypeTagList: function() {
+            getFilterBox: function() {
+                var serviceStr = '',
+                    serviceArr = [],
+                    that = this;
+                this.typeHeaders.fullCollection.each(function(model) {
+                    var serviceType = model.toJSON().serviceType;
+                    if (serviceType) {
+                        serviceArr.push(serviceType);
+                    }
+                });
+                _.each(_.uniq(serviceArr), function(service) {
+                    serviceStr += '<li><div class="pretty p-switch p-fill"><input type="checkbox" class="pull-left" data-value="' + (service) + '" value="" ' + (_.contains(that.filterTypeSelected, service) ? "checked" : "") + '/><div class="state p-primary"><label>' + (service.toUpperCase()) + '</label></div></div></li>';
+                });
+                var templt = serviceStr + '<hr class="hr-filter"/><div class="text-right"><div class="divider"></div><button class="btn btn-action btn-sm filterDone">Done</button></div>';
+                return templt;
+            },
+            renderTypeTagList: function(options) {
                 var that = this;
+                var serviceTypeToBefiltered = (options && options.filterList);
+                var isTypeOnly = options && options.isTypeOnly;
                 this.ui.typeLov.empty();
                 var typeStr = '<option></option>',
                     tagStr = typeStr;
-                this.typeHeaders.fullCollection.comparator = function(model) {
-                    return Utils.getName(model.toJSON(), 'name').toLowerCase();
-                }
-                this.typeHeaders.fullCollection.sort().each(function(model) {
+                this.typeHeaders.fullCollection.each(function(model) {
                     var name = Utils.getName(model.toJSON(), 'name');
-                    if (model.get('category') == 'ENTITY') {
-                        typeStr += '<option>' + (name) + '</option>';
+                    if (model.get('category') == 'ENTITY' && (serviceTypeToBefiltered && serviceTypeToBefiltered.length ? _.contains(serviceTypeToBefiltered, model.get('serviceType')) : true)) {
+                        var entityCount = (that.entityCountObj.entity.entityActive[name] + (that.entityCountObj.entity.entityDeleted[name] ? that.entityCountObj.entity.entityDeleted[name] : 0));
+                        typeStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + _.numberFormatWithComa(entityCount) + ")" : '') + '</option>';
                     }
-                    if (model.get('category') == 'CLASSIFICATION') {
-                        var checkTagOrTerm = Utils.checkTagOrTerm(name);
-                        if (checkTagOrTerm.tag) {
-                            tagStr += '<option>' + (name) + '</option>';
-                        }
+                    if (isTypeOnly == undefined && model.get('category') == 'CLASSIFICATION') {
+                        var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
+                        tagStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (tagEntityCount ? "(" + _.numberFormatWithComa(tagEntityCount) + ")" : '') + '</option>';
                     }
                 });
+                if (_.isUndefined(isTypeOnly)) {
+                    //to insert extra classification list
+                    _.each(Enums.addOnClassification, function(classificationName) {
+                        tagStr += '<option  value="' + (classificationName) + '" data-name="' + (classificationName) + '">' + classificationName + '</option>';
+                    });
+                    that.ui.tagLov.html(tagStr);
+                    this.ui.tagLov.select2({
+                        placeholder: "Select Classification",
+                        allowClear: true
+                    });
+                }
                 that.ui.typeLov.html(typeStr);
-                that.ui.tagLov.html(tagStr);
+                var typeLovSelect2 = this.ui.typeLov.select2({
+                    placeholder: "Select Type",
+                    dropdownAdapter: $.fn.select2.amd.require("ServiceTypeFilterDropdownAdapter"),
+                    allowClear: true,
+                    getFilterBox: this.getFilterBox.bind(this),
+                    onFilterSubmit: function(options) {
+                        that.filterTypeSelected = options.filterVal;
+                        that.renderTypeTagList({ "filterList": options.filterVal, isTypeOnly: true })
+                    }
+                });
+                typeLovSelect2.on("select2:close", function() {
+                    typeLovSelect2.trigger("hideFilter");
+                });
+                if (typeLovSelect2 && serviceTypeToBefiltered) {
+                    typeLovSelect2.select2('open').trigger("change", { 'manual': true });
+                }
+            },
+            renderTermList: function() {
+                var getTypeAheadData = function(data, params) {
+                    var dataList = data.entities,
+                        foundOptions = [];
+                    _.each(dataList, function(obj) {
+                        if (obj) {
+                            if (obj.guid) {
+                                obj['id'] = Utils.getName(obj, 'qualifiedName');
+                            }
+                            foundOptions.push(obj);
+                        }
+                    });
+                    return foundOptions;
+                }
+                this.ui.termLov.select2({
+                    placeholder: "Search Term",
+                    allowClear: true,
+                    ajax: {
+                        url: UrlLinks.searchApiUrl('attribute'),
+                        dataType: 'json',
+                        delay: 250,
+                        data: function(params) {
+                            return {
+                                attrValuePrefix: params.term, // search term
+                                typeName: "AtlasGlossaryTerm",
+                                limit: 10,
+                                offset: 0
+                            };
+                        },
+                        processResults: function(data, params) {
+                            return {
+                                results: getTypeAheadData(data, params)
+                            };
+                        },
+                        cache: true
+                    },
+                    templateResult: function(option) {
+                        var name = Utils.getName(option, 'qualifiedName');
+                        return name === "-" ? option.text : name;
+                    },
+                    templateSelection: function(option) {
+                        var name = Utils.getName(option, 'qualifiedName');
+                        return name === "-" ? option.text : name;
+                    },
+                    escapeMarkup: function(markup) {
+                        return markup;
+                    },
+                    minimumInputLength: 1
+                });
             },
             setValues: function(paramObj) {
                 var arr = [],
@@ -476,6 +596,17 @@ define(['require',
                                 this.ui.tagLov.trigger("change", { 'manual': true });
                             }
                         }
+                        if (this.value.term) {
+                            this.ui.termLov.append('<option value="' + this.value.term + '" selected="selected">' + this.value.term + '</option>');
+                        }
+                        if (this.ui.termLov.data('select2')) {
+                            if (this.ui.termLov.val() !== this.value.term) {
+                                this.value.term = null;
+                                this.ui.termLov.val("").trigger("change", { 'manual': true });
+                            } else {
+                                this.ui.termLov.trigger("change", { 'manual': true });
+                            }
+                        }
                     }
                     setTimeout(function() {
                         that.ui.searchInput.focus();
@@ -487,12 +618,18 @@ define(['require',
             },
             triggerSearch: function(value) {
                 var params = {
-                    searchType: this.type,
-                    dslChecked: this.ui.searchType.is(':checked')
-                }
-                params['type'] = this.ui.typeLov.select2('val') || null;
+                        searchType: this.type,
+                        dslChecked: this.ui.searchType.is(':checked'),
+                        tagFilters: null,
+                        entityFilters: null
+                    },
+                    typeLovValue = this.ui.typeLov.find(':selected').data('name'),
+                    tagLovValue = this.ui.tagLov.find(':selected').data('name'),
+                    termLovValue = this.ui.termLov.select2('val')
+                params['type'] = typeLovValue || null;
                 if (!this.dsl) {
-                    params['tag'] = this.ui.tagLov.select2('val') || null;
+                    params['tag'] = tagLovValue || null;
+                    params['term'] = termLovValue || null;
                     var entityFilterObj = this.searchTableFilters['entityFilters'],
                         tagFilterObj = this.searchTableFilters['tagFilters'];
                     if (this.value.tag) {
@@ -505,11 +642,9 @@ define(['require',
                     if (columnList) {
                         params['attributes'] = columnList.join(',');
                     }
-                    if (_.isUndefinedNull(this.value.includeDE)) {
-                        params['includeDE'] = false;
-                    } else {
-                        params['includeDE'] = this.value.includeDE;
-                    }
+                    params['includeDE'] = _.isUndefinedNull(this.value.includeDE) ? false : this.value.includeDE;
+                    params['excludeST'] = _.isUndefinedNull(this.value.excludeST) ? false : this.value.excludeST;
+                    params['excludeSC'] = _.isUndefinedNull(this.value.excludeSC) ? false : this.value.excludeSC;
                 }
                 if (!_.isUndefinedNull(this.value.pageLimit)) {
                     params['pageLimit'] = this.value.pageLimit;
@@ -539,20 +674,16 @@ define(['require',
                 if (e.currentTarget.checked) {
                     this.type = "dsl";
                     this.dsl = true;
-                    this.$('.tagBox').hide();
-                    this.$('.temFilterBtn').hide();
-                    this.$('.temFilter').addClass('col-sm-12');
-                    this.$('.temFilter').removeClass('col-sm-10');
-                    this.$('.basicSaveSearch').hide();
+                    this.$('.typeFilterBtn,.tagBox,.termBox,.basicSaveSearch').hide();
+                    this.$('.typeFilter').addClass('col-sm-12');
+                    this.$('.typeFilter').removeClass('col-sm-10');
                     this.$('.advanceSaveSearch').show();
                     this.$('.searchText').text('Search By Query');
                     this.ui.searchInput.attr("placeholder", 'Search By Query eg. where name="sales_fact"');
                 } else {
-                    this.$('.temFilter').addClass('col-sm-10');
-                    this.$('.temFilter').removeClass('col-sm-12');
-                    this.$('.temFilterBtn').show();
-                    this.$('.tagBox').show();
-                    this.$('.basicSaveSearch').show();
+                    this.$('.typeFilter').addClass('col-sm-10');
+                    this.$('.typeFilter').removeClass('col-sm-12');
+                    this.$('.typeFilterBtn,.tagBox,.termBox,.basicSaveSearch').show();
                     this.$('.advanceSaveSearch').hide();
                     this.dsl = false;
                     this.type = "basic";
@@ -573,6 +704,8 @@ define(['require',
                 }
             },
             clearSearchData: function() {
+                this.filterTypeSelected = [];
+                this.renderTypeTagList();
                 this.updateQueryObject();
                 this.ui.typeLov.val("").trigger("change");
                 this.ui.tagLov.val("").trigger("change");

@@ -20,16 +20,23 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+import java.util.Objects;
+
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -42,23 +49,36 @@ public class AtlasRelationshipType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipType.class);
 
     private final AtlasRelationshipDef relationshipDef;
+    private final boolean              hasLegacyAttributeEnd;
+    private       String               relationshipLabel;
     private       AtlasEntityType      end1Type;
     private       AtlasEntityType      end2Type;
 
     public AtlasRelationshipType(AtlasRelationshipDef relationshipDef) {
         super(relationshipDef);
 
-        this.relationshipDef = relationshipDef;
+        AtlasRelationshipEndDef end1Def = relationshipDef != null ? relationshipDef.getEndDef1() : null;
+        AtlasRelationshipEndDef end2Def = relationshipDef != null ? relationshipDef.getEndDef2() : null;
+
+        this.relationshipDef       = relationshipDef;
+        this.hasLegacyAttributeEnd = (end1Def != null && end1Def.getIsLegacyAttribute()) || (end2Def != null && end2Def.getIsLegacyAttribute());
     }
 
     public AtlasRelationshipType(AtlasRelationshipDef relationshipDef, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        super(relationshipDef);
-
-        this.relationshipDef = relationshipDef;
+        this(relationshipDef);
 
         resolveReferences(typeRegistry);
     }
+
     public AtlasRelationshipDef getRelationshipDef() { return relationshipDef; }
+
+    public boolean hasLegacyAttributeEnd() {
+        return this.hasLegacyAttributeEnd;
+    }
+
+    public String getRelationshipLabel() {
+        return this.relationshipLabel;
+    }
 
     @Override
     void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
@@ -76,19 +96,17 @@ public class AtlasRelationshipType extends AtlasStructType {
 
         if (type1 instanceof AtlasEntityType) {
             end1Type = (AtlasEntityType) type1;
-
         } else {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end1TypeName);
         }
 
         if (type2 instanceof AtlasEntityType) {
             end2Type = (AtlasEntityType) type2;
-
         } else {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_INVALID_END_TYPE, getTypeName(), end2TypeName);
         }
 
-        validateAtlasRelationshipDef(this.relationshipDef);
+        validateAtlasRelationshipDef(relationshipDef);
     }
 
     @Override
@@ -97,18 +115,22 @@ public class AtlasRelationshipType extends AtlasStructType {
 
         AtlasRelationshipEndDef endDef1           = relationshipDef.getEndDef1();
         AtlasRelationshipEndDef endDef2           = relationshipDef.getEndDef2();
-        String                  relationshipLabel = null;
+        String                  relationshipLabel = relationshipDef.getRelationshipLabel();
 
-        // if legacyLabel is not specified at both ends, use relationshipDef name as relationship label.
-        // if legacyLabel is specified in any one end, use it as the relationship label for both ends (legacy case).
-        // if legacyLabel is specified at both ends use the respective end's legacyLabel as relationship label (legacy case).
-        if (!endDef1.getIsLegacyAttribute() && !endDef2.getIsLegacyAttribute()) {
-            relationshipLabel = relationshipDef.getRelationshipLabel();
-        } else if (endDef1.getIsLegacyAttribute() && !endDef2.getIsLegacyAttribute()) {
-            relationshipLabel = getLegacyEdgeLabel(end1Type, endDef1.getName());
-        } else if (!endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
-            relationshipLabel = getLegacyEdgeLabel(end2Type, endDef2.getName());
+        if (relationshipLabel == null) {
+            // if legacyLabel is not specified at both ends, use relationshipDef name as relationship label.
+            // if legacyLabel is specified in any one end, use it as the relationship label for both ends (legacy case).
+            // if legacyLabel is specified at both ends use the respective end's legacyLabel as relationship label (legacy case).
+            if (!endDef1.getIsLegacyAttribute() && !endDef2.getIsLegacyAttribute()) {
+                relationshipLabel = "r:" + getTypeName();
+            } else if (endDef1.getIsLegacyAttribute() && !endDef2.getIsLegacyAttribute()) {
+                relationshipLabel = getLegacyEdgeLabel(end1Type, endDef1.getName());
+            } else if (!endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
+                relationshipLabel = getLegacyEdgeLabel(end2Type, endDef2.getName());
+            }
         }
+
+        this.relationshipLabel = relationshipLabel;
 
         addRelationshipAttributeToEndType(endDef1, end1Type, end2Type.getTypeName(), typeRegistry, relationshipLabel);
 
@@ -125,19 +147,21 @@ public class AtlasRelationshipType extends AtlasStructType {
         if (StringUtils.equals(endDef1.getType(), endDef2.getType()) &&
                 StringUtils.equals(endDef1.getName(), endDef2.getName())) {
 
-            AtlasAttribute endAttribute = end1Type.getRelationshipAttribute(endDef1.getName());
+            AtlasAttribute endAttribute = end1Type.getRelationshipAttribute(endDef1.getName(), relationshipDef.getName());
 
             endAttribute.setRelationshipEdgeDirection(BOTH);
         } else {
-            AtlasAttribute end1Attribute = end1Type.getRelationshipAttribute(endDef1.getName());
-            AtlasAttribute end2Attribute = end2Type.getRelationshipAttribute(endDef2.getName());
+            AtlasAttribute end1Attribute = end1Type.getRelationshipAttribute(endDef1.getName(), relationshipDef.getName());
+            AtlasAttribute end2Attribute = end2Type.getRelationshipAttribute(endDef2.getName(), relationshipDef.getName());
 
             //default relationship edge direction is end1 (out) -> end2 (in)
             AtlasRelationshipEdgeDirection end1Direction = OUT;
             AtlasRelationshipEdgeDirection end2Direction = IN;
 
             if (endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
-                end2Direction = OUT;
+                if (relationshipDef.getRelationshipLabel() == null) { // only if label hasn't been overridden
+                    end2Direction = OUT;
+                }
             } else if (!endDef1.getIsLegacyAttribute() && endDef2.getIsLegacyAttribute()) {
                 end1Direction = IN;
                 end2Direction = OUT;
@@ -150,15 +174,46 @@ public class AtlasRelationshipType extends AtlasStructType {
 
     @Override
     public boolean isValidValue(Object obj) {
-        boolean ret = true;
-
         if (obj != null) {
-
-            if (obj instanceof AtlasRelationshipType) {
-                validateAtlasRelationshipType((AtlasRelationshipType) obj);
+            if (obj instanceof AtlasRelationship) {
+                return validateRelationship((AtlasRelationship) obj);
+            } else {
+                return false;
             }
+        }
 
-            ret = super.isValidValue(obj);
+        return true;
+    }
+
+    @Override
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+        final boolean ret;
+
+        if (val1 == null) {
+            ret = val2 == null;
+        } else if (val2 == null) {
+            ret = false;
+        } else {
+            AtlasRelationship rel1 = getRelationshipFromValue(val1);
+
+            if (rel1 == null) {
+                ret = false;
+            } else {
+                AtlasRelationship rel2 = getRelationshipFromValue(val2);
+
+                if (rel2 == null) {
+                    ret = false;
+                } else if (!super.areEqualValues(rel1, rel2, guidAssignments)) {
+                    ret = false;
+                } else {
+                    ret = Objects.equals(rel1.getGuid(), rel2.getGuid()) &&
+                          Objects.equals(rel1.getEnd1(), rel2.getEnd1()) &&
+                          Objects.equals(rel1.getEnd2(), rel2.getEnd2()) &&
+                          Objects.equals(rel1.getLabel(), rel2.getLabel()) &&
+                          Objects.equals(rel1.getPropagateTags(), rel2.getPropagateTags()) &&
+                          Objects.equals(rel1.getStatus(), rel2.getStatus());
+                }
+            }
         }
 
         return ret;
@@ -166,14 +221,15 @@ public class AtlasRelationshipType extends AtlasStructType {
 
     @Override
     public boolean isValidValueForUpdate(Object obj) {
-        boolean ret = true;
-
         if (obj != null) {
-            validateAtlasRelationshipType((AtlasRelationshipType) obj);
-            ret = super.isValidValueForUpdate(obj);
+            if (obj instanceof AtlasRelationship) {
+                return validateRelationship((AtlasRelationship) obj);
+            } else {
+                return false;
+            }
         }
 
-        return ret;
+        return true;
     }
 
     public AtlasEntityType getEnd1Type() { return end1Type; }
@@ -182,18 +238,18 @@ public class AtlasRelationshipType extends AtlasStructType {
 
     /**
      * Validate the fields in the the RelationshipType are consistent with respect to themselves.
-     * @param type
+     * @param relationship
      * @throws AtlasBaseException
      */
-    private boolean validateAtlasRelationshipType(AtlasRelationshipType type) {
-        boolean isValid = false;
-        try {
-            validateAtlasRelationshipDef(type.getRelationshipDef());
-            isValid = true;
-        } catch (AtlasBaseException abe) {
-            LOG.error("Validation error for AtlasRelationshipType", abe);
+    private boolean validateRelationship(AtlasRelationship relationship) {
+        String end1TypeName = relationship.getEnd1() != null ? relationship.getEnd1().getTypeName() : null;
+        String end2TypeName = relationship.getEnd2() != null ? relationship.getEnd2().getTypeName() : null;
+
+        if (StringUtils.isNotEmpty(end1TypeName) && StringUtils.isNotEmpty(end2TypeName)) {
+            return end1Type.isTypeOrSuperTypeOf(end1TypeName) && end2Type.isTypeOrSuperTypeOf(end2TypeName) && super.isValidValue(relationship);
         }
-        return isValid;
+
+        return false;
     }
 
     /**
@@ -268,23 +324,48 @@ public class AtlasRelationshipType extends AtlasStructType {
         }
 
         if (attribute == null) { //attr doesn't exist in type - is a new relationship attribute
+            Cardinality        cardinality = endDef.getCardinality();
+            boolean            isOptional  = true;
+            AtlasConstraintDef constraint  = null;
 
-            if (endDef.getCardinality() == Cardinality.SET) {
+            if (cardinality == Cardinality.SET) {
                 attrTypeName = AtlasBaseTypeDef.getArrayTypeName(attrTypeName);
             }
 
-            attribute = new AtlasAttribute(entityType, new AtlasAttributeDef(attrName, attrTypeName),
-                                           typeRegistry.getType(attrTypeName), relationshipLabel);
+            if (relationshipDef.getRelationshipCategory() == RelationshipCategory.COMPOSITION) {
+                if (endDef.getIsContainer()) {
+                    constraint = new AtlasConstraintDef(CONSTRAINT_TYPE_OWNED_REF);
+                } else {
+                    isOptional = false;
+                }
+            }
 
+            AtlasAttributeDef attributeDef = new AtlasAttributeDef(attrName, attrTypeName, isOptional, cardinality);
+
+            if (constraint != null) {
+                attributeDef.addConstraint(constraint);
+            }
+
+            AtlasType attrType = typeRegistry.getType(attrTypeName);
+
+            if (attrType instanceof AtlasArrayType) {
+                AtlasArrayType arrayType = (AtlasArrayType) attrType;
+
+                arrayType.setCardinality(attributeDef.getCardinality());
+            }
+
+            attribute = new AtlasAttribute(entityType, attributeDef, attrType, getTypeName(), relationshipLabel);
+
+            attribute.setLegacyAttribute(endDef.getIsLegacyAttribute());
         } else {
             // attribute already exists (legacy attribute which is also a relationship attribute)
             // add relationshipLabel information to existing attribute
+            attribute.setRelationshipName(getTypeName());
             attribute.setRelationshipEdgeLabel(relationshipLabel);
+            attribute.setLegacyAttribute(true);
         }
 
-        entityType.addRelationshipAttribute(attrName, attribute);
-
-        entityType.addRelationshipAttributeType(attrName, this);
+        entityType.addRelationshipAttribute(attrName, attribute, this);
     }
 
     private String getLegacyEdgeLabel(AtlasEntityType entityType, String attributeName) {
@@ -293,6 +374,20 @@ public class AtlasRelationshipType extends AtlasStructType {
 
         if (attribute != null) {
             ret = "__" + attribute.getQualifiedName();
+        }
+
+        return ret;
+    }
+
+    private AtlasRelationship getRelationshipFromValue(Object val) {
+        final AtlasRelationship ret;
+
+        if (val instanceof AtlasRelationship) {
+            ret = (AtlasRelationship) val;
+        } else if (val instanceof Map) {
+            ret = new AtlasRelationship((Map) val);
+        } else {
+            ret = null;
         }
 
         return ret;

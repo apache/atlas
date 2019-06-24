@@ -162,3 +162,18 @@ ul.tabs li.tab {
         border-top: none;
     }
 }
+
+.default-tab {
+    .nav-tabs {
+        >li {
+            &.active {
+                >a {
+                    color: $color_jungle_green_approx;
+                }
+            }
+            >a {
+                color: $black;
+            }
+        }
+    }
+}

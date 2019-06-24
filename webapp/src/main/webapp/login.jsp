@@ -44,6 +44,7 @@ Redirect();
     <link href="js/libs/font-awesome/css/font-awesome.min.css" rel="stylesheet">
     <link href="css/login.css" media="all" rel="stylesheet" type="text/css" >
     <script src="js/libs/jquery/js/jquery.min.js" ></script>
+    <script src="js/libs/jquery-placeholder/js/jquery.placeholder.js"></script>
     <script src="js/modules/atlasLogin.js" ></script>
   </head>
   <body class="login" style="">

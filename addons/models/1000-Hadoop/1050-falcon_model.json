@@ -8,6 +8,7 @@
             "superTypes": [
                 "Process"
             ],
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "attributeDefs": []
         },
@@ -16,6 +17,7 @@
             "superTypes": [
                 "Infrastructure"
             ],
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -41,6 +43,7 @@
             "superTypes": [
                 "DataSet"
             ],
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -48,14 +51,6 @@
                     "typeName": "string",
                     "cardinality": "SINGLE",
                     "isIndexable": false,
-                    "isOptional": false,
-                    "isUnique": false
-                },
-                {
-                    "name": "stored-in",
-                    "typeName": "falcon_cluster",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
                     "isOptional": false,
                     "isUnique": false
                 },
@@ -82,6 +77,7 @@
             "superTypes": [
                 "Process"
             ],
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -89,14 +85,6 @@
                     "typeName": "string",
                     "cardinality": "SINGLE",
                     "isIndexable": false,
-                    "isOptional": false,
-                    "isUnique": false
-                },
-                {
-                    "name": "runs-on",
-                    "typeName": "falcon_cluster",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
                     "isOptional": false,
                     "isUnique": false
                 },
@@ -131,24 +119,18 @@
             "superTypes": [
                 "Process"
             ],
+            "serviceType": "falcon",
             "typeVersion": "1.0",
-            "attributeDefs": [
-                {
-                    "name": "stored-in",
-                    "typeName": "falcon_cluster",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional": false,
-                    "isUnique": false
-                }
-            ]
+            "attributeDefs": []
         }
     ],
     "relationshipDefs": [
         {
             "name": "falcon_feed_cluster",
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__falcon_feed.stored-in",
             "endDef1": {
                 "type": "falcon_feed",
                 "name": "stored-in",
@@ -166,8 +148,10 @@
         },
         {
             "name": "falcon_cluster_process",
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__falcon_cluster.processes",
             "endDef1": {
                 "type": "falcon_cluster",
                 "name": "processes",
@@ -185,8 +169,10 @@
         },
         {
             "name": "falcon_cluster_feed_creation",
+            "serviceType": "falcon",
             "typeVersion": "1.0",
             "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__falcon_cluster.feedCreations",
             "endDef1": {
                 "type": "falcon_cluster",
                 "name": "feedCreations",

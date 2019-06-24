@@ -17,13 +17,15 @@
  */
 package org.apache.atlas.model.typedef;
 
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -35,8 +37,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -52,6 +54,10 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
 
     private Set<String> superTypes;
     private Set<String> entityTypes;
+
+    // subTypes field below is derived from 'superTypes' specified in all AtlasClassificationDef
+    // this value is ignored during create & update operations
+    private Set<String> subTypes;
 
 
     public AtlasClassificationDef() {
@@ -115,6 +121,14 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         } else {
             this.superTypes = new HashSet<>(superTypes);
         }
+    }
+
+    public Set<String> getSubTypes() {
+        return subTypes;
+    }
+
+    public void setSubTypes(Set<String> subTypes) {
+        this.subTypes = subTypes;
     }
 
     public boolean hasSuperType(String typeName) {

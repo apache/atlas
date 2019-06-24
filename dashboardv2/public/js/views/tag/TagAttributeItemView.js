@@ -60,13 +60,17 @@ define(['require',
             },
             onRender: function() {
                 var that = this;
-                _.each(this.parentView.typeEnum.models, function(objValue) {
-                    that.ui.dataTypeSelector.append("<option>" + objValue.attributes.name + "</option>");
+                this.parentView.enumDefCollection.fullCollection.each(function(model) {
+                    that.ui.dataTypeSelector.append("<option>" + model.get('name') + "</option>");
                 });
             },
             onCloseButton: function() {
+                var tagName = this.parentView.$el.find('[data-id="tagName"]').val();
                 if (this.parentView.collection.models.length > 0) {
                     this.model.destroy();
+                }
+                if (this.parentView.collection.models.length == 0 && tagName != "") {
+                    this.parentView.$el.parent().next().find('button.ok').removeAttr("disabled");
                 }
             }
         });

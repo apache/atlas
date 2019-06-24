@@ -17,36 +17,30 @@
 ~ limitations under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>atlas-graphdb</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>atlas-graphdb-impls</artifactId>
-    <!-- Convenience dependency project that allows
-    the dependency on the correct implementation class
-    to be configured through profiles.  In implementation
-    specific profiles, the dependency on this project
-    should be configured to exclude all but the
-    proper dependency
-    -->
+
 
     <description>Apache Atlas Graph Database Implementation Dependencies</description>
     <name>Apache Atlas Graph Database Implementation Dependencies</name>
     <packaging>pom</packaging>
+
+
     <dependencies>
+        <!-- Use the single graph provider configured in root pom using graphGroup, graphArtifact properties -->
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-graphdb-titan1</artifactId>
+            <groupId>${graphGroup}</groupId>
+            <artifactId>${graphArtifact}</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-graphdb-titan0</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+
     </dependencies>
+
 </project>

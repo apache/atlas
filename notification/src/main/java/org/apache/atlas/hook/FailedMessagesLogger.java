@@ -73,17 +73,19 @@ public class FailedMessagesLogger {
      * @return directory under which host component's logs are stored.
      */
     private String getRootLoggerDirectory() {
-        String rootLoggerDirectory = null;
-        org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+        String      rootLoggerDirectory = null;
+        Logger      rootLogger          = Logger.getRootLogger();
+        Enumeration allAppenders        = rootLogger.getAllAppenders();
 
-        Enumeration allAppenders = rootLogger.getAllAppenders();
         if (allAppenders != null) {
             while (allAppenders.hasMoreElements()) {
                 Appender appender = (Appender) allAppenders.nextElement();
+
                 if (appender instanceof FileAppender) {
-                    FileAppender fileAppender = (FileAppender) appender;
-                    String rootLoggerFile = fileAppender.getFile();
-                    rootLoggerDirectory = new File(rootLoggerFile).getParent();
+                    FileAppender fileAppender   = (FileAppender) appender;
+                    String       rootLoggerFile = fileAppender.getFile();
+
+                    rootLoggerDirectory = rootLoggerFile != null ? new File(rootLoggerFile).getParent() : null;
                     break;
                 }
             }

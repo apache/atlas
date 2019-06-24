@@ -32,7 +32,7 @@ LIB = "lib"
 CONF = "conf"
 LOG = "logs"
 WEBAPP = "server" + os.sep + "webapp"
-CONFIG_SETS_CONF = "server" + os.sep + "solr" + os.sep + "configsets" + os.sep + "basic_configs" + os.sep + "conf"
+CONFIG_SETS_CONF = "server" + os.sep + "solr" + os.sep + "configsets" + os.sep + "_default" + os.sep + "conf"
 DATA = "data"
 ATLAS_CONF = "ATLAS_CONF"
 ATLAS_LOG = "ATLAS_LOG_DIR"
@@ -46,6 +46,8 @@ ATLAS_HOME = "ATLAS_HOME_DIR"
 HBASE_CONF_DIR = "HBASE_CONF_DIR"
 MANAGE_LOCAL_HBASE = "MANAGE_LOCAL_HBASE"
 MANAGE_LOCAL_SOLR = "MANAGE_LOCAL_SOLR"
+MANAGE_EMBEDDED_CASSANDRA = "MANAGE_EMBEDDED_CASSANDRA"
+MANAGE_LOCAL_ELASTICSEARCH = "MANAGE_LOCAL_ELASTICSEARCH"
 SOLR_BIN = "SOLR_BIN"
 SOLR_CONF = "SOLR_CONF"
 SOLR_PORT = "SOLR_PORT"
@@ -56,13 +58,14 @@ SOLR_REPLICATION_FACTOR = "SOLR_REPLICATION_FACTOR"
 DEFAULT_SOLR_REPLICATION_FACTOR = "1"
 
 ENV_KEYS = ["JAVA_HOME", ATLAS_OPTS, ATLAS_SERVER_OPTS, ATLAS_SERVER_HEAP, ATLAS_LOG, ATLAS_PID, ATLAS_CONF,
-            "ATLASCPPATH", ATLAS_DATA, ATLAS_HOME, ATLAS_WEBAPP, HBASE_CONF_DIR, SOLR_PORT]
+            "ATLASCPPATH", ATLAS_DATA, ATLAS_HOME, ATLAS_WEBAPP, HBASE_CONF_DIR, SOLR_PORT, MANAGE_LOCAL_HBASE,
+            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA, MANAGE_LOCAL_ELASTICSEARCH]
 IS_WINDOWS = platform.system() == "Windows"
 ON_POSIX = 'posix' in sys.builtin_module_names
 CONF_FILE="atlas-application.properties"
-HBASE_STORAGE_CONF_ENTRY="atlas.graph.storage.backend\s*=\s*hbase"
+STORAGE_BACKEND_CONF="atlas.graph.storage.backend"
 HBASE_STORAGE_LOCAL_CONF_ENTRY="atlas.graph.storage.hostname\s*=\s*localhost"
-SOLR_INDEX_CONF_ENTRY="atlas.graph.index.search.backend\s*=\s*solr5"
+SOLR_INDEX_CONF_ENTRY="atlas.graph.index.search.backend\s*=\s*solr"
 SOLR_INDEX_LOCAL_CONF_ENTRY="atlas.graph.index.search.solr.zookeeper-url\s*=\s*localhost"
 SOLR_INDEX_ZK_URL="atlas.graph.index.search.solr.zookeeper-url"
 TOPICS_TO_CREATE="atlas.notification.topics"
@@ -99,8 +102,14 @@ def hbaseBinDir(dir):
 def hbaseConfDir(dir):
     return os.environ.get(HBASE_CONF_DIR, os.path.join(dir, "hbase", CONF))
 
+def zookeeperBinDir(dir):
+    return os.environ.get(SOLR_BIN, os.path.join(dir, "zk", BIN))
+
 def solrBinDir(dir):
     return os.environ.get(SOLR_BIN, os.path.join(dir, "solr", BIN))
+
+def elasticsearchBinDir(dir):
+    return os.environ.get(SOLR_BIN, os.path.join(dir, "elasticsearch", BIN))
 
 def solrConfDir(dir):
     return os.environ.get(SOLR_CONF, os.path.join(dir, "solr", CONFIG_SETS_CONF))
@@ -396,15 +405,18 @@ def wait_for_shutdown(pid, msg, wait):
     sys.stdout.write('\n')
 
 def is_hbase(confdir):
-    confdir = os.path.join(confdir, CONF_FILE)
-    return grep(confdir, HBASE_STORAGE_CONF_ENTRY) is not None
+    confFile = os.path.join(confdir, CONF_FILE)
+    storageBackEnd = getConfig(confFile, STORAGE_BACKEND_CONF)
+    if storageBackEnd is not None:
+        storageBackEnd = storageBackEnd.strip()
+    return storageBackEnd is None or storageBackEnd == '' or storageBackEnd == 'hbase' or storageBackEnd == 'hbase2'
 
 def is_hbase_local(confdir):
     if os.environ.get(MANAGE_LOCAL_HBASE, "False").lower() == 'false':
         return False
 
-    confdir = os.path.join(confdir, CONF_FILE)
-    return grep(confdir, HBASE_STORAGE_CONF_ENTRY) is not None and grep(confdir, HBASE_STORAGE_LOCAL_CONF_ENTRY) is not None
+    confFile = os.path.join(confdir, CONF_FILE)
+    return is_hbase(confdir) and grep(confFile, HBASE_STORAGE_LOCAL_CONF_ENTRY) is not None
 
 def run_hbase_action(dir, action, hbase_conf_dir = None, logdir = None, wait=True):
     if IS_WINDOWS:
@@ -430,12 +442,24 @@ def is_solr(confdir):
     confdir = os.path.join(confdir, CONF_FILE)
     return grep(confdir, SOLR_INDEX_CONF_ENTRY) is not None
 
+def is_cassandra_local(configdir):
+    if os.environ.get(MANAGE_EMBEDDED_CASSANDRA, "False").lower() == 'false':
+        return False
+
+    return True
+
 def is_solr_local(confdir):
     if os.environ.get(MANAGE_LOCAL_SOLR, "False").lower() == 'false':
         return False
 
     confdir = os.path.join(confdir, CONF_FILE)
     return grep(confdir, SOLR_INDEX_CONF_ENTRY) is not None and grep(confdir, SOLR_INDEX_LOCAL_CONF_ENTRY) is not None
+
+def is_elasticsearch_local():
+    if os.environ.get(MANAGE_LOCAL_ELASTICSEARCH, "False").lower() == 'false':
+        return False
+
+    return True
 
 def get_solr_zk_url(confdir):
     confdir = os.path.join(confdir, CONF_FILE)
@@ -447,7 +471,7 @@ def get_topics_to_create(confdir):
     if topic_list is not None:
         topics = topic_list.split(",")
     else:
-        topics = ["ATLAS_HOOK", "ATLAS_ENTITIES"]
+        topics = [getConfigWithDefault("atlas.notification.hook.topic.name", "ATLAS_HOOK"), getConfigWithDefault("atlas.notification.entities.topic.name", "ATLAS_ENTITIES")]
     return topics
 
 def get_atlas_url_port(confdir):
@@ -498,6 +522,29 @@ def wait_for_startup(confdir, wait):
         count = count + 1
 
     sys.stdout.write('\n')
+
+def run_zookeeper(dir, action, logdir = None, wait=True):
+    zookeeperScript = "zkServer.sh"
+
+    if IS_WINDOWS:
+        zookeeperScript = "zkServer.cmd"
+
+    cmd = [os.path.join(dir, zookeeperScript), action, os.path.join(dir, '../../conf/zookeeper/zoo.cfg')]
+
+    return runProcess(cmd, logdir, False, wait)
+
+def start_elasticsearch(dir, logdir = None, wait=True):
+
+    elasticsearchScript = "elasticsearch"
+
+    if IS_WINDOWS:
+        elasticsearchScript = "elasticsearch.bat"
+
+    cmd = [os.path.join(dir, elasticsearchScript), '-d', '-p', os.path.join(logdir, 'elasticsearch.pid')]
+
+    processVal = runProcess(cmd, logdir, False, wait)
+    sleep(6)
+    return processVal
 
 def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
 
@@ -561,16 +608,58 @@ def configure_hbase(dir):
             f.close()
             os.remove(tmpl_file)
 
+def configure_zookeeper(dir):
+
+    conf_dir = os.path.join(dir, CONF, "zookeeper")
+    zk_conf_file = "zoo.cfg"
+    tmpl_file = os.path.join(conf_dir, zk_conf_file + ".template")
+
+    conf_file = os.path.join(conf_dir, zk_conf_file)
+    if os.path.exists(tmpl_file):
+        debug ("Configuring " + tmpl_file + " to " + conf_file)
+
+        f = open(tmpl_file,'r')
+        template = f.read()
+        f.close()
+
+        config = template.replace("${atlas_home}", dir)
+
+        f = open(conf_file,'w')
+        f.write(config)
+        f.close()
+        os.remove(tmpl_file)
+
+def configure_cassandra(dir):
+
+    conf_dir = os.path.join(dir, CONF)
+    cassandra_conf_file = "cassandra.yml"
+    tmpl_file = os.path.join(conf_dir, cassandra_conf_file + ".template")
+
+    conf_file = os.path.join(conf_dir, cassandra_conf_file)
+    if os.path.exists(tmpl_file):
+        debug ("Configuring " + tmpl_file + " to " + conf_file)
+
+        f = open(tmpl_file,'r')
+        template = f.read()
+        f.close()
+
+        config = template.replace("${atlas_home}", dir)
+
+        f = open(conf_file,'w')
+        f.write(config)
+        f.close()
+        os.remove(tmpl_file)
+
 def server_already_running(pid):
     print "Atlas server is already running under process %s" % pid
-    sys.exit()  
-    
+    sys.exit()
+
 def server_pid_not_running(pid):
     print "The Server is no longer running with pid %s" %pid
 
 def grep(file, value):
     for line in open(file).readlines():
-        if re.match(value, line):	
+        if re.match(value, line):
            return line
     return None
 

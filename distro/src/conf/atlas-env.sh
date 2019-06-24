@@ -37,8 +37,6 @@
 # java heap size we want to set for the atlas server. Default is 1024MB
 #export ATLAS_SERVER_HEAP=
 
-# indicative values for large number of metadata entities (equal or more than 10,000s) for JDK 7
-#export ATLAS_SERVER_HEAP="-Xms15360m -Xmx15360m -XX:MaxNewSize=3072m -XX:PermSize=100M -XX:MaxPermSize=512m"
 # indicative values for large number of metadata entities (equal or more than 10,000s) for JDK 8
 #export ATLAS_SERVER_HEAP="-Xms15360m -Xmx15360m -XX:MaxNewSize=5120m -XX:MetaspaceSize=100M -XX:MaxMetaspaceSize=512m"
 
@@ -62,3 +60,9 @@ export MANAGE_LOCAL_HBASE=${hbase.embedded}
 
 # indicates whether or not a local instance of Solr should be started for Atlas
 export MANAGE_LOCAL_SOLR=${solr.embedded}
+
+# indicates whether or not cassandra is the embedded backend for Atlas
+export MANAGE_EMBEDDED_CASSANDRA=${cassandra.embedded}
+
+# indicates whether or not a local instance of Elasticsearch should be started for Atlas
+export MANAGE_LOCAL_ELASTICSEARCH=${elasticsearch.managed}

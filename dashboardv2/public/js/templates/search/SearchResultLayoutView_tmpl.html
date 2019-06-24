@@ -14,38 +14,61 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="">
+<div class="position-relative">
     <div class="tableOverlay"></div>
     <!-- Not for table Loader its only for initial loading -->
     <div class="fontLoader" style="z-index:999">
         <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <div class="ellipsis" style="display: none;"><span class="searchResult" style=" font-size: 16px;"></span>
+    <div class="ellipsis-with-margin" style="display: none;"><span class="searchResult" style=" font-size: 16px;"></span>
     </div>
     <div class="searchTable">
-        <div class="row well">
-            <div class="row form-group pagination-box" style="display: none;">
-                <div class="col-md-4">
+        <div class="row no-data" style="display: none;">
+            <div class="position-relative thick-border">
+                <div style="padding-top: 20px; " class="table-responsive tableBorder">
+                    <table class="table table-hover backgrid table-quickMenu">
+                        <tbody>
+                            <tr class="empty">
+                                <td colspan="16"><span>No Records found!</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="{{#unless isGlossaryView}}row well{{/unless}}" style="padding-top: 0px;">
+            <div class="row form-group pagination-box filter-box" style="display: none;">
+                <div class="col-sm-3">
                     <span class="labelShowRecord pull-left" data-id="pageRecordText"> </span>
                 </div>
-                <div class="col-md-8 inline-content-fr">
+                <div class="col-sm-9 inline-content-fr no-padding-left">
+                    <div class="inline">
+                        <a href="javascript:void(0)" class=" multiSelectTag assignTag btn btn-action btn-sm" style="display:none" title="Assign Classification" data-id="addAssignTag"><i class="fa fa-plus"></i>&nbsp;Classification</a>
+                    </div>
                     <div class="inline" data-id="colManager"></div>
                     <div class="inline" data-id="containerCheckBox" style="display: none;">
-                        <label class="checkbox-inline btn" for="inputLabel">
-                            <input type="checkbox" id="inputLabel" name="queryType" name="check" data-id="checkDeletedEntity" />
+                        <label class="checkbox-inline btn" for="historicalentities">
+                            <input type="checkbox" data-id="checkDeletedEntity" data-value="includeDE" id="historicalentities" />
                             <b>Show historical entities</b></label>
                     </div>
-                    <div class="inline">
-                        {{#if taxonomy}}
-                        <a href="javascript:void(0)" class=" multiSelectTerm btn btn-action btn-sm inline" style="display:none" data-id="addTerm"><i class="fa fa-plus"></i> Assign Term</a> {{/if}}
-                        <a href="javascript:void(0)" class=" multiSelectTag assignTag btn btn-action btn-sm" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i> Assign Tag</a>
+                    <div class="inline" data-id="containerCheckBox" style="display: none;">
+                        <label class="checkbox-inline btn" for="subclassifications">
+                            <input type="checkbox" data-id="checkSubClassification" data-value="excludeSC" id="subclassifications" />
+                            <b>Exclude sub-classifications</b></label>
                     </div>
+                    {{#ifCond fromView '!==' "classification"}}
+                    <div class="inline" data-id="containerCheckBox" style="display: none;">
+                        <label class="checkbox-inline btn" for="subtypes">
+                            <input type="checkbox" data-id="checkSubType" data-value="excludeST" id="subtypes" />
+                            <b>Exclude sub-types</b></label>
+                    </div>
+                    {{/ifCond}}
                 </div>
             </div>
             <div id="r_searchResultTableLayoutView">
+                {{#if isSearchTab}}<h1><b>{{searchType}}</b></h1>{{/if}}
                 {{#if entityCreate}}
                 <div class="entityLink" style="display:none">
-                    <h1><b>{{searchType}}</b></h1>
                     <p class="entityLink">Search Atlas for existing entities or
                         <a href="javascript:void(0)" data-id='createEntity'> create new entity </a>
                     </p>
@@ -53,7 +76,7 @@
                 {{/if}}
             </div>
             <div class="row pagination-box" style="display: none">
-                <div class="col-md-offset-4 col-md-8">
+                <div class="col-sm-offset-4 col-sm-8">
                     <div class="inline-content-fr">
                         <div class="backgrid-paginator inline">
                             <ul class="" data-id="paginationDiv" style="display:none">
@@ -72,16 +95,16 @@
                                 </li>
                             </ul>
                         </div>
-                        <div class="inline col-md-4" data-id="paginationDiv">
+                        <div class="inline col-sm-4" data-id="paginationDiv">
                             <div class="input-group" data-id="goToPageDiv">
                                 <input type="text" class="form-control number-input" data-id="gotoPage" placeholder="Goto Page" />
                                 <span class="input-group-btn">
-                                    <button class="btn btn-secondary" type="button" data-id="gotoPagebtn" title="Goto Page" disabled="disabled">Go!</button>
+                                    <button class="btn btn-default" type="button" data-id="gotoPagebtn" title="Goto Page" disabled="disabled">Go!</button>
                                 </span>
                             </div>
                         </div>
                         <div class="inline">
-                            <div class="form-group inline-content">
+                            <div class="inline-content">
                                 <span class="control-label-sm inline ">Page Limit :</span>
                                 <div class="inline" style="width: 80px;">
                                     <select data-id="showPage" multiple="multiple" class="form-control">

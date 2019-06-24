@@ -17,23 +17,18 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>hive-bridge</artifactId>
     <description>Apache Atlas Hive Bridge Module</description>
     <name>Apache Atlas Hive Bridge</name>
     <packaging>jar</packaging>
-
-    <properties>
-        <hive.version>1.2.1</hive.version>
-        <calcite.version>0.9.2-incubating</calcite.version>
-    </properties>
 
     <dependencies>
         <!-- Logging -->
@@ -57,6 +52,10 @@
                     <groupId>org.mortbay.jetty</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
             </exclusions>
 
         </dependency>
@@ -66,6 +65,12 @@
             <artifactId>hive-exec</artifactId>
             <version>${hive.version}</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -73,6 +78,20 @@
             <artifactId>hive-jdbc</artifactId>
             <version>${hive.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.ws.rs</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -95,12 +114,13 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
+            <artifactId>atlas-client-v1</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client</artifactId>
+            <artifactId>atlas-client-v2</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -124,11 +144,27 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
@@ -156,7 +192,14 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
+            <artifactId>atlas-intg</artifactId>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-repository</artifactId>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
@@ -189,28 +232,18 @@
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-native_${scala.binary.version}</artifactId>
-                                            <version>${json.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-core_${scala.binary.version}</artifactId>
-                                            <version>${json.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-ast_${scala.binary.version}</artifactId>
-                                            <version>${json.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-client</artifactId>
+                                            <artifactId>atlas-client-common</artifactId>
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-typesystem</artifactId>
+                                            <artifactId>atlas-client-v1</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-client-v2</artifactId>
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
@@ -234,28 +267,8 @@
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scala-compiler</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scala-reflect</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scala-library</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scalap</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>org.apache.kafka</groupId>
-                                            <artifactId>kafka_${scala.binary.version}</artifactId>
+                                            <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
                                             <version>${kafka.version}</version>
                                         </artifactItem>
                                         <artifactItem>
@@ -264,9 +277,49 @@
                                             <version>${kafka.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>com.google.code.gson</groupId>
-                                            <artifactId>gson</artifactId>
-                                            <version>${gson.version}</version>
+                                            <groupId>com.sun.jersey.contribs</groupId>
+                                            <artifactId>jersey-multipart</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-databind</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-core</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-annotations</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-configuration</groupId>
+                                            <artifactId>commons-configuration</artifactId>
+                                            <version>${commons-conf.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.hbase</groupId>
+                                            <artifactId>hbase-common</artifactId>
+                                            <version>${hbase.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.hbase</groupId>
+                                            <artifactId>hbase-server</artifactId>
+                                            <version>${hbase.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.sun.jersey</groupId>
+                                            <artifactId>jersey-json</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>javax.ws.rs</groupId>
+                                            <artifactId>jsr311-api</artifactId>
+                                            <version>${jsr.version}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>
@@ -316,42 +369,66 @@
                     </httpConnector>
                     <war>../../webapp/target/atlas-webapp-${project.version}.war</war>
                     <daemon>true</daemon>
+                    <webAppSourceDirectory>../../webapp/src/test/webapp</webAppSourceDirectory>
                     <webApp>
                         <contextPath>/</contextPath>
                         <descriptor>${project.basedir}/../../webapp/src/test/webapp/WEB-INF/web.xml</descriptor>
-                        <extraClasspath>${project.basedir}/../../webapp/target/test-classes/</extraClasspath>
                     </webApp>
                     <useTestScope>true</useTestScope>
                     <systemProperties>
+                        <force>true</force>
                         <systemProperty>
-                            <name>log4j.configuration</name>
-                            <value>file://${project.basedir}/../../distro/src/conf/atlas-log4j.xml</value>
+                            <name>atlas.home</name>
+                            <value>${project.build.directory}</value>
                         </systemProperty>
                         <systemProperty>
-                            <name>atlas.log.file</name>
-                            <value>application.log</value>
-                        </systemProperty>
-                        <systemProperty>
-                            <name>atlas.log.dir</name>
-                            <value>${project.build.directory}/logs</value>
+                            <key>atlas.conf</key>
+                            <value>${project.build.directory}/test-classes</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.data</name>
                             <value>${project.build.directory}/data</value>
                         </systemProperty>
                         <systemProperty>
-                            <key>atlas.conf</key>
-                            <value>${project.build.directory}/../../../typesystem/target/test-classes</value>
+                            <name>atlas.log.dir</name>
+                            <value>${project.build.directory}/logs</value>
                         </systemProperty>
                         <systemProperty>
-                            <key>atlas.home</key>
-                            <value>${project.basedir}/target</value>
+                            <name>atlas.log.file</name>
+                            <value>application.log</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>log4j.configuration</name>
+                            <value>file:///${project.build.directory}/../../../distro/src/conf/atlas-log4j.xml</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>atlas.graphdb.backend</name>
+                            <value>${graphdb.backend.impl}</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>embedded.solr.directory</key>
+                            <value>${project.build.directory}</value>
                         </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>
                     <stopWait>${jetty-maven-plugin.stopWait}</stopWait>
+                    <daemon>${debug.jetty.daemon}</daemon>
+                    <testClassesDirectory>${project.build.testOutputDirectory}</testClassesDirectory>
+                    <useTestClasspath>true</useTestClasspath>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-core</artifactId>
+                        <version>2.8</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-api</artifactId>
+                        <version>2.8</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>start-jetty</id>
@@ -359,9 +436,6 @@
                         <goals>
                             <goal>deploy-war</goal>
                         </goals>
-                        <configuration>
-                            <daemon>true</daemon>
-                        </configuration>
                     </execution>
                     <execution>
                         <id>stop-jetty</id>
@@ -380,7 +454,12 @@
                     <dependency>
                         <groupId>org.apache.maven.doxia</groupId>
                         <artifactId>doxia-module-twiki</artifactId>
-                        <version>1.3</version>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-core</artifactId>
+                        <version>${doxia.version}</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -417,17 +496,36 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${basedir}/target/models/1000-Hadoop</outputDirectory>
+                            <outputDirectory>${basedir}/target/models</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>${basedir}/../models/1000-Hadoop</directory>
-                                    <filtering>true</filtering>
+                                    <directory>${basedir}/../models</directory>
+                                    <includes>
+                                        <include>0000-Area0/0010-base_model.json</include>
+                                        <include>1000-Hadoop/**</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-solr-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/solr</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/../../test-tools/src/main/resources/solr</directory>
                                 </resource>
                             </resources>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 </project>

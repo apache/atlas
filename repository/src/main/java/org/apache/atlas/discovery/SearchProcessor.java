@@ -28,13 +28,9 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.AtlasGraphUtilsV1;
-import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasEnumType;
-import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.SearchPredicateUtil.*;
 import org.apache.commons.collections.CollectionUtils;
@@ -60,49 +56,58 @@ public abstract class SearchProcessor {
     public static final int     MAX_RESULT_SIZE            = getApplicationProperty(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
     public static final int     MAX_QUERY_STR_LENGTH_TYPES = getApplicationProperty(Constants.INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH, 512);
     public static final int     MAX_QUERY_STR_LENGTH_TAGS  = getApplicationProperty(Constants.INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH, 512);
-    public static final String  AND_STR         = " AND ";
-    public static final String  EMPTY_STRING    = "";
-    public static final String  SPACE_STRING    = " ";
-    public static final String  BRACE_OPEN_STR  = "(";
-    public static final String  BRACE_CLOSE_STR = ")";
+    public static final String  INDEX_SEARCH_PREFIX        = AtlasGraphUtilsV2.getIndexSearchPrefix();
+    public static final String  AND_STR                    = " AND ";
+    public static final String  EMPTY_STRING               = "";
+    public static final String  SPACE_STRING               = " ";
+    public static final String  BRACE_OPEN_STR             = "(";
+    public static final String  BRACE_CLOSE_STR            = ")";
 
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
     private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
 
     static
     {
-        OPERATOR_MAP.put(SearchParameters.Operator.LT,"v.\"%s\": [* TO %s}");
+        OPERATOR_MAP.put(SearchParameters.Operator.LT, INDEX_SEARCH_PREFIX + "\"%s\": [* TO %s}");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.LT, getLTPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.GT,"v.\"%s\": {%s TO *]");
+        OPERATOR_MAP.put(SearchParameters.Operator.GT, INDEX_SEARCH_PREFIX + "\"%s\": {%s TO *]");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.GT, getGTPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.LTE,"v.\"%s\": [* TO %s]");
+        OPERATOR_MAP.put(SearchParameters.Operator.LTE, INDEX_SEARCH_PREFIX + "\"%s\": [* TO %s]");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.LTE, getLTEPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.GTE,"v.\"%s\": [%s TO *]");
+        OPERATOR_MAP.put(SearchParameters.Operator.GTE, INDEX_SEARCH_PREFIX + "\"%s\": [%s TO *]");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.GTE, getGTEPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.EQ,"v.\"%s\": %s");
+        OPERATOR_MAP.put(SearchParameters.Operator.EQ, INDEX_SEARCH_PREFIX + "\"%s\": %s");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.EQ, getEQPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.NEQ,"-" + "v.\"%s\": %s");
+        OPERATOR_MAP.put(SearchParameters.Operator.NEQ, "(*:* -" + INDEX_SEARCH_PREFIX + "\"%s\": %s)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NEQ, getNEQPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.IN, "v.\"%s\": (%s)"); // this should be a list of quoted strings
+        OPERATOR_MAP.put(SearchParameters.Operator.IN, INDEX_SEARCH_PREFIX + "\"%s\": (%s)"); // this should be a list of quoted strings
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.IN, getINPredicateGenerator()); // this should be a list of quoted strings
 
-        OPERATOR_MAP.put(SearchParameters.Operator.LIKE, "v.\"%s\": (%s)"); // this should be regex pattern
+        OPERATOR_MAP.put(SearchParameters.Operator.LIKE, INDEX_SEARCH_PREFIX + "\"%s\": (%s)"); // this should be regex pattern
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.LIKE, getLIKEPredicateGenerator()); // this should be regex pattern
 
-        OPERATOR_MAP.put(SearchParameters.Operator.STARTS_WITH, "v.\"%s\": (%s*)");
+        OPERATOR_MAP.put(SearchParameters.Operator.STARTS_WITH, INDEX_SEARCH_PREFIX + "\"%s\": (%s*)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.STARTS_WITH, getStartsWithPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.ENDS_WITH, "v.\"%s\": (*%s)");
+        OPERATOR_MAP.put(SearchParameters.Operator.ENDS_WITH, INDEX_SEARCH_PREFIX + "\"%s\": (*%s)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.ENDS_WITH, getEndsWithPredicateGenerator());
 
-        OPERATOR_MAP.put(SearchParameters.Operator.CONTAINS, "v.\"%s\": (*%s*)");
+        OPERATOR_MAP.put(SearchParameters.Operator.CONTAINS, INDEX_SEARCH_PREFIX + "\"%s\": (*%s*)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.CONTAINS, getContainsPredicateGenerator());
+
+        // TODO: Add contains any, contains all mappings here
+
+        OPERATOR_MAP.put(SearchParameters.Operator.IS_NULL, "(*:* NOT " + INDEX_SEARCH_PREFIX + "\"%s\":[* TO *])");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.IS_NULL, getIsNullPredicateGenerator());
+
+        OPERATOR_MAP.put(SearchParameters.Operator.NOT_NULL, INDEX_SEARCH_PREFIX + "\"%s\":[* TO *]");
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NOT_NULL, getNotNullPredicateGenerator());
     }
 
     protected final SearchContext   context;
@@ -239,7 +244,7 @@ public abstract class SearchProcessor {
                 indexQuery.append(AND_STR);
             }
 
-            indexQuery.append("v.\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":").append(typeAndAllSubTypesQryStr);
+            indexQuery.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":").append(typeAndAllSubTypesQryStr);
         }
     }
 
@@ -321,7 +326,7 @@ public abstract class SearchProcessor {
             indexQuery.append(AND_STR);
         }
 
-        indexQuery.append("v.\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
+        indexQuery.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
     }
 
     private boolean isIndexSearchable(FilterCriteria filterCriteria, AtlasStructType structType) throws AtlasBaseException {
@@ -428,9 +433,10 @@ public abstract class SearchProcessor {
 
         try {
             if (OPERATOR_MAP.get(op) != null) {
-                String qualifiedName = type.getQualifiedAttributeName(attrName);
+                String qualifiedName         = type.getQualifiedAttributeName(attrName);
+                String escapeIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(attrVal);
 
-                ret = String.format(OPERATOR_MAP.get(op), qualifiedName, AtlasStructType.AtlasAttribute.escapeIndexQueryValue(attrVal));
+                ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue);
             }
         } catch (AtlasBaseException ex) {
             LOG.warn(ex.getMessage());
@@ -450,6 +456,7 @@ public abstract class SearchProcessor {
             final Class     attrClass;
             final Object    attrValue;
 
+            // Some operators support null comparison, thus the parsing has to be conditional
             switch (attrType.getTypeName()) {
                 case AtlasBaseTypeDef.ATLAS_TYPE_STRING:
                     attrClass = String.class;
@@ -457,40 +464,40 @@ public abstract class SearchProcessor {
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_SHORT:
                     attrClass = Short.class;
-                    attrValue = Short.parseShort(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Short.parseShort(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_INT:
                     attrClass = Integer.class;
-                    attrValue = Integer.parseInt(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Integer.parseInt(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER:
                     attrClass = BigInteger.class;
-                    attrValue = new BigInteger(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : new BigInteger(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN:
                     attrClass = Boolean.class;
-                    attrValue = Boolean.parseBoolean(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Boolean.parseBoolean(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_BYTE:
                     attrClass = Byte.class;
-                    attrValue = Byte.parseByte(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Byte.parseByte(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_LONG:
                 case AtlasBaseTypeDef.ATLAS_TYPE_DATE:
                     attrClass = Long.class;
-                    attrValue = Long.parseLong(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Long.parseLong(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_FLOAT:
                     attrClass = Float.class;
-                    attrValue = Float.parseFloat(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Float.parseFloat(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE:
                     attrClass = Double.class;
-                    attrValue = Double.parseDouble(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : Double.parseDouble(attrVal);
                     break;
                 case AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL:
                     attrClass = BigDecimal.class;
-                    attrValue = new BigDecimal(attrVal);
+                    attrValue = StringUtils.isEmpty(attrVal) ? null : new BigDecimal(attrVal);
                     break;
                 default:
                     if (attrType instanceof AtlasEnumType) {
@@ -572,7 +579,13 @@ public abstract class SearchProcessor {
                         case ENDS_WITH:
                             query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getSuffixRegex(attrValue));
                             break;
-                        case IN:
+                        case IS_NULL:
+                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, null);
+                            break;
+                        case NOT_NULL:
+                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, null);
+                            break;
+                        default:
                             LOG.warn("{}: unsupported operator. Ignored", operator);
                             break;
                     }
@@ -621,6 +634,12 @@ public abstract class SearchProcessor {
                 break;
             case CONTAINS:
                 queryTemplate = queryProvider.getQuery(AtlasGremlinQueryProvider.AtlasGremlinQuery.COMPARE_CONTAINS);
+                break;
+            case IS_NULL:
+                queryTemplate = queryProvider.getQuery(AtlasGremlinQueryProvider.AtlasGremlinQuery.COMPARE_IS_NULL);
+                break;
+            case NOT_NULL:
+                queryTemplate = queryProvider.getQuery(AtlasGremlinQueryProvider.AtlasGremlinQuery.COMPARE_NOT_NULL);
                 break;
         }
 
@@ -680,6 +699,10 @@ public abstract class SearchProcessor {
     }
 
     private static boolean hasIndexQuerySpecialChar(String attributeValue) {
+        if (attributeValue == null) {
+            return false;
+        }
+
         for (int i = 0; i < attributeValue.length(); i++) {
             if (isIndexQuerySpecialChar(attributeValue.charAt(i))) {
                 return true;
@@ -749,7 +772,7 @@ public abstract class SearchProcessor {
 
         if (vertices != null) {
             for(AtlasVertex vertex : vertices) {
-                String guid = AtlasGraphUtilsV1.getIdFromVertex(vertex);
+                String guid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
 
                 if (StringUtils.isNotEmpty(guid)) {
                     ret.add(guid);

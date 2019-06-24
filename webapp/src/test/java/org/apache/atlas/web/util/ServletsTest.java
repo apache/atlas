@@ -18,8 +18,8 @@
 
 package org.apache.atlas.web.util;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.AtlasClient;
-import org.codehaus.jettison.json.JSONObject;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
@@ -33,8 +33,8 @@ public class ServletsTest {
         Response response =
                 Servlets.getErrorResponse(new NullPointerException(), Response.Status.INTERNAL_SERVER_ERROR);
         assertNotNull(response);
-        JSONObject responseEntity = (JSONObject) response.getEntity();
+        ObjectNode responseEntity = (ObjectNode) response.getEntity();
         assertNotNull(responseEntity);
-        assertNotNull(responseEntity.getString(AtlasClient.ERROR));
+        assertNotNull(responseEntity.get(AtlasClient.ERROR));
     }
 }

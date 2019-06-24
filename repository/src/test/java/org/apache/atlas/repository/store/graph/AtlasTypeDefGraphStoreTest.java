@@ -18,18 +18,26 @@
 package org.apache.atlas.repository.store.graph;
 
 import com.google.inject.Inject;
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.TestResourceFileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
@@ -38,9 +46,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.*;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
@@ -53,11 +64,18 @@ public class AtlasTypeDefGraphStoreTest {
 
     @BeforeTest
     public void setupTest() {
-        RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+        RequestContext.clear();
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
     }
 
-    @Test(priority = 1)
+    @AfterClass
+    public void cleanup() throws Exception {
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
+    }
+
+    @Test
     public void testGet() {
         try {
             AtlasTypesDef typesDef = typeDefStore.searchTypesDef(new SearchFilter());
@@ -73,7 +91,7 @@ public class AtlasTypeDefGraphStoreTest {
         }
     }
 
-    @Test(dataProvider = "invalidGetProvider", priority = 2)
+    @Test(dataProvider = "invalidGetProvider", dependsOnMethods = "testGet")
     public void testInvalidGet(String name, String guid){
         try {
             assertNull(typeDefStore.getEnumDefByName(name));
@@ -309,6 +327,25 @@ public class AtlasTypeDefGraphStoreTest {
         }
     }
 
+    @Test
+    public void deleteTypeByName() throws IOException {
+        try {
+            final String HIVEDB_v2_JSON = "hiveDBv2";
+            final String hiveDB2 = "hive_db_v2";
+            final String relationshipDefName = "cluster_hosts_relationship";
+            final String hostEntityDef = "host";
+            final String clusterEntityDef = "cluster";
+            AtlasTypesDef typesDef = TestResourceFileUtils.readObjectFromJson(".", HIVEDB_v2_JSON, AtlasTypesDef.class);
+            typeDefStore.createTypesDef(typesDef);
+            typeDefStore.deleteTypeByName(hiveDB2);
+            typeDefStore.deleteTypeByName(relationshipDefName);
+            typeDefStore.deleteTypeByName(hostEntityDef);
+            typeDefStore.deleteTypeByName(clusterEntityDef);
+        } catch (AtlasBaseException e) {
+            fail("Deletion should've succeeded");
+        }
+    }
+
     @Test(dependsOnMethods = "testGet")
     public void testCreateWithValidAttributes(){
         AtlasTypesDef hiveTypes = TestUtilsV2.defineHiveTypes();
@@ -320,6 +357,21 @@ public class AtlasTypeDefGraphStoreTest {
             assertEquals(hiveTypes.getEntityDefs(), createdTypes.getEntityDefs(), "Data integrity issue while persisting");
         } catch (AtlasBaseException e) {
             fail("Hive Type creation should've succeeded");
+        }
+    }
+
+    @Test(dependsOnMethods = "testGet")
+    public void testCreateWithNestedContainerAttributes() {
+        AtlasTypesDef typesDef = TestUtilsV2.defineTypeWithNestedCollectionAttributes();
+
+        try {
+            AtlasTypesDef createdTypes = typeDefStore.createTypesDef(typesDef);
+            assertEquals(typesDef.getEnumDefs(), createdTypes.getEnumDefs(), "Data integrity issue while persisting");
+            assertEquals(typesDef.getStructDefs(), createdTypes.getStructDefs(), "Data integrity issue while persisting");
+            assertEquals(typesDef.getClassificationDefs(), createdTypes.getClassificationDefs(), "Data integrity issue while persisting");
+            assertEquals(typesDef.getEntityDefs(), createdTypes.getEntityDefs(), "Data integrity issue while persisting");
+        } catch (AtlasBaseException e) {
+            fail("creation of type with nested-container attributes should've succeeded");
         }
     }
 
@@ -540,12 +592,12 @@ public class AtlasTypeDefGraphStoreTest {
         }
     }
 
-    @Test
+    @Test(dependsOnMethods = "testGet")
     public void testTypeDeletionAndRecreate() {
         AtlasClassificationDef aTag = new AtlasClassificationDef("testTag");
         AtlasAttributeDef attributeDef = new AtlasAttributeDef("testAttribute", "string", true,
                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                false, true,
+                false, true, false,
                 Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
         aTag.addAttribute(attributeDef);
 
@@ -567,7 +619,7 @@ public class AtlasTypeDefGraphStoreTest {
         aTag = new AtlasClassificationDef("testTag");
         attributeDef = new AtlasAttributeDef("testAttribute", "int", true,
                 AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                false, true,
+                false, true, false,
                 Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
         aTag.addAttribute(attributeDef);
         typesDef.setClassificationDefs(Arrays.asList(aTag));
@@ -579,7 +631,7 @@ public class AtlasTypeDefGraphStoreTest {
         }
     }
 
-    @Test
+    @Test(dependsOnMethods = "testGet")
     public void testTypeRegistryIsUpdatedAfterGraphStorage() throws AtlasBaseException {
       String classificationDef = "{"
           + "\"name\":\"test_classification_11\","

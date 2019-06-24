@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.SERVICE_TYPE_ATLAS_CORE;
+
 
 /**
  * class that implements behaviour of a map-type.
@@ -39,15 +41,8 @@ public class AtlasMapType extends AtlasType {
     private AtlasType keyType;
     private AtlasType valueType;
 
-    public AtlasMapType(String keyTypeName, String valueTypeName) {
-        super(AtlasBaseTypeDef.getMapTypeName(keyTypeName, valueTypeName), TypeCategory.MAP);
-
-        this.keyTypeName   = keyTypeName;
-        this.valueTypeName = valueTypeName;
-    }
-
     public AtlasMapType(AtlasType keyType, AtlasType valueType) {
-        super(AtlasBaseTypeDef.getMapTypeName(keyType.getTypeName(), valueType.getTypeName()), TypeCategory.MAP);
+        super(AtlasBaseTypeDef.getMapTypeName(keyType.getTypeName(), valueType.getTypeName()), TypeCategory.MAP, SERVICE_TYPE_ATLAS_CORE);
 
         this.keyTypeName   = keyType.getTypeName();
         this.valueTypeName = valueType.getTypeName();
@@ -57,7 +52,7 @@ public class AtlasMapType extends AtlasType {
 
     public AtlasMapType(String keyTypeName, String valueTypeName, AtlasTypeRegistry typeRegistry)
         throws AtlasBaseException {
-        super(AtlasBaseTypeDef.getMapTypeName(keyTypeName, valueTypeName), TypeCategory.MAP);
+        super(AtlasBaseTypeDef.getMapTypeName(keyTypeName, valueTypeName), TypeCategory.MAP, SERVICE_TYPE_ATLAS_CORE);
 
         this.keyTypeName   = keyTypeName;
         this.valueTypeName = valueTypeName;
@@ -121,6 +116,45 @@ public class AtlasMapType extends AtlasType {
         }
 
         return true;
+    }
+
+    @Override
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+        boolean ret = true;
+
+        if (val1 == null) {
+            ret = isEmptyMapValue(val2);
+        } else if (val2 == null) {
+            ret = isEmptyMapValue(val1);
+        } else {
+            Map map1 = getMapFromValue(val1);
+
+            if (map1 == null) {
+                ret = false;
+            } else {
+                Map map2 = getMapFromValue(val2);
+
+                if (map2 == null) {
+                    ret = false;
+                } else {
+                    int len = map1.size();
+
+                    if (len != map2.size()) {
+                        ret = false;
+                    } else {
+                        for (Object key : map1.keySet()) {
+                            if (!valueType.areEqualValues(map1.get(key), map2.get(key), guidAssignments)) {
+                                ret = false;
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return ret;
     }
 
     @Override
@@ -302,5 +336,33 @@ public class AtlasMapType extends AtlasType {
 
             return attributeType;
         }
+    }
+
+    private boolean isEmptyMapValue(Object val) {
+        if (val == null) {
+            return true;
+        } else if (val instanceof Map) {
+            return ((Map) val).isEmpty();
+        } else if (val instanceof String) {
+            Map map = AtlasType.fromJson(val.toString(), Map.class);
+
+            return map == null || map.isEmpty();
+        }
+
+        return false;
+    }
+
+    private Map getMapFromValue(Object val) {
+        final Map ret;
+
+        if (val instanceof Map) {
+            ret = (Map) val;
+        } else if (val instanceof String) {
+            ret = AtlasType.fromJson(val.toString(), Map.class);
+        } else {
+            ret = null;
+        }
+
+        return ret;
     }
 }

@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.type;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -33,10 +32,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinali
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.testng.Assert.fail;
 
@@ -144,7 +140,7 @@ public class TestAtlasRelationshipType {
 
     @Test(dependsOnMethods = "createTypesAndRelationships")
     public void testRelationshipAttributes() throws Exception {
-        Map<String, AtlasAttribute> employeeRelationAttrs = getRelationAttrsForType(EMPLOYEE_TYPE);
+        Map<String, Map<String, AtlasAttribute>> employeeRelationAttrs = getRelationAttrsForType(EMPLOYEE_TYPE);
 
         Assert.assertNotNull(employeeRelationAttrs);
         Assert.assertEquals(employeeRelationAttrs.size(), 2);
@@ -152,28 +148,28 @@ public class TestAtlasRelationshipType {
         Assert.assertTrue(employeeRelationAttrs.containsKey("department"));
         Assert.assertTrue(employeeRelationAttrs.containsKey("address"));
 
-        AtlasAttribute deptAttr = employeeRelationAttrs.get("department");
+        AtlasAttribute deptAttr = employeeRelationAttrs.get("department").values().iterator().next();
         Assert.assertEquals(deptAttr.getTypeName(), DEPARTMENT_TYPE);
 
-        AtlasAttribute addrAttr = employeeRelationAttrs.get("address");
+        AtlasAttribute addrAttr = employeeRelationAttrs.get("address").values().iterator().next();
         Assert.assertEquals(addrAttr.getTypeName(), ADDRESS_TYPE);
 
-        Map<String, AtlasAttribute> deptRelationAttrs = getRelationAttrsForType(DEPARTMENT_TYPE);
+        Map<String, Map<String, AtlasAttribute>> deptRelationAttrs = getRelationAttrsForType(DEPARTMENT_TYPE);
 
         Assert.assertNotNull(deptRelationAttrs);
         Assert.assertEquals(deptRelationAttrs.size(), 1);
         Assert.assertTrue(deptRelationAttrs.containsKey("employees"));
 
-        AtlasAttribute employeesAttr = deptRelationAttrs.get("employees");
+        AtlasAttribute employeesAttr = deptRelationAttrs.get("employees").values().iterator().next();
         Assert.assertEquals(employeesAttr.getTypeName(),AtlasBaseTypeDef.getArrayTypeName(EMPLOYEE_TYPE));
 
-        Map<String, AtlasAttribute> addressRelationAttrs = getRelationAttrsForType(ADDRESS_TYPE);
+        Map<String, Map<String, AtlasAttribute>> addressRelationAttrs = getRelationAttrsForType(ADDRESS_TYPE);
 
         Assert.assertNotNull(addressRelationAttrs);
         Assert.assertEquals(addressRelationAttrs.size(), 1);
         Assert.assertTrue(addressRelationAttrs.containsKey("employees"));
 
-        AtlasAttribute employeesAttr1 = addressRelationAttrs.get("employees");
+        AtlasAttribute employeesAttr1 = addressRelationAttrs.get("employees").values().iterator().next();
         Assert.assertEquals(employeesAttr1.getTypeName(),AtlasBaseTypeDef.getArrayTypeName(EMPLOYEE_TYPE));
     }
 
@@ -186,8 +182,8 @@ public class TestAtlasRelationshipType {
 
         createType(employeePhoneRelationDef);
 
-        Map<String, AtlasAttribute> employeeRelationshipAttrs = getRelationAttrsForType(EMPLOYEE_TYPE);
-        Map<String, AtlasAttribute> employeeAttrs             = getAttrsForType(EMPLOYEE_TYPE);
+        Map<String, Map<String, AtlasAttribute>> employeeRelationshipAttrs = getRelationAttrsForType(EMPLOYEE_TYPE);
+        Map<String, AtlasAttribute>              employeeAttrs             = getAttrsForType(EMPLOYEE_TYPE);
 
         // validate if phone_no exists in both relationAttributes and attributes
         Assert.assertTrue(employeeRelationshipAttrs.containsKey("phone_no"));
@@ -195,22 +191,22 @@ public class TestAtlasRelationshipType {
     }
 
     private void createEmployeeTypes() throws AtlasBaseException {
-        AtlasEntityDef phoneDef      = AtlasTypeUtil.createClassTypeDef(PHONE_TYPE, getDescription(PHONE_TYPE), ImmutableSet.<String>of(),
+        AtlasEntityDef phoneDef      = AtlasTypeUtil.createClassTypeDef(PHONE_TYPE, getDescription(PHONE_TYPE), Collections.<String>emptySet(),
                                                                         AtlasTypeUtil.createRequiredAttrDef("phone_number", "int"),
                                                                         AtlasTypeUtil.createOptionalAttrDef("area_code", "int"),
                                                                         AtlasTypeUtil.createOptionalAttrDef("owner", EMPLOYEE_TYPE));
 
-        AtlasEntityDef employeeDef   = AtlasTypeUtil.createClassTypeDef(EMPLOYEE_TYPE, getDescription(EMPLOYEE_TYPE), ImmutableSet.<String>of(),
+        AtlasEntityDef employeeDef   = AtlasTypeUtil.createClassTypeDef(EMPLOYEE_TYPE, getDescription(EMPLOYEE_TYPE), Collections.<String>emptySet(),
                                                                         AtlasTypeUtil.createRequiredAttrDef("name", "string"),
                                                                         AtlasTypeUtil.createOptionalAttrDef("dob", "date"),
                                                                         AtlasTypeUtil.createOptionalAttrDef("age", "int"),
                                                                         AtlasTypeUtil.createRequiredAttrDef("phone_no", PHONE_TYPE));
 
-        AtlasEntityDef departmentDef = AtlasTypeUtil.createClassTypeDef(DEPARTMENT_TYPE, getDescription(DEPARTMENT_TYPE), ImmutableSet.<String>of(),
+        AtlasEntityDef departmentDef = AtlasTypeUtil.createClassTypeDef(DEPARTMENT_TYPE, getDescription(DEPARTMENT_TYPE), Collections.<String>emptySet(),
                                                                         AtlasTypeUtil.createRequiredAttrDef("name", "string"),
                                                                         AtlasTypeUtil.createOptionalAttrDef("count", "int"));
 
-        AtlasEntityDef addressDef    = AtlasTypeUtil.createClassTypeDef(ADDRESS_TYPE, getDescription(ADDRESS_TYPE), ImmutableSet.<String>of(),
+        AtlasEntityDef addressDef    = AtlasTypeUtil.createClassTypeDef(ADDRESS_TYPE, getDescription(ADDRESS_TYPE), Collections.<String>emptySet(),
                                                                         AtlasTypeUtil.createOptionalAttrDef("street", "string"),
                                                                         AtlasTypeUtil.createRequiredAttrDef("city", "string"),
                                                                         AtlasTypeUtil.createRequiredAttrDef("state", "string"),
@@ -249,7 +245,7 @@ public class TestAtlasRelationshipType {
         return typeName + " description";
     }
 
-    private Map<String, AtlasAttribute> getRelationAttrsForType(String typeName) {
+    private Map<String, Map<String, AtlasAttribute>> getRelationAttrsForType(String typeName) {
         return typeRegistry.getEntityTypeByName(typeName).getRelationshipAttributes();
     }
 

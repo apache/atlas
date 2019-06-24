@@ -23,6 +23,7 @@ import org.apache.atlas.web.service.ServiceState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriUtils;
 
 import javax.inject.Inject;
 import javax.servlet.Filter;
@@ -36,7 +37,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
-import java.net.URLEncoder;
 
 /**
  * A servlet {@link Filter} that redirects web requests from a passive Atlas server instance to an active one.
@@ -87,6 +87,10 @@ public class ActiveServerFilter implements Filter {
             HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
             LOG.error("Instance in transition. Service may not be ready to return a result");
             httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        } else if (serviceState.isInstanceInMigration()) {
+            HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+            LOG.error("Instance in migration. Service may not be ready to return a result");
+            httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
         } else {
             HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
             String activeServerAddress = activeInstanceState.getActiveServerAddress();
@@ -129,7 +133,7 @@ public class ActiveServerFilter implements Filter {
         String queryString = servletRequest.getQueryString();
 
         if (queryString != null && (!queryString.isEmpty())) {
-            queryString = URLEncoder.encode(queryString, "UTF-8");
+            queryString = UriUtils.encodeQuery(queryString, "UTF-8");
         }
 
         if ((queryString != null) && (!queryString.isEmpty())) {

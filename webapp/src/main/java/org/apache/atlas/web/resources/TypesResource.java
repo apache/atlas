@@ -23,17 +23,14 @@ import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.repository.converters.TypeConverterUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.rest.TypesREST;
 import org.apache.atlas.web.util.Servlets;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -53,7 +50,11 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class provides RESTful API for Types.
@@ -102,8 +103,6 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.submit()");
         }
 
-        JSONArray typesResponse = new JSONArray();
-
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
 
@@ -114,18 +113,16 @@ public class TypesResource {
             AtlasTypesDef createTypesDef  = TypeConverterUtil.toAtlasTypesDef(typeDefinition, typeRegistry);
             AtlasTypesDef createdTypesDef = typesREST.createAtlasTypeDefs(createTypesDef);
             List<String>  typeNames       = TypeConverterUtil.getTypeNames(createdTypesDef);
+            List<Map<String, Object>> typesResponse = new ArrayList<>(typeNames.size());
 
-            for (int i = 0; i < typeNames.size(); i++) {
-                final String name = typeNames.get(i);
-                typesResponse.put(new JSONObject() {{
-                    put(AtlasClient.NAME, name);
-                }});
+            for (String typeName : typeNames) {
+                typesResponse.add(Collections.singletonMap(AtlasClient.NAME, typeName));
             }
 
-            JSONObject response = new JSONObject();
+            Map<String, Object> response = new HashMap<>();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPES, typesResponse);
-            return Response.status(ClientResponse.Status.CREATED).entity(response).build();
+            return Response.status(ClientResponse.Status.CREATED).entity(AtlasJson.toV1Json(response)).build();
         } catch (AtlasBaseException e) {
             LOG.error("Type creation failed", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e));
@@ -170,7 +167,6 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.update()");
         }
 
-        JSONArray typesResponse = new JSONArray();
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
 
@@ -181,18 +177,16 @@ public class TypesResource {
             AtlasTypesDef updateTypesDef  = TypeConverterUtil.toAtlasTypesDef(typeDefinition, typeRegistry);
             AtlasTypesDef updatedTypesDef = typeDefStore.createUpdateTypesDef(updateTypesDef);
             List<String>  typeNames       = TypeConverterUtil.getTypeNames(updatedTypesDef);
+            List<Map<String, Object>> typesResponse = new ArrayList<>(typeNames.size());
 
-            for (int i = 0; i < typeNames.size(); i++) {
-                final String name = typeNames.get(i);
-                typesResponse.put(new JSONObject() {{
-                    put(AtlasClient.NAME, name);
-                }});
+            for (String typeName : typeNames) {
+                typesResponse.add(Collections.singletonMap(AtlasClient.NAME, typeName));
             }
 
-            JSONObject response = new JSONObject();
+            Map<String, Object> response = new HashMap<>();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPES, typesResponse);
-            return Response.ok().entity(response).build();
+            return Response.ok().entity(AtlasJson.toV1Json(response)).build();
         } catch (AtlasBaseException e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e));
@@ -233,21 +227,20 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getDefinition(" + typeName + ")");
         }
 
-        JSONObject response = new JSONObject();
+        Map<String, Object> response = new HashMap<>();
 
         try {
-            TypesDef typesDef       = TypeConverterUtil.toTypesDef(typeRegistry.getType(typeName), typeRegistry);;
-            String   typeDefinition = TypesSerialization.toJson(typesDef);
+            TypesDef typesDef = TypeConverterUtil.toTypesDef(typeRegistry.getType(typeName), typeRegistry);;
 
             response.put(AtlasClient.TYPENAME, typeName);
-            response.put(AtlasClient.DEFINITION, new JSONObject(typeDefinition));
+            response.put(AtlasClient.DEFINITION, typesDef);
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
 
-            return Response.ok(response).build();
+            return Response.ok(AtlasJson.toV1Json(response)).build();
         } catch (AtlasBaseException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e));
-        } catch (JSONException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
@@ -292,15 +285,15 @@ public class TypesResource {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getTypesByFilter(" + typeCategory + ", " + supertype + ", " + notsupertype + ")");
         }
 
-        JSONObject response  = new JSONObject();
+        Map<String, Object> response = new HashMap<>();
         try {
             List<String> result = TypeConverterUtil.getTypeNames(typesREST.getTypeDefHeaders(request));
 
-            response.put(AtlasClient.RESULTS, new JSONArray(result));
+            response.put(AtlasClient.RESULTS, result);
             response.put(AtlasClient.COUNT, result.size());
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
 
-            return Response.ok(response).build();
+            return Response.ok(AtlasJson.toV1Json(response)).build();
         } catch (AtlasBaseException e) {
             LOG.warn("TypesREST exception: {} {}", e.getClass().getSimpleName(), e.getMessage());
             throw new WebApplicationException(Servlets.getErrorResponse(e));

@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.web.errors;
 
-import org.apache.atlas.typesystem.exception.NotFoundException;
+import org.apache.atlas.exception.NotFoundException;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.Response;

@@ -53,6 +53,11 @@ public class AtlasBaseExceptionMapper implements ExceptionMapper<AtlasBaseExcept
         AtlasErrorCode errorCode = baseException.getAtlasErrorCode();
         errorJsonMap.put("errorCode", errorCode.getErrorCode());
         errorJsonMap.put("errorMessage", baseException.getMessage());
+
+        if (baseException.getCause() != null) {
+            errorJsonMap.put("errorCause", baseException.getCause().getMessage());
+        }
+
         Response.ResponseBuilder responseBuilder = Response.status(errorCode.getHttpCode());
 
         // No body for 204 (and maybe 304)

@@ -20,11 +20,13 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.validator.routines.DateValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +40,14 @@ public class AtlasClassificationType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasClassificationType.class);
 
     private final AtlasClassificationDef classificationDef;
+    private final String                 typeQryStr;
 
     private List<AtlasClassificationType> superTypes               = Collections.emptyList();
     private Set<String>                   allSuperTypes            = Collections.emptySet();
+    private Set<String>                   subTypes                 = Collections.emptySet();
     private Set<String>                   allSubTypes              = Collections.emptySet();
     private Set<String>                   typeAndAllSubTypes       = Collections.emptySet();
+    private Set<String>                   typeAndAllSuperTypes     = Collections.emptySet();
     private String                        typeAndAllSubTypesQryStr = "";
 
     // we need to store the entityTypes specified in our supertypes. i.e. our parent classificationDefs may specify more entityTypes
@@ -57,6 +62,7 @@ public class AtlasClassificationType extends AtlasStructType {
         super(classificationDef);
 
         this.classificationDef = classificationDef;
+        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
     }
 
     /**
@@ -72,6 +78,7 @@ public class AtlasClassificationType extends AtlasStructType {
         super(classificationDef);
 
         this.classificationDef = classificationDef;
+        this.typeQryStr        = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
 
         resolveReferences(typeRegistry);
     }
@@ -103,20 +110,29 @@ public class AtlasClassificationType extends AtlasStructType {
         this.allSuperTypes      = Collections.unmodifiableSet(allS);
         this.allAttributes      = Collections.unmodifiableMap(allA);
         this.uniqAttributes     = getUniqueAttributes(this.allAttributes);
+        this.subTypes           = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.allSubTypes        = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.typeAndAllSubTypes = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.entityTypes        = new HashSet<>(); // this will be populated in resolveReferencesPhase3()
 
         this.typeAndAllSubTypes.add(this.getTypeName());
+
+        this.typeAndAllSuperTypes = new HashSet<>(this.allSuperTypes);
+        this.typeAndAllSuperTypes.add(this.getTypeName());
+        this.typeAndAllSuperTypes = Collections.unmodifiableSet(this.typeAndAllSuperTypes);
     }
 
     @Override
     void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferencesPhase2(typeRegistry);
 
+        for (AtlasClassificationType superType : superTypes) {
+            superType.addSubType(this);
+        }
+
         for (String superTypeName : allSuperTypes) {
             AtlasClassificationType superType = typeRegistry.getClassificationTypeByName(superTypeName);
-            superType.addSubType(this);
+            superType.addToAllSubTypes(this);
         }
     }
 
@@ -139,6 +155,7 @@ public class AtlasClassificationType extends AtlasStructType {
      */
     @Override
     void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        subTypes                 = Collections.unmodifiableSet(subTypes);
         allSubTypes              = Collections.unmodifiableSet(allSubTypes);
         typeAndAllSubTypes       = Collections.unmodifiableSet(typeAndAllSubTypes);
         typeAndAllSubTypesQryStr = ""; // will be computed on next access
@@ -206,9 +223,15 @@ public class AtlasClassificationType extends AtlasStructType {
                 }
             }
         }
+
+        classificationDef.setSubTypes(subTypes);
     }
 
     private void addSubType(AtlasClassificationType subType) {
+        subTypes.add(subType.getTypeName());
+    }
+
+    private void addToAllSubTypes(AtlasClassificationType subType) {
         allSubTypes.add(subType.getTypeName());
         typeAndAllSubTypes.add(subType.getTypeName());
     }
@@ -219,9 +242,15 @@ public class AtlasClassificationType extends AtlasStructType {
 
     public Set<String> getAllSuperTypes() { return allSuperTypes; }
 
+    public Set<String> getSubTypes() { return subTypes; }
+
     public Set<String> getAllSubTypes() { return allSubTypes; }
 
     public Set<String> getTypeAndAllSubTypes() { return typeAndAllSubTypes; }
+
+    public Set<String> getTypeAndAllSuperTypes() { return typeAndAllSuperTypes; }
+
+    public String getTypeQryStr() { return typeQryStr; }
 
     public String getTypeAndAllSubTypesQryStr() {
         if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {
@@ -275,10 +304,25 @@ public class AtlasClassificationType extends AtlasStructType {
                 }
             }
 
+            if (!validateTimeBoundaries(obj, null)) {
+                return false;
+            }
+
             return super.isValidValue(obj);
         }
 
         return true;
+    }
+
+    @Override
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+        for (AtlasClassificationType superType : superTypes) {
+            if (!superType.areEqualValues(val1, val2, guidAssignments)) {
+                return false;
+            }
+        }
+
+        return super.areEqualValues(val1, val2, guidAssignments);
     }
 
     @Override
@@ -288,6 +332,10 @@ public class AtlasClassificationType extends AtlasStructType {
                 if (!superType.isValidValueForUpdate(obj)) {
                     return false;
                 }
+            }
+
+            if (!validateTimeBoundaries(obj, null)) {
+                return false;
             }
 
             return super.isValidValueForUpdate(obj);
@@ -343,6 +391,8 @@ public class AtlasClassificationType extends AtlasStructType {
                 ret = superType.validateValue(obj, objName, messages) && ret;
             }
 
+            ret = validateTimeBoundaries(obj, messages) && ret;
+
             ret = super.validateValue(obj, objName, messages) && ret;
         }
 
@@ -357,6 +407,8 @@ public class AtlasClassificationType extends AtlasStructType {
             for (AtlasClassificationType superType : superTypes) {
                 ret = superType.validateValueForUpdate(obj, objName, messages) && ret;
             }
+
+            ret = validateTimeBoundaries(obj, messages) && ret;
 
             ret = super.validateValueForUpdate(obj, objName, messages) && ret;
         }
@@ -476,6 +528,101 @@ public class AtlasClassificationType extends AtlasStructType {
                 AtlasType type = typeRegistry.getType(attributeDef.getTypeName());
                 allAttributes.put(attributeDef.getName(), new AtlasAttribute(this, attributeDef, type));
             }
+        }
+    }
+
+    private boolean validateTimeBoundaries(Object classificationObj, List<String> messages) {
+        boolean             ret            = true;
+        AtlasClassification classification = null;
+
+        if (classificationObj instanceof AtlasClassification) {
+            classification = (AtlasClassification) classificationObj;
+        } else if (classificationObj instanceof Map) {
+            classification = new AtlasClassification((Map) classificationObj);
+        }
+
+        if (classification != null && classification.getValidityPeriods() != null) {
+            for (TimeBoundary timeBoundary : classification.getValidityPeriods()) {
+                if (timeBoundary != null) {
+                    ret = validateTimeBoundry(timeBoundary, messages) && ret;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private boolean validateTimeBoundry(TimeBoundary timeBoundary, List<String> messages) {
+        boolean        ret           = true;
+        DateValidator  dateValidator = DateValidator.getInstance();
+        Date           startDate     = null;
+        Date           endDate       = null;
+        final TimeZone timezone;
+
+        if (StringUtils.isNotEmpty(timeBoundary.getTimeZone())) {
+            if (!isValidTimeZone(timeBoundary.getTimeZone())) {
+                addValidationMessageIfNotPresent(new AtlasBaseException(AtlasErrorCode.INVALID_TIMEBOUNDRY_TIMEZONE, timeBoundary.getTimeZone()), messages);
+
+                ret = false;
+            }
+
+            timezone = TimeZone.getTimeZone(timeBoundary.getTimeZone());
+        } else {
+            timezone = TimeZone.getDefault();
+        }
+
+        if (StringUtils.isNotEmpty(timeBoundary.getStartTime())) {
+            startDate = dateValidator.validate(timeBoundary.getStartTime(), TimeBoundary.TIME_FORMAT, timezone);
+
+            if (startDate == null) {
+                addValidationMessageIfNotPresent(new AtlasBaseException(AtlasErrorCode.INVALID_TIMEBOUNDRY_START_TIME, timeBoundary.getStartTime()), messages);
+
+                ret = false;
+            }
+        }
+
+        if (StringUtils.isNotEmpty(timeBoundary.getEndTime())) {
+            endDate = dateValidator.validate(timeBoundary.getEndTime(), TimeBoundary.TIME_FORMAT, timezone);
+
+            if (endDate == null) {
+                addValidationMessageIfNotPresent(new AtlasBaseException(AtlasErrorCode.INVALID_TIMEBOUNDRY_END_TIME, timeBoundary.getEndTime()), messages);
+
+                ret = false;
+            }
+        }
+
+        if (startDate != null && endDate != null) {
+            if (endDate.before(startDate)) {
+                addValidationMessageIfNotPresent(new AtlasBaseException(AtlasErrorCode.INVALID_TIMEBOUNDRY_DATERANGE, timeBoundary.getStartTime(), timeBoundary.getEndTime()), messages);
+
+                ret = false;
+            }
+        }
+
+        return ret;
+    }
+
+    public static boolean isValidTimeZone(final String timeZone) {
+        final String DEFAULT_GMT_TIMEZONE = "GMT";
+        if (timeZone.equals(DEFAULT_GMT_TIMEZONE)) {
+            return true;
+        } else {
+            // if custom time zone is invalid,
+            // time zone id returned is always "GMT" by default
+            String id = TimeZone.getTimeZone(timeZone).getID();
+            if (!id.equals(DEFAULT_GMT_TIMEZONE)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void addValidationMessageIfNotPresent(AtlasBaseException excp, List<String> messages) {
+        String msg = excp.getMessage();
+
+        if (messages != null && !messages.contains(msg)) {
+            messages.add(msg);
         }
     }
 }

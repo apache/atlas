@@ -55,7 +55,7 @@ define(['require',
 
     Handlebars.registerHelper('toHumanDate', function(val) {
         if (!val) return "";
-        return val;//localization.formatDate(val, 'f');
+        return val; //localization.formatDate(val, 'f');
     });
     Handlebars.registerHelper('tt', function(str) {
         //return localization.tt(str);
@@ -67,8 +67,15 @@ define(['require',
             case '==':
                 return (v1 == v2) ? options.fn(this) : options.inverse(this);
                 break;
+
             case '===':
                 return (v1 === v2) ? options.fn(this) : options.inverse(this);
+                break;
+            case '!=':
+                return (v1 !== v2) ? options.fn(this) : options.inverse(this);
+                break;
+            case '!==':
+                return (v1 !== v2) ? options.fn(this) : options.inverse(this);
                 break;
             case '<':
                 return (v1 < v2) ? options.fn(this) : options.inverse(this);
@@ -87,6 +94,20 @@ define(['require',
                 break;
         }
         //return options.inverse(this);
+    });
+
+    Handlebars.registerHelper('lookup', function(obj, field, defaulValue) {
+        return (obj[field] ? obj[field] : (defaulValue ? defaulValue : ""));
+    });
+
+    Handlebars.registerHelper('eachlookup', function(obj, field, options) {
+        return Handlebars.helpers.each((obj[field] ? obj[field] : null), options);
+    });
+
+    Handlebars.registerHelper('callmyfunction', function(functionObj, param, options) {
+        var argumentObj = _.extend([], arguments);
+        argumentObj.shift();
+        return functionObj.apply(this, argumentObj);
     });
 
     return HHelpers;

@@ -38,12 +38,16 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
 
     Utils.generatePopover = function(options) {
         if (options.el) {
-            return options.el.popover(_.extend({
+            var defaultObj = {
                 placement: 'auto bottom',
                 html: true,
                 animation: false,
-                template: '<div class="popover fixed-popover fade bottom"><div class="arrow"></div><h3 class="popover-title"></h3><div class="' + (options.contentClass ? options.contentClass : '') + ' popover-content"></div></div>'
-            }, options.popoverOptions));
+                container: 'body'
+            };
+            if (options.viewFixedPopover || options.contentClass) {
+                defaultObj.template = '<div class="popover ' + (options.viewFixedPopover ? 'fixed-popover' : '') + ' fade bottom"><div class="arrow"></div><h3 class="popover-title"></h3><div class="' + (options.contentClass ? options.contentClass : '') + ' popover-content"></div></div>';
+            }
+            return options.el.popover(_.extend(defaultObj, options.popoverOptions));
         }
     }
 
@@ -69,7 +73,60 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         });
         return uuid;
     };
-    pnotify.prototype.options.styling = "bootstrap3";
+    Utils.getBaseUrl = function(url) {
+        return url.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, '');
+    };
+    Utils.getEntityIconPath = function(options) {
+        var entityData = options && options.entityData,
+            serviceType,
+            status,
+            typeName,
+            iconBasePath = Utils.getBaseUrl(window.location.pathname) + Globals.entityImgPath;
+        if (entityData) {
+            typeName = entityData.typeName;
+            serviceType = entityData && entityData.serviceType;
+            status = entityData && entityData.status;
+        }
+
+        function getImgPath(imageName) {
+            return iconBasePath + (Enums.entityStateReadOnly[status] ? "disabled/" + imageName : imageName);
+        }
+
+        function getDefaultImgPath() {
+            if (entityData.isProcess) {
+                if (Enums.entityStateReadOnly[status]) {
+                    return iconBasePath + 'disabled/process.png';
+                } else {
+                    return iconBasePath + 'process.png';
+                }
+            } else {
+                if (Enums.entityStateReadOnly[status]) {
+                    return iconBasePath + 'disabled/table.png';
+                } else {
+                    return iconBasePath + 'table.png';
+                }
+            }
+        }
+
+        if (entityData) {
+            if (options.errorUrl) {
+                var isErrorInTypeName = (options.errorUrl && options.errorUrl.match("entity-icon/" + typeName + ".png|disabled/" + typeName + ".png") ? true : false);
+                if (serviceType && isErrorInTypeName) {
+                    var imageName = serviceType + ".png";
+                    return getImgPath(imageName);
+                } else {
+                    return getDefaultImgPath();
+                }
+            } else if (entityData.typeName) {
+                var imageName = entityData.typeName + ".png";
+                return getImgPath(imageName);
+            } else {
+                return getDefaultImgPath();
+            }
+        }
+    }
+
+    pnotify.prototype.options.styling = "fontawesome";
     var notify = function(options) {
         return new pnotify(_.extend({
             icon: true,
@@ -117,7 +174,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         var modal = {};
         if (options && options.modal) {
             var myStack = { "dir1": "down", "dir2": "right", "push": "top", 'modal': true };
-            modal['addclass'] = 'stack-modal';
+            modal['addclass'] = 'stack-modal ' + (options.modalClass ? modalClass : 'width-500');
             modal['stack'] = myStack;
         }
         notify(_.extend({
@@ -126,7 +183,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             confirm: {
                 confirm: true,
                 buttons: [{
-                        text: 'cancel',
+                        text: options.cancelText || 'Cancel',
                         addClass: 'btn-action btn-md',
                         click: function(notice) {
                             options.cancel(notice);
@@ -134,7 +191,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                         }
                     },
                     {
-                        text: 'Ok',
+                        text: options.okText || 'Ok',
                         addClass: 'btn-atlas btn-md',
                         click: function(notice) {
                             options.ok(notice);
@@ -274,10 +331,10 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 };
                 if (Utils.getUrlState.isTagTab(options.url)) {
                     urlUpdate['tagUrl'] = options.url;
-                } else if (Utils.getUrlState.isTaxonomyTab(options.url)) {
-                    urlUpdate['taxonomyUrl'] = options.url;
                 } else if (Utils.getUrlState.isSearchTab(options.url)) {
                     urlUpdate['searchUrl'] = options.url;
+                } else if (Utils.getUrlState.isGlossaryTab(options.url)) {
+                    urlUpdate['glossaryUrl'] = options.url;
                 }
                 $.extend(Globals.saveApplicationState.tabState, urlUpdate);
             }
@@ -298,20 +355,38 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 lastValue: hashValue.split('/')[hashValue.split('/').length - 1]
             }
         },
+        checkTabUrl: function(options) {
+            var url = options && options.url,
+                matchString = options && options.matchString,
+                quey = this.getQueryUrl(url);
+            return quey.firstValue == matchString || quey.queyParams[0] == "#!/" + matchString;
+        },
         isInitial: function() {
-            return this.getQueryUrl().firstValue == undefined ? true : false;
+            return this.getQueryUrl().firstValue == undefined;
         },
         isTagTab: function(url) {
-            return this.getQueryUrl(url).firstValue == "tag" ? true : false;
-        },
-        isTaxonomyTab: function(url) {
-            return this.getQueryUrl(url).firstValue == "taxonomy" ? true : false;
+            return this.checkTabUrl({
+                url: url,
+                matchString: "tag"
+            });
         },
         isSearchTab: function(url) {
-            return this.getQueryUrl(url).firstValue == "search" ? true : false;
+            return this.checkTabUrl({
+                url: url,
+                matchString: "search"
+            });
+        },
+        isGlossaryTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "glossary"
+            });
         },
         isDetailPage: function(url) {
-            return this.getQueryUrl(url).firstValue == "detailPage" ? true : false;
+            return this.checkTabUrl({
+                url: url,
+                matchString: "detailPage"
+            });
         },
         getLastValue: function() {
             return this.getQueryUrl().lastValue;
@@ -347,63 +422,6 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             }
         }
     }
-    Utils.checkTagOrTerm = function(value, isTermView) {
-        if (value && _.isString(value) && isTermView) {
-            // For string break
-            if (value == "TaxonomyTerm") {
-                return {}
-            }
-            var name = _.escape(value).split('.');
-            return {
-                term: true,
-                tag: false,
-                name: name[name.length - 1],
-                fullName: value
-            }
-        }
-        if (value && _.isString(value)) {
-            value = {
-                typeName: value
-            }
-        }
-        if (_.isObject(value)) {
-            var name = "";
-            if (value && value.$typeName$) {
-                name = value.$typeName$;
-            } else if (value && value.typeName) {
-                name = value.typeName;
-            }
-            if (name === "TaxonomyTerm") {
-                return {}
-            }
-            name = _.escape(name).split('.');
-
-            var trem = false;
-            if (value['taxonomy.namespace']) {
-                trem = true;
-            } else if (value.values && value.values['taxonomy.namespace']) {
-                trem = true;
-            } else if (Globals.taxonomy && name.length > 1) {
-                trem = true; // Temp fix
-            }
-
-            if (trem) {
-                return {
-                    term: true,
-                    tag: false,
-                    name: name[name.length - 1],
-                    fullName: name.join('.')
-                }
-            } else {
-                return {
-                    term: false,
-                    tag: true,
-                    name: name[name.length - 1],
-                    fullName: name.join('.')
-                }
-            }
-        }
-    }
     Utils.getName = function() {
         return Utils.extractKeyValueFromEntity.apply(this, arguments).name;
     }
@@ -412,12 +430,13 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     }
     Utils.extractKeyValueFromEntity = function() {
         var collectionJSON = arguments[0],
-            priorityAttribute = arguments[1];
-        var returnObj = {
-            name: '-',
-            found: true,
-            key: null
-        }
+            priorityAttribute = arguments[1],
+            skipAttribute = arguments[2],
+            returnObj = {
+                name: '-',
+                found: true,
+                key: null
+            }
         if (collectionJSON) {
             if (collectionJSON.attributes && collectionJSON.attributes[priorityAttribute]) {
                 returnObj.name = _.escape(collectionJSON.attributes[priorityAttribute]);
@@ -435,9 +454,24 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     returnObj.key = 'name';
                     return returnObj;
                 }
+                if (collectionJSON.attributes.displayName) {
+                    returnObj.name = _.escape(collectionJSON.attributes.displayName);
+                    returnObj.key = 'displayName';
+                    return returnObj;
+                }
                 if (collectionJSON.attributes.qualifiedName) {
                     returnObj.name = _.escape(collectionJSON.attributes.qualifiedName);
                     returnObj.key = 'qualifiedName';
+                    return returnObj;
+                }
+                if (collectionJSON.attributes.displayText) {
+                    returnObj.name = _.escape(collectionJSON.attributes.displayText);
+                    returnObj.key = 'displayText';
+                    return returnObj;
+                }
+                if (collectionJSON.attributes.guid) {
+                    returnObj.name = _.escape(collectionJSON.attributes.guid);
+                    returnObj.key = 'guid';
                     return returnObj;
                 }
                 if (collectionJSON.attributes.id) {
@@ -455,6 +489,11 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             if (collectionJSON.name) {
                 returnObj.name = _.escape(collectionJSON.name);
                 returnObj.key = 'name';
+                return returnObj;
+            }
+            if (collectionJSON.displayName) {
+                returnObj.name = _.escape(collectionJSON.displayName);
+                returnObj.key = 'displayName';
                 return returnObj;
             }
             if (collectionJSON.qualifiedName) {
@@ -485,62 +524,97 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             }
         }
         returnObj.found = false;
-        return returnObj;
+        if (skipAttribute && returnObj.key == skipAttribute) {
+            return {
+                name: '-',
+                found: true,
+                key: null
+            }
+        } else {
+            return returnObj;
+        }
+
     }
     Utils.showTitleLoader = function(loaderEl, titleBoxEl) {
-        loaderEl.css({
+        loaderEl.css ? loaderEl.css({
             'display': 'block',
             'position': 'relative',
             'height': '85px',
             'marginTop': '85px',
             'marginLeft': '50%',
             'left': '0%'
-        });
-        titleBoxEl.hide();
+        }) : null;
+        titleBoxEl.hide ? titleBoxEl.hide() : null;
     }
     Utils.hideTitleLoader = function(loaderEl, titleBoxEl) {
-        loaderEl.hide();
-        titleBoxEl.fadeIn();
+        loaderEl.hide ? loaderEl.hide() : null;
+        titleBoxEl.fadeIn ? titleBoxEl.fadeIn() : null;
     }
-    Utils.findAndMergeRefEntity = function(attributeObject, referredEntities) {
+    Utils.findAndMergeRefEntity = function(options) {
+        var attributeObject = options.attributeObject,
+            referredEntities = options.referredEntities
+        var mergeObject = function(obj) {
+            if (obj) {
+                if (obj.attributes) {
+                    Utils.findAndMergeRefEntity({
+                        "attributeObject": obj.attributes,
+                        "referredEntities": referredEntities
+                    });
+                } else if (referredEntities[obj.guid]) {
+                    _.extend(obj, referredEntities[obj.guid]);
+                }
+            }
+        }
         if (attributeObject && referredEntities) {
             _.each(attributeObject, function(obj, key) {
                 if (_.isObject(obj)) {
                     if (_.isArray(obj)) {
                         _.each(obj, function(value) {
-                            _.extend(value, referredEntities[value.guid]);
+                            mergeObject(value);
                         });
                     } else {
-                        _.extend(obj, referredEntities[obj.guid]);
+                        mergeObject(obj);
                     }
                 }
             });
         }
     }
-    Utils.getNestedSuperTypeObj = function(options) {
-        var flag = 0,
-            data = options.data,
-            collection = options.collection;
-        if (options.attrMerge) {
-            var attributeDefs = [];
-        } else {
-            var attributeDefs = {};
-        }
-        var getData = function(data, collection) {
-            if (options.attrMerge) {
-                attributeDefs = attributeDefs.concat(data.attributeDefs);
-            } else {
-                if (attributeDefs[data.name]) {
-                    if (_.isArray(attributeDefs[data.name])) {
-                        attributeDefs[data.name] = attributeDefs[data.name].concat(data.attributeDefs);
-                    } else {
-                        _.extend(attributeDefs[data.name], data.attributeDefs);
-                    }
 
-                } else {
-                    attributeDefs[data.name] = data.attributeDefs;
+    Utils.findAndMergeRelationShipEntity = function(options) {
+        var attributeObject = options.attributeObject,
+            relationshipAttributes = options.relationshipAttributes;
+        _.each(attributeObject, function(val, key) {
+            var attributVal = val;
+            if (relationshipAttributes && relationshipAttributes[key]) {
+                var relationShipVal = relationshipAttributes[key];
+                if (_.isObject(val)) {
+                    if (_.isArray(val)) {
+                        _.each(val, function(attr) {
+                            if (attr && attr.attributes === undefined) {
+                                var entityFound = _.find(relationShipVal, { guid: attr.guid });
+                                if (entityFound) {
+                                    attr.attributes = _.omit(entityFound, 'typeName', 'guid', 'entityStatus');
+                                    attr.status = entityFound.entityStatus;
+                                }
+                            }
+                        });
+                    } else if (relationShipVal && val.attributes === undefined) {
+                        val.attributes = _.omit(relationShipVal, 'typeName', 'guid', 'entityStatus');
+                        val.status = relationShipVal.entityStatus;
+                    }
                 }
             }
+        })
+    }
+
+    Utils.getNestedSuperTypes = function(options) {
+        var data = options.data,
+            collection = options.collection,
+            superTypes = [];
+
+        var getData = function(data, collection) {
+            superTypes = superTypes.concat(data.superTypes);
+
             if (data.superTypes && data.superTypes.length) {
                 _.each(data.superTypes, function(superTypeName) {
                     if (collection.fullCollection) {
@@ -553,7 +627,100 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             }
         }
         getData(data, collection);
-        return attributeDefs
+        return _.uniq(superTypes);
+    }
+    Utils.getNestedSuperTypeObj = function(options) {
+        var mainData = options.data,
+            collection = options.collection,
+            attrMerge = options.attrMerge,
+            seperateRelatioshipAttr = options.seperateRelatioshipAttr || false,
+            mergeRelationAttributes = options.mergeRelationAttributes || (seperateRelatioshipAttr ? false : true);
+
+        if (mergeRelationAttributes && seperateRelatioshipAttr) {
+            throw "Both mergeRelationAttributes & seperateRelatioshipAttr cannot be true!"
+        }
+        var attributeDefs = {};
+        if (attrMerge && !seperateRelatioshipAttr) {
+            attributeDefs = [];
+        } else if (options.attrMerge && seperateRelatioshipAttr) {
+            attributeDefs = {
+                attributeDefs: [],
+                relationshipAttributeDefs: []
+            }
+        }
+        var getRelationshipAttributeDef = function(data) {
+            return _.filter(
+                data.relationshipAttributeDefs,
+                function(obj, key) {
+                    return obj;
+                })
+        }
+        var getData = function(data, collection) {
+            if (options.attrMerge) {
+                if (seperateRelatioshipAttr) {
+                    attributeDefs.attributeDefs = attributeDefs.attributeDefs.concat(data.attributeDefs);
+                    attributeDefs.relationshipAttributeDefs = attributeDefs.relationshipAttributeDefs.concat(getRelationshipAttributeDef(data));
+                } else {
+                    attributeDefs = attributeDefs.concat(data.attributeDefs);
+                    if (mergeRelationAttributes) {
+                        attributeDefs = attributeDefs.concat(getRelationshipAttributeDef(data));
+                    }
+                }
+            } else {
+                if (attributeDefs[data.name]) {
+                    attributeDefs[data.name] = _.toArrayifObject(attributeDefs[data.name]).concat(data.attributeDefs);
+                } else {
+                    if (seperateRelatioshipAttr) {
+                        attributeDefs[data.name] = {
+                            attributeDefs: data.attributeDefs,
+                            relationshipAttributeDefs: data.relationshipAttributeDefs
+                        };
+                    } else {
+                        attributeDefs[data.name] = data.attributeDefs;
+                        if (mergeRelationAttributes) {
+                            attributeDefs[data.name] = _.toArrayifObject(attributeDefs[data.name]).concat(getRelationshipAttributeDef(data));
+                        }
+                    }
+                }
+            }
+            if (data.superTypes && data.superTypes.length) {
+                _.each(data.superTypes, function(superTypeName) {
+                    if (collection.fullCollection) {
+                        var collectionData = collection.fullCollection.findWhere({ name: superTypeName });
+                    } else {
+                        var collectionData = collection.findWhere({ name: superTypeName });
+                    }
+                    collectionData = collectionData && collectionData.toJSON ? collectionData.toJSON() : collectionData;
+                    if (collectionData) {
+                        return getData(collectionData, collection);
+                    } else {
+                        return;
+                    }
+                });
+            }
+        }
+        getData(mainData, collection);
+        if (attrMerge) {
+            if (seperateRelatioshipAttr) {
+                attributeDefs = {
+                    attributeDefs: _.uniq(_.sortBy(attributeDefs.attributeDefs, 'name'), true, function(obj) {
+                        return obj.name
+                    }),
+                    relationshipAttributeDefs: _.uniq(_.sortBy(attributeDefs.relationshipAttributeDefs, 'name'), true, function(obj) {
+                        return (obj.name + obj.relationshipTypeName)
+                    })
+                }
+            } else {
+                attributeDefs = _.uniq(_.sortBy(attributeDefs, 'name'), true, function(obj) {
+                    if (obj.relationshipTypeName) {
+                        return (obj.name + obj.relationshipTypeName)
+                    } else {
+                        return (obj.name)
+                    }
+                });
+            }
+        }
+        return attributeDefs;
     }
 
     Utils.getProfileTabType = function(profileData, skipData) {
@@ -643,10 +810,35 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             }
         }
     }
+
     Utils.isUrl = function(url) {
         var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
         return regexp.test(url);
     }
+
+    Utils.JSONPrettyPrint = function(obj) {
+        var replacer = function(match, pIndent, pKey, pVal, pEnd) {
+                var key = '<span class=json-key>';
+                var val = '<span class=json-value>';
+                var str = '<span class=json-string>';
+                var r = pIndent || '';
+                if (pKey)
+                    r = r + key + pKey.replace(/[": ]/g, '') + '</span>: ';
+                if (pVal)
+                    r = r + (pVal[0] == '"' ? str : val) + pVal + '</span>';
+                return r + (pEnd || '');
+            },
+            jsonLine = /^( *)("[\w]+": )?("[^"]*"|[\w.+-]*)?([,[{])?$/mg;
+        if (obj && _.isObject(obj)) {
+            return JSON.stringify(obj, null, 3)
+                .replace(/&/g, '&amp;').replace(/\\"/g, '&quot;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(jsonLine, replacer);
+        } else {
+            return {};
+        }
+    };
+
     $.fn.toggleAttribute = function(attributeName, firstString, secondString) {
         if (this.attr(attributeName) == firstString) {
             this.attr(attributeName, secondString);
@@ -654,44 +846,28 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             this.attr(attributeName, firstString);
         }
     }
-    $('body').on('click', '.expand_collapse_panel', function() {
-        var icon = $(this).find('i'),
-            panel = $(this).parents('.panel').first(),
-            panelBody = panel.find('.panel-body');
-        icon.toggleClass('fa-chevron-up fa-chevron-down');
-        $(this).toggleAttribute('title', 'Collapse', 'Expand');
-        panelBody.toggle();
-        $(this).trigger('expand_collapse_panel', [$(this).parents('.panel')]);
-    });
-    $('body').on('click', '.fullscreen_panel', function() {
-        var icon = $(this).find('i'),
-            panel = $(this).parents('.panel').first(),
-            panelBody = panel.find('.panel-body');
-        icon.toggleClass('fa-expand fa-compress');
-        $(this).toggleAttribute('title', 'Fullscreen', 'Exit Fullscreen');
-        panel.toggleClass('panel-fullscreen');
-        panel.find('.expand_collapse_panel').toggle();
-        // Condition if user clicks on fullscree button and body is in collapse mode.
-        if (panel.hasClass('panel-fullscreen')) {
-            $('body').css("position", "fixed");
-            if (!panelBody.is(':visible')) {
-                panelBody.show();
-                panelBody.addClass('full-visible');
-            }
-            //first show body to get width and height for postion then trigger the event.
-            $(this).trigger('fullscreen_done', [$(this).parents('.panel')]);
-        } else if (panelBody.hasClass('full-visible')) {
-            $('body').removeAttr("style");
-            $(this).trigger('fullscreen_done', [$(this).parents('.panel')]);
-            //first trigger the event to getwidth and height for postion then hide body.
-            panelBody.hide();
-            panelBody.removeClass('full-visible');
+
+    Utils.millisecondsToTime = function(duration) {
+        var milliseconds = parseInt((duration % 1000) / 100),
+            seconds = parseInt((duration / 1000) % 60),
+            minutes = parseInt((duration / (1000 * 60)) % 60),
+            hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+
+        hours = (hours < 10) ? "0" + hours : hours;
+        minutes = (minutes < 10) ? "0" + minutes : minutes;
+        seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+        return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
+    }
+    Utils.togglePropertyRelationshipTableEmptyValues = function(object) {
+        var inputSelector = object.inputType,
+            tableEl = object.tableEl;
+        if (inputSelector.prop('checked') == true) {
+            tableEl.removeClass('hide-empty-value');
         } else {
-            $('body').removeAttr("style");
-            $(this).trigger('fullscreen_done', [$(this).parents('.panel')]);
+            tableEl.addClass('hide-empty-value');
         }
 
-
-    });
+    }
     return Utils;
 });

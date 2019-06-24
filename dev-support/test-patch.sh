@@ -126,6 +126,9 @@ parseArgs() {
     --review-id=*)
       REVIEW_ID=${i#*=}
       ;;
+    --pullrequest-id=*)
+      PR_ID=${i#*=}
+      ;;
     --local-patch=*)
       LOCAL_PATCH=${i#*=}
       ;;
@@ -213,6 +216,9 @@ downloadPatch () {
     if [[ -n $REVIEW_ID ]]; then
         echo "Download Patch from Review Board: https://reviews.apache.org/r/$REVIEW_ID/diff/raw at `date`"
         $WGET -q -O $PATCH_DIR/patch https://reviews.apache.org/r/$REVIEW_ID/diff/raw
+    elif [[ -n $PR_ID ]]; then
+        echo "Download Patch from Git pull request: https://patch-diff.githubusercontent.com/raw/apache/atlas/pull/$PR_ID.patch at `date`"
+        $WGET -q -O $PATCH_DIR/patch https://patch-diff.githubusercontent.com/raw/apache/atlas/pull/$PR_ID.patch
     elif [[ -n $LOCAL_PATCH ]]; then
         echo "Using Local Patch in $LOCAL_PATCH at `date`"
     else
@@ -832,6 +838,7 @@ if [[ $JENKINS == "true" ]] ; then
     exit 100
   fi
 fi
+
 downloadPatch
 verifyPatch
 (( RESULT = RESULT + $? ))
@@ -839,20 +846,14 @@ if [[ $RESULT != 0 ]] ; then
   submitJiraComment 1
   cleanupAndExit 1
 fi
-#prebuildWithoutPatch
-(( RESULT = RESULT + $? ))
-if [[ $RESULT != 0 ]] ; then
-  submitJiraComment 1
-  cleanupAndExit 1
-fi
+
 checkAuthor
 (( RESULT = RESULT + $? ))
 
 if [[ $JENKINS == "true" ]] ; then
   cleanUpXml
 fi
-#checkTests
-(( RESULT = RESULT + $? ))
+
 applyPatch
 APPLY_PATCH_RET=$?
 (( RESULT = RESULT + $APPLY_PATCH_RET ))
@@ -860,28 +861,15 @@ if [[ $APPLY_PATCH_RET != 0 ]] ; then
   submitJiraComment 1
   cleanupAndExit 1
 fi
-#checkJavacWarnings
-JAVAC_RET=$?
-#2 is returned if the code could not compile
-if [[ $JAVAC_RET == 2 ]] ; then
+
+buildAndInstall
+BUILD_INSTALL_RET=$?
+(( RESULT = RESULT + $BUILD_INSTALL_RET ))
+if [[ $BUILD_INSTALL_RET != 0 ]] ; then
   submitJiraComment 1
   cleanupAndExit 1
 fi
-(( RESULT = RESULT + $JAVAC_RET ))
-#checkJavadocWarnings
-(( RESULT = RESULT + $? ))
-#checkStyle
-(( RESULT = RESULT + $? ))
-#checkFindbugsWarnings
-(( RESULT = RESULT + $? ))
-#checkReleaseAuditWarnings
-(( RESULT = RESULT + $? ))
-buildAndInstall
-### Run tests for Jenkins or if explictly asked for by a developer
-if [[ $JENKINS == "true" || $RUN_TESTS == "true" ]] ; then
-  #runTests
-  (( RESULT = RESULT + $? ))
-fi
+
 JIRA_COMMENT_FOOTER="Test results: $BUILD_URL/testReport/
 $JIRA_COMMENT_FOOTER"
 

@@ -186,7 +186,7 @@ public class BaseSecurityTest {
     public static void setUpPolicyStore(String tmpDir) throws Exception {
         StringBuilder policyStr = new StringBuilder(1024);
         policyStr.append("adminPolicy;;admin:rwud;;ROLE_ADMIN:rwud;;type:*,entity:*,operation:*\n");
-        policyStr.append("dataStewardPolicy;;testuser:rwud;;DATA_STEWARD:rwu;;type:*,entity:*,taxonomy:*,term:*\n");
+        policyStr.append("dataStewardPolicy;;testuser:rwud;;DATA_STEWARD:rwu;;type:*,entity:*\n");
 
         File policyFile = new File(tmpDir, "policy-store.txt");
         FileUtils.write(policyFile, policyStr.toString());

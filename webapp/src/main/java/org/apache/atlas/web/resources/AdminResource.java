@@ -22,23 +22,38 @@ import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.authorize.AtlasActionTypes;
-import org.apache.atlas.authorize.AtlasResourceTypes;
-import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.impexp.AtlasServer;
+import org.apache.atlas.model.impexp.ExportImportAuditEntry;
+import org.apache.atlas.model.impexp.MigrationStatus;
+import org.apache.atlas.model.instance.AtlasCheckStateRequest;
+import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.metrics.AtlasMetrics;
+import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
+import org.apache.atlas.repository.impexp.AtlasServerService;
+import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.impexp.ExportService;
 import org.apache.atlas.repository.impexp.ImportService;
+import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.impexp.ZipSource;
+import org.apache.atlas.repository.patches.AtlasPatchManager;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.SearchTracker;
+import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
@@ -46,8 +61,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -74,9 +87,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -88,6 +106,17 @@ import java.util.concurrent.locks.ReentrantLock;
 @Service
 public class AdminResource {
     private static final Logger LOG = LoggerFactory.getLogger(AdminResource.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("AdminResource");
+
+    private static final String isCSRF_ENABLED                 = "atlas.rest-csrf.enabled";
+    private static final String BROWSER_USER_AGENT_PARAM       = "atlas.rest-csrf.browser-useragents-regex";
+    private static final String CUSTOM_METHODS_TO_IGNORE_PARAM = "atlas.rest-csrf.methods-to-ignore";
+    private static final String CUSTOM_HEADER_PARAM            = "atlas.rest-csrf.custom-header";
+    private static final String isEntityUpdateAllowed          = "atlas.entity.update.allowed";
+    private static final String isEntityCreateAllowed          = "atlas.entity.create.allowed";
+    private static final String editableEntityTypes            = "atlas.ui.editable.entity.types";
+    private static final String DEFAULT_EDITABLE_ENTITY_TYPES  = "hdfs_path";
+    private static final List TIMEZONE_LIST  = Arrays.asList(TimeZone.getAvailableIDs());
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -95,25 +124,21 @@ public class AdminResource {
     @Context
     private HttpServletResponse httpServletResponse;
 
-    private final ReentrantLock importExportOperationLock;
-
-    private static final String isCSRF_ENABLED = "atlas.rest-csrf.enabled";
-    private static final String BROWSER_USER_AGENT_PARAM = "atlas.rest-csrf.browser-useragents-regex";
-    private static final String CUSTOM_METHODS_TO_IGNORE_PARAM = "atlas.rest-csrf.methods-to-ignore";
-    private static final String CUSTOM_HEADER_PARAM = "atlas.rest-csrf.custom-header";
-    private static final String isTaxonomyEnabled = "atlas.feature.taxonomy.enable";
-    private static final String isEntityUpdateAllowed = "atlas.entity.update.allowed";
-    private static final String isEntityCreateAllowed = "atlas.entity.create.allowed";
-    private static final String editableEntityTypes = "atlas.ui.editable.entity.types";
-    private static final String DEFAULT_EDITABLE_ENTITY_TYPES = "hdfs_path,hbase_table,hbase_column,hbase_column_family,kafka_topic";
     private Response version;
 
-    private final ServiceState      serviceState;
-    private final MetricsService    metricsService;
-    private static Configuration atlasProperties;
-    private final ExportService exportService;
-    private final ImportService importService;
-    private final SearchTracker activeSearches;
+    private static Configuration            atlasProperties;
+    private final  ServiceState             serviceState;
+    private final  MetricsService           metricsService;
+    private final  ExportService            exportService;
+    private final  ImportService            importService;
+    private final  SearchTracker            activeSearches;
+    private final  AtlasTypeRegistry        typeRegistry;
+    private final  MigrationProgressService migrationProgressService;
+    private final  ReentrantLock            importExportOperationLock;
+    private final  ExportImportAuditService exportImportAuditService;
+    private final  AtlasServerService       atlasServerService;
+    private final  AtlasEntityStore         entityStore;
+    private final  AtlasPatchManager        patchManager;
 
     static {
         try {
@@ -124,14 +149,24 @@ public class AdminResource {
     }
 
     @Inject
-    public AdminResource(ServiceState serviceState, MetricsService metricsService,
-                         ExportService exportService, ImportService importService, SearchTracker activeSearches) {
-        this.serviceState               = serviceState;
-        this.metricsService             = metricsService;
-        this.exportService = exportService;
-        this.importService = importService;
-        this.activeSearches = activeSearches;
-        importExportOperationLock = new ReentrantLock();
+    public AdminResource(ServiceState serviceState, MetricsService metricsService, AtlasTypeRegistry typeRegistry,
+                         ExportService exportService, ImportService importService, SearchTracker activeSearches,
+                         MigrationProgressService migrationProgressService,
+                         AtlasServerService serverService,
+                         ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
+                         AtlasPatchManager patchManager) {
+        this.serviceState              = serviceState;
+        this.metricsService            = metricsService;
+        this.exportService             = exportService;
+        this.importService             = importService;
+        this.activeSearches            = activeSearches;
+        this.typeRegistry              = typeRegistry;
+        this.migrationProgressService  = migrationProgressService;
+        this.atlasServerService        = serverService;
+        this.entityStore               = entityStore;
+        this.exportImportAuditService  = exportImportAuditService;
+        this.importExportOperationLock = new ReentrantLock();
+        this.patchManager              = patchManager;
     }
 
     /**
@@ -187,16 +222,17 @@ public class AdminResource {
             try {
                 PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-buildinfo.properties");
 
-                JSONObject response = new JSONObject();
+                Map<String, Object> response = new HashMap<String, Object>();
                 response.put("Version", configProperties.getString("build.version", "UNKNOWN"));
+                response.put("Revision",configProperties.getString("vc.revision", "UNKNOWN"));
                 response.put("Name", configProperties.getString("project.name", "apache-atlas"));
                 response.put("Description", configProperties.getString("project.description",
                         "Metadata Management and Data Governance Platform over Hadoop"));
 
                 // todo: add hadoop version?
                 // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo.getRevision());
-                version = Response.ok(response).build();
-            } catch (JSONException | ConfigurationException e) {
+                version = Response.ok(AtlasJson.toV1Json(response)).build();
+            } catch (ConfigurationException e) {
                 throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
             }
         }
@@ -216,15 +252,18 @@ public class AdminResource {
             LOG.debug("==> AdminResource.getStatus()");
         }
 
-        Response response;
+        Map<String, Object> responseData = new HashMap() {{
+                put(AtlasClient.STATUS, serviceState.getState().toString());
+            }};
 
-        try {
-            JSONObject responseData = new JSONObject();
-            responseData.put(AtlasClient.STATUS, serviceState.getState().toString());
-            response = Response.ok(responseData).build();
-        } catch (JSONException e) {
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        if(serviceState.isInstanceInMigration()) {
+            MigrationStatus status = migrationProgressService.getStatus();
+            if (status != null) {
+                responseData.put("MigrationStatus", status);
+            }
         }
+
+        Response response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getStatus()");
@@ -242,47 +281,37 @@ public class AdminResource {
         }
 
         Response response;
-        Boolean enableTaxonomy = false;
-        try {
-            if(atlasProperties != null) {
-                enableTaxonomy = atlasProperties.getBoolean(isTaxonomyEnabled, false);
+
+        boolean isEntityUpdateAccessAllowed = false;
+        boolean isEntityCreateAccessAllowed = false;
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userName = null;
+        Set<String> groups = new HashSet<>();
+        if (auth != null) {
+            userName = auth.getName();
+            Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
+            for (GrantedAuthority c : authorities) {
+                groups.add(c.getAuthority());
             }
 
-            boolean isEntityUpdateAccessAllowed = false;
-            boolean isEntityCreateAccessAllowed = false;
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String userName = null;
-            Set<String> groups = new HashSet<>();
-            if (auth != null) {
-                userName = auth.getName();
-                Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
-                for (GrantedAuthority c : authorities) {
-                    groups.add(c.getAuthority());
-                }
-
-                isEntityUpdateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
-                        AtlasActionTypes.UPDATE, userName, groups, httpServletRequest);
-                isEntityCreateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(AtlasResourceTypes.ENTITY,
-                        AtlasActionTypes.CREATE, userName, groups, httpServletRequest);
-            }
-
-            JSONObject responseData = new JSONObject();
-
-            responseData.put(isCSRF_ENABLED, AtlasCSRFPreventionFilter.isCSRF_ENABLED);
-            responseData.put(BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
-            responseData.put(CUSTOM_METHODS_TO_IGNORE_PARAM, AtlasCSRFPreventionFilter.METHODS_TO_IGNORE_DEFAULT);
-            responseData.put(CUSTOM_HEADER_PARAM, AtlasCSRFPreventionFilter.HEADER_DEFAULT);
-            responseData.put(isTaxonomyEnabled, enableTaxonomy);
-            responseData.put(isEntityUpdateAllowed, isEntityUpdateAccessAllowed);
-            responseData.put(isEntityCreateAllowed, isEntityCreateAccessAllowed);
-            responseData.put(editableEntityTypes, getEditableEntityTypes(atlasProperties));
-            responseData.put("userName", userName);
-            responseData.put("groups", groups);
-
-            response = Response.ok(responseData).build();
-        } catch (JSONException e) {
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            isEntityUpdateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE));
+            isEntityCreateAccessAllowed = AtlasAuthorizationUtils.isAccessAllowed(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE));
         }
+
+        Map<String, Object> responseData = new HashMap<>();
+
+        responseData.put(isCSRF_ENABLED, AtlasCSRFPreventionFilter.isCSRF_ENABLED);
+        responseData.put(BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
+        responseData.put(CUSTOM_METHODS_TO_IGNORE_PARAM, AtlasCSRFPreventionFilter.METHODS_TO_IGNORE_DEFAULT);
+        responseData.put(CUSTOM_HEADER_PARAM, AtlasCSRFPreventionFilter.HEADER_DEFAULT);
+        responseData.put(isEntityUpdateAllowed, isEntityUpdateAccessAllowed);
+        responseData.put(isEntityCreateAllowed, isEntityCreateAccessAllowed);
+        responseData.put(editableEntityTypes, getEditableEntityTypes(atlasProperties));
+        responseData.put("userName", userName);
+        responseData.put("groups", groups);
+        responseData.put("timezones", TIMEZONE_LIST);
+
+        response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getUserProfile()");
@@ -294,12 +323,12 @@ public class AdminResource {
     @GET
     @Path("metrics")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasMetrics getMetrics(@QueryParam("ignoreCache") boolean ignoreCache) {
+    public AtlasMetrics getMetrics() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.getMetrics()");
         }
 
-        AtlasMetrics metrics = metricsService.getMetrics(ignoreCache);
+        AtlasMetrics metrics = metricsService.getMetrics();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getMetrics()");
@@ -319,6 +348,8 @@ public class AdminResource {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.export()");
         }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "export");
 
         acquireExportImportLock("export");
 
@@ -366,8 +397,10 @@ public class AdminResource {
             LOG.debug("==> AdminResource.importData(jsonData={}, inputStream={})", jsonData, (inputStream != null));
         }
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "importData");
+
         acquireExportImportLock("import");
-        AtlasImportResult result;
+        AtlasImportResult result = null;
 
         try {
             AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
@@ -376,6 +409,15 @@ public class AdminResource {
             result = importService.run(zipSource, request, Servlets.getUserName(httpServletRequest),
                     Servlets.getHostName(httpServletRequest),
                     AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
+        } catch (AtlasBaseException excp) {
+            if (excp.getAtlasErrorCode().equals(AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP)) {
+                LOG.info(excp.getMessage());
+                return new AtlasImportResult();
+            } else {
+                LOG.error("importData(binary) failed", excp);
+                throw excp;
+            }
+
         } catch (Exception excp) {
             LOG.error("importData(binary) failed", excp);
 
@@ -399,6 +441,8 @@ public class AdminResource {
             LOG.debug("==> AdminResource.importFile()");
         }
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "importFile");
+
         acquireExportImportLock("importFile");
 
         AtlasImportResult result;
@@ -408,6 +452,14 @@ public class AdminResource {
             result = importService.run(request, Servlets.getUserName(httpServletRequest),
                                        Servlets.getHostName(httpServletRequest),
                                        AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
+        } catch (AtlasBaseException excp) {
+            if (excp.getAtlasErrorCode().getErrorCode().equals(AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP)) {
+                LOG.info(excp.getMessage());
+            } else {
+                LOG.error("importData(binary) failed", excp);
+            }
+
+            throw excp;
         } catch (Exception excp) {
             LOG.error("importFile() failed", excp);
 
@@ -423,6 +475,55 @@ public class AdminResource {
         return result;
     }
 
+    /**
+     * Fetch details of a cluster.
+     * @param serverName name of target cluster with which it is paired
+     * @return AtlasServer
+     * @throws AtlasBaseException
+     */
+    @GET
+    @Path("/server/{serverName}")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasServer getCluster(@PathParam("serverName") String serverName) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "cluster.getServer(" + serverName + ")");
+            }
+
+            AtlasServer cluster = new AtlasServer(serverName, serverName);
+            return atlasServerService.get(cluster);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @GET
+    @Path("/expimp/audit")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<ExportImportAuditEntry> getExportImportAudit(@QueryParam("serverName") String serverName,
+                                                             @QueryParam("userName") String userName,
+                                                             @QueryParam("operation") String operation,
+                                                             @QueryParam("startTime") String startTime,
+                                                             @QueryParam("endTime") String endTime,
+                                                             @QueryParam("limit") int limit,
+                                                             @QueryParam("offset") int offset) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "getExportImportAudit(" + serverName + ")");
+            }
+
+            return exportImportAuditService.get(userName, operation, serverName, startTime, endTime, limit, offset);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
     @GET
     @Path("activeSearches")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -436,6 +537,43 @@ public class AdminResource {
     public boolean terminateActiveSearch(@PathParam("id") String searchId) {
         SearchContext terminate = activeSearches.terminate(searchId);
         return null != terminate;
+    }
+
+    @POST
+    @Path("checkstate")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public AtlasCheckStateResult checkState(AtlasCheckStateRequest request) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "checkState(" + request + ")");
+            }
+
+            AtlasCheckStateResult ret = entityStore.checkState(request);
+
+            return ret;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @GET
+    @Path("patches")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasPatches getAtlasPatches() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.getAtlasPatches()");
+        }
+
+        AtlasPatches ret = patchManager.getAllPatches();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.getAtlasPatches()");
+        }
+
+        return ret;
     }
 
     private String getEditableEntityTypes(Configuration config) {

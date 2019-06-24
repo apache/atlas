@@ -524,11 +524,11 @@
                class="solr.UUIDField"
                indexed="true" />
 
+
     <dynamicField name="*_uuid" type="uuid"     indexed="true"  stored="true"/>
 
     <!-- TTL -->
     <field name="ttl"  type="string" indexed="true" stored="true" />
     <field name="expire_at" type="date" indexed="true" stored="true" />
     <field name="timestamp" type="date" indexed="true" stored="true" />
-
 </schema>

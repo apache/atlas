@@ -31,13 +31,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
@@ -47,6 +43,8 @@ import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.C
  */
 public class AtlasStructType extends AtlasType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasStructType.class);
+
+    public static final String UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX = "__u_";
 
     private final AtlasStructDef structDef;
 
@@ -101,6 +99,18 @@ public class AtlasStructType extends AtlasType {
 
                 arrayType.setMinCount(attributeDef.getValuesMinCount());
                 arrayType.setMaxCount(attributeDef.getValuesMaxCount());
+                arrayType.setCardinality(cardinality);
+            }
+
+            //check if attribute type is not classification
+            if (attrType instanceof AtlasArrayType) {
+                attrType = ((AtlasArrayType) attrType).getElementType();
+            } else if (attrType instanceof AtlasMapType) {
+                attrType = ((AtlasMapType) attrType).getValueType();
+            }
+
+            if (attrType instanceof AtlasClassificationType) {
+                throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_TYPE_INVALID, getTypeName(), attributeDef.getName());
             }
 
             a.put(attributeDef.getName(), attribute);
@@ -235,6 +245,44 @@ public class AtlasStructType extends AtlasType {
         }
 
         return true;
+    }
+
+    @Override
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+        boolean ret = true;
+
+        if (val1 == null) {
+            ret = val2 == null;
+        } else if (val2 == null) {
+            ret = false;
+        } else {
+            AtlasStruct structVal1 = getStructFromValue(val1);
+
+            if (structVal1 == null) {
+                ret = false;
+            } else {
+                AtlasStruct structVal2 = getStructFromValue(val2);
+
+                if (structVal2 == null) {
+                    ret = false;
+                } else if (!StringUtils.equalsIgnoreCase(structVal1.getTypeName(), structVal2.getTypeName())) {
+                    ret = false;
+                } else {
+                    for (AtlasAttribute attribute : getAllAttributes().values()) {
+                        Object attrValue1 = structVal1.getAttribute(attribute.getName());
+                        Object attrValue2 = structVal2.getAttribute(attribute.getName());
+
+                        if (!attribute.getAttributeType().areEqualValues(attrValue1, attrValue2, guidAssignments)) {
+                            ret = false;
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return ret;
     }
 
     @Override
@@ -591,6 +639,14 @@ public class AtlasStructType extends AtlasType {
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
     }
 
+    public String getQualifiedAttributePropertyKey(String attrName) throws AtlasBaseException {
+        if ( allAttributes.containsKey(attrName)) {
+            return allAttributes.get(attrName).getVertexPropertyName();
+        }
+
+        throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
+    }
+
     AtlasEntityType getReferencedEntityType(AtlasType type) {
         if (type instanceof AtlasArrayType) {
             type = ((AtlasArrayType)type).getElementType();
@@ -617,25 +673,54 @@ public class AtlasStructType extends AtlasType {
         return Collections.unmodifiableMap(ret);
     }
 
+    private AtlasStruct getStructFromValue(Object val) {
+        final AtlasStruct ret;
+
+        if (val instanceof AtlasStruct) {
+            ret = (AtlasStruct) val;
+        } else if (val instanceof Map) {
+            ret = new AtlasStruct((Map) val);
+        } else if (val instanceof String) {
+            Map map = AtlasType.fromJson(val.toString(), Map.class);
+
+            if (map == null) {
+                ret = null;
+            } else {
+                ret = new AtlasStruct((Map) val);
+            }
+        } else {
+            ret = null;
+        }
+
+        return ret;
+    }
+
     public static class AtlasAttribute {
         private final AtlasStructType          definedInType;
         private final AtlasType                attributeType;
         private final AtlasAttributeDef        attributeDef;
         private final String                   qualifiedName;
         private final String                   vertexPropertyName;
+        private final String                   vertexUniquePropertyName;
         private final boolean                  isOwnedRef;
+        private final boolean                  isObjectRef;
         private final String                   inverseRefAttributeName;
         private AtlasAttribute                 inverseRefAttribute;
+        private String                         relationshipName;
         private String                         relationshipEdgeLabel;
         private AtlasRelationshipEdgeDirection relationshipEdgeDirection;
+        private boolean                        isLegacyAttribute;
 
-        public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType, String relationshipLabel) {
+        public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType, String relationshipName, String relationshipLabel) {
             this.definedInType            = definedInType;
             this.attributeDef             = attrDef;
             this.attributeType            = attributeType.getTypeForAttribute();
             this.qualifiedName            = getQualifiedAttributeName(definedInType.getStructDef(), attributeDef.getName());
             this.vertexPropertyName       = encodePropertyKey(this.qualifiedName);
+            this.vertexUniquePropertyName = attrDef.getIsUnique() ? encodePropertyKey(getQualifiedAttributeName(definedInType.getStructDef(), UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + attributeDef.getName())) : null;
+            this.relationshipName         = relationshipName;
             this.relationshipEdgeLabel    = getRelationshipEdgeLabel(relationshipLabel);
+
             boolean isOwnedRef            = false;
             String  inverseRefAttribute   = null;
 
@@ -658,10 +743,32 @@ public class AtlasStructType extends AtlasType {
             this.isOwnedRef                = isOwnedRef;
             this.inverseRefAttributeName   = inverseRefAttribute;
             this.relationshipEdgeDirection = AtlasRelationshipEdgeDirection.OUT;
+
+            switch (this.attributeType.getTypeCategory()) {
+                case OBJECT_ID_TYPE:
+                    isObjectRef = true;
+                break;
+
+                case MAP:
+                    AtlasMapType mapType = (AtlasMapType) this.attributeType;
+
+                    isObjectRef = mapType.getValueType().getTypeCategory() == OBJECT_ID_TYPE;
+                break;
+
+                case ARRAY:
+                    AtlasArrayType arrayType = (AtlasArrayType) this.attributeType;
+
+                    isObjectRef = arrayType.getElementType().getTypeCategory() == OBJECT_ID_TYPE;
+                break;
+
+                default:
+                    isObjectRef = false;
+                break;
+            }
         }
 
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType) {
-            this(definedInType, attrDef, attributeType, null);
+            this(definedInType, attrDef, attributeType, null, null);
         }
 
         public AtlasStructType getDefinedInType() { return definedInType; }
@@ -684,13 +791,21 @@ public class AtlasStructType extends AtlasType {
 
         public String getVertexPropertyName() { return vertexPropertyName; }
 
+        public String getVertexUniquePropertyName() { return vertexUniquePropertyName; }
+
         public boolean isOwnedRef() { return isOwnedRef; }
+
+        public boolean isObjectRef() { return isObjectRef; }
 
         public String getInverseRefAttributeName() { return inverseRefAttributeName; }
 
         public AtlasAttribute getInverseRefAttribute() { return inverseRefAttribute; }
 
         public void setInverseRefAttribute(AtlasAttribute inverseAttr) { inverseRefAttribute = inverseAttr; }
+
+        public String getRelationshipName() { return relationshipName; }
+
+        public void setRelationshipName(String relationshipName) { this.relationshipName = relationshipName; }
 
         public String getRelationshipEdgeLabel() { return relationshipEdgeLabel; }
 
@@ -701,6 +816,10 @@ public class AtlasStructType extends AtlasType {
         public void setRelationshipEdgeDirection(AtlasRelationshipEdgeDirection relationshipEdgeDirection) {
             this.relationshipEdgeDirection = relationshipEdgeDirection;
         }
+
+        public boolean isLegacyAttribute() { return isLegacyAttribute; }
+
+        public void setLegacyAttribute(boolean legacyAttribute) { isLegacyAttribute = legacyAttribute; }
 
         public static String getEdgeLabel(String property) {
             return "__" + property;
@@ -772,7 +891,7 @@ public class AtlasStructType extends AtlasType {
         }
 
         private String getRelationshipEdgeLabel(String relationshipLabel) {
-            return (relationshipLabel == null) ? getEdgeLabel(vertexPropertyName) : relationshipLabel;
+            return (relationshipLabel == null) ? getEdgeLabel(qualifiedName) : relationshipLabel;
         }
 
         private static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
@@ -780,12 +899,15 @@ public class AtlasStructType extends AtlasType {
             return attrName.contains(".") ? attrName : String.format("%s.%s", typeName, attrName);
         }
 
-        private static String[][] RESERVED_CHAR_ENCODE_MAP = new String[][] {
-                new String[] { "{",  "_o" },
-                new String[] { "}",  "_c" },
-                new String[] { "\"", "_q" },
-                new String[] { "$",  "_d" },
-                new String[] { "%", "_p"  },
+        // Keys copied from org.janusgraph.graphdb.types.system.SystemTypeManager.RESERVED_CHARS
+        // JanusGraph checks that these chars are not part of any keys hence encoding
+        // also including Titan reserved characters to support migrated property keys
+        private static String[][] RESERVED_CHAR_ENCODE_MAP = new String[][]{
+                new String[] {"{", "_o"},
+                new String[] {"}", "_c"},
+                new String[] {"\"", "_q"},
+                new String[] {"$", "_d"}, //titan reserved character
+                new String[] {"%", "_p"}, //titan reserved characters
         };
 
         private static final char[] IDX_QRY_OFFENDING_CHARS = { '@', '/', ' ', '-' };

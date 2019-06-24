@@ -73,18 +73,22 @@ define(['require',
                     }
                     try {
                         parseDetailsObject = JSON.parse(auditData);
-                        var name = _.escape(parseDetailsObject.typeName);
+                        var skipAttribute = parseDetailsObject.typeName ? "guid" : null,
+                            name = Utils.getName(parseDetailsObject, null, skipAttribute);
+                        if (name == "-") {
+                            name = _.escape(parseDetailsObject.typeName);
+                        }
                     } catch (err) {
                         if (_.isArray(parseDetailsObject)) {
                             var name = _.escape(parseDetailsObject[0]);
                         }
                     }
-                    var values = parseDetailsObject.values;
-                    if (parseDetailsObject && parseDetailsObject.values) {
-                        var name = ((name ? name : this.entityName));
-                        this.ui.name.text(name);
+                    var name = ((name ? name : this.entityName));
+                    this.ui.name.text(name);
+                    if (parseDetailsObject) {
                         this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
-                        table = CommonViewFunction.propertyTable({ scope: this, valueObject: values, attributeDefs: this.attributeDefs, extractJSON: { extractKey: 'value' } });
+                        var value = parseDetailsObject.attributes || parseDetailsObject;
+                        table = CommonViewFunction.propertyTable({ scope: this, valueObject: value, attributeDefs: this.attributeDefs });
                         if (table.length) {
                             this.ui.noData.hide();
                             this.ui.tableAudit.show();
@@ -94,8 +98,7 @@ define(['require',
                             this.ui.tableAudit.hide();
                         }
                     } else {
-                        this.ui.auditHeaderValue.html('<th>' + this.action + '</th>');
-                        this.ui.auditValue.html("<tr><td>" + (name ? name : this.entityName) + "</td></tr>");
+                        this.ui.noData.show();
                     }
                 } else if (detailObj == "Deleted entity") {
                     this.ui.name.text(this.entityName);

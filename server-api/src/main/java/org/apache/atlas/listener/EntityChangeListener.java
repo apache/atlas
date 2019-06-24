@@ -19,8 +19,9 @@
 package org.apache.atlas.listener;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 
 import java.util.Collection;
 
@@ -36,7 +37,7 @@ public interface EntityChangeListener {
      * @param isImport
      * @throws AtlasException if the listener notification fails
      */
-    void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException;
+    void onEntitiesAdded(Collection<Referenceable> entities, boolean isImport) throws AtlasException;
 
     /**
      * This is upon updating an entity.
@@ -46,7 +47,7 @@ public interface EntityChangeListener {
      * @param isImport
      * @throws AtlasException if the listener notification fails
      */
-    void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException;
+    void onEntitiesUpdated(Collection<Referenceable> entities, boolean isImport) throws AtlasException;
 
     /**
      * This is upon adding a new trait to a typed instance.
@@ -56,17 +57,17 @@ public interface EntityChangeListener {
      *
      * @throws AtlasException if the listener notification fails
      */
-    void onTraitsAdded(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits) throws AtlasException;
+    void onTraitsAdded(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException;
 
     /**
      * This is upon deleting a trait from a typed instance.
      *
      * @param entity        the entity
-     * @param traitNames    trait name for the instance that needs to be deleted from entity
+     * @param traits    trait that needs to be added to entity
      *
      * @throws AtlasException if the listener notification fails
      */
-    void onTraitsDeleted(ITypedReferenceableInstance entity, Collection<String> traitNames) throws AtlasException;
+    void onTraitsDeleted(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException;
 
     /**
      * This is upon updating a trait from a typed instance.
@@ -76,7 +77,7 @@ public interface EntityChangeListener {
      *
      * @throws AtlasException if the listener notification fails
      */
-    void onTraitsUpdated(ITypedReferenceableInstance entity, Collection<? extends IStruct> traits) throws AtlasException;
+    void onTraitsUpdated(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException;
     
     /**
      * This is upon deleting entities from the repository.
@@ -85,5 +86,23 @@ public interface EntityChangeListener {
      * @param isImport
      * @throws AtlasException
      */
-    void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities, boolean isImport) throws AtlasException;
+    void onEntitiesDeleted(Collection<Referenceable> entities, boolean isImport) throws AtlasException;
+
+    /**
+     * This is upon adding a new term to a list of typed instance.
+     *
+     * @param entities entity list
+     * @param term  term that needs to be added to entity
+     * @throws AtlasException if the listener notification fails
+     */
+    void onTermAdded(Collection<Referenceable> entities, AtlasGlossaryTerm term) throws AtlasException;
+
+    /**
+     * This is upon adding a new trait to a typed instance.
+     *
+     * @param entities entity list
+     * @param term  term that needs to be added to entity
+     * @throws AtlasException if the listener notification fails
+     */
+    void onTermDeleted(Collection<Referenceable> entities, AtlasGlossaryTerm term) throws AtlasException;
 }

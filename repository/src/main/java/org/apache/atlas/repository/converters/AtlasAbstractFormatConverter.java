@@ -19,9 +19,14 @@ package org.apache.atlas.repository.converters;
 
 
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AtlasAbstractFormatConverter implements AtlasFormatConverter {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasAbstractFormatConverter.class);
+
 
     protected final AtlasFormatConverters converterRegistry;
     protected final AtlasTypeRegistry     typeRegistry;
@@ -32,6 +37,18 @@ public abstract class AtlasAbstractFormatConverter implements AtlasFormatConvert
         this.typeRegistry      = typeRegistry;
         this.typeCategory      = typeCategory;
     }
+
+    @Override
+    public boolean isValidValueV1(Object v1Obj, AtlasType type) {
+        boolean ret = type.isValidValue(v1Obj);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("AtlasAbstractFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+        }
+
+        return ret;
+    }
+
 
     @Override
     public TypeCategory getTypeCategory() {

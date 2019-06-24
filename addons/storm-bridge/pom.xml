@@ -16,12 +16,12 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>storm-bridge</artifactId>
@@ -29,21 +29,16 @@
     <name>Apache Atlas Storm Bridge</name>
     <packaging>jar</packaging>
 
-    <properties>
-        <storm.version>1.0.0</storm.version>
-        <hive.version>1.2.1</hive.version>
-    </properties>
-
     <dependencies>
         <!-- apache atlas core dependencies -->
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
+            <artifactId>atlas-client-v1</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client</artifactId>
+            <artifactId>atlas-client-v2</artifactId>
         </dependency>
 
         <dependency>
@@ -72,6 +67,16 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-common</artifactId>
             <version>${hbase.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -80,6 +85,7 @@
         </dependency>
 
         <!-- apache storm core dependencies -->
+        <!-- exclude the dropwizard metrics as it is an older version that conflicts -->
         <dependency>
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-core</artifactId>
@@ -89,7 +95,40 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>log4j-over-slf4j</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-graphite</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-ganglia</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+
+        <!-- Update metrics to same version used in Atlas to avoid conflicts -->
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>${dropwizard-metrics}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-graphite</artifactId>
+            <version>${dropwizard-metrics}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-ganglia</artifactId>
+            <version>${dropwizard-metrics}</version>
         </dependency>
 
         <!-- Testing dependencies -->
@@ -102,6 +141,18 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>${jetty.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
         </dependency>
 
         <!-- to bring up atlas server for integration tests -->
@@ -117,13 +168,6 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-webapp</artifactId>
             <type>war</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
-            <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -155,28 +199,18 @@
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-native_${scala.binary.version}</artifactId>
-                                            <version>${json.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-core_${scala.binary.version}</artifactId>
-                                            <version>${json.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-ast_${scala.binary.version}</artifactId>
-                                            <version>${json.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-client</artifactId>
+                                            <artifactId>atlas-client-common</artifactId>
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-typesystem</artifactId>
+                                            <artifactId>atlas-client-v1</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-client-v2</artifactId>
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
@@ -205,28 +239,8 @@
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scala-compiler</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scala-reflect</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scala-library</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.scala-lang</groupId>
-                                            <artifactId>scalap</artifactId>
-                                            <version>${scala.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>org.apache.kafka</groupId>
-                                            <artifactId>kafka_${scala.binary.version}</artifactId>
+                                            <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
                                             <version>${kafka.version}</version>
                                         </artifactItem>
                                         <artifactItem>
@@ -244,10 +258,20 @@
                                             <artifactId>commons-configuration</artifactId>
                                             <version>${commons-conf.version}</version>
                                         </artifactItem>
+                                        <dependency>
+                                            <groupId>org.apache.commons</groupId>
+                                            <artifactId>commons-configuration2</artifactId>
+                                            <version>${commons-conf2.version}</version>
+                                        </dependency>
                                         <artifactItem>
                                             <groupId>commons-logging</groupId>
                                             <artifactId>commons-logging</artifactId>
                                             <version>${commons-logging.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-collections</groupId>
+                                            <artifactId>commons-collections</artifactId>
+                                            <version>${commons-collections.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>javax.inject</groupId>
@@ -285,14 +309,58 @@
                                             <version>${hadoop.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>com.google.code.gson</groupId>
-                                            <artifactId>gson</artifactId>
-                                            <version>${gson.version}</version>
+                                            <groupId>org.apache.hadoop</groupId>
+                                            <artifactId>hadoop-auth</artifactId>
+                                            <version>${hadoop.version}</version>
                                         </artifactItem>
+
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-databind</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-core</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-annotations</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <dependency>
+                                            <groupId>org.codehaus.woodstox</groupId>
+                                            <artifactId>stax2-api</artifactId>
+                                            <version>${codehaus.woodstox.stax2-api.version}</version>
+                                        </dependency>
+                                        <dependency>
+                                            <groupId>org.apache.hadoop</groupId>
+                                            <artifactId>hadoop-hdfs-client</artifactId>
+                                            <version>${hadoop.hdfs-client.version}</version>
+                                        </dependency>
+
                                         <artifactItem>
                                             <groupId>log4j</groupId>
                                             <artifactId>log4j</artifactId>
                                             <version>${log4j.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.sun.jersey</groupId>
+                                            <artifactId>jersey-json</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>javax.ws.rs</groupId>
+                                            <artifactId>jsr311-api</artifactId>
+                                            <version>${jsr.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.woodstox</groupId>
+                                            <artifactId>woodstox-core</artifactId>
+                                            <version>${woodstox-core.version}</version>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>
@@ -332,61 +400,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.0</version>
-                <executions>
-                    <execution>
-                        <id>scala-compile-first</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>scala-test-compile-first</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <scalaVersion>${scala.version}</scalaVersion>
-                    <recompileMode>incremental</recompileMode>
-                    <useZincServer>true</useZincServer>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                    <args>
-                        <arg>-unchecked</arg>
-                        <arg>-deprecation</arg>
-                        <arg>-feature</arg>
-                    </args>
-                    <jvmArgs>
-                        <jvmArg>-Xmx512m</jvmArg>
-                        <jvmArg>-XX:MaxPermSize=128m</jvmArg>
-                    </jvmArgs>
-                    <!--
-                    <javacArgs>
-                        <javacArg>-source</javacArg>
-                        <javacArg>${java.version}</javacArg>
-                        <javacArg>-target</javacArg>
-                        <javacArg>${java.version}</javacArg>
-                    </javacArgs>
-                    -->
-                    <!-- The following plugin is required to use quasiquotes in Scala 2.10 and is used
-                         by Spark SQL for code generation. -->
-                    <!--<compilerPlugins>
-                        <compilerPlugin>
-                            <groupId>org.scalamacros</groupId>
-                            <artifactId>paradise_${scala.version}</artifactId>
-                            <version>${scala.macros.version}</version>
-                        </compilerPlugin>
-                    </compilerPlugins>-->
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <configuration>
@@ -401,33 +414,41 @@
                     <webApp>
                         <contextPath>/</contextPath>
                         <descriptor>${project.basedir}/../../webapp/src/test/webapp/WEB-INF/web.xml</descriptor>
-                        <extraClasspath>${project.basedir}/../../webapp/target/test-classes/</extraClasspath>
                     </webApp>
                     <useTestScope>true</useTestScope>
                     <systemProperties>
+                        <force>true</force>
                         <systemProperty>
-                            <name>log4j.configuration</name>
-                            <value>file://${project.basedir}/../../distro/src/conf/atlas-log4j.xml</value>
+                            <name>atlas.home</name>
+                            <value>${project.build.directory}</value>
                         </systemProperty>
                         <systemProperty>
-                            <name>atlas.log.file</name>
-                            <value>application.log</value>
-                        </systemProperty>
-                        <systemProperty>
-                            <name>atlas.log.dir</name>
-                            <value>${project.build.directory}/logs</value>
+                            <key>atlas.conf</key>
+                            <value>${project.build.directory}/test-classes</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.data</name>
                             <value>${project.build.directory}/data</value>
                         </systemProperty>
                         <systemProperty>
-                            <key>atlas.conf</key>
-                            <value>${project.build.directory}/../../../typesystem/target/test-classes</value>
+                            <name>atlas.log.dir</name>
+                            <value>${project.build.directory}/logs</value>
                         </systemProperty>
                         <systemProperty>
-                            <key>atlas.home</key>
-                            <value>${project.basedir}/target</value>
+                            <name>atlas.log.file</name>
+                            <value>application.log</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>log4j.configuration</name>
+                            <value>file:///${project.build.directory}/test-classes/atlas-log4j.xml</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>atlas.graphdb.backend</name>
+                            <value>${graphdb.backend.impl}</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>embedded.solr.directory</key>
+                            <value>${project.build.directory}</value>
                         </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
@@ -462,7 +483,12 @@
                     <dependency>
                         <groupId>org.apache.maven.doxia</groupId>
                         <artifactId>doxia-module-twiki</artifactId>
-                        <version>1.3</version>
+                        <version>${doxia.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-core</artifactId>
+                        <version>${doxia.version}</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -501,17 +527,36 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${basedir}/target/models/1000-Hadoop</outputDirectory>
+                            <outputDirectory>${basedir}/target/models</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>${basedir}/../models/1000-Hadoop</directory>
-                                    <filtering>true</filtering>
+                                    <directory>${basedir}/../models</directory>
+                                    <includes>
+                                        <include>0000-Area0/0010-base_model.json</include>
+                                        <include>1000-Hadoop/**</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-solr-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/solr</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/../../test-tools/src/main/resources/solr</directory>
                                 </resource>
                             </resources>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 </project>

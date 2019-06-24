@@ -8,6 +8,7 @@
             "superTypes": [
                 "Process"
             ],
+            "serviceType": "storm",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -48,15 +49,7 @@
                     "cardinality": "SINGLE",
                     "isIndexable": true,
                     "isOptional": true,
-                    "isUnique": false
-                },
-                {
-                    "name": "nodes",
-                    "typeName": "array<storm_node>",
-                    "cardinality": "LIST",
-                    "constraints": [],
-                    "isIndexable": false,
-                    "isOptional": false,
+                    "includeInNotification": true,
                     "isUnique": false
                 }
             ]
@@ -64,6 +57,7 @@
         {
             "name": "storm_node",
             "superTypes": [],
+            "serviceType": "storm",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -105,6 +99,7 @@
             "superTypes": [
                 "storm_node"
             ],
+            "serviceType": "storm",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -122,6 +117,7 @@
             "superTypes": [
                 "storm_node"
             ],
+            "serviceType": "storm",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -146,8 +142,10 @@
     "relationshipDefs": [
         {
             "name": "storm_topology_nodes",
+            "serviceType": "storm",
             "typeVersion": "1.0",
             "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__storm_topology.nodes",
             "endDef1": {
                 "type": "storm_topology",
                 "name": "nodes",

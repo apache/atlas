@@ -24,6 +24,10 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,9 +36,53 @@ import java.util.List;
 import java.util.Set;
 
 public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasArrayFormatConverter.class);
 
     public AtlasArrayFormatConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
         super(registry, typeRegistry, TypeCategory.ARRAY);
+    }
+
+    @Override
+    public boolean isValidValueV1(Object v1Obj, AtlasType type) {
+        boolean ret = false;
+
+        if (v1Obj == null) {
+            return true;
+        } if (type instanceof AtlasArrayType) {
+            AtlasArrayType       arrType       = (AtlasArrayType) type;
+            AtlasType            elemType      = arrType.getElementType();
+            AtlasFormatConverter elemConverter = null;
+
+            try {
+                elemConverter = converterRegistry.getConverter(elemType.getTypeCategory());
+            } catch (AtlasBaseException excp) {
+                LOG.warn("failed to get element converter. type={}", type.getTypeName(), excp);
+
+                ret = false;
+            }
+
+            if (elemConverter != null) {
+                if (v1Obj instanceof Collection) {
+                    ret = true; // for empty array
+
+                    for (Object v1Elem : (Collection) v1Obj) {
+                        ret = elemConverter.isValidValueV1(v1Elem, elemType);
+
+                        if (!ret) {
+                            break;
+                        }
+                    }
+                } else {
+                    ret = elemConverter.isValidValueV1(v1Obj, elemType);
+                }
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("AtlasArrayFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+        }
+
+        return ret;
     }
 
     @Override

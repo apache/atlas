@@ -24,7 +24,7 @@
     <skin>
         <groupId>org.apache.maven.skins</groupId>
         <artifactId>maven-fluido-skin</artifactId>
-        <version>1.3.0</version>
+        <version>1.7</version>
     </skin>
 
     <custom>
@@ -55,72 +55,84 @@
     <version position="right"/>
 
     <body>
-        <head>
-            <script type="text/javascript">
-                $( document ).ready( function() { $( '.carousel' ).carousel( { interval: 3500 } ) } );
-            </script>
-        </head>
-
         <breadcrumbs>
             <item name="Apache" href="http://www.apache.org"/>
             <item name="Atlas" title="Apache Atlas" href="index.html"/>
         </breadcrumbs>
 
-        <menu name="Atlas">
-            <item name="About" href="index.html"/>
+        <menu name="Apache Atlas">
+            <item name="Overview" href="index.html"/>
+            <item name="License" href="license.html" />
+            <item name="Downloads" href="Downloads.html" />
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
-            <item name="News" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
-            <item name="Git" href="https://git-wip-us.apache.org/repos/asf/atlas.git" />
+            <item name="Git" href="https://gitbox.apache.org/repos/asf/atlas.git" />
             <item name="Jira" href="https://issues.apache.org/jira/browse/ATLAS" />
-            <item name="Powered by" href="https://cwiki.apache.org/confluence/display/ATLAS/PoweredBy" />
-            <item name="Blog" href="http://blogs.apache.org/atlas/" />
+            <item name="Review Board" href="https://reviews.apache.org/groups/atlas/?sort=-time_added" />
         </menu>
 
         <menu name="Project Information">
             <item name="Summary" href="project-info.html" />
             <item name="Mailing Lists" href="mail-lists.html" />
-            <item name="IRC" href="http://webchat.freenode.net?channels=apacheatlas&amp;uio=d4" />
             <item name="Team" href="team-list.html" />
             <item name="Issue Tracking" href="issue-tracking.html" />
             <item name="Source Repository" href="source-repository.html" />
-            <item name="License" href="license.html" />
         </menu>
 
-        <menu name="Releases">
+        <menu name="Downloads">
+            <item name="2.0.0"
+                  href="Downloads.html"/>
+            <item name="1.2.0"
+                  href="Downloads.html"/>
+            <item name="1.1.0"
+                  href="Downloads.html"/>
+            <item name="1.0.0"
+                  href="Downloads.html"/>
+            <item name="0.8.2"
+                  href="Downloads.html"/>
             <item name="0.8.1"
-                  href="http://www.apache.org/dyn/closer.cgi/atlas/0.8.1/"/>
+                  href="Downloads.html"/>
             <item name="0.8-incubating"
-                  href="http://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/"/>
+                  href="Downloads.html"/>
             <item name="0.7.1-incubating"
-                  href="http://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/"/>
+                  href="Downloads.html"/>
             <item name="0.7-incubating"
-                  href="http://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/"/>
+                  href="Downloads.html"/>
             <item name="0.6-incubating"
-                  href="http://archive.apache.org/dist/incubator/atlas/0.6.0-incubating/"/>
+                  href="Downloads.html"/>
             <item name="0.5-incubating"
-                  href="http://archive.apache.org/dist/incubator/atlas/0.5.0-incubating/"/>
+                  href="Downloads.html"/>
         </menu>
 
         <menu name="Documentation">
-            <item name="0.8.1" href="./0.8.1/index.html"/>
-            <item name="0.8-incubating" href="./0.8.0-incubating/index.html"/>
-            <item name="0.7.1-incubating" href="./0.7.1-incubating/index.html"/>
-            <item name="0.7-incubating" href="./0.7.0-incubating/index.html"/>
-            <item name="0.6-incubating" href="./0.6.0-incubating/index.html"/>
-            <item name="0.5-incubating" href="./0.5.0-incubating/index.html"/>
+            <item name="latest" href="../index.html"/>
+            <item name="2.0.0" href="../2.0.0/index.html"/>
+            <item name="1.2.0" href="../1.2.0/index.html"/>
+            <item name="1.1.0" href="../1.1.0/index.html"/>
+            <item name="1.0.0" href="../1.0.0/index.html"/>
+            <item name="0.8.2" href="../0.8.2/index.html"/>
+            <item name="0.8.1" href="../0.8.1/index.html"/>
+            <item name="0.8-incubating" href="../0.8.0-incubating/index.html"/>
+            <item name="0.7.1-incubating" href="../0.7.1-incubating/index.html"/>
+            <item name="0.7-incubating" href="../0.7.0-incubating/index.html"/>
+            <item name="0.6-incubating" href="../0.6.0-incubating/index.html"/>
+            <item name="0.5-incubating" href="../0.5.0-incubating/index.html"/>
         </menu>
 
         <menu name="ASF">
-            <item name="How Apache Works" href="http://www.apache.org/foundation/how-it-works.html"/>
-            <item name="Foundation" href="http://www.apache.org/foundation/"/>
+            <item name="How Apache Works"  href="http://www.apache.org/foundation/how-it-works.html"/>
+            <item name="Events"            href="https://www.apache.org/events/current-event" />
+            <item name="License"           href="https://www.apache.org/licenses/" />
+            <item name="Foundation" 	   href="http://www.apache.org/foundation/"/>
             <item name="Sponsoring Apache" href="http://www.apache.org/foundation/sponsorship.html"/>
-            <item name="Thanks" href="http://www.apache.org/foundation/thanks.html"/>
+            <item name="Thanks"            href="http://www.apache.org/foundation/thanks.html"/>
         </menu>
 
         <footer>
-            Â© 2011-2012 The Apache Software Foundation. Apache Atlas, Atlas, Apache,
-            the Apache feather logo, and the Apache Metadata and Governance project logo are
-            trademarks of The Apache Software Foundation.
+<![CDATA[
+<p><a href="https://www.apache.org/foundation/contributing"><img src="https://www.apache.org/images/SupportApache-small.png" alt="Support the ASF" id="asf-logo" height="20" width="20" /></a>Copyright © 2011-2018 The Apache Software Foundation. Licensed under the <a href="https://www.apache.org/licenses/">Apache License, Version 2.0</a>.<br/>
+Apache Atlas, Atlas, Apache, the Apache feather logo are trademarks of the <a href="https://www.apache.org">Apache Software Foundation</a>.<br/>
+All other marks mentioned may be trademarks or registered trademarks of their respective owners.</p>
+]]>
         </footer>
     </body>
 </project>

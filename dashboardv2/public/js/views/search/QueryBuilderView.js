@@ -21,9 +21,10 @@ define(['require',
     'hbs!tmpl/search/QueryBuilder_tmpl',
     'utils/Utils',
     'utils/CommonViewFunction',
+    'utils/Enums',
     'query-builder',
     'daterangepicker'
-], function(require, Backbone, QueryBuilder_Tmpl, Utils, CommonViewFunction) {
+], function(require, Backbone, QueryBuilder_Tmpl, Utils, CommonViewFunction, Enums) {
 
     var QueryBuilderView = Backbone.Marionette.LayoutView.extend(
         /** @lends QueryBuilderView */
@@ -70,6 +71,9 @@ define(['require',
                 if (type === "enum" || type === "boolean") {
                     obj.operators = ['=', '!='];
                 }
+                if (obj.operators) {
+                    obj.operators = obj.operators.concat(['is_null', 'not_null']);
+                }
                 return obj;
             },
             isPrimitive: function(type) {
@@ -81,8 +85,8 @@ define(['require',
             getObjDef: function(attrObj, rules) {
                 var obj = {
                     id: attrObj.name,
-                    label: attrObj.name.capitalize() + " (" + attrObj.typeName + ")",
-                    type: attrObj.typeName
+                    label: _.escape(attrObj.name.capitalize() + " (" + attrObj.typeName + ")"),
+                    type: _.escape(attrObj.typeName)
                 };
                 if (obj.type === "date") {
                     obj['plugin'] = 'daterangepicker';
@@ -109,11 +113,16 @@ define(['require',
                         obj['values'] = ['true', 'false'];
                     }
                     _.extend(obj, this.getOperator(obj.type));
-                    if (obj.type === "long" || obj.type === "float") {
-                        obj.type = "double";
-                    }
-                    if (obj.type === "int" || obj.type === "byte" || obj.type === "short") {
-                        obj.type = "integer";
+                    if (_.has(Enums.regex.RANGE_CHECK, obj.type)) {
+                        obj.validation = {
+                            min: Enums.regex.RANGE_CHECK[obj.type].min,
+                            max: Enums.regex.RANGE_CHECK[obj.type].max
+                        };
+                        if (obj.type === "double" || obj.type === "float") {
+                            obj.type = "double";
+                        } else if (obj.type === "int" || obj.type === "byte" || obj.type === "short" || obj.type === "long") {
+                            obj.type = "integer"
+                        }
                     }
                     return obj;
                 }
@@ -134,7 +143,7 @@ define(['require',
                 var that = this,
                     filters = [];
                 if (this.value) {
-                    var rules_widgets = CommonViewFunction.attributeFilter.extractUrl(this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)]);
+                    var rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
                 }
                 _.each(this.attrObj, function(obj) {
                     var returnObj = that.getObjDef(obj, rules_widgets);
@@ -149,8 +158,8 @@ define(['require',
                         filters: filters,
                         select_placeholder: '--Select Attribute--',
                         allow_empty: true,
-                        conditions: ['AND'],
-                        allow_groups: false,
+                        conditions: ['AND', 'OR'],
+                        allow_groups: true,
                         allow_empty: true,
                         operators: [
                             { type: '=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
@@ -161,15 +170,25 @@ define(['require',
                             { type: '<=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
                             { type: 'contains', nb_inputs: 1, multiple: false, apply_to: ['string'] },
                             { type: 'begins_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
-                            { type: 'ends_with', nb_inputs: 1, multiple: false, apply_to: ['string'] }
+                            { type: 'ends_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                            { type: 'is_null', nb_inputs: false, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
+                            { type: 'not_null', nb_inputs: false, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] }
                         ],
                         lang: {
                             add_rule: 'Add filter',
-                            add_group: 'Add filter group'
+                            add_group: 'Add filter group',
+                            operators: {
+                                not_null: 'is not null'
+                            }
+                        },
+                        icons: {
+                            add_rule: 'fa fa-plus',
+                            remove_rule: 'fa fa-times',
+                            error: 'fa fa-exclamation-triangle'
                         },
                         rules: rules_widgets
                     });
-                    this.$('.rules-group-header .btn-group.pull-right.group-actions').toggleClass('pull-right pull-left');
+                    this.$('.rules-group-header .btn-group.pull-right.group-actions').toggleClass('pull-left');
                 } else {
                     this.ui.builder.html('<h4>No Attributes are available !</h4>')
                 }

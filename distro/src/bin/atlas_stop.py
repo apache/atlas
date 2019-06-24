@@ -68,7 +68,41 @@ def main():
 
     # stop solr
     if mc.is_solr_local(confdir):
+
         mc.run_solr(mc.solrBinDir(atlas_home), "stop", None, mc.solrPort(), None, True)
+
+    if mc.is_cassandra_local(confdir):
+        mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "stop")
+
+    # stop elasticsearch
+    if mc.is_elasticsearch_local():
+        logdir = os.path.join(atlas_home, 'logs')
+        elastic_pid_file = os.path.join(logdir, 'elasticsearch.pid')
+        try:
+            pf = file(elastic_pid_file, 'r')
+            pid = int(pf.read().strip())
+            pf.close()
+        except:
+            pid = None
+
+        if not pid:
+            sys.stderr.write("No process ID file found. Elasticsearch not running?\n")
+            return
+
+        if not mc.exist_pid(pid):
+           sys.stderr.write("Elasticsearch no longer running with pid %s\nImproper shutdown?\npid file deleted.\n" %pid)
+           os.remove(elastic_pid_file)
+           return
+
+        os.kill(pid, SIGTERM)
+
+        mc.wait_for_shutdown(pid, "stopping elasticsearch", 30)
+        if not mc.exist_pid(pid):
+            print "Elasticsearch stopped!!!\n"
+
+        # assuming kill worked since process check on windows is more involved...
+        if os.path.exists(elastic_pid_file):
+            os.remove(elastic_pid_file)
 
     # stop hbase
     if mc.is_hbase_local(confdir):

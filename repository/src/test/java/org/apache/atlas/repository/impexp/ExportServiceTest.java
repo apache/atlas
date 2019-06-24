@@ -18,7 +18,7 @@
 package org.apache.atlas.repository.impexp;
 
 
-import org.apache.atlas.RequestContextV1;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -26,16 +26,15 @@ import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityChangeNotifier;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
-import org.apache.atlas.repository.store.graph.v1.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
-import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,25 +44,24 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-import scala.actors.threadpool.Arrays;
 
 import javax.inject.Inject;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.Mockito.mock;
+import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ExportServiceTest {
+public class ExportServiceTest extends ExportImportTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(ExportServiceTest.class);
 
     @Inject
@@ -73,23 +71,23 @@ public class ExportServiceTest {
     private AtlasTypeDefStore typeDefStore;
 
     @Inject
-    private EntityGraphMapper graphMapper;
-    @Inject
     ExportService exportService;
-    private DeleteHandlerV1 deleteHandler = mock(SoftDeleteHandlerV1.class);;
-    private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
-    private AtlasEntityStoreV1 entityStore;
+
+    @Inject
+    private ExportImportAuditService auditService;
+
+    @Inject
+    private AtlasEntityStoreV2 entityStore;
 
     @BeforeTest
-    public void setupTest() {
-        RequestContextV1.clear();
-        RequestContextV1.get().setUser(TestUtilsV2.TEST_USER);
+    public void setupTest() throws IOException, AtlasBaseException {
+        RequestContext.clear();
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+        basicSetup(typeDefStore, typeRegistry);
     }
 
     @BeforeClass
     public void setupSampleData() throws AtlasBaseException {
-        entityStore = new AtlasEntityStoreV1(deleteHandler, typeRegistry, mockChangeNotifier, graphMapper);;
-
         AtlasTypesDef sampleTypes = TestUtilsV2.defineDeptEmployeeTypes();
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(sampleTypes, typeRegistry);
 
@@ -97,16 +95,23 @@ public class ExportServiceTest {
             typeDefStore.createTypesDef(typesToCreate);
         }
 
-        AtlasEntity.AtlasEntitiesWithExtInfo  hrDept = TestUtilsV2.createDeptEg2();
-
-        AtlasEntityStream entityStream = new AtlasEntityStream(hrDept);
-        entityStore.createOrUpdate(entityStream, false);
-        LOG.debug("==> setupSampleData: ", AtlasEntity.dumpObjects(hrDept.getEntities(), null).toString());
+        AtlasEntity.AtlasEntitiesWithExtInfo  deptEg2 = TestUtilsV2.createDeptEg2();
+        AtlasEntityStream entityStream = new AtlasEntityStream(deptEg2);
+        EntityMutationResponse emr = entityStore.createOrUpdate(entityStream, false);
+        assertNotNull(emr);
+        assertNotNull(emr.getCreatedEntities());
+        assertTrue(emr.getCreatedEntities().size() > 0);
     }
 
     @AfterClass
-    public void clear() {
+    public void clear() throws Exception {
+        Thread.sleep(1000);
+        assertAuditEntry(auditService);
         AtlasGraphProvider.cleanup();
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
     }
 
     private AtlasExportRequest getRequestForFullFetch() {
@@ -183,7 +188,7 @@ public class ExportServiceTest {
     }
 
     @Test
-    public void exportType_Succeeds() throws AtlasBaseException, FileNotFoundException {
+    public void exportType() throws AtlasBaseException {
         String requestingIP = "1.0.0.0";
         String hostName = "root";
 
@@ -196,9 +201,10 @@ public class ExportServiceTest {
         assertEquals(result.getHostName(), hostName);
         assertEquals(result.getClientIpAddress(), requestingIP);
         assertEquals(request, result.getRequest());
+        assertNotNull(result.getSourceClusterName());
     }
 
-    @Test
+    @Test(expectedExceptions = AtlasBaseException.class)
     public void requestingEntityNotFound_NoData() throws AtlasBaseException, IOException {
         String requestingIP = "1.0.0.0";
         String hostName = "root";
@@ -211,11 +217,7 @@ public class ExportServiceTest {
         Assert.assertNull(result.getData());
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        ZipSource zipSource = new ZipSource(bais);
-
-        assertNotNull(exportService);
-        assertNotNull(zipSource.getCreationOrder());
-        Assert.assertFalse(zipSource.hasNext());
+        new ZipSource(bais);
     }
 
     @Test
@@ -260,9 +262,7 @@ public class ExportServiceTest {
     }
 
     @Test
-    public void verifyOverallStatus() throws Exception {
-
-//        ExportService service = new ExportService(typeRegistry);
+    public void verifyOverallStatus() {
         assertEquals(AtlasExportResult.OperationStatus.FAIL, exportService.getOverallOperationStatus());
 
         assertEquals(AtlasExportResult.OperationStatus.SUCCESS, exportService.getOverallOperationStatus(AtlasExportResult.OperationStatus.SUCCESS));
@@ -288,15 +288,31 @@ public class ExportServiceTest {
                 AtlasExportResult.OperationStatus.FAIL));
     }
 
-    @Test
+    @Test(expectedExceptions = AtlasBaseException.class)
     public void requestingExportOfNonExistentEntity_ReturnsFailure() throws Exception {
         AtlasExportRequest request = getRequestForEmployee();
         tamperEmployeeRequest(request);
-        ZipSource zipSource = runExportWithParameters(request);
+        runExportWithParameters(request);
+    }
 
-        assertNotNull(zipSource.getCreationOrder());
-        assertEquals(zipSource.getCreationOrder().size(), 0);
-        assertEquals(AtlasExportResult.OperationStatus.FAIL, zipSource.getExportResult().getOperationStatus());
+    @Test
+    public void requestForTypeFull() {
+        AtlasExportRequest req = getRequestForTypeFull("Department,Employee");
+
+        assertNotNull(req);
+        assertEquals(req.getItemsToExport().size(), 1);
+        assertEquals(req.getOptions().get(AtlasExportRequest.OPTION_ATTR_MATCH_TYPE), "forType");
+    }
+
+    @Test
+    public void verifyTypeFull() throws AtlasBaseException, IOException {
+        ZipSource zipSource = runExportWithParameters(getRequestForTypeFull("Department,Employee,Manager"));
+        verifyExportForFullEmployeeData(zipSource);
+    }
+
+    private AtlasExportRequest getRequestForTypeFull(String type) {
+        String jsonRequest = "{ \"itemsToExport\": [ { \"typeName\": \"%s\" } ], \"options\": {  \"fetchType\": \"FULL\", \"matchType\": \"forType\"} }";
+        return AtlasType.fromJson(String.format(jsonRequest, type), AtlasExportRequest.class);
     }
 
     private void tamperEmployeeRequest(AtlasExportRequest request) {
@@ -310,6 +326,23 @@ public class ExportServiceTest {
 
         assertNotNull(zipSource.getCreationOrder());
         assertEquals(zipSource.getCreationOrder().size(), 2);
+        assertTrue(zipSource.hasNext());
+
+        while (zipSource.hasNext()) {
+            AtlasEntity entity = zipSource.next();
+
+            assertNotNull(entity);
+            assertEquals(AtlasEntity.Status.ACTIVE, entity.getStatus());
+            assertTrue(expectedEntityTypes.contains(entity.getTypeName()));
+        }
+
+        verifyTypeDefs(zipSource);
+    }
+
+    private void verifyExportForFullEmployeeData(ZipSource zipSource) throws AtlasBaseException {
+        final List<String> expectedEntityTypes = Arrays.asList(new String[]{"Manager", "Employee", "Department"});
+
+        assertNotNull(zipSource.getCreationOrder());
         assertTrue(zipSource.hasNext());
 
         while (zipSource.hasNext()) {
@@ -338,7 +371,7 @@ public class ExportServiceTest {
 
     private void verifyExportForHrDataForConnected(ZipSource zipSource) throws IOException, AtlasBaseException {
         assertNotNull(zipSource.getCreationOrder());
-        assertTrue(zipSource.getCreationOrder().size() == 2);
+        assertEquals(zipSource.getCreationOrder().size(), 1);
         assertTrue(zipSource.hasNext());
 
         AtlasEntity entity = zipSource.next();

@@ -36,8 +36,10 @@ import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -54,21 +56,27 @@ public class AtlasTypeRegistry {
 
     protected       RegistryData                   registryData;
     private   final TypeRegistryUpdateSynchronizer updateSynchronizer;
+    private   final Set<String>                    missingRelationshipDefs;
+
 
     public AtlasTypeRegistry() {
-        registryData       = new RegistryData();
-        updateSynchronizer = new TypeRegistryUpdateSynchronizer(this);
+        registryData            = new RegistryData();
+        updateSynchronizer      = new TypeRegistryUpdateSynchronizer(this);
+        missingRelationshipDefs = new HashSet<>();
     }
 
     // used only by AtlasTransientTypeRegistry
     protected AtlasTypeRegistry(AtlasTypeRegistry other) {
-        registryData       = new RegistryData();
-        updateSynchronizer = other.updateSynchronizer;
+        registryData            = new RegistryData();
+        updateSynchronizer      = other.updateSynchronizer;
+        missingRelationshipDefs = other.missingRelationshipDefs;
     }
 
     public Collection<String> getAllTypeNames() { return registryData.allTypes.getAllTypeNames(); }
 
     public Collection<AtlasType> getAllTypes() { return registryData.allTypes.getAllTypes(); }
+
+    public Set<String> getAllServiceTypes() { return registryData.allTypes.getAllServiceTypes(); }
 
     public boolean isRegisteredType(String typeName) {
         return registryData.allTypes.isKnownType(typeName);
@@ -108,12 +116,14 @@ public class AtlasTypeRegistry {
         return ret;
     }
 
-    public AtlasType getTypeByGuid(String guid) {
+    public AtlasType getTypeByGuid(String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasTypeRegistry.getTypeByGuid({})", guid);
         }
 
         AtlasType ret = registryData.allTypes.getTypeByGuid(guid);
+        if(ret == null)
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasTypeRegistry.getTypeByGuid({}): {}", guid, ret);
@@ -220,6 +230,15 @@ public class AtlasTypeRegistry {
         updateSynchronizer.releaseTypeRegistryForUpdate(transientTypeRegistry, commitUpdates);
     }
 
+    public void reportMissingRelationshipDef(String entityType1, String entityType2, String attributeName) {
+        String key = entityType1 + "->" + entityType2 + ":" + attributeName;
+
+        if (!missingRelationshipDefs.contains(key)) {
+            LOG.warn("No RelationshipDef defined between {} and {} on attribute: {}.{}", entityType1, entityType2, entityType1, attributeName);
+
+            missingRelationshipDefs.add(key);
+        }
+    }
 
     static class RegistryData {
         final TypeCache                                                       allTypes;
@@ -376,9 +395,9 @@ public class AtlasTypeRegistry {
 
             if (typeDef != null) {
                 addTypeWithNoRefResolve(typeDef);
-
-                resolveReferences();
             }
+
+            resolveReferences();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasTypeRegistry.addType({})", typeDef);
@@ -404,9 +423,9 @@ public class AtlasTypeRegistry {
 
             if (CollectionUtils.isNotEmpty(typeDefs)) {
                 addTypesWithNoRefResolve(typeDefs);
-
-                resolveReferences();
             }
+
+            resolveReferences();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasTypeRegistry.addTypes(length={})", (typeDefs == null ? 0 : typeDefs.size()));
@@ -424,9 +443,9 @@ public class AtlasTypeRegistry {
                 addTypesWithNoRefResolve(typesDef.getClassificationDefs());
                 addTypesWithNoRefResolve(typesDef.getEntityDefs());
                 addTypesWithNoRefResolve(typesDef.getRelationshipDefs());
-
-                resolveReferences();
             }
+
+            resolveReferences();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasTypeRegistry.addTypes({})", typesDef);
@@ -440,9 +459,9 @@ public class AtlasTypeRegistry {
 
             if (typeDef != null) {
                 updateTypeWithNoRefResolve(typeDef);
-
-                resolveReferences();
             }
+
+            resolveReferences();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasTypeRegistry.updateType({})", typeDef);
@@ -456,9 +475,9 @@ public class AtlasTypeRegistry {
 
             if (guid != null && typeDef != null) {
                 updateTypeByGuidWithNoRefResolve(guid, typeDef);
-
-                resolveReferences();
             }
+
+            resolveReferences();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasTypeRegistry.updateTypeByGuid({})", guid);
@@ -472,9 +491,9 @@ public class AtlasTypeRegistry {
 
             if (name != null && typeDef != null) {
                 updateTypeByNameWithNoRefResolve(name, typeDef);
-
-                resolveReferences();
             }
+
+            resolveReferences();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasTypeRegistry.updateEnumDefByName({})", name);
@@ -488,9 +507,9 @@ public class AtlasTypeRegistry {
 
             if (CollectionUtils.isNotEmpty(typeDefs)) {
                 updateTypesWithNoRefResolve(typeDefs);
-
-                resolveReferences();
             }
+
+            resolveReferences();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasTypeRegistry.updateTypes(length={})", (typeDefs == null ? 0 : typeDefs.size()));
@@ -504,9 +523,9 @@ public class AtlasTypeRegistry {
 
             if (typesDef != null) {
                 updateTypesWithNoRefResolve(typesDef);
-
-                resolveReferences();
             }
+
+            resolveReferences();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasTypeRegistry.updateTypes({})", typesDef);
@@ -538,9 +557,9 @@ public class AtlasTypeRegistry {
                 removeTypesWithNoRefResolve(typesDef.getClassificationDefs());
                 removeTypesWithNoRefResolve(typesDef.getEntityDefs());
                 removeTypesWithNoRefResolve(typesDef.getRelationshipDefs());
-
-                resolveReferences();
             }
+
+            resolveReferences();
         }
 
         private void removeTypesWithNoRefResolve(Collection<? extends AtlasBaseTypeDef> typeDefs) {
@@ -602,16 +621,16 @@ public class AtlasTypeRegistry {
                 LOG.debug("==> AtlasTypeRegistry.removeTypeByGuid({})", guid);
             }
 
+            AtlasBaseTypeDef typeDef = getTypeDefByGuid(guid);
+
             if (guid != null) {
-                AtlasBaseTypeDef typeDef = getTypeDefByGuid(guid);
-
                 registryData.removeByGuid(guid);
+            }
 
-                resolveReferences();
+            resolveReferences();
 
-                if (typeDef != null) {
-                    deletedTypes.add(typeDef);
-                }
+            if (typeDef != null) {
+                deletedTypes.add(typeDef);
             }
 
             if (LOG.isDebugEnabled()) {
@@ -624,16 +643,16 @@ public class AtlasTypeRegistry {
                 LOG.debug("==> AtlasTypeRegistry.removeTypeByName({})", name);
             }
 
+            AtlasBaseTypeDef typeDef = getTypeDefByName(name);
+
             if (name != null) {
-                AtlasBaseTypeDef typeDef = getTypeDefByName(name);
-
                 registryData.removeByName(name);
+            }
 
-                resolveReferences();
+            resolveReferences();
 
-                if (typeDef != null) {
-                    deletedTypes.add(typeDef);
-                }
+            if (typeDef != null) {
+                deletedTypes.add(typeDef);
             }
 
             if (LOG.isDebugEnabled()) {
@@ -846,8 +865,8 @@ public class AtlasTypeRegistry {
             boolean alreadyLockedByCurrentThread = typeRegistryUpdateLock.isHeldByCurrentThread();
 
             if (!alreadyLockedByCurrentThread) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("lockTypeRegistryForUpdate(): waiting for lock to be released by thread {}", lockedByThread);
+                if (lockedByThread != null) {
+                    LOG.info("lockTypeRegistryForUpdate(): waiting for lock to be released by thread {}", lockedByThread);
                 }
             } else {
                 LOG.warn("lockTypeRegistryForUpdate(): already locked. currentLockCount={}",
@@ -916,21 +935,28 @@ public class AtlasTypeRegistry {
 class TypeCache {
     private final Map<String, AtlasType> typeGuidMap;
     private final Map<String, AtlasType> typeNameMap;
+    private final Set<String>            serviceTypes;
 
     public TypeCache() {
-        typeGuidMap = new ConcurrentHashMap<>();
-        typeNameMap = new ConcurrentHashMap<>();
+        typeGuidMap  = new ConcurrentHashMap<>();
+        typeNameMap  = new ConcurrentHashMap<>();
+        serviceTypes = new HashSet<>();
     }
 
     public TypeCache(TypeCache other) {
-        typeGuidMap = new ConcurrentHashMap<>(other.typeGuidMap);
-        typeNameMap = new ConcurrentHashMap<>(other.typeNameMap);
+        typeGuidMap  = new ConcurrentHashMap<>(other.typeGuidMap);
+        typeNameMap  = new ConcurrentHashMap<>(other.typeNameMap);
+        serviceTypes = new HashSet<>(other.serviceTypes);
     }
 
     public void addType(AtlasType type) {
         if (type != null) {
             if (StringUtils.isNotEmpty(type.getTypeName())) {
                 typeNameMap.put(type.getTypeName(), type);
+            }
+
+            if (StringUtils.isNotEmpty(type.getServiceType())) {
+                serviceTypes.add(type.getServiceType());
             }
         }
     }
@@ -943,6 +969,10 @@ class TypeCache {
 
             if (StringUtils.isNotEmpty(typeDef.getName())) {
                 typeNameMap.put(typeDef.getName(), type);
+            }
+
+            if (StringUtils.isNotEmpty(type.getServiceType())) {
+                serviceTypes.add(type.getServiceType());
             }
         }
     }
@@ -957,6 +987,10 @@ class TypeCache {
 
     public Collection<AtlasType> getAllTypes() {
         return Collections.unmodifiableCollection(typeNameMap.values());
+    }
+
+    public Set<String> getAllServiceTypes() {
+        return Collections.unmodifiableSet(serviceTypes);
     }
 
     public AtlasType getTypeByGuid(String guid) {

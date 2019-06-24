@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License. See accompanying LICENSE file.
 #
-
 # resolve links - $0 may be a softlink
 PRG="${0}"
 
@@ -50,6 +49,11 @@ fi
 for i in "${BASEDIR}/hook/hive/atlas-hive-plugin-impl/"*.jar; do
   ATLASCPPATH="${ATLASCPPATH}:$i"
 done
+
+if [ -z "${ATLAS_CONF_DIR}" ] && [ -e /etc/atlas/conf ];then
+    ATLAS_CONF_DIR=/etc/atlas/conf
+fi
+ATLASCPPATH=${ATLASCPPATH}:${ATLAS_CONF_DIR}
 
 # log dir for applications
 ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-$BASEDIR/logs}"
@@ -119,17 +123,36 @@ fi
 
 JAVA_PROPERTIES="$ATLAS_OPTS -Datlas.log.dir=$ATLAS_LOG_DIR -Datlas.log.file=import-hive.log
 -Dlog4j.configuration=atlas-hive-import-log4j.xml"
-shift
 
-while [[ ${1} =~ ^\-D ]]; do
-  JAVA_PROPERTIES="${JAVA_PROPERTIES} ${1}"
+IMPORT_ARGS=
+JVM_ARGS=
+
+while true
+do
+  option=$1
   shift
+
+  case "$option" in
+    -d) IMPORT_ARGS="$IMPORT_ARGS -d $1"; shift;;
+    -t) IMPORT_ARGS="$IMPORT_ARGS -t $1"; shift;;
+    -f) IMPORT_ARGS="$IMPORT_ARGS -f $1"; shift;;
+    --database) IMPORT_ARGS="$IMPORT_ARGS --database $1"; shift;;
+    --table) IMPORT_ARGS="$IMPORT_ARGS --table $1"; shift;;
+    --filename) IMPORT_ARGS="$IMPORT_ARGS --filename $1"; shift;;
+    "") break;;
+    *) JVM_ARGS="$JVM_ARGS $option"
+  esac
 done
+
+JAVA_PROPERTIES="${JAVA_PROPERTIES} ${JVM_ARGS}"
 
 echo "Log file for import is $LOGFILE"
 
-"${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hive.bridge.HiveMetaStoreBridge
+"${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hive.bridge.HiveMetaStoreBridge $IMPORT_ARGS
 
 RETVAL=$?
-[ $RETVAL -eq 0 ] && echo Hive Data Model imported successfully!!!
-[ $RETVAL -ne 0 ] && echo Failed to import Hive Data Model!!!
+[ $RETVAL -eq 0 ] && echo Hive Meta Data imported successfully!!!
+[ $RETVAL -ne 0 ] && echo Failed to import Hive Meta Data!!!
+
+exit $RETVAL
+

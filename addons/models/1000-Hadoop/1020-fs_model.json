@@ -3,6 +3,7 @@
         {
             "name": "file_action",
             "typeVersion": "1.0",
+            "serviceType": "file_system",
             "elementDefs": [
                 {
                     "ordinal": 0,
@@ -42,6 +43,7 @@
     "structDefs": [
         {
             "name": "fs_permissions",
+            "serviceType": "file_system",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -86,6 +88,7 @@
             "superTypes": [
                 "DataSet"
             ],
+            "serviceType": "file_system",
             "typeVersion": "1.0",
             "attributeDefs": [
                 {
@@ -94,6 +97,7 @@
                     "cardinality": "SINGLE",
                     "isIndexable": true,
                     "isOptional": false,
+                    "includeInNotification": true,
                     "isUnique": false
                 },
                 {
@@ -159,7 +163,8 @@
             "superTypes": [
                 "fs_path"
             ],
-            "typeVersion": "1.0",
+            "serviceType": "file_system",
+            "typeVersion": "1.1",
             "attributeDefs": [
                 {
                     "name": "clusterName",
@@ -167,6 +172,7 @@
                     "cardinality": "SINGLE",
                     "isIndexable": true,
                     "isOptional": true,
+                    "includeInNotification": true,
                     "isUnique": false
                 },
                 {
@@ -183,6 +189,15 @@
                     "cardinality": "SINGLE",
                     "isIndexable": false,
                     "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "nameServiceId",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "includeInNotification": true,
                     "isUnique": false
                 }
             ]

@@ -19,7 +19,6 @@ package org.apache.atlas.repository.converters;
 
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -27,16 +26,18 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.typesystem.IReferenceableInstance;
-import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.persistence.StructInstance;
+import org.apache.atlas.v1.model.instance.Id;
+import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasObjectIdConverter.class);
+
 
     public AtlasObjectIdConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
         this(registry, typeRegistry, TypeCategory.OBJECT_ID_TYPE);
@@ -47,6 +48,17 @@ public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
     }
 
     @Override
+    public boolean isValidValueV1(Object v1Obj, AtlasType type) {
+        boolean ret = (v1Obj == null) || v1Obj instanceof Id || v1Obj instanceof Referenceable;
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("AtlasObjectIdConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
     public Object fromV1ToV2(Object v1Obj, AtlasType type, AtlasFormatConverter.ConverterContext converterContext) throws AtlasBaseException {
         Object ret = null;
 
@@ -54,10 +66,10 @@ public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
             if (v1Obj instanceof Id) {
                 Id id = (Id) v1Obj;
 
-                ret = new AtlasObjectId(id._getId(), id.getTypeName());
-            } else if (v1Obj instanceof IReferenceableInstance) {
-                IReferenceableInstance refInst = (IReferenceableInstance) v1Obj;
-                String                 guid    = refInst.getId()._getId();
+                ret = new AtlasObjectId(id.getId(), id.getTypeName());
+            } else if (v1Obj instanceof Referenceable) {
+                Referenceable refInst = (Referenceable) v1Obj;
+                String        guid    = refInst.getId().getId();
 
                 ret = new AtlasObjectId(guid, refInst.getTypeName());
 
@@ -79,11 +91,10 @@ public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
         Id ret = null;
 
         if (v2Obj != null) {
-
             if (v2Obj instanceof Map) {
                 Map    v2Map    = (Map) v2Obj;
                 String idStr    = (String)v2Map.get(AtlasObjectId.KEY_GUID);
-                String typeName = type.getTypeName();
+                String typeName = (String)v2Map.get(AtlasObjectId.KEY_TYPENAME);
 
                 if (StringUtils.isEmpty(idStr)) {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
@@ -91,47 +102,33 @@ public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
 
                 ret = new Id(idStr, 0, typeName);
             } else if (v2Obj instanceof AtlasObjectId) { // transient-id
-                ret = new Id(((AtlasObjectId) v2Obj).getGuid(), 0, type.getTypeName());
+                AtlasObjectId objId = (AtlasObjectId) v2Obj;
+
+                ret = new Id(objId.getGuid(), 0, objId.getTypeName());
             } else if (v2Obj instanceof AtlasEntity) {
                 AtlasEntity entity = (AtlasEntity) v2Obj;
-                ret = new Id(((AtlasObjectId) v2Obj).getGuid(), 0, type.getTypeName());
+
+                ret = new Id(entity.getGuid(), entity.getVersion() == null ? 0 : entity.getVersion().intValue(), entity.getTypeName());
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_CATEGORY_INVALID, type.getTypeCategory().name());
             }
         }
+
         return ret;
     }
 
-    private boolean hasAnyAssignedAttribute(IReferenceableInstance rInstance) {
+    private boolean hasAnyAssignedAttribute(org.apache.atlas.v1.model.instance.Referenceable rInstance) {
         boolean ret = false;
 
-        if (rInstance instanceof StructInstance) {
-            StructInstance sInstance = (StructInstance) rInstance;
+        Map<String, Object> attributes = rInstance.getValues();
 
-            Map<String, Object> attributes = null;
-
-            try {
-                attributes = sInstance.getValuesMap();
-            } catch (AtlasException e) {
-                // ignore
-            }
-
-            if (MapUtils.isNotEmpty(attributes)) {
-                for (String attrName : attributes.keySet()) {
-                    try {
-                        if (sInstance.isValueSet(attrName)) {
-                            ret = true;
-                            break;
-                        }
-                    } catch (AtlasException e) {
-                            // ignore
-                    }
+        if (MapUtils.isNotEmpty(attributes)) {
+            for (Map.Entry<String, Object> attribute : attributes.entrySet()) {
+                if (attribute.getValue() != null) {
+                    ret = true;
+                    break;
                 }
             }
-        } else if (rInstance instanceof Referenceable) {
-            Referenceable referenceable = (Referenceable) rInstance;
-
-            ret = MapUtils.isNotEmpty(referenceable.getValuesMap());
         }
 
         return ret;

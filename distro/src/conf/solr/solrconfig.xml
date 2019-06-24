@@ -110,9 +110,13 @@
        When ManagedIndexSchemaFactory is specified with mutable = true, schema
        modification REST API calls will be allowed; otherwise, error responses will be
        sent back for these requests.
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
   -->
 
-  <schemaFactory class="ClassicIndexSchemaFactory"/>
+  <schemaFactory class="ManagedIndexSchemaFactory">
+         <bool name="mutable">true</bool>
+         <str name="managedSchemaResourceName">managed-schema</str>
+  </schemaFactory>
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Index Config - These settings control low-level behavior of indexing
@@ -473,6 +477,7 @@
        <str name="df">text</str>
      </lst>
   </requestHandler>
+
 
   <!--
     The export request handler is used to export full sorted result sets.

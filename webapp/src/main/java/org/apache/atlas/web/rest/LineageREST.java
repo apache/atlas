@@ -39,6 +39,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 
 /**
  * REST interface for an entity's lineage information
@@ -46,6 +47,8 @@ import javax.ws.rs.core.Context;
 @Path("v2/lineage")
 @Singleton
 @Service
+@Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+@Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class LineageREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.LineageREST");
 
@@ -74,11 +77,11 @@ public class LineageREST {
      */
     @GET
     @Path("/{guid}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
                                             @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION)  LineageDirection direction,
                                             @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
         AtlasPerfTracer perf = null;
 
         try {

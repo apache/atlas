@@ -23,11 +23,14 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
+
+import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 
 /**
  * A class that maintains the state of this instance.
@@ -38,14 +41,14 @@ import javax.inject.Singleton;
 @Singleton
 @Component
 public class ServiceState {
-
     private static final Logger LOG = LoggerFactory.getLogger(ServiceState.class);
 
     public enum ServiceStateValue {
         ACTIVE,
         PASSIVE,
         BECOMING_ACTIVE,
-        BECOMING_PASSIVE
+        BECOMING_PASSIVE,
+        MIGRATING
     }
 
     private Configuration configuration;
@@ -57,8 +60,12 @@ public class ServiceState {
 
     public ServiceState(Configuration configuration) {
         this.configuration = configuration;
-        state = !HAConfiguration.isHAEnabled(configuration) ?
-                ServiceStateValue.ACTIVE : ServiceStateValue.PASSIVE;
+
+        state = !HAConfiguration.isHAEnabled(configuration) ? ServiceStateValue.ACTIVE : ServiceStateValue.PASSIVE;
+
+        if(!StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME, ""))) {
+            state = ServiceStateValue.MIGRATING;
+        }
     }
 
     public ServiceStateValue getState() {
@@ -95,5 +102,14 @@ public class ServiceState {
         ServiceStateValue state = getState();
         return state == ServiceStateValue.BECOMING_ACTIVE
                 || state == ServiceStateValue.BECOMING_PASSIVE;
+    }
+
+    public void setMigration() {
+        LOG.warn("Instance in {}", state);
+        setState(ServiceStateValue.MIGRATING);
+    }
+
+    public boolean isInstanceInMigration() {
+        return getState() == ServiceStateValue.MIGRATING;
     }
 }

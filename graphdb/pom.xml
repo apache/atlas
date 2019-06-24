@@ -17,13 +17,13 @@
 ~ limitations under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>atlas-graphdb</artifactId>
@@ -31,11 +31,13 @@
     <name>Apache Atlas Graph Database Projects</name>
     <packaging>pom</packaging>
 
+    <!-- Build all modules including all the possible graph providers although only one will be used -->
     <modules>
         <module>api</module>
         <module>common</module>
         <module>graphdb-impls</module>
-        <module>titan0</module>
-        <module>titan1</module>
+        <module>janus-hbase2</module>
+        <module>janus</module>
     </modules>
+
 </project>

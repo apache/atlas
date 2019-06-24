@@ -18,11 +18,11 @@
 package org.apache.atlas.model.discovery;
 
 
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.annotate.JsonValue;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -31,8 +31,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -43,13 +43,21 @@ public class SearchParameters implements Serializable {
     private String  query;
     private String  typeName;
     private String  classification;
+    private String  termName;
     private boolean excludeDeletedEntities;
+    private boolean includeClassificationAttributes;
+    private boolean includeSubTypes                 = true;
+    private boolean includeSubClassifications       = true;
     private int     limit;
     private int     offset;
 
     private FilterCriteria entityFilters;
     private FilterCriteria tagFilters;
     private Set<String>    attributes;
+
+    public static final String WILDCARD_CLASSIFICATIONS = "*";
+    public static final String ALL_CLASSIFICATIONS      = "_CLASSIFIED";
+    public static final String NO_CLASSIFICATIONS       = "_NOT_CLASSIFIED";
 
     /**
      * @return The type of query
@@ -83,6 +91,22 @@ public class SearchParameters implements Serializable {
 
     /**
      *
+     * @return termName to search on
+     */
+    public String getTermName() {
+        return termName;
+    }
+
+    /**
+     * Set the classification/tag to search on
+     * @param termName classification/tag name
+     */
+    public void setTermName(String termName) {
+        this.termName = termName;
+    }
+
+    /**
+     *
      * @return Classification/tag to search on
      */
     public String getClassification() {
@@ -110,6 +134,51 @@ public class SearchParameters implements Serializable {
      */
     public void setExcludeDeletedEntities(boolean excludeDeletedEntities) {
         this.excludeDeletedEntities = excludeDeletedEntities;
+    }
+
+    /**
+     * @return True if classification attributes are included in search result.
+     */
+    public boolean getIncludeClassificationAttributes() {
+        return includeClassificationAttributes;
+    }
+
+    /**
+     * Include classificatio attributes in search result.
+     * @param includeClassificationAttributes boolean flag
+     */
+    public void setIncludeClassificationAttributes(boolean includeClassificationAttributes) {
+        this.includeClassificationAttributes = includeClassificationAttributes;
+    }
+
+    /**
+     * @return True iff sub-type entities are to be included
+     */
+    public boolean getIncludeSubTypes() {
+        return includeSubTypes;
+    }
+
+    /**
+     * Include sub-type entities in search
+     * @param includeSubTypes boolean flag
+     */
+    public void setIncludeSubTypes(boolean includeSubTypes) {
+        this.includeSubTypes = includeSubTypes;
+    }
+
+    /**
+     * @return True iff sub-classifications are to be included
+     */
+    public boolean getIncludeSubClassifications() {
+        return includeSubClassifications;
+    }
+
+    /**
+     * Include sub-classifications in search
+     * @param includeSubClassifications boolean flag
+     */
+    public void setIncludeSubClassifications(boolean includeSubClassifications) {
+        this.includeSubClassifications = includeSubClassifications;
     }
 
     /**
@@ -195,11 +264,13 @@ public class SearchParameters implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         SearchParameters that = (SearchParameters) o;
         return excludeDeletedEntities == that.excludeDeletedEntities &&
+                includeClassificationAttributes == that.includeClassificationAttributes &&
                 limit == that.limit &&
                 offset == that.offset &&
                 Objects.equals(query, that.query) &&
                 Objects.equals(typeName, that.typeName) &&
                 Objects.equals(classification, that.classification) &&
+                Objects.equals(termName, that.termName) &&
                 Objects.equals(entityFilters, that.entityFilters) &&
                 Objects.equals(tagFilters, that.tagFilters) &&
                 Objects.equals(attributes, that.attributes);
@@ -207,7 +278,8 @@ public class SearchParameters implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(query, typeName, classification, excludeDeletedEntities, limit, offset, entityFilters, tagFilters, attributes);
+        return Objects.hash(query, typeName, classification, termName, excludeDeletedEntities, includeClassificationAttributes,
+                            limit, offset, entityFilters, tagFilters, attributes);
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -219,7 +291,9 @@ public class SearchParameters implements Serializable {
         sb.append("query='").append(query).append('\'');
         sb.append(", typeName='").append(typeName).append('\'');
         sb.append(", classification='").append(classification).append('\'');
+        sb.append(", termName='").append(termName).append('\'');
         sb.append(", excludeDeletedEntities=").append(excludeDeletedEntities);
+        sb.append(", includeClassificationAttributes=").append(includeClassificationAttributes);
         sb.append(", limit=").append(limit);
         sb.append(", offset=").append(offset);
         sb.append(", entityFilters=").append(entityFilters);
@@ -341,15 +415,17 @@ public class SearchParameters implements Serializable {
         GT(new String[]{">", "gt"}),
         LTE(new String[]{"<=", "lte"}),
         GTE(new String[]{">=", "gte"}),
-        EQ(new String[]{"eq", "="}),
-        NEQ(new String[]{"neq", "!="}),
+        EQ(new String[]{"=", "eq"}),
+        NEQ(new String[]{"!=", "neq"}),
         IN(new String[]{"in", "IN"}),
         LIKE(new String[]{"like", "LIKE"}),
         STARTS_WITH(new String[]{"startsWith", "STARTSWITH", "begins_with", "BEGINS_WITH"}),
-        ENDS_WITH(new String[]{"endsWith", "ENDSWITH", "ends_with", "BEGINS_WITH"}),
+        ENDS_WITH(new String[]{"endsWith", "ENDSWITH", "ends_with", "ENDS_WITH"}),
         CONTAINS(new String[]{"contains", "CONTAINS"}),
         CONTAINS_ANY(new String[]{"containsAny", "CONTAINSANY", "contains_any", "CONTAINS_ANY"}),
-        CONTAINS_ALL(new String[]{"containsAll", "CONTAINSALL", "contains_all", "CONTAINS_ALL"})
+        CONTAINS_ALL(new String[]{"containsAll", "CONTAINSALL", "contains_all", "CONTAINS_ALL"}),
+        IS_NULL(new String[]{"isNull", "ISNULL", "is_null", "IS_NULL"}),
+        NOT_NULL(new String[]{"notNull", "NOTNULL", "not_null", "NOT_NULL"}),
         ;
         static final Map<String, Operator> operatorsMap = new HashMap<>();
 

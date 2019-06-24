@@ -17,6 +17,11 @@
  */
 package org.apache.atlas.model.typedef;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,13 +44,9 @@ import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.util.StringUtils;
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 
 /**
@@ -88,7 +89,11 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     }
 
     protected AtlasStructDef(TypeCategory category, String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
-        super(category, name, description, typeVersion, options);
+        this(category, name, description, typeVersion, attributeDefs, null, options);
+    }
+
+    protected AtlasStructDef(TypeCategory category, String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, String serviceType, Map<String, String> options) {
+        super(category, name, description, typeVersion, serviceType, options);
 
         setAttributeDefs(attributeDefs);
     }
@@ -254,7 +259,12 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasAttributeDef implements Serializable {
-        private static final long serialVersionUID = 1L;
+        private static final long serialVersionUID               = 1L;
+        public static final int DEFAULT_SEARCHWEIGHT             = -1;
+
+        public static final String SEARCH_WEIGHT_ATTR_NAME       = "searchWeight";
+        public static final String ATTRDEF_OPTION_SOFT_REFERENCE = "isSoftReference";
+        private final String STRING_TRUE                         = "true";
 
         /**
          * single-valued attribute or multi-valued attribute.
@@ -271,26 +281,47 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private int                      valuesMaxCount;
         private boolean                  isUnique;
         private boolean                  isIndexable;
+        private boolean                  includeInNotification;
         private String                   defaultValue;
         private String                   description;
+        private int                      searchWeight = DEFAULT_SEARCHWEIGHT;
 
         private List<AtlasConstraintDef> constraints;
+        private Map<String, String>      options;
 
         public AtlasAttributeDef() { this(null, null); }
 
         public AtlasAttributeDef(String name, String typeName) {
-            this(name, typeName, false, Cardinality.SINGLE, COUNT_NOT_SET, COUNT_NOT_SET, false, false, null);
+            this(name, typeName, DEFAULT_SEARCHWEIGHT);
+        }
 
+        public AtlasAttributeDef(String name, String typeName, int searchWeight) {
+            this(name, typeName, false, Cardinality.SINGLE, searchWeight);
+        }
+
+        public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality) {
+            this(name, typeName, isOptional, cardinality, DEFAULT_SEARCHWEIGHT);
+        }
+
+        private AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality, int searchWeight) {
+            this(name, typeName, isOptional, cardinality, COUNT_NOT_SET, COUNT_NOT_SET, false, false, false, null, searchWeight);
+        }
+
+
+
+        public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
+                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, List<AtlasConstraintDef> constraints) {
+            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, constraints, DEFAULT_SEARCHWEIGHT);
+        }
+
+        private AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
+                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, List<AtlasConstraintDef> constraints, int searchWeight) {
+            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, null, constraints, null, null, searchWeight);
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
-                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, List<AtlasConstraintDef> constraints) {
-            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, null, constraints, "");
-        }
-
-        public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
-                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, String defaultValue,
-                                 List<AtlasConstraintDef> constraints, String description) {
+                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, String defaultValue,
+                                 List<AtlasConstraintDef> constraints, Map<String,String> options, String description, int searchWeight) {
             setName(name);
             setTypeName(typeName);
             setIsOptional(isOptional);
@@ -299,9 +330,12 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             setValuesMaxCount(valuesMaxCount);
             setIsUnique(isUnique);
             setIsIndexable(isIndexable);
+            setIncludeInNotification(includeInNotification);
             setDefaultValue(defaultValue);
             setConstraints(constraints);
+            setOptions(options);
             setDescription(description);
+            setSearchWeight(searchWeight);
         }
 
         public AtlasAttributeDef(AtlasAttributeDef other) {
@@ -314,10 +348,21 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setValuesMaxCount(other.getValuesMaxCount());
                 setIsUnique(other.getIsUnique());
                 setIsIndexable(other.getIsIndexable());
+                setIncludeInNotification(other.getIncludeInNotification());
                 setDefaultValue(other.getDefaultValue());
                 setConstraints(other.getConstraints());
+                setOptions(other.getOptions());
                 setDescription((other.getDescription()));
+                setSearchWeight(other.getSearchWeight());
             }
+        }
+
+        public int getSearchWeight() {
+            return searchWeight;
+        }
+
+        public void setSearchWeight(int searchWeight) {
+            this.searchWeight = searchWeight;
         }
 
         public String getName() {
@@ -378,6 +423,10 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             return isIndexable;
         }
 
+        public boolean getIncludeInNotification() { return includeInNotification; }
+
+        public void setIncludeInNotification(Boolean isInNotification) { this.includeInNotification = isInNotification == null ? Boolean.FALSE : isInNotification; }
+
         public String getDefaultValue(){
             return defaultValue;
         }
@@ -415,6 +464,24 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
             cDefs.add(constraintDef);
         }
+        public Map<String, String> getOptions() {
+            return options;
+        }
+
+        public void setOptions(Map<String, String> options) {
+            if (options != null) {
+                this.options = new HashMap<>(options);
+            } else {
+                this.options = null;
+            }
+        }
+
+        @JsonIgnore
+        public boolean isSoftReferenced() {
+            return this.options != null &&
+                    getOptions().containsKey(AtlasAttributeDef.ATTRDEF_OPTION_SOFT_REFERENCE) &&
+                    getOptions().get(AtlasAttributeDef.ATTRDEF_OPTION_SOFT_REFERENCE).equals(STRING_TRUE);
+        }
 
         public String getDescription() {
             return description;
@@ -439,7 +506,10 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", valuesMaxCount=").append(valuesMaxCount);
             sb.append(", isUnique=").append(isUnique);
             sb.append(", isIndexable=").append(isIndexable);
+            sb.append(", includeInNotification=").append(includeInNotification);
             sb.append(", defaultValue=").append(defaultValue);
+            sb.append(", options='").append(options).append('\'');
+            sb.append(", searchWeight='").append(searchWeight).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -467,17 +537,20 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     valuesMaxCount == that.valuesMaxCount &&
                     isUnique == that.isUnique &&
                     isIndexable == that.isIndexable &&
+                    includeInNotification == that.includeInNotification &&
                     Objects.equals(name, that.name) &&
                     Objects.equals(typeName, that.typeName) &&
                     cardinality == that.cardinality &&
                     Objects.equals(defaultValue, that.defaultValue) &&
                     Objects.equals(description, that.description) &&
-                    Objects.equals(constraints, that.constraints);
+                    Objects.equals(constraints, that.constraints) &&
+                    Objects.equals(options, that.options) &&
+                    Objects.equals(searchWeight, that.searchWeight);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, defaultValue, constraints, description);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight);
         }
 
         @Override

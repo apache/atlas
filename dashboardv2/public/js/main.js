@@ -114,12 +114,24 @@ require.config({
         'daterangepicker': {
             'deps': ['jquery', 'moment']
         },
+        'moment-timezone': {
+            'deps': ['moment']
+        },
+        'moment': {
+            'exports': ['moment']
+        },
         'nvd3': {
             'deps': ['d3']
         },
         'sparkline': {
             'deps': ['jquery'],
             'exports': ['sparkline']
+        },
+        'jstree': {
+            'deps': ['jquery']
+        },
+        'jquery-steps': {
+            'deps': ['jquery']
         }
     },
 
@@ -137,7 +149,7 @@ require.config({
         'backgrid-orderable': 'libs/backgrid-orderable-columns/js/backgrid-orderable-columns',
         'backgrid-paginator': 'libs/backgrid-paginator/js/backgrid-paginator.min',
         'backgrid-sizeable': 'libs/backgrid-sizeable-columns/js/backgrid-sizeable-columns',
-        'backgrid-columnmanager': 'libs/backgrid-columnmanager/js/Backgrid.ColumnManager',
+        'backgrid-columnmanager': 'external_lib/backgrid-columnmanager/js/Backgrid.ColumnManager',
         'asBreadcrumbs': 'libs/jquery-asBreadcrumbs/js/jquery-asBreadcrumbs.min',
         'd3': 'libs/d3/d3.min',
         'd3-tip': 'libs/d3/index',
@@ -150,6 +162,7 @@ require.config({
         'select2': 'libs/select2/select2.full.min',
         'backgrid-select-all': 'libs/backgrid-select-all/backgrid-select-all.min',
         'moment': 'libs/moment/js/moment.min',
+        'moment-timezone': 'libs/moment-timezone/moment-timezone-with-data.min',
         'jquery-ui': 'external_lib/jquery-ui/jquery-ui.min',
         'pnotify': 'external_lib/pnotify/pnotify.custom.min',
         'pnotify.buttons': 'external_lib/pnotify/pnotify.custom.min',
@@ -159,7 +172,10 @@ require.config({
         'query-builder': 'libs/jQueryQueryBuilder/js/query-builder.standalone.min',
         'daterangepicker': 'libs/bootstrap-daterangepicker/js/daterangepicker',
         'nvd3': 'libs/nvd3/nv.d3.min',
-        'sparkline': 'libs/sparkline/jquery.sparkline.min'
+        'sparkline': 'libs/sparkline/jquery.sparkline.min',
+        'table-dragger': 'libs/table-dragger/table-dragger',
+        'jstree': 'libs/jstree/jstree.min',
+        'jquery-steps': 'libs/jquery-steps/jquery.steps.min',
     },
 
     /**
@@ -173,6 +189,7 @@ require.config({
 
 require(['App',
     'router/Router',
+    'utils/Helper',
     'utils/CommonViewFunction',
     'utils/Globals',
     'utils/UrlLinks',
@@ -182,9 +199,9 @@ require(['App',
     'bootstrap',
     'd3',
     'select2'
-], function(App, Router, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList) {
+], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList) {
     var that = this;
-    this.asyncFetchCounter = 5;
+    this.asyncFetchCounter = 6;
     this.entityDefCollection = new VEntityList();
     this.entityDefCollection.url = UrlLinks.entitiesDefApiUrl();
     this.typeHeaders = new VTagList();
@@ -193,12 +210,16 @@ require(['App',
     this.enumDefCollection.url = UrlLinks.enumDefApiUrl();
     this.enumDefCollection.modelAttrName = "enumDefs";
     this.classificationDefCollection = new VTagList();
+    this.entityCountCollection = new VTagList();
+    this.entityCountCollection.url = UrlLinks.entityCountApi();
+    this.entityCountCollection.modelAttrName = "data";
 
     App.appRouter = new Router({
         entityDefCollection: this.entityDefCollection,
         typeHeaders: this.typeHeaders,
         enumDefCollection: this.enumDefCollection,
-        classificationDefCollection: this.classificationDefCollection
+        classificationDefCollection: this.classificationDefCollection,
+        entityCountCollection: this.entityCountCollection
     });
 
     var startApp = function() {
@@ -209,26 +230,25 @@ require(['App',
     CommonViewFunction.userDataFetch({
         url: UrlLinks.sessionApiUrl(),
         callback: function(response) {
-            if (response && response.userName) {
-                Globals.userLogedIn.status = true;
-                Globals.userLogedIn.response = response;
-            }
-            if (response && response['atlas.feature.taxonomy.enable'] !== undefined) {
-                Globals.taxonomy = response['atlas.feature.taxonomy.enable']
-            }
-            if (response && response['atlas.entity.create.allowed'] !== undefined) {
-                Globals.entityCreate = response['atlas.entity.create.allowed'];
-            }
-            if (response && response['atlas.entity.update.allowed'] !== undefined) {
-                Globals.entityUpdate = response['atlas.entity.update.allowed'];
-            }
-            if (response && response['atlas.ui.editable.entity.types'] !== undefined) {
-                var entityTypeList = response['atlas.ui.editable.entity.types'].trim().split(",");
-                if (entityTypeList.length) {
-                    if (entityTypeList[0] === "*") {
-                        Globals.entityTypeConfList = [];
-                    } else if (entityTypeList.length > 0) {
-                        Globals.entityTypeConfList = entityTypeList;
+            if (response) {
+                if (response.userName) {
+                    Globals.userLogedIn.status = true;
+                    Globals.userLogedIn.response = response;
+                }
+                if (response['atlas.entity.create.allowed'] !== undefined) {
+                    Globals.entityCreate = response['atlas.entity.create.allowed'];
+                }
+                if (response['atlas.entity.update.allowed'] !== undefined) {
+                    Globals.entityUpdate = response['atlas.entity.update.allowed'];
+                }
+                if (response['atlas.ui.editable.entity.types'] !== undefined) {
+                    var entityTypeList = response['atlas.ui.editable.entity.types'].trim().split(",");
+                    if (entityTypeList.length) {
+                        if (entityTypeList[0] === "*") {
+                            Globals.entityTypeConfList = [];
+                        } else if (entityTypeList.length > 0) {
+                            Globals.entityTypeConfList = entityTypeList;
+                        }
                     }
                 }
             }
@@ -239,6 +259,10 @@ require(['App',
     this.entityDefCollection.fetch({
         skipDefaultError: true,
         complete: function() {
+            that.entityDefCollection.fullCollection.comparator = function(model) {
+                return model.get('name').toLowerCase();
+            };
+            that.entityDefCollection.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
         }
@@ -246,6 +270,10 @@ require(['App',
     this.typeHeaders.fetch({
         skipDefaultError: true,
         complete: function() {
+            that.typeHeaders.fullCollection.comparator = function(model) {
+                return model.get('name').toLowerCase();
+            }
+            that.typeHeaders.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
         }
@@ -253,11 +281,27 @@ require(['App',
     this.enumDefCollection.fetch({
         skipDefaultError: true,
         complete: function() {
+            that.enumDefCollection.fullCollection.comparator = function(model) {
+                return model.get('name').toLowerCase();
+            };
+            that.enumDefCollection.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
         }
     });
     this.classificationDefCollection.fetch({
+        skipDefaultError: true,
+        complete: function() {
+            that.classificationDefCollection.fullCollection.comparator = function(model) {
+                return model.get('name').toLowerCase();
+            };
+            that.classificationDefCollection.fullCollection.sort({ silent: true });
+            --that.asyncFetchCounter;
+            startApp();
+        }
+    });
+
+    this.entityCountCollection.fetch({
         skipDefaultError: true,
         complete: function() {
             --that.asyncFetchCounter;

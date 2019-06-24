@@ -37,18 +37,23 @@
     </property>
 
     <property>
+        <name>hive.metastore.event.listeners</name>
+        <value>org.apache.atlas.hive.hook.HiveMetastoreHookImpl</value>
+    </property>
+
+    <property>
         <name>hive.support.concurrency</name>
         <value>false</value>
     </property>
 
     <property>
         <name>hive.metastore.warehouse.dir</name>
-        <value>${user.dir}/target/metastore</value>
+        <value>${project.basedir}/target/metastore</value>
     </property>
 
     <property>
         <name>javax.jdo.option.ConnectionURL</name>
-        <value>jdbc:derby:${user.dir}/target/metastore_db;create=true</value>
+        <value>jdbc:derby:;databaseName=${project.basedir}/target/metastore_db;create=true</value>
     </property>
 
     <property>
@@ -70,4 +75,25 @@
         <name>hive.zookeeper.quorum</name>
         <value>localhost:19026</value>
     </property>
+
+    <property>
+        <name>hive.metastore.schema.verification</name>
+        <value>false</value>
+    </property>
+
+    <property>
+        <name>hive.metastore.disallow.incompatible.col.type.changes</name>
+        <value>false</value>
+    </property>
+
+    <property>
+        <name>datanucleus.schema.autoCreateAll</name>
+        <value>true</value>
+    </property>
+
+    <property>
+        <name>hive.exec.scratchdir</name>
+        <value>${project.basedir}/target/scratchdir</value>
+    </property>
+
 </configuration>

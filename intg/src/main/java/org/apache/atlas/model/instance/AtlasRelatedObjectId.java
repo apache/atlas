@@ -17,20 +17,20 @@
  */
 package org.apache.atlas.model.instance;
 
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
-import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * Reference to an object-instance of AtlasEntity type used in relationship attribute values
@@ -43,42 +43,112 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    public static final String KEY_RELATIONSHIP_TYPE       = "relationshipType";
     public static final String KEY_RELATIONSHIP_GUID       = "relationshipGuid";
+    public static final String KEY_RELATIONSHIP_STATUS     = "relationshipStatus";
     public static final String KEY_RELATIONSHIP_ATTRIBUTES = "relationshipAttributes";
 
-    private String      displayText             = null;
-    private String      relationshipGuid        = null;
-    private AtlasStruct relationshipAttributes;
+    private AtlasEntity.Status       entityStatus           = null;
+    private String                   displayText            = null;
+    private String                   relationshipType       = null;
+    private String                   relationshipGuid       = null;
+    private AtlasRelationship.Status relationshipStatus     = null;
+    private AtlasStruct              relationshipAttributes = null;
 
     public AtlasRelatedObjectId() { }
 
-    public AtlasRelatedObjectId(String guid, String typeName, String relationshipGuid, AtlasStruct relationshipAttributes) {
+    public AtlasRelatedObjectId(String guid, String typeName, AtlasEntity.Status entityStatus, String relationshipGuid,
+                                AtlasRelationship.Status relationshipStatus, AtlasStruct relationshipAttributes) {
         super(guid, typeName);
 
+        setEntityStatus(entityStatus);
         setRelationshipGuid(relationshipGuid);
+        setRelationshipStatus(relationshipStatus);
         setRelationshipAttributes(relationshipAttributes);
     }
 
-    public AtlasRelatedObjectId(String guid, String typeName, Map<String, Object> uniqueAttributes, String displayText,
-                                String relationshipGuid, AtlasStruct relationshipAttributes) {
+    public AtlasRelatedObjectId(String guid, String typeName, AtlasEntity.Status entityStatus, Map<String, Object> uniqueAttributes, String displayText,
+                                String relationshipGuid, AtlasRelationship.Status relationshipStatus,
+                                AtlasStruct relationshipAttributes) {
         super(guid, typeName, uniqueAttributes);
 
+        setEntityStatus(entityStatus);
         setRelationshipGuid(relationshipGuid);
+        setRelationshipStatus(relationshipStatus);
         setDisplayText(displayText);
         setRelationshipAttributes(relationshipAttributes);
+    }
+
+    public AtlasRelatedObjectId(AtlasObjectId other) {
+        super(other);
+    }
+
+    public AtlasRelatedObjectId(Map objIdMap) {
+        super(objIdMap);
+
+        if (objIdMap != null) {
+            Object g = objIdMap.get(KEY_RELATIONSHIP_GUID);
+            Object t = objIdMap.get(KEY_RELATIONSHIP_TYPE);
+            Object a = objIdMap.get(KEY_RELATIONSHIP_ATTRIBUTES);
+            Object s = objIdMap.get(KEY_RELATIONSHIP_STATUS);
+
+            if (g != null) {
+                setRelationshipGuid(g.toString());
+            }
+
+            if (a instanceof Map) {
+                setRelationshipAttributes(new AtlasStruct((Map) a));
+            } else if (a instanceof AtlasStruct) {
+                setRelationshipAttributes(new AtlasStruct((AtlasStruct) a));
+            }
+
+            if (t != null) {
+                setRelationshipType(t.toString());
+            }
+
+            if (s != null) {
+                setRelationshipStatus(AtlasRelationship.Status.valueOf(s.toString()));
+            }
+        }
+    }
+
+    public AtlasEntity.Status getEntityStatus() {
+        return entityStatus;
+    }
+
+    public void setEntityStatus(AtlasEntity.Status entityStatus) {
+        this.entityStatus = entityStatus;
     }
 
     public String getDisplayText() { return displayText; }
 
     public void setDisplayText(String displayText) { this.displayText = displayText; }
 
+    public String getRelationshipType() { return relationshipType; }
+
+    public void setRelationshipType(String relationshipType) { this.relationshipType = relationshipType; }
+
     public String getRelationshipGuid() { return relationshipGuid; }
 
     public void setRelationshipGuid(String relationshipGuid) { this.relationshipGuid = relationshipGuid; }
 
+    public AtlasRelationship.Status getRelationshipStatus() {
+        return relationshipStatus;
+    }
+
+    public void setRelationshipStatus(final AtlasRelationship.Status relationshipStatus) {
+        this.relationshipStatus = relationshipStatus;
+    }
+
     public AtlasStruct getRelationshipAttributes() { return relationshipAttributes; }
 
-    public void setRelationshipAttributes(AtlasStruct relationshipAttributes) { this.relationshipAttributes = relationshipAttributes; }
+    public void setRelationshipAttributes(AtlasStruct relationshipAttributes) {
+        this.relationshipAttributes = relationshipAttributes;
+
+        if (relationshipAttributes != null && relationshipAttributes.getTypeName() != null) {
+            setRelationshipType(relationshipAttributes.getTypeName());
+        }
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -86,14 +156,17 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
         if (o == null || getClass() != o.getClass()) { return false; }
         if (!super.equals(o)) { return false; }
         AtlasRelatedObjectId that = (AtlasRelatedObjectId) o;
-        return Objects.equals(displayText, that.displayText) &&
+        return Objects.equals(entityStatus, that.entityStatus) &&
+               Objects.equals(displayText, that.displayText) &&
+               Objects.equals(relationshipType, that.relationshipType) &&
                Objects.equals(relationshipGuid, that.relationshipGuid) &&
+               Objects.equals(relationshipStatus, that.relationshipStatus) &&
                Objects.equals(relationshipAttributes, that.relationshipAttributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), displayText, relationshipGuid, relationshipAttributes);
+        return Objects.hash(super.hashCode(), displayText, relationshipType, relationshipGuid, relationshipStatus, relationshipAttributes);
     }
 
     @Override
@@ -109,8 +182,11 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
 
         sb.append("AtlasRelatedObjectId{");
         super.toString(sb);
-        sb.append("displayText='").append(displayText).append('\'');
+        sb.append("entityStatus='").append(entityStatus).append('\'');
+        sb.append(", displayText='").append(displayText).append('\'');
+        sb.append(", relationshipType='").append(relationshipType).append('\'');
         sb.append(", relationshipGuid='").append(relationshipGuid).append('\'');
+        sb.append(", relationshipStatus='").append(relationshipStatus).append('\'');
         sb.append(", relationshipAttributes=").append(relationshipAttributes);
         sb.append('}');
 

@@ -18,8 +18,6 @@
 
 package org.apache.atlas;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -38,10 +36,7 @@ import org.apache.commons.lang.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.BOTH;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
@@ -146,11 +141,11 @@ public final class TestRelationshipUtilsV2 {
                                                         new AtlasRelationshipEndDef(PERSON_TYPE, "sibling", SINGLE),
                                                         new AtlasRelationshipEndDef(PERSON_TYPE, "sibling", SINGLE));
 
-        return new AtlasTypesDef(ImmutableList.of(orgLevelType),
-                                 ImmutableList.of(addressType),
-                                 ImmutableList.of(securityClearanceType),
-                                 ImmutableList.of(personType, employeeType, departmentType, managerType),
-                                 ImmutableList.of(employeeDepartmentType, employeeManagerType, employeeMentorsType, employeeFriendsType, personSiblingType));
+        return new AtlasTypesDef(Collections.singletonList(orgLevelType),
+                                 Collections.singletonList(addressType),
+                                 Collections.singletonList(securityClearanceType),
+                                 Arrays.asList(personType, employeeType, departmentType, managerType),
+                                 Arrays.asList(employeeDepartmentType, employeeManagerType, employeeMentorsType, employeeFriendsType, personSiblingType));
     }
 
     public static AtlasEntitiesWithExtInfo getDepartmentEmployeeInstances() {
@@ -282,9 +277,8 @@ public final class TestRelationshipUtilsV2 {
                                                         new AtlasRelationshipEndDef(TYPE_B, "mappedFromA", SINGLE),
                                                         new AtlasRelationshipEndDef(TYPE_A, "mapToB", SET));
 
-        return new AtlasTypesDef(ImmutableList.<AtlasEnumDef>of(), ImmutableList.<AtlasStructDef>of(),
-                                 ImmutableList.<AtlasClassificationDef>of(),  ImmutableList.of(aType, bType),
-                                 ImmutableList.of(relationshipType1, relationshipType2, relationshipType3, relationshipType4));
+        return new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(), Collections.<AtlasStructDef>emptyList(), Collections.<AtlasClassificationDef>emptyList(),  Arrays.asList(aType, bType),
+                                 Arrays.asList(relationshipType1, relationshipType2, relationshipType3, relationshipType4));
     }
 
     private static List<AtlasEnumElementDef> getOrgLevelElements() {
@@ -299,8 +293,8 @@ public final class TestRelationshipUtilsV2 {
         return typeName + " description";
     }
 
-    private static ImmutableSet<String> superType(String superTypeName) {
-        return StringUtils.isNotEmpty(superTypeName) ? ImmutableSet.of(superTypeName) : ImmutableSet.<String>of();
+    private static Set<String> superType(String superTypeName) {
+        return StringUtils.isNotEmpty(superTypeName) ? Collections.singleton(superTypeName) : Collections.<String>emptySet();
     }
 
     private static List<AtlasObjectId> getAtlasObjectIds(AtlasEntity... entities) {

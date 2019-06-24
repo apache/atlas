@@ -34,8 +34,8 @@ public abstract class AtlasGremlinQueryProvider {
         // Metrics related Queries
         TYPE_COUNT_METRIC,
         TYPE_UNUSED_COUNT_METRIC,
-        ENTITY_COUNT_METRIC,
         TAG_COUNT_METRIC,
+        ENTITY_ACTIVE_METRIC,
         ENTITY_DELETED_METRIC,
         ENTITIES_PER_TYPE_METRIC,
         TAGGED_ENTITIES_METRIC,
@@ -45,6 +45,7 @@ public abstract class AtlasGremlinQueryProvider {
         EXPORT_BY_GUID_FULL,
         EXPORT_BY_GUID_CONNECTED_IN_EDGE,
         EXPORT_BY_GUID_CONNECTED_OUT_EDGE,
+        EXPORT_TYPE_ALL_FOR_TYPE,
         EXPORT_TYPE_STARTS_WITH,
         EXPORT_TYPE_ENDS_WITH,
         EXPORT_TYPE_CONTAINS,
@@ -52,8 +53,10 @@ public abstract class AtlasGremlinQueryProvider {
         EXPORT_TYPE_DEFAULT,
 
         // Lineage Queries
-        FULL_LINEAGE,
-        PARTIAL_LINEAGE,
+        FULL_LINEAGE_DATASET,
+        FULL_LINEAGE_PROCESS,
+        PARTIAL_LINEAGE_DATASET,
+        PARTIAL_LINEAGE_PROCESS,
 
         // Discovery Queries
         BASIC_SEARCH_TYPE_FILTER,
@@ -65,6 +68,10 @@ public abstract class AtlasGremlinQueryProvider {
         RELATIONSHIP_SEARCH_ASCENDING_SORT,
         RELATIONSHIP_SEARCH_DESCENDING_SORT,
 
+        // Discovery test queries
+        GREMLIN_SEARCH_RETURNS_VERTEX_ID,
+        GREMLIN_SEARCH_RETURNS_EDGE_ID,
+
         // Comparison clauses
         COMPARE_LT,
         COMPARE_LTE,
@@ -75,6 +82,13 @@ public abstract class AtlasGremlinQueryProvider {
         COMPARE_MATCHES,
         COMPARE_STARTS_WITH,
         COMPARE_ENDS_WITH,
-        COMPARE_CONTAINS
+        COMPARE_CONTAINS,
+        COMPARE_IS_NULL,
+        COMPARE_NOT_NULL,
+
+        TAG_PROPAGATION_IMPACTED_INSTANCES,
+        TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL,
+        TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS,
+        TAG_PROPAGATION_IMPACTED_INSTANCES_EXCLUDE_RELATIONSHIP
     }
 }

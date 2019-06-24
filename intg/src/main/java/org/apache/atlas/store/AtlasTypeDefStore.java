@@ -21,14 +21,12 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasClassificationDef.AtlasClassificationDefs;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 
-import java.util.List;
 
 /**
  * Interface to persistence store of TypeDef
@@ -101,8 +99,11 @@ public interface AtlasTypeDefStore {
 
     AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException;
 
+
     /* Generic operation */
     AtlasBaseTypeDef getByName(String name) throws AtlasBaseException;
 
     AtlasBaseTypeDef getByGuid(String guid) throws AtlasBaseException;
+
+    void deleteTypeByName(String typeName) throws AtlasBaseException;
 }

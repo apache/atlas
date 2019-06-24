@@ -18,9 +18,13 @@
 
 package org.apache.atlas.web.util;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.LocalServletRequest;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.IOUtils;
@@ -28,8 +32,6 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +40,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.util.UriUtils;
 
 /**
  * Utility functions for dealing with servlets.
@@ -56,6 +60,8 @@ public final class Servlets {
 
     public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
     public static final String BINARY = MediaType.APPLICATION_OCTET_STREAM;
+
+    private static final int QUERY_PARAM_MAX_LENGTH = AtlasConfiguration.QUERY_PARAM_MAX_LENGTH.getInt();
 
     /**
      * Returns the user of the given request.
@@ -149,15 +155,10 @@ public final class Servlets {
     }
 
     public static Response getErrorResponse(String message, Response.Status status) {
-        JSONObject errorJson = new JSONObject();
-        Object errorEntity = escapeJsonString(message);
-        try {
-            errorJson.put(AtlasClient.ERROR, errorEntity);
-            errorEntity = errorJson;
-        } catch (JSONException jsonE) {
-            LOG.warn("Could not construct error Json rensponse", jsonE);
-        }
-        return Response.status(status).entity(errorEntity).type(JSON_MEDIA_TYPE).build();
+        Object     errorEntity = escapeJsonString(message);
+        ObjectNode errorJson   = AtlasJson.createV1ObjectNode(AtlasClient.ERROR, errorEntity);
+
+        return Response.status(status).entity(errorJson).type(JSON_MEDIA_TYPE).build();
     }
 
     public static String getRequestPayload(HttpServletRequest request) throws IOException {
@@ -205,5 +206,20 @@ public final class Servlets {
         }
 
         return attributes;
+    }
+
+    public static void validateQueryParamLength(String paramName, String paramValue) throws AtlasBaseException {
+        if (StringUtils.isNotEmpty(paramValue) && paramValue.length() > QUERY_PARAM_MAX_LENGTH) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_PARAM_LENGTH, paramName);
+        }
+    }
+
+    public static String decodeQueryString(String query){
+        try {
+            return UriUtils.decode(query,"UTF-8");
+
+        } catch (UnsupportedEncodingException e){
+            return query;
+        }
     }
 }

@@ -18,7 +18,7 @@
 
 define(['require',
     'backbone',
-    'hbs!tmpl/tag/createTagLayoutView_tmpl',
+    'hbs!tmpl/tag/CreateTagLayoutView_tmpl',
     'utils/Utils',
     'views/tag/TagAttributeItemView',
     'collection/VTagList',
@@ -74,18 +74,13 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tagCollection', 'model', 'tag', 'termCollection', 'descriptionData'));
+                _.extend(this, _.pick(options, 'tagCollection', 'enumDefCollection', 'model', 'tag', 'descriptionData', 'selectedTag'));
                 if (this.model) {
                     this.description = this.model.get('description');
-                } else if (this.termCollection) {
-                    this.description = this.descriptionData;
                 } else {
                     this.create = true;
                 }
                 this.collection = new Backbone.Collection();
-                this.typeEnum = new VTagList();
-                this.typeEnum.url = UrlLinks.typedefsUrl().defs;
-                this.typeEnum.modelAttrName = "enumDefs";
             },
             bindEvents: function() {},
             onRender: function() {
@@ -99,30 +94,22 @@ define(['require',
                 if (!('placeholder' in HTMLInputElement.prototype)) {
                     this.ui.createTagForm.find('input,textarea').placeholder();
                 }
-                that.typeEnum.fetch({
-                    reset: true,
-                    complete: function(model, response) {
-                        that.hideLoader();
-                    }
-                });
+                that.hideLoader();
             },
             tagCollectionList: function() {
-                var str = '',
-                    that = this;
+                var that = this,
+                    str = '';
                 this.ui.parentTag.empty();
                 this.tagCollection.fullCollection.each(function(val) {
-                    var name = Utils.getName(val.toJSON()),
-                        checkTagOrTerm = Utils.checkTagOrTerm(name);
-                    if (checkTagOrTerm.tag) {
-                        str += '<option>' + (name) + '</option>';
-                    }
+                    var name = Utils.getName(val.toJSON());
+                    str += '<option ' + (name == that.selectedTag ? 'selected' : '') + '>' + (name) + '</option>';
                 });
                 that.ui.parentTag.html(str);
                 // IE9 support
                 if (platform.name === "IE") {
                     that.ui.parentTag.select2({
                         multiple: true,
-                        placeholder: "Search Tags",
+                        placeholder: "Search Classification",
                         allowClear: true
                     });
                 }

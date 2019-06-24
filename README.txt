@@ -15,6 +15,7 @@
 # limitations under the License.
 
 Apache Atlas Overview
+=====================
 
 Apache Atlas framework is an extensible set of core
 foundational governance services – enabling enterprises to effectively and
@@ -30,6 +31,7 @@ each other -- the metadata store is common.
 The metadata veracity is maintained by leveraging Apache Ranger to prevent
 non-authorized access paths to data at runtime.
 Security is both role based (RBAC) and attribute based (ABAC).
+
 
 Build Process
 =============
@@ -49,22 +51,18 @@ Build Process
 
 2. Execute the following commands to build Apache Atlas
 
-   $ export MAVEN_OPTS="-Xms2g -Xmx2g -XX:MaxPermSize=512M"
+   $ export MAVEN_OPTS="-Xms2g -Xmx2g"
    $ mvn clean install
-
-   # currently few tests might fail in some environments
-   # (timing issue?), the community is reviewing and updating
-   # such tests.
-   #
-   # if you see test failures, please run the following command:
-      $ mvn clean -DskipTests install
-
    $ mvn clean package -Pdist
 
 3. After above build commands successfully complete, you should see the following files
 
-   webapp/target/atlas-webapp-<version>.war
-   addons/falcon-bridge/target/falcon-bridge-<version>.jar
-   addons/hive-bridge/target/hive-bridge-<version>.jar
-   addons/sqoop-bridge/target/sqoop-bridge-<version>.jar
-   addons/storm-bridge/target/storm-bridge-<version>.jar
+   distro/target/apache-atlas-1.0.0-bin.tar.gz
+   distro/target/apache-atlas-1.0.0-hbase-hook.tar.gz
+   distro/target/apache-atlas-1.0.0-hive-hook.tar.gz
+   distro/target/apache-atlas-1.0.0-kafka-hook.tar.gz
+   distro/target/apache-atlas-1.0.0-sources.tar.gz
+   distro/target/apache-atlas-1.0.0-sqoop-hook.tar.gz
+   distro/target/apache-atlas-1.0.0-storm-hook.tar.gz
+
+4. For more details on building and running Apache Atlas, please refer to http://atlas.apache.org/InstallationSteps.html

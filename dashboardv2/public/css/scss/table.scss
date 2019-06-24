@@ -1,0 +1,172 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+tr.empty {
+    td {
+        display: table-cell;
+        text-align: center;
+    }
+}
+
+
+.stat-table {
+
+    tbody,
+    thead {
+        >tr {
+
+            td:nth-child(2),
+            th:nth-child(2) {
+                text-align: right;
+            }
+        }
+    }
+}
+
+.table-action-btn {
+    position: absolute;
+    right: 0px;
+}
+
+.entity-detail-table,
+.relationship-detail-table {
+    position: relative;
+
+    .hide-empty-value {
+        .hide-row {
+            display: none;
+        }
+    }
+
+    .entity-relationship-table-toggle,
+    .entity-detail-table-toggle {
+        position: absolute;
+        right: 0;
+        top: 18px;
+    }
+
+    table {
+
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 20%;
+        }
+    }
+}
+
+.backgrid {
+    td {
+        white-space: normal;
+    }
+
+    th.renderable.html-cell,
+    td.renderable.html-cell {
+        min-width: 250px;
+    }
+
+    .select-all-header-cell,
+    .select-row-cell {
+        width: 42px;
+        text-overflow: clip;
+    }
+
+    thead {
+        th {
+            button {
+                padding-right: 11px;
+            }
+        }
+    }
+
+    .sortable:not(.descending):not(.ascending) {
+        .sort-caret {
+            font: normal normal normal 14px/1 FontAwesome;
+            font-size: inherit;
+            text-rendering: auto;
+            -webkit-font-smoothing: antialiased;
+            font-size: 11px;
+
+            &:before {
+                content: "\f0dc";
+            }
+        }
+    }
+}
+
+.backgrid-paginator ul {
+    display: inline-block;
+    padding-left: 0;
+    margin: 20px 0;
+    border: 1px $color_keppel_approx solid;
+    margin: 0px;
+    float: right;
+    border-radius: 4px;
+    overflow: hidden;
+
+    >.active>span,
+    >.active>a,
+    >.active>a:hover {
+        background: none;
+        color: $color_keppel_approx;
+        background: none;
+        color: #37bb9b;
+        font-weight: 600;
+        font-family: sans-serif;
+    }
+
+    >li>a,
+    >li>span,
+    >li>button {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        line-height: 30px;
+        text-decoration: none;
+        border: none;
+        float: left;
+        background: $transparent;
+        color: $color_keppel_approx;
+        @include ellipsis();
+
+        i {
+            font-weight: bold;
+        }
+
+        &:hover {
+            color: $white;
+            background: $color_keppel_approx
+        }
+    }
+
+    >.disabled>span,
+    >.disabled>a,
+    >li>button[disabled] {
+        color: $color_mountain_mist_approx;
+
+        &:hover {
+            cursor: not-allowed;
+            color: $white;
+            background: $color_jungle_green_light !important;
+        }
+    }
+}
+
+.toggleList.semi-collapsed div:nth-child(n+2) {
+    display: none;
+
+}

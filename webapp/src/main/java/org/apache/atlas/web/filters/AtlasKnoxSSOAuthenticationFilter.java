@@ -137,6 +137,10 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
 
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
         responseWrapper.setHeader("X-Frame-Options", "DENY");
+        responseWrapper.setHeader("X-Content-Type-Options", "nosniff");
+        responseWrapper.setHeader("X-XSS-Protection", "1; mode=block");
+        responseWrapper.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+
 
         if (!ssoEnabled) {
             filterChain.doFilter(servletRequest, servletResponse);

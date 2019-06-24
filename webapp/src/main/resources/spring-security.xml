@@ -51,7 +51,6 @@
         <http-basic />
         <headers disabled="true"/>
         <csrf disabled="true"/>
-        <security:custom-filter position="LAST" ref="atlasAuthorizationFilter"/>
     </security:http>
 
     <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasAuthenticationFilter">
@@ -102,6 +101,4 @@
 
     <security:global-method-security
             pre-post-annotations="enabled" />
-
-    <beans:bean id = "atlasAuthorizationFilter" class="org.apache.atlas.web.filters.AtlasAuthorizationFilter"/>
 </beans:beans>

@@ -17,10 +17,8 @@
  */
 package org.apache.atlas.repository.ogm;
 
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.AtlasBaseModelObject;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang3.StringUtils;
@@ -32,9 +30,13 @@ public abstract class AbstractDataTransferObject<T extends AtlasBaseModelObject>
     private final String            entityTypeName;
 
     protected AbstractDataTransferObject(AtlasTypeRegistry typeRegistry, Class<T> tClass) {
+        this(typeRegistry, tClass, tClass.getSimpleName());
+    }
+
+    protected AbstractDataTransferObject(AtlasTypeRegistry typeRegistry, Class<T> tClass, String entityTypeName) {
         this.typeRegistry   = typeRegistry;
         this.objectType     = tClass;
-        this.entityTypeName = Constants.INTERNAL_PROPERTY_KEY_PREFIX + objectType.getSimpleName();
+        this.entityTypeName = entityTypeName;
     }
 
     @Override
@@ -44,11 +46,13 @@ public abstract class AbstractDataTransferObject<T extends AtlasBaseModelObject>
 
     @Override
     public AtlasEntityType getEntityType() {
-        return typeRegistry.getEntityTypeByName(entityTypeName);
+        AtlasEntityType ret = typeRegistry.getEntityTypeByName(entityTypeName);
+
+        return ret;
     }
 
 
-    protected AtlasEntity getDefaultAtlasEntity(T obj) throws AtlasBaseException {
+    protected AtlasEntity getDefaultAtlasEntity(T obj) {
         AtlasEntity ret = getEntityType().createDefaultValue();
 
         if (obj != null) {
