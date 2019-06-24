@@ -525,12 +525,11 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
      * increment the version value for this vertex
      */
     private void markVertexUpdated(AtlasVertex vertex) {
-        Date   now         = new Date();
         Number currVersion = vertex.getProperty(Constants.VERSION_PROPERTY_KEY, Number.class);
         long   newVersion  = currVersion == null ? 1 : (currVersion.longValue() + 1);
 
         vertex.setProperty(Constants.MODIFIED_BY_KEY, getCurrentUser());
-        vertex.setProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, now.getTime());
+        vertex.setProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, System.currentTimeMillis());
         vertex.setProperty(Constants.VERSION_PROPERTY_KEY, newVersion);
     }
 
