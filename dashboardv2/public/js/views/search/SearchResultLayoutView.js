@@ -587,7 +587,7 @@ define(['require',
                         that.tableRender({ "order": that.columnOrder, "table": TableLayout });
                         that.checkTableFetch();
                     }
-                    that.REntityTableLayoutView.$el.find('.colSort thead tr th:not(:first)').addClass('dragHandler');
+                    that.REntityTableLayoutView.$el.find('.colSort thead tr th:not(.select-all-header-cell)').addClass('dragHandler');
                     tableDragger(document.querySelector(".colSort"), { dragHandler: ".dragHandler" }).on('drop', tableDropFunction);
                 }
             },
