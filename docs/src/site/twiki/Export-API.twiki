@@ -128,7 +128,7 @@ The _metrics_ contains the number of types and entities exported as part of the 
             }
         ],
         "options": {
-            "fetchType": "full"
+            "fetchType": "FULL"
         }
     },
     "userName": "admin"
@@ -141,11 +141,13 @@ Below are sample CURL calls that demonstrate Export of _!QuickStart_ database.
 <verbatim>
 curl -X POST -u adminuser:password -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
     "itemsToExport": [
-            { "typeName": "DB", "uniqueAttributes": { "name": "Sales" }
-            { "typeName": "DB", "uniqueAttributes": { "name": "Reporting" }
-            { "typeName": "DB", "uniqueAttributes": { "name": "Logging" }
-        }
+            { "typeName": "DB", "uniqueAttributes": { "name": "Sales" } },
+            { "typeName": "DB", "uniqueAttributes": { "name": "Reporting" } },
+            { "typeName": "DB", "uniqueAttributes": { "name": "Logging" } }
     ],
-        "options": { "full" }
-    }' "http://localhost:21000/api/atlas/admin/export" > quickStartDB.zip
+    "options": {
+        "fetchType": "FULL"
+    }
+}' "http://localhost:21000/api/atlas/admin/export" > quickStartDB.zip
+
 </verbatim>
