@@ -1,0 +1,159 @@
+---+ Downloads
+
+
+Apache Atlas release artifacts are distributed via mirror sites and should be checked for tampering using GPG or SHA-256.
+
+The table below lists release artifacts and their associated signatures and hashes. The keys used to sign the release
+artifacts can be found in our published [[https://www.apache.org/dist/atlas/KEYS][KEYS file]].
+
+| *Version* | *Release Date* | *Tarball* | *GPG* | *Hash* |
+| 0.8.4 | 2019-06-21 | [[https://www.apache.org/dyn/closer.cgi/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.asc][signature]]| [[https://www.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.sha512][SHA512]] |
+| 0.8.3 | 2018-11-01 | [[https://www.apache.org/dyn/closer.cgi/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/0.8.3/apache-atlas-0.8.3-sources.tar.gz.sha512][SHA512]] |
+| 0.8.2 | 2018-02-05 | [[https://www.apache.org/dyn/closer.cgi/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz][source]] | [[https://www.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.asc][signature]] | [[https://www.apache.org/dist/atlas/0.8.2/apache-atlas-0.8.2-sources.tar.gz.sha512][SHA512]] |
+| 0.8.1 | 2017-08-29 | [[https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz][source]] | [[https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/atlas/0.8.1/apache-atlas-0.8.1-sources.tar.gz.sha512][SHA512]] |
+| 0.8.0-incubating | 2017-03-16 | [[https://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz][source]] | [[https://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/incubator/atlas/0.8.0-incubating/apache-atlas-0.8-incubating-sources.tar.gz.sha512][SHA512]] |
+| 0.7.1-incubating | 2017-01-29 | [[https://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz][source]] | [[https://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/incubator/atlas/0.7.1-incubating/apache-atlas-0.7.1-incubating-sources.tar.gz.mds][checksum]] |
+| 0.7.0-incubating | 2016-07-09 | [[https://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz][source]] | [[https://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/incubator/atlas/0.7.0-incubating/apache-atlas-0.7-incubating-sources.tar.gz.sha512][SHA512]] |
+| 0.6.0-incubating | 2015-12-31 | [[https://archive.apache.org/dist/incubator/atlas/0.6.0-incubating/apache-atlas-0.6-incubating-sources.tar.gz][source]] | [[https://archive.apache.org/dist/incubator/atlas/0.6.0-incubating/apache-atlas-0.6-incubating-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/incubator/atlas/0.6.0-incubating/apache-atlas-0.6-incubating-sources.tar.gz.sha][SHA]] |
+| 0.5.0-incubating | 2015-06-22 | [[https://archive.apache.org/dist/incubator/atlas/0.5.0-incubating/apache-atlas-0.5-incubating-sources.tar.gz][source]] | [[https://archive.apache.org/dist/incubator/atlas/0.5.0-incubating/apache-atlas-0.5-incubating-sources.tar.gz.asc][signature]] | [[https://archive.apache.org/dist/incubator/atlas/0.5.0-incubating/apache-atlas-0.5-incubating-sources.tar.gz.sha][SHA]] |
+
+---++ Verify the integrity of the files
+
+It is essential that you verify the integrity of the downloaded file using the PGP signature (.asc file) or a hash
+(.md5 or .sha* file). Please read [[https://www.apache.org/info/verification.html][Verifying Apache Software Foundation Releases]]
+for more information on why you should verify our releases.
+
+The PGP signature can be verified using PGP or GPG, with the following steps:
+   * Download the release artifact from the link in the table above
+   * Download the signature file for the release from the link in the table above
+   * Download [[https://www.apache.org/dist/atlas/KEYS][Apache Atlas KEYS file]]
+   * Verify the signatures using one of the following:
+
+<verbatim>
+% gpg --import KEYS
+% gpg --verify downloaded_file.asc downloaded_file</verbatim>
+
+or
+
+<verbatim>
+% pgpk -a KEYS
+% pgpv downloaded_file.asc</verbatim>
+
+or
+
+<verbatim>
+% pgp -ka KEYS
+% pgp downloaded_file.asc</verbatim>
+
+---++ Release Notes
+*[[../0.8.4/index][Atlas 0.8.4]] (Released on 2018/06/21)*
+
+   * Entity specific icons updated
+   * Improve FullTextMapper performance during entity retrieval
+   * Option to ignore/prune metadata for temporary/staging Hive tables
+   * Add instrumentation to enable troubleshooting and optimization of ingest
+   * Name of Kafka topics used by Atlas should be configurable
+   * Atlas authentication to support proxy-user
+   * IE-10 Issue fixed
+   * Lineage UI Improvements
+      * Show hide tooltip
+      * Show Path when user hovers on node
+      * Entity detail popup improvments
+      * Export Lineage in PNG format
+      * Search for the node
+      * Drag and Drop node
+      * Reset button
+      * Full Screen support
+   * !BugFixes, Optimizations & UI Improvements
+   * [[https://issues.apache.org/jira/issues/?jql=project%3DATLAS%20AND%20resolution%3DFixed%20AND%20fixVersion%3D0.8.4%20ORDER%20BY%20key%20DESC][List of JIRAs resolved in Apache Atlas 0.8.4 release]]
+
+
+*[[../0.8.3/index][Atlas 0.8.3]] (Released on 2018/11/01)*
+
+   * Utility to detect incorrect entity state
+   * Export & Import improvements
+   * Implement clear attribute value transformer for Atlas Entity Transformer
+   * Rename AtlasCluster to AtlasServer
+   * Upgrade commons-fileupload to 1.3.3
+   * Updated node/NPM version and add package-lock.json
+   * Enhance AtlasClient to use UGI's authentication method to initialize URL connection handler
+   * UI enhancement for Avro schemas and other JSON-valued attributes
+   * Updated frontend-maven-plugin to 1.4
+   * Remove Powermock Usage
+   * !BugFixes, Optimizations & UI Improvements.
+   * [[https://issues.apache.org/jira/issues/?jql=project%3DATLAS%20AND%20resolution%3DFixed%20AND%20fixVersion%3D0.8.3%20ORDER%20BY%20key%20DESC][List of JIRAs resolved in Apache Atlas 0.8.3 release]]
+
+
+*[[../0.8.2/index][Atlas 0.8.2]] (Released on 2018/02/05)*
+
+   * Search improvements:
+      * Basic search enhancement to optionally exclude sub-type entities and sub-classification-types
+      * Basic search to return classification attributes
+      * Support for saving searches
+      * UI support to reorder columns in search results page
+   * UI - updates for classification rendering – tree/flat view
+   * UI – minification of js, css; cache busting for static content (css, js)
+   * notification updates to handle large messages
+   * fix type initialization issues in HA deployment
+   * In HA, the passive node redirects the request with wrong URL encoding
+   * tool kit to recover from lost/bad index data
+   * [[https://issues.apache.org/jira/issues/?jql=project%20%3D%20Atlas%20AND%20fixVersion%20%3D%200.8.2%20ORDER%20BY%20key%20ASC][List of JIRAs resolved in Apache Atlas 0.8.2 release]]
+
+*[[../0.8.1/index][Atlas 0.8.1]] (Released on 2017/08/29)*
+
+   * Basic-search improvement in use of index for attribute filtering
+   * DSL query enhancement to support 'like' operator
+   * REST API and UI enhancements to update classification attributes
+   * Export/import support to copy data between Apache Atlas instances
+   * Ability to delete a tag from UI (and API)
+   * UI enhancements: lineage, attribute search filter, ability to search historical data
+   * Knox SSO for Atlas REST APIs
+   * Moved from use of Guice + Spring framework for dependency-injection to use only Spring framework
+
+*[[../0.8.0-incubating/index][Atlas 0.8-incubating]] (Released on 2017/03/16)*
+
+   * API revamp - new, structured REST API
+   * Simplified search UI
+   * UI to create/update entities - HDFS/HBase/Kafka
+   * Performance and scalability improvements
+   * Knox SSO for Atlas UI
+
+*[[../0.7.1-incubating/index][Atlas 0.7.1-incubating]] (Released on 2017/01/29)*
+
+   * Performance and scalability improvements (ATLAS-1403, ATLAS-1404)
+   * Bug fixes
+
+*[[../0.7.0-incubating/index][Atlas 0.7-incubating]] (Released on 2016/07/09)*
+
+   * High Availability (ATLAS-510)
+   * Business Catalog / Taxonomy (ATLAS-491)
+   * Improved Hive Integration (ATLAS-492)
+   * Improved Sqoop Integration
+   * Improved Falcon Integration
+   * Improved Storm Integration
+   * Improved Ambari Deployment & Management Support
+   * Entity Versioning / Audit (ATLAS-493)
+   * Performance Improvements
+   * Authorization (ATLAS-497)
+   * Atlas / Ranger Authorization Integration (ATLAS-495)
+   * Standalone HBase Support (ATLAS-498)
+   * Upgrade Support (ATLAS-631)
+
+*[[../0.6.0-incubating/index][Atlas 0.6-incubating]] (Released on 2015/12/30)*
+   * Improved Hive Server 2 Integration
+   * Sqoop Integration
+   * Falcon Integration
+   * Storm Integration
+   * Various Bug Fixes
+   * Atlas / Ranger Integration
+
+*[[../0.5.0-incubating/index][Atlas 0.5-incubating]] (Released on 2015/07/09)*
+   * Hive Server 2 Integration
+   * Basic Hive Lineage
+   * Basic Ambari Integration
+   * Kerberos Support
+   * DSL for query of datastore
+   * Basic Storage of Metadata
+   * Support for BerkleyDB
+   * Support for Titan 0.5
+   * Support
