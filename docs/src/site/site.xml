@@ -87,6 +87,10 @@
                   href="Downloads.html"/>
             <item name="1.0.0"
                   href="Downloads.html"/>
+            <item name="0.8.4"
+                  href="Downloads.html"/>
+            <item name="0.8.3"
+                  href="Downloads.html"/>
             <item name="0.8.2"
                   href="Downloads.html"/>
             <item name="0.8.1"
@@ -109,6 +113,8 @@
             <item name="1.2.0" href="../1.2.0/index.html"/>
             <item name="1.1.0" href="../1.1.0/index.html"/>
             <item name="1.0.0" href="../1.0.0/index.html"/>
+            <item name="0.8.4" href="../0.8.4/index.html"/>
+            <item name="0.8.3" href="../0.8.3/index.html"/>
             <item name="0.8.2" href="../0.8.2/index.html"/>
             <item name="0.8.1" href="../0.8.1/index.html"/>
             <item name="0.8-incubating" href="../0.8.0-incubating/index.html"/>
