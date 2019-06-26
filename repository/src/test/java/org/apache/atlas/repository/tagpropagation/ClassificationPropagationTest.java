@@ -282,9 +282,9 @@ public class ClassificationPropagationTest {
         AtlasEntity employees_union_table   = getEntity(EMPLOYEES_UNION_TABLE);
 
         AtlasClassification tag1 = new AtlasClassification("tag1"); tag1.setPropagate(true); tag1.setEntityGuid(hdfs_employees.getGuid());
-        AtlasClassification tag2 = new AtlasClassification("tag2"); tag1.setPropagate(true); tag2.setEntityGuid(employees2_table.getGuid());
-        AtlasClassification tag3 = new AtlasClassification("tag3"); tag1.setPropagate(true); tag3.setEntityGuid(employees_union_process.getGuid());
-        AtlasClassification tag4 = new AtlasClassification("tag4"); tag1.setPropagate(true); tag4.setEntityGuid(employees_union_table.getGuid());
+        AtlasClassification tag2 = new AtlasClassification("tag2"); tag2.setPropagate(true); tag2.setEntityGuid(employees2_table.getGuid());
+        AtlasClassification tag3 = new AtlasClassification("tag3"); tag3.setPropagate(true); tag3.setEntityGuid(employees_union_process.getGuid());
+        AtlasClassification tag4 = new AtlasClassification("tag4"); tag4.setPropagate(true); tag4.setEntityGuid(employees_union_table.getGuid());
 
         // add tag1 to hdfs_employees, tag2 to employees2, tag3 to process3, tag4 to employees_union
         addClassification(hdfs_employees, tag1);
