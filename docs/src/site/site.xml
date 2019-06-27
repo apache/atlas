@@ -80,25 +80,8 @@
             <item name="License" href="license.html" />
         </menu>
 
-        <menu name="Downloads">
-            <item name="0.8.4"
-                  href="Downloads.html"/>
-            <item name="0.8.3"
-                  href="Downloads.html"/>
-            <item name="0.8.2"
-                  href="Downloads.html"/>
-            <item name="0.8.1"
-                  href="Downloads.html"/>
-            <item name="0.8-incubating"
-                  href="Downloads.html"/>
-            <item name="0.7.1-incubating"
-                  href="Downloads.html"/>
-            <item name="0.7-incubating"
-                  href="Downloads.html"/>
-            <item name="0.6-incubating"
-                  href="Downloads.html"/>
-            <item name="0.5-incubating"
-                  href="Downloads.html"/>
+        <menu name="Download">
+            <item name="Source Downloads" target="_blank" href="../Downloads.html"/>
         </menu>
 
         <menu name="Documentation">
