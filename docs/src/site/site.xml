@@ -63,7 +63,7 @@
         <menu name="Apache Atlas">
             <item name="Overview" href="index.html"/>
             <item name="License" href="license.html" />
-            <item name="Downloads" href="Downloads.html" />
+            <item name="Downloads" href="../Downloads.html" />
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
             <item name="Git" href="https://gitbox.apache.org/repos/asf/atlas.git" />
             <item name="Jira" href="https://issues.apache.org/jira/browse/ATLAS" />
@@ -78,27 +78,8 @@
             <item name="Source Repository" href="source-repository.html" />
         </menu>
 
-        <menu name="Downloads">
-            <item name="1.2.0"
-                  href="Downloads.html"/>
-            <item name="1.1.0"
-                  href="Downloads.html"/>
-            <item name="1.0.0"
-                  href="Downloads.html"/>
-            <item name="0.8.2"
-                  href="Downloads.html"/>
-            <item name="0.8.1"
-                  href="Downloads.html"/>
-            <item name="0.8-incubating"
-                  href="Downloads.html"/>
-            <item name="0.7.1-incubating"
-                  href="Downloads.html"/>
-            <item name="0.7-incubating"
-                  href="Downloads.html"/>
-            <item name="0.6-incubating"
-                  href="Downloads.html"/>
-            <item name="0.5-incubating"
-                  href="Downloads.html"/>
+        <menu name="Download">
+            <item name="Source Downloads" target="_blank" href="../Downloads.html"/>
         </menu>
 
         <menu name="Documentation">
