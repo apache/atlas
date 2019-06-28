@@ -63,7 +63,7 @@
         <menu name="Apache Atlas">
             <item name="Overview" href="index.html"/>
             <item name="License" href="license.html" />
-            <item name="Downloads" href="Downloads.html" />
+            <item name="Downloads" href="../Downloads.html" />
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
             <item name="Git" href="https://gitbox.apache.org/repos/asf/atlas.git" />
             <item name="Jira" href="https://issues.apache.org/jira/browse/ATLAS" />
@@ -79,7 +79,7 @@
         </menu>
 
         <menu name="Download">
-            <item name="Source Downloads" target="_blank" href="Downloads.html"/>
+            <item name="All Releases" target="_blank" href="../Downloads.html"/>
         </menu>
 
         <menu name="Documentation">
