@@ -79,7 +79,7 @@
         </menu>
 
         <menu name="Download">
-            <item name="Source Downloads" target="_blank" href="Downloads.html"/>
+            <item name="All Releases" target="_blank" href="Downloads.html"/>
         </menu>
 
         <menu name="Documentation">
