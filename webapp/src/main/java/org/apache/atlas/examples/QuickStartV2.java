@@ -150,21 +150,31 @@ public class QuickStartV2 {
 
     public static void main(String[] args) throws Exception {
         String[] basicAuthUsernamePassword = null;
+        String token = null;
 
-        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+        if (AuthenticationUtil.isKeycloakAuthenticationEnabled()) {
+            token = AuthenticationUtil.getBearerTokenInput();
+        } else if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
         }
 
-        runQuickstart(args, basicAuthUsernamePassword);
+        runQuickstart(args, basicAuthUsernamePassword, token);
     }
 
     @VisibleForTesting
     static void runQuickstart(String[] args, String[] basicAuthUsernamePassword) throws Exception {
+        runQuickstart(args, basicAuthUsernamePassword, null);
+    }
+
+    @VisibleForTesting
+    static void runQuickstart(String[] args, String[] basicAuthUsernamePassword, String token) throws Exception {
         String[] urls = getServerUrl(args);
 
         QuickStartV2 quickStartV2 = null;
         try {
-            if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+            if (AuthenticationUtil.isKeycloakAuthenticationEnabled()) {
+                quickStartV2 = new QuickStartV2(urls, token);
+            } else if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
                 quickStartV2 = new QuickStartV2(urls, basicAuthUsernamePassword);
             } else {
                 quickStartV2 = new QuickStartV2(urls);
@@ -206,6 +216,10 @@ public class QuickStartV2 {
     }
 
     private final AtlasClientV2 atlasClientV2;
+
+    QuickStartV2(String[] urls, String token) {
+        atlasClientV2 = new AtlasClientV2(urls, token);
+    }
 
     QuickStartV2(String[] urls, String[] basicAuthUsernamePassword) {
         atlasClientV2 = new AtlasClientV2(urls,basicAuthUsernamePassword);

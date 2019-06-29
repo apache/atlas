@@ -110,6 +110,7 @@ public abstract class AtlasBaseClient {
     protected Configuration configuration;
     private String basicAuthUser;
     private String basicAuthPassword;
+    private String token;
     private AtlasClientContext atlasClientContext;
     private boolean retryEnabled = false;
     private Cookie cookie = null;
@@ -128,6 +129,12 @@ public abstract class AtlasBaseClient {
                 this.basicAuthPassword = basicAuthUserNamePassword[1];
             }
         }
+
+        initializeState(baseUrl, null, null);
+    }
+
+    protected AtlasBaseClient(String[] baseUrl, String token) {
+        this.token = token;
 
         initializeState(baseUrl, null, null);
     }
@@ -452,7 +459,10 @@ public abstract class AtlasBaseClient {
         this.configuration = configuration;
         Client client = getClient(configuration, ugi, doAsUser);
 
-        if ((!AuthenticationUtil.isKerberosAuthenticationEnabled()) && basicAuthUser != null && basicAuthPassword != null) {
+        if (token != null) {
+            final HTTPBearerTokenFilter authFilter = new HTTPBearerTokenFilter(token);
+            client.addFilter(authFilter);
+        } else if ((!AuthenticationUtil.isKerberosAuthenticationEnabled()) && basicAuthUser != null && basicAuthPassword != null) {
             final HTTPBasicAuthFilter authFilter = new HTTPBasicAuthFilter(basicAuthUser, basicAuthPassword);
             client.addFilter(authFilter);
         }

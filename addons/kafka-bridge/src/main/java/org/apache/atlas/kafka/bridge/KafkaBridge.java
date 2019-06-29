@@ -107,7 +107,11 @@ public class KafkaBridge {
             }
 
 
-            if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+            if (AuthenticationUtil.isKeycloakAuthenticationEnabled()) {
+                String token = AuthenticationUtil.getBearerTokenInput();
+
+                atlasClientV2 = new AtlasClientV2(urls, token);
+            } else if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
                 String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
 
                 atlasClientV2 = new AtlasClientV2(urls, basicAuthUsernamePassword);

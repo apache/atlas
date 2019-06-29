@@ -82,6 +82,10 @@ public class AtlasClientV2 extends AtlasBaseClient {
         super(baseUrl, basicAuthUserNamePassword);
     }
 
+    public AtlasClientV2(String[] baseUrl, String token) {
+        super(baseUrl, token);
+    }
+
     public AtlasClientV2(String... baseUrls) throws AtlasException {
         super(baseUrls);
     }

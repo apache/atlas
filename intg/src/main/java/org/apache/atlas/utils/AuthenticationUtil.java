@@ -23,12 +23,16 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
 import java.io.Console;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 /**
  * Util class for Authentication.
  */
-public final class AuthenticationUtil {
+public final class  AuthenticationUtil {
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationUtil.class);
 
     private AuthenticationUtil() {
@@ -56,6 +60,24 @@ public final class AuthenticationUtil {
 
     public static boolean isKerberosAuthenticationEnabled(Configuration atlasConf, boolean defaultValue) {
         return atlasConf.getBoolean("atlas.authentication.method.kerberos", defaultValue);
+    }
+
+    public static boolean isKeycloakAuthenticationEnabled() {
+        try {
+            return isKeycloakAuthenticationEnabled(ApplicationProperties.get(), false);
+        } catch (AtlasException e) {
+            LOG.error("Error while isKeycloakAuthenticationEnabled", e);
+        }
+
+        return false;
+    }
+
+    public static boolean isKeycloakAuthenticationEnabled(Configuration atlasConf) {
+        return isKeycloakAuthenticationEnabled(atlasConf, false);
+    }
+
+    public static boolean isKeycloakAuthenticationEnabled(Configuration atlasConf, boolean defaultValue) {
+        return atlasConf.getBoolean("atlas.authentication.method.keycloak", defaultValue);
     }
 
     public static boolean includeHadoopGroups(){
@@ -95,6 +117,26 @@ public final class AuthenticationUtil {
             System.exit(1);
         }
         return new String[]{username, password};
+    }
+
+    public static String getBearerTokenInput() {
+        String fmt = "Provide bearer token for atlas oidc authentication :- ";
+
+        try {
+            Console console = System.console();
+            if (console != null) {
+                return console.readLine(fmt);
+            } else {
+                System.out.print(fmt);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+                return reader.readLine();
+            }
+        } catch (IOException ioe) {
+            System.out.print("Error while reading user input");
+            System.exit(1);
+        }
+
+        return null;
     }
 
 }
