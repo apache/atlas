@@ -420,17 +420,15 @@
       "name": "spark_table_storagedesc",
       "serviceType": "spark",
       "typeVersion": "1.0",
-      "relationshipCategory": "COMPOSITION",
+      "relationshipCategory": "ASSOCIATION",
       "endDef1": {
         "type": "spark_table",
         "name": "sd",
-        "isContainer": true,
         "cardinality": "SINGLE"
       },
       "endDef2": {
         "type": "spark_storagedesc",
         "name": "table",
-        "isContainer": false,
         "cardinality": "SINGLE"
       },
       "propagateTags": "NONE"
