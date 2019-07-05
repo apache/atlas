@@ -147,6 +147,9 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                             config.addProperty("graph.allow-upgrade", true);
                             graphInstance = JanusGraphFactory.open(config);
                         }
+                        else {
+                            throw new RuntimeException(e);
+                        }
                     }
                     atlasGraphInstance = new AtlasJanusGraph();
                     validateIndexBackend(config);
