@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.graphdb.janus;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
@@ -165,25 +166,30 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                         throw new RuntimeException(e);
                     }
 
-                    try {
-                        graphInstance = JanusGraphFactory.open(config);
-                    } catch (JanusGraphException e) {
-                        LOG.warn("JanusGraphException: {}", e.getMessage());
-                        if (e.getMessage().startsWith(OLDER_STORAGE_EXCEPTION)) {
-                            LOG.info("Newer client is being used with older janus storage version. Setting allow-upgrade=true and reattempting connection");
-                            config.addProperty("graph.allow-upgrade", true);
-                            graphInstance = JanusGraphFactory.open(config);
-                        }
-                        else {
-                            throw new RuntimeException(e);
-                        }
-                    }
+                    graphInstance = initJanusGraph(config);
                     atlasGraphInstance = new AtlasJanusGraph();
                     validateIndexBackend(config);
+
                 }
             }
         }
         return graphInstance;
+    }
+
+    @VisibleForTesting
+    static JanusGraph initJanusGraph(Configuration config) {
+        try {
+            return JanusGraphFactory.open(config);
+        } catch (JanusGraphException e) {
+            LOG.warn("JanusGraphException: {}", e.getMessage());
+            if (e.getMessage().startsWith(OLDER_STORAGE_EXCEPTION)) {
+                LOG.info("Newer client is being used with older janus storage version. Setting allow-upgrade=true and reattempting connection");
+                config.addProperty("graph.allow-upgrade", true);
+                return JanusGraphFactory.open(config);
+            } else {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public static JanusGraph getBulkLoadingGraphInstance() {

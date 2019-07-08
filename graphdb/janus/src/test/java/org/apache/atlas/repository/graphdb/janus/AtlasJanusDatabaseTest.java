@@ -31,6 +31,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
+import org.apache.commons.configuration.Configuration;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -39,9 +40,18 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
-import static org.testng.Assert.*;
+import static org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase.initJanusGraph;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 /**
  * Sanity test of basic graph operations using the Janus graphdb
@@ -77,6 +87,30 @@ public class AtlasJanusDatabaseTest {
         if (atlasGraph != null) {
             atlasGraph.clear();
             atlasGraph = null;
+        }
+    }
+
+    @Test
+    public void initializationFailureShouldThrowRuntimeException() throws AtlasException {
+        Configuration cfg = AtlasJanusGraphDatabase.getConfiguration();
+        Map<String, Object> cfgBackup = new HashMap<>();
+        Iterator<String> keys = cfg.getKeys();
+        while(keys.hasNext()) {
+            String key = keys.next();
+            cfgBackup.put(key, cfg.getProperty(key));
+        }
+
+        try {
+            cfg.clear();
+            initJanusGraph(cfg);
+
+            fail("Should have thrown an exception!");
+        }
+        catch (RuntimeException ex) {
+            assertTrue(true);
+            for (Map.Entry<String, Object> entry : cfgBackup.entrySet()) {
+                cfg.setProperty(entry.getKey(), entry.getValue());
+            }
         }
     }
 
