@@ -83,6 +83,12 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
         super(other);
     }
 
+    public AtlasRelatedObjectId(AtlasObjectId objId, String relationshipType) {
+        this(objId);
+
+        setRelationshipType(relationshipType);
+    }
+
     public AtlasRelatedObjectId(Map objIdMap) {
         super(objIdMap);
 

@@ -129,17 +129,13 @@ public class AlterTableRename extends BaseHiveEvent {
         // update qualifiedName for all columns, partitionKeys, storageDesc
         String renamedTableQualifiedName = (String) renamedTableEntity.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
-        renameColumns((List<AtlasObjectId>) oldTableEntity.getEntity().getAttribute(ATTRIBUTE_COLUMNS), oldTableEntity, renamedTableQualifiedName, ret);
-        renameColumns((List<AtlasObjectId>) oldTableEntity.getEntity().getAttribute(ATTRIBUTE_PARTITION_KEYS), oldTableEntity, renamedTableQualifiedName, ret);
+        renameColumns((List<AtlasObjectId>) oldTableEntity.getEntity().getRelationshipAttribute(ATTRIBUTE_COLUMNS), oldTableEntity, renamedTableQualifiedName, ret);
+        renameColumns((List<AtlasObjectId>) oldTableEntity.getEntity().getRelationshipAttribute(ATTRIBUTE_PARTITION_KEYS), oldTableEntity, renamedTableQualifiedName, ret);
         renameStorageDesc(oldTableEntity, renamedTableEntity, ret);
-
-        // remove columns, partitionKeys and storageDesc - as they have already been updated above
-        removeAttribute(renamedTableEntity, ATTRIBUTE_COLUMNS);
-        removeAttribute(renamedTableEntity, ATTRIBUTE_PARTITION_KEYS);
-        removeAttribute(renamedTableEntity, ATTRIBUTE_STORAGEDESC);
 
         // set previous name as the alias
         renamedTableEntity.getEntity().setAttribute(ATTRIBUTE_ALIASES, Collections.singletonList(oldTable.getTableName()));
+        renamedTableEntity.getEntity().setRelationshipAttributes(null);
 
         String        oldTableQualifiedName = (String) oldTableEntity.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME);
         AtlasObjectId oldTableId            = new AtlasObjectId(oldTableEntity.getEntity().getTypeName(), ATTRIBUTE_QUALIFIED_NAME, oldTableQualifiedName);
@@ -179,27 +175,9 @@ public class AlterTableRename extends BaseHiveEvent {
             AtlasObjectId oldSdId = new AtlasObjectId(oldSd.getTypeName(), ATTRIBUTE_QUALIFIED_NAME, oldSd.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
 
             newSd.removeAttribute(ATTRIBUTE_TABLE);
+            newSd.setRelationshipAttributes(null);
 
             notifications.add(new EntityPartialUpdateRequestV2(getUserName(), oldSdId, new AtlasEntityWithExtInfo(newSd)));
-        }
-    }
-
-    private void removeAttribute(AtlasEntityWithExtInfo entity, String attributeName) {
-        Object attributeValue = entity.getEntity().getAttribute(attributeName);
-
-        entity.getEntity().getAttributes().remove(attributeName);
-
-        if (attributeValue instanceof AtlasObjectId) {
-            AtlasObjectId objectId = (AtlasObjectId) attributeValue;
-
-            entity.removeReferredEntity(objectId.getGuid());
-        } else if (attributeValue instanceof Collection) {
-            for (Object item : (Collection) attributeValue)
-                if (item instanceof AtlasObjectId) {
-                    AtlasObjectId objectId = (AtlasObjectId) item;
-
-                    entity.removeReferredEntity(objectId.getGuid());
-                }
         }
     }
 
@@ -207,7 +185,7 @@ public class AlterTableRename extends BaseHiveEvent {
         AtlasEntity ret = null;
 
         if (tableEntity != null && tableEntity.getEntity() != null) {
-            Object attrSdId = tableEntity.getEntity().getAttribute(ATTRIBUTE_STORAGEDESC);
+            Object attrSdId = tableEntity.getEntity().getRelationshipAttribute(ATTRIBUTE_STORAGEDESC);
 
             if (attrSdId instanceof AtlasObjectId) {
                 ret = tableEntity.getReferredEntity(((AtlasObjectId) attrSdId).getGuid());

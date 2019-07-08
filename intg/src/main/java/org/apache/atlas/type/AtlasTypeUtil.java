@@ -414,6 +414,10 @@ public class AtlasTypeUtil {
         return new AtlasRelatedObjectId(getAtlasObjectId(entity));
     }
 
+    public static AtlasRelatedObjectId toAtlasRelatedObjectId(AtlasEntity entity, String relationshipType){
+        return new AtlasRelatedObjectId(getAtlasObjectId(entity), relationshipType);
+    }
+
     public static AtlasRelatedObjectId toAtlasRelatedObjectId(AtlasEntity entity, AtlasTypeRegistry typeRegistry) {
         return new AtlasRelatedObjectId(getAtlasObjectId(entity, typeRegistry));
     }
