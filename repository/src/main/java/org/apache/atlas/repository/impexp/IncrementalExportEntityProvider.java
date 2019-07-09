@@ -48,6 +48,10 @@ public class IncrementalExportEntityProvider implements ExtractStrategy {
     private static final String TRANSFORM_CLAUSE = ".project('__guid').by('__guid').dedup().toList()";
     private static final String TIMESTAMP_CLAUSE = ".has('__modificationTimestamp', gt(modificationTimestamp))";
 
+    private static final String QUERY_TABLE_DB = QUERY_DB + ".out('__hive_table.db')";
+    private static final String QUERY_TABLE_SD = QUERY_DB + ".out('__hive_table.sd')";
+    private static final String QUERY_TABLE_COLUMNS = QUERY_DB + ".out('__hive_table.columns')";
+
     private ScriptEngine scriptEngine;
 
     @Inject
@@ -67,7 +71,10 @@ public class IncrementalExportEntityProvider implements ExtractStrategy {
 
     @Override
     public void connectedFetch(AtlasEntity entity, ExportService.ExportContext context) {
-
+        //starting entity is hive_table
+        context.guidsToProcess.addAll(fetchGuids(entity.getGuid(), QUERY_TABLE_DB, context.changeMarker));
+        context.guidsToProcess.addAll(fetchGuids(entity.getGuid(), QUERY_TABLE_SD, context.changeMarker));
+        context.guidsToProcess.addAll(fetchGuids(entity.getGuid(), QUERY_TABLE_COLUMNS, context.changeMarker));
     }
 
     public void populate(String dbEntityGuid, long timeStamp, UniqueList<String> guidsToProcess) {
