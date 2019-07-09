@@ -36,6 +36,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.util.UniqueList;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -332,6 +333,7 @@ public class ExportService {
     static class ExportContext {
         private static final int REPORTING_THREASHOLD = 1000;
         private static final String ATLAS_TYPE_HIVE_DB = "hive_db";
+        private static final String ATLAS_TYPE_HIVE_TABLE = "hive_table";
 
 
         final UniqueList<String>              entityCreationOrder = new UniqueList<>();
@@ -353,6 +355,7 @@ public class ExportService {
         final long                        changeMarker;
         boolean isSkipConnectedFetch;
         private final boolean isHiveDBIncremental;
+        private final boolean isHiveTableIncremental;
 
         private       int                 progressReportCount = 0;
 
@@ -364,15 +367,26 @@ public class ExportService {
             skipLineage  = result.getRequest().getSkipLineageOptionValue();
             this.changeMarker = result.getRequest().getChangeTokenFromOptions();
             this.isHiveDBIncremental = checkHiveDBIncrementalSkipLineage(result.getRequest());
+            this.isHiveTableIncremental = checkHiveTableIncrementalSkipLineage(result.getRequest());
             this.isSkipConnectedFetch = false;
         }
 
         private boolean checkHiveDBIncrementalSkipLineage(AtlasExportRequest request) {
-            if(request.getItemsToExport().size() == 0) {
+            if(CollectionUtils.isEmpty(request.getItemsToExport())) {
                 return false;
             }
 
             return request.getItemsToExport().get(0).getTypeName().equalsIgnoreCase(ATLAS_TYPE_HIVE_DB) &&
+                    request.getFetchTypeOptionValue().equalsIgnoreCase(AtlasExportRequest.FETCH_TYPE_INCREMENTAL) &&
+                    request.getSkipLineageOptionValue();
+        }
+
+        private boolean checkHiveTableIncrementalSkipLineage(AtlasExportRequest request) {
+            if(CollectionUtils.isEmpty(request.getItemsToExport())) {
+                return false;
+            }
+
+            return request.getItemsToExport().get(0).getTypeName().equalsIgnoreCase(ATLAS_TYPE_HIVE_TABLE) &&
                     request.getFetchTypeOptionValue().equalsIgnoreCase(AtlasExportRequest.FETCH_TYPE_INCREMENTAL) &&
                     request.getSkipLineageOptionValue();
         }
@@ -440,6 +454,10 @@ public class ExportService {
 
         public boolean isHiveDBIncrementalSkipLineage() {
             return isHiveDBIncremental;
+        }
+
+        public boolean isHiveTableIncrementalSkipLineage() {
+            return isHiveTableIncremental;
         }
 
         public void addToEntityCreationOrder(String guid) {
