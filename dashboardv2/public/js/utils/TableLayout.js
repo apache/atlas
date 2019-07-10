@@ -189,13 +189,10 @@ define(['require',
                 if (this.includeAtlasTableSorting) {
                     var oldSortingRef = this.collection.setSorting;
                     this.collection.setSorting = function() {
+                        this.state.pageSize = this.length
                         var val = oldSortingRef.apply(this, arguments);
-                        // console.log(val)
                         val.fullCollection.models.sort();
                         this.comparator = function(next, previous, data) {
-
-
-                            // return a.get('year');
                             var getValue = function(options) {
 
                                 var next = options.next,
@@ -209,7 +206,6 @@ define(['require',
                                 }
                             }
                             if (val.state && (!_.isNull(val.state.sortKey))) {
-
                                 var nextValue,
                                     previousValue;
                                 if ((next && next.get("attributes") && next.get("attributes")[val.state.sortKey]) || (previous && previous.get("attributes") && previous.get("attributes")[val.state.sortKey])) {
@@ -228,13 +224,11 @@ define(['require',
                                 });
                             }
                         }
-
                         return val;
                     };
                 }
                 this.bindEvents();
             },
-
             /** all events binding here */
             bindEvents: function() {
                 this.listenTo(this.collection, 'request', function() {
