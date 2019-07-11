@@ -38,12 +38,12 @@ import static org.apache.atlas.hive.hook.events.BaseHiveEvent.toTable;
 
 
 public class AtlasHiveHookContext {
-    public static final char   QNAME_SEP_CLUSTER_NAME = '@';
-    public static final char   QNAME_SEP_ENTITY_NAME  = '.';
-    public static final char   QNAME_SEP_PROCESS      = ':';
-    public static final String TEMP_TABLE_PREFIX      = "_temp-";
-    public static final String CREATE_OPERATION       = "CREATE";
-    public static final String ALTER_OPERATION        = "ALTER";
+    public static final char   QNAME_SEP_METADATA_NAMESPACE = '@';
+    public static final char   QNAME_SEP_ENTITY_NAME        = '.';
+    public static final char   QNAME_SEP_PROCESS            = ':';
+    public static final String TEMP_TABLE_PREFIX            = "_temp-";
+    public static final String CREATE_OPERATION             = "CREATE";
+    public static final String ALTER_OPERATION              = "ALTER";
 
     private final HiveHook                 hook;
     private final HiveOperation            hiveOperation;
@@ -157,8 +157,8 @@ public class AtlasHiveHookContext {
     public Collection<AtlasEntity> getEntities() { return qNameEntityMap.values(); }
 
 
-    public String getClusterName() {
-        return hook.getClusterName();
+    public String getMetadataNamespace() {
+        return hook.getMetadataNamespace();
     }
 
     public String getHostName() { return hook.getHostName(); }
@@ -192,7 +192,7 @@ public class AtlasHiveHookContext {
     }
 
     public String getQualifiedName(Database db) {
-        return (db.getName() + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+        return (db.getName() + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + getMetadataNamespace();
     }
 
     public String getQualifiedName(Table table) {
@@ -206,7 +206,7 @@ public class AtlasHiveHookContext {
             }
         }
 
-        return (table.getDbName() + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+        return (table.getDbName() + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + getMetadataNamespace();
     }
 
     public boolean isKnownDatabase(String dbQualifiedName) {

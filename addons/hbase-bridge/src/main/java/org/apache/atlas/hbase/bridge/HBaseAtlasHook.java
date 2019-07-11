@@ -30,7 +30,6 @@ import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
@@ -55,20 +54,17 @@ public class HBaseAtlasHook extends AtlasHook {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseAtlasHook.class);
 
 
-    public static final String HBASE_CLUSTER_NAME   = "atlas.cluster.name";
-    public static final String DEFAULT_CLUSTER_NAME = "primary";
-    public static final String ATTR_DESCRIPTION     = "description";
-    public static final String ATTR_ATLAS_ENDPOINT  = "atlas.rest.address";
-    public static final String ATTR_COMMENT         = "comment";
-    public static final String ATTR_PARAMETERS      = "parameters";
-    public static final String ATTR_URI             = "uri";
-    public static final String ATTR_NAMESPACE       = "namespace";
-    public static final String ATTR_TABLE           = "table";
-    public static final String ATTR_COLUMNFAMILIES  = "column_families";
-    public static final String ATTR_CREATE_TIME     = "createTime";
-    public static final String ATTR_MODIFIED_TIME   = "modifiedTime";
-    public static final String ATTR_OWNER           = "owner";
-    public static final String ATTR_NAME            = "name";
+    public static final String ATTR_DESCRIPTION           = "description";
+    public static final String ATTR_ATLAS_ENDPOINT        = "atlas.rest.address";
+    public static final String ATTR_PARAMETERS            = "parameters";
+    public static final String ATTR_URI                   = "uri";
+    public static final String ATTR_NAMESPACE             = "namespace";
+    public static final String ATTR_TABLE                 = "table";
+    public static final String ATTR_COLUMNFAMILIES        = "column_families";
+    public static final String ATTR_CREATE_TIME           = "createTime";
+    public static final String ATTR_MODIFIED_TIME         = "modifiedTime";
+    public static final String ATTR_OWNER                 = "owner";
+    public static final String ATTR_NAME                  = "name";
 
     // column addition metadata
     public static final String ATTR_TABLE_MAX_FILESIZE              = "maxFileSize";
@@ -106,7 +102,6 @@ public class HBaseAtlasHook extends AtlasHook {
     public static final String HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT = "%s:%s.%s@%s";
 
     private static final String REFERENCEABLE_ATTRIBUTE_NAME = "qualifiedName";
-    private              String clusterName                  = null;
 
     private static volatile HBaseAtlasHook me;
 
@@ -141,7 +136,7 @@ public class HBaseAtlasHook extends AtlasHook {
                     ret = me;
 
                     if (ret == null) {
-                        me = ret = new HBaseAtlasHook(atlasProperties);
+                        me = ret = new HBaseAtlasHook();
                     }
                 }
             } catch (Exception e) {
@@ -152,14 +147,8 @@ public class HBaseAtlasHook extends AtlasHook {
         return ret;
     }
 
-    public HBaseAtlasHook(Configuration atlasProperties) {
-        this(atlasProperties.getString(HBASE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME));
+    public HBaseAtlasHook() {
     }
-
-    public HBaseAtlasHook(String clusterName) {
-        this.clusterName = clusterName;
-    }
-
 
     public void createAtlasInstances(HBaseOperationContext hbaseOperationContext) {
         OPERATION operation = hbaseOperationContext.getOperation();
@@ -210,7 +199,7 @@ public class HBaseAtlasHook extends AtlasHook {
     }
 
     private void deleteNameSpaceInstance(HBaseOperationContext hbaseOperationContext) {
-        String        nameSpaceQName = getNameSpaceQualifiedName(clusterName, hbaseOperationContext.getNameSpace());
+        String        nameSpaceQName = getNameSpaceQualifiedName(getMetadataNamespace(), hbaseOperationContext.getNameSpace());
         AtlasObjectId nameSpaceId    = new AtlasObjectId(HBaseDataTypes.HBASE_NAMESPACE.getName(), REFERENCEABLE_ATTRIBUTE_NAME, nameSpaceQName);
 
         LOG.info("Delete NameSpace {}", nameSpaceQName);
@@ -259,7 +248,7 @@ public class HBaseAtlasHook extends AtlasHook {
         }
 
         String        tableNameStr = tableName.getNameAsString();
-        String        tableQName   = getTableQualifiedName(clusterName, nameSpaceName, tableNameStr);
+        String        tableQName   = getTableQualifiedName(getMetadataNamespace(), nameSpaceName, tableNameStr);
         AtlasObjectId tableId      = new AtlasObjectId(HBaseDataTypes.HBASE_TABLE.getName(), REFERENCEABLE_ATTRIBUTE_NAME, tableQName);
 
         LOG.info("Delete Table {}", tableQName);
@@ -302,7 +291,7 @@ public class HBaseAtlasHook extends AtlasHook {
 
         String        tableNameStr      = tableName.getNameAsString();
         String        columnFamilyName  = hbaseOperationContext.getColummFamily();
-        String        columnFamilyQName = getColumnFamilyQualifiedName(clusterName, nameSpaceName, tableNameStr, columnFamilyName);
+        String        columnFamilyQName = getColumnFamilyQualifiedName(getMetadataNamespace(), nameSpaceName, tableNameStr, columnFamilyName);
         AtlasObjectId columnFamilyId    = new AtlasObjectId(HBaseDataTypes.HBASE_COLUMN_FAMILY.getName(), REFERENCEABLE_ATTRIBUTE_NAME, columnFamilyQName);
 
         LOG.info("Delete ColumnFamily {}", columnFamilyQName);
@@ -314,48 +303,48 @@ public class HBaseAtlasHook extends AtlasHook {
     /**
      * Construct the qualified name used to uniquely identify a ColumnFamily instance in Atlas.
      *
-     * @param clusterName  Name of the cluster to which the HBase component belongs
+     * @param metadataNamespace  Metadata namespace of the cluster to which the HBase component belongs
      * @param nameSpace    Name of the HBase database to which the Table belongs
      * @param tableName    Name of the HBase table
      * @param columnFamily Name of the ColumnFamily
      * @return Unique qualified name to identify the Table instance in Atlas.
      */
-    public static String getColumnFamilyQualifiedName(String clusterName, String nameSpace, String tableName, String columnFamily) {
-        if (clusterName == null || nameSpace == null || tableName == null || columnFamily == null) {
+    public static String getColumnFamilyQualifiedName(String metadataNamespace, String nameSpace, String tableName, String columnFamily) {
+        if (metadataNamespace == null || nameSpace == null || tableName == null || columnFamily == null) {
             return null;
         } else {
-            return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), stripNameSpace(tableName.toLowerCase()), columnFamily.toLowerCase(), clusterName);
+            return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), stripNameSpace(tableName.toLowerCase()), columnFamily.toLowerCase(), metadataNamespace);
         }
     }
 
     /**
      * Construct the qualified name used to uniquely identify a Table instance in Atlas.
      *
-     * @param clusterName Name of the cluster to which the HBase component belongs
+     * @param metadataNamespace  Metadata namespace of the cluster to which the HBase component belongs
      * @param nameSpace   Name of the HBase database to which the Table belongs
      * @param tableName   Name of the HBase table
      * @return Unique qualified name to identify the Table instance in Atlas.
      */
-    public static String getTableQualifiedName(String clusterName, String nameSpace, String tableName) {
-        if (clusterName == null || nameSpace == null || tableName == null) {
+    public static String getTableQualifiedName(String metadataNamespace, String nameSpace, String tableName) {
+        if (metadataNamespace == null || nameSpace == null || tableName == null) {
             return null;
         } else {
-            return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), stripNameSpace(tableName.toLowerCase()), clusterName);
+            return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), stripNameSpace(tableName.toLowerCase()), metadataNamespace);
         }
     }
 
     /**
      * Construct the qualified name used to uniquely identify a HBase NameSpace instance in Atlas.
      *
-     * @param clusterName Name of the cluster to which the HBase component belongs
+     * @param metadataNamespace  Metadata namespace of the cluster to which the HBase component belongs
      * @param nameSpace
      * @return Unique qualified name to identify the HBase NameSpace instance in Atlas.
      */
-    public static String getNameSpaceQualifiedName(String clusterName, String nameSpace) {
-        if (clusterName == null || nameSpace == null) {
+    public static String getNameSpaceQualifiedName(String metadataNamespace, String nameSpace) {
+        if (metadataNamespace == null || nameSpace == null) {
             return null;
         } else {
-            return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace.toLowerCase(), clusterName);
+            return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace.toLowerCase(), metadataNamespace);
         }
     }
 
@@ -375,8 +364,8 @@ public class HBaseAtlasHook extends AtlasHook {
         Date now = new Date(System.currentTimeMillis());
 
         nameSpace.setAttribute(ATTR_NAME, nameSpaceName);
-        nameSpace.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, getNameSpaceQualifiedName(clusterName, nameSpaceName));
-        nameSpace.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
+        nameSpace.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, getNameSpaceQualifiedName(getMetadataNamespace(), nameSpaceName));
+        nameSpace.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, getMetadataNamespace());
         nameSpace.setAttribute(ATTR_DESCRIPTION, nameSpaceName);
         nameSpace.setAttribute(ATTR_PARAMETERS, hbaseOperationContext.getHbaseConf());
         nameSpace.setAttribute(ATTR_OWNER, hbaseOperationContext.getOwner());
@@ -393,7 +382,7 @@ public class HBaseAtlasHook extends AtlasHook {
         AtlasEntity table         = new AtlasEntity(HBaseDataTypes.HBASE_TABLE.getName());
         String      tableName     = getTableName(hbaseOperationContext);
         String      nameSpaceName = (String) nameSpace.getAttribute(ATTR_NAME);
-        String      tableQName    = getTableQualifiedName(clusterName, nameSpaceName, tableName);
+        String      tableQName    = getTableQualifiedName(getMetadataNamespace(), nameSpaceName, tableName);
         OPERATION   operation     = hbaseOperationContext.getOperation();
         Date        now           = new Date(System.currentTimeMillis());
 
@@ -455,7 +444,7 @@ public class HBaseAtlasHook extends AtlasHook {
         String      columnFamilyName  = columnFamilyDescriptor.getNameAsString();
         String      tableName         = (String) table.getAttribute(ATTR_NAME);
         String      nameSpaceName     = (String) nameSpace.getAttribute(ATTR_NAME);
-        String      columnFamilyQName = getColumnFamilyQualifiedName(clusterName, nameSpaceName, tableName, columnFamilyName);
+        String      columnFamilyQName = getColumnFamilyQualifiedName(getMetadataNamespace(), nameSpaceName, tableName, columnFamilyName);
         Date        now               = new Date(System.currentTimeMillis());
 
         columnFamily.setAttribute(ATTR_NAME, columnFamilyName);

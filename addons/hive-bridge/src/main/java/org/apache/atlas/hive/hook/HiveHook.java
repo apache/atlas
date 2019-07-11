@@ -55,7 +55,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public enum PreprocessAction { NONE, IGNORE, PRUNE }
 
     public static final String CONF_PREFIX                         = "atlas.hook.hive.";
-    public static final String CONF_CLUSTER_NAME                   = "atlas.cluster.name";
     public static final String HDFS_PATH_CONVERT_TO_LOWER_CASE     = CONF_PREFIX + "hdfs_path.convert_to_lowercase";
     public static final String HOOK_NAME_CACHE_ENABLED             = CONF_PREFIX + "name.cache.enabled";
     public static final String HOOK_NAME_CACHE_DATABASE_COUNT      = CONF_PREFIX + "name.cache.database.count";
@@ -66,13 +65,10 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String HOOK_HIVE_TABLE_IGNORE_PATTERN                            = CONF_PREFIX + "hive_table.ignore.pattern";
     public static final String HOOK_HIVE_TABLE_PRUNE_PATTERN                             = CONF_PREFIX + "hive_table.prune.pattern";
     public static final String HOOK_HIVE_TABLE_CACHE_SIZE                                = CONF_PREFIX + "hive_table.cache.size";
-
-    public static final String DEFAULT_CLUSTER_NAME = "primary";
     public static final String DEFAULT_HOST_NAME = "localhost";
 
     private static final Map<String, HiveOperation> OPERATION_MAP = new HashMap<>();
 
-    private static final String  clusterName;
     private static final boolean convertHdfsPathToLowerCase;
     private static final boolean nameCacheEnabled;
     private static final int     nameCacheDatabaseMaxCount;
@@ -96,7 +92,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             OPERATION_MAP.put(hiveOperation.getOperationName(), hiveOperation);
         }
 
-        clusterName                     = atlasProperties.getString(CONF_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
         convertHdfsPathToLowerCase      = atlasProperties.getBoolean(HDFS_PATH_CONVERT_TO_LOWER_CASE, false);
         nameCacheEnabled                = atlasProperties.getBoolean(HOOK_NAME_CACHE_ENABLED, true);
         nameCacheDatabaseMaxCount       = atlasProperties.getInt(HOOK_NAME_CACHE_DATABASE_COUNT, 10000);
@@ -251,10 +246,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== HiveHook.run({})", hookContext.getOperationName());
         }
-    }
-
-    public String getClusterName() {
-        return clusterName;
     }
 
     public boolean isConvertHdfsPathToLowerCase() {

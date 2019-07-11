@@ -340,7 +340,7 @@ public abstract class BaseImpalaEvent {
 
             ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, dbQualifiedName);
             ret.setAttribute(ATTRIBUTE_NAME, dbName.toLowerCase());
-            ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, context.getClusterName());
+            ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, context.getMetadataNamespace());
 
             context.putEntity(dbQualifiedName, ret);
         }

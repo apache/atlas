@@ -118,7 +118,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
         topology.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, topologyInfo.get_name());
         topology.setAttribute(AtlasClient.OWNER, owner);
         topology.setAttribute("startTime", new Date(System.currentTimeMillis()));
-        topology.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, getClusterName(stormConf));
+        topology.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, getMetadataNamespace());
 
         return topology;
     }
@@ -166,9 +166,9 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     }
 
     private AtlasEntity addDataSet(String dataSetType, String topologyOwner, Serializable instance, Map stormConf, AtlasEntityExtInfo entityExtInfo) {
-        Map<String, String> config      = StormTopologyUtil.getFieldValues(instance, true, null);
-        String              clusterName = null;
-        AtlasEntity         ret         = null;
+        Map<String, String> config            = StormTopologyUtil.getFieldValues(instance, true, null);
+        AtlasEntity         ret               = null;
+        String              metadataNamespace = getMetadataNamespace();
 
         // todo: need to redo this with a config driven approach
         switch (dataSetType) {
@@ -188,8 +188,6 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                     topologyOwner = ANONYMOUS_OWNER;
                 }
 
-                clusterName = getClusterName(stormConf);
-
                 if (topicName == null) {
                     LOG.error("Kafka topic name not found");
                 } else {
@@ -198,7 +196,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                     ret.setAttribute("topic", topicName);
                     ret.setAttribute("uri", uri);
                     ret.setAttribute(AtlasClient.OWNER, topologyOwner);
-                    ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getKafkaTopicQualifiedName(clusterName, topicName));
+                    ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getKafkaTopicQualifiedName(metadataNamespace, topicName));
                     ret.setAttribute(AtlasClient.NAME, topicName);
                 }
             }
@@ -212,7 +210,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                     uri = hbaseTableName;
                 }
 
-                clusterName = extractComponentClusterName(HBaseConfiguration.create(), stormConf);
+                metadataNamespace = extractComponentMetadataNamespace(HBaseConfiguration.create(), stormConf);
 
                 if (hbaseTableName == null) {
                     LOG.error("HBase table name not found");
@@ -223,7 +221,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                     ret.setAttribute(AtlasClient.NAME, uri);
                     ret.setAttribute(AtlasClient.OWNER, stormConf.get("storm.kerberos.principal"));
                     //TODO - Hbase Namespace is hardcoded to 'default'. need to check how to get this or is it already part of tableName
-                    ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHbaseTableQualifiedName(clusterName, HBASE_NAMESPACE_DEFAULT, hbaseTableName));
+                    ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHbaseTableQualifiedName(metadataNamespace, HBASE_NAMESPACE_DEFAULT, hbaseTableName));
                 }
             }
             break;
@@ -234,11 +232,9 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 final Path   hdfsPath      = new Path(hdfsPathStr);
                 final String nameServiceID = HdfsNameServiceResolver.getNameServiceIDForPath(hdfsPathStr);
 
-                clusterName = getClusterName(stormConf);
-
                 ret = new AtlasEntity(HiveMetaStoreBridge.HDFS_PATH);
 
-                ret.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, getClusterName(stormConf));
+                ret.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, metadataNamespace);
                 ret.setAttribute(AtlasClient.OWNER, stormConf.get("hdfs.kerberos.principal"));
                 ret.setAttribute(AtlasClient.NAME, Path.getPathWithoutSchemeAndAuthority(hdfsPath).toString().toLowerCase());
 
@@ -247,16 +243,16 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
                     ret.setAttribute("path", updatedPath);
                     ret.setAttribute("nameServiceId", nameServiceID);
-                    ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHdfsPathQualifiedName(clusterName, updatedPath));
+                    ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHdfsPathQualifiedName(metadataNamespace, updatedPath));
                 } else {
                     ret.setAttribute("path", hdfsPathStr);
-                    ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHdfsPathQualifiedName(clusterName, hdfsPathStr));
+                    ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHdfsPathQualifiedName(metadataNamespace, hdfsPathStr));
                 }
             }
             break;
 
             case "HiveBolt": {
-                clusterName = extractComponentClusterName(new HiveConf(), stormConf);
+                metadataNamespace = extractComponentMetadataNamespace(new HiveConf(), stormConf);
 
                 final String dbName  = config.get("HiveBolt.options.databaseName");
                 final String tblName = config.get("HiveBolt.options.tableName");
@@ -267,8 +263,8 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                     AtlasEntity dbEntity = new AtlasEntity("hive_db");
 
                     dbEntity.setAttribute(AtlasClient.NAME, dbName);
-                    dbEntity.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getDBQualifiedName(getClusterName(stormConf), dbName));
-                    dbEntity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, getClusterName(stormConf));
+                    dbEntity.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getDBQualifiedName(metadataNamespace, dbName));
+                    dbEntity.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, metadataNamespace);
 
                     entityExtInfo.addReferredEntity(dbEntity);
 
@@ -277,7 +273,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
                     ret.setAttribute(AtlasClient.NAME, tblName);
                     ret.setAttribute(ATTRIBUTE_DB, AtlasTypeUtil.getAtlasObjectId(dbEntity));
-                    ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tblName));
+                    ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getTableQualifiedName(metadataNamespace, dbName, tblName));
                 }
             }
             break;
@@ -384,30 +380,25 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
         }
     }
 
-    public static String getKafkaTopicQualifiedName(String clusterName, String topicName) {
-        return String.format("%s@%s", topicName.toLowerCase(), clusterName);
+    public static String getKafkaTopicQualifiedName(String metadataNamespace, String topicName) {
+        return String.format("%s@%s", topicName.toLowerCase(), metadataNamespace);
     }
 
-    public static String getHbaseTableQualifiedName(String clusterName, String nameSpace, String tableName) {
-        return String.format("%s.%s@%s", nameSpace.toLowerCase(), tableName.toLowerCase(), clusterName);
+    public static String getHbaseTableQualifiedName(String metadataNamespace, String nameSpace, String tableName) {
+        return String.format("%s.%s@%s", nameSpace.toLowerCase(), tableName.toLowerCase(), metadataNamespace);
     }
 
-    public static String getHdfsPathQualifiedName(String clusterName, String hdfsPath) {
-        return String.format("%s@%s", hdfsPath.toLowerCase(), clusterName);
+    public static String getHdfsPathQualifiedName(String metadataNamespace, String hdfsPath) {
+        return String.format("%s@%s", hdfsPath.toLowerCase(), metadataNamespace);
     }
 
-    private String getClusterName(Map stormConf) {
-        return atlasProperties.getString(AtlasConstants.CLUSTER_NAME_KEY, AtlasConstants.DEFAULT_CLUSTER_NAME);
-    }
-
-    private String extractComponentClusterName(Configuration configuration, Map stormConf) {
-        String clusterName = configuration.get(AtlasConstants.CLUSTER_NAME_KEY, null);
+    private String extractComponentMetadataNamespace(Configuration configuration, Map stormConf) {
+        String clusterName = configuration.get(CLUSTER_NAME_KEY, null);
 
         if (clusterName == null) {
-            clusterName = getClusterName(stormConf);
+            clusterName = getMetadataNamespace();
         }
 
         return clusterName;
     }
-
 }

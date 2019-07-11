@@ -52,8 +52,9 @@ import java.util.Date;
 public class SqoopHook extends SqoopJobDataPublisher {
     private static final Logger LOG = LoggerFactory.getLogger(SqoopHook.class);
 
-    public static final String ATLAS_CLUSTER_NAME   = "atlas.cluster.name";
-    public static final String DEFAULT_CLUSTER_NAME = "primary";
+    public static final String CLUSTER_NAME_KEY           = "atlas.cluster.name";
+    public static final String ATLAS_METADATA_NAMESPACE   = "atlas.metadata.namespace";
+    public static final String DEFAULT_CLUSTER_NAME       = "primary";
 
     public static final String USER           = "userName";
     public static final String DB_STORE_TYPE  = "dbStoreType";
@@ -80,12 +81,14 @@ public class SqoopHook extends SqoopJobDataPublisher {
     @Override
     public void publish(SqoopJobDataPublisher.Data data) throws AtlasHookException {
         try {
-            Configuration atlasProperties = ApplicationProperties.get();
-            String        clusterName     = atlasProperties.getString(ATLAS_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
-            AtlasEntity   entDbStore      = toSqoopDBStoreEntity(data);
-            AtlasEntity   entHiveDb       = toHiveDatabaseEntity(clusterName, data.getHiveDB());
-            AtlasEntity   entHiveTable    = data.getHiveTable() != null ? toHiveTableEntity(entHiveDb, data.getHiveTable()) : null;
-            AtlasEntity   entProcess      = toSqoopProcessEntity(entDbStore, entHiveDb, entHiveTable, data, clusterName);
+            Configuration atlasProperties   = ApplicationProperties.get();
+            String        metadataNamespace = atlasProperties.getString(ATLAS_METADATA_NAMESPACE, getClusterName(atlasProperties));
+
+            AtlasEntity entDbStore   = toSqoopDBStoreEntity(data);
+            AtlasEntity entHiveDb    = toHiveDatabaseEntity(metadataNamespace, data.getHiveDB());
+            AtlasEntity entHiveTable = data.getHiveTable() != null ? toHiveTableEntity(entHiveDb, data.getHiveTable()) : null;
+            AtlasEntity entProcess   = toSqoopProcessEntity(entDbStore, entHiveDb, entHiveTable, data, metadataNamespace);
+
 
             AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo(entProcess);
 
@@ -105,11 +108,15 @@ public class SqoopHook extends SqoopJobDataPublisher {
         }
     }
 
-    private AtlasEntity toHiveDatabaseEntity(String clusterName, String dbName) {
-        AtlasEntity entHiveDb     = new AtlasEntity(HiveDataTypes.HIVE_DB.getName());
-        String      qualifiedName = HiveMetaStoreBridge.getDBQualifiedName(clusterName, dbName);
+    private String getClusterName(Configuration config) {
+        return config.getString(CLUSTER_NAME_KEY, DEFAULT_CLUSTER_NAME);
+    }
 
-        entHiveDb.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
+    private AtlasEntity toHiveDatabaseEntity(String metadataNamespace, String dbName) {
+        AtlasEntity entHiveDb     = new AtlasEntity(HiveDataTypes.HIVE_DB.getName());
+        String      qualifiedName = HiveMetaStoreBridge.getDBQualifiedName(metadataNamespace, dbName);
+
+        entHiveDb.setAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, metadataNamespace);
         entHiveDb.setAttribute(AtlasClient.NAME, dbName);
         entHiveDb.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qualifiedName);
 
@@ -153,9 +160,10 @@ public class SqoopHook extends SqoopJobDataPublisher {
         return entDbStore;
     }
 
-    private AtlasEntity toSqoopProcessEntity(AtlasEntity entDbStore, AtlasEntity entHiveDb, AtlasEntity entHiveTable, SqoopJobDataPublisher.Data data, String clusterName) {
+    private AtlasEntity toSqoopProcessEntity(AtlasEntity entDbStore, AtlasEntity entHiveDb, AtlasEntity entHiveTable,
+                                             SqoopJobDataPublisher.Data data, String metadataNamespace) {
         AtlasEntity         entProcess       = new AtlasEntity(SqoopDataTypes.SQOOP_PROCESS.getName());
-        String              sqoopProcessName = getSqoopProcessName(data, clusterName);
+        String              sqoopProcessName = getSqoopProcessName(data, metadataNamespace);
         Map<String, String> sqoopOptionsMap  = new HashMap<>();
         Properties          options          = data.getOptions();
 
@@ -190,7 +198,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
         return data.getOperation().toLowerCase().equals("import");
     }
 
-    static String getSqoopProcessName(Data data, String clusterName) {
+    static String getSqoopProcessName(Data data, String metadataNamespace) {
         StringBuilder name = new StringBuilder(String.format("sqoop %s --connect %s", data.getOperation(), data.getUrl()));
 
         if (StringUtils.isNotEmpty(data.getHiveTable())) {
@@ -204,9 +212,9 @@ public class SqoopHook extends SqoopJobDataPublisher {
         }
 
         if (data.getHiveTable() != null) {
-            name.append(String.format(" --hive-%s --hive-database %s --hive-table %s --hive-cluster %s", data.getOperation(), data.getHiveDB().toLowerCase(), data.getHiveTable().toLowerCase(), clusterName));
+            name.append(String.format(" --hive-%s --hive-database %s --hive-table %s --hive-cluster %s", data.getOperation(), data.getHiveDB().toLowerCase(), data.getHiveTable().toLowerCase(), metadataNamespace));
         } else {
-            name.append(String.format("--hive-%s --hive-database %s --hive-cluster %s", data.getOperation(), data.getHiveDB(), clusterName));
+            name.append(String.format("--hive-%s --hive-database %s --hive-cluster %s", data.getOperation(), data.getHiveDB(), metadataNamespace));
         }
 
         return name.toString();

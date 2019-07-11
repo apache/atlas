@@ -109,7 +109,7 @@ else
     exit 1
 fi
 
-CP="${ATLASCPPATH}:${HIVE_CP}:${HADOOP_CP}"
+CP="${HIVE_CP}:${HADOOP_CP}:${ATLASCPPATH}"
 
 # If running in cygwin, convert pathnames and classpath to Windows format.
 if [ "${CYGWIN}" == "true" ]
