@@ -519,7 +519,7 @@ public class HiveITBase {
                 Table outTable = entity.getTable();
                 //refresh table
                 outTable = dgiBridge.getHiveClient().getTable(outTable.getDbName(), outTable.getTableName());
-                return HiveMetaStoreBridge.getTableProcessQualifiedName(dgiBridge.getClusterName(), outTable);
+                return HiveMetaStoreBridge.getTableProcessQualifiedName(dgiBridge.getMetadataNamespace(), outTable);
             }
         }
 

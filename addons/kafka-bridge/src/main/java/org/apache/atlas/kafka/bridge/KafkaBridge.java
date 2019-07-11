@@ -58,19 +58,20 @@ import java.util.regex.Pattern;
 public class KafkaBridge {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaBridge.class);
 
-    private static final int    EXIT_CODE_SUCCESS        = 0;
-    private static final int    EXIT_CODE_FAILED         = 1;
-    private static final String ATLAS_ENDPOINT           = "atlas.rest.address";
-    private static final String DEFAULT_ATLAS_URL        = "http://localhost:21000/";
-    private static final String KAFKA_CLUSTER_NAME       = "atlas.cluster.name";
-    private static final String DEFAULT_CLUSTER_NAME     = "primary";
-    private static final String ATTRIBUTE_QUALIFIED_NAME = "qualifiedName";
-    private static final String DESCRIPTION_ATTR         = "description";
-    private static final String PARTITION_COUNT          = "partitionCount";
-    private static final String NAME                     = "name";
-    private static final String URI                      = "uri";
-    private static final String CLUSTERNAME              = "clusterName";
-    private static final String TOPIC                    = "topic";
+    private static final int    EXIT_CODE_SUCCESS          = 0;
+    private static final int    EXIT_CODE_FAILED           = 1;
+    private static final String ATLAS_ENDPOINT             = "atlas.rest.address";
+    private static final String DEFAULT_ATLAS_URL          = "http://localhost:21000/";
+    private static final String CLUSTER_NAME_KEY           = "atlas.cluster.name";
+    private static final String KAFKA_METADATA_NAMESPACE   = "atlas.metadata.namespace";
+    private static final String DEFAULT_CLUSTER_NAME       = "primary";
+    private static final String ATTRIBUTE_QUALIFIED_NAME   = "qualifiedName";
+    private static final String DESCRIPTION_ATTR           = "description";
+    private static final String PARTITION_COUNT            = "partitionCount";
+    private static final String NAME                       = "name";
+    private static final String URI                        = "uri";
+    private static final String CLUSTERNAME                = "clusterName";
+    private static final String TOPIC                      = "topic";
 
     private static final String FORMAT_KAKFA_TOPIC_QUALIFIED_NAME       = "%s@%s";
     private static final String ZOOKEEPER_CONNECT                       = "atlas.kafka.zookeeper.connect";
@@ -81,7 +82,7 @@ public class KafkaBridge {
     private static final int    DEFAULT_ZOOKEEPER_CONNECTION_TIMEOUT_MS = 10 * 1000;
 
     private final List<String>  availableTopics;
-    private final String        clusterName;
+    private final String        metadataNamespace;
     private final AtlasClientV2 atlasClientV2;
     private final ZkUtils       zkUtils;
 
@@ -163,10 +164,18 @@ public class KafkaBridge {
         int      connectionTimeOutMs = atlasConf.getInt(ZOOKEEPER_CONNECTION_TIMEOUT_MS, DEFAULT_ZOOKEEPER_CONNECTION_TIMEOUT_MS);
         ZkClient zkClient            = new ZkClient(zookeeperConnect, sessionTimeOutMs, connectionTimeOutMs, ZKStringSerializer$.MODULE$);
 
-        this.atlasClientV2   = atlasClientV2;
-        this.clusterName     = atlasConf.getString(KAFKA_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
-        this.zkUtils         = new ZkUtils(zkClient, new ZkConnection(zookeeperConnect), JaasUtils.isZkSecurityEnabled());
-        this.availableTopics = scala.collection.JavaConversions.seqAsJavaList(zkUtils.getAllTopics());
+        this.atlasClientV2     = atlasClientV2;
+        this.metadataNamespace = getMetadataNamespace(atlasConf);
+        this.zkUtils           = new ZkUtils(zkClient, new ZkConnection(zookeeperConnect), JaasUtils.isZkSecurityEnabled());
+        this.availableTopics   = scala.collection.JavaConversions.seqAsJavaList(zkUtils.getAllTopics());
+    }
+
+    private String getMetadataNamespace(Configuration config) {
+        return config.getString(KAFKA_METADATA_NAMESPACE, getClusterName(config));
+    }
+
+    private String getClusterName(Configuration config) {
+        return config.getString(CLUSTER_NAME_KEY, DEFAULT_CLUSTER_NAME);
     }
 
     public void importTopic(String topicToImport) throws Exception {
@@ -191,7 +200,7 @@ public class KafkaBridge {
 
     @VisibleForTesting
     AtlasEntityWithExtInfo createOrUpdateTopic(String topic) throws Exception {
-        String                 topicQualifiedName = getTopicQualifiedName(clusterName, topic);
+        String                 topicQualifiedName = getTopicQualifiedName(metadataNamespace, topic);
         AtlasEntityWithExtInfo topicEntity        = findTopicEntityInAtlas(topicQualifiedName);
 
         if (topicEntity == null) {
@@ -225,10 +234,10 @@ public class KafkaBridge {
             ret = topicEntity;
         }
 
-        String qualifiedName = getTopicQualifiedName(clusterName, topic);
+        String qualifiedName = getTopicQualifiedName(metadataNamespace, topic);
 
         ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, qualifiedName);
-        ret.setAttribute(CLUSTERNAME, clusterName);
+        ret.setAttribute(CLUSTERNAME, metadataNamespace);
         ret.setAttribute(TOPIC, topic);
         ret.setAttribute(NAME,topic);
         ret.setAttribute(DESCRIPTION_ATTR, topic);
@@ -239,8 +248,8 @@ public class KafkaBridge {
     }
 
     @VisibleForTesting
-    static String getTopicQualifiedName(String clusterName, String topic) {
-        return String.format(FORMAT_KAKFA_TOPIC_QUALIFIED_NAME, topic.toLowerCase(), clusterName);
+    static String getTopicQualifiedName(String metadataNamespace, String topic) {
+        return String.format(FORMAT_KAKFA_TOPIC_QUALIFIED_NAME, topic.toLowerCase(), metadataNamespace);
     }
 
     private AtlasEntityWithExtInfo findTopicEntityInAtlas(String topicQualifiedName) {

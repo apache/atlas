@@ -65,21 +65,22 @@ import java.util.regex.Pattern;
 public class HBaseBridge {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseBridge.class);
 
-    private static final int     EXIT_CODE_SUCCESS     = 0;
-    private static final int     EXIT_CODE_FAILED      = 1;
-    private static final String  ATLAS_ENDPOINT        = "atlas.rest.address";
-    private static final String  DEFAULT_ATLAS_URL     = "http://localhost:21000/";
-    private static final String  HBASE_CLUSTER_NAME    = "atlas.cluster.name";
-    private static final String  DEFAULT_CLUSTER_NAME  = "primary";
-    private static final String  QUALIFIED_NAME        = "qualifiedName";
-    private static final String  NAME                  = "name";
-    private static final String  URI                   = "uri";
-    private static final String  OWNER                 = "owner";
-    private static final String  DESCRIPTION_ATTR      = "description";
-    private static final String  CLUSTERNAME           = "clusterName";
-    private static final String  NAMESPACE             = "namespace";
-    private static final String  TABLE                 = "table";
-    private static final String  COLUMN_FAMILIES       = "column_families";
+    private static final int     EXIT_CODE_SUCCESS          = 0;
+    private static final int     EXIT_CODE_FAILED           = 1;
+    private static final String  ATLAS_ENDPOINT             = "atlas.rest.address";
+    private static final String  DEFAULT_ATLAS_URL          = "http://localhost:21000/";
+    private static final String  CLUSTER_NAME_KEY           = "atlas.cluster.name";
+    private static final String  DEFAULT_CLUSTER_NAME       = "primary";
+    private static final String  HBASE_METADATA_NAMESPACE   = "atlas.metadata.namespace";
+    private static final String  QUALIFIED_NAME             = "qualifiedName";
+    private static final String  NAME                       = "name";
+    private static final String  URI                        = "uri";
+    private static final String  OWNER                      = "owner";
+    private static final String  DESCRIPTION_ATTR           = "description";
+    private static final String  CLUSTERNAME                = "clusterName";
+    private static final String  NAMESPACE                  = "namespace";
+    private static final String  TABLE                      = "table";
+    private static final String  COLUMN_FAMILIES            = "column_families";
 
     // table metadata
     private static final String ATTR_TABLE_MAX_FILESIZE              = "maxFileSize";
@@ -115,9 +116,9 @@ public class HBaseBridge {
     private static final String HBASE_TABLE_QUALIFIED_NAME_FORMAT         = "%s:%s@%s";
     private static final String HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT = "%s:%s.%s@%s";
 
-    private final String         clusterName;
-    private final AtlasClientV2  atlasClientV2;
-    private final Admin          hbaseAdmin;
+    private final String        metadataNamespace;
+    private final AtlasClientV2 atlasClientV2;
+    private final Admin         hbaseAdmin;
 
 
     public static void main(String[] args) {
@@ -204,8 +205,8 @@ public class HBaseBridge {
     }
 
     public HBaseBridge(Configuration atlasConf, AtlasClientV2 atlasClientV2) throws Exception {
-        this.atlasClientV2 = atlasClientV2;
-        this.clusterName   = atlasConf.getString(HBASE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
+        this.atlasClientV2     = atlasClientV2;
+        this.metadataNamespace = getMetadataNamespace(atlasConf);
 
         org.apache.hadoop.conf.Configuration conf = HBaseConfiguration.create();
 
@@ -218,6 +219,14 @@ public class HBaseBridge {
         Connection conn = ConnectionFactory.createConnection(conf);
 
         hbaseAdmin = conn.getAdmin();
+    }
+
+    private String getMetadataNamespace(Configuration config) {
+        return config.getString(HBASE_METADATA_NAMESPACE, getClusterName(config));
+    }
+
+    private String getClusterName(Configuration config) {
+        return config.getString(CLUSTER_NAME_KEY, DEFAULT_CLUSTER_NAME);
     }
 
     private boolean importHBaseEntities(String namespaceToImport, String tableToImport) throws Exception {
@@ -367,7 +376,7 @@ public class HBaseBridge {
 
     protected AtlasEntityWithExtInfo createOrUpdateNameSpace(NamespaceDescriptor namespaceDescriptor) throws Exception {
         String                 nsName          = namespaceDescriptor.getName();
-        String                 nsQualifiedName = getNameSpaceQualifiedName(clusterName, nsName);
+        String                 nsQualifiedName = getNameSpaceQualifiedName(metadataNamespace, nsName);
         AtlasEntityWithExtInfo nsEntity        = findNameSpaceEntityInAtlas(nsQualifiedName);
 
         if (nsEntity == null) {
@@ -390,7 +399,7 @@ public class HBaseBridge {
 
     protected  AtlasEntityWithExtInfo  createOrUpdateTable(String nameSpace, String tableName, AtlasEntity nameSapceEntity, TableDescriptor htd, ColumnFamilyDescriptor[] hcdts) throws Exception {
         String                 owner            = htd.getOwnerString();
-        String                 tblQualifiedName = getTableQualifiedName(clusterName, nameSpace, tableName);
+        String                 tblQualifiedName = getTableQualifiedName(metadataNamespace, nameSpace, tableName);
         AtlasEntityWithExtInfo ret              = findTableEntityInAtlas(tblQualifiedName);
 
         if (ret == null) {
@@ -436,7 +445,7 @@ public class HBaseBridge {
 
             for (ColumnFamilyDescriptor columnFamilyDescriptor : hcdts) {
                 String                 cfName          = columnFamilyDescriptor.getNameAsString();
-                String                 cfQualifiedName = getColumnFamilyQualifiedName(clusterName, nameSpace, tableName, cfName);
+                String                 cfQualifiedName = getColumnFamilyQualifiedName(metadataNamespace, nameSpace, tableName, cfName);
                 AtlasEntityWithExtInfo cfEntity        = findColumnFamiltyEntityInAtlas(cfQualifiedName);
 
                 if (cfEntity == null) {
@@ -516,10 +525,10 @@ public class HBaseBridge {
             ret = nsEtity;
         }
 
-        String qualifiedName = getNameSpaceQualifiedName(clusterName, nameSpace);
+        String qualifiedName = getNameSpaceQualifiedName(metadataNamespace, nameSpace);
 
         ret.setAttribute(QUALIFIED_NAME, qualifiedName);
-        ret.setAttribute(CLUSTERNAME, clusterName);
+        ret.setAttribute(CLUSTERNAME, metadataNamespace);
         ret.setAttribute(NAME, nameSpace);
         ret.setAttribute(DESCRIPTION_ATTR, nameSpace);
 
@@ -535,10 +544,10 @@ public class HBaseBridge {
             ret = atlasEntity;
         }
 
-        String tableQualifiedName = getTableQualifiedName(clusterName, nameSpace, tableName);
+        String tableQualifiedName = getTableQualifiedName(metadataNamespace, nameSpace, tableName);
 
         ret.setAttribute(QUALIFIED_NAME, tableQualifiedName);
-        ret.setAttribute(CLUSTERNAME, clusterName);
+        ret.setAttribute(CLUSTERNAME, metadataNamespace);
         ret.setAttribute(NAMESPACE, AtlasTypeUtil.getAtlasObjectId(nameSpaceEntity));
         ret.setAttribute(NAME, tableName);
         ret.setAttribute(DESCRIPTION_ATTR, tableName);
@@ -564,10 +573,10 @@ public class HBaseBridge {
         }
 
         String cfName          = hcdt.getNameAsString();
-        String cfQualifiedName = getColumnFamilyQualifiedName(clusterName, nameSpace, tableName, cfName);
+        String cfQualifiedName = getColumnFamilyQualifiedName(metadataNamespace, nameSpace, tableName, cfName);
 
         ret.setAttribute(QUALIFIED_NAME, cfQualifiedName);
-        ret.setAttribute(CLUSTERNAME, clusterName);
+        ret.setAttribute(CLUSTERNAME, metadataNamespace);
         ret.setAttribute(TABLE, tableId);
         ret.setAttribute(NAME, cfName);
         ret.setAttribute(DESCRIPTION_ATTR, cfName);
@@ -637,37 +646,37 @@ public class HBaseBridge {
 
     /**
      * Construct the qualified name used to uniquely identify a ColumnFamily instance in Atlas.
-     * @param clusterName Name of the cluster to which the Hbase component belongs
+     * @param metadataNamespace Metadata namespace of the cluster to which the Hbase component belongs
      * @param nameSpace Name of the Hbase database to which the Table belongs
      * @param tableName Name of the Hbase table
      * @param columnFamily Name of the ColumnFamily
      * @return Unique qualified name to identify the Table instance in Atlas.
      */
-    private static String getColumnFamilyQualifiedName(String clusterName, String nameSpace, String tableName, String columnFamily) {
+    private static String getColumnFamilyQualifiedName(String metadataNamespace, String nameSpace, String tableName, String columnFamily) {
         tableName = stripNameSpace(tableName.toLowerCase());
-        return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), tableName, columnFamily.toLowerCase(), clusterName);
+        return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), tableName, columnFamily.toLowerCase(), metadataNamespace);
     }
 
     /**
      * Construct the qualified name used to uniquely identify a Table instance in Atlas.
-     * @param clusterName Name of the cluster to which the Hbase component belongs
+     * @param metadataNamespace Metadata namespace of the cluster to which the Hbase component belongs
      * @param nameSpace Name of the Hbase database to which the Table belongs
      * @param tableName Name of the Hbase table
      * @return Unique qualified name to identify the Table instance in Atlas.
      */
-    private static String getTableQualifiedName(String clusterName, String nameSpace, String tableName) {
+    private static String getTableQualifiedName(String metadataNamespace, String nameSpace, String tableName) {
         tableName = stripNameSpace(tableName.toLowerCase());
-        return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), tableName, clusterName);
+        return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), tableName, metadataNamespace);
     }
 
     /**
      * Construct the qualified name used to uniquely identify a Hbase NameSpace instance in Atlas.
-     * @param clusterName Name of the cluster to which the Hbase component belongs
+     * @param metadataNamespace Metadata namespace of the cluster to which the Hbase component belongs
      * @param nameSpace Name of the NameSpace
      * @return Unique qualified name to identify the HBase NameSpace instance in Atlas.
      */
-    private static String getNameSpaceQualifiedName(String clusterName, String nameSpace) {
-        return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace.toLowerCase(), clusterName);
+    private static String getNameSpaceQualifiedName(String metadataNamespace, String nameSpace) {
+        return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace.toLowerCase(), metadataNamespace);
     }
 
     private static String stripNameSpace(String tableName){

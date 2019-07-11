@@ -293,7 +293,7 @@ public class ImpalaLineageITBase {
     protected String assertDatabaseIsRegistered(String dbName, AssertPredicate assertPredicate) throws Exception {
         LOG.debug("Searching for database: {}", dbName);
 
-        String dbQualifiedName = dbName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+        String dbQualifiedName = dbName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
             CLUSTER_NAME;
 
         dbQualifiedName = dbQualifiedName.toLowerCase();
@@ -320,7 +320,7 @@ public class ImpalaLineageITBase {
     protected String assertTableIsRegistered(String fullTableName, AssertPredicate assertPredicate, boolean isTemporary) throws Exception {
         LOG.debug("Searching for table {}", fullTableName);
 
-        String tableQualifiedName = (fullTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME).toLowerCase() +
+        String tableQualifiedName = (fullTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE).toLowerCase() +
             CLUSTER_NAME;
 
         return assertEntityIsRegistered(HIVE_TYPE_TABLE, REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName,

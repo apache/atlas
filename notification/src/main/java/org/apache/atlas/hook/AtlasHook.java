@@ -59,10 +59,14 @@ public abstract class AtlasHook {
     public static final String ATLAS_NOTIFICATION_FAILED_MESSAGES_FILENAME_KEY    = "atlas.notification.failed.messages.filename";
     public static final String ATLAS_NOTIFICATION_LOG_FAILED_MESSAGES_ENABLED_KEY = "atlas.notification.log.failed.messages";
     public static final String ATLAS_HOOK_FAILED_MESSAGES_LOG_DEFAULT_NAME        = "atlas_hook_failed_messages.log";
+    public static final String CONF_METADATA_NAMESPACE                            = "atlas.metadata.namespace";
+    public static final String CLUSTER_NAME_KEY                                   = "atlas.cluster.name";
+    public static final String DEFAULT_CLUSTER_NAME                               = "primary";
 
     protected static Configuration         atlasProperties;
     protected static NotificationInterface notificationInterface;
 
+    private static final String               metadataNamespace;
     private static final int                  SHUTDOWN_HOOK_WAIT_TIME_MS = 3000;
     private static final boolean              logFailedMessages;
     private static final FailedMessagesLogger failedMessagesLogger;
@@ -95,6 +99,7 @@ public abstract class AtlasHook {
             }
         }
 
+        metadataNamespace         = getMetadataNamespace(atlasProperties);
         notificationMaxRetries    = atlasProperties.getInt(ATLAS_NOTIFICATION_MAX_RETRIES, 3);
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
         notificationInterface     = NotificationProvider.get();
@@ -306,4 +311,15 @@ public abstract class AtlasHook {
         return ret;
     }
 
+    private static String getMetadataNamespace(Configuration config) {
+        return config.getString(CONF_METADATA_NAMESPACE, getClusterName(config));
+    }
+
+    private static String getClusterName(Configuration config) {
+        return config.getString(CLUSTER_NAME_KEY, DEFAULT_CLUSTER_NAME);
+    }
+
+    public String getMetadataNamespace() {
+        return metadataNamespace;
+    }
 }

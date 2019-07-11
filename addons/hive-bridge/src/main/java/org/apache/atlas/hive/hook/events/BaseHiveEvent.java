@@ -65,7 +65,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_CLUSTER_NAME;
+import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_METADATA_NAMESPACE;
 import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_ENTITY_NAME;
 import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_PROCESS;
 
@@ -353,7 +353,7 @@ public abstract class BaseHiveEvent {
             ret.setAttribute(ATTRIBUTE_DESCRIPTION, db.getDescription());
             ret.setAttribute(ATTRIBUTE_OWNER, db.getOwnerName());
 
-            ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, getClusterName());
+            ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, getMetadataNamespace());
             ret.setAttribute(ATTRIBUTE_LOCATION, HdfsNameServiceResolver.getPathWithNameServiceID(db.getLocationUri()));
             ret.setAttribute(ATTRIBUTE_PARAMETERS, db.getParameters());
 
@@ -599,7 +599,8 @@ public abstract class BaseHiveEvent {
 
     protected AtlasEntity getPathEntity(Path path, AtlasEntityExtInfo extInfo) {
         AtlasEntity ret;
-        String strPath = path.toString();
+        String      strPath           = path.toString();
+        String      metadataNamespace = getMetadataNamespace();
 
         if (strPath.startsWith(HDFS_PATH_PREFIX) && context.isConvertHdfsPathToLowerCase()) {
             strPath = strPath.toLowerCase();
@@ -607,8 +608,8 @@ public abstract class BaseHiveEvent {
 
         if (isS3Path(strPath)) {
             String      bucketName          = path.toUri().getAuthority();
-            String      bucketQualifiedName = (path.toUri().getScheme() + SCHEME_SEPARATOR + path.toUri().getAuthority() + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
-            String      pathQualifiedName   = (strPath + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+            String      bucketQualifiedName = (path.toUri().getScheme() + SCHEME_SEPARATOR + path.toUri().getAuthority() + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + metadataNamespace;
+            String      pathQualifiedName   = (strPath + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + metadataNamespace;
             AtlasEntity bucketEntity        = context.getEntity(bucketQualifiedName);
 
             ret = context.getEntity(pathQualifiedName);
@@ -657,7 +658,7 @@ public abstract class BaseHiveEvent {
                 ret.setAttribute(ATTRIBUTE_PATH, attrPath);
                 ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, pathQualifiedName);
                 ret.setAttribute(ATTRIBUTE_NAME, name);
-                ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, getClusterName());
+                ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, metadataNamespace);
 
                 context.putEntity(pathQualifiedName, ret);
             }
@@ -754,8 +755,8 @@ public abstract class BaseHiveEvent {
         return hiveDDL;
     }
 
-    protected String getClusterName() {
-        return context.getClusterName();
+    protected String getMetadataNamespace() {
+        return context.getMetadataNamespace();
     }
 
     protected Database getDatabases(String dbName) throws Exception {
@@ -873,7 +874,7 @@ public abstract class BaseHiveEvent {
     protected String getQualifiedName(Table table, FieldSchema column) {
         String tblQualifiedName = getQualifiedName(table);
 
-        int sepPos = tblQualifiedName.lastIndexOf(QNAME_SEP_CLUSTER_NAME);
+        int sepPos = tblQualifiedName.lastIndexOf(QNAME_SEP_METADATA_NAMESPACE);
 
         if (sepPos == -1) {
             return tblQualifiedName + QNAME_SEP_ENTITY_NAME + column.getName().toLowerCase();
@@ -891,19 +892,20 @@ public abstract class BaseHiveEvent {
     }
 
     protected String getQualifiedName(BaseColumnInfo column) {
-        String dbName    = column.getTabAlias().getTable().getDbName();
-        String tableName = column.getTabAlias().getTable().getTableName();
-        String colName   = column.getColumn() != null ? column.getColumn().getName() : null;
+        String dbName            = column.getTabAlias().getTable().getDbName();
+        String tableName         = column.getTabAlias().getTable().getTableName();
+        String colName           = column.getColumn() != null ? column.getColumn().getName() : null;
+        String metadataNamespace = getMetadataNamespace();
 
         if (colName == null) {
-            return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+            return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + metadataNamespace;
         } else {
-            return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_ENTITY_NAME + colName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+            return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_ENTITY_NAME + colName + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + metadataNamespace;
         }
     }
 
     protected String getQualifiedName(String dbName, String tableName, String colName) {
-        return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_ENTITY_NAME + colName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+        return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_ENTITY_NAME + colName + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + getMetadataNamespace();
     }
 
     protected String getQualifiedName(URI location) {
@@ -921,14 +923,14 @@ public abstract class BaseHiveEvent {
 
     protected String getQualifiedName(String path) {
         if (path.startsWith(HdfsNameServiceResolver.HDFS_SCHEME)) {
-            return path + QNAME_SEP_CLUSTER_NAME + getClusterName();
+            return path + QNAME_SEP_METADATA_NAMESPACE + getMetadataNamespace();
         }
 
         return path.toLowerCase();
     }
 
     protected String getColumnQualifiedName(String tblQualifiedName, String columnName) {
-        int sepPos = tblQualifiedName.lastIndexOf(QNAME_SEP_CLUSTER_NAME);
+        int sepPos = tblQualifiedName.lastIndexOf(QNAME_SEP_METADATA_NAMESPACE);
 
         if (sepPos == -1) {
             return tblQualifiedName + QNAME_SEP_ENTITY_NAME + columnName.toLowerCase();
@@ -983,26 +985,27 @@ public abstract class BaseHiveEvent {
     }
 
     protected AtlasEntity toReferencedHBaseTable(Table table, AtlasEntitiesWithExtInfo entities) {
-        AtlasEntity    ret            = null;
-        HBaseTableInfo hBaseTableInfo = new HBaseTableInfo(table);
-        String         hbaseNameSpace = hBaseTableInfo.getHbaseNameSpace();
-        String         hbaseTableName = hBaseTableInfo.getHbaseTableName();
+        AtlasEntity    ret               = null;
+        HBaseTableInfo hBaseTableInfo    = new HBaseTableInfo(table);
+        String         hbaseNameSpace    = hBaseTableInfo.getHbaseNameSpace();
+        String         hbaseTableName    = hBaseTableInfo.getHbaseTableName();
+        String         metadataNamespace = getMetadataNamespace();
 
         if (hbaseTableName != null) {
             AtlasEntity nsEntity = new AtlasEntity(HBASE_TYPE_NAMESPACE);
             nsEntity.setAttribute(ATTRIBUTE_NAME, hbaseNameSpace);
-            nsEntity.setAttribute(ATTRIBUTE_CLUSTER_NAME, getClusterName());
-            nsEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getHBaseNameSpaceQualifiedName(getClusterName(), hbaseNameSpace));
+            nsEntity.setAttribute(ATTRIBUTE_CLUSTER_NAME, metadataNamespace);
+            nsEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getHBaseNameSpaceQualifiedName(metadataNamespace, hbaseNameSpace));
 
             ret = new AtlasEntity(HBASE_TYPE_TABLE);
 
             ret.setAttribute(ATTRIBUTE_NAME, hbaseTableName);
             ret.setAttribute(ATTRIBUTE_URI, hbaseTableName);
 
-            AtlasRelatedObjectId objIdRelatedObject =     new AtlasRelatedObjectId(getObjectId(nsEntity), RELATIONSHIP_HBASE_TABLE_NAMESPACE);
+            AtlasRelatedObjectId objIdRelatedObject = new AtlasRelatedObjectId(getObjectId(nsEntity), RELATIONSHIP_HBASE_TABLE_NAMESPACE);
 
             ret.setRelationshipAttribute(ATTRIBUTE_NAMESPACE, objIdRelatedObject);
-            ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getHBaseTableQualifiedName(getClusterName(), hbaseNameSpace, hbaseTableName));
+            ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getHBaseTableQualifiedName(metadataNamespace, hbaseNameSpace, hbaseTableName));
 
             entities.addReferredEntity(nsEntity);
             entities.addEntity(ret);
@@ -1024,12 +1027,12 @@ public abstract class BaseHiveEvent {
         return ret;
     }
 
-    private static String getHBaseTableQualifiedName(String clusterName, String nameSpace, String tableName) {
-        return String.format("%s:%s@%s", nameSpace.toLowerCase(), tableName.toLowerCase(), clusterName);
+    private static String getHBaseTableQualifiedName(String metadataNamespace, String nameSpace, String tableName) {
+        return String.format("%s:%s@%s", nameSpace.toLowerCase(), tableName.toLowerCase(), metadataNamespace);
     }
 
-    private static String getHBaseNameSpaceQualifiedName(String clusterName, String nameSpace) {
-        return String.format("%s@%s", nameSpace.toLowerCase(), clusterName);
+    private static String getHBaseNameSpaceQualifiedName(String metadataNamespace, String nameSpace) {
+        return String.format("%s@%s", nameSpace.toLowerCase(), metadataNamespace);
     }
 
     private boolean ignoreHDFSPathsinProcessQualifiedName() {

@@ -33,9 +33,9 @@ import org.apache.commons.lang.StringUtils;
  * Contain the info related to an linear record from Impala
  */
 public class AtlasImpalaHookContext {
-    public static final char   QNAME_SEP_CLUSTER_NAME = '@';
-    public static final char   QNAME_SEP_ENTITY_NAME  = '.';
-    public static final char   QNAME_SEP_PROCESS      = ':';
+    public static final char QNAME_SEP_METADATA_NAMESPACE = '@';
+    public static final char QNAME_SEP_ENTITY_NAME        = '.';
+    public static final char QNAME_SEP_PROCESS            = ':';
 
     private final ImpalaLineageHook        hook;
     private final ImpalaOperationType      impalaOperation;
@@ -69,8 +69,8 @@ public class AtlasImpalaHookContext {
 
     public Collection<AtlasEntity> getEntities() { return qNameEntityMap.values(); }
 
-    public String getClusterName() {
-        return hook.getClusterName();
+    public String getMetadataNamespace() {
+        return hook.getMetadataNamespace();
     }
 
     public String getHostName() {
@@ -82,7 +82,7 @@ public class AtlasImpalaHookContext {
     }
 
     public String getQualifiedNameForDb(String dbName) {
-        return (dbName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+        return (dbName + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + getMetadataNamespace();
     }
 
     public String getQualifiedNameForTable(String fullTableName) throws IllegalArgumentException {
@@ -100,8 +100,7 @@ public class AtlasImpalaHookContext {
     }
 
     public String getQualifiedNameForTable(String dbName, String tableName) {
-        return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_CLUSTER_NAME).toLowerCase() +
-            getClusterName();
+        return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + getMetadataNamespace();
     }
 
     public String getQualifiedNameForColumn(LineageVertex vertex) {
@@ -179,7 +178,7 @@ public class AtlasImpalaHookContext {
     public String getQualifiedNameForColumn(String dbName, String tableName, String columnName) {
         return
             (dbName + QNAME_SEP_ENTITY_NAME  + tableName + QNAME_SEP_ENTITY_NAME +
-             columnName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+             columnName + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + getMetadataNamespace();
     }
 
     public String getUserName() { return lineageQuery.getUser(); }

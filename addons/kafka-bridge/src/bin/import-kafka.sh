@@ -117,7 +117,7 @@ else
     exit 1
 fi
 
-CP="${KAFKA_CP}:${ATLASCPPATH}:${HADOOP_CP}"
+CP="${ATLASCPPATH}:${HADOOP_CP}:${KAFKA_CP}"
 
 # If running in cygwin, convert pathnames and classpath to Windows format.
 if [ "${CYGWIN}" == "true" ]

@@ -77,7 +77,7 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             // the value is from info in IMPALA_3
             String createTime = new Long((long)(1554750072)*1000).toString();
             String processQFName =
-                "db_1.view_1" + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+                "db_1.view_1" + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                     CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
 
             processQFName = processQFName.toLowerCase();
@@ -140,7 +140,7 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             Long afterCreateTime = System.currentTimeMillis() / BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
 
             String processQFNameWithoutTime =
-                dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+                dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                     CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS;
             processQFNameWithoutTime = processQFNameWithoutTime.toLowerCase();
 
@@ -210,7 +210,7 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         // the value is from info in IMPALA_4.
         String createTime = new Long(TABLE_CREATE_TIME*1000).toString();
         String processQFName =
-            dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+            dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                 CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
 
         processQFName = processQFName.toLowerCase();
@@ -266,7 +266,7 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         // the value is from info in IMPALA_4.
         String createTime = new Long(TABLE_CREATE_TIME*1000).toString();
         String processQFName =
-            dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+            dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                 CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
 
         processQFName = processQFName.toLowerCase();
@@ -322,9 +322,9 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         // the value is from info in IMPALA_4.
         String createTime1 = new Long(TABLE_CREATE_TIME_SOURCE*1000).toString();
         String createTime2 = new Long(TABLE_CREATE_TIME*1000).toString();
-        String sourceQFName = dbName + "." + sourceTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+        String sourceQFName = dbName + "." + sourceTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
             CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime1;
-        String targetQFName = dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+        String targetQFName = dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
             CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime2;
         String processQFName = "QUERY:" + sourceQFName.toLowerCase() + "->:INSERT:" + targetQFName.toLowerCase();
 
@@ -385,9 +385,9 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         // the value is from info in IMPALA_4.
         String createTime1 = new Long(TABLE_CREATE_TIME_SOURCE*1000).toString();
         String createTime2 = new Long(TABLE_CREATE_TIME*1000).toString();
-        String sourceQFName = dbName + "." + sourceTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+        String sourceQFName = dbName + "." + sourceTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
             CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime1;
-        String targetQFName = dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+        String targetQFName = dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
             CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime2;
         String processQFName = "QUERY:" + sourceQFName.toLowerCase() + "->:INSERT:" + targetQFName.toLowerCase();
 
@@ -454,7 +454,7 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         // the value is from info in IMPALA_4.
         String createTime = new Long((long)1560885039*1000).toString();
         String processQFName =
-            dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+            dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                 CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
 
         processQFName = processQFName.toLowerCase();

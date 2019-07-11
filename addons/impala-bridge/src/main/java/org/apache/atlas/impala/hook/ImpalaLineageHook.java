@@ -18,7 +18,6 @@
 
 package org.apache.atlas.impala.hook;
 
-import static org.apache.atlas.AtlasConstants.DEFAULT_CLUSTER_NAME;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import com.google.common.collect.Sets;
@@ -42,20 +41,17 @@ public class ImpalaLineageHook extends AtlasHook {
     public static final String ATLAS_ENDPOINT                      = "atlas.rest.address";
     public static final String REALM_SEPARATOR                     = "@";
     public static final String CONF_PREFIX                         = "atlas.hook.impala.";
-    public static final String CONF_CLUSTER_NAME                   = "atlas.cluster.name";
     public static final String CONF_REALM_NAME                     = "atlas.realm.name";
     public static final String HDFS_PATH_CONVERT_TO_LOWER_CASE     = CONF_PREFIX + "hdfs_path.convert_to_lowercase";
     public static final String DEFAULT_HOST_NAME                   = "localhost";
 
-    private static final String clusterName;
-    private static final String realm;
+    private static final String  realm;
     private static final boolean convertHdfsPathToLowerCase;
-    private static String hostName;
+    private static       String  hostName;
 
     static {
-        clusterName                     = atlasProperties.getString(CONF_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
-        realm                           = atlasProperties.getString(CONF_REALM_NAME, DEFAULT_CLUSTER_NAME);  // what should default be ??
-        convertHdfsPathToLowerCase      = atlasProperties.getBoolean(HDFS_PATH_CONVERT_TO_LOWER_CASE, false);
+        realm                      = atlasProperties.getString(CONF_REALM_NAME, DEFAULT_CLUSTER_NAME);  // what should default be ??
+        convertHdfsPathToLowerCase = atlasProperties.getBoolean(HDFS_PATH_CONVERT_TO_LOWER_CASE, false);
 
         try {
             hostName = InetAddress.getLocalHost().getHostName();
@@ -141,10 +137,6 @@ public class ImpalaLineageHook extends AtlasHook {
         Subject userSubject = new Subject(false, Sets.newHashSet(
             new KerberosPrincipal(userPrincipal)), new HashSet<Object>(),new HashSet<Object>());
         return UserGroupInformation.getUGIFromSubject(userSubject);
-    }
-
-    public String getClusterName() {
-        return clusterName;
     }
 
     public String getRealm() {

@@ -137,7 +137,7 @@ public class ImpalaLineageHookIT extends ImpalaLineageITBase {
             impalaHook.process(queryObj);
             String createTime = new Long(BaseImpalaEvent.getTableCreateTime(vertex5)).toString();
             String processQFName =
-                vertex5.getVertexId() + AtlasImpalaHookContext.QNAME_SEP_CLUSTER_NAME +
+                vertex5.getVertexId() + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                     CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
 
             processQFName = processQFName.toLowerCase();
