@@ -70,8 +70,7 @@ define(['require',
                 showPage: "[data-id='showPage']",
                 gotoPage: "[data-id='gotoPage']",
                 gotoPagebtn: "[data-id='gotoPagebtn']",
-                activePage: "[data-id='activePage']",
-                rowData: ".row"
+                activePage: "[data-id='activePage']"
             },
             templateHelpers: function() {
                 return {
@@ -474,7 +473,9 @@ define(['require',
                         that.ui.activePage.attr('title', "Page " + that.activePage);
                         that.ui.activePage.text(that.activePage);
                         that.renderTableLayoutView();
-
+                        if(dataLength>0){
+                            that.$('.searchTable').removeClass('noData')
+                        }
                         if (Utils.getUrlState.isSearchTab() && value && !value.profileDBView) {
                             var searchString = 'Results for: <span class="filterQuery">' + CommonViewFunction.generateQueryOfFilter(that.value) + "</span>";
                             if (Globals.entityCreate && Globals.entityTypeConfList && Utils.getUrlState.isSearchTab()) {
@@ -531,6 +532,7 @@ define(['require',
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
                 }
+
             },
             renderSearchQueryView: function() {
                 var that = this;
@@ -564,8 +566,7 @@ define(['require',
                     columns: columns
                 }));
                 if (table.collection.length === 0) {
-                    this.hideIrreleventElements();
-                    return;
+                    that.$(".searchTable").addClass('noData');
                 }
                 if (!that.REntityTableLayoutView) {
                     return;
@@ -825,10 +826,6 @@ define(['require',
                         }
                     }
                 });
-            },
-            hideIrreleventElements: function() {
-                this.ui.rowData.siblings('.well').hide();
-                this.ui.rowData.siblings('.no-data').show();
             },
             getDaynamicColumns: function(valueObj) {
                 var that = this,
@@ -1116,6 +1113,7 @@ define(['require',
                 }
                 _.extend(this.searchCollection.queryParams, { limit: this.limit, offset: this.offset });
                 this.fetchCollection();
+
             },
             changePageLimit: function(e, obj) {
                 if (!obj || (obj && !obj.skipViewChange)) {
