@@ -55,8 +55,7 @@ public class AtlasMetrics {
     public static final String STAT_NOTIFY_FAILED_COUNT_CURR_HOUR      = PREFIX_NOTIFICATION + "currentHourFailed";
     public static final String STAT_NOTIFY_START_TIME_CURR_HOUR        = PREFIX_NOTIFICATION + "currentHourStartTime";
     public static final String STAT_NOTIFY_LAST_MESSAGE_PROCESSED_TIME = PREFIX_NOTIFICATION + "lastMessageProcessedTime";
-    public static final String STAT_NOTIFY_START_OFFSET                = PREFIX_NOTIFICATION + "offsetStart";
-    public static final String STAT_NOTIFY_CURRENT_OFFSET              = PREFIX_NOTIFICATION + "offsetCurrent";
+    public static final String STAT_NOTIFY_TOPIC_OFFSETS               = PREFIX_NOTIFICATION + "topicOffsets";
     public static final String STAT_NOTIFY_COUNT_PREV_DAY              = PREFIX_NOTIFICATION + "previousDay";
     public static final String STAT_NOTIFY_AVG_TIME_PREV_DAY           = PREFIX_NOTIFICATION + "previousDayAvgTime";
     public static final String STAT_NOTIFY_CREATES_COUNT_PREV_DAY      = PREFIX_NOTIFICATION + "previousDayEntityCreates";

@@ -182,7 +182,10 @@ public class NotificationHookConsumerKafkaTest {
 
     ExceptionThrowingCommitConsumer createNewConsumerThatThrowsExceptionInCommit(KafkaNotification kafkaNotification, boolean autoCommitEnabled) {
         Properties prop = kafkaNotification.getConsumerProperties(NotificationInterface.NotificationType.HOOK);
-        KafkaConsumer consumer = kafkaNotification.getKafkaConsumer(prop, NotificationInterface.NotificationType.HOOK, true);
+
+        prop.put("enable.auto.commit", autoCommitEnabled);
+
+        KafkaConsumer consumer = kafkaNotification.getOrCreateKafkaConsumer(null, prop, NotificationInterface.NotificationType.HOOK, 0);
         return new ExceptionThrowingCommitConsumer(NotificationInterface.NotificationType.HOOK, consumer, autoCommitEnabled, 1000);
     }
 

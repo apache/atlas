@@ -183,6 +183,8 @@ public class AbstractNotificationConsumerTest {
     }
 
     private static class TestNotificationConsumer extends AbstractNotificationConsumer<TestMessage> {
+        private static final String TEST_TOPIC_NAME = "TEST_TOPIC";
+
         private final List<TestMessage> messageList;
         private       int              index = 0;
 
@@ -217,7 +219,7 @@ public class AbstractNotificationConsumerTest {
         public List<AtlasKafkaMessage<TestMessage>> receive(long timeoutMilliSeconds) {
             List<AtlasKafkaMessage<TestMessage>> tempMessageList = new ArrayList();
             for(Object json :  messageList) {
-                tempMessageList.add(new AtlasKafkaMessage(deserializer.deserialize((String) json), -1, -1));
+                tempMessageList.add(new AtlasKafkaMessage(deserializer.deserialize((String) json), -1, TEST_TOPIC_NAME, -1));
             }
             return tempMessageList;
         }

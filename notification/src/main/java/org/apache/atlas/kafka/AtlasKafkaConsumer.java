@@ -88,7 +88,7 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
                     continue;
                 }
 
-                messages.add(new AtlasKafkaMessage(message, record.offset(), record.partition()));
+                messages.add(new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition()));
             }
         }
 

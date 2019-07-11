@@ -21,7 +21,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.util.AtlasMetricsCounter.Stats;
+import org.apache.atlas.util.AtlasMetricsCounter.StatsReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,16 +50,15 @@ public class AtlasMetricsUtil {
     private static final String STATUS_CONNECTED     = "connected";
     private static final String STATUS_NOT_CONNECTED = "not-connected";
 
-    private final AtlasGraph          graph;
-    private       long                serverStartTime   = 0;
-    private       long                serverActiveTime  = 0;
-    private       long                msgOffsetStart    = -1;
-    private       long                msgOffsetCurrent  = 0;
-    private final AtlasMetricsCounter messagesProcessed = new AtlasMetricsCounter("messagesProcessed");
-    private final AtlasMetricsCounter messagesFailed    = new AtlasMetricsCounter("messagesFailed");
-    private final AtlasMetricsCounter entityCreates     = new AtlasMetricsCounter("entityCreates");
-    private final AtlasMetricsCounter entityUpdates     = new AtlasMetricsCounter("entityUpdates");
-    private final AtlasMetricsCounter entityDeletes     = new AtlasMetricsCounter("entityDeletes");
+    private final AtlasGraph              graph;
+    private       long                    serverStartTime   = 0;
+    private       long                    serverActiveTime  = 0;
+    private final Map<String, TopicStats> topicStats        = new HashMap<>();
+    private final AtlasMetricsCounter     messagesProcessed = new AtlasMetricsCounter("messagesProcessed");
+    private final AtlasMetricsCounter     messagesFailed    = new AtlasMetricsCounter("messagesFailed");
+    private final AtlasMetricsCounter     entityCreates     = new AtlasMetricsCounter("entityCreates");
+    private final AtlasMetricsCounter     entityUpdates     = new AtlasMetricsCounter("entityUpdates");
+    private final AtlasMetricsCounter     entityDeletes     = new AtlasMetricsCounter("entityDeletes");
 
     @Inject
     public AtlasMetricsUtil(AtlasGraph graph) {
@@ -83,7 +82,7 @@ public class AtlasMetricsUtil {
         serverActiveTime = System.currentTimeMillis();
     }
 
-    public void onNotificationProcessingComplete(long msgOffset, NotificationStat stats) {
+    public void onNotificationProcessingComplete(String topicName, int partition, long msgOffset, NotificationStat stats) {
         messagesProcessed.incrWithMeasure(stats.timeTakenMs);
         entityCreates.incrBy(stats.entityCreates);
         entityUpdates.incrBy(stats.entityUpdates);
@@ -93,21 +92,33 @@ public class AtlasMetricsUtil {
             messagesFailed.incr();
         }
 
-        if (msgOffsetStart == -1) {
-            msgOffsetStart = msgOffset;
+        TopicStats topicStat = topicStats.get(topicName);
+
+        if (topicStat == null) {
+            topicStat = new TopicStats(topicName);
+
+            topicStats.put(topicName, topicStat);
         }
 
-        msgOffsetCurrent = ++msgOffset;
+        TopicPartitionStat partitionStat = topicStat.get(partition);
+
+        if (partitionStat == null) {
+            partitionStat = new TopicPartitionStat(topicName, partition, msgOffset, msgOffset);
+
+            topicStat.set(partition, partitionStat);
+        }
+
+        partitionStat.setCurrentOffset(msgOffset + 1);
     }
 
     public Map<String, Object> getStats() {
         Map<String, Object> ret = new HashMap<>();
 
-        Stats messagesProcessed = this.messagesProcessed.report();
-        Stats messagesFailed    = this.messagesFailed.report();
-        Stats entityCreates     = this.entityCreates.report();
-        Stats entityUpdates     = this.entityUpdates.report();
-        Stats entityDeletes     = this.entityDeletes.report();
+        StatsReport messagesProcessed = this.messagesProcessed.report();
+        StatsReport messagesFailed    = this.messagesFailed.report();
+        StatsReport entityCreates     = this.entityCreates.report();
+        StatsReport entityUpdates     = this.entityUpdates.report();
+        StatsReport entityDeletes     = this.entityDeletes.report();
 
         ret.put(STAT_SERVER_START_TIMESTAMP, serverStartTime);
         ret.put(STAT_SERVER_ACTIVE_TIMESTAMP, serverActiveTime);
@@ -115,8 +126,20 @@ public class AtlasMetricsUtil {
         ret.put(STAT_SERVER_STATUS_BACKEND_STORE, getBackendStoreStatus() ? STATUS_CONNECTED : STATUS_NOT_CONNECTED);
         ret.put(STAT_SERVER_STATUS_INDEX_STORE, getIndexStoreStatus() ? STATUS_CONNECTED : STATUS_NOT_CONNECTED);
 
-        ret.put(STAT_NOTIFY_START_OFFSET, msgOffsetStart);
-        ret.put(STAT_NOTIFY_CURRENT_OFFSET, msgOffsetCurrent);
+        Map<String, Map<String, Long>> topicOffsets = new HashMap<>();
+
+        for (TopicStats tStat : topicStats.values()) {
+            for (TopicPartitionStat tpStat : tStat.partitionStats.values()) {
+                Map<String, Long> tpOffsets = new HashMap<>();
+
+                tpOffsets.put("offsetStart", tpStat.startOffset);
+                tpOffsets.put("offsetCurrent", tpStat.currentOffset);
+
+                topicOffsets.put(tpStat.topicName + "-" + tpStat.partition, tpOffsets);
+            }
+        }
+
+        ret.put(STAT_NOTIFY_TOPIC_OFFSETS, topicOffsets);
         ret.put(STAT_NOTIFY_LAST_MESSAGE_PROCESSED_TIME, this.messagesProcessed.getLastIncrTime().toEpochMilli());
 
         ret.put(STAT_NOTIFY_COUNT_TOTAL,         messagesProcessed.getCount(ALL));
@@ -297,4 +320,58 @@ public class AtlasMetricsUtil {
             return collection != null ? collection.size() : 0;
         }
     }
+
+    class TopicStats {
+        private final String                           topicName;
+        private final Map<Integer, TopicPartitionStat> partitionStats = new HashMap<>();
+
+        public TopicStats(String topicName) {
+            this.topicName = topicName;
+        }
+
+        public String getTopicName() { return topicName; }
+
+        public Map<Integer, TopicPartitionStat> getPartitionStats() { return partitionStats; }
+
+        public TopicPartitionStat get(Integer partition) { return partitionStats.get(partition); }
+
+        public void set(Integer partition, TopicPartitionStat partitionStat) {
+            partitionStats.put(partition, partitionStat);
+        }
+    }
+
+    class TopicPartitionStat {
+        private final String topicName;
+        private final int    partition;
+        private final long   startOffset;
+        private       long   currentOffset;
+
+        public TopicPartitionStat(String  topicName, int partition, long startOffset, long currentOffset) {
+            this.topicName     = topicName;
+            this.partition     = partition;
+            this.startOffset   = startOffset;
+            this.currentOffset = currentOffset;
+        }
+
+        public String getTopicName() {
+            return topicName;
+        }
+
+        public int getPartition() {
+            return partition;
+        }
+
+        public long getStartOffset() {
+            return startOffset;
+        }
+
+        public long getCurrentOffset() {
+            return currentOffset;
+        }
+
+        public void setCurrentOffset(long currentOffset) {
+            this.currentOffset = currentOffset;
+        }
+
+    };
 }
