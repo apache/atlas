@@ -23,7 +23,6 @@ import kafka.utils.ShutdownableThread;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClientV2;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.RequestContext;
@@ -118,7 +117,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private static final String ATTRIBUTE_QUALIFIED_NAME = "qualifiedName";
 
     private static final String THREADNAME_PREFIX = NotificationHookConsumer.class.getSimpleName();
-    private static final String ATLAS_HOOK_TOPIC  = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
 
     public static final String CONSUMER_THREADS_PROPERTY         = "atlas.notification.hook.numthreads";
     public static final String CONSUMER_RETRIES_PROPERTY         = "atlas.notification.hook.maxretries";
@@ -701,7 +699,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                 stats.timeTakenMs = System.currentTimeMillis() - startTime;
 
-                metricsUtil.onNotificationProcessingComplete(kafkaMsg.getOffset(), stats);
+                metricsUtil.onNotificationProcessingComplete(kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), stats);
 
                 if (stats.timeTakenMs > largeMessageProcessingTimeThresholdMs) {
                     String strMessage = AbstractNotification.getMessageJson(message);
@@ -785,9 +783,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             try {
                 recordFailedMessages();
 
-                TopicPartition partition = new TopicPartition(ATLAS_HOOK_TOPIC, kafkaMessage.getPartition());
+                consumer.commit(kafkaMessage.getTopicPartition(), kafkaMessage.getOffset() + 1);
 
-                consumer.commit(partition, kafkaMessage.getOffset() + 1);
                 commitSucceessStatus = true;
             } finally {
                 failedCommitOffsetRecorder.recordIfFailed(commitSucceessStatus, kafkaMessage.getOffset());

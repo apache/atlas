@@ -18,15 +18,17 @@
 
 package org.apache.atlas.kafka;
 
-public class AtlasKafkaMessage<T> {
-    private final T    message;
-    private final long offset;
-    private final int  partition;
+import org.apache.kafka.common.TopicPartition;
 
-    public AtlasKafkaMessage(T message, long offset, int partition) {
-        this.message   = message;
-        this.offset    = offset;
-        this.partition = partition;
+public class AtlasKafkaMessage<T> {
+    private final T              message;
+    private final long           offset;
+    private final TopicPartition topicPartition;
+
+    public AtlasKafkaMessage(T message, long offset, String topic, int partition) {
+        this.message        = message;
+        this.offset         = offset;
+        this.topicPartition = new TopicPartition(topic, partition);
     }
 
     public T getMessage() {
@@ -37,8 +39,16 @@ public class AtlasKafkaMessage<T> {
         return offset;
     }
 
+    public TopicPartition getTopicPartition() {
+        return topicPartition;
+    }
+
+    public String getTopic() {
+        return topicPartition.topic();
+    }
+
     public int getPartition() {
-        return partition;
+        return topicPartition.partition();
     }
 
 }

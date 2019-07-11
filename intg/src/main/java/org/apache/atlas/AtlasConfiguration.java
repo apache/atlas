@@ -19,6 +19,7 @@
 package org.apache.atlas;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Enum that encapsulated each property name and its default value.
@@ -38,6 +39,9 @@ public enum AtlasConfiguration {
 
     NOTIFICATION_HOOK_TOPIC_NAME("atlas.notification.hook.topic.name", "ATLAS_HOOK"),
     NOTIFICATION_ENTITIES_TOPIC_NAME("atlas.notification.entities.topic.name", "ATLAS_ENTITIES"),
+
+    NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES("atlas.notification.hook.consumer.topic.names", "ATLAS_HOOK"), //  a comma separated list of topic names
+    NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES("atlas.notification.entities.consumer.topic.names", "ATLAS_ENTITIES"), //  a comma separated list of topic names
 
     NOTIFICATION_MESSAGE_MAX_LENGTH_BYTES("atlas.notification.message.max.length.bytes", (1000 * 1000)),
     NOTIFICATION_MESSAGE_COMPRESSION_ENABLED("atlas.notification.message.compression.enabled", true),
@@ -82,6 +86,28 @@ public enum AtlasConfiguration {
 
     public String getString() {
         return APPLICATION_PROPERTIES.getString(propertyName, defaultValue.toString());
+    }
+
+    public String[] getStringArray() {
+        String[] ret = APPLICATION_PROPERTIES.getStringArray(propertyName);
+
+        if (ret == null ||  ret.length == 0 || (ret.length == 1 && StringUtils.isEmpty(ret[0]))) {
+            if (defaultValue != null) {
+                ret = StringUtils.split(defaultValue.toString(), ',');
+            }
+        }
+
+        return ret;
+    }
+
+    public String[] getStringArray(String... defaultValue) {
+        String[] ret = APPLICATION_PROPERTIES.getStringArray(propertyName);
+
+        if (ret == null ||  ret.length == 0 || (ret.length == 1 && StringUtils.isEmpty(ret[0]))) {
+            ret = defaultValue;
+        }
+
+        return ret;
     }
 
     public Object get() {

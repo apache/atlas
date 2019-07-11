@@ -57,20 +57,30 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public    static final String ATLAS_ENTITIES_TOPIC       = AtlasConfiguration.NOTIFICATION_ENTITIES_TOPIC_NAME.getString();
     protected static final String CONSUMER_GROUP_ID_PROPERTY = "group.id";
 
+    private   static final String[] ATLAS_HOOK_CONSUMER_TOPICS     = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC);
+    private   static final String[] ATLAS_ENTITIES_CONSUMER_TOPICS = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
+
     private static final String DEFAULT_CONSUMER_CLOSED_ERROR_MESSAGE = "This consumer has already been closed.";
 
-    private static final Map<NotificationType, String> TOPIC_MAP = new HashMap<NotificationType, String>() {
+    private static final Map<NotificationType, String> PRODUCER_TOPIC_MAP = new HashMap<NotificationType, String>() {
         {
             put(NotificationType.HOOK, ATLAS_HOOK_TOPIC);
             put(NotificationType.ENTITIES, ATLAS_ENTITIES_TOPIC);
         }
     };
 
-    private final Properties    properties;
-    private final Long          pollTimeOutMs;
-    private       KafkaConsumer consumer;
-    private       KafkaProducer producer;
-    private       String        consumerClosedErrorMsg;
+    private static final Map<NotificationType, String[]> CONSUMER_TOPICS_MAP = new HashMap<NotificationType, String[]>() {
+        {
+            put(NotificationType.HOOK, trimAndPurge(ATLAS_HOOK_CONSUMER_TOPICS));
+            put(NotificationType.ENTITIES, trimAndPurge(ATLAS_ENTITIES_CONSUMER_TOPICS));
+        }
+    };
+
+    private final Properties                                 properties;
+    private final Long                                       pollTimeOutMs;
+    private final Map<NotificationType, List<KafkaConsumer>> consumers = new HashMap<>();
+    private final Map<NotificationType, KafkaProducer>       producers = new HashMap<>();
+    private       String                                     consumerClosedErrorMsg;
 
     // ----- Constructors ----------------------------------------------------
 
@@ -125,8 +135,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
     }
 
     @VisibleForTesting
-    String getTopicName(NotificationType notificationType) {
-        return TOPIC_MAP.get(notificationType);
+    String getProducerTopicName(NotificationType notificationType) {
+        return PRODUCER_TOPIC_MAP.get(notificationType);
     }
 
     // ----- Service ---------------------------------------------------------
@@ -156,10 +166,43 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers, boolean autoCommitEnabled) {
         LOG.info("==> KafkaNotification.createConsumers(notificationType={}, numConsumers={}, autoCommitEnabled={})", notificationType, numConsumers, autoCommitEnabled);
 
-        Properties         consumerProperties = getConsumerProperties(notificationType);
-        AtlasKafkaConsumer kafkaConsumer      = new AtlasKafkaConsumer(notificationType, getKafkaConsumer(consumerProperties, notificationType, autoCommitEnabled), autoCommitEnabled, pollTimeOutMs);
+        String[] topics = CONSUMER_TOPICS_MAP.get(notificationType);
 
-        List<NotificationConsumer<T>> consumers = Collections.singletonList(kafkaConsumer);
+        if (numConsumers < topics.length) {
+            LOG.warn("consumers count {} is fewer than number of topics {}. Creating {} consumers, so that consumer count is equal to number of topics.", numConsumers, topics.length, topics.length);
+
+            numConsumers = topics.length;
+        } else if (numConsumers > topics.length) {
+            LOG.warn("consumers count {} is higher than number of topics {}. Creating {} consumers, so that consumer count is equal to number of topics", numConsumers, topics.length, topics.length);
+
+            numConsumers = topics.length;
+        }
+
+        List<KafkaConsumer> notificationConsumers = this.consumers.get(notificationType);
+
+        if (notificationConsumers == null) {
+            notificationConsumers = new ArrayList<>(numConsumers);
+
+            this.consumers.put(notificationType, notificationConsumers);
+        }
+
+        List<NotificationConsumer<T>> consumers          = new ArrayList<>();
+        Properties                    consumerProperties = getConsumerProperties(notificationType);
+
+        consumerProperties.put("enable.auto.commit", autoCommitEnabled);
+
+        for (int i = 0; i < numConsumers; i++) {
+            KafkaConsumer existingConsumer = notificationConsumers.size() > i ? notificationConsumers.get(i) : null;
+            KafkaConsumer kafkaConsumer    = getOrCreateKafkaConsumer(existingConsumer, consumerProperties, notificationType, i);
+
+            if (notificationConsumers.size() > i) {
+                notificationConsumers.set(i, kafkaConsumer);
+            } else {
+                notificationConsumers.add(kafkaConsumer);
+            }
+
+            consumers.add(new AtlasKafkaConsumer(notificationType, kafkaConsumer, autoCommitEnabled, pollTimeOutMs));
+        }
 
         LOG.info("<== KafkaNotification.createConsumers(notificationType={}, numConsumers={}, autoCommitEnabled={})", notificationType, numConsumers, autoCommitEnabled);
 
@@ -170,11 +213,17 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public void close() {
         LOG.info("==> KafkaNotification.close()");
 
-        if (producer != null) {
-            producer.close();
-
-            producer = null;
+        for (KafkaProducer producer : producers.values()) {
+            if (producer != null) {
+                try {
+                    producer.close();
+                } catch (Throwable t) {
+                    LOG.error("failed to close Kafka producer. Ignoring", t);
+                }
+            }
         }
+
+        producers.clear();
 
         LOG.info("<== KafkaNotification.close()");
     }
@@ -182,17 +231,15 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     // ----- AbstractNotification --------------------------------------------
     @Override
-    public void sendInternal(NotificationType type, List<String> messages) throws NotificationException {
-        if (producer == null) {
-            createProducer();
-        }
+    public void sendInternal(NotificationType notificationType, List<String> messages) throws NotificationException {
+        KafkaProducer producer = getOrCreateProducer(notificationType);
 
-        sendInternalToProducer(producer, type, messages);
+        sendInternalToProducer(producer, notificationType, messages);
     }
 
     @VisibleForTesting
-    void sendInternalToProducer(Producer p, NotificationType type, List<String> messages) throws NotificationException {
-        String               topic           = TOPIC_MAP.get(type);
+    void sendInternalToProducer(Producer p, NotificationType notificationType, List<String> messages) throws NotificationException {
+        String               topic           = PRODUCER_TOPIC_MAP.get(notificationType);
         List<MessageContext> messageContexts = new ArrayList<>();
 
         for (String message : messages) {
@@ -229,35 +276,14 @@ public class KafkaNotification extends AbstractNotification implements Service {
         }
     }
 
-
-    public KafkaConsumer getKafkaConsumer(Properties consumerProperties, NotificationType type, boolean autoCommitEnabled) {
-        if (consumer == null || !isKafkaConsumerOpen(consumer)) {
-            try {
-                String topic = TOPIC_MAP.get(type);
-
-                consumerProperties.put("enable.auto.commit", autoCommitEnabled);
-
-                this.consumer = new KafkaConsumer(consumerProperties);
-
-                this.consumer.subscribe(Arrays.asList(topic));
-            } catch (Exception ee) {
-                LOG.error("Exception in getKafkaConsumer ", ee);
-            }
-        }
-
-        return this.consumer;
-    }
-
-
+    // Get properties for consumer request
     @VisibleForTesting
-    public
-        // Get properties for consumer request
-    Properties getConsumerProperties(NotificationType type) {
+    public Properties getConsumerProperties(NotificationType notificationType) {
         // find the configured group id for the given notification type
-        String groupId = properties.getProperty(type.toString().toLowerCase() + "." + CONSUMER_GROUP_ID_PROPERTY);
+        String groupId = properties.getProperty(notificationType.toString().toLowerCase() + "." + CONSUMER_GROUP_ID_PROPERTY);
 
         if (StringUtils.isEmpty(groupId)) {
-            throw new IllegalStateException("No configuration group id set for the notification type " + type);
+            throw new IllegalStateException("No configuration group id set for the notification type " + notificationType);
         }
 
         Properties consumerProperties = new Properties();
@@ -268,14 +294,64 @@ public class KafkaNotification extends AbstractNotification implements Service {
         return consumerProperties;
     }
 
-    private synchronized void createProducer() {
-        LOG.info("==> KafkaNotification.createProducer()");
+    @VisibleForTesting
+    public KafkaConsumer getOrCreateKafkaConsumer(KafkaConsumer existingConsumer, Properties consumerProperties, NotificationType notificationType, int idxConsumer) {
+        KafkaConsumer ret = existingConsumer;
 
-        if (producer == null) {
-            producer = new KafkaProducer(properties);
+        try {
+            if (ret == null || !isKafkaConsumerOpen(ret)) {
+                String[] topics = CONSUMER_TOPICS_MAP.get(notificationType);
+                String   topic  = topics[idxConsumer % topics.length];
+
+                LOG.debug("Creating new KafkaConsumer for topic : {}, index : {}", topic, idxConsumer);
+
+                ret = new KafkaConsumer(consumerProperties);
+
+                ret.subscribe(Arrays.asList(topic));
+            }
+        } catch (Exception ee) {
+            LOG.error("Exception in getKafkaConsumer ", ee);
         }
 
-        LOG.info("<== KafkaNotification.createProducer()");
+        return ret;
+    }
+
+    private KafkaProducer getOrCreateProducer(NotificationType notificationType) {
+        LOG.debug("==> KafkaNotification.getOrCreateProducer()");
+
+        KafkaProducer ret = producers.get(notificationType);
+
+        if (ret == null) {
+            synchronized (this) {
+                ret = producers.get(notificationType);
+
+                if (ret == null) {
+                    ret = new KafkaProducer(properties);
+
+                    producers.put(notificationType, ret);
+                }
+            }
+        }
+
+        LOG.debug("<== KafkaNotification.getOrCreateProducer()");
+
+        return ret;
+    }
+
+    public static String[] trimAndPurge(String[] strings)  {
+        List<String> ret = new ArrayList<>();
+
+        if (strings != null) {
+            for (int i = 0; i < strings.length; i++) {
+                String str = StringUtils.trim(strings[i]);
+
+                if (StringUtils.isNotEmpty(str)) {
+                    ret.add(str);
+                }
+            }
+        }
+
+        return ret.toArray(new String[ret.size()]);
     }
 
     private class MessageContext {

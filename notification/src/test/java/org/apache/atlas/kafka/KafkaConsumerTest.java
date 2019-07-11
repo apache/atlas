@@ -54,7 +54,8 @@ import static org.testng.Assert.*;
 public class KafkaConsumerTest {
     private static final String TRAIT_NAME = "MyTrait";
 
-    private final String ATLAS_HOOK_TOPIC = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
+    private static final String ATLAS_HOOK_TOPIC = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
+    private static final String[] ATLAS_HOOK_CONSUMER_TOPICS = KafkaNotification.trimAndPurge(AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC));
 
 
     @Mock
@@ -67,11 +68,25 @@ public class KafkaConsumerTest {
 
     @Test
     public void testReceive() throws Exception {
-        Referenceable                        entity  = getEntity(TRAIT_NAME);
-        EntityUpdateRequest                  message = new EntityUpdateRequest("user1", entity);
+        for (String topic : ATLAS_HOOK_CONSUMER_TOPICS) {
+            String traitName = TRAIT_NAME + "_" + topic;
+            Referenceable entity = getEntity(traitName);
+            EntityUpdateRequest message = new EntityUpdateRequest("user1", entity);
+            List<AtlasKafkaMessage<HookNotification>> messageList = testReceiveHelper(message, topic);
+            assertTrue(messageList.size() > 0);
+
+            HookNotification consumedMessage = messageList.get(0).getMessage();
+
+            assertMessagesEqual(message, consumedMessage, entity);
+        }
+    }
+
+
+    private List<AtlasKafkaMessage<HookNotification>> testReceiveHelper(EntityUpdateRequest message, String topic) throws Exception {
+
         String                               json    = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), message));
-        TopicPartition                       tp      = new TopicPartition(ATLAS_HOOK_TOPIC, 0);
-        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>(ATLAS_HOOK_TOPIC, 0, 0L, "mykey", json));
+        TopicPartition                       tp      = new TopicPartition(topic, 0);
+        List<ConsumerRecord<String, String>> klist   = Collections.singletonList(new ConsumerRecord<>(topic, 0, 0L, "mykey", json));
         Map                                  mp      = Collections.singletonMap(tp, klist);
         ConsumerRecords                      records = new ConsumerRecords(mp);
 
@@ -81,12 +96,7 @@ public class KafkaConsumerTest {
 
         AtlasKafkaConsumer                        consumer    = new AtlasKafkaConsumer(NotificationType.HOOK, kafkaConsumer, false, 100L);
         List<AtlasKafkaMessage<HookNotification>> messageList = consumer.receive();
-
-        assertTrue(messageList.size() > 0);
-
-        HookNotification consumedMessage  = messageList.get(0).getMessage();
-
-        assertMessagesEqual(message, consumedMessage, entity);
+        return messageList;
     }
 
     @Test

@@ -227,10 +227,10 @@ public class MetricsServiceTest {
     private void processMessage(Instant instant) {
         clock.setInstant(instant);
 
-        metricsUtil.onNotificationProcessingComplete(++msgOffset, new AtlasMetricsUtil.NotificationStat(true, 1));
+        metricsUtil.onNotificationProcessingComplete("ATLAS_HOOK", 0, ++msgOffset, new AtlasMetricsUtil.NotificationStat(true, 1));
 
         for (int i = 0; i < 10; i++) {
-            metricsUtil.onNotificationProcessingComplete(msgOffset++, new AtlasMetricsUtil.NotificationStat(false, 1));
+            metricsUtil.onNotificationProcessingComplete("ATLAS_HOOK", 0, msgOffset++, new AtlasMetricsUtil.NotificationStat(false, 1));
         }
 
         clock.setInstant(null);
