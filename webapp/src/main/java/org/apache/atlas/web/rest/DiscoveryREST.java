@@ -20,6 +20,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -398,7 +399,7 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.addSavedSearch(userName=" + savedSearch.getOwnerName() + ", name=" + savedSearch.getName() + ", searchType=" + savedSearch.getSearchType() + ")");
             }
 
-            return discoveryService.addSavedSearch(Servlets.getUserName(httpServletRequest), savedSearch);
+            return discoveryService.addSavedSearch(AtlasAuthorizationUtils.getCurrentUserName(), savedSearch);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -422,7 +423,7 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.updateSavedSearch(userName=" + savedSearch.getOwnerName() + ", name=" + savedSearch.getName() + ", searchType=" + savedSearch.getSearchType() + ")");
             }
 
-            return discoveryService.updateSavedSearch(Servlets.getUserName(httpServletRequest), savedSearch);
+            return discoveryService.updateSavedSearch(AtlasAuthorizationUtils.getCurrentUserName(), savedSearch);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -449,7 +450,7 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.getSavedSearch(userName=" + userName + ", name=" + searchName + ")");
             }
 
-            return discoveryService.getSavedSearchByName(Servlets.getUserName(httpServletRequest), userName, searchName);
+            return discoveryService.getSavedSearchByName(AtlasAuthorizationUtils.getCurrentUserName(), userName, searchName);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -473,7 +474,7 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.getSavedSearches(userName=" + userName + ")");
             }
 
-            return discoveryService.getSavedSearches(Servlets.getUserName(httpServletRequest), userName);
+            return discoveryService.getSavedSearches(AtlasAuthorizationUtils.getCurrentUserName(), userName);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -494,7 +495,7 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.deleteSavedSearch(guid=" + guid + ")");
             }
 
-            discoveryService.deleteSavedSearch(Servlets.getUserName(httpServletRequest), guid);
+            discoveryService.deleteSavedSearch(AtlasAuthorizationUtils.getCurrentUserName(), guid);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -524,7 +525,7 @@ public class DiscoveryREST {
                         "DiscoveryREST.executeSavedSearchByName(userName=" + userName + ", " + "name=" + searchName + ")");
             }
 
-            AtlasUserSavedSearch savedSearch = discoveryService.getSavedSearchByName(Servlets.getUserName(httpServletRequest), userName, searchName);
+            AtlasUserSavedSearch savedSearch = discoveryService.getSavedSearchByName(AtlasAuthorizationUtils.getCurrentUserName(), userName, searchName);
 
             return executeSavedSearch(savedSearch);
         } finally {
@@ -551,7 +552,7 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.executeSavedSearchByGuid(" + searchGuid + ")");
             }
 
-            AtlasUserSavedSearch savedSearch = discoveryService.getSavedSearchByGuid(Servlets.getUserName(httpServletRequest), searchGuid);
+            AtlasUserSavedSearch savedSearch = discoveryService.getSavedSearchByGuid(AtlasAuthorizationUtils.getCurrentUserName(), searchGuid);
 
             return executeSavedSearch(savedSearch);
         } finally {
