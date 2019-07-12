@@ -184,7 +184,8 @@ define(['require'], function(require) {
             "totalCreates": "number",
             "totalDeletes": "number",
             "totalFailed": "number",
-            "totalUpdates": "number"
+            "totalUpdates": "number",
+            "topicOffsets":"number"
         }
     };
     return Enums;

@@ -20,6 +20,7 @@ define(['require',
     'backbone',
     'hbs!tmpl/site/Statistics_tmpl',
     'hbs!tmpl/site/Statistics_Notification_table_tmpl',
+    'hbs!tmpl/site/Statistics_Topic_Offset_table_tmpl',
     'hbs!tmpl/site/entity_tmpl',
     'modules/Modal',
     'models/VCommon',
@@ -30,7 +31,7 @@ define(['require',
     'moment',
     'utils/Utils',
     'moment-timezone'
-], function(require, Backbone, StatTmpl, StatsNotiTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, moment, Utils) {
+], function(require, Backbone, StatTmpl, StatsNotiTable, TopicOffsetTable, EntityTable, Modal, VCommon, UrlLinks, VTagList, CommonViewFunction, Enums, moment, Utils) {
     'use strict';
 
     var StatisticsView = Backbone.Marionette.LayoutView.extend(
@@ -48,7 +49,8 @@ define(['require',
                 notificationCard: "[data-id='notification-card']",
                 statsNotificationTable: "[data-id='stats-notification-table']",
                 notificationSmallCard: "[data-id='notification-small-card']",
-                entityCard: "[data-id='entity-card']"
+                entityCard: "[data-id='entity-card']",
+                offsetCard: "[data-id='offset-card']"
             },
             /** ui events hash */
             events: function() {},
@@ -241,6 +243,29 @@ define(['require',
                             "data": _.pick(data.Notification, 'lastMessageProcessedTime', 'offsetCurrent', 'offsetStart')
                         })
                     );
+
+
+                    var offsetTableColumn = function(obj) {
+                        var returnObj = []
+                        _.each(obj, function(value, key) {
+                            returnObj.push({ "label": key, "dataValue": value });
+                        });
+                        return returnObj
+                    }
+
+                    that.ui.offsetCard.html(
+                        TopicOffsetTable({
+                            "enums": Enums.stats.Notification,
+                            "data": data.Notification.topicOffsets,
+                            "tableHeader": ['offsetCurrent', 'offsetStart'],
+                            "tableCol": offsetTableColumn(data.Notification.topicOffsets),
+                            "getTmplValue": function(argument, args) {
+                                console.log(argument, args)
+                                var returnVal = data.Notification.topicOffsets[argument.label][args];
+                                return returnVal ? _.numberFormatWithComa(returnVal) : 0;
+                            }
+                        })
+                    )
                 }
 
                 if (data.Server) {
