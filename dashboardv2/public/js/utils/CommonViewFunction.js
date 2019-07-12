@@ -230,7 +230,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (valueOfArray.length) {
                     subLink = valueOfArray.join(', ');
                 }
-                return subLink;
+                return subLink === "" ? "N/A" : subLink;
             }
         var valueObjectKeysList = _.keys(valueObject);
         if (_.isUndefined(sortBy) || sortBy == true) {
