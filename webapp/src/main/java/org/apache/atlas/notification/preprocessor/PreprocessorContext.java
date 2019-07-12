@@ -41,6 +41,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
+import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.QNAME_SEP_CLUSTER_NAME;
+import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.QNAME_SEP_ENTITY_NAME;
 
 
 public class PreprocessorContext {
@@ -54,8 +56,12 @@ public class PreprocessorContext {
     private final List<Pattern>                       hiveTablesToIgnore;
     private final List<Pattern>                       hiveTablesToPrune;
     private final Map<String, PreprocessAction>       hiveTablesCache;
+    private final List<String>                        hiveDummyDatabasesToIgnore;
+    private final List<String>                        hiveDummyTablesToIgnore;
+    private final List<String>                        hiveTablePrefixesToIgnore;
     private final boolean                             hiveTypesRemoveOwnedRefAttrs;
     private final boolean                             rdbmsTypesRemoveOwnedRefAttrs;
+    private final boolean                             isHivePreProcessEnabled;
     private final Set<String>                         ignoredEntities        = new HashSet<>();
     private final Set<String>                         prunedEntities         = new HashSet<>();
     private final Set<String>                         referredEntitiesToMove = new HashSet<>();
@@ -64,12 +70,15 @@ public class PreprocessorContext {
     private final Map<String, String>                 guidAssignments        = new HashMap<>();
     private       List<AtlasEntity>                   postUpdateEntities     = null;
 
-    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, AtlasTypeRegistry typeRegistry, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs) {
+    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, AtlasTypeRegistry typeRegistry, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, List<String> hiveDummyDatabasesToIgnore, List<String> hiveDummyTablesToIgnore, List<String> hiveTablePrefixesToIgnore, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs) {
         this.kafkaMessage                  = kafkaMessage;
         this.typeRegistry                  = typeRegistry;
         this.hiveTablesToIgnore            = hiveTablesToIgnore;
         this.hiveTablesToPrune             = hiveTablesToPrune;
         this.hiveTablesCache               = hiveTablesCache;
+        this.hiveDummyDatabasesToIgnore    = hiveDummyDatabasesToIgnore;
+        this.hiveDummyTablesToIgnore       = hiveDummyTablesToIgnore;
+        this.hiveTablePrefixesToIgnore     = hiveTablePrefixesToIgnore;
         this.hiveTypesRemoveOwnedRefAttrs  = hiveTypesRemoveOwnedRefAttrs;
         this.rdbmsTypesRemoveOwnedRefAttrs = rdbmsTypesRemoveOwnedRefAttrs;
 
@@ -88,6 +97,8 @@ public class PreprocessorContext {
                 entitiesWithExtInfo = null;
             break;
         }
+
+        this.isHivePreProcessEnabled = hiveTypesRemoveOwnedRefAttrs || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty();
     }
 
     public AtlasKafkaMessage<HookNotification> getKafkaMessage() {
@@ -107,7 +118,7 @@ public class PreprocessorContext {
     public boolean getRdbmsTypesRemoveOwnedRefAttrs() { return rdbmsTypesRemoveOwnedRefAttrs; }
 
     public boolean isHivePreprocessEnabled() {
-        return !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || hiveTypesRemoveOwnedRefAttrs;
+        return isHivePreProcessEnabled;
     }
 
     public List<AtlasEntity> getEntities() {
@@ -142,22 +153,78 @@ public class PreprocessorContext {
 
     public List<AtlasEntity> getPostUpdateEntities() { return postUpdateEntities; }
 
+    public PreprocessAction getPreprocessActionForHiveDb(String dbName) {
+        PreprocessAction ret = PreprocessAction.NONE;
+
+        if (dbName != null) {
+            for (String dummyDbName : hiveDummyDatabasesToIgnore) {
+                if (StringUtils.equalsIgnoreCase(dbName, dummyDbName)) {
+                    ret = PreprocessAction.IGNORE;
+
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
+
     public PreprocessAction getPreprocessActionForHiveTable(String qualifiedName) {
         PreprocessAction ret = PreprocessAction.NONE;
 
-        if (qualifiedName != null && (CollectionUtils.isNotEmpty(hiveTablesToIgnore) || CollectionUtils.isNotEmpty(hiveTablesToPrune))) {
-            ret = hiveTablesCache.get(qualifiedName);
+        if (qualifiedName != null) {
+            if (CollectionUtils.isNotEmpty(hiveTablesToIgnore) || CollectionUtils.isNotEmpty(hiveTablesToPrune)) {
+                ret = hiveTablesCache.get(qualifiedName);
 
-            if (ret == null) {
-                if (isMatch(qualifiedName, hiveTablesToIgnore)) {
-                    ret = PreprocessAction.IGNORE;
-                } else if (isMatch(qualifiedName, hiveTablesToPrune)) {
-                    ret = PreprocessAction.PRUNE;
-                } else {
-                    ret = PreprocessAction.NONE;
+                if (ret == null) {
+                    if (isMatch(qualifiedName, hiveTablesToIgnore)) {
+                        ret = PreprocessAction.IGNORE;
+                    } else if (isMatch(qualifiedName, hiveTablesToPrune)) {
+                        ret = PreprocessAction.PRUNE;
+                    } else {
+                        ret = PreprocessAction.NONE;
+                    }
+
+                    hiveTablesCache.put(qualifiedName, ret);
+                }
+            }
+
+            if (ret != PreprocessAction.IGNORE && (CollectionUtils.isNotEmpty(hiveDummyTablesToIgnore) || CollectionUtils.isNotEmpty(hiveTablePrefixesToIgnore))) {
+                String tblName = getHiveTableNameFromQualifiedName(qualifiedName);
+
+                if (tblName != null) {
+                    for (String dummyTblName : hiveDummyTablesToIgnore) {
+                        if (StringUtils.equalsIgnoreCase(tblName, dummyTblName)) {
+                            ret = PreprocessAction.IGNORE;
+
+                            break;
+                        }
+                    }
+
+                    if (ret != PreprocessAction.IGNORE) {
+                        for (String tableNamePrefix : hiveTablePrefixesToIgnore) {
+                            if (StringUtils.startsWithIgnoreCase(tblName, tableNamePrefix)) {
+                                ret = PreprocessAction.IGNORE;
+
+                                break;
+                            }
+                        }
+                    }
                 }
 
-                hiveTablesCache.put(qualifiedName, ret);
+                if (ret != PreprocessAction.IGNORE && CollectionUtils.isNotEmpty(hiveDummyDatabasesToIgnore)) {
+                    String dbName = getHiveDbNameFromQualifiedName(qualifiedName);
+
+                    if (dbName != null) {
+                        for (String dummyDbName : hiveDummyDatabasesToIgnore) {
+                            if (StringUtils.equalsIgnoreCase(dbName, dummyDbName)) {
+                                ret = PreprocessAction.IGNORE;
+
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -319,6 +386,36 @@ public class PreprocessorContext {
                 }
             }
         }
+    }
+
+    public String getHiveTableNameFromQualifiedName(String qualifiedName) {
+        String ret      = null;
+        int    idxStart = qualifiedName.indexOf(QNAME_SEP_ENTITY_NAME) + 1;
+
+        if (idxStart != 0 && qualifiedName.length() > idxStart) {
+            int idxEnd = qualifiedName.indexOf(QNAME_SEP_CLUSTER_NAME, idxStart);
+
+            if (idxEnd != -1) {
+                ret = qualifiedName.substring(idxStart, idxEnd);
+            }
+        }
+
+        return ret;
+    }
+
+    public String getHiveDbNameFromQualifiedName(String qualifiedName) {
+        String ret    = null;
+        int    idxEnd = qualifiedName.indexOf(QNAME_SEP_ENTITY_NAME); // db.table@cluster, db.table.column@cluster
+
+        if (idxEnd == -1) {
+            idxEnd = qualifiedName.indexOf(QNAME_SEP_CLUSTER_NAME); // db@cluster
+        }
+
+        if (idxEnd != -1) {
+            ret = qualifiedName.substring(0, idxEnd);
+        }
+
+        return ret;
     }
 
     public String getTypeName(Object obj) {
