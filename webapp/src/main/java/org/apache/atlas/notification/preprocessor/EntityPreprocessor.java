@@ -31,6 +31,7 @@ public abstract class EntityPreprocessor {
     public static final String TYPE_HIVE_COLUMN_LINEAGE = "hive_column_lineage";
     public static final String TYPE_HIVE_PROCESS        = "hive_process";
     public static final String TYPE_HIVE_STORAGEDESC    = "hive_storagedesc";
+    public static final String TYPE_HIVE_DB             = "hive_db";
     public static final String TYPE_HIVE_TABLE          = "hive_table";
     public static final String TYPE_RDBMS_INSTANCE      = "rdbms_instance";
     public static final String TYPE_RDBMS_DB            = "rdbms_db";
@@ -67,6 +68,7 @@ public abstract class EntityPreprocessor {
 
     static {
         EntityPreprocessor[] hivePreprocessors = new EntityPreprocessor[] {
+                                                                    new HivePreprocessor.HiveDbPreprocessor(),
                                                                     new HivePreprocessor.HiveTablePreprocessor(),
                                                                     new HivePreprocessor.HiveColumnPreprocessor(),
                                                                     new HivePreprocessor.HiveProcessPreprocessor(),
@@ -110,6 +112,12 @@ public abstract class EntityPreprocessor {
 
     public static String getQualifiedName(AtlasEntity entity) {
         Object obj = entity != null ? entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME) : null;
+
+        return obj != null ? obj.toString() : null;
+    }
+
+    public static String getName(AtlasEntity entity) {
+        Object obj = entity != null ? entity.getAttribute(ATTRIBUTE_NAME) : null;
 
         return obj != null ? obj.toString() : null;
     }
