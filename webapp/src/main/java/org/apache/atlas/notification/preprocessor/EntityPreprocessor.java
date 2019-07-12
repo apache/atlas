@@ -31,10 +31,12 @@ public abstract class EntityPreprocessor {
     public static final String TYPE_HIVE_COLUMN_LINEAGE = "hive_column_lineage";
     public static final String TYPE_HIVE_PROCESS        = "hive_process";
     public static final String TYPE_HIVE_STORAGEDESC    = "hive_storagedesc";
+    public static final String TYPE_HIVE_DB             = "hive_db";
     public static final String TYPE_HIVE_TABLE          = "hive_table";
 
     public static final String ATTRIBUTE_COLUMNS        = "columns";
     public static final String ATTRIBUTE_INPUTS         = "inputs";
+    public static final String ATTRIBUTE_NAME           = "name";
     public static final String ATTRIBUTE_OUTPUTS        = "outputs";
     public static final String ATTRIBUTE_PARTITION_KEYS = "partitionKeys";
     public static final String ATTRIBUTE_QUALIFIED_NAME = "qualifiedName";
@@ -50,7 +52,8 @@ public abstract class EntityPreprocessor {
 
 
     static {
-        EntityPreprocessor[] preprocessors = new EntityPreprocessor[] {
+        EntityPreprocessor[] hivePreprocessors = new EntityPreprocessor[] {
+                                                                    new HivePreprocessor.HiveDbPreprocessor(),
                                                                     new HivePreprocessor.HiveTablePreprocessor(),
                                                                     new HivePreprocessor.HiveColumnPreprocessor(),
                                                                     new HivePreprocessor.HiveProcessPreprocessor(),
@@ -58,7 +61,7 @@ public abstract class EntityPreprocessor {
                                                                     new HivePreprocessor.HiveStorageDescPreprocessor()
         };
 
-        for (EntityPreprocessor preprocessor : preprocessors) {
+        for (EntityPreprocessor preprocessor : hivePreprocessors) {
             PREPROCESSOR_MAP.put(preprocessor.getTypeName(), preprocessor);
         }
     }
@@ -80,6 +83,12 @@ public abstract class EntityPreprocessor {
 
     public static String getQualifiedName(AtlasEntity entity) {
         Object obj = entity != null ? entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME) : null;
+
+        return obj != null ? obj.toString() : null;
+    }
+
+    public static String getName(AtlasEntity entity) {
+        Object obj = entity != null ? entity.getAttribute(ATTRIBUTE_NAME) : null;
 
         return obj != null ? obj.toString() : null;
     }

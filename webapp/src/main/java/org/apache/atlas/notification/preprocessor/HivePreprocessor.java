@@ -21,11 +21,34 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.commons.lang.StringUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public class HivePreprocessor {
+    private static final Logger LOG = LoggerFactory.getLogger(HivePreprocessor.class);
+
+
+    static class HiveDbPreprocessor extends EntityPreprocessor {
+        public HiveDbPreprocessor() {
+            super(TYPE_HIVE_DB);
+        }
+
+        @Override
+        public void preprocess(AtlasEntity entity, PreprocessorContext context) {
+            if (!context.isIgnoredEntity(entity.getGuid())) {
+                PreprocessAction action = context.getPreprocessActionForHiveDb(getName(entity));
+
+                if (action == PreprocessAction.IGNORE) {
+                    context.addToIgnoredEntities(entity);
+                }
+            }
+        }
+    }
+
     static class HiveTablePreprocessor extends EntityPreprocessor {
         public HiveTablePreprocessor() {
             super(TYPE_HIVE_TABLE);
@@ -135,16 +158,19 @@ public class HivePreprocessor {
             if (context.isIgnoredEntity(entity.getGuid())) {
                 context.addToIgnoredEntities(entity); // so that this will be logged with typeName and qualifiedName
             } else {
-                Object inputs  = entity.getAttribute(ATTRIBUTE_INPUTS);
-                Object outputs = entity.getAttribute(ATTRIBUTE_OUTPUTS);
+                Object inputs       = entity.getAttribute(ATTRIBUTE_INPUTS);
+                Object outputs      = entity.getAttribute(ATTRIBUTE_OUTPUTS);
+                int    inputsCount  = getCollectionSize(inputs);
+                int    outputsCount = getCollectionSize(outputs);
 
                 removeIgnoredObjectIds(inputs, context);
                 removeIgnoredObjectIds(outputs, context);
 
                 boolean isInputsEmpty  = isEmpty(inputs);
                 boolean isOutputsEmpty = isEmpty(outputs);
+                boolean isAnyRemoved   = inputsCount > getCollectionSize(inputs) || outputsCount > getCollectionSize(outputs);
 
-                if (isInputsEmpty || isOutputsEmpty) {
+                if (isAnyRemoved && (isInputsEmpty || isOutputsEmpty)) {
                     context.addToIgnoredEntities(entity);
 
                     // since the process entity is ignored, entities referenced by inputs/outputs of this process entity
@@ -168,6 +194,10 @@ public class HivePreprocessor {
                     }
                 }
             }
+        }
+
+        private int getCollectionSize(Object obj) {
+            return (obj instanceof Collection) ? ((Collection) obj).size() : 0;
         }
 
         private void removeIgnoredObjectIds(Object obj, PreprocessorContext context) {
