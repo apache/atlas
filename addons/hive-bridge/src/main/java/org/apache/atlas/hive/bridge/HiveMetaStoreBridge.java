@@ -363,8 +363,8 @@ public class HiveMetaStoreBridge {
                     processInst.setAttribute(ATTRIBUTE_QUALIFIED_NAME, processQualifiedName);
                     processInst.setAttribute(ATTRIBUTE_NAME, query);
                     processInst.setAttribute(ATTRIBUTE_CLUSTER_NAME, metadataNamespace);
-                    processInst.setAttribute(ATTRIBUTE_INPUTS, Collections.singletonList(BaseHiveEvent.getObjectId(pathInst)));
-                    processInst.setAttribute(ATTRIBUTE_OUTPUTS, Collections.singletonList(BaseHiveEvent.getObjectId(tableInst)));
+                    processInst.setRelationshipAttribute(ATTRIBUTE_INPUTS, Collections.singletonList(getAtlasRelatedObjectId(pathInst, RELATIONSHIP_DATASET_PROCESS_INPUTS)));
+                    processInst.setRelationshipAttribute(ATTRIBUTE_OUTPUTS, Collections.singletonList(getAtlasRelatedObjectId(tableInst, RELATIONSHIP_PROCESS_DATASET_OUTPUTS)));
                     processInst.setAttribute(ATTRIBUTE_USER_NAME, table.getOwner());
                     processInst.setAttribute(ATTRIBUTE_START_TIME, now);
                     processInst.setAttribute(ATTRIBUTE_END_TIME, now);
@@ -590,7 +590,7 @@ public class HiveMetaStoreBridge {
         long        createTime         = BaseHiveEvent.getTableCreateTime(hiveTable);
         long        lastAccessTime     = hiveTable.getLastAccessTime() > 0 ? hiveTable.getLastAccessTime() : createTime;
 
-        tableEntity.setAttribute(ATTRIBUTE_DB, BaseHiveEvent.getObjectId(database));
+        tableEntity.setRelationshipAttribute(ATTRIBUTE_DB, getAtlasRelatedObjectId(database, RELATIONSHIP_HIVE_TABLE_DB));
         tableEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, tableQualifiedName);
         tableEntity.setAttribute(ATTRIBUTE_NAME, hiveTable.getTableName().toLowerCase());
         tableEntity.setAttribute(ATTRIBUTE_OWNER, hiveTable.getOwner());
@@ -611,13 +611,13 @@ public class HiveMetaStoreBridge {
             tableEntity.setAttribute(ATTRIBUTE_VIEW_EXPANDED_TEXT, hiveTable.getViewExpandedText());
         }
 
-        AtlasEntity       sdEntity = toStroageDescEntity(hiveTable.getSd(), tableQualifiedName, getStorageDescQFName(tableQualifiedName), BaseHiveEvent.getObjectId(tableEntity));
-        List<AtlasEntity> partKeys = toColumns(hiveTable.getPartitionKeys(), tableEntity);
-        List<AtlasEntity> columns  = toColumns(hiveTable.getCols(), tableEntity);
+        AtlasEntity       sdEntity = toStorageDescEntity(hiveTable.getSd(), tableQualifiedName, getStorageDescQFName(tableQualifiedName), BaseHiveEvent.getObjectId(tableEntity));
+        List<AtlasEntity> partKeys = toColumns(hiveTable.getPartitionKeys(), tableEntity, RELATIONSHIP_HIVE_TABLE_PART_KEYS);
+        List<AtlasEntity> columns  = toColumns(hiveTable.getCols(), tableEntity, RELATIONSHIP_HIVE_TABLE_COLUMNS);
 
-        tableEntity.setAttribute(ATTRIBUTE_STORAGEDESC, BaseHiveEvent.getObjectId(sdEntity));
-        tableEntity.setAttribute(ATTRIBUTE_PARTITION_KEYS, BaseHiveEvent.getObjectIds(partKeys));
-        tableEntity.setAttribute(ATTRIBUTE_COLUMNS, BaseHiveEvent.getObjectIds(columns));
+        tableEntity.setRelationshipAttribute(ATTRIBUTE_STORAGEDESC, getAtlasRelatedObjectId(sdEntity, RELATIONSHIP_HIVE_TABLE_STORAGE_DESC));
+        tableEntity.setRelationshipAttribute(ATTRIBUTE_PARTITION_KEYS, getObjectIdsWithRelationshipType(partKeys, RELATIONSHIP_HIVE_TABLE_PART_KEYS));
+        tableEntity.setRelationshipAttribute(ATTRIBUTE_COLUMNS, getObjectIdsWithRelationshipType(columns, RELATIONSHIP_HIVE_TABLE_COLUMNS));
 
         table.addReferredEntity(database);
         table.addReferredEntity(sdEntity);
@@ -639,10 +639,10 @@ public class HiveMetaStoreBridge {
         return table;
     }
 
-    private AtlasEntity toStroageDescEntity(StorageDescriptor storageDesc, String tableQualifiedName, String sdQualifiedName, AtlasObjectId tableId ) throws AtlasHookException {
+    private AtlasEntity toStorageDescEntity(StorageDescriptor storageDesc, String tableQualifiedName, String sdQualifiedName, AtlasObjectId tableId ) throws AtlasHookException {
         AtlasEntity ret = new AtlasEntity(HiveDataTypes.HIVE_STORAGEDESC.getName());
 
-        ret.setAttribute(ATTRIBUTE_TABLE, tableId);
+        ret.setRelationshipAttribute(ATTRIBUTE_TABLE, getAtlasRelatedObjectId(tableId, RELATIONSHIP_HIVE_TABLE_STORAGE_DESC));
         ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, sdQualifiedName);
         ret.setAttribute(ATTRIBUTE_PARAMETERS, storageDesc.getParameters());
         ret.setAttribute(ATTRIBUTE_LOCATION, HdfsNameServiceResolver.getPathWithNameServiceID(storageDesc.getLocation()));
@@ -689,7 +689,7 @@ public class HiveMetaStoreBridge {
         return ret;
     }
 
-    private List<AtlasEntity> toColumns(List<FieldSchema> schemaList, AtlasEntity table) throws AtlasHookException {
+    private List<AtlasEntity> toColumns(List<FieldSchema> schemaList, AtlasEntity table, String relationshipType) throws AtlasHookException {
         List<AtlasEntity> ret = new ArrayList<>();
 
         int columnPosition = 0;
@@ -698,7 +698,7 @@ public class HiveMetaStoreBridge {
 
             AtlasEntity column = new AtlasEntity(HiveDataTypes.HIVE_COLUMN.getName());
 
-            column.setAttribute(ATTRIBUTE_TABLE, BaseHiveEvent.getObjectId(table));
+            column.setRelationshipAttribute(ATTRIBUTE_TABLE, getAtlasRelatedObjectId(table, relationshipType));
             column.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getColumnQualifiedName((String) table.getAttribute(ATTRIBUTE_QUALIFIED_NAME), fs.getName()));
             column.setAttribute(ATTRIBUTE_NAME, fs.getName());
             column.setAttribute(ATTRIBUTE_OWNER, table.getAttribute(ATTRIBUTE_OWNER));
