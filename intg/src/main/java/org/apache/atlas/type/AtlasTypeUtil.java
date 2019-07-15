@@ -67,6 +67,8 @@ public class AtlasTypeUtil {
     private static final String InvalidTypeNameErrorMessage      = "Name must consist of a letter followed by a sequence of [ letter, number, '_' ] characters.";
     private static final String InvalidTraitTypeNameErrorMessage = "Name must consist of a letter followed by a sequence of [ letter,  number, '_', '.' ] characters.";
 
+    public static final String ATTRIBUTE_QUALIFIED_NAME = "qualifiedName";
+
     static {
         Collections.addAll(ATLAS_BUILTIN_TYPENAMES, AtlasBaseTypeDef.ATLAS_BUILTIN_TYPES);
     }
@@ -464,6 +466,48 @@ public class AtlasTypeUtil {
         } else {
             ret = new ArrayList<>();
         }
+
+        return ret;
+    }
+
+    public static AtlasRelatedObjectId getAtlasRelatedObjectId(AtlasEntity entity, String relationshipType) {
+        return getAtlasRelatedObjectId(getObjectId(entity), relationshipType);
+    }
+
+    public static AtlasRelatedObjectId getAtlasRelatedObjectId(AtlasObjectId objectId, String relationShipType) {
+        AtlasRelatedObjectId atlasRelatedObjectId = new AtlasRelatedObjectId(objectId, relationShipType);
+        return atlasRelatedObjectId;
+    }
+
+    public static List<AtlasRelatedObjectId> getAtlasRelatedObjectIds(List<AtlasEntity> entities, String relationshipType) {
+        final List<AtlasRelatedObjectId> ret;
+        if (CollectionUtils.isNotEmpty(entities)) {
+            ret = new ArrayList<>(entities.size());
+            for (AtlasEntity entity : entities) {
+                ret.add(getAtlasRelatedObjectId(entity, relationshipType));
+            }
+        } else {
+            ret = Collections.emptyList();
+        }
+        return ret;
+    }
+
+    public static List<AtlasRelatedObjectId> getAtlasRelatedObjectIdList(List<AtlasObjectId> atlasObjectIds, String relationshipType) {
+        final List<AtlasRelatedObjectId> ret;
+        if (CollectionUtils.isNotEmpty(atlasObjectIds)) {
+            ret = new ArrayList<>(atlasObjectIds.size());
+            for (AtlasObjectId atlasObjectId : atlasObjectIds) {
+                ret.add(getAtlasRelatedObjectId(atlasObjectId, relationshipType));
+            }
+        } else {
+            ret = Collections.emptyList();
+        }
+        return ret;
+    }
+
+    public static AtlasObjectId getObjectId(AtlasEntity entity) {
+        String qualifiedName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+        AtlasObjectId ret = new AtlasObjectId(entity.getGuid(), entity.getTypeName(), Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName));
 
         return ret;
     }

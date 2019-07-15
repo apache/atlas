@@ -103,6 +103,9 @@ public class HBaseAtlasHook extends AtlasHook {
 
     private static final String REFERENCEABLE_ATTRIBUTE_NAME = "qualifiedName";
 
+    public static final String RELATIONSHIP_HBASE_TABLE_COLUMN_FAMILIES = "hbase_table_column_families";
+    public static final String RELATIONSHIP_HBASE_TABLE_NAMESPACE = "hbase_table_namespace";
+
     private static volatile HBaseAtlasHook me;
 
     public enum OPERATION {
@@ -212,7 +215,7 @@ public class HBaseAtlasHook extends AtlasHook {
         AtlasEntity       table          = buildTable(hbaseOperationContext, nameSpace);
         List<AtlasEntity> columnFamilies = buildColumnFamilies(hbaseOperationContext, nameSpace, table);
 
-        table.setAttribute(ATTR_COLUMNFAMILIES, AtlasTypeUtil.getAtlasObjectIds(columnFamilies));
+        table.setRelationshipAttribute(ATTR_COLUMNFAMILIES, AtlasTypeUtil.getAtlasRelatedObjectIds(columnFamilies, RELATIONSHIP_HBASE_TABLE_COLUMN_FAMILIES));
 
         AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo(table);
 
@@ -392,7 +395,7 @@ public class HBaseAtlasHook extends AtlasHook {
         table.setAttribute(ATTR_OWNER, hbaseOperationContext.getOwner());
         table.setAttribute(ATTR_DESCRIPTION, tableName);
         table.setAttribute(ATTR_PARAMETERS, hbaseOperationContext.getHbaseConf());
-        table.setAttribute(ATTR_NAMESPACE, AtlasTypeUtil.getAtlasObjectId(nameSpace));
+        table.setRelationshipAttribute(ATTR_NAMESPACE, AtlasTypeUtil.getAtlasRelatedObjectId(nameSpace, RELATIONSHIP_HBASE_TABLE_NAMESPACE));
 
         TableDescriptor tableDescriptor = hbaseOperationContext.gethTableDescriptor();
         if (tableDescriptor != null) {
@@ -451,7 +454,7 @@ public class HBaseAtlasHook extends AtlasHook {
         columnFamily.setAttribute(ATTR_DESCRIPTION, columnFamilyName);
         columnFamily.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, columnFamilyQName);
         columnFamily.setAttribute(ATTR_OWNER, hbaseOperationContext.getOwner());
-        columnFamily.setAttribute(ATTR_TABLE, AtlasTypeUtil.getAtlasObjectId(table));
+        columnFamily.setRelationshipAttribute(ATTR_TABLE, AtlasTypeUtil.getAtlasRelatedObjectId(table, RELATIONSHIP_HBASE_TABLE_COLUMN_FAMILIES));
 
         if (columnFamilyDescriptor!= null) {
             columnFamily.setAttribute(ATTR_CF_BLOCK_CACHE_ENABLED, columnFamilyDescriptor.isBlockCacheEnabled());

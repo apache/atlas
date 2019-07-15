@@ -430,8 +430,7 @@ public class HBaseBridge {
                     cfIDs.add(AtlasTypeUtil.getAtlasObjectId(cfEntity.getEntity()));
                 }
             }
-
-            tableEntity.setAttribute(COLUMN_FAMILIES, cfIDs);
+            tableEntity.setRelationshipAttribute(COLUMN_FAMILIES, AtlasTypeUtil.getAtlasRelatedObjectIdList(cfIDs, HBaseAtlasHook.RELATIONSHIP_HBASE_TABLE_COLUMN_FAMILIES));
         }
 
         return ret;
@@ -548,7 +547,7 @@ public class HBaseBridge {
 
         ret.setAttribute(QUALIFIED_NAME, tableQualifiedName);
         ret.setAttribute(CLUSTERNAME, metadataNamespace);
-        ret.setAttribute(NAMESPACE, AtlasTypeUtil.getAtlasObjectId(nameSpaceEntity));
+        ret.setRelationshipAttribute(NAMESPACE, AtlasTypeUtil.getAtlasRelatedObjectId(nameSpaceEntity, HBaseAtlasHook.RELATIONSHIP_HBASE_TABLE_NAMESPACE));
         ret.setAttribute(NAME, tableName);
         ret.setAttribute(DESCRIPTION_ATTR, tableName);
         ret.setAttribute(OWNER, owner);
@@ -577,7 +576,7 @@ public class HBaseBridge {
 
         ret.setAttribute(QUALIFIED_NAME, cfQualifiedName);
         ret.setAttribute(CLUSTERNAME, metadataNamespace);
-        ret.setAttribute(TABLE, tableId);
+        ret.setRelationshipAttribute(TABLE, AtlasTypeUtil.getAtlasRelatedObjectId(tableId, HBaseAtlasHook.RELATIONSHIP_HBASE_TABLE_COLUMN_FAMILIES));
         ret.setAttribute(NAME, cfName);
         ret.setAttribute(DESCRIPTION_ATTR, cfName);
         ret.setAttribute(OWNER, owner);
