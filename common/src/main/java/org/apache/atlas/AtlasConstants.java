@@ -26,6 +26,7 @@ public final class AtlasConstants {
     }
 
     public static final String CLUSTER_NAME_KEY              = "atlas.cluster.name";
+    public static final String DEFAULT_CLUSTER_NAME          = "primary";
     public static final String SYSTEM_PROPERTY_APP_PORT      = "atlas.app.port";
     public static final String ATLAS_REST_ADDRESS_KEY        = "atlas.rest.address";
     public static final String ATLAS_MIGRATION_MODE_FILENAME = "atlas.migration.data.filename";
@@ -36,5 +37,4 @@ public final class AtlasConstants {
     public static final String DEFAULT_ATLAS_REST_ADDRESS    = "http://localhost:21000";
     public static final String DEFAULT_TYPE_VERSION          = "1.0";
     public static final int    ATLAS_SHUTDOWN_HOOK_PRIORITY  = 30;
-
 }
