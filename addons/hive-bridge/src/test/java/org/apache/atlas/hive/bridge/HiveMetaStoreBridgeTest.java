@@ -24,6 +24,7 @@ import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -293,7 +294,7 @@ public class HiveMetaStoreBridgeTest {
     private AtlasEntity createTableReference() {
         AtlasEntity tableEntity = new AtlasEntity(HiveDataTypes.HIVE_TABLE.getName());
         AtlasEntity sdEntity = new AtlasEntity(HiveDataTypes.HIVE_STORAGEDESC.getName());
-        tableEntity.setAttribute(ATTRIBUTE_STORAGEDESC, getObjectId(sdEntity));
+        tableEntity.setAttribute(ATTRIBUTE_STORAGEDESC, AtlasTypeUtil.getObjectId(sdEntity));
         return tableEntity;
     }
 

@@ -209,36 +209,6 @@ public abstract class BaseHiveEvent {
     }
 
 
-    public static AtlasRelatedObjectId getAtlasRelatedObjectId(AtlasEntity entity, String relationshipType) {
-        return getAtlasRelatedObjectId(getObjectId(entity), relationshipType);
-    }
-
-    public static AtlasRelatedObjectId getAtlasRelatedObjectId(AtlasObjectId objectId, String relationShipType) {
-        AtlasRelatedObjectId atlasRelatedObjectId = new AtlasRelatedObjectId(objectId, relationShipType);
-        return atlasRelatedObjectId;
-    }
-
-    public static List<AtlasRelatedObjectId> getObjectIdsWithRelationshipType(List<AtlasEntity> entities,String relationshipType) {
-        final List<AtlasRelatedObjectId> ret;
-        if (CollectionUtils.isNotEmpty(entities)) {
-            ret = new ArrayList<>(entities.size());
-            for (AtlasEntity entity : entities) {
-                ret.add(getAtlasRelatedObjectId(entity, relationshipType));
-            }
-        } else {
-            ret = Collections.emptyList();
-        }
-        return ret;
-    }
-
-
-    public static AtlasObjectId getObjectId(AtlasEntity entity) {
-        String        qualifiedName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
-        AtlasObjectId ret           = new AtlasObjectId(entity.getGuid(), entity.getTypeName(), Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName));
-
-        return ret;
-    }
-
     public static List<AtlasObjectId> getObjectIds(List<AtlasEntity> entities) {
         final List<AtlasObjectId> ret;
 
@@ -246,7 +216,7 @@ public abstract class BaseHiveEvent {
             ret = new ArrayList<>(entities.size());
 
             for (AtlasEntity entity : entities) {
-                ret.add(getObjectId(entity));
+                ret.add(AtlasTypeUtil.getObjectId(entity));
             }
         } else {
             ret = Collections.emptyList();
@@ -403,7 +373,7 @@ public abstract class BaseHiveEvent {
             }
         }
 
-        AtlasEntity ret = toTableEntity(getObjectId(dbEntity), table, entityExtInfo);
+        AtlasEntity ret = toTableEntity(AtlasTypeUtil.getObjectId(dbEntity), table, entityExtInfo);
 
         return ret;
     }
@@ -459,7 +429,7 @@ public abstract class BaseHiveEvent {
                 if (pruneTable) {
                     LOG.info("ignoring details of table {}", tblQualifiedName);
                 } else {
-                    AtlasObjectId     tableId       = getObjectId(ret);
+                    AtlasObjectId     tableId       = AtlasTypeUtil.getObjectId(ret);
                     AtlasEntity       sd            = getStorageDescEntity(tableId, table);
                     List<AtlasEntity> partitionKeys = getColumnEntities(tableId, table, table.getPartitionKeys(), RELATIONSHIP_HIVE_TABLE_PART_KEYS);
                     List<AtlasEntity> columns       = getColumnEntities(tableId, table, table.getCols(), RELATIONSHIP_HIVE_TABLE_COLUMNS);
@@ -483,9 +453,9 @@ public abstract class BaseHiveEvent {
                     }
 
 
-                    ret.setRelationshipAttribute(ATTRIBUTE_STORAGEDESC, getAtlasRelatedObjectId(sd, RELATIONSHIP_HIVE_TABLE_STORAGE_DESC));
-                    ret.setRelationshipAttribute(ATTRIBUTE_PARTITION_KEYS, getObjectIdsWithRelationshipType(partitionKeys, RELATIONSHIP_HIVE_TABLE_PART_KEYS));
-                    ret.setRelationshipAttribute(ATTRIBUTE_COLUMNS, getObjectIdsWithRelationshipType(columns, RELATIONSHIP_HIVE_TABLE_COLUMNS));
+                    ret.setRelationshipAttribute(ATTRIBUTE_STORAGEDESC, AtlasTypeUtil.getAtlasRelatedObjectId(sd, RELATIONSHIP_HIVE_TABLE_STORAGE_DESC));
+                    ret.setRelationshipAttribute(ATTRIBUTE_PARTITION_KEYS, AtlasTypeUtil.getAtlasRelatedObjectIds(partitionKeys, RELATIONSHIP_HIVE_TABLE_PART_KEYS));
+                    ret.setRelationshipAttribute(ATTRIBUTE_COLUMNS, AtlasTypeUtil.getAtlasRelatedObjectIds(columns, RELATIONSHIP_HIVE_TABLE_COLUMNS));
                 }
 
                 context.putEntity(tblQualifiedName, ret);
@@ -630,7 +600,7 @@ public abstract class BaseHiveEvent {
 
                 ret = new AtlasEntity(AWS_S3_PSEUDO_DIR);
 
-                ret.setRelationshipAttribute(ATTRIBUTE_BUCKET, getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_AWS_S3_BUCKET_S3_PSEUDO_DIRS));
+                ret.setRelationshipAttribute(ATTRIBUTE_BUCKET, AtlasTypeUtil.getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_AWS_S3_BUCKET_S3_PSEUDO_DIRS));
                 ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
                 ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, pathQualifiedName);
                 ret.setAttribute(ATTRIBUTE_NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
@@ -678,8 +648,8 @@ public abstract class BaseHiveEvent {
         }
 
         ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(inputs, outputs));
-        ret.setRelationshipAttribute(ATTRIBUTE_INPUTS, getObjectIdsWithRelationshipType(inputs, RELATIONSHIP_DATASET_PROCESS_INPUTS));
-        ret.setRelationshipAttribute(ATTRIBUTE_OUTPUTS, getObjectIdsWithRelationshipType(outputs, RELATIONSHIP_PROCESS_DATASET_OUTPUTS));
+        ret.setRelationshipAttribute(ATTRIBUTE_INPUTS, AtlasTypeUtil.getAtlasRelatedObjectIds(inputs, RELATIONSHIP_DATASET_PROCESS_INPUTS));
+        ret.setRelationshipAttribute(ATTRIBUTE_OUTPUTS, AtlasTypeUtil.getAtlasRelatedObjectIds(outputs, RELATIONSHIP_PROCESS_DATASET_OUTPUTS));
         ret.setAttribute(ATTRIBUTE_NAME, queryStr);
         ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, getOperationName());
 
@@ -726,7 +696,7 @@ public abstract class BaseHiveEvent {
     }
 
     protected AtlasEntity createHiveDDLEntity(AtlasEntity dbOrTable, boolean excludeEntityGuid) {
-        AtlasObjectId objId   = BaseHiveEvent.getObjectId(dbOrTable);
+        AtlasObjectId objId   = AtlasTypeUtil.getObjectId(dbOrTable);
         AtlasEntity   hiveDDL = null;
 
         if (excludeEntityGuid) {
@@ -1004,7 +974,7 @@ public abstract class BaseHiveEvent {
             ret.setAttribute(ATTRIBUTE_NAME, hbaseTableName);
             ret.setAttribute(ATTRIBUTE_URI, hbaseTableName);
 
-            AtlasRelatedObjectId objIdRelatedObject = new AtlasRelatedObjectId(getObjectId(nsEntity), RELATIONSHIP_HBASE_TABLE_NAMESPACE);
+            AtlasRelatedObjectId objIdRelatedObject = new AtlasRelatedObjectId(AtlasTypeUtil.getObjectId(nsEntity), RELATIONSHIP_HBASE_TABLE_NAMESPACE);
 
             ret.setRelationshipAttribute(ATTRIBUTE_NAMESPACE, objIdRelatedObject);
             ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getHBaseTableQualifiedName(metadataNamespace, hbaseNameSpace, hbaseTableName));
