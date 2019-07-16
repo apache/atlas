@@ -833,13 +833,14 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 Collections.singletonList(classTypeDefinition));
         createType(typesDef);
 
-        Referenceable instance = new Referenceable(classType);
-        instance.set(attrName, attrValue);
-        Id guid = createInstance(instance);
+        Referenceable instance      = new Referenceable(classType, Collections.singletonMap(attrName, attrValue));
+        Id            guid          = createInstance(instance);
+        ObjectNode    response      = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid._getId());
+        Object        objResponse   = response.get(AtlasClient.DEFINITION);
+        String        jsonResponse  = AtlasType.toJson(objResponse);
+        Referenceable createdEntity = AtlasType.fromV1Json(jsonResponse, Referenceable.class);
 
-        ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid._getId());
-        Referenceable getReferenceable = AtlasType.fromV1Json(AtlasType.toJson(response.get(AtlasClient.DEFINITION)), Referenceable.class);
-        Assert.assertEquals(getReferenceable.get(attrName), attrValue);
+        Assert.assertEquals(createdEntity.get(attrName), attrValue, "entityId=" + guid + "; objResponse=" + objResponse + "; jsonResponse=" + jsonResponse + "; createdEntity=" + createdEntity);
     }
 
 
