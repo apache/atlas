@@ -277,9 +277,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testGetEntityByAttribute() throws Exception {
         Referenceable db1 = new Referenceable(DATABASE_TYPE_BUILTIN);
         String dbName = randomString();
+        String qualifiedName = dbName + "@cl1";
         db1.set(NAME, dbName);
         db1.set(DESCRIPTION, randomString());
-        db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qualifiedName);
         db1.set("owner", "user1");
         db1.set(CLUSTER_NAME, "cl1");
         db1.set("parameters", Collections.EMPTY_MAP);
@@ -287,9 +288,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         createInstance(db1);
 
         //get entity by attribute
-        Referenceable referenceable = atlasClientV1.getEntity(DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, dbName);
+        Referenceable referenceable = atlasClientV1.getEntity(DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, qualifiedName);
         Assert.assertEquals(referenceable.getTypeName(), DATABASE_TYPE_BUILTIN);
-        Assert.assertEquals(referenceable.get(QUALIFIED_NAME), dbName);
+        Assert.assertEquals(referenceable.get(QUALIFIED_NAME), dbName + "@" + "cl1");
     }
 
     @Test
@@ -1096,11 +1097,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         // Create database entity
         Referenceable db1 = new Referenceable(DATABASE_TYPE_BUILTIN);
         String dbName = randomString();
+        String qualifiedName = dbName + "@cl1";
         db1.set(NAME, dbName);
-        db1.set(QUALIFIED_NAME, dbName);
+        db1.set(QUALIFIED_NAME, qualifiedName);
         db1.set(CLUSTER_NAME, randomString());
         db1.set(DESCRIPTION, randomString());
-        db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
+        db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qualifiedName);
         db1.set("owner", "user1");
         db1.set(CLUSTER_NAME, "cl1");
         db1.set("parameters", Collections.EMPTY_MAP);
@@ -1108,7 +1110,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Id db1Id = createInstance(db1);
 
         // Delete the database entity
-        List<String> deletedGuidsList = atlasClientV1.deleteEntity(DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, dbName).getDeletedEntities();
+        List<String> deletedGuidsList = atlasClientV1.deleteEntity(DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, qualifiedName).getDeletedEntities();
 
         // Verify that deleteEntities() response has database entity guids
         Assert.assertEquals(deletedGuidsList.size(), 1);

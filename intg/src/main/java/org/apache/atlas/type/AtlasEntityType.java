@@ -30,6 +30,7 @@ import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.curator.shaded.com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,16 +43,21 @@ import java.util.Map;
 import java.util.Set;
 
 
+
 /**
  * class that implements behaviour of an entity-type.
  */
 public class AtlasEntityType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityType.class);
 
-    private static final String NAME        = "name";
-    private static final String DESCRIPTION = "description";
-    private static final String OWNER       = "owner";
-    private static final String CREATE_TIME = "createTime";
+    private static final String NAME                         = "name";
+    private static final String DESCRIPTION                  = "description";
+    private static final String OWNER                        = "owner";
+    private static final String CREATE_TIME                  = "createTime";
+    private static final String DYN_ATTRIBUTE_PREFIX         = "dynAttribute:";
+    private static final char   DYN_ATTRIBUTE_NAME_SEPARATOR = '.';
+    private static final char   DYN_ATTRIBUTE_OPEN_DELIM     = '{';
+    private static final char   DYN_ATTRIBUTE_CLOSE_DELIM    = '}';
 
     private static final String[] ENTITY_HEADER_ATTRIBUTES = new String[]{NAME, DESCRIPTION, OWNER, CREATE_TIME};
     private static final String   OPTION_SCHEMA_ATTRIBUTES = "schemaAttributes";
@@ -73,6 +79,9 @@ public class AtlasEntityType extends AtlasStructType {
     private boolean                                  isInternalType             = false;
     private Map<String, AtlasAttribute>              headerAttributes           = Collections.emptyMap();
     private Map<String, AtlasAttribute>              minInfoAttributes          = Collections.emptyMap();
+    private List<AtlasAttribute>                     dynAttributes              = Collections.emptyList();
+    private List<AtlasAttribute>                     dynEvalTriggerAttributes   = Collections.emptyList();
+    private Map<String,List<TemplateToken>>          parsedTemplates            = Collections.emptyMap();
 
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
@@ -256,6 +265,10 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         entityDef.setRelationshipAttributeDefs(Collections.unmodifiableList(relationshipAttrDefs));
+
+        this.parsedTemplates = parseDynAttributeTemplates();
+
+        populateDynFlagsInfo();
     }
 
     public Set<String> getSuperTypes() {
@@ -317,6 +330,18 @@ public class AtlasEntityType extends AtlasStructType {
     public List<AtlasAttribute> getOwnedRefAttributes() {
         return ownedRefAttributes;
     }
+
+    public List<AtlasAttribute> getDynEvalAttributes() { return dynAttributes; }
+
+    @VisibleForTesting
+    public void setDynEvalAttributes(List<AtlasAttribute> dynAttributes) { this.dynAttributes = dynAttributes; }
+
+    public List<AtlasAttribute> getDynEvalTriggerAttributes() { return dynEvalTriggerAttributes; }
+
+    @VisibleForTesting
+    public void setDynEvalTriggerAttributes(List<AtlasAttribute> dynEvalTriggerAttributes) { this.dynEvalTriggerAttributes = dynEvalTriggerAttributes; }
+
+    public Map<String,List<TemplateToken>> getParsedTemplates() { return parsedTemplates; }
 
     public AtlasAttribute getRelationshipAttribute(String attributeName, String relationshipType) {
         final AtlasAttribute        ret;
@@ -649,6 +674,123 @@ public class AtlasEntityType extends AtlasStructType {
                 allAttributes.put(attributeDef.getName(), new AtlasAttribute(this, attributeDef, type));
             }
         }
+    }
+
+    private void populateDynFlagsInfo() {
+        dynAttributes              = new ArrayList<>();
+        dynEvalTriggerAttributes   = new ArrayList<>();
+
+        for (String attributeName : parsedTemplates.keySet()) {
+            AtlasAttribute attribute = getAttribute(attributeName);
+            if (attribute != null) {
+                dynAttributes.add(attribute);
+            }
+        }
+
+        for (List<TemplateToken> parsedTemplate : parsedTemplates.values()) {
+            for (TemplateToken token : parsedTemplate) {
+                // If token is an instance of AttributeToken means that the attribute is of this entity type
+                // so it must be added to the dynEvalTriggerAttributes list
+                if (token instanceof AttributeToken) {
+                    AtlasAttribute attribute = getAttribute(token.getValue());
+
+                    if (attribute != null) {
+                        dynEvalTriggerAttributes.add(attribute);
+                    }
+                }
+            }
+        }
+
+        dynAttributes              = Collections.unmodifiableList(dynAttributes);
+        dynEvalTriggerAttributes   = Collections.unmodifiableList(dynEvalTriggerAttributes);
+
+        for (AtlasAttribute attribute : dynAttributes) {
+            attribute.setIsDynAttribute(true);
+        }
+
+        for (AtlasAttribute attribute : dynEvalTriggerAttributes) {
+            attribute.setIsDynAttributeEvalTrigger(true);
+        }
+    }
+
+    private Map<String, List<TemplateToken>> parseDynAttributeTemplates(){
+        Map<String, List<TemplateToken>> ret = new HashMap<>();
+        Map<String, String> options = entityDef.getOptions();
+        if (options == null || options.size() == 0) {
+            return ret;
+        }
+
+        for (String key : options.keySet()) {
+            if (key.startsWith(DYN_ATTRIBUTE_PREFIX)) {
+                String         attributeName   = key.substring(DYN_ATTRIBUTE_PREFIX.length());
+                AtlasAttribute attribute       = getAttribute(attributeName);
+
+                if (attribute == null) {
+                    LOG.warn("Ignoring {} attribute of {} type as dynamic attribute because attribute does not exist", attributeName, this.getTypeName());
+                    continue;
+                }
+
+                if (!(attribute.getAttributeType() instanceof AtlasBuiltInTypes.AtlasStringType)) {
+                    LOG.warn("Ignoring {} attribute of {} type as dynamic attribute because attribute isn't a string type", attributeName, this.getTypeName());
+                    continue;
+                }
+
+                String              template        = options.get(key);
+                List<TemplateToken> splitTemplate   = templateSplit(template);
+
+                ret.put(attributeName,splitTemplate);
+            }
+        }
+
+        return Collections.unmodifiableMap(ret);
+    }
+
+    // own split function that also designates the right subclass for each token
+    private List<TemplateToken> templateSplit(String template) {
+        List<TemplateToken> ret         = new ArrayList<>();
+        StringBuilder       token       = new StringBuilder();
+        boolean             isInAttrName   = false;
+
+        for (int i = 0; i < template.length(); i++) {
+            char c = template.charAt(i);
+
+            switch (c) {
+                case DYN_ATTRIBUTE_OPEN_DELIM:
+                    isInAttrName = true;
+
+                    if (token.length() > 0) {
+                        ret.add(new ConstantToken(token.toString()));
+                        token.setLength(0);
+                    }
+                    break;
+
+                case DYN_ATTRIBUTE_CLOSE_DELIM:
+                    if (isInAttrName) {
+                        isInAttrName = false;
+
+                        if (token.length() > 0) {
+                            String attrName = token.toString();
+
+                            if (attrName.indexOf(DYN_ATTRIBUTE_NAME_SEPARATOR) != -1) {
+                                ret.add(new DependentToken(token.toString()));
+                            } else {
+                                ret.add(new AttributeToken(token.toString()));
+                            }
+
+                            token.setLength(0);
+                        }
+                    } else {
+                        token.append(c);
+                    }
+                    break;
+
+                default:
+                    token.append(c);
+                    break;
+            }
+        }
+
+        return ret;
     }
 
     boolean isAssignableFrom(AtlasObjectId objId) {

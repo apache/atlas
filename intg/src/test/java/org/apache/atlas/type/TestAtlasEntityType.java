@@ -42,6 +42,7 @@ public class TestAtlasEntityType {
     private static final String TYPE_COLUMN  = "my_column";
     private static final String ATTR_TABLE   = "table";
     private static final String ATTR_COLUMNS = "columns";
+    private static final String ATTR_OWNER   = "owner";
     private static final String ATTR_NAME    = "name";
 
     private final AtlasEntityType entityType;
@@ -153,6 +154,39 @@ public class TestAtlasEntityType {
             assertFalse(typeColumn.getAttribute(ATTR_TABLE).isOwnedRef());
             assertEquals(typeColumn.getAttribute(ATTR_TABLE).getInverseRefAttributeName(), ATTR_COLUMNS);
             assertEquals(typeColumn.getAttribute(ATTR_TABLE).getInverseRefAttribute(), typeTable.getAttribute(ATTR_COLUMNS));
+
+            commit = true;
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+        assertNull(failureMsg, "failed to create types " + TYPE_TABLE + " and " + TYPE_COLUMN);
+    }
+
+    @Test
+    public void testDynAttributeFlags() {
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
+        String                     failureMsg   = null;
+
+        entityDefs.add(createTableEntityDefWithOptions());
+        entityDefs.add(createColumnEntityDef());
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
+            ttr.addTypes(entityDefs);
+            //options are read in the table,
+            AtlasEntityType typeTable  = ttr.getEntityTypeByName(TYPE_TABLE);
+            AtlasEntityType typeColumn = ttr.getEntityTypeByName(TYPE_COLUMN);
+
+            assertTrue(typeTable.getAttribute(ATTR_NAME).getIsDynAttributeEvalTrigger());
+            assertFalse(typeTable.getAttribute(ATTR_NAME).getIsDynAttribute());
+            assertFalse(typeTable.getAttribute(ATTR_OWNER).getIsDynAttributeEvalTrigger());
+            assertTrue(typeTable.getAttribute(ATTR_OWNER).getIsDynAttribute());
 
             commit = true;
         } catch (AtlasBaseException excp) {
@@ -310,6 +344,29 @@ public class TestAtlasEntityType {
 
         table.addAttribute(attrName);
         table.addAttribute(attrColumns);
+
+        return table;
+    }
+
+    private AtlasEntityDef createTableEntityDefWithOptions() {
+        AtlasEntityDef    table       = new AtlasEntityDef(TYPE_TABLE);
+        AtlasAttributeDef attrName    = new AtlasAttributeDef(ATTR_NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        AtlasAttributeDef attrColumns = new AtlasAttributeDef(ATTR_COLUMNS, AtlasBaseTypeDef.getArrayTypeName(TYPE_COLUMN));
+        AtlasAttributeDef attrOwner   = new AtlasAttributeDef(ATTR_OWNER, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+
+        attrColumns.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
+
+        table.addAttribute(attrName);
+        table.addAttribute(attrColumns);
+        table.addAttribute(attrOwner);
+
+        Map<String,String> options = new HashMap<>();
+        String             key     = "dynAttribute:" + ATTR_OWNER;
+        String             value   = "{" + ATTR_NAME + "}";
+
+        options.put(key,value);
+
+        table.setOptions(options);
 
         return table;
     }

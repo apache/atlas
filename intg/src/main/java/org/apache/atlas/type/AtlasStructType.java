@@ -710,6 +710,9 @@ public class AtlasStructType extends AtlasType {
         private boolean                        isLegacyAttribute;
         private String                         indexFieldName;
 
+        private boolean isDynAttribute            = false;
+        private boolean isDynAttributeEvalTrigger = false;
+
         public AtlasAttribute(AtlasStructType definedInType, AtlasAttributeDef attrDef, AtlasType attributeType, String relationshipName, String relationshipLabel) {
             this.definedInType            = definedInType;
             this.attributeDef             = attrDef;
@@ -746,23 +749,23 @@ public class AtlasStructType extends AtlasType {
             switch (this.attributeType.getTypeCategory()) {
                 case OBJECT_ID_TYPE:
                     isObjectRef = true;
-                break;
+                    break;
 
                 case MAP:
                     AtlasMapType mapType = (AtlasMapType) this.attributeType;
 
                     isObjectRef = mapType.getValueType().getTypeCategory() == OBJECT_ID_TYPE;
-                break;
+                    break;
 
                 case ARRAY:
                     AtlasArrayType arrayType = (AtlasArrayType) this.attributeType;
 
                     isObjectRef = arrayType.getElementType().getTypeCategory() == OBJECT_ID_TYPE;
-                break;
+                    break;
 
                 default:
                     isObjectRef = false;
-                break;
+                    break;
             }
         }
 
@@ -826,6 +829,13 @@ public class AtlasStructType extends AtlasType {
 
         public int getSearchWeight() { return attributeDef.getSearchWeight(); }
 
+        public boolean getIsDynAttribute() { return isDynAttribute; }
+
+        public void setIsDynAttribute(boolean isDynAttribute){ this.isDynAttribute = isDynAttribute; }
+
+        public boolean getIsDynAttributeEvalTrigger() { return isDynAttributeEvalTrigger; }
+
+        public void setIsDynAttributeEvalTrigger(boolean isDynAttributeEvalTrigger) { this.isDynAttributeEvalTrigger = isDynAttributeEvalTrigger; }
 
         public static String getEdgeLabel(String property) {
             return "__" + property;
