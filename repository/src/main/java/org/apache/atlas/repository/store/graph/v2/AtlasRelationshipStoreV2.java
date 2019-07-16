@@ -192,7 +192,16 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             }
         }
 
-        validateRelationship(end1Vertex, end2Vertex, edgeType, relationship.getAttributes());
+        boolean relationshipTypeNotExists = false;
+        if (StringUtils.isEmpty(relationship.getTypeName())) {
+            relationship.setTypeName(edgeType);
+            relationshipTypeNotExists = true;
+        }
+        validateRelationship(end1Vertex, end2Vertex, relationship);
+
+        if (relationshipTypeNotExists) {
+            relationship.setTypeName(null);
+        }
 
         AtlasRelationship ret = updateRelationship(edge, relationship);
         sendNotifications(ret, OperationType.RELATIONSHIP_UPDATE);
@@ -337,7 +346,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasEdge ret;
 
         try {
-            validateRelationship(end1Vertex, end2Vertex, relationship.getTypeName(), relationship.getAttributes());
+            validateRelationship(end1Vertex, end2Vertex, relationship);
 
             String relationshipLabel = getRelationshipEdgeLabel(end1Vertex, end2Vertex, relationship.getTypeName());
 
@@ -623,7 +632,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         validateAndNormalize(relationship);
     }
 
-    private void validateRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, String relationshipName, Map<String, Object> attributes) throws AtlasBaseException {
+    private void validateRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex,  AtlasRelationship relationship) throws AtlasBaseException {
+
+        String relationshipName = relationship.getTypeName();
+
         AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipName);
 
         if (relationshipType == null) {
@@ -654,7 +666,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         List<String>      messages     = new ArrayList<>();
-        AtlasRelationship relationship = new AtlasRelationship(relationshipName, attributes);
 
         relationshipType.validateValue(relationship, relationshipName, messages);
 
