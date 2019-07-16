@@ -20,6 +20,7 @@ package org.apache.atlas.type;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
@@ -242,14 +243,29 @@ public class AtlasRelationshipType extends AtlasStructType {
      * @throws AtlasBaseException
      */
     private boolean validateRelationship(AtlasRelationship relationship) {
-        String end1TypeName = relationship.getEnd1() != null ? relationship.getEnd1().getTypeName() : null;
-        String end2TypeName = relationship.getEnd2() != null ? relationship.getEnd2().getTypeName() : null;
 
-        if (StringUtils.isNotEmpty(end1TypeName) && StringUtils.isNotEmpty(end2TypeName)) {
-            return end1Type.isTypeOrSuperTypeOf(end1TypeName) && end2Type.isTypeOrSuperTypeOf(end2TypeName) && super.isValidValue(relationship);
+        AtlasObjectId end1 = relationship.getEnd1();
+        AtlasObjectId end2 = relationship.getEnd2();
+
+        if (end1 != null && end2 != null) {
+
+            String end1TypeName = end1.getTypeName();
+            String end2TypeName = end2.getTypeName();
+
+            if (StringUtils.isNotEmpty(end1TypeName) && StringUtils.isNotEmpty(end2TypeName)) {
+
+                return end1Type.isTypeOrSuperTypeOf(end1TypeName) && end2Type.isTypeOrSuperTypeOf(end2TypeName) && super.isValidValue(relationship);
+
+            } else {
+
+                return StringUtils.isNotEmpty(end1.getGuid()) && StringUtils.isNotEmpty(end2.getGuid());
+
+            }
+
         }
 
         return false;
+
     }
 
     /**
