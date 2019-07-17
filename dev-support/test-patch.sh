@@ -603,6 +603,11 @@ buildAndInstall () {
     MVN_GOALS+=" -DskipITs"
   fi
 
+  if [[ $FAIL_AT_END == "true" ]]; then
+    echo "Fail at end flag set to true."
+    MVN_GOALS+=" --fail-at-end"
+  fi
+
   echo "$MVN $MVN_GOALS"
   $MVN $MVN_GOALS
 
