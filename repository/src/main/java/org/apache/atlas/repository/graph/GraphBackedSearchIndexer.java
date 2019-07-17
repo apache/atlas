@@ -379,25 +379,30 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     private void resolveIndexFieldNames(AtlasGraphManagement managementSystem, AtlasEntityType entityType) {
         for(AtlasAttribute attribute: entityType.getAllAttributes().values()) {
-            if(needsIndexFieldNameResolution(attribute)) {
-                resolveIndexFieldName(managementSystem, attribute);
-            }
+            resolveIndexFieldName(managementSystem, attribute);
         }
     }
 
-    private void resolveIndexFieldName(AtlasGraphManagement managementSystem,
-                                       AtlasAttribute attribute) {
-        AtlasPropertyKey propertyKey = managementSystem.getPropertyKey(attribute.getQualifiedName());
-        String indexFieldName        = managementSystem.getIndexFieldName(Constants.VERTEX_INDEX, propertyKey);
+    private void resolveIndexFieldName(AtlasGraphManagement managementSystem, AtlasAttribute attribute) {
+        if (attribute.getIndexFieldName() == null && TypeCategory.PRIMITIVE.equals(attribute.getAttributeType().getTypeCategory())) {
+            AtlasStructType definedInType = attribute.getDefinedInType();
+            AtlasAttribute  baseInstance  = definedInType != null ? definedInType.getAttribute(attribute.getName()) : null;
 
-        attribute.setIndexFieldName(indexFieldName);
+            if (baseInstance != null && baseInstance.getIndexFieldName() != null) {
+                attribute.setIndexFieldName(baseInstance.getIndexFieldName());
+            } else {
+                AtlasPropertyKey propertyKey    = managementSystem.getPropertyKey(attribute.getVertexPropertyName());
+                String           indexFieldName = managementSystem.getIndexFieldName(Constants.VERTEX_INDEX, propertyKey);
 
-        LOG.info("Property {} is mapped to index field name {}", attribute.getQualifiedName(), attribute.getIndexFieldName());
-    }
+                attribute.setIndexFieldName(indexFieldName);
 
-    private boolean needsIndexFieldNameResolution(AtlasAttribute attribute) {
-        return attribute.getIndexFieldName() == null &&
-                TypeCategory.PRIMITIVE.equals(attribute.getAttributeType().getTypeCategory());
+                if (baseInstance != null) {
+                    baseInstance.setIndexFieldName(indexFieldName);
+                }
+
+                LOG.info("Property {} is mapped to index field name {}", attribute.getQualifiedName(), attribute.getIndexFieldName());
+            }
+        }
     }
 
     private void createCommonVertexIndex(AtlasGraphManagement management,
