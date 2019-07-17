@@ -54,7 +54,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <packages.to.exclude>WEB-INF/lib/je-*.jar</packages.to.exclude>
+                <packages.to.exclude>WEB-INF/lib/je-*.jar,WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
             </properties>
         </profile>
 
@@ -501,7 +501,7 @@
                         </manifest>
                     </archive>
                     <packagingExcludes>
-                        WEB-INF/lib/junit*.jar,${packages.to.exclude}
+                        WEB-INF/lib/junit*.jar,WEB-INF/lib/dom4j-*.jar,${packages.to.exclude}
                     </packagingExcludes>
                 </configuration>
             </plugin>
