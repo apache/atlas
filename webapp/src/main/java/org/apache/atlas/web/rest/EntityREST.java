@@ -596,7 +596,7 @@ public class EntityREST {
      *
      * The REST request would look something like this
      *
-     * GET /v2/entity/bulk/uniqueAttribute/type/hive_db?attrs_0:qualifiedName=db1@cl1&attrs_2:qualifiedName=db2@cl1
+     * GET /v2/entity/bulk/uniqueAttribute/type/hive_db?attr_0:qualifiedName=db1@cl1&attr_2:qualifiedName=db2@cl1
      *
      * @param typeName
      * @param minExtInfo
@@ -853,7 +853,7 @@ public class EntityREST {
         return attributes;
     }
 
-    // attrs_1:qualifiedName=db1@cl1&attrs_2:qualifiedName=db2@cl1 ==> [ { qualifiedName:db1@cl1 }, { qualifiedName:db2@cl1 } ]
+    // attr_1:qualifiedName=db1@cl1&attr_2:qualifiedName=db2@cl1 ==> [ { qualifiedName:db1@cl1 }, { qualifiedName:db2@cl1 } ]
     private List<Map<String, Object>> getAttributesList(HttpServletRequest request) {
         Map<String, Map<String, Object>> ret = new HashMap<>();
 
