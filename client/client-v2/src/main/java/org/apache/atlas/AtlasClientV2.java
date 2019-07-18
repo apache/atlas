@@ -259,6 +259,14 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.LINEAGE_INFO, AtlasLineageInfo.class, queryParams, guid);
     }
 
+    public AtlasLineageInfo getLineageInfo(String type, Map<String, String> attributes, final LineageDirection direction, final int depth) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = attributesToQueryParams(attributes);
+        queryParams.add("direction", direction.toString());
+        queryParams.add("depth", String.valueOf(depth));
+
+        return callAPI(API_V2.GET_LINEAGE_BY_ATTRIBUTES, AtlasLineageInfo.class, queryParams, type);
+    }
+
     public AtlasEntityWithExtInfo getEntityByGuid(String guid) throws AtlasServiceException {
         return getEntityByGuid(guid, false, false);
     }
@@ -552,6 +560,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 UPDATE_CLASSIFICATIONS      = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.PUT, Response.Status.NO_CONTENT);
         public static final API_V2 DELETE_CLASSIFICATION       = new API_V2(ENTITY_API + "guid/%s/classification/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
         public static final API_V2 LINEAGE_INFO                = new API_V2(LINEAGE_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 GET_LINEAGE_BY_ATTRIBUTES   = new API_V2(LINEAGE_URI + "uniqueAttribute/type/", HttpMethod.GET, Response.Status.OK);
         public static final API_V2 DSL_SEARCH                  = new API_V2(DSL_URI, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 FULL_TEXT_SEARCH            = new API_V2(FULL_TEXT_URI, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 BASIC_SEARCH                = new API_V2(BASIC_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
