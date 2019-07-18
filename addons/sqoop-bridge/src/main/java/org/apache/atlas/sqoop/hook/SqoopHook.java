@@ -70,6 +70,10 @@ public class SqoopHook extends SqoopJobDataPublisher {
     public static final String OUTPUTS        = "outputs";
     public static final String ATTRIBUTE_DB   = "db";
 
+    public static final String RELATIONSHIP_HIVE_TABLE_DB = "hive_table_db";
+    public static final String RELATIONSHIP_DATASET_PROCESS_INPUTS = "dataset_process_inputs";
+    public static final String RELATIONSHIP_PROCESS_DATASET_OUTPUTS = "process_dataset_outputs";
+
     private static final AtlasHookImpl atlasHook;
 
     static {
@@ -129,7 +133,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
 
         entHiveTable.setAttribute(AtlasClient.NAME, tableName.toLowerCase());
         entHiveTable.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qualifiedName);
-        entHiveTable.setAttribute(ATTRIBUTE_DB, AtlasTypeUtil.getAtlasObjectId(entHiveDb));
+        entHiveTable.setRelationshipAttribute(ATTRIBUTE_DB, AtlasTypeUtil.getAtlasRelatedObjectId(entHiveDb, RELATIONSHIP_HIVE_TABLE_DB));
 
         return entHiveTable;
     }
@@ -179,11 +183,11 @@ public class SqoopHook extends SqoopJobDataPublisher {
         List<AtlasObjectId> hiveObjects  = Collections.singletonList(AtlasTypeUtil.getAtlasObjectId(entHiveTable != null ? entHiveTable : entHiveDb));
 
         if (isImportOperation(data)) {
-            entProcess.setAttribute(SqoopHook.INPUTS, sqoopObjects);
-            entProcess.setAttribute(SqoopHook.OUTPUTS, hiveObjects);
+            entProcess.setRelationshipAttribute(SqoopHook.INPUTS, AtlasTypeUtil.getAtlasRelatedObjectIdList(sqoopObjects, RELATIONSHIP_DATASET_PROCESS_INPUTS));
+            entProcess.setRelationshipAttribute(SqoopHook.OUTPUTS, AtlasTypeUtil.getAtlasRelatedObjectIdList(hiveObjects, RELATIONSHIP_PROCESS_DATASET_OUTPUTS));
         } else {
-            entProcess.setAttribute(SqoopHook.INPUTS, hiveObjects);
-            entProcess.setAttribute(SqoopHook.OUTPUTS, sqoopObjects);
+            entProcess.setRelationshipAttribute(SqoopHook.INPUTS, AtlasTypeUtil.getAtlasRelatedObjectIdList(hiveObjects, RELATIONSHIP_DATASET_PROCESS_INPUTS));
+            entProcess.setRelationshipAttribute(SqoopHook.OUTPUTS, AtlasTypeUtil.getAtlasRelatedObjectIdList(sqoopObjects, RELATIONSHIP_PROCESS_DATASET_OUTPUTS));
         }
 
         entProcess.setAttribute(SqoopHook.USER, data.getUser());
