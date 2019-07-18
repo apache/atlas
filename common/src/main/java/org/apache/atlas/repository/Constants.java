@@ -39,8 +39,8 @@ public final class Constants {
     public static final String GUID_PROPERTY_KEY                = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "guid");
     public static final String RELATIONSHIP_GUID_PROPERTY_KEY   = encodePropertyKey(RELATIONSHIP_PROPERTY_KEY_PREFIX + GUID_PROPERTY_KEY);
     public static final String HISTORICAL_GUID_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "historicalGuids");
-    public static final String FREETEXT_REQUEST_HANDLER = "/freetext";
-    public static final String TERMS_REQUEST_HANDLER = "/terms";
+    public static final String FREETEXT_REQUEST_HANDLER         = "/freetext";
+    public static final String TERMS_REQUEST_HANDLER            = "/terms";
 
     /**
      * Entity type name property key.
@@ -82,15 +82,17 @@ public final class Constants {
     /**
      * Trait names property key and index name.
      */
-    public static final String TRAIT_NAMES_PROPERTY_KEY            = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "traitNames");
-    public static final String PROPAGATED_TRAIT_NAMES_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "propagatedTraitNames");
+    public static final String TRAIT_NAMES_PROPERTY_KEY             = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "traitNames");
+    public static final String PROPAGATED_TRAIT_NAMES_PROPERTY_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "propagatedTraitNames");
 
-    public static final String VERSION_PROPERTY_KEY          = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "version");
-    public static final String STATE_PROPERTY_KEY            = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "state");
-    public static final String CREATED_BY_KEY                = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "createdBy");
-    public static final String CLASSIFICATION_TEXT_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "classificationsText");
+    public static final String VERSION_PROPERTY_KEY                 = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "version");
+    public static final String STATE_PROPERTY_KEY                   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "state");
+    public static final String CREATED_BY_KEY                       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "createdBy");
+    public static final String CLASSIFICATION_TEXT_KEY              = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "classificationsText");
+    public static final String CLASSIFICATION_NAMES_KEY             = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "classificationNames");
+    public static final String PROPAGATED_CLASSIFICATION_NAMES_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "propagatedClassificationNames");
 
-    public static final String MODIFIED_BY_KEY      = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modifiedBy");
+    public static final String MODIFIED_BY_KEY                      = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modifiedBy");
 
     /**
      * Patch vertices property keys.

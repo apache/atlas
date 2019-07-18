@@ -64,6 +64,7 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_STATUS
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
+import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
@@ -449,7 +450,7 @@ public abstract class DeleteHandlerV1 {
 
                 graphHelper.addClassificationEdge(propagatedEntityVertex, classificationVertex, true);
 
-                addToPropagatedTraitNames(propagatedEntityVertex, classificationName);
+                addToPropagatedClassificationAndTraitNames(propagatedEntityVertex, classificationName);
 
                 // record add propagation details to send notifications at the end
                 RequestContext      context        = RequestContext.get();
@@ -613,7 +614,7 @@ public abstract class DeleteHandlerV1 {
 
                         graphHelper.removeEdge(propagatedEdge);
 
-                        removeFromPropagatedTraitNames(impactedEntityVertex, classificationName);
+                        removeFromPropagatedClassificationAndTraitNames(impactedEntityVertex, classificationName);
                     } else {
                         if (LOG.isDebugEnabled()) {
                             LOG.debug(" --> Not removing propagated classification edge from [{}] --> [{}][{}] using edge label: [{}], since edge doesn't exist",
@@ -665,7 +666,7 @@ public abstract class DeleteHandlerV1 {
                        getTypeName(entityVertex), GraphHelper.getGuid(entityVertex), CLASSIFICATION_LABEL);
         }
 
-        removeFromPropagatedTraitNames(entityVertex, classificationName);
+        removeFromPropagatedClassificationAndTraitNames(entityVertex, classificationName);
 
         deleteEdge(edge, true);
 
@@ -986,16 +987,17 @@ public abstract class DeleteHandlerV1 {
         return Objects.nonNull(entityType) && entityType.isInternalType();
     }
 
-    private void removeFromPropagatedTraitNames(AtlasVertex entityVertex, String classificationName) {
+    private void removeFromPropagatedClassificationAndTraitNames(AtlasVertex entityVertex, String classificationName) {
         if (entityVertex != null && StringUtils.isNotEmpty(classificationName)) {
             List<String> propagatedTraitNames = getTraitNames(entityVertex, true);
 
             propagatedTraitNames.remove(classificationName);
 
             entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+            entityVertex.removeProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY);
 
             for (String propagatedTraitName : propagatedTraitNames) {
-                addToPropagatedTraitNames(entityVertex, propagatedTraitName);
+                addToPropagatedClassificationAndTraitNames(entityVertex, propagatedTraitName);
             }
         }
     }
