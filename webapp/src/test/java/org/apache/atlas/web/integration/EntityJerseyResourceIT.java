@@ -46,6 +46,8 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static com.sun.jersey.api.client.ClientResponse.Status.BAD_REQUEST;
@@ -818,11 +820,21 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         return RandomStringUtils.random(10);
     }
 
+    private String randomUTF8() throws Exception {
+        String ret = random();
+
+        if (!StandardCharsets.UTF_8.equals(Charset.defaultCharset())) {
+            ret = new String(ret.getBytes(), StandardCharsets.UTF_8.name());
+        }
+
+        return ret;
+    }
+
     @Test
     public void testUTF8() throws Exception {
+        String              attrName            = randomUTF8();
+        String              attrValue           = randomUTF8();
         String              classType           = randomString(); //Type names cannot be arbitrary UTF8 characters. See org.apache.atlas.type.AtlasTypeUtil#validateType()
-        String              attrName            = random();
-        String              attrValue           = random();
         ClassTypeDefinition classTypeDefinition = TypesUtil.createClassTypeDef(classType, null, Collections.<String>emptySet(), TypesUtil.createUniqueRequiredAttrDef(attrName, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
         TypesDef            typesDef            = new TypesDef(Collections.<EnumTypeDefinition>emptyList(), Collections.<StructTypeDefinition>emptyList(), Collections.<TraitTypeDefinition>emptyList(), Collections.singletonList(classTypeDefinition));
 
