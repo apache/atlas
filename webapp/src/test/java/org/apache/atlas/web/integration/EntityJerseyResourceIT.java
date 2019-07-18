@@ -820,27 +820,24 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testUTF8() throws Exception {
-        //Type names cannot be arbitrary UTF8 characters. See org.apache.atlas.type.AtlasTypeUtil#validateType()
-        String classType = randomString();
-        String attrName = random();
-        String attrValue = random();
+        String              classType           = randomString(); //Type names cannot be arbitrary UTF8 characters. See org.apache.atlas.type.AtlasTypeUtil#validateType()
+        String              attrName            = random();
+        String              attrValue           = random();
+        ClassTypeDefinition classTypeDefinition = TypesUtil.createClassTypeDef(classType, null, Collections.<String>emptySet(), TypesUtil.createUniqueRequiredAttrDef(attrName, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        TypesDef            typesDef            = new TypesDef(Collections.<EnumTypeDefinition>emptyList(), Collections.<StructTypeDefinition>emptyList(), Collections.<TraitTypeDefinition>emptyList(), Collections.singletonList(classTypeDefinition));
 
-        ClassTypeDefinition classTypeDefinition = TypesUtil
-                .createClassTypeDef(classType, null, Collections.<String>emptySet(),
-                        TypesUtil.createUniqueRequiredAttrDef(attrName, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
-        TypesDef typesDef = new TypesDef(Collections.<EnumTypeDefinition>emptyList(), Collections.<StructTypeDefinition>emptyList(),
-                Collections.<TraitTypeDefinition>emptyList(),
-                Collections.singletonList(classTypeDefinition));
         createType(typesDef);
 
-        Referenceable instance      = new Referenceable(classType, Collections.singletonMap(attrName, attrValue));
-        Id            guid          = createInstance(instance);
-        ObjectNode    response      = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid._getId());
-        Object        objResponse   = response.get(AtlasClient.DEFINITION);
-        String        jsonResponse  = AtlasType.toJson(objResponse);
-        Referenceable createdEntity = AtlasType.fromV1Json(jsonResponse, Referenceable.class);
+        Referenceable entityToCreate  = new Referenceable(classType, Collections.singletonMap(attrName, attrValue));
+        Id            guid            = createInstance(entityToCreate);
+        ObjectNode    response        = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid._getId());
+        Object        objResponse     = response.get(AtlasClient.DEFINITION);
+        String        jsonResponse    = AtlasType.toJson(objResponse);
+        Referenceable createdEntity   = AtlasType.fromV1Json(jsonResponse, Referenceable.class);
+        Object        entityAttrValue = createdEntity.get(attrName);
 
-        Assert.assertEquals(createdEntity.get(attrName), attrValue, "entityId=" + guid + "; objResponse=" + objResponse + "; jsonResponse=" + jsonResponse + "; createdEntity=" + createdEntity);
+        Assert.assertEquals(entityAttrValue, attrValue,
+                            "attrName=" + attrName + "; attrValue=" + attrValue + "; entityToCreate=" + entityToCreate + "; entityId=" + guid + "; getEntityResponse_Obj=" + objResponse + "; getEntityResponse_Json=" + jsonResponse + "; getEntityResponse_Entity=" + createdEntity);
     }
 
 
