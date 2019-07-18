@@ -67,6 +67,10 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     public  static final String HBASE_NAMESPACE_DEFAULT = "default";
     public  static final String ATTRIBUTE_DB            = "db";
 
+    public static final String RELATIONSHIP_STORM_TOPOLOGY_NODES = "storm_topology_nodes";
+    public static final String RELATIONSHIP_DATASET_PROCESS_INPUTS = "dataset_process_inputs";
+    public static final String RELATIONSHIP_PROCESS_DATASET_OUTPUTS = "process_dataset_outputs";
+
     /**
      * This is the client-side hook that storm fires when a topology is added.
      *
@@ -90,7 +94,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
             if (CollectionUtils.isNotEmpty(graphNodes)) {
                 // add the connection from topology to the graph
-                topology.setAttribute("nodes", AtlasTypeUtil.getAtlasObjectIds(graphNodes));
+                topology.setRelationshipAttribute("nodes", AtlasTypeUtil.getAtlasRelatedObjectIds(graphNodes, RELATIONSHIP_STORM_TOPOLOGY_NODES));
 
                 for (AtlasEntity graphNode : graphNodes) {
                     entity.addReferredEntity(graphNode);
@@ -144,7 +148,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
             }
         }
 
-        topology.setAttribute("inputs", AtlasTypeUtil.getAtlasObjectIds(inputs));
+        topology.setRelationshipAttribute("inputs", AtlasTypeUtil.getAtlasRelatedObjectIds(inputs, RELATIONSHIP_DATASET_PROCESS_INPUTS));
     }
 
     private void addTopologyOutputs(StormTopology stormTopology, String topologyOwner, Map stormConf, AtlasEntity topology, AtlasEntityExtInfo entityExtInfo) {
@@ -162,7 +166,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
             }
         }
 
-        topology.setAttribute("outputs", AtlasTypeUtil.getAtlasObjectIds(outputs));
+        topology.setRelationshipAttribute("outputs", AtlasTypeUtil.getAtlasRelatedObjectIds(outputs, RELATIONSHIP_PROCESS_DATASET_OUTPUTS));
     }
 
     private AtlasEntity addDataSet(String dataSetType, String topologyOwner, Serializable instance, Map stormConf, AtlasEntityExtInfo entityExtInfo) {
@@ -272,7 +276,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                     ret = new AtlasEntity("hive_table");
 
                     ret.setAttribute(AtlasClient.NAME, tblName);
-                    ret.setAttribute(ATTRIBUTE_DB, AtlasTypeUtil.getAtlasObjectId(dbEntity));
+                    ret.setRelationshipAttribute(ATTRIBUTE_DB, AtlasTypeUtil.getAtlasRelatedObjectId(dbEntity, "hive_table_db"));
                     ret.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getTableQualifiedName(metadataNamespace, dbName, tblName));
                 }
             }
