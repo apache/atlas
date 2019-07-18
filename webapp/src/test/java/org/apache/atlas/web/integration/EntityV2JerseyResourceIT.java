@@ -46,6 +46,8 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.testng.Assert.*;
@@ -615,11 +617,21 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         return RandomStringUtils.random(10);
     }
 
+    private String randomUTF8() throws Exception {
+        String ret = random();
+
+        if (!StandardCharsets.UTF_8.equals(Charset.defaultCharset())) {
+            ret = new String(ret.getBytes(), StandardCharsets.UTF_8.name());
+        }
+
+        return ret;
+    }
+
     @Test
     public void testUTF8() throws Exception {
         String classType = randomString();
-        String attrName = random();
-        String attrValue = random();
+        String attrName = randomUTF8();
+        String attrValue = randomUTF8();
 
         AtlasEntityDef classTypeDef = AtlasTypeUtil
                 .createClassTypeDef(classType, Collections.<String>emptySet(),
@@ -772,7 +784,7 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     @Test
     public void testDeleteEntityByUniqAttribute() throws Exception {
         // Create database entity
-        AtlasEntity hiveDB = createHiveDB(DATABASE_NAME + random());
+        AtlasEntity hiveDB = createHiveDB(DATABASE_NAME + randomUTF8());
 
         // Delete the database entity
         EntityMutationResponse deleteResponse = atlasClientV2.deleteEntityByAttribute(DATABASE_TYPE_V2, toMap(NAME, (String) hiveDB.getAttribute(NAME)));
