@@ -92,6 +92,7 @@ import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
+import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
@@ -658,12 +659,16 @@ public final class GraphHelper {
         return element.toString();
     }
 
-    public static void addToPropagatedTraitNames(AtlasVertex entityVertex, String classificationName) {
+    public static void addToPropagatedClassificationAndTraitNames(AtlasVertex entityVertex, String classificationName) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Adding property {} = \"{}\" to vertex {}", PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName, string(entityVertex));
         }
 
         entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+
+        String propClsNames = entityVertex.getProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, String.class);
+        propClsNames        = StringUtils.isEmpty(propClsNames)? classificationName : propClsNames + "|" + classificationName;
+        entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, propClsNames);
     }
 
     /**
