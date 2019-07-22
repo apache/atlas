@@ -109,6 +109,11 @@ public class AtlasMetricsUtil {
         }
 
         partitionStat.setCurrentOffset(msgOffset + 1);
+        if(stats.isFailedMsg) {
+            partitionStat.incrFailedMessageCount();
+        }
+        partitionStat.incrProcessedMessageCount();
+        partitionStat.setLastMessageProcessedTime(messagesProcessed.getLastIncrTime().toEpochMilli());
     }
 
     public Map<String, Object> getStats() {
@@ -126,20 +131,25 @@ public class AtlasMetricsUtil {
         ret.put(STAT_SERVER_STATUS_BACKEND_STORE, getBackendStoreStatus() ? STATUS_CONNECTED : STATUS_NOT_CONNECTED);
         ret.put(STAT_SERVER_STATUS_INDEX_STORE, getIndexStoreStatus() ? STATUS_CONNECTED : STATUS_NOT_CONNECTED);
 
-        Map<String, Map<String, Long>> topicOffsets = new HashMap<>();
+        Map<String, Map<String, Long>> topicDetails = new HashMap<>();
 
         for (TopicStats tStat : topicStats.values()) {
             for (TopicPartitionStat tpStat : tStat.partitionStats.values()) {
-                Map<String, Long> tpOffsets = new HashMap<>();
+                Map<String, Long> tpDetails = new HashMap<>();
 
-                tpOffsets.put("offsetStart", tpStat.startOffset);
-                tpOffsets.put("offsetCurrent", tpStat.currentOffset);
-
-                topicOffsets.put(tpStat.topicName + "-" + tpStat.partition, tpOffsets);
+                tpDetails.put("offsetStart", tpStat.startOffset);
+                tpDetails.put("offsetCurrent", tpStat.currentOffset);
+                tpDetails.put("failedMessageCount", tpStat.failedMessageCount);
+                tpDetails.put("lastMessageProcessedTime", tpStat.lastMessageProcessedTime);
+                tpDetails.put("processedMessageCount", tpStat.processedMessageCount);
+                if(LOG.isDebugEnabled()) {
+                    LOG.debug("Setting failedMessageCount : {} and lastMessageProcessedTime : {} for topic {}-{}", tpStat.failedMessageCount, tpStat.lastMessageProcessedTime, tpStat.topicName, tpStat.partition);
+                }
+                topicDetails.put(tpStat.topicName + "-" + tpStat.partition, tpDetails);
             }
         }
 
-        ret.put(STAT_NOTIFY_TOPIC_OFFSETS, topicOffsets);
+        ret.put(STAT_NOTIFY_TOPIC_DETAILS, topicDetails);
         ret.put(STAT_NOTIFY_LAST_MESSAGE_PROCESSED_TIME, this.messagesProcessed.getLastIncrTime().toEpochMilli());
 
         ret.put(STAT_NOTIFY_COUNT_TOTAL,         messagesProcessed.getCount(ALL));
@@ -345,6 +355,9 @@ public class AtlasMetricsUtil {
         private final int    partition;
         private final long   startOffset;
         private       long   currentOffset;
+        private       long   lastMessageProcessedTime;
+        private       long   failedMessageCount;
+        private       long   processedMessageCount;
 
         public TopicPartitionStat(String  topicName, int partition, long startOffset, long currentOffset) {
             this.topicName     = topicName;
@@ -373,5 +386,16 @@ public class AtlasMetricsUtil {
             this.currentOffset = currentOffset;
         }
 
+        public long getLastMessageProcessedTime() { return lastMessageProcessedTime; }
+
+        public void setLastMessageProcessedTime(long lastMessageProcessedTime) { this.lastMessageProcessedTime = lastMessageProcessedTime; }
+
+        public long getFailedMessageCount() { return failedMessageCount; }
+
+        public void incrFailedMessageCount() { this.failedMessageCount++; }
+
+        public long getProcessedMessageCount() { return processedMessageCount; }
+
+        public void incrProcessedMessageCount() { this.processedMessageCount++; }
     };
 }

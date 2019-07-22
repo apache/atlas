@@ -185,7 +185,9 @@ define(['require'], function(require) {
             "totalDeletes": "number",
             "totalFailed": "number",
             "totalUpdates": "number",
-            "topicOffsets":"number"
+            "processedMessageCount": "number",
+            "lastMessageProcessedTime": "day",
+            "failedMessageCount": "number"
         }
     };
     return Enums;
