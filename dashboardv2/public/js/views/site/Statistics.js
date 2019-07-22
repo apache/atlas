@@ -48,7 +48,6 @@ define(['require',
                 connectionCard: "[data-id='connection-card']",
                 notificationCard: "[data-id='notification-card']",
                 statsNotificationTable: "[data-id='stats-notification-table']",
-                notificationSmallCard: "[data-id='notification-small-card']",
                 entityCard: "[data-id='entity-card']",
                 offsetCard: "[data-id='offset-card']"
             },
@@ -237,14 +236,6 @@ define(['require',
                         })
                     );
 
-                    that.ui.notificationSmallCard.html(
-                        createTable({
-                            "enums": Enums.stats.Notification,
-                            "data": _.pick(data.Notification, 'lastMessageProcessedTime', 'offsetCurrent', 'offsetStart')
-                        })
-                    );
-
-
                     var offsetTableColumn = function(obj) {
                         var returnObj = []
                         _.each(obj, function(value, key) {
@@ -255,14 +246,12 @@ define(['require',
 
                     that.ui.offsetCard.html(
                         TopicOffsetTable({
-                            "enums": Enums.stats.Notification,
-                            "data": data.Notification.topicOffsets,
-                            "tableHeader": ['offsetCurrent', 'offsetStart'],
-                            "tableCol": offsetTableColumn(data.Notification.topicOffsets),
-                            "getTmplValue": function(argument, args) {
-                                console.log(argument, args)
-                                var returnVal = data.Notification.topicOffsets[argument.label][args];
-                                return returnVal ? _.numberFormatWithComa(returnVal) : 0;
+                            data: data.Notification.topicDetails,
+                            tableHeader: ["offsetStart", "offsetCurrent", "processedMessageCount", "failedMessageCount", "lastMessageProcessedTime"],
+                            tableCol: offsetTableColumn(data.Notification.topicDetails),
+                            getTmplValue: function(argument, args) {
+                                var returnVal = data.Notification.topicDetails[argument.label][args];
+                                return returnVal ? that.getValue({ value: returnVal, type: Enums.stats.Notification[args] }) : 0;
                             }
                         })
                     )
