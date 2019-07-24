@@ -86,7 +86,7 @@
         "__internal"
       ],
       "serviceType": "atlas_core",
-      "typeVersion": "1.0",
+      "typeVersion": "1.1",
       "attributeDefs": [
         {
           "name": "qualifiedName",
@@ -135,8 +135,18 @@
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false
+        },
+        {
+          "name": "additionalAttributes",
+          "typeName": "map<string,string>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
         }
+
       ]
+
     },
     {
       "name": "AtlasGlossaryTerm",
@@ -144,7 +154,7 @@
         "__internal"
       ],
       "serviceType": "atlas_core",
-      "typeVersion": "1.0",
+      "typeVersion": "1.1",
       "attributeDefs": [
         {
           "name": "qualifiedName",
@@ -201,8 +211,18 @@
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false
+        },
+        {
+          "name": "additionalAttributes",
+          "typeName": "map<string,string>",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
         }
+
       ]
+
     },
     {
       "name": "AtlasGlossaryCategory",
@@ -210,7 +230,7 @@
         "__internal"
       ],
       "serviceType": "atlas_core",
-      "typeVersion": "1.0",
+      "typeVersion": "1.1",
       "attributeDefs": [
         {
           "name": "qualifiedName",
@@ -239,6 +259,14 @@
         {
           "name": "longDescription",
           "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "additionalAttributes",
+          "typeName": "map<string,string>",
           "cardinality": "SINGLE",
           "isIndexable": false,
           "isOptional": true,
