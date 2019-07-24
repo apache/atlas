@@ -29,10 +29,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Collection;
 
 @Component
 public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryCategory> {
@@ -57,6 +57,7 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
         ret.setName((String) entity.getAttribute("name"));
         ret.setShortDescription((String) entity.getAttribute("shortDescription"));
         ret.setLongDescription((String) entity.getAttribute("longDescription"));
+        ret.setAdditionalAttributes((Map) entity.getAttribute("additionalAttributes"));
 
         Object anchor = entity.getRelationshipAttribute("anchor");
         if (anchor instanceof AtlasRelatedObjectId) {
@@ -125,6 +126,7 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
         ret.setAttribute("shortDescription", obj.getShortDescription());
         ret.setAttribute("longDescription", obj.getLongDescription());
         ret.setAttribute("anchor", new AtlasObjectId(obj.getAnchor().getGlossaryGuid()));
+        ret.setAttribute("additionalAttributes", obj.getAdditionalAttributes());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasGlossaryCategoryDTO.toEntity() : {}", ret);

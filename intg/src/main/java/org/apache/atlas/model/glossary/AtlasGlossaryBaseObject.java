@@ -25,14 +25,17 @@ import org.apache.commons.collections.CollectionUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Map;
+
 
 public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
 
     // Core attributes
-    private   String qualifiedName;
+    private String qualifiedName;
     protected String name;
     protected String shortDescription;
     protected String longDescription;
+    private Map<String, Object> additionalAttributes;
 
     // Classifications
     protected List<AtlasClassification> classifications;
@@ -47,6 +50,15 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
         this.longDescription = other.longDescription;
         this.classifications = other.classifications;
         this.qualifiedName = other.qualifiedName;
+        this.additionalAttributes = other.additionalAttributes;
+    }
+
+    public Map<String, Object> getAdditionalAttributes() {
+        return additionalAttributes;
+    }
+
+    public void setAdditionalAttributes(Map<String, Object> additionalAttributes) {
+        this.additionalAttributes = additionalAttributes;
     }
 
     public String getQualifiedName() {
@@ -109,22 +121,22 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof AtlasGlossaryBaseObject)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        final AtlasGlossaryBaseObject that = (AtlasGlossaryBaseObject) o;
-        return Objects.equals(name, that.name) &&
-                       Objects.equals(shortDescription, that.shortDescription) &&
-                       Objects.equals(longDescription, that.longDescription) &&
-                       Objects.equals(classifications, that.classifications) &&
-                       Objects.equals(qualifiedName, that.qualifiedName);
+        AtlasGlossaryBaseObject that = (AtlasGlossaryBaseObject) o;
+        return Objects.equals(qualifiedName, that.qualifiedName) &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(shortDescription, that.shortDescription) &&
+                Objects.equals(longDescription, that.longDescription) &&
+                Objects.equals(additionalAttributes, that.additionalAttributes) &&
+                Objects.equals(classifications, that.classifications);
     }
 
     @Override
     public int hashCode() {
-
-        return Objects.hash(super.hashCode(), name, shortDescription, longDescription, classifications, qualifiedName);
+        return Objects.hash(super.hashCode(), qualifiedName, name, shortDescription, longDescription, additionalAttributes, classifications);
     }
 
     @Override
@@ -133,7 +145,8 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
         sb.append(", name='").append(name).append('\'');
         sb.append(", shortDescription='").append(shortDescription).append('\'');
         sb.append(", longDescription='").append(longDescription).append('\'');
-        sb.append(", classifications=").append(classifications);
+        sb.append(", classifications=").append(classifications).append('\'');
+        sb.append(", additionalAttributes=").append(additionalAttributes);
 
         return sb;
     }

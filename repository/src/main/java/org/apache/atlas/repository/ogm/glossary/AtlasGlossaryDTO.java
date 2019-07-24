@@ -58,9 +58,10 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
         ret.setLongDescription((String) entity.getAttribute("longDescription"));
         ret.setLanguage((String) entity.getAttribute("language"));
         ret.setUsage((String) entity.getAttribute("usage"));
+        ret.setAdditionalAttributes((Map) entity.getAttribute("additionalAttributes"));
 
         Object categoriesAttr = entity.getRelationshipAttribute("categories");
-        Object termsAttr      = entity.getRelationshipAttribute("terms");
+        Object termsAttr = entity.getRelationshipAttribute("terms");
 
         // Populate categories
         if (Objects.nonNull(categoriesAttr)) {
@@ -92,7 +93,7 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
     @Override
     public AtlasGlossary from(final AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryDTO.from()",entityWithExtInfo);
+            LOG.debug("==> AtlasGlossaryDTO.from()", entityWithExtInfo);
         }
         Objects.requireNonNull(entityWithExtInfo, "entity");
         AtlasGlossary ret = from(entityWithExtInfo.getEntity());
@@ -119,6 +120,7 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
         ret.setAttribute("longDescription", obj.getLongDescription());
         ret.setAttribute("language", obj.getLanguage());
         ret.setAttribute("usage", obj.getUsage());
+        ret.setAttribute("additionalAttributes", obj.getAdditionalAttributes());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasGlossaryDTO.toEntity() : {}", ret);
