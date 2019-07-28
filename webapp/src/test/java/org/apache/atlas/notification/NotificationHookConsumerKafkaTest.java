@@ -123,7 +123,7 @@ public class NotificationHookConsumerKafkaTest {
         reset(atlasEntityStore);
     }
 
-    @Test
+    @Test (enabled = false)
     public void consumerConsumesNewMessageButCommitThrowsAnException_MessageOffsetIsRecorded() throws AtlasException, InterruptedException, AtlasBaseException {
 
         ExceptionThrowingCommitConsumer        consumer                 = createNewConsumerThatThrowsExceptionInCommit(kafkaNotification, true);
