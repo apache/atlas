@@ -376,10 +376,10 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
 
         // re-run the same lineage record, should have the same process entity and another process execution entity
-        Thread.sleep(500);
+        Thread.sleep(5000);
         IMPALA = dir + "impalaMultipleInsertIntoAsSelect2.json";
         toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
-        Thread.sleep(300);
+        Thread.sleep(5000);
 
         // verify the process is saved in Atlas
         // the value is from info in IMPALA_4.

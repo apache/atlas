@@ -107,7 +107,7 @@ public class ImpalaLineageITBase {
     // return guid of the entity
     protected String assertEntityIsRegistered(final String typeName, final String property, final String value,
         final AssertPredicate assertPredicate) throws Exception {
-        waitFor(80000, new Predicate() {
+        waitFor(100000, new Predicate() {
             @Override
             public void evaluate() throws Exception {
                 AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByAttribute(typeName, Collections
@@ -169,6 +169,8 @@ public class ImpalaLineageITBase {
 
     protected String assertProcessIsRegistered(List<String> processQFNames, String queryString) throws Exception {
         try {
+            Thread.sleep(5000);
+
             LOG.debug("Searching for process with query {}", queryString);
 
             return assertEntityIsRegistered(ImpalaDataType.IMPALA_PROCESS.getName(), processQFNames, new AssertPredicates() {
@@ -194,6 +196,8 @@ public class ImpalaLineageITBase {
 
     protected String assertProcessIsRegistered(String processQFName, String queryString) throws Exception {
         try {
+            Thread.sleep(5000);
+
             LOG.debug("Searching for process with qualified name {} and query {}", processQFName, queryString);
 
             return assertEntityIsRegistered(ImpalaDataType.IMPALA_PROCESS.getName(), ATTRIBUTE_QUALIFIED_NAME, processQFName, new AssertPredicate() {
@@ -212,6 +216,8 @@ public class ImpalaLineageITBase {
 
     private String assertProcessExecutionIsRegistered(AtlasEntity impalaProcess, final String queryString) throws Exception {
         try {
+            Thread.sleep(5000);
+
             String guid = "";
             List<AtlasObjectId> processExecutions = toAtlasObjectIdList(impalaProcess.getRelationshipAttribute(
                 BaseImpalaEvent.ATTRIBUTE_PROCESS_EXECUTIONS));
@@ -334,7 +340,7 @@ public class ImpalaLineageITBase {
     }
 
     protected  String createDatabase(String dbName) throws Exception {
-        runCommand("CREATE DATABASE IF NOT EXISTS " + dbName);
+        runCommandWithDelay("CREATE DATABASE IF NOT EXISTS " + dbName, 3000);
 
         return dbName;
     }
@@ -349,7 +355,7 @@ public class ImpalaLineageITBase {
     }
 
     protected String createTable(String dbName, String tableName, String columnsString, boolean isPartitioned) throws Exception {
-        runCommand("CREATE TABLE IF NOT EXISTS " + dbName + "." + tableName + " " + columnsString + " comment 'table comment' " + (isPartitioned ? " partitioned by(dt string)" : ""));
+        runCommandWithDelay("CREATE TABLE IF NOT EXISTS " + dbName + "." + tableName + " " + columnsString + " comment 'table comment' " + (isPartitioned ? " partitioned by(dt string)" : ""), 3000);
 
         return dbName + "." + tableName;
     }

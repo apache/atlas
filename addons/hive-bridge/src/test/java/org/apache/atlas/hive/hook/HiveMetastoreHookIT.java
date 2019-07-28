@@ -120,22 +120,22 @@ public class HiveMetastoreHookIT extends HiveITBase {
         String dbName = dbName();
         String query  = "CREATE DATABASE " + dbName;
 
-        runCommand(query);
+        runCommandWithDelay(query);
         String dbId = assertDatabaseIsRegistered(dbName);
         assertEquals(getAtlasEntity(dbId).getStatus(), ACTIVE);
 
         String table1 = tableName();
-        runCommand("CREATE TABLE " + dbName + "." + table1 + " (name string, age int, dob date)");
+        runCommandWithDelay("CREATE TABLE " + dbName + "." + table1 + " (name string, age int, dob date)");
         String table1Id = assertTableIsRegistered(dbName, table1);
         assertEquals(getAtlasEntity(table1Id).getStatus(), ACTIVE);
 
         String table2 = tableName();
-        runCommand("CREATE TABLE " + dbName + "." + table2 + " (name string, age int, dob date)");
+        runCommandWithDelay("CREATE TABLE " + dbName + "." + table2 + " (name string, age int, dob date)");
         String table2Id = assertTableIsRegistered(dbName, table2);
         assertEquals(getAtlasEntity(table2Id).getStatus(), ACTIVE);
 
         query = "DROP DATABASE " + dbName + " CASCADE";
-        runCommand(query);
+        runCommandWithDelay(query);
         assertDatabaseIsNotRegistered(dbName);
 
         assertEquals(getAtlasEntity(dbId).getStatus(), DELETED);
@@ -378,7 +378,7 @@ public class HiveMetastoreHookIT extends HiveITBase {
     }
 
     protected void runCommandWithDelay(String cmd) throws Exception {
-        int delayTimeInMs = 5000;
+        int delayTimeInMs = 10000;
         runCommandWithDelay(driverWithoutContext, cmd, delayTimeInMs);
     }
 }

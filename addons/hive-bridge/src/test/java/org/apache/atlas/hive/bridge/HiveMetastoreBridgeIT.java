@@ -76,7 +76,7 @@ public class HiveMetastoreBridgeIT extends HiveITBase {
         String tableName = tableName();
         String pFile     = createTestDFSPath("parentPath");
 
-        runCommand(driverWithoutContext, String.format("create EXTERNAL table %s(id string) location '%s'", tableName, pFile));
+        runCommandWithDelay(driverWithoutContext, String.format("create EXTERNAL table %s(id string) location '%s'", tableName, pFile), 3000);
 
         String dbId = assertDatabaseIsRegistered(DEFAULT_DB);
 

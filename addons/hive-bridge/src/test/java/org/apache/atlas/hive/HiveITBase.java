@@ -224,7 +224,7 @@ public class HiveITBase {
 
     protected String assertEntityIsRegistered(final String typeName, final String property, final String value,
                                               final HiveHookIT.AssertPredicate assertPredicate) throws Exception {
-        waitFor(80000, new HiveHookIT.Predicate() {
+        waitFor(100000, new HiveHookIT.Predicate() {
             @Override
             public void evaluate() throws Exception {
                 AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(property,value));
@@ -242,7 +242,7 @@ public class HiveITBase {
 
     protected String assertEntityIsRegisteredViaGuid(String guid,
                                               final HiveHookIT.AssertPredicate assertPredicate) throws Exception {
-        waitFor(80000, new HiveHookIT.Predicate() {
+        waitFor(100000, new HiveHookIT.Predicate() {
             @Override
             public void evaluate() throws Exception {
                     AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByGuid(guid);
@@ -373,7 +373,7 @@ public class HiveITBase {
 
     protected void assertEntityIsNotRegistered(final String typeName, final String property, final String value) throws Exception {
         // wait for sufficient time before checking if entity is not available.
-        long waitTime = 2000;
+        long waitTime = 10000;
         LOG.debug("Waiting for {} msecs, before asserting entity is not registered.", waitTime);
         Thread.sleep(waitTime);
 
