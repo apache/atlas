@@ -394,6 +394,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         String queryString = "insert into table " + dbName + "." + targetTableName + " (count, id) select count, id from " + dbName + "." + sourceTableName;
         queryString = queryString.toLowerCase().trim();
         String queryString2 = queryString;
+
+        Thread.sleep(5000);
         AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
 
         List<AtlasObjectId> processExecutions = toAtlasObjectIdList(processEntity1.getRelationshipAttribute(
