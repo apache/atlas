@@ -1769,11 +1769,11 @@ public class HiveHookIT extends HiveITBase {
         String newName   = tableName();
         String query     = "create view " + viewName + " as select * from " + tableName;
 
-        runCommand(query);
+        runCommandWithDelay(query, 5000);
 
         query = "alter view " + viewName + " rename to " + newName;
 
-        runCommand(query);
+        runCommandWithDelay(query, 5000);
 
         assertTableIsNotRegistered(DEFAULT_DB, viewName);
 
