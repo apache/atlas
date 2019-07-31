@@ -57,7 +57,10 @@ public class AtlasBuiltInTypes {
 
         @Override
         public boolean isValidValue(Object obj) {
-            return true;
+            if (obj == null) {
+                return true;
+            }
+            return getNormalizedValue(obj) != null;
         }
 
         @Override
@@ -65,11 +68,12 @@ public class AtlasBuiltInTypes {
             if (obj != null) {
                 if (obj instanceof Boolean) {
                     return (Boolean)obj;
-                } else {
-                    return Boolean.valueOf(obj.toString());
+                } else if (obj instanceof String){
+                    if (obj.toString().equalsIgnoreCase("true") || obj.toString().equalsIgnoreCase("false")) {
+                        return Boolean.valueOf(obj.toString());
+                    }
                 }
             }
-
             return null;
         }
     }
@@ -78,7 +82,9 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of byte type.
      */
     public static class AtlasByteType extends AtlasType {
-        private static final Byte DEFAULT_VALUE = (byte) 0;
+        private static final Byte       DEFAULT_VALUE = (byte) 0;
+        private static final BigInteger MIN_VALUE     = BigInteger.valueOf(Byte.MIN_VALUE);
+        private static final BigInteger MAX_VALUE     = BigInteger.valueOf(Byte.MAX_VALUE);
 
         public AtlasByteType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_BYTE, TypeCategory.PRIMITIVE, SERVICE_TYPE_ATLAS_CORE);
@@ -91,7 +97,7 @@ public class AtlasBuiltInTypes {
 
         @Override
         public boolean isValidValue(Object obj) {
-            if (obj == null || obj instanceof Number) {
+            if (obj == null || obj instanceof Byte) {
                 return true;
             }
 
@@ -100,11 +106,12 @@ public class AtlasBuiltInTypes {
 
         @Override
         public Byte getNormalizedValue(Object obj) {
+
             if (obj != null) {
                 if (obj instanceof Byte) {
                     return (Byte) obj;
                 } else if (obj instanceof Number) {
-                    return ((Number) obj).byteValue();
+                    return isValidRange((Number) obj) ? ((Number) obj).byteValue() : null;
                 } else {
                     String strValue = obj.toString();
 
@@ -120,13 +127,33 @@ public class AtlasBuiltInTypes {
 
             return null;
         }
+
+        private boolean isValidRange(Number num) {
+            final boolean ret;
+
+            if (num instanceof Byte) {
+                ret = true;
+            } else if (num instanceof Double || num instanceof Float || num instanceof Long || num instanceof Integer || num instanceof Short) {
+                long longVal = num.longValue();
+
+                ret = longVal >= Byte.MIN_VALUE && longVal <= Byte.MAX_VALUE;
+            } else {
+                BigInteger bigInt = toBigInteger(num);
+
+                ret = bigInt.compareTo(MIN_VALUE) >= 0 && bigInt.compareTo(MAX_VALUE) <= 0;
+            }
+
+            return ret;
+        }
     }
 
     /**
      * class that implements behaviour of short type.
      */
     public static class AtlasShortType extends AtlasType {
-        private static final Short DEFAULT_VALUE = (short) 0;
+        private static final Short      DEFAULT_VALUE = (short) 0;
+        private static final BigInteger MIN_VALUE     = BigInteger.valueOf(Short.MIN_VALUE);
+        private static final BigInteger MAX_VALUE     = BigInteger.valueOf(Short.MAX_VALUE);
 
         public AtlasShortType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_SHORT, TypeCategory.PRIMITIVE, SERVICE_TYPE_ATLAS_CORE);
@@ -139,7 +166,7 @@ public class AtlasBuiltInTypes {
 
         @Override
         public boolean isValidValue(Object obj) {
-            if (obj == null || obj instanceof Number) {
+            if (obj == null || obj instanceof Short) {
                 return true;
             }
 
@@ -152,7 +179,7 @@ public class AtlasBuiltInTypes {
                 if (obj instanceof Short) {
                     return (Short)obj;
                 } else if (obj instanceof Number) {
-                    return ((Number) obj).shortValue();
+                    return isValidRange((Number) obj) ? ((Number) obj).shortValue() : null;
                 } else {
                     try {
                         return Short.valueOf(obj.toString());
@@ -161,8 +188,25 @@ public class AtlasBuiltInTypes {
                     }
                 }
             }
-
             return null;
+        }
+
+        private boolean isValidRange(Number num) {
+            final boolean ret;
+
+            if (num instanceof Short || num instanceof Byte) {
+                ret = true;
+            } else if (num instanceof Double || num instanceof Float || num instanceof Long || num instanceof Integer) {
+                long longVal = num.longValue();
+
+                ret = longVal >= Short.MIN_VALUE && longVal <= Short.MAX_VALUE;
+            } else {
+                BigInteger bigInt = toBigInteger(num);
+
+                ret = bigInt.compareTo(MIN_VALUE) >= 0 && bigInt.compareTo(MAX_VALUE) <= 0;
+            }
+
+            return ret;
         }
     }
 
@@ -170,7 +214,9 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of integer type.
      */
     public static class AtlasIntType extends AtlasType {
-        private static final Integer DEFAULT_VALUE = 0;
+        private static final Integer    DEFAULT_VALUE = 0;
+        private static final BigInteger MIN_VALUE     = BigInteger.valueOf(Integer.MIN_VALUE);
+        private static final BigInteger MAX_VALUE     = BigInteger.valueOf(Integer.MAX_VALUE);
 
         public AtlasIntType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_INT, TypeCategory.PRIMITIVE, SERVICE_TYPE_ATLAS_CORE);
@@ -183,7 +229,7 @@ public class AtlasBuiltInTypes {
 
         @Override
         public boolean isValidValue(Object obj) {
-            if (obj == null || obj instanceof Number) {
+            if (obj == null || obj instanceof Integer) {
                 return true;
             }
 
@@ -192,11 +238,12 @@ public class AtlasBuiltInTypes {
 
         @Override
         public Integer getNormalizedValue(Object obj) {
+
             if (obj != null) {
                 if (obj instanceof Integer) {
                     return (Integer) obj;
                 } else if (obj instanceof Number) {
-                    return ((Number) obj).intValue();
+                    return isValidRange((Number) obj) ? ((Number) obj).intValue() : null;
                 } else {
                     try {
                         return Integer.valueOf(obj.toString());
@@ -208,13 +255,33 @@ public class AtlasBuiltInTypes {
 
             return null;
         }
+
+        private boolean isValidRange(Number num) {
+            final boolean ret;
+
+            if (num instanceof Integer || num instanceof Short || num instanceof Byte) {
+                ret = true;
+            } else if (num instanceof Double || num instanceof Float || num instanceof Long) {
+                long longVal = num.longValue();
+
+                ret = longVal >= Integer.MIN_VALUE && longVal <= Integer.MAX_VALUE;
+            } else {
+                BigInteger bigInt = toBigInteger(num);
+
+                ret = bigInt.compareTo(MIN_VALUE) >= 0 && bigInt.compareTo(MAX_VALUE) <= 0;
+            }
+
+            return ret;
+        }
     }
 
     /**
      * class that implements behaviour of long type.
      */
     public static class AtlasLongType extends AtlasType {
-        private static final Long DEFAULT_VALUE = 0L;
+        private static final Long       DEFAULT_VALUE = 0L;
+        private static final BigInteger MIN_VALUE     = BigInteger.valueOf(Long.MIN_VALUE);
+        private static final BigInteger MAX_VALUE     = BigInteger.valueOf(Long.MAX_VALUE);
 
         public AtlasLongType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_LONG, TypeCategory.PRIMITIVE, SERVICE_TYPE_ATLAS_CORE);
@@ -227,7 +294,7 @@ public class AtlasBuiltInTypes {
 
         @Override
         public boolean isValidValue(Object obj) {
-            if (obj == null || obj instanceof Number) {
+            if (obj == null || obj instanceof Long) {
                 return true;
             }
 
@@ -240,7 +307,7 @@ public class AtlasBuiltInTypes {
                 if (obj instanceof Long) {
                     return (Long) obj;
                 } else if (obj instanceof Number) {
-                    return ((Number) obj).longValue();
+                    return isValidRange((Number) obj) ? ((Number) obj).longValue() : null;
                 } else {
                     try {
                         return Long.valueOf(obj.toString());
@@ -252,14 +319,30 @@ public class AtlasBuiltInTypes {
 
             return null;
         }
+
+        private boolean isValidRange(Number num) {
+            final boolean ret;
+
+            if (num instanceof Long || num instanceof Integer || num instanceof Short || num instanceof Byte) {
+                ret = true;
+            } else {
+                BigInteger number = toBigInteger(num);
+
+                ret = (number.compareTo(MIN_VALUE) >= 0) && (number.compareTo(MAX_VALUE) <= 0);
+            }
+
+            return ret;
+        }
     }
 
     /**
      * class that implements behaviour of float type.
      */
     public static class AtlasFloatType extends AtlasType {
-        private static final Float DEFAULT_VALUE = 0f;
-        private static final Float FLOAT_EPSILON = 0.00000001f;
+        private static final Float      DEFAULT_VALUE = 0f;
+        private static final Float      FLOAT_EPSILON = 0.00000001f;
+        private static final BigDecimal MIN_VALUE     = BigDecimal.valueOf(-Float.MAX_VALUE);
+        private static final BigDecimal MAX_VALUE     = BigDecimal.valueOf(Float.MAX_VALUE);
 
         public AtlasFloatType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_FLOAT, TypeCategory.PRIMITIVE, SERVICE_TYPE_ATLAS_CORE);
@@ -272,7 +355,7 @@ public class AtlasBuiltInTypes {
 
         @Override
         public boolean isValidValue(Object obj) {
-            if (obj == null || obj instanceof Number) {
+            if (obj == null) {
                 return true;
             }
 
@@ -310,9 +393,13 @@ public class AtlasBuiltInTypes {
         public Float getNormalizedValue(Object obj) {
             if (obj != null) {
                 if (obj instanceof Float) {
-                    return (Float) obj;
+                    if (!Float.isInfinite((float) obj)) {
+                        return (Float) obj;
+                    } else {
+                        return null;
+                    }
                 } else if (obj instanceof Number) {
-                    return ((Number) obj).floatValue();
+                    return isValidRange((Number) obj) ? ((Number) obj).floatValue() : null;
                 } else {
                     try {
                         Float f = Float.valueOf(obj.toString());
@@ -329,14 +416,32 @@ public class AtlasBuiltInTypes {
 
             return null;
         }
+
+        private boolean isValidRange(Number num) {
+            final boolean ret;
+
+            if (num instanceof Float || num instanceof Long || num instanceof Integer || num instanceof Short || num instanceof Byte) {
+                ret = true;
+            } else if (num instanceof Double) {
+                ret = num.floatValue() >= MIN_VALUE.floatValue() && num.floatValue() <= MAX_VALUE.floatValue();
+            } else {
+                BigDecimal number = new BigDecimal(num.doubleValue());
+
+                ret = (number.compareTo(MIN_VALUE) >= 0) && (number.compareTo(MAX_VALUE) <= 0);
+            }
+
+            return ret;
+        }
     }
 
     /**
      * class that implements behaviour of double type.
      */
     public static class AtlasDoubleType extends AtlasType {
-        private static final Double DEFAULT_VALUE = 0d;
-        private static final Double DOUBLE_EPSILON = 0.00000001d;
+        private static final Double     DEFAULT_VALUE  = 0d;
+        private static final Double     DOUBLE_EPSILON = 0.00000001d;
+        private static final BigDecimal MIN_VALUE     = BigDecimal.valueOf(-Double.MAX_VALUE);
+        private static final BigDecimal MAX_VALUE     = BigDecimal.valueOf(Double.MAX_VALUE);
 
         public AtlasDoubleType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE, TypeCategory.PRIMITIVE, SERVICE_TYPE_ATLAS_CORE);
@@ -349,7 +454,7 @@ public class AtlasBuiltInTypes {
 
         @Override
         public boolean isValidValue(Object obj) {
-            if (obj == null || obj instanceof Number) {
+            if (obj == null) {
                 return true;
             }
 
@@ -389,9 +494,13 @@ public class AtlasBuiltInTypes {
 
             if (obj != null) {
                 if (obj instanceof Double) {
-                    return (Double) obj;
+                    if (!Double.isInfinite((double) obj)) {
+                        return (Double) obj;
+                    } else {
+                        return null;
+                    }
                 } else if (obj instanceof Number) {
-                    return ((Number) obj).doubleValue();
+                    return isValidRange((Number) obj) ? ((Number) obj).doubleValue() : null;
                 } else {
                     try {
                         Double d = Double.valueOf(obj.toString());
@@ -407,6 +516,20 @@ public class AtlasBuiltInTypes {
             }
 
             return null;
+        }
+
+        private boolean isValidRange(Number num) {
+            final boolean ret;
+
+            if (num instanceof Double || num instanceof Float || num instanceof Long || num instanceof Integer || num instanceof Short || num instanceof Byte) {
+                ret = true;
+            } else {
+                BigDecimal number = new BigDecimal(num.toString());
+
+                ret = (number.compareTo(MIN_VALUE) >= 0) && (number.compareTo(MAX_VALUE) <= 0);
+            }
+
+            return ret;
         }
     }
 
@@ -427,7 +550,7 @@ public class AtlasBuiltInTypes {
 
         @Override
         public boolean isValidValue(Object obj) {
-            if (obj == null || obj instanceof Number) {
+            if (obj == null || obj instanceof BigInteger) {
                 return true;
             }
 
@@ -712,5 +835,21 @@ public class AtlasBuiltInTypes {
 
             return false;
         }
+    }
+
+    private static BigInteger toBigInteger(Number num) {
+        final BigInteger ret;
+
+        if (num instanceof BigInteger) {
+            ret = (BigInteger) num;
+        } else if (num instanceof Byte || num instanceof Short || num instanceof Integer || num instanceof Long) {
+            ret = BigInteger.valueOf(num.longValue());
+        } else if (num instanceof BigDecimal) {
+            ret = ((BigDecimal) num).toBigInteger();
+        } else {
+            ret = new BigDecimal(num.toString()).toBigInteger();
+        }
+
+        return ret;
     }
 }

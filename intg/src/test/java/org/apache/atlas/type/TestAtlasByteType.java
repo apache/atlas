@@ -36,12 +36,17 @@ public class TestAtlasByteType {
         Double.valueOf(1), BigInteger.valueOf(1), BigDecimal.valueOf(1), "1",
     };
 
+    private final Object[] validValuesLimitCheck = {Byte.MIN_VALUE, Byte.MAX_VALUE, Float.MIN_VALUE, Double.MIN_VALUE};
+
     private final Object[] negativeValues = {
         Byte.valueOf((byte)-1), Short.valueOf((short)-1), Integer.valueOf(-1), Long.valueOf(-1L), Float.valueOf(-1),
         Double.valueOf(-1), BigInteger.valueOf(-1), BigDecimal.valueOf(-1), "-1",
     };
 
-    private final Object[] invalidValues  = { "", };
+    private  final Object[] negativeValuesLimitCheck = {-Float.MIN_VALUE, -Double.MIN_VALUE};
+
+    private final Object[] invalidValues = {"", Byte.MIN_VALUE - 1, Byte.MAX_VALUE + 1, Short.MIN_VALUE, Short.MAX_VALUE, Integer.MIN_VALUE, Integer.MAX_VALUE,
+    Long.MIN_VALUE, Long.MAX_VALUE, Float.MAX_VALUE, Double.MAX_VALUE, -Float.MAX_VALUE, -Double.MAX_VALUE};
 
 
     @Test
@@ -57,7 +62,15 @@ public class TestAtlasByteType {
             assertTrue(byteType.isValidValue(value), "value=" + value);
         }
 
+        for (Object value : validValuesLimitCheck) {
+            assertTrue(byteType.isValidValue(value), "value=" + value);
+        }
+
         for (Object value : negativeValues) {
+            assertTrue(byteType.isValidValue(value), "value=" + value);
+        }
+
+        for (Object value : negativeValuesLimitCheck) {
             assertTrue(byteType.isValidValue(value), "value=" + value);
         }
 
@@ -81,11 +94,44 @@ public class TestAtlasByteType {
             assertEquals(normalizedValue, Byte.valueOf((byte)1), "value=" + value);
         }
 
+        for (Object value : validValuesLimitCheck) {
+            if (value == null) {
+                continue;
+            }
+
+            Byte normalizedValue = byteType.getNormalizedValue(value);
+
+            assertNotNull(normalizedValue, "value=" + value);
+
+            byte b;
+            if (value instanceof Float) {
+                b = ((Float) value).byteValue();
+                assertEquals(normalizedValue, Byte.valueOf(b), "value=" + value);
+            } else if (value instanceof Double) {
+                b = ((Double) value).byteValue();
+                assertEquals(normalizedValue, Byte.valueOf(b), "value=" + value);
+            } else {
+                assertEquals(normalizedValue, Byte.valueOf((byte) value), "value=" + value);
+            }
+        }
+
         for (Object value : negativeValues) {
             Byte normalizedValue = byteType.getNormalizedValue(value);
 
             assertNotNull(normalizedValue, "value=" + value);
-            assertEquals(normalizedValue, Byte.valueOf((byte)-1), "value=" + value);
+            assertEquals(normalizedValue, Byte.valueOf((byte) -1), "value=" + value);
+        }
+
+        for (Object value : negativeValuesLimitCheck) {
+            Byte normalizedValue = byteType.getNormalizedValue(value);
+            byte b;
+            if (value instanceof Float) {
+                b = ((Float) value).byteValue();
+                assertEquals(normalizedValue, Byte.valueOf(b), "value=" + value);
+            } else if (value instanceof Double) {
+                b = ((Double) value).byteValue();
+                assertEquals(normalizedValue, Byte.valueOf(b), "value=" + value);
+            }
         }
 
         for (Object value : invalidValues) {
@@ -101,7 +147,17 @@ public class TestAtlasByteType {
             assertEquals(messages.size(), 0, "value=" + value);
         }
 
+        for (Object value : validValuesLimitCheck) {
+            assertTrue(byteType.validateValue(value, "testObj", messages));
+            assertEquals(messages.size(), 0, "value=" + value);
+        }
+
         for (Object value : negativeValues) {
+            assertTrue(byteType.validateValue(value, "testObj", messages));
+            assertEquals(messages.size(), 0, "value=" + value);
+        }
+
+        for (Object value : negativeValuesLimitCheck) {
             assertTrue(byteType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);
         }
