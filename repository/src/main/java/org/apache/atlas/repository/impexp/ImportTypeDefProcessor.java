@@ -22,6 +22,7 @@ import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
@@ -66,6 +67,10 @@ public class ImportTypeDefProcessor {
         }
 
         for (AtlasStructDef def : typesDef.getStructDefs()) {
+            def.setGuid(null);
+        }
+
+        for (AtlasRelationshipDef def : typesDef.getRelationshipDefs()) {
             def.setGuid(null);
         }
     }

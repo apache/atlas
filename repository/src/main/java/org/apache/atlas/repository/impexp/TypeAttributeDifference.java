@@ -24,6 +24,7 @@ import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -53,6 +54,7 @@ public class TypeAttributeDifference {
         updateClassificationDef(typeDefinitionMap, result);
         updateEnumDef(typeDefinitionMap, result);
         updateStructDef(typeDefinitionMap, result);
+        updateRelationshipDefs(typeDefinitionMap, result);
     }
 
     private void updateEntityDef(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
@@ -91,6 +93,16 @@ public class TypeAttributeDifference {
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateStructDefByName(existing.getName(), existing);
                 result.incrementMeticsCounter("typedef:struct:update");
+            }
+        }
+    }
+
+    private void updateRelationshipDefs(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
+        for (AtlasRelationshipDef def : typeDefinitionMap.getRelationshipDefs()) {
+            AtlasRelationshipDef existing = typeRegistry.getRelationshipDefByName(def.getName());
+            if (existing != null && addAttributes(existing, def)) {
+                typeDefStore.updateRelationshipDefByName(existing.getName(), existing);
+                result.incrementMeticsCounter("typedef:relationshipdef:update");
             }
         }
     }
