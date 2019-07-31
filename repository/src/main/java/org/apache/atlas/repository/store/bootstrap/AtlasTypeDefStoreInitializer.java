@@ -360,6 +360,8 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             }
         } catch (AtlasBaseException e) {
             LOG.error("Failed to init after becoming active", e);
+        } finally {
+            RequestContext.clear();
         }
     }
 
@@ -880,6 +882,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         ret = APPLIED;
                     } finally {
                         RequestContext.get().setInTypePatching(false);
+                        RequestContext.clear();
                     }
                 }
             } else {
