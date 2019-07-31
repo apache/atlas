@@ -36,12 +36,17 @@ public class TestAtlasDoubleType {
         Double.valueOf(1), BigInteger.valueOf(1), BigDecimal.valueOf(1), "1",
     };
 
+    private final Object[] validValuesLimitCheck = {Byte.MIN_VALUE, Byte.MAX_VALUE, Short.MIN_VALUE, Short.MAX_VALUE,
+            Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE, Float.MIN_VALUE, Float.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE};
+
     private final Object[] negativeValues = {
         Byte.valueOf((byte)-1), Short.valueOf((short)-1), Integer.valueOf(-1), Long.valueOf(-1L), Float.valueOf(-1),
         Double.valueOf(-1), BigInteger.valueOf(-1), BigDecimal.valueOf(-1), "-1",
     };
 
-    private final Object[] invalidValues  = { "", "12ab", "abcd", "-12ab", };
+    private  final Object[] negativeValuesLimitCheck = {-Double.MIN_VALUE, -Double.MAX_VALUE, -Float.MIN_VALUE, -Float.MAX_VALUE,};
+
+    private final Object[] invalidValues  = { "", "12ab", "abcd", "-12ab", (Double.MAX_VALUE + Double.MAX_VALUE), -(Double.MAX_VALUE+Double.MAX_VALUE)};
 
 
     @Test
@@ -57,7 +62,15 @@ public class TestAtlasDoubleType {
             assertTrue(doubleType.isValidValue(value), "value=" + value);
         }
 
+        for (Object value : validValuesLimitCheck) {
+            assertTrue(doubleType.isValidValue(value), "value=" + value);
+        }
+
         for (Object value : negativeValues) {
+            assertTrue(doubleType.isValidValue(value), "value=" + value);
+        }
+
+        for (Object value : negativeValuesLimitCheck) {
             assertTrue(doubleType.isValidValue(value), "value=" + value);
         }
 
@@ -81,11 +94,44 @@ public class TestAtlasDoubleType {
             assertEquals(normalizedValue, Double.valueOf(1), "value=" + value);
         }
 
+        for (Object value : validValuesLimitCheck) {
+            if (value == null) {
+                continue;
+            }
+
+            Double normalizedValue = doubleType.getNormalizedValue(value);
+
+            assertNotNull(normalizedValue, "value=" + value);
+
+            double d;
+            if (value instanceof Float) {
+                d = ((Float) value).doubleValue();
+                assertEquals(normalizedValue, Double.valueOf(d), "value=" + value);
+            } else if (value instanceof Double) {
+                d = ((Double) value).doubleValue();
+                assertEquals(normalizedValue, Double.valueOf(d), "value=" + value);
+            } else {
+                assertEquals(normalizedValue, Double.valueOf(value.toString()), "value=" + value);
+            }
+        }
+
         for (Object value : negativeValues) {
             Double normalizedValue = doubleType.getNormalizedValue(value);
 
             assertNotNull(normalizedValue, "value=" + value);
             assertEquals(normalizedValue, Double.valueOf(-1), "value=" + value);
+        }
+
+        for (Object value : negativeValuesLimitCheck) {
+            Double normalizedValue = doubleType.getNormalizedValue(value);
+            double d;
+            if (value instanceof Float) {
+                d = ((Float) value).doubleValue();
+                assertEquals(normalizedValue, Double.valueOf(d), "value=" + value);
+            } else if (value instanceof Double) {
+                d = ((Double) value).doubleValue();
+                assertEquals(normalizedValue, Double.valueOf(d), "value=" + value);
+            }
         }
 
         for (Object value : invalidValues) {

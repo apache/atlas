@@ -28,8 +28,8 @@ import static org.testng.Assert.*;
 
 public class TestAtlasBooleanType {
     private final AtlasBooleanType booleanType = new AtlasBooleanType();
-    private final Object[] validValues   = { null, Boolean.TRUE, Boolean.FALSE, "true", "false", "TRUE", "FALSE", };
-    private final Object[] invalidValues = { };
+    private final Object[] validValues   = { null, Boolean.TRUE, Boolean.FALSE, "true", "false", "TRUE", "FALSE", "tRue", "FaLse" };
+    private final Object[] invalidValues = {1, 0.5,123456789, "abcd", "101010" };
 
     @Test
     public void testBooleanTypeDefaultValue() {
