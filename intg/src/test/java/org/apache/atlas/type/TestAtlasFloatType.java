@@ -36,12 +36,18 @@ public class TestAtlasFloatType {
         Double.valueOf(1), BigInteger.valueOf(1), BigDecimal.valueOf(1), "1",
     };
 
+    private final Object[] validValuesLimitCheck = {Byte.MIN_VALUE, Byte.MAX_VALUE, Short.MIN_VALUE, Short.MAX_VALUE,
+            Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE, Float.MIN_VALUE, Float.MAX_VALUE, Double.MIN_VALUE};
+
     private final Object[] negativeValues = {
         Byte.valueOf((byte)-1), Short.valueOf((short)-1), Integer.valueOf(-1), Long.valueOf(-1L), Float.valueOf(-1),
         Double.valueOf(-1), BigInteger.valueOf(-1), BigDecimal.valueOf(-1), "-1",
     };
 
-    private final Object[] invalidValues  = { "", "12ab", "abcd", "-12ab", };
+    private  final Object[] negativeValuesLimitCheck = {-Float.MIN_VALUE, -Float.MAX_VALUE, -Double.MIN_VALUE};
+
+    private final Object[] invalidValues  = { "", "12ab", "abcd", "-12ab", (Float.MAX_VALUE + Float.MAX_VALUE)/*+Infinity*/, -(Float.MAX_VALUE + Float.MAX_VALUE)/*-Infinity*/
+    , Double.MAX_VALUE, -Double.MAX_VALUE};
 
 
     @Test
@@ -57,7 +63,15 @@ public class TestAtlasFloatType {
             assertTrue(floatType.isValidValue(value), "value=" + value);
         }
 
+        for (Object value : validValuesLimitCheck) {
+            assertTrue(floatType.isValidValue(value), "value=" + value);
+        }
+
         for (Object value : negativeValues) {
+            assertTrue(floatType.isValidValue(value), "value=" + value);
+        }
+
+        for (Object value : negativeValuesLimitCheck) {
             assertTrue(floatType.isValidValue(value), "value=" + value);
         }
 
@@ -81,11 +95,44 @@ public class TestAtlasFloatType {
             assertEquals(normalizedValue, Float.valueOf(1), "value=" + value);
         }
 
+        for (Object value : validValuesLimitCheck) {
+            if (value == null) {
+                continue;
+            }
+
+            Float normalizedValue = floatType.getNormalizedValue(value);
+
+            assertNotNull(normalizedValue, "value=" + value);
+
+            float f;
+            if (value instanceof Float) {
+                f = ((Float) value).floatValue();
+                assertEquals(normalizedValue, Float.valueOf(f), "value=" + value);
+            } else if (value instanceof Double) {
+                f = ((Double) value).floatValue();
+                assertEquals(normalizedValue, Float.valueOf(f), "value=" + value);
+            } else {
+                assertEquals(normalizedValue, Float.valueOf(value.toString()), "value=" + value);
+            }
+        }
+
         for (Object value : negativeValues) {
             Float normalizedValue = floatType.getNormalizedValue(value);
 
             assertNotNull(normalizedValue, "value=" + value);
             assertEquals(normalizedValue, Float.valueOf(-1), "value=" + value);
+        }
+
+        for (Object value : negativeValuesLimitCheck) {
+            Float normalizedValue = floatType.getNormalizedValue(value);
+            float f;
+            if (value instanceof Float) {
+                f = ((Float) value).floatValue();
+                assertEquals(normalizedValue, Float.valueOf(f), "value=" + value);
+            } else if (value instanceof Double) {
+                f = ((Double) value).floatValue();
+                assertEquals(normalizedValue, Float.valueOf(f), "value=" + value);
+            }
         }
 
         for (Object value : invalidValues) {
@@ -101,7 +148,17 @@ public class TestAtlasFloatType {
             assertEquals(messages.size(), 0, "value=" + value);
         }
 
+        for (Object value : validValuesLimitCheck) {
+            assertTrue(floatType.validateValue(value, "testObj", messages));
+            assertEquals(messages.size(), 0, "value=" + value);
+        }
+
         for (Object value : negativeValues) {
+            assertTrue(floatType.validateValue(value, "testObj", messages));
+            assertEquals(messages.size(), 0, "value=" + value);
+        }
+
+        for (Object value : negativeValuesLimitCheck) {
             assertTrue(floatType.validateValue(value, "testObj", messages));
             assertEquals(messages.size(), 0, "value=" + value);
         }
