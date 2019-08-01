@@ -85,6 +85,8 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_STATUS;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
+
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAME_DELIMITER;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_NAME_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY;
@@ -92,8 +94,6 @@ import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
-import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
@@ -657,18 +657,6 @@ public final class GraphHelper {
             return string((AtlasEdge)element);
         }
         return element.toString();
-    }
-
-    public static void addToPropagatedClassificationAndTraitNames(AtlasVertex entityVertex, String classificationName) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Adding property {} = \"{}\" to vertex {}", PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName, string(entityVertex));
-        }
-
-        entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
-
-        String propClsNames = entityVertex.getProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, String.class);
-        propClsNames        = StringUtils.isEmpty(propClsNames)? classificationName : propClsNames + "|" + classificationName;
-        entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, propClsNames);
     }
 
     /**
@@ -1848,5 +1836,15 @@ public final class GraphHelper {
 
     public static boolean getDefaultRemovePropagations() {
         return removePropagations;
+    }
+
+    public static String getDelimitedClassificationNames(Collection<String> classificationNames) {
+        String ret = null;
+
+        if (CollectionUtils.isNotEmpty(classificationNames)) {
+            ret = CLASSIFICATION_NAME_DELIMITER + StringUtils.join(classificationNames, CLASSIFICATION_NAME_DELIMITER)
+                + CLASSIFICATION_NAME_DELIMITER;
+        }
+        return ret;
     }
 }

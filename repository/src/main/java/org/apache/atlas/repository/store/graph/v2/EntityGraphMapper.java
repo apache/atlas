@@ -81,11 +81,11 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PA
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graph.GraphHelper.DEFAULT_REMOVE_PROPAGATIONS_ON_ENTITY_DELETE;
 import static org.apache.atlas.repository.graph.GraphHelper.getCollectionElementsUsingRelationship;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getDefaultRemovePropagations;
+import static org.apache.atlas.repository.graph.GraphHelper.getDelimitedClassificationNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getMapElementsProperty;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
@@ -1512,7 +1512,7 @@ public class EntityGraphMapper {
                     LOG.debug("Adding classification [{}] to [{}] using edge label: [{}]", classificationName, entityType.getTypeName(), getTraitLabel(classificationName));
                 }
 
-                addClassificationAndTraitNames(entityVertex, classificationName);
+                addToClassificationNames(entityVertex, classificationName);
 
                 // add a new AtlasVertex for the struct or trait instance
                 AtlasVertex classificationVertex = createClassificationVertex(classification);
@@ -1676,47 +1676,67 @@ public class EntityGraphMapper {
 
         traitNames.remove(classificationName);
 
-        updateClassificationAndTraitNames(entityVertex, traitNames);
+        setClassificationNames(entityVertex, traitNames);
 
         updateModificationMetadata(entityVertex);
 
         for (Map.Entry<AtlasVertex, List<AtlasClassification>> entry : removedClassifications.entrySet()) {
             AtlasEntity entity = updateClassificationText(entry.getKey());
 
-
             List<AtlasClassification> deletedClassificationNames = entry.getValue();
             entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassificationNames);
         }
     }
 
-    public AtlasEntity updateClassificationText(AtlasVertex vertex) throws AtlasBaseException {
-        String                    guid                       = GraphHelper.getGuid(vertex);
-        AtlasEntity               entity                     = instanceConverter.getAndCacheEntity(guid);
+    private AtlasEntity updateClassificationText(AtlasVertex vertex) throws AtlasBaseException {
+        String guid        = GraphHelper.getGuid(vertex);
+        AtlasEntity entity = instanceConverter.getAndCacheEntity(guid);
 
         vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
         return entity;
     }
 
-    public void setClassificationNames(AtlasVertex vertex) {
-        List<String> clsNamesList     = getTraitNames(vertex, false);
-        List<String> propClsNamesList = getTraitNames(vertex, true);
-        String clsNames               = StringUtils.join(clsNamesList, CLASSIFICATION_NAME_DELIMITER);
-        String propClsNames           = StringUtils.join(propClsNamesList, CLASSIFICATION_NAME_DELIMITER);
+    public void updateClassificationTextAndNames(AtlasVertex vertex) throws AtlasBaseException {
+        String        guid         = GraphHelper.getGuid(vertex);
+        AtlasEntity   entity       = instanceConverter.getAndCacheEntity(guid);
 
-        vertex.setProperty(CLASSIFICATION_NAMES_KEY, clsNames);
-        vertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, propClsNames);
+        if (CollectionUtils.isEmpty(entity.getClassifications())) return;
+
+        List<String> classificationNames           = new ArrayList<>();
+        List<String> propagatedClassificationNames = new ArrayList<>();
+
+        for (AtlasClassification classification : entity.getClassifications()) {
+            if (isPropagatedClassification(classification, guid)) {
+                propagatedClassificationNames.add(classification.getTypeName());
+            } else {
+                classificationNames.add(classification.getTypeName());
+            }
+        }
+
+        vertex.setProperty(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(classificationNames));
+        vertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(propagatedClassificationNames));
+        vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
     }
 
-    private void addClassificationAndTraitNames(AtlasVertex entityVertex, String classificationName) {
+    private boolean isPropagatedClassification(AtlasClassification classification, String guid) {
+        String classificationEntityGuid = classification.getEntityGuid();
 
+        return StringUtils.isNotEmpty(classificationEntityGuid) && !StringUtils.equals(classificationEntityGuid, guid);
+    }
+
+    private void addToClassificationNames(AtlasVertex entityVertex, String classificationName) {
         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, TRAIT_NAMES_PROPERTY_KEY, classificationName);
 
         String clsNames = entityVertex.getProperty(CLASSIFICATION_NAMES_KEY, String.class);
-        clsNames = StringUtils.isEmpty(clsNames) ? classificationName : clsNames + CLASSIFICATION_NAME_DELIMITER + classificationName;
+
+        clsNames = StringUtils.isEmpty(clsNames) ? CLASSIFICATION_NAME_DELIMITER + classificationName : clsNames + classificationName;
+
+        clsNames = clsNames + CLASSIFICATION_NAME_DELIMITER;
+
         entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, clsNames);
     }
 
-    private void updateClassificationAndTraitNames(AtlasVertex entityVertex, List<String> traitNames) {
+    private void setClassificationNames(AtlasVertex entityVertex, List<String> traitNames) {
         if (entityVertex != null) {
             entityVertex.removeProperty(TRAIT_NAMES_PROPERTY_KEY);
             entityVertex.removeProperty(CLASSIFICATION_NAMES_KEY);
@@ -1725,7 +1745,11 @@ public class EntityGraphMapper {
                 AtlasGraphUtilsV2.addEncodedProperty(entityVertex, TRAIT_NAMES_PROPERTY_KEY, traitName);
             }
 
-            entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, StringUtils.join(traitNames, CLASSIFICATION_NAME_DELIMITER));
+            String clsNames = StringUtils.join(traitNames, CLASSIFICATION_NAME_DELIMITER);
+
+            clsNames = StringUtils.isEmpty(clsNames) ? clsNames : CLASSIFICATION_NAME_DELIMITER + clsNames + CLASSIFICATION_NAME_DELIMITER;
+
+            entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, clsNames);
         }
     }
 

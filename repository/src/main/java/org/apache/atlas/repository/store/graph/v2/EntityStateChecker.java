@@ -34,6 +34,7 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY;
+import static org.apache.atlas.repository.graph.GraphHelper.getDelimitedClassificationNames;
 
 @Component
 public final class EntityStateChecker {
@@ -266,10 +268,13 @@ public final class EntityStateChecker {
                     }
 
                     entityVertex.removeProperty(Constants.TRAIT_NAMES_PROPERTY_KEY);
+                    entityVertex.removeProperty(Constants.CLASSIFICATION_NAMES_KEY);
 
                     for (String classificationName : traitVertexNames) {
                         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, classificationName);
                     }
+
+                    entityVertex.setProperty(Constants.CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(traitVertexNames));
                 }
 
                 if (propagatedTraitNamesToAdd != null || propagatedTraitNamesToRemove != null) {
@@ -282,10 +287,13 @@ public final class EntityStateChecker {
                     }
 
                     entityVertex.removeProperty(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+                    entityVertex.removeProperty(Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY);
 
                     for (String classificationName : propagatedTraitVertexNames) {
                         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
                     }
+
+                    entityVertex.setProperty(Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY,getDelimitedClassificationNames(propagatedTraitVertexNames));
                 }
 
                 AtlasGraphUtilsV2.setEncodedProperty(entityVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
