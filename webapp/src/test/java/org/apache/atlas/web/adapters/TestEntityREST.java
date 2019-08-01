@@ -131,11 +131,12 @@ public class TestEntityREST {
         Assert.assertEquals(retrievedClassification, testClassification);
 
         // For ATLAS-3327 to test internal properties are added properly.
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(dbEntity.getGuid());
+        AtlasVertex vertex         = AtlasGraphUtilsV2.findByGuid(dbEntity.getGuid());
+        String expectedClsName     = Constants.CLASSIFICATION_NAME_DELIMITER + TestUtilsV2.CLASSIFICATION + Constants.CLASSIFICATION_NAME_DELIMITER ;
         String classificationNames = vertex.getProperty(Constants.CLASSIFICATION_NAMES_KEY, String.class);
 
         Assert.assertNotNull(classificationNames);
-        Assert.assertEquals(classificationNames, TestUtilsV2.CLASSIFICATION);
+        Assert.assertEquals(classificationNames, expectedClsName);
     }
 
     @Test(dependsOnMethods = "testGetEntityById")
@@ -167,8 +168,9 @@ public class TestEntityREST {
         }
 
         // For ATLAS-3327 to test internal properties are added properly.
-        String expectedClsNames = TestUtilsV2.CLASSIFICATION + "|" + TestUtilsV2.PHI;
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(dbEntity.getGuid());
+        String expectedClsNames    = Constants.CLASSIFICATION_NAME_DELIMITER + TestUtilsV2.CLASSIFICATION +
+                                     Constants.CLASSIFICATION_NAME_DELIMITER + TestUtilsV2.PHI + Constants.CLASSIFICATION_NAME_DELIMITER;
+        AtlasVertex vertex         = AtlasGraphUtilsV2.findByGuid(dbEntity.getGuid());
         String classificationNames = vertex.getProperty(Constants.CLASSIFICATION_NAMES_KEY, String.class);
 
         Assert.assertNotNull(classificationNames);
@@ -204,8 +206,8 @@ public class TestEntityREST {
 
         deleteClassification(dbEntity.getGuid(), TestUtilsV2.PHI);
 
-        expectedClsNames = TestUtilsV2.CLASSIFICATION;
-        vertex = AtlasGraphUtilsV2.findByGuid(dbEntity.getGuid());
+        expectedClsNames    = Constants.CLASSIFICATION_NAME_DELIMITER + TestUtilsV2.CLASSIFICATION + Constants.CLASSIFICATION_NAME_DELIMITER;
+        vertex              = AtlasGraphUtilsV2.findByGuid(dbEntity.getGuid());
         classificationNames = vertex.getProperty(Constants.CLASSIFICATION_NAMES_KEY, String.class);
 
         Assert.assertNotNull(classificationNames);
@@ -257,7 +259,7 @@ public class TestEntityREST {
 
         Assert.assertEquals(classifications, retrievedClassificationsList);
 
-        String expectedClsNames    = TestUtilsV2.CLASSIFICATION;
+        String expectedClsNames    = Constants.CLASSIFICATION_NAME_DELIMITER + TestUtilsV2.CLASSIFICATION + Constants.CLASSIFICATION_NAME_DELIMITER;
         AtlasVertex vertex         = AtlasGraphUtilsV2.findByGuid(dbEntity.getGuid());
         String classificationNames = vertex.getProperty(Constants.CLASSIFICATION_NAMES_KEY, String.class);
 
