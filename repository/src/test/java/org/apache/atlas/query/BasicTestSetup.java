@@ -77,7 +77,7 @@ public abstract class BasicTestSetup {
             loadModelFromJson("0000-Area0/0010-base_model.json", typeDefStore, typeRegistry);
             baseLoaded = true;
         } catch (IOException | AtlasBaseException e) {
-            fail("Base model setup is required for test to run");
+            fail("Base model setup is required for test to run!");
         }
     }
 
@@ -89,7 +89,7 @@ public abstract class BasicTestSetup {
         try {
             loadModelFromJson("1000-Hadoop/1030-hive_model.json", typeDefStore, typeRegistry);
         } catch (IOException | AtlasBaseException e) {
-            fail("Hive model setup is required for test to run");
+            fail("Hive model setup is required for test to run!");
         }
 
         AtlasEntity.AtlasEntitiesWithExtInfo hiveTestEntities = hiveTestEntities();
@@ -97,7 +97,7 @@ public abstract class BasicTestSetup {
         try {
             entityStore.createOrUpdate(new AtlasEntityStream(hiveTestEntities), false);
         } catch (AtlasBaseException e) {
-            fail("Hive instance setup is needed for test to run");
+            fail("Hive entities need to be created for test to run!");
         }
     }
 
@@ -356,7 +356,7 @@ public abstract class BasicTestSetup {
         table.setAttribute("temporary", false);
         table.setAttribute("createTime", new Date(System.currentTimeMillis()));
         table.setAttribute("lastAccessTime", System.currentTimeMillis());
-        table.setAttribute("retention", System.currentTimeMillis());
+        table.setAttribute("retention", 5d);
 
         table.setAttribute("db", getAtlasObjectId(db));
         table.setAttribute("sd", getAtlasObjectId(sd));
