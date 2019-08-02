@@ -302,7 +302,8 @@ public abstract class BaseResourceIT {
                         TypesUtil.createUniqueRequiredAttrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
                         TypesUtil.createRequiredAttrDef(DESCRIPTION, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
                         attrDef("locationUri", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
-                        attrDef("owner", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_INT),
+                        attrDef("owner", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
                         new AttributeDefinition("tables", AtlasBaseTypeDef.getArrayTypeName(HIVE_TABLE_TYPE),
                                 Multiplicity.OPTIONAL, false, "db")
                 );
@@ -333,7 +334,8 @@ public abstract class BaseResourceIT {
 
         ClassTypeDefinition loadProcessClsDef = TypesUtil
                 .createClassTypeDef(HIVE_PROCESS_TYPE, null, Collections.singleton("Process"),
-                        attrDef("userName", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("startTime", AtlasBaseTypeDef.ATLAS_TYPE_INT),
+                        attrDef("userName", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        attrDef("startTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
                         attrDef("endTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
                         attrDef("queryText", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED),
                         attrDef("queryPlan", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED),
@@ -372,8 +374,8 @@ public abstract class BaseResourceIT {
                 AtlasTypeUtil.createRequiredAttrDef(DESCRIPTION, "string"),
                 AtlasTypeUtil.createOptionalAttrDef("locationUri", "string"),
                 AtlasTypeUtil.createOptionalAttrDef("owner", "string"),
-                AtlasTypeUtil.createOptionalAttrDef("createTime", "int"),
-                AtlasTypeUtil.createOptionalAttrDef("createTime", "int"),
+                AtlasTypeUtil.createOptionalAttrDef("createTime", "long"),
+
                 //there is a serializ
                 new AtlasAttributeDef("randomTable",
                         AtlasBaseTypeDef.getArrayTypeName(HIVE_TABLE_TYPE_V2),
@@ -421,7 +423,7 @@ public abstract class BaseResourceIT {
                 .createClassTypeDef(HIVE_PROCESS_TYPE_V2,
                         Collections.singleton("Process"),
                         AtlasTypeUtil.createOptionalAttrDef("userName", "string"),
-                        AtlasTypeUtil.createOptionalAttrDef("startTime", "int"),
+                        AtlasTypeUtil.createOptionalAttrDef("startTime", "long"),
                         AtlasTypeUtil.createOptionalAttrDef("endTime", "long"),
                         AtlasTypeUtil.createRequiredAttrDef("queryText", "string"),
                         AtlasTypeUtil.createRequiredAttrDef("queryPlan", "string"),
