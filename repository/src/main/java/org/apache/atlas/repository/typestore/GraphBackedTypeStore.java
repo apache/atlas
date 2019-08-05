@@ -255,34 +255,38 @@ public class GraphBackedTypeStore implements ITypeStore {
             String typeName = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, String.class);
             String typeDescription = AtlasGraphUtilsV1.getEncodedProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, String.class);
             LOG.info("Restoring type {}.{}.{}", typeCategory, typeName, typeDescription);
-            switch (typeCategory) {
-            case ENUM:
-                enums.add(getEnumType(vertex));
-                break;
 
-            case STRUCT:
-                AttributeDefinition[] attributes = getAttributes(vertex, typeName);
-                structs.add(new StructTypeDefinition(typeName, typeDescription, attributes));
-                break;
+            if(typeCategory != null && typeName != null ) {
 
-            case CLASS:
-                ImmutableSet<String> superTypes = getSuperTypes(vertex);
-                attributes = getAttributes(vertex, typeName);
-                classTypes.add(new HierarchicalTypeDefinition(ClassType.class, typeName, typeDescription, superTypes, attributes));
-                break;
+                switch (typeCategory) {
+                    case ENUM:
+                        enums.add(getEnumType(vertex));
+                        break;
 
-            case TRAIT:
-                superTypes = getSuperTypes(vertex);
-                attributes = getAttributes(vertex, typeName);
-                traits.add(new HierarchicalTypeDefinition(TraitType.class, typeName, typeDescription, superTypes, attributes));
-                break;
+                    case STRUCT:
+                        AttributeDefinition[] attributes = getAttributes(vertex, typeName);
+                        structs.add(new StructTypeDefinition(typeName, typeDescription, attributes));
+                        break;
 
-            case RELATIONSHIP:
-                // v1 typesystem is not notified on new relation type
-                break;
+                    case CLASS:
+                        ImmutableSet<String> superTypes = getSuperTypes(vertex);
+                        attributes = getAttributes(vertex, typeName);
+                        classTypes.add(new HierarchicalTypeDefinition(ClassType.class, typeName, typeDescription, superTypes, attributes));
+                        break;
 
-            default:
-                throw new IllegalArgumentException("Unhandled type category " + typeCategory);
+                    case TRAIT:
+                        superTypes = getSuperTypes(vertex);
+                        attributes = getAttributes(vertex, typeName);
+                        traits.add(new HierarchicalTypeDefinition(TraitType.class, typeName, typeDescription, superTypes, attributes));
+                        break;
+
+                    case RELATIONSHIP:
+                        // v1 typesystem is not notified on new relation type
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Unhandled type category " + typeCategory);
+                }
             }
         }
         return TypesUtil.getTypesDef(enums.build(), structs.build(), traits.build(), classTypes.build());
