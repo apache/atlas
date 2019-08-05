@@ -85,7 +85,7 @@ public class NotificationHookConsumerKafkaTest {
     private AtlasMetricsUtil metricsUtil;
 
     @BeforeTest
-    public void setup() throws AtlasException, InterruptedException, AtlasBaseException {
+    public void setup() throws Exception {
         MockitoAnnotations.initMocks(this);
 
         AtlasType                mockType   = mock(AtlasType.class);
@@ -95,7 +95,7 @@ public class NotificationHookConsumerKafkaTest {
 
         when(instanceConverter.toAtlasEntities(anyList())).thenReturn(mockEntity);
 
-        initNotificationService();
+        startNotificationServicesWithRetry();
     }
 
     @AfterTest
@@ -226,6 +226,31 @@ public class NotificationHookConsumerKafkaTest {
 
     private void produceMessage(HookNotification message) throws NotificationException {
         kafkaNotification.send(NotificationInterface.NotificationType.HOOK, message);
+    }
+
+    // retry starting notification services every 2 mins for total of 30 mins
+    // running parallel tests will keep the notification service ports occupied, hence retry
+    void startNotificationServicesWithRetry() throws Exception {
+        long totalTime = 0;
+        long sleepTime = 2 * 60 * 1000; // 2 mins
+        long maxTime   = 30 * 60 * 1000; // 30 mins
+
+        while (true) {
+            try {
+                initNotificationService();
+                break;
+            } catch (Exception ex) {
+                cleanUpNotificationService();
+
+                if (totalTime >= maxTime) {
+                    throw ex;
+                }
+
+                Thread.sleep(sleepTime);
+
+                totalTime = totalTime + sleepTime;
+            }
+        }
     }
 
     void initNotificationService() throws AtlasException, InterruptedException {
