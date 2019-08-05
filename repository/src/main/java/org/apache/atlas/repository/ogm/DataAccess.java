@@ -72,10 +72,6 @@ public class DataAccess {
             AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
             EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
 
-            if (noEntityMutation(entityMutationResponse)) {
-                throw new AtlasBaseException(AtlasErrorCode.DATA_ACCESS_SAVE_FAILED, obj.toString());
-            }
-
             // Update GUID assignment for newly created entity
             if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {
                 String assignedGuid = entityMutationResponse.getGuidAssignments().get(obj.getGuid());
@@ -263,8 +259,5 @@ public class DataAccess {
         }
     }
 
-    // Helper functions
-    private boolean noEntityMutation(EntityMutationResponse er) {
-        return er == null || (CollectionUtils.isEmpty(er.getCreatedEntities()) && CollectionUtils.isEmpty(er.getUpdatedEntities()));
-    }
+
 }
