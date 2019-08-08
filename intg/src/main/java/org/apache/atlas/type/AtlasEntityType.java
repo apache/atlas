@@ -687,6 +687,9 @@ public class AtlasEntityType extends AtlasStructType {
             }
         }
 
+        //reorder dynAttributes in a topological sort
+        dynAttributes = reorderDynAttributes();
+
         for (List<TemplateToken> parsedTemplate : parsedTemplates.values()) {
             for (TemplateToken token : parsedTemplate) {
                 // If token is an instance of AttributeToken means that the attribute is of this entity type
@@ -999,5 +1002,58 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         return ret;
+    }
+
+    private List<AtlasAttribute> reorderDynAttributes() {
+        Map<AtlasAttribute, List<AtlasAttribute>> adj = createTokenAttributesMap();
+
+        return topologicalSort(adj);
+    }
+
+    private List<AtlasAttribute> topologicalSort(Map<AtlasAttribute, List<AtlasAttribute>> adj){
+        List<AtlasAttribute> order   = new ArrayList<>();
+        Set<AtlasAttribute>  visited = new HashSet<>();
+
+        for (AtlasAttribute attribute : adj.keySet()) {
+            visitAttribute(attribute, visited, order, adj);
+        }
+
+        Collections.reverse(order);
+
+        return order;
+    }
+
+    private void visitAttribute(AtlasAttribute attribute, Set<AtlasAttribute> visited, List<AtlasAttribute> order, Map<AtlasAttribute, List<AtlasAttribute>> adj) {
+        if (!visited.contains(attribute)) {
+            visited.add(attribute);
+
+            for (AtlasAttribute neighbor : adj.get(attribute)) {
+                visitAttribute(neighbor, visited, order, adj);
+            }
+
+            order.add(attribute);
+        }
+    }
+
+    private Map<AtlasAttribute, List<AtlasAttribute>> createTokenAttributesMap() {
+        Map<AtlasAttribute, List<AtlasAttribute>> adj = new HashMap<>();
+
+        for (AtlasAttribute attribute : dynAttributes) {
+            adj.put(attribute, new ArrayList<>());
+        }
+
+        for (AtlasAttribute attribute : adj.keySet()) {
+            for (TemplateToken token : parsedTemplates.get(attribute.getName())) {
+                if (token instanceof AttributeToken) {
+                    AtlasAttribute tokenAttribute = getAttribute(token.getValue());
+
+                    if (adj.containsKey(tokenAttribute)) {
+                        adj.get(tokenAttribute).add(attribute);
+                    }
+                }
+            }
+        }
+
+        return adj;
     }
 }

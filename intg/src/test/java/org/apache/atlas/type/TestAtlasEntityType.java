@@ -38,12 +38,14 @@ import static org.testng.Assert.*;
 
 
 public class TestAtlasEntityType {
-    private static final String TYPE_TABLE   = "my_table";
-    private static final String TYPE_COLUMN  = "my_column";
-    private static final String ATTR_TABLE   = "table";
-    private static final String ATTR_COLUMNS = "columns";
-    private static final String ATTR_OWNER   = "owner";
-    private static final String ATTR_NAME    = "name";
+    private static final String TYPE_TABLE       = "my_table";
+    private static final String TYPE_COLUMN      = "my_column";
+    private static final String ATTR_TABLE       = "table";
+    private static final String ATTR_COLUMNS     = "columns";
+    private static final String ATTR_OWNER       = "owner";
+    private static final String ATTR_NAME        = "name";
+    private static final String ATTR_DESCRIPTION = "description";
+    private static final String ATTR_LOCATION    = "location";
 
     private final AtlasEntityType entityType;
     private final List<Object>    validValues   = new ArrayList<>();
@@ -187,6 +189,38 @@ public class TestAtlasEntityType {
             assertFalse(typeTable.getAttribute(ATTR_NAME).getIsDynAttribute());
             assertFalse(typeTable.getAttribute(ATTR_OWNER).getIsDynAttributeEvalTrigger());
             assertTrue(typeTable.getAttribute(ATTR_OWNER).getIsDynAttribute());
+
+            commit = true;
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
+        }
+        assertNull(failureMsg, "failed to create types " + TYPE_TABLE + " and " + TYPE_COLUMN);
+    }
+
+    @Test
+    public void testReorderDynAttributes() {
+        AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
+        AtlasTransientTypeRegistry ttr          = null;
+        boolean                    commit       = false;
+        List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
+        String                     failureMsg   = null;
+
+        entityDefs.add(createTableEntityDefForTopSort());
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate();
+
+            ttr.addTypes(entityDefs);
+            //options are read in the table,
+            AtlasEntityType typeTable  = ttr.getEntityTypeByName(TYPE_TABLE);
+
+            // Expect attributes in this order: ATTR_DESCRIPTION, ATTR_OWNER, ATTR_NAME, ATTR_LOCATION
+            assertEquals(typeTable.getDynEvalAttributes().get(0).getName(), ATTR_DESCRIPTION);
+            assertEquals(typeTable.getDynEvalAttributes().get(1).getName(), ATTR_OWNER);
+            assertEquals(typeTable.getDynEvalAttributes().get(2).getName(), ATTR_NAME);
+            assertEquals(typeTable.getDynEvalAttributes().get(3).getName(), ATTR_LOCATION);
 
             commit = true;
         } catch (AtlasBaseException excp) {
@@ -365,6 +399,42 @@ public class TestAtlasEntityType {
         String             value   = "{" + ATTR_NAME + "}";
 
         options.put(key,value);
+
+        table.setOptions(options);
+
+        return table;
+    }
+
+    private AtlasEntityDef createTableEntityDefForTopSort() {
+        AtlasEntityDef    table           = new AtlasEntityDef(TYPE_TABLE);
+        AtlasAttributeDef attrName        = new AtlasAttributeDef(ATTR_NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        AtlasAttributeDef attrOwner       = new AtlasAttributeDef(ATTR_OWNER, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        AtlasAttributeDef attrDescription = new AtlasAttributeDef(ATTR_DESCRIPTION, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        AtlasAttributeDef attrLocation    = new AtlasAttributeDef(ATTR_LOCATION, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+
+        table.addAttribute(attrName);
+        table.addAttribute(attrOwner);
+        table.addAttribute(attrDescription);
+        table.addAttribute(attrLocation);
+
+        Map<String,String> options = new HashMap<>();
+
+        String key1   = "dynAttribute:" + ATTR_OWNER;
+        String value1 = "{" + ATTR_DESCRIPTION + "}";
+
+        String key2   = "dynAttribute:" + ATTR_DESCRIPTION;
+        String value2 = "template";
+
+        String key3   = "dynAttribute:" + ATTR_NAME;
+        String value3 = "{" + ATTR_DESCRIPTION + "}@{" + ATTR_OWNER + "}";
+
+        String key4   = "dynAttribute:" + ATTR_LOCATION;
+        String value4 = "{" + ATTR_NAME + "}@{" + ATTR_OWNER + "}";
+
+        options.put(key1, value1);
+        options.put(key2, value2);
+        options.put(key3, value3);
+        options.put(key4, value4);
 
         table.setOptions(options);
 
