@@ -33,7 +33,8 @@ define(['require',
             backButton: "[data-id='backButton']",
             menuHamburger: "[data-id='menuHamburger']",
             globalSearch: "[data-id='globalSearch']",
-            clearGlobalSearch: "[data-id='clearGlobalSearch']"
+            clearGlobalSearch: "[data-id='clearGlobalSearch']",
+            signOut: "[data-id='signOut']"
         },
         events: function() {
             var events = {};
@@ -67,6 +68,10 @@ define(['require',
                     }
                 });
                 $('body').toggleClass("full-screen");
+            };
+            events['click ' + this.ui.signOut] = function() {
+                var path = Utils.getBaseUrl(window.location.pathname);
+                window.location = path + "/logout.html";
             };
             return events;
 
