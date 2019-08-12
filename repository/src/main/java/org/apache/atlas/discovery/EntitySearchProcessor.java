@@ -311,4 +311,9 @@ public class EntitySearchProcessor extends SearchProcessor {
             LOG.debug("<== EntitySearchProcessor.filter(): ret.size()={}", entityVertices.size());
         }
     }
+
+    @Override
+    public long getResultCount() {
+        return (indexQuery != null) ? indexQuery.vertexTotals() : -1;
+    }
 }

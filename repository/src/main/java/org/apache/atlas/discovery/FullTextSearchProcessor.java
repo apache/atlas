@@ -166,4 +166,9 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
         return ret;
     }
+
+    @Override
+    public long getResultCount() {
+        return indexQuery.vertexTotals();
+    }
 }
