@@ -128,6 +128,7 @@ public abstract class SearchProcessor {
     }
 
     public abstract List<AtlasVertex> execute();
+    public abstract long getResultCount();
 
     protected int collectResultVertices(final List<AtlasVertex> ret, final int startIdx, final int limit, int resultIdx, final List<AtlasVertex> entityVertices) {
         for (AtlasVertex entityVertex : entityVertices) {

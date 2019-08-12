@@ -110,4 +110,9 @@ public class TermSearchProcessor extends SearchProcessor {
             LOG.debug("<== TermSearchProcessor.filter(): ret.size()={}", entityVertices.size());
         }
     }
+
+    @Override
+    public long getResultCount() {
+        return -1;
+    }
 }

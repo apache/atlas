@@ -52,6 +52,7 @@ public class AtlasSearchResult implements Serializable {
     private AttributeSearchResult          attributes;
     private List<AtlasFullTextResult>      fullTextResult;
     private Map<String, AtlasEntityHeader> referredEntities;
+    private long                           approximateCount = -1;
 
     public AtlasSearchResult() {}
 
@@ -126,6 +127,10 @@ public class AtlasSearchResult implements Serializable {
         this.referredEntities = referredEntities;
     }
 
+    public long getApproximateCount() { return approximateCount; }
+
+    public void setApproximateCount(long approximateCount) { this.approximateCount = approximateCount; }
+
     @Override
     public int hashCode() { return Objects.hash(queryType, searchParameters, queryText, type, classification, entities, attributes, fullTextResult, referredEntities); }
 
@@ -184,6 +189,7 @@ public class AtlasSearchResult implements Serializable {
                 ", attributes=" + attributes +
                 ", fullTextResult=" + fullTextResult +
                 ", referredEntities=" + referredEntities +
+                ", approximateCount=" + approximateCount +
                 '}';
     }
 
