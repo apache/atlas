@@ -218,7 +218,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
 
         assertNull(updatedSimpleEntity.getAttribute("stringAtrr"));
         assertEquals(updatedSimpleEntity.getAttribute("mapOfStrings"), Collections.emptyMap());
-        assertNull(updatedSimpleEntity.getAttribute("arrayOfStrings"));
+        assertEquals(updatedSimpleEntity.getAttribute("arrayOfStrings"), Collections.emptyList());
 
         updatedSimpleEntity.setAttribute("stringAtrr", "");
         updatedSimpleEntity.setAttribute("mapOfStrings", null);
