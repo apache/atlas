@@ -36,10 +36,7 @@ import org.apache.hadoop.hive.ql.metadata.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class AlterTableRename extends BaseHiveEvent {
     private static final Logger LOG = LoggerFactory.getLogger(AlterTableRename.class);
@@ -123,9 +120,6 @@ public class AlterTableRename extends BaseHiveEvent {
             return;
         }
 
-        // first update with oldTable info, so that the table will be created if it is not present in Atlas
-        ret.add(new EntityUpdateRequestV2(getUserName(), new AtlasEntitiesWithExtInfo(oldTableEntity)));
-
         // update qualifiedName for all columns, partitionKeys, storageDesc
         String renamedTableQualifiedName = (String) renamedTableEntity.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
@@ -135,13 +129,19 @@ public class AlterTableRename extends BaseHiveEvent {
 
         // set previous name as the alias
         renamedTableEntity.getEntity().setAttribute(ATTRIBUTE_ALIASES, Collections.singletonList(oldTable.getTableName()));
-        renamedTableEntity.getEntity().setRelationshipAttributes(null);
+
+        // make a copy of renamedTableEntity to send as partial-update with no relationship attributes
+        AtlasEntity renamedTableEntityForPartialUpdate = new AtlasEntity(renamedTableEntity.getEntity());
+        renamedTableEntityForPartialUpdate.setRelationshipAttributes(null);
 
         String        oldTableQualifiedName = (String) oldTableEntity.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME);
         AtlasObjectId oldTableId            = new AtlasObjectId(oldTableEntity.getEntity().getTypeName(), ATTRIBUTE_QUALIFIED_NAME, oldTableQualifiedName);
 
         // update qualifiedName and other attributes (like params - which include lastModifiedTime, lastModifiedBy) of the table
-        ret.add(new EntityPartialUpdateRequestV2(getUserName(), oldTableId, renamedTableEntity));
+        ret.add(new EntityPartialUpdateRequestV2(getUserName(), oldTableId, new AtlasEntityWithExtInfo(renamedTableEntityForPartialUpdate)));
+
+        // to handle cases where Atlas didn't have the oldTable, send a full update
+        ret.add(new EntityUpdateRequestV2(getUserName(), new AtlasEntitiesWithExtInfo(renamedTableEntity)));
 
         // partial update relationship attribute ddl
         if (!context.isMetastoreHook()) {
