@@ -186,6 +186,10 @@ atlas.webserver.keepalivetimesecs=60
 
 # Queue size for the requests(when max threads are busy) for the atlas web server
 atlas.webserver.queuesize=100
+
+# Set to the property to true to enable warn on no relationships defined between entities on a particular attribute
+# Not having relationships defined can lead to performance loss while adding new entities
+atlas.relationships.warnOnNoRelationships=false
 </verbatim>
 
 ---+++ Recording performance metrics
