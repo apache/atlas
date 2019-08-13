@@ -110,6 +110,7 @@ public class EntityGraphMapper {
 
     private static final String SOFT_REF_FORMAT               = "%s:%s";
     private static final int INDEXED_STR_SAFE_LEN             = AtlasConfiguration.GRAPHSTORE_INDEXED_STRING_SAFE_LENGTH.getInt();
+    private static final boolean WARN_ON_NO_RELATIONSHIP       = AtlasConfiguration.RELATIONSHIP_WARN_NO_RELATIONSHIPS.getBoolean();
     private static final String CLASSIFICATION_NAME_DELIMITER = "|";
 
     private final GraphHelper               graphHelper = GraphHelper.getInstance();
@@ -948,9 +949,9 @@ public class EntityGraphMapper {
                 }
             } else {
                 // use legacy way to create/update edges
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("No RelationshipDef defined between {} and {} on attribute: {}",  getTypeName(entityVertex),
-                               getTypeName(attributeVertex), attributeName);
+                if (WARN_ON_NO_RELATIONSHIP || LOG.isDebugEnabled()) {
+                    LOG.warn("No RelationshipDef defined between {} and {} on attribute: {}. This can lead to severe performance degradation.",
+                             getTypeName(entityVertex), getTypeName(attributeVertex), attributeName);
                 }
 
                 ret = mapObjectIdValue(ctx, context);
