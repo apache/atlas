@@ -839,7 +839,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
 
                 if (entitiesToSkipUpdate != null) {
+                    // remove entitiesToSkipUpdate from EntityMutationContext
                     context.getUpdatedEntities().removeAll(entitiesToSkipUpdate);
+
+                    // remove entitiesToSkipUpdate from RequestContext
+                    for (AtlasEntity entity : entitiesToSkipUpdate) {
+                        RequestContext.get().removeEntityUpdate(entity);
+                    }
                 }
 
                 // Check if authorized to update entities

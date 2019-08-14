@@ -189,6 +189,12 @@ public class RequestContext {
         }
     }
 
+    public void removeEntityUpdate(AtlasEntity entity) {
+        if (entity != null && entity.getGuid() != null) {
+            updatedEntities.remove(entity.getGuid());
+        }
+    }
+
     public void recordEntityDelete(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null) {
             deletedEntities.put(entity.getGuid(), entity);
