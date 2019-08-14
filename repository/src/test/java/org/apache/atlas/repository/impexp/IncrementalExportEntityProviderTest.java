@@ -23,7 +23,6 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
-import org.apache.atlas.repository.store.graph.v1.EntityGraphRetriever;
 import org.apache.atlas.repository.util.UniqueList;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -64,7 +63,7 @@ public class IncrementalExportEntityProviderTest extends ExportImportTestBase {
         verifyCreatedEntities(entityStore, entityGuids, 2);
 
         gremlinScriptEngine = atlasGraph.getGremlinScriptEngine();
-        incrementalExportEntityProvider = new IncrementalExportEntityProvider(atlasGraph, gremlinScriptEngine);
+        incrementalExportEntityProvider = new IncrementalExportEntityProvider(atlasGraph);
     }
 
     @AfterClass

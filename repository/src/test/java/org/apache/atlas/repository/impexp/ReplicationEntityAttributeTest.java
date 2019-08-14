@@ -32,7 +32,6 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
-import org.apache.atlas.repository.store.graph.v1.EntityGraphMapper;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
@@ -142,6 +141,14 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
                 AuditsWriter.getServerNameFromFullName(REPLICATED_FROM_CLUSTER_NAME),
                 REPLICATED_FROM_CLUSTER_NAME, importResult);
         assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_FROM);
+    }
+
+    @Test
+    public void replKeyGuidFinder() {
+        String expectedDBQualifiedName = "stocks_base@cl1";
+
+        assertEquals(AuditsWriter.ReplKeyGuidFinder.extractHiveDBQualifiedName("stocks_base.stocks_daily.volume@cl1"), expectedDBQualifiedName);
+        assertEquals(AuditsWriter.ReplKeyGuidFinder.extractHiveDBQualifiedName("stocks_base.stocks_daily@cl1"), expectedDBQualifiedName);
     }
 
     private void assertReplicationAttribute(String attrNameReplication) throws AtlasBaseException {

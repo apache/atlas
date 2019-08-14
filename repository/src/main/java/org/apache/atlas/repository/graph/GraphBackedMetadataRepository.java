@@ -138,7 +138,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     public CreateUpdateEntitiesResult createEntities(ITypedReferenceableInstance... entities) throws RepositoryException,
                                                                                                      EntityExistsException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("adding entities={}", entities);
+            for(ITypedReferenceableInstance instance : entities){
+                LOG.debug("adding entity {}", instance);
+            }
         }
 
         try {
@@ -412,7 +414,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @GraphTransaction
     public CreateUpdateEntitiesResult updateEntities(ITypedReferenceableInstance... entitiesUpdated) throws RepositoryException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("updating entity {}", entitiesUpdated);
+            for(ITypedReferenceableInstance instance : entitiesUpdated){
+                LOG.debug("updating entity {}", instance);
+            }
         }
 
         try {

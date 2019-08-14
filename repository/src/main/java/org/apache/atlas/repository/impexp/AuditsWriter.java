@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.impexp;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
@@ -28,8 +29,12 @@ import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +42,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.inject.Inject;
+import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -45,6 +51,8 @@ public class AuditsWriter {
     private static final String CLUSTER_NAME_DEFAULT = "default";
     private static final String DC_SERVER_NAME_SEPARATOR = "$";
 
+    private AtlasTypeRegistry typeRegistry;
+    private AtlasEntityStore entityStore;
     private AtlasServerService atlasServerService;
     private ExportImportAuditService auditService;
 
@@ -52,7 +60,10 @@ public class AuditsWriter {
     private ImportAudits auditForImport = new ImportAudits();
 
     @Inject
-    public AuditsWriter(AtlasServerService atlasServerService, ExportImportAuditService auditService) {
+    public AuditsWriter(AtlasTypeRegistry typeRegistry, AtlasEntityStore entityStore,
+                        AtlasServerService atlasServerService, ExportImportAuditService auditService) {
+        this.typeRegistry = typeRegistry;
+        this.entityStore = entityStore;
         this.atlasServerService = atlasServerService;
         this.auditService = auditService;
     }
@@ -78,7 +89,10 @@ public class AuditsWriter {
             return;
         }
 
-        AtlasServer server = saveServer(serverName, serverFullName, exportedGuids.get(0), lastModifiedTimestamp);
+        String candidateGuid = exportedGuids.get(0);
+        String replGuidKey = ReplKeyGuidFinder.get(typeRegistry, entityStore, candidateGuid);
+        AtlasServer server = saveServer(serverName, serverFullName, replGuidKey, lastModifiedTimestamp);
+
         atlasServerService.updateEntitiesWithServer(server, exportedGuids, attrNameReplicated);
     }
 
@@ -122,6 +136,51 @@ public class AuditsWriter {
 
     private void saveCurrentServer() throws AtlasBaseException {
         atlasServerService.getCreateAtlasServer(getCurrentClusterName(), getCurrentClusterName());
+    }
+
+    static class ReplKeyGuidFinder {
+        private static final String ENTITY_TYPE_HIVE_DB = "hive_db";
+        private static final String ENTITY_TYPE_HIVE_TABLE = "hive_table";
+        private static final String ENTITY_TYPE_HIVE_COLUMN = "hive_column";
+        private static final String QUALIFIED_NAME = "qualifiedName";
+
+        public static String get(AtlasTypeRegistry typeRegistry, AtlasEntityStore entityStore, String candidateGuid) {
+            String guid = null;
+            try {
+                guid = getParentEntityGuid(typeRegistry, entityStore, candidateGuid);
+            } catch (AtlasBaseException e) {
+                LOG.error("Error fetching parent guid for child entity: {}", candidateGuid);
+            }
+
+            if (StringUtils.isEmpty(guid)) {
+                guid = candidateGuid;
+            }
+
+            return guid;
+        }
+
+        private static String getParentEntityGuid(AtlasTypeRegistry typeRegistry, AtlasEntityStore entityStore, String defaultGuid) throws AtlasBaseException {
+            AtlasEntity.AtlasEntityWithExtInfo extInfo = entityStore.getById(defaultGuid);
+            if (extInfo == null || extInfo.getEntity() == null) {
+                return null;
+            }
+
+            String typeName = extInfo.getEntity().getTypeName();
+            if (!typeName.equals(ENTITY_TYPE_HIVE_TABLE) && !typeName.equals(ENTITY_TYPE_HIVE_COLUMN)) {
+                return null;
+            }
+
+            Object hiveDBQualifiedName = extractHiveDBQualifiedName((String) extInfo.getEntity().getAttribute(QUALIFIED_NAME));
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ENTITY_TYPE_HIVE_DB);
+            return entityStore.getGuidByUniqueAttributes(entityType, Collections.singletonMap(QUALIFIED_NAME, hiveDBQualifiedName));
+        }
+
+        @VisibleForTesting
+        static String extractHiveDBQualifiedName(String qualifiedName) {
+            return String.format("%s@%s",
+                    StringUtils.substringBefore(qualifiedName, "."),
+                    StringUtils.substringAfter(qualifiedName, "@"));
+        }
     }
 
     private class ExportAudits {

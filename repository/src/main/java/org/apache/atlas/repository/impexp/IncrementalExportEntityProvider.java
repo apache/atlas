@@ -18,6 +18,8 @@
 
 package org.apache.atlas.repository.impexp;
 
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.util.UniqueList;
 import org.slf4j.Logger;
@@ -32,7 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class IncrementalExportEntityProvider {
+public class IncrementalExportEntityProvider implements ExtractStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalExportEntityProvider.class);
 
     private static final String QUERY_PARAMETER_START_GUID = "startGuid";
@@ -45,15 +47,35 @@ public class IncrementalExportEntityProvider {
     private static final String QUERY_SD = QUERY_TABLE + ".out('__hive_table.sd')";
     private static final String QUERY_COLUMN = QUERY_TABLE + ".out('__hive_table.columns')";
     private static final String TRANSFORM_CLAUSE = ".transform{[__guid:it.__guid]}.toList()";
-
     private static final String TIMESTAMP_CLAUSE = ".has('__modificationTimestamp', T.gt, modificationTimestamp)";
+
+    private static final String QUERY_TABLE_DB = QUERY_DB + ".out('__hive_table.db')";
+    private static final String QUERY_TABLE_SD = QUERY_DB + ".out('__hive_table.sd')";
+    private static final String QUERY_TABLE_COLUMNS = QUERY_DB + ".out('__hive_table.columns')";
 
     private ScriptEngine scriptEngine;
 
     @Inject
-    public IncrementalExportEntityProvider(AtlasGraph atlasGraph, ScriptEngine scriptEngine) {
+    public IncrementalExportEntityProvider(AtlasGraph atlasGraph) {
         this.atlasGraph = atlasGraph;
-        this.scriptEngine = scriptEngine;
+        try {
+            this.scriptEngine = atlasGraph.getGremlinScriptEngine();
+        } catch (AtlasBaseException e) {
+            LOG.error("Error instantiating script engine.", e);
+        }
+    }
+
+    @Override
+    public void fullFetch(AtlasEntity entity, ExportService.ExportContext context) {
+        populate(entity.getGuid(), context.changeMarker, context.guidsToProcess);
+    }
+
+    @Override
+    public void connectedFetch(AtlasEntity entity, ExportService.ExportContext context) {
+        //starting entity is hive_table
+        context.guidsToProcess.addAll(fetchGuids(entity.getGuid(), QUERY_TABLE_DB, context.changeMarker));
+        context.guidsToProcess.addAll(fetchGuids(entity.getGuid(), QUERY_TABLE_SD, context.changeMarker));
+        context.guidsToProcess.addAll(fetchGuids(entity.getGuid(), QUERY_TABLE_COLUMNS, context.changeMarker));
     }
 
     public void populate(String dbEntityGuid, long timeStamp, UniqueList<String> guidsToProcess) {
@@ -99,7 +121,7 @@ public class IncrementalExportEntityProvider {
             }
 
             for (HashMap<String, Object> item : result) {
-                guids.add((String) item.get(ExportService.PROPERTY_GUID));
+                guids.add((String) item.get(EntitiesExtractor.PROPERTY_GUID));
             }
 
             return guids;
@@ -107,6 +129,13 @@ public class IncrementalExportEntityProvider {
         } catch (ScriptException e) {
             LOG.error("error executing query: {}: bindings: {}", query, bindings, e);
             return null;
+        }
+    }
+
+    @Override
+    public void close() {
+        if (scriptEngine != null) {
+            atlasGraph.releaseGremlinScriptEngine(scriptEngine);
         }
     }
 }
