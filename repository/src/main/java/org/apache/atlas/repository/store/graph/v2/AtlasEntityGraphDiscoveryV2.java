@@ -402,6 +402,10 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     private void processDynamicAttributes(AtlasEntity entity) throws AtlasBaseException {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
+        if (entityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+        }
+
         for (AtlasAttribute attribute : entityType.getDynEvalAttributes()) {
             String              attributeName   = attribute.getName();
             List<TemplateToken> tokens          = entityType.getParsedTemplates().get(attributeName);
