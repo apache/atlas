@@ -424,6 +424,10 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                                .append(entry.getValue().intValue());
         }
 
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("generateSearchWeightString(fieldsCount={}): ret={}", indexFieldName2SearchWeightMap.size(), searchWeightBuilder.toString());
+        }
+
         return searchWeightBuilder.toString();
     }
 
@@ -438,6 +442,10 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             if(iterator.hasNext()) {
                 ret.append(", ");
             }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("generateSuggestionsString(fieldsCount={}): ret={}", suggestionIndexFieldNames.size(), ret.toString());
         }
 
         return ret.toString();
