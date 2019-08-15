@@ -386,26 +386,35 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     private void resolveIndexFieldName(AtlasGraphManagement managementSystem, AtlasAttribute attribute) {
-        if (attribute.getIndexFieldName() == null && TypeCategory.PRIMITIVE.equals(attribute.getAttributeType().getTypeCategory())) {
-            AtlasStructType definedInType = attribute.getDefinedInType();
-            AtlasAttribute  baseInstance  = definedInType != null ? definedInType.getAttribute(attribute.getName()) : null;
+        try {
+            if (attribute.getIndexFieldName() == null && TypeCategory.PRIMITIVE.equals(attribute.getAttributeType().getTypeCategory())) {
+                AtlasStructType definedInType = attribute.getDefinedInType();
+                AtlasAttribute  baseInstance  = definedInType != null ? definedInType.getAttribute(attribute.getName()) : null;
 
-            if (baseInstance != null && baseInstance.getIndexFieldName() != null) {
-                attribute.setIndexFieldName(baseInstance.getIndexFieldName());
-            } else {
-                AtlasPropertyKey propertyKey    = managementSystem.getPropertyKey(attribute.getVertexPropertyName());
-                String           indexFieldName = managementSystem.getIndexFieldName(Constants.VERTEX_INDEX, propertyKey);
+                if (baseInstance != null && baseInstance.getIndexFieldName() != null) {
+                    attribute.setIndexFieldName(baseInstance.getIndexFieldName());
+                } else if (isIndexApplicable(getPrimitiveClass(attribute.getTypeName()), toAtlasCardinality(attribute.getAttributeDef().getCardinality()))) {
+                    AtlasPropertyKey propertyKey = managementSystem.getPropertyKey(attribute.getVertexPropertyName());
 
-                attribute.setIndexFieldName(indexFieldName);
+                    if (propertyKey != null) {
+                        String indexFieldName = managementSystem.getIndexFieldName(Constants.VERTEX_INDEX, propertyKey);
 
-                if (baseInstance != null) {
-                    baseInstance.setIndexFieldName(indexFieldName);
+                        attribute.setIndexFieldName(indexFieldName);
+
+                        if (baseInstance != null) {
+                            baseInstance.setIndexFieldName(indexFieldName);
+                        }
+
+                        typeRegistry.addIndexFieldName(attribute.getVertexPropertyName(), indexFieldName);
+
+                        LOG.info("Property {} is mapped to index field name {}", attribute.getQualifiedName(), attribute.getIndexFieldName());
+                    } else {
+                        LOG.warn("resolveIndexFieldName(attribute={}): propertyKey is null for vertextPropertyName={}", attribute.getQualifiedName(), attribute.getVertexPropertyName());
+                    }
                 }
-
-                typeRegistry.addIndexFieldName(attribute.getVertexPropertyName(), indexFieldName);
-
-                LOG.info("Property {} is mapped to index field name {}", attribute.getQualifiedName(), attribute.getIndexFieldName());
             }
+        } catch (Exception excp) {
+            LOG.warn("resolveIndexFieldName(attribute={}) failed.", attribute.getQualifiedName(), excp);
         }
     }
 

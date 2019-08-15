@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graph;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.ChangedTypeDefs;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
@@ -27,7 +28,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,37 +67,37 @@ public class SolrIndexHelper implements IndexChangeListener {
         }
 
         try {
-            AtlasGraph            graph                        = AtlasGraphProvider.getGraphInstance();
-            AtlasGraphIndexClient graphIndexClient             = graph.getGraphIndexClient();
-            Map<String, Integer>  propertyName2SearchWeightMap = gePropertiesWithSearchWeights();
+            AtlasGraph            graph                          = AtlasGraphProvider.getGraphInstance();
+            AtlasGraphIndexClient graphIndexClient               = graph.getGraphIndexClient();
+            Map<String, Integer>  indexFieldName2SearchWeightMap = geIndexFieldNamesWithSearchWeights();
 
-            graphIndexClient.applySearchWeight(Constants.VERTEX_INDEX, propertyName2SearchWeightMap);
-            graphIndexClient.applySuggestionFields(Constants.VERTEX_INDEX, getPropertiesForSuggestions(propertyName2SearchWeightMap));
+            graphIndexClient.applySearchWeight(Constants.VERTEX_INDEX, indexFieldName2SearchWeightMap);
+            graphIndexClient.applySuggestionFields(Constants.VERTEX_INDEX, getIndexFieldNamesForSuggestions(indexFieldName2SearchWeightMap));
         } catch (AtlasException e) {
             LOG.error("Error encountered in handling type system change notification.", e);
             throw new RuntimeException("Error encountered in handling type system change notification.", e);
         }
     }
 
-    private List<String> getPropertiesForSuggestions(Map<String, Integer> propertyName2SearchWeightMap) {
+    private List<String> getIndexFieldNamesForSuggestions(Map<String, Integer> indexFieldName2SearchWeightMap) {
         List<String> ret = new ArrayList<>();
 
-        for(Map.Entry<String, Integer> entry: propertyName2SearchWeightMap.entrySet()) {
+        for(Map.Entry<String, Integer> entry: indexFieldName2SearchWeightMap.entrySet()) {
             if(entry.getValue().intValue() >= MIN_SEARCH_WEIGHT_FOR_SUGGESTIONS) {
-                String propertyName = entry.getKey();
+                String indexFieldName = entry.getKey();
 
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Adding the property {} for suggestions.", propertyName);
+                    LOG.debug("Adding indexFieldName {} for suggestions.", indexFieldName);
                 }
 
-                ret.add(propertyName);
+                ret.add(indexFieldName);
             }
         }
 
         return ret;
     }
 
-    private Map<String, Integer> gePropertiesWithSearchWeights() {
+    private Map<String, Integer> geIndexFieldNamesWithSearchWeights() {
         Map<String, Integer>        ret         = new HashMap<>();
         Collection<AtlasEntityType> entityTypes = typeRegistry.getAllEntityTypes();
 
@@ -116,11 +117,11 @@ public class SolrIndexHelper implements IndexChangeListener {
     }
 
     private void processEntityType(Map<String, Integer> indexFieldNameWithSearchWeights, AtlasEntityType entityType) {
-        Map<String, AtlasAttribute> attributes = entityType.getAllAttributes();
+        List<AtlasAttributeDef> attributes = entityType.getEntityDef().getAttributeDefs();
 
-        if(MapUtils.isNotEmpty(attributes)) {
-            for (AtlasAttribute attribute : attributes.values()) {
-                processAttribute(indexFieldNameWithSearchWeights, attribute);
+        if(CollectionUtils.isNotEmpty(attributes)) {
+            for (AtlasAttributeDef attribute : attributes) {
+                processAttribute(indexFieldNameWithSearchWeights, entityType.getAttribute(attribute.getName()));
             }
         }  else {
             LOG.debug("No attributes are defined for entity {}", entityType.getTypeName());
@@ -128,7 +129,7 @@ public class SolrIndexHelper implements IndexChangeListener {
     }
 
     private void processAttribute(Map<String, Integer> indexFieldNameWithSearchWeights, AtlasAttribute attribute) {
-        if (GraphBackedSearchIndexer.isStringAttribute(attribute)) {
+        if (attribute != null && GraphBackedSearchIndexer.isStringAttribute(attribute) && StringUtils.isNotEmpty(attribute.getIndexFieldName())) {
             int searchWeight = attribute.getSearchWeight();
 
             if (searchWeight == DEFAULT_SEARCHWEIGHT) {
@@ -143,7 +144,7 @@ public class SolrIndexHelper implements IndexChangeListener {
             }
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Applying search weight {} for attribute {}", searchWeight, attribute.getQualifiedName());
+                LOG.debug("Applying search weight {} for attribute={}: indexFieldName={}", searchWeight, attribute.getQualifiedName(), attribute.getIndexFieldName());
             }
 
             indexFieldNameWithSearchWeights.put(attribute.getIndexFieldName(), searchWeight);

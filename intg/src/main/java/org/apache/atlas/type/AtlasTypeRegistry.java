@@ -26,6 +26,7 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -918,6 +919,23 @@ public class AtlasTypeRegistry {
                                 new Exception().fillInStackTrace());
                     } else if (typeRegistryUpdateLock.getHoldCount() == 1) {
                         if (ttr != null && commitUpdates) {
+                            // copy indexName for entity attributes from current typeRegistry to new one
+                            for (AtlasEntityType ttrEntityType : ttr.getAllEntityTypes()) {
+                                AtlasEntityType currEntityType = typeRegistry.getEntityTypeByName(ttrEntityType.getTypeName());
+
+                                if (currEntityType != null) { // ttrEntityType could be a new type introduced
+                                    for (AtlasAttribute attribute : ttrEntityType.getAllAttributes().values()) {
+                                        if (StringUtils.isEmpty(attribute.getIndexFieldName())) {
+                                            AtlasAttribute currAttribute = currEntityType.getAttribute(attribute.getName());
+
+                                            if (currAttribute != null) {
+                                                attribute.setIndexFieldName(currAttribute.getIndexFieldName());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             typeRegistry.registryData = ttr.registryData;
                         }
                     }
