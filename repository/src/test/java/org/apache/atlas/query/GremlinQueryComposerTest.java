@@ -162,7 +162,7 @@ public class GremlinQueryComposerTest {
         verify("from DB where name = \"Reporting\" select name, owner", getExpected(exSel, exMain));
         verify("from DB where (name = \"Reporting\") select name, owner", getExpected(exSel, exMain));
         verify("Table where Asset.name like \"Tab*\"",
-                "g.V().has('__typeName', 'Table').has('Table.name', org.janusgraph.core.attribute.Text.textRegex(\"Tab.*\")).dedup().limit(25).toList()");
+                "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"Tab.*\")).dedup().limit(25).toList()");
         verify("from Table where (db.name = \"Reporting\")",
                 "g.V().has('__typeName', 'Table').out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db').dedup().limit(25).toList()");
     }
@@ -184,8 +184,8 @@ public class GremlinQueryComposerTest {
 
     @Test
     public void subType() {
-        String exMain = "g.V().has('__typeName', within('Asset','Table')).has('Asset.name').has('Asset.owner').dedup().limit(25).toList()";
-        String exSel = "def f(r){ t=[['name','owner']];  r.each({t.add([it.value('Asset.name'),it.value('Asset.owner')])}); t.unique(); }";
+        String exMain = "g.V().has('__typeName', within('Asset','Table')).has('Asset.__s_name').has('Asset.__s_owner').dedup().limit(25).toList()";
+        String exSel = "def f(r){ t=[['name','owner']];  r.each({t.add([it.value('Asset.__s_name'),it.value('Asset.__s_owner')])}); t.unique(); }";
 
         verify("Asset select name, owner", getExpected(exSel, exMain));
     }
@@ -343,8 +343,8 @@ public class GremlinQueryComposerTest {
         verify("Table has db", 1);
         verify("Table groupby(db) select name", 1);
         verify("Table groupby(name) select name, max(db)", 1);
-        verify("Table select db, columns", 2);
-        verify("Table select db, owner, columns", 3);
+        verify("Table select db, columns", 1);
+        verify("Table select db, owner, columns", 2);
     }
 
     private void verify(String dsl, String expectedGremlin, int expectedNumberOfErrors) {
@@ -529,6 +529,17 @@ public class GremlinQueryComposerTest {
         public boolean isNumeric(GremlinQueryComposer.Context context, String attrName) {
             context.setNumericTypeFormatter("f");
             return attrName.equals("partitionSize");
+        }
+
+        @Override
+        public String getVertexPropertyName(String typeName, String attrName) {
+            if (typeName.equals("Asset")) {
+                if (attrName.equals("name") || attrName.equals("owner")) {
+                    return String.format("%s.__s_%s", typeName, attrName);
+                }
+            }
+
+            return null;
         }
     }
 }

@@ -254,6 +254,17 @@ class RegistryBasedLookup implements Lookup {
         return ret;
     }
 
+    @Override
+    public String getVertexPropertyName(String typeName, String attrName) {
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+        AtlasStructType.AtlasAttribute attribute = getAttribute(entityType, attrName);
+        if (attribute == null) {
+            return null;
+        }
+
+        return attribute.getVertexPropertyName();
+    }
+
     private AtlasStructType.AtlasAttribute getAttribute(AtlasEntityType entityType, String attrName) {
         AtlasStructType.AtlasAttribute ret = null;
 

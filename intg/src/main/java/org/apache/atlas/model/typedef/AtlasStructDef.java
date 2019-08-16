@@ -259,17 +259,21 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasAttributeDef implements Serializable {
-        private static final long serialVersionUID               = 1L;
-        public static final int DEFAULT_SEARCHWEIGHT             = -1;
+        private static final long     serialVersionUID              = 1L;
+        public static final int       DEFAULT_SEARCHWEIGHT          = -1;
 
-        public static final String SEARCH_WEIGHT_ATTR_NAME       = "searchWeight";
-        public static final String ATTRDEF_OPTION_SOFT_REFERENCE = "isSoftReference";
-        private final String STRING_TRUE                         = "true";
+
+        public static final String    SEARCH_WEIGHT_ATTR_NAME       = "searchWeight";
+        public static final String    INDEX_TYPE_ATTR_NAME          = "indexType";
+        public static final String    ATTRDEF_OPTION_SOFT_REFERENCE = "isSoftReference";
+        private final String          STRING_TRUE                   = "true";
 
         /**
          * single-valued attribute or multi-valued attribute.
          */
         public enum Cardinality { SINGLE, LIST, SET }
+
+        public enum IndexType { DEFAULT, STRING}
 
         public static final int COUNT_NOT_SET = -1;
 
@@ -285,6 +289,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private String                   defaultValue;
         private String                   description;
         private int                      searchWeight = DEFAULT_SEARCHWEIGHT;
+        private IndexType                indexType    = null;
 
         private List<AtlasConstraintDef> constraints;
         private Map<String, String>      options;
@@ -296,32 +301,34 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         }
 
         public AtlasAttributeDef(String name, String typeName, int searchWeight) {
-            this(name, typeName, false, Cardinality.SINGLE, searchWeight);
+            this(name, typeName, false, Cardinality.SINGLE, searchWeight, null);
+        }
+
+        public AtlasAttributeDef(String name, String typeName, int searchWeight, IndexType indexType) {
+            this(name, typeName, false, Cardinality.SINGLE, searchWeight, indexType);
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality) {
-            this(name, typeName, isOptional, cardinality, DEFAULT_SEARCHWEIGHT);
+            this(name, typeName, isOptional, cardinality, DEFAULT_SEARCHWEIGHT, null);
         }
 
-        private AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality, int searchWeight) {
-            this(name, typeName, isOptional, cardinality, COUNT_NOT_SET, COUNT_NOT_SET, false, false, false, null, searchWeight);
+        private AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality, int searchWeight, IndexType indexType) {
+            this(name, typeName, isOptional, cardinality, COUNT_NOT_SET, COUNT_NOT_SET, false, false, false, null, searchWeight, indexType);
         }
-
-
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                  int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, List<AtlasConstraintDef> constraints) {
-            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, constraints, DEFAULT_SEARCHWEIGHT);
+            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, constraints, DEFAULT_SEARCHWEIGHT, null);
         }
 
         private AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
-                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, List<AtlasConstraintDef> constraints, int searchWeight) {
-            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, null, constraints, null, null, searchWeight);
+                                  int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, List<AtlasConstraintDef> constraints, int searchWeight, IndexType indexType) {
+            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, null, constraints, null, null, searchWeight, indexType);
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                  int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, String defaultValue,
-                                 List<AtlasConstraintDef> constraints, Map<String,String> options, String description, int searchWeight) {
+                                 List<AtlasConstraintDef> constraints, Map<String,String> options, String description, int searchWeight, IndexType indexType) {
             setName(name);
             setTypeName(typeName);
             setIsOptional(isOptional);
@@ -336,6 +343,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             setOptions(options);
             setDescription(description);
             setSearchWeight(searchWeight);
+            setIndexType(indexType);
         }
 
         public AtlasAttributeDef(AtlasAttributeDef other) {
@@ -354,6 +362,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setOptions(other.getOptions());
                 setDescription((other.getDescription()));
                 setSearchWeight(other.getSearchWeight());
+                setIndexType(other.getIndexType());
             }
         }
 
@@ -363,6 +372,14 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         public void setSearchWeight(int searchWeight) {
             this.searchWeight = searchWeight;
+        }
+
+        public void setIndexType(IndexType indexType) {
+            this.indexType = indexType;
+        }
+
+        public IndexType getIndexType() {
+            return indexType;
         }
 
         public String getName() {
@@ -510,6 +527,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", defaultValue=").append(defaultValue);
             sb.append(", options='").append(options).append('\'');
             sb.append(", searchWeight='").append(searchWeight).append('\'');
+            sb.append(", indexType='").append(indexType).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -545,12 +563,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(description, that.description) &&
                     Objects.equals(constraints, that.constraints) &&
                     Objects.equals(options, that.options) &&
-                    Objects.equals(searchWeight, that.searchWeight);
+                    Objects.equals(searchWeight, that.searchWeight) &&
+                    Objects.equals(indexType, that.indexType);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType);
         }
 
         @Override

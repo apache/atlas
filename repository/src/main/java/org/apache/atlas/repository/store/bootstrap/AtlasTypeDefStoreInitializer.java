@@ -55,6 +55,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jute.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -1041,6 +1042,18 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                             }
                             atlasAttributeDef.setSearchWeight(searchWeight);
                             LOG.info("Updating Model attribute {}'s property{} to {}.", atlasAttributeDef.getName(), entry.getKey(), entry.getValue());
+                        } else if (AtlasAttributeDef.INDEX_TYPE_ATTR_NAME.equalsIgnoreCase(entry.getKey())) {
+                            String indexTypeString = (String) entry.getValue();
+                            if(!StringUtils.isEmpty(indexTypeString)) {
+                                try {
+                                    AtlasAttributeDef.IndexType indexType = AtlasAttributeDef.IndexType.valueOf(indexTypeString);
+                                    atlasAttributeDef.setIndexType(indexType);
+                                } catch (IllegalArgumentException e) {
+                                    String msg = String.format("Value %s provided for the attribute %s is not valid.", indexTypeString, AtlasAttributeDef.INDEX_TYPE_ATTR_NAME);
+                                    LOG.error(msg);
+                                    throw new RuntimeException(msg);
+                                }
+                            }
                         } else {
                             //sanity exception
                             //more attributes can be added as needed.

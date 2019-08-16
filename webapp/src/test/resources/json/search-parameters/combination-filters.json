@@ -139,7 +139,7 @@
       "typeName": "hdfs_path",
       "excludeDeletedEntities": true,
       "classification" : "fooTag",
-      "query": "test ; \\{ \\} \\[ \\]",
+      "query": "test",
       "limit": 25,
       "offset": 0,
       "entityFilters": null,
@@ -169,7 +169,7 @@
       "typeName": "hdfs_path",
       "excludeDeletedEntities": true,
       "classification" : "fooTag",
-      "query": "test ; \\{ \\} \\[ \\]",
+      "query": "test",
       "limit": 25,
       "offset": 0,
       "entityFilters": {
