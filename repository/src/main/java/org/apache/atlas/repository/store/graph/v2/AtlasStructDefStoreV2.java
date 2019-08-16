@@ -540,6 +540,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         attribInfo.put("defaultValue", attributeDef.getDefaultValue());
         attribInfo.put("description", attributeDef.getDescription());
         attribInfo.put("searchWeight", attributeDef.getSearchWeight());
+        attribInfo.put("indexType", attributeDef.getIndexType());
 
         if(attributeDef.getOptions() != null) {
             attribInfo.put("options", AtlasType.toJson(attributeDef.getOptions()));
@@ -634,6 +635,11 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         } else {
             ret.setSearchWeight(-1);
         }
+
+        String indexType = (String) attribInfo.get("indexType");
+        if(!StringUtils.isEmpty(indexType)) {
+            ret.setIndexType(AtlasAttributeDef.IndexType.valueOf(indexType));
+        }
         return ret;
     }
 
@@ -652,7 +658,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         ret.setDescription(attrDef.getDescription());
         ret.setDefaultValue(attrDef.getDefaultValue());
         ret.setSearchWeight(attrDef.getSearchWeight());
-
+        ret.setIndexType(attrDef.getIndexType());
         return ret;
     }
 }

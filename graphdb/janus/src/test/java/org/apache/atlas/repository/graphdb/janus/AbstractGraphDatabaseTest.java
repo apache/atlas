@@ -99,7 +99,7 @@ public abstract class AbstractGraphDatabaseTest {
         AtlasPropertyKey key = management.makePropertyKey(propertyName, propertyClass, cardinality);
         try {
             if (propertyClass != Integer.class) {
-                management.addMixedIndex(BACKING_INDEX_NAME, key);
+                management.addMixedIndex(BACKING_INDEX_NAME, key, false);
             }
         } catch(Throwable t) {
             //ok

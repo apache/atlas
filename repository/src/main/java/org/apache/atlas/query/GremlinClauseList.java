@@ -37,14 +37,6 @@ class GremlinClauseList {
         list.add(idx, g);
     }
 
-    public void add(GremlinQueryComposer.GremlinClauseValue g, AtlasEntityType t) {
-        add(g);
-    }
-
-    public void add(int idx, GremlinQueryComposer.GremlinClauseValue g, AtlasEntityType t) {
-        add(idx, g);
-    }
-
     public void add(GremlinClause clause, String... args) {
         list.add(new GremlinQueryComposer.GremlinClauseValue(clause, clause.get(args)));
     }

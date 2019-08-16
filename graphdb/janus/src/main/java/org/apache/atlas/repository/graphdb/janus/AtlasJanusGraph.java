@@ -51,6 +51,7 @@ import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -75,8 +76,9 @@ import static org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase.
  */
 public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraph.class);
+    private static final Parameter[] EMPTY_PARAMETER_ARRAY  = new Parameter[0];
 
-    private static final Parameter[]   EMPTY_PARAMETER_ARRAY  = new Parameter[0];
+
     private static       Configuration APPLICATION_PROPERTIES = null;
 
     private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
@@ -418,10 +420,12 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
 
-    String getIndexFieldName(AtlasPropertyKey propertyKey, JanusGraphIndex graphIndex) {
+    String getIndexFieldName(AtlasPropertyKey propertyKey, JanusGraphIndex graphIndex, Parameter ... parameters) {
         PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
-
-        return janusGraph.getIndexSerializer().getDefaultFieldName(janusKey, EMPTY_PARAMETER_ARRAY, graphIndex.getBackingIndex());
+        if(parameters == null) {
+            parameters = EMPTY_PARAMETER_ARRAY;
+        }
+        return janusGraph.getIndexSerializer().getDefaultFieldName(janusKey, parameters, graphIndex.getBackingIndex());
     }
 
 

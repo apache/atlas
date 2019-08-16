@@ -21,8 +21,11 @@ package org.apache.atlas.v1.model.typedef;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.typedef.AtlasStructDef;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
@@ -40,45 +43,46 @@ import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.DE
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AttributeDefinition implements Serializable {
-    private static final long serialVersionUID = 1L;
-    private String       name;
-    private String       dataTypeName;
-    private Multiplicity multiplicity;
-    private boolean      isComposite; // A composite is the one whose lifecycle is dependent on the enclosing type and is not just a reference
-    private boolean      isUnique;
-    private boolean      isIndexable;
-    private String       reverseAttributeName; // If this is a reference attribute, then the name of the attribute on the Class that this refers to.
-    private String       defaultValue;
-    private String       description;
-    private Map<String, String> options;
-    private int searchWeight = DEFAULT_SEARCHWEIGHT;
+    private static final long                          serialVersionUID = 1L;
+    private String                                     name;
+    private String                                     dataTypeName;
+    private Multiplicity                               multiplicity;
+    private boolean                                    isComposite; // A composite is the one whose lifecycle is dependent on the enclosing type and is not just a reference
+    private boolean                                    isUnique;
+    private boolean                                    isIndexable;
+    private String                                     reverseAttributeName; // If this is a reference attribute, then the name of the attribute on the Class that this refers to.
+    private String                                     defaultValue;
+    private String                                     description;
+    private Map<String, String>                        options;
+    private int                                        searchWeight = DEFAULT_SEARCHWEIGHT;
+    private AtlasStructDef.AtlasAttributeDef.IndexType indexType    = null;
 
     public AttributeDefinition() {
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity) {
-        this(name, dataTypeName, multiplicity, false, false, true, null, null, DEFAULT_SEARCHWEIGHT);
+        this(name, dataTypeName, multiplicity, false, false, true, null, null, DEFAULT_SEARCHWEIGHT, null);
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                String reverseAttributeName) {
-        this(name, dataTypeName, multiplicity, isComposite, reverseAttributeName,  DEFAULT_SEARCHWEIGHT);
+        this(name, dataTypeName, multiplicity, isComposite, reverseAttributeName,  DEFAULT_SEARCHWEIGHT, null);
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
-                               String reverseAttributeName, int searchWeight) {
-        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName, null, searchWeight);
+                               String reverseAttributeName, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
+        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName, null, searchWeight, indexType);
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                boolean isUnique, boolean isIndexable, String reverseAttributeName,
                                Map<String, String> options) {
-        this(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,reverseAttributeName, options, DEFAULT_SEARCHWEIGHT);
+        this(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,reverseAttributeName, options, DEFAULT_SEARCHWEIGHT, null);
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                boolean isUnique, boolean isIndexable, String reverseAttributeName,
-                               Map<String, String> options, int searchWeight) {
+                               Map<String, String> options, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
         this.name                 = name;
         this.dataTypeName         = dataTypeName;
         this.multiplicity         = multiplicity;
@@ -88,6 +92,7 @@ public class AttributeDefinition implements Serializable {
         this.reverseAttributeName = reverseAttributeName;
         this.options              = options;
         this.searchWeight         = searchWeight;
+        this.indexType            = indexType;
     }
 
 
@@ -212,5 +217,13 @@ public class AttributeDefinition implements Serializable {
 
   public int getSearchWeight() {
         return searchWeight;
+  }
+
+  public void setIndexType(AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
+        this.indexType = indexType;
+  }
+
+  public AtlasStructDef.AtlasAttributeDef.IndexType getIndexType() {
+        return this.indexType;
   }
 }

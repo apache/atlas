@@ -33,6 +33,9 @@ public class IdentifierHelper {
 
     public static String get(String quotedIdentifier) {
         String ret;
+        if (StringUtils.isEmpty(quotedIdentifier)) {
+            return null;
+        }
 
         if (quotedIdentifier.charAt(0) == '`') {
             ret = extract(BACKTICK_QUOTED_IDENTIFIER, quotedIdentifier);
@@ -74,20 +77,25 @@ public class IdentifierHelper {
 
     public static boolean isQuoted(String val) {
         boolean ret = false;
+        if (StringUtils.isEmpty(val)) {
+            return ret;
+        }
 
-        if (val != null && val.length() > 1) {
-            char first = val.charAt(0);
-            char last  = val.charAt(val.length() - 1);
+        char first = val.charAt(0);
+        char last  = val.charAt(val.length() - 1);
 
-            if (first == last && (first == '\'' || first == '"' || first == '`')) {
-                ret = true;
-            }
+        if (first == last && (first == '\'' || first == '"' || first == '`')) {
+            ret = true;
         }
 
         return ret;
     }
 
     public static String removeQuotes(String rhs) {
+        if (StringUtils.isEmpty(rhs)) {
+            return rhs;
+        }
+
         return rhs.replace("\"", "")
                   .replace("'", "")
                   .replace("`", "");
@@ -293,6 +301,10 @@ public class IdentifierHelper {
 
         public boolean isNumeric() {
             return isNumeric;
+        }
+
+        public void setTypeName(String typeName) {
+            this.typeName = typeName;
         }
     }
 }

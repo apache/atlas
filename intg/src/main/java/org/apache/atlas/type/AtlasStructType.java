@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.model.TypeCategory.OBJECT_ID_TYPE;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.*;
 
 /**
@@ -694,6 +695,7 @@ public class AtlasStructType extends AtlasType {
     }
 
     public static class AtlasAttribute {
+        public static final Object VERTEX_PROPERTY_PREFIX_STRING_INDEX_TYPE = "__s_";
         private final AtlasStructType          definedInType;
         private final AtlasType                attributeType;
         private final AtlasAttributeDef        attributeDef;
@@ -718,13 +720,14 @@ public class AtlasStructType extends AtlasType {
             this.attributeDef             = attrDef;
             this.attributeType            = attributeType.getTypeForAttribute();
             this.qualifiedName            = getQualifiedAttributeName(definedInType.getStructDef(), attributeDef.getName());
-            this.vertexPropertyName       = encodePropertyKey(this.qualifiedName);
+            this.vertexPropertyName       = generateVertexPropertyName(definedInType.getStructDef(), attributeDef, qualifiedName);
             this.vertexUniquePropertyName = attrDef.getIsUnique() ? encodePropertyKey(getQualifiedAttributeName(definedInType.getStructDef(), UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + attributeDef.getName())) : null;
             this.relationshipName         = relationshipName;
             this.relationshipEdgeLabel    = getRelationshipEdgeLabel(relationshipLabel);
-
             boolean isOwnedRef            = false;
             String  inverseRefAttribute   = null;
+
+            LOG.debug("Attribute {} will use the vertext property name {}.", qualifiedName, vertexPropertyName);
 
             if (CollectionUtils.isNotEmpty(attributeDef.getConstraints())) {
                 for (AtlasConstraintDef constraint : attributeDef.getConstraints()) {
@@ -829,6 +832,8 @@ public class AtlasStructType extends AtlasType {
 
         public int getSearchWeight() { return attributeDef.getSearchWeight(); }
 
+        public AtlasAttributeDef.IndexType getIndexType() { return attributeDef.getIndexType();}
+
         public boolean getIsDynAttribute() { return isDynAttribute; }
 
         public void setIsDynAttribute(boolean isDynAttribute){ this.isDynAttribute = isDynAttribute; }
@@ -910,9 +915,19 @@ public class AtlasStructType extends AtlasType {
             return (relationshipLabel == null) ? getEdgeLabel(qualifiedName) : relationshipLabel;
         }
 
-        private static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
-            final String typeName = structDef.getName();
-            return attrName.contains(".") ? attrName : String.format("%s.%s", typeName, attrName);
+        public static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
+            return attrName.contains(".") ? attrName : String.format("%s.%s", structDef.getName(), attrName);
+        }
+
+        public static String generateVertexPropertyName(AtlasStructDef structDef, AtlasAttributeDef attrDef, String qualifiedName) {
+            String vertexPropertyName = qualifiedName;
+
+            if(!attrDef.getName().contains(".") &&
+                AtlasAttributeDef.IndexType.STRING.equals(attrDef.getIndexType()) &&
+                ATLAS_TYPE_STRING.equalsIgnoreCase(attrDef.getTypeName())) {
+                vertexPropertyName = String.format("%s.%s%s", structDef.getName(), VERTEX_PROPERTY_PREFIX_STRING_INDEX_TYPE, attrDef.getName());
+            }
+            return encodePropertyKey(vertexPropertyName);
         }
 
         // Keys copied from org.janusgraph.graphdb.types.system.SystemTypeManager.RESERVED_CHARS

@@ -138,7 +138,14 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
                     Class             propertyClass  = getIndexer().getPrimitiveClass(attribTypeName);
                     AtlasCardinality  cardinality    = getIndexer().toAtlasCardinality(attributeDef.getCardinality());
 
-                    getIndexer().createVertexIndex(management, uniquePropertyName, UniqueKind.PER_TYPE_UNIQUE, propertyClass, cardinality, isIndexable, true);
+                    getIndexer().createVertexIndex(management,
+                                                   uniquePropertyName,
+                                                   UniqueKind.PER_TYPE_UNIQUE,
+                                                   propertyClass,
+                                                   cardinality,
+                                                   isIndexable,
+                                                   true,
+                                                   AtlasAttributeDef.IndexType.STRING.equals(attribute.getIndexType()));
                 }
 
                 getIndexer().commit(management);

@@ -177,6 +177,7 @@ public class GremlinQueryComposer {
             introduceType(lhsI);
             org = lhsI;
             lhsI = createInfo(lhs);
+            lhsI.setTypeName(org.getTypeName());
         }
 
         if (!context.validator.isValidQualifiedName(lhsI.getQualifiedName(), lhsI.getRaw())) {
@@ -192,11 +193,11 @@ public class GremlinQueryComposer {
         rhs = addQuotesIfNecessary(lhsI, rhs);
         SearchParameters.Operator op = SearchParameters.Operator.fromString(operator);
         if (op == SearchParameters.Operator.LIKE) {
-            add(GremlinClause.TEXT_CONTAINS, lhsI.getQualifiedName(), IdentifierHelper.getFixedRegEx(rhs));
+            add(GremlinClause.TEXT_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
         } else if (op == SearchParameters.Operator.IN) {
-            add(GremlinClause.HAS_OPERATOR, lhsI.getQualifiedName(), "within", rhs);
+            add(GremlinClause.HAS_OPERATOR, getPropertyForClause(lhsI), "within", rhs);
         } else {
-            add(GremlinClause.HAS_OPERATOR, lhsI.getQualifiedName(), op.getSymbols()[1], rhs);
+            add(GremlinClause.HAS_OPERATOR, getPropertyForClause(lhsI), op.getSymbols()[1], rhs);
         }
         // record that the attribute has been processed so that the select clause doesn't add a attr presence check
         attributesProcessed.add(lhsI.getQualifiedName());
@@ -320,12 +321,12 @@ public class GremlinQueryComposer {
 
         IdentifierHelper.Info ia = createInfo(name);
         if (queryMetadata.hasSelect() && queryMetadata.hasGroupBy()) {
-            addSelectTransformation(this.context.selectClauseComposer, getQualifiedName(ia), isDesc);
+            addSelectTransformation(this.context.selectClauseComposer, getPropertyForClause(ia), isDesc);
         } else if (queryMetadata.hasGroupBy()) {
-            addOrderByClause(getQualifiedName(ia), isDesc);
+            addOrderByClause(ia, isDesc);
             moveToLast(GremlinClause.GROUP_BY);
         } else {
-            addOrderByClause(getQualifiedName(ia), isDesc);
+            addOrderByClause(ia, isDesc);
         }
     }
 
@@ -347,9 +348,17 @@ public class GremlinQueryComposer {
                        queryClauses.contains(GremlinClause.HAS_TYPE_WITHIN) != -1;
     }
 
-    private String getQualifiedName(IdentifierHelper.Info ia) {
-        return context.validator.isValidQualifiedName(ia.getQualifiedName(), ia.getRaw()) ?
-                       ia.getQualifiedName() : ia.getRaw();
+    private String getPropertyForClause(IdentifierHelper.Info ia) {
+        String vertexPropertyName = lookup.getVertexPropertyName(ia.getTypeName(), ia.getAttributeName());
+        if (StringUtils.isNotEmpty(vertexPropertyName)) {
+            return vertexPropertyName;
+        }
+
+        if (StringUtils.isNotEmpty(ia.getQualifiedName())) {
+            return ia.getQualifiedName();
+        }
+
+        return ia.getRaw();
     }
 
     private void addSelectAttrExistsCheck(final SelectClauseComposer selectClauseComposer) {
@@ -362,7 +371,7 @@ public class GremlinQueryComposer {
                 IdentifierHelper.Info idMetadata         = createInfo(qualifiedAttribute);
                 // Only primitive attributes need to be checked
                 if (idMetadata.isPrimitive() && !selectClauseComposer.isAggregatorIdx(i) && !attributesProcessed.contains(qualifiedAttribute)) {
-                    add(GremlinClause.HAS_PROPERTY, qualifiedAttribute);
+                    add(GremlinClause.HAS_PROPERTY, getPropertyForClause(idMetadata));
                 }
             }
             // All these checks should be done before the grouping happens (if any)
@@ -388,10 +397,10 @@ public class GremlinQueryComposer {
             }
 
             if (!scc.getItem(i).equals(scc.getLabel(i))) {
-                context.addAlias(scc.getLabel(i), getQualifiedName(ia));
+                context.addAlias(scc.getLabel(i), ia.getQualifiedName());
             }
 
-            if (scc.updateAsApplicable(i, getQualifiedName(ia))) {
+            if (scc.updateAsApplicable(i, getPropertyForClause(ia), ia.getQualifiedName())) {
                 continue;
             }
 
@@ -404,10 +413,10 @@ public class GremlinQueryComposer {
                 scc.incrementTypesIntroduced();
                 scc.isSelectNoop = !ia.hasParts();
                 if (ia.hasParts()) {
-                    scc.assign(i, getQualifiedName(createInfo(ia.get())), GremlinClause.INLINE_GET_PROPERTY);
+                    scc.assign(i, getPropertyForClause(createInfo(ia.get())), GremlinClause.INLINE_GET_PROPERTY);
                 }
             } else {
-                scc.assign(i, getQualifiedName(ia), GremlinClause.INLINE_GET_PROPERTY);
+                scc.assign(i, getPropertyForClause(ia), GremlinClause.INLINE_GET_PROPERTY);
                 scc.incrementPrimitiveType();
             }
         }
@@ -456,16 +465,16 @@ public class GremlinQueryComposer {
     private void addSelectTransformation(final SelectClauseComposer selectClauseComposer,
                                          final String orderByQualifiedAttrName,
                                          final boolean isDesc) {
-        GremlinClause fn;
+        GremlinClause gremlinClause;
         if (selectClauseComposer.isSelectNoop) {
-            fn = GremlinClause.SELECT_NOOP_FN;
+            gremlinClause = GremlinClause.SELECT_NOOP_FN;
         } else if (queryMetadata.hasGroupBy()) {
-            fn = selectClauseComposer.onlyAggregators() ? GremlinClause.SELECT_ONLY_AGG_GRP_FN : GremlinClause.SELECT_MULTI_ATTR_GRP_FN;
+            gremlinClause = selectClauseComposer.onlyAggregators() ? GremlinClause.SELECT_ONLY_AGG_GRP_FN : GremlinClause.SELECT_MULTI_ATTR_GRP_FN;
         } else {
-            fn = selectClauseComposer.onlyAggregators() ? GremlinClause.SELECT_ONLY_AGG_FN : GremlinClause.SELECT_FN;
+            gremlinClause = selectClauseComposer.onlyAggregators() ? GremlinClause.SELECT_ONLY_AGG_FN : GremlinClause.SELECT_FN;
         }
         if (StringUtils.isEmpty(orderByQualifiedAttrName)) {
-            add(0, fn,
+            add(0, gremlinClause,
                 selectClauseComposer.getLabelHeader(),
                 selectClauseComposer.hasAssignmentExpr() ? selectClauseComposer.getAssignmentExprString() : EMPTY_STRING,
                 selectClauseComposer.getItemsString(),
@@ -477,7 +486,7 @@ public class GremlinQueryComposer {
                 sortClause = isDesc ? GremlinClause.INLINE_TUPLE_SORT_DESC : GremlinClause.INLINE_TUPLE_SORT_ASC;
             }
             String idxStr = String.valueOf(itemIdx);
-            add(0, fn,
+            add(0, gremlinClause,
                 selectClauseComposer.getLabelHeader(),
                 selectClauseComposer.hasAssignmentExpr() ? selectClauseComposer.getAssignmentExprString() : EMPTY_STRING,
                 selectClauseComposer.getItemsString(),
@@ -575,12 +584,11 @@ public class GremlinQueryComposer {
         }
     }
 
-    private void addOrderByClause(String name, boolean descr) {
+    private void addOrderByClause(IdentifierHelper.Info ia, boolean descr) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("addOrderByClause(name={})", name, descr);
+            LOG.debug("addOrderByClause(name={})", ia.getRaw(), descr);
         }
 
-        IdentifierHelper.Info ia = createInfo(name);
         add((!descr) ? GremlinClause.ORDER_BY : GremlinClause.ORDER_BY_DESC, ia);
     }
 
@@ -598,7 +606,7 @@ public class GremlinQueryComposer {
             return;
         }
 
-        add(clause, (idInfo.getQualifiedName() == null ? idInfo.get() : idInfo.getQualifiedName()));
+        add(clause, getPropertyForClause(idInfo));
     }
 
     private void add(GremlinClause clause, String... args) {

@@ -43,4 +43,6 @@ public interface Lookup {
     boolean isDate(GremlinQueryComposer.Context context, String attributeName);
 
     boolean isNumeric(GremlinQueryComposer.Context context, String attrName);
+
+    String getVertexPropertyName(String typeName, String attrName);
 }

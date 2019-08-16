@@ -61,20 +61,16 @@ class SelectClauseComposer {
         this.items = Arrays.copyOf(items, items.length);
     }
 
-    public boolean updateAsApplicable(int currentIndex, String qualifiedName) {
+    public boolean updateAsApplicable(int currentIndex, String propertyForClause, String qualifiedName) {
         boolean ret = false;
         if (currentIndex == getCountIdx()) {
-            ret = assign(currentIndex, COUNT_STR,
-                    GremlinClause.INLINE_COUNT.get(), GremlinClause.INLINE_ASSIGNMENT);
+            ret = assign(currentIndex, COUNT_STR, GremlinClause.INLINE_COUNT.get(), GremlinClause.INLINE_ASSIGNMENT);
         } else if (currentIndex == getMinIdx()) {
-            ret = assign(currentIndex, MIN_STR, qualifiedName,
-                    GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_MIN);
+            ret = assign(currentIndex, MIN_STR, propertyForClause,  GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_MIN);
         } else if (currentIndex == getMaxIdx()) {
-            ret = assign(currentIndex, MAX_STR, qualifiedName,
-                    GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_MAX);
+            ret = assign(currentIndex, MAX_STR, propertyForClause, GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_MAX);
         } else if (currentIndex == getSumIdx()) {
-            ret = assign(currentIndex, SUM_STR, qualifiedName,
-                    GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_SUM);
+            ret = assign(currentIndex, SUM_STR, propertyForClause, GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_SUM);
         } else {
             attributes[currentIndex] = qualifiedName;
         }
