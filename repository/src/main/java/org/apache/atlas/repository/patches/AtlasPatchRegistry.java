@@ -22,7 +22,9 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.patches.AtlasPatch;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -45,8 +47,6 @@ import java.util.Map;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
-import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.TYPEDEF_PATCH_TYPE;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getEncodedProperty;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIndexSearchPrefix;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
@@ -96,20 +96,20 @@ public class AtlasPatchRegistry {
     }
 
     public void updateStatus(String patchId, PatchStatus patchStatus) {
-        AtlasVertex patchVertex = findByPatchId(patchId);
+        try {
+            AtlasVertex patchVertex = findByPatchId(patchId);
 
-        if (patchVertex == null) {
-            return;
+            if (patchVertex != null) {
+                setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, patchStatus.toString());
+                setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+                setEncodedProperty(patchVertex, MODIFIED_BY_KEY, getCurrentUser());
+                setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, patchStatus.toString());
+            }
+        } finally {
+            graph.commit();
+
+            patchNameStatusMap.put(patchId, patchStatus);
         }
-
-        setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, patchStatus.toString());
-        setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        setEncodedProperty(patchVertex, MODIFIED_BY_KEY, getCurrentUser());
-        setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, patchStatus.toString());
-
-        patchNameStatusMap.put(patchId, patchStatus);
-
-        graph.commit();
     }
 
     private static String getId(String incomingId, String patchFile, int index) {
@@ -128,20 +128,27 @@ public class AtlasPatchRegistry {
 
     private void createOrUpdatePatchVertex(AtlasGraph graph, String patchId, String description,
                                            String patchType, String action, PatchStatus patchStatus) {
-        boolean     isPatchRegistered = MapUtils.isNotEmpty(patchNameStatusMap) && patchNameStatusMap.containsKey(patchId);
-        AtlasVertex patchVertex       = isPatchRegistered ? findByPatchId(patchId) : graph.addVertex();
+        try {
+            AtlasVertex patchVertex = findByPatchId(patchId);
 
-        setEncodedProperty(patchVertex, PATCH_ID_PROPERTY_KEY, patchId);
-        setEncodedProperty(patchVertex, PATCH_DESCRIPTION_PROPERTY_KEY, description);
-        setEncodedProperty(patchVertex, PATCH_TYPE_PROPERTY_KEY, patchType);
-        setEncodedProperty(patchVertex, PATCH_ACTION_PROPERTY_KEY, action);
-        setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, patchStatus.toString());
-        setEncodedProperty(patchVertex, TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        setEncodedProperty(patchVertex, CREATED_BY_KEY, AtlasTypeDefGraphStoreV2.getCurrentUser());
-        setEncodedProperty(patchVertex, MODIFIED_BY_KEY, AtlasTypeDefGraphStoreV2.getCurrentUser());
+            if (patchVertex == null) {
+                patchVertex = graph.addVertex();
+            }
 
-        graph.commit();
+            setEncodedProperty(patchVertex, PATCH_ID_PROPERTY_KEY, patchId);
+            setEncodedProperty(patchVertex, PATCH_DESCRIPTION_PROPERTY_KEY, description);
+            setEncodedProperty(patchVertex, PATCH_TYPE_PROPERTY_KEY, patchType);
+            setEncodedProperty(patchVertex, PATCH_ACTION_PROPERTY_KEY, action);
+            setEncodedProperty(patchVertex, PATCH_STATE_PROPERTY_KEY, patchStatus.toString());
+            setEncodedProperty(patchVertex, TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+            setEncodedProperty(patchVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+            setEncodedProperty(patchVertex, CREATED_BY_KEY, AtlasTypeDefGraphStoreV2.getCurrentUser());
+            setEncodedProperty(patchVertex, MODIFIED_BY_KEY, AtlasTypeDefGraphStoreV2.getCurrentUser());
+        } finally {
+            graph.commit();
+
+            patchNameStatusMap.put(patchId, patchStatus);
+        }
     }
 
     private static Map<String, PatchStatus> getPatchNameStatusForAllRegistered(AtlasGraph graph) {
@@ -170,7 +177,7 @@ public class AtlasPatchRegistry {
 
             while (results != null && results.hasNext()) {
                 AtlasVertex patchVertex = results.next().getVertex();
-                AtlasPatch patch = toAtlasPatch(patchVertex);
+                AtlasPatch patch        = toAtlasPatch(patchVertex);
 
                 ret.add(patch);
             }
@@ -180,9 +187,9 @@ public class AtlasPatchRegistry {
             }
         } catch (Throwable t) {
             LOG.warn("getAllPatches(): Returned empty result!");
+        } finally {
+            graph.commit();
         }
-
-        graph.commit();
 
         return new AtlasPatches(ret);
     }
@@ -204,20 +211,11 @@ public class AtlasPatchRegistry {
         return ret;
     }
 
-    private static AtlasVertex findByPatchId(String patchId) {
-        AtlasVertex                      ret        = null;
-        String                           indexQuery = getIndexSearchPrefix() + "\"" + PATCH_ID_PROPERTY_KEY + "\" : (" + patchId + ")";
-        Iterator<Result<Object, Object>> results    = getGraphInstance().indexQuery(VERTEX_INDEX, indexQuery).vertices();
+    public AtlasVertex findByPatchId(String patchId) {
+        AtlasGraphQuery       query   = graph.query().has(Constants.PATCH_ID_PROPERTY_KEY, patchId);
+        Iterator<AtlasVertex> results = query.vertices().iterator();
 
-        while (results != null && results.hasNext()) {
-            ret = results.next().getVertex();
-
-            if (ret != null) {
-                break;
-            }
-        }
-
-        return ret;
+        return results.hasNext() ? results.next() : null;
     }
 
     private static PatchStatus getPatchStatus(AtlasVertex vertex) {
