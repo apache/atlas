@@ -60,6 +60,7 @@ define(['require',
                 nextData: "[data-id='nextData']",
                 pageRecordText: "[data-id='pageRecordText']",
                 addAssignTag: "[data-id='addAssignTag']",
+                addAssignTerm: "[data-id='addAssignTerm']",
                 createEntity: "[data-id='createEntity']",
                 checkDeletedEntity: "[data-id='checkDeletedEntity']",
                 checkSubClassification: "[data-id='checkSubClassification']",
@@ -129,9 +130,10 @@ define(['require',
                 };
                 events["change " + this.ui.showPage] = 'changePageLimit';
                 events["click " + this.ui.gotoPagebtn] = 'gotoPagebtn';
-                events["click " + this.ui.addTag] = 'checkedValue';
+                events["click " + this.ui.addTag] = 'onClickAddTag';
                 events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
-                events["click " + this.ui.addAssignTag] = 'checkedValue';
+                events["click " + this.ui.addAssignTag] = 'onClickAddTag';
+                events["click " + this.ui.addAssignTerm] = 'onClickAddTermBtn';
                 events["click " + this.ui.nextData] = "onClicknextData";
                 events["click " + this.ui.previousData] = "onClickpreviousData";
                 events["click " + this.ui.createEntity] = 'onClickCreateEntity';
@@ -152,7 +154,7 @@ define(['require',
                 this.asyncFetchCounter = 0;
                 this.offset = 0;
                 this.bindEvents();
-                this.arr = [];
+                this.multiSelectEntity = [];
                 this.searchType = 'Basic Search';
                 this.columnOrder = null;
                 if (this.value) {
@@ -186,7 +188,7 @@ define(['require',
                 var that = this;
                 this.onClickLoadMore();
                 this.listenTo(this.searchCollection, 'backgrid:selected', function(model, checked) {
-                    this.arr = [];
+                    this.multiSelectEntity = [];
                     if (checked === true) {
                         model.set("isEnable", true);
                     } else {
@@ -195,17 +197,17 @@ define(['require',
                     this.searchCollection.find(function(item) {
                         if (item.get('isEnable')) {
                             var obj = item.toJSON();
-                            that.arr.push({
+                            that.multiSelectEntity.push({
                                 id: obj.guid,
                                 model: obj
                             });
                         }
                     });
 
-                    if (this.arr.length > 0) {
-                        this.$('.multiSelectTag').show();
+                    if (this.multiSelectEntity.length > 0) {
+                        this.$('.multiSelectTag,.multiSelectTerm').show();
                     } else {
-                        this.$('.multiSelectTag').hide();
+                        this.$('.multiSelectTag,.multiSelectTerm').hide();
                     }
                 });
                 this.listenTo(this.searchCollection, "error", function(model, response) {
@@ -263,7 +265,7 @@ define(['require',
                             saveState: false
                         },
                         visibilityControlOpts: {
-                            buttonTemplate: _.template("<button class='btn btn-action btn-sm pull-right'>Attributes&nbsp<i class='fa fa-caret-down'></i></button>")
+                            buttonTemplate: _.template("<button class='btn btn-action btn-sm pull-right'>Columns&nbsp<i class='fa fa-caret-down'></i></button>")
                         },
                         el: this.ui.colManager
                     },
@@ -942,8 +944,9 @@ define(['require',
                         guid: guid,
                         multiple: multiple,
                         callback: function() {
+                            that.multiSelectEntity = [];
+                            that.$('.multiSelectTag,.multiSelectTerm').hide();
                             that.fetchCollection();
-                            that.arr = [];
                         },
                         tagList: that.getTagList(guid, multiple),
                         showLoader: that.showLoader.bind(that),
@@ -985,12 +988,12 @@ define(['require',
                 options && options.type === 'error' ? this.$('.ellipsis-with-margin,.pagination-box').hide() : this.$('.ellipsis-with-margin,.pagination-box').show(); // only show for first time and hide when type is error
                 this.$('.tableOverlay').removeClass('show');
             },
-            checkedValue: function(e) {
+            onClickAddTag: function(e) {
                 var guid = "",
                     that = this,
                     isTagMultiSelect = $(e.currentTarget).hasClass('multiSelectTag');
-                if (isTagMultiSelect && this.arr && this.arr.length) {
-                    that.addTagModalView(guid, this.arr);
+                if (isTagMultiSelect && this.multiSelectEntity && this.multiSelectEntity.length) {
+                    that.addTagModalView(guid, this.multiSelectEntity);
                 } else {
                     guid = that.$(e.currentTarget).data("guid");
                     that.addTagModalView(guid);
@@ -998,14 +1001,26 @@ define(['require',
             },
             onClickAddTermBtn: function(e) {
                 var that = this,
+                    guid = "",
                     entityGuid = $(e.currentTarget).data("guid"),
+                    associatedTerms = undefined,
+                    multiple = undefined,
+                    isTermMultiSelect = $(e.currentTarget).hasClass('multiSelectTerm');
+                if (isTermMultiSelect && this.multiSelectEntity && this.multiSelectEntity.length) {
+                    multiple = this.multiSelectEntity;
+                } else if (entityGuid) {
                     associatedTerms = this.searchCollection.find({ guid: entityGuid }).get('meanings');
+                }
                 require(['views/glossary/AssignTermLayoutView'], function(AssignTermLayoutView) {
                     var view = new AssignTermLayoutView({
                         guid: entityGuid,
+                        multiple: multiple,
                         associatedTerms: associatedTerms,
                         callback: function() {
+                            that.multiSelectEntity = [];
+                            that.$('.multiSelectTag,.multiSelectTerm').hide();
                             that.fetchCollection();
+
                         },
                         glossaryCollection: that.glossaryCollection,
                     });
