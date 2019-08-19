@@ -30,6 +30,7 @@ define(['require'], function(require) {
         removeErrorMessage: " could not be removed",
         editSuccessMessage: " has been updated successfully",
         assignDeletedEntity: " is deleted, Classification cannot be assigned",
+        assignTermDeletedEntity: " is deleted, Term cannot be assigned",
         conformation: {
             deleteMessage: "Are you sure you want to delete "
         },

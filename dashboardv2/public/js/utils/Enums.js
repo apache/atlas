@@ -186,7 +186,6 @@ define(['require'], function(require) {
             "totalFailed": "number",
             "totalUpdates": "number",
             "processedMessageCount": "number",
-            "lastMessageProcessedTime": "day",
             "failedMessageCount": "number"
         }
     };

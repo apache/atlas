@@ -21,10 +21,11 @@ define(['require',
     'hbs!tmpl/glossary/AssignTermLayoutView_tmpl',
     'utils/Utils',
     'utils/Enums',
+    'utils/Messages',
     'utils/UrlLinks',
     'modules/Modal',
     'jquery-steps'
-], function(require, Backbone, AssignTermLayoutViewTmpl, Utils, Enums, UrlLinks, Modal) {
+], function(require, Backbone, AssignTermLayoutViewTmpl, Utils, Enums, Messages, UrlLinks, Modal) {
 
     var AssignTermLayoutView = Backbone.Marionette.LayoutView.extend(
         /** @lends AssignTermLayoutView */
@@ -59,7 +60,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'glossaryCollection', 'guid', 'callback', 'hideLoader', 'isCategoryView', 'categoryData', 'isTermView', 'termData', 'isAttributeRelationView', 'selectedTermAttribute', 'associatedTerms'));
+                _.extend(this, _.pick(options, 'glossaryCollection', 'guid', 'callback', 'hideLoader', 'isCategoryView', 'categoryData', 'isTermView', 'termData', 'isAttributeRelationView', 'selectedTermAttribute', 'associatedTerms', 'multiple'));
                 var that = this;
                 this.options = options;
                 if (!this.isCategoryView && !this.isTermView && !this.isAttributeRelationView) {
@@ -80,7 +81,6 @@ define(['require',
                     "title": title,
                     "content": this,
                     "cancelText": "Cancel",
-                    "okCloses": false,
                     "okText": "Assign",
                     "allowCancel": true,
                     "showFooter": this.isAttributeRelationView ? false : true,
@@ -151,6 +151,7 @@ define(['require',
                     termAttributeFormData = [],
                     selectedItem = this.glossary.selectedItem,
                     selectedGuid = selectedItem.guid,
+                    termName = selectedItem.text,
                     ajaxOptions = {
                         success: function(rModel, response) {
                             Utils.notifySuccess({
@@ -195,8 +196,70 @@ define(['require',
                     }
                     model.assignTermToAttributes(_.extend(ajaxOptions, { data: JSON.stringify(data), guid: data.guid }));
                 } else {
-                    data.push({ "guid": that.guid });
-                    model.assignTermToEntity(selectedGuid, _.extend(ajaxOptions, { data: JSON.stringify(data) }));
+                    var deletedEntity = [],
+                        skipEntity = [];
+
+                    if (this.multiple) {
+                        _.each(that.multiple, function(entity, i) {
+                            var name = Utils.getName(entity.model);
+                            if (Enums.entityStateReadOnly[entity.model.status]) {
+                                deletedEntity.push(name);
+                            } else {
+                                if (_.indexOf((entity.model.meaningNames || _.pluck(entity.model.meanings, 'displayText')), termName) === -1) {
+                                    data.push({ guid: entity.model.guid })
+                                } else {
+                                    skipEntity.push(name);
+                                }
+                            }
+                        });
+                        if (deletedEntity.length) {
+                            Utils.notifyError({
+                                html: true,
+                                content: "<b>" + deletedEntity.join(', ') +
+                                    "</b> " + (deletedEntity.length === 1 ? "entity " : "entities ") +
+                                    Messages.assignTermDeletedEntity
+                            });
+                        }
+                    } else {
+                        data.push({ "guid": that.guid });
+                    }
+                    if (skipEntity.length) {
+                        var text = "<b>" + skipEntity.length + " of " + that.multiple.length +
+                            "</b> entities selected have already been associated with <b>" + termName +
+                            "</b> term, Do you want to associate the term with other entities ?",
+                            removeCancelButton = false;
+                        if ((skipEntity.length + deletedEntity.length) === that.multiple.length) {
+                            text = (skipEntity.length > 1 ? "All selected" : "Selected") + " entities have already been associated with <b>" + termName + "</b> term";
+                            removeCancelButton = true;
+                        }
+                        var notifyObj = {
+                            text: text,
+                            modal: true,
+                            ok: function(argument) {
+                                if (data.length) {
+                                    model.assignTermToEntity(selectedGuid, _.extend(ajaxOptions, { data: JSON.stringify(data) }));
+                                }
+                            },
+                            cancel: function(argument) {}
+                        }
+                        if (removeCancelButton) {
+                            notifyObj['confirm'] = {
+                                confirm: true,
+                                buttons: [{
+                                        text: 'Ok',
+                                        addClass: 'btn-atlas btn-md',
+                                        click: function(notice) {
+                                            notice.remove();
+                                        }
+                                    },
+                                    null
+                                ]
+                            }
+                        }
+                        Utils.notifyConfirm(notifyObj);
+                    } else if (data.length) {
+                        model.assignTermToEntity(selectedGuid, _.extend(ajaxOptions, { data: JSON.stringify(data) }));
+                    }
                 }
             },
             renderGlossaryTree: function() {
