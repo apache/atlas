@@ -77,6 +77,7 @@ import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.
 public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityDiscoveryService.class);
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
+    private static final String SORT_ATTRIBUTE_NAME = "sortAttributeName";
 
     private final AtlasGraph                      graph;
     private final EntityGraphRetriever            entityRetriever;
@@ -594,7 +595,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             sortByAttributeName = null;
             sortOrder           = null;
         } else {
-            sortByAttributeName = sortByAttribute.getQualifiedName();
+            sortByAttributeName = sortByAttribute.getVertexPropertyName();
 
             if (sortOrder == null) {
                 sortOrder = ASCENDING;
@@ -613,11 +614,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         if (sortOrder == ASCENDING) {
             relatedEntitiesQuery += gremlinQueryProvider.getQuery(RELATIONSHIP_SEARCH_ASCENDING_SORT);
-            bindings.put("sortAttributeName", sortByAttributeName);
+            bindings.put(SORT_ATTRIBUTE_NAME, sortByAttributeName);
 
         } else if (sortOrder == DESCENDING) {
             relatedEntitiesQuery += gremlinQueryProvider.getQuery(RELATIONSHIP_SEARCH_DESCENDING_SORT);
-            bindings.put("sortAttributeName", sortByAttributeName);
+            bindings.put(SORT_ATTRIBUTE_NAME, sortByAttributeName);
         }
 
         relatedEntitiesQuery += gremlinQueryProvider.getQuery(TO_RANGE_LIST);
