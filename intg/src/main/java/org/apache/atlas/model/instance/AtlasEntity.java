@@ -201,6 +201,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setUpdateTime(other.getUpdateTime());
             setVersion(other.getVersion());
             setClassifications(other.getClassifications());
+            setRelationshipAttributes(other.getRelationshipAttributes());
+            setMeanings(other.getMeanings());
         }
     }
 
