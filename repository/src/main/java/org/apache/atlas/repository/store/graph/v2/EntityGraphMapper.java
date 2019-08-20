@@ -1697,12 +1697,13 @@ public class EntityGraphMapper {
     }
 
     public void updateClassificationTextAndNames(AtlasVertex vertex) throws AtlasBaseException {
-        String        guid         = GraphHelper.getGuid(vertex);
-        AtlasEntity   entity       = instanceConverter.getAndCacheEntity(guid);
+        if (StringUtils.isEmpty(vertex.getProperty(CLASSIFICATION_NAMES_KEY, String.class))) {
+            return;
+        }
 
-        if (CollectionUtils.isEmpty(entity.getClassifications())) return;
-
-        List<String> classificationNames           = new ArrayList<>();
+        String guid = GraphHelper.getGuid(vertex);
+        AtlasEntity entity = instanceConverter.getAndCacheEntity(guid);
+        List<String> classificationNames = new ArrayList<>();
         List<String> propagatedClassificationNames = new ArrayList<>();
 
         for (AtlasClassification classification : entity.getClassifications()) {

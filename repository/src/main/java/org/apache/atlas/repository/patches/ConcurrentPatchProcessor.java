@@ -222,6 +222,7 @@ public abstract class ConcurrentPatchProcessor {
 
             try {
                 individualItemProcessor.processVertexItem(vertexId, vertex, typeName, entityType);
+                doCommit();
             } catch (AtlasBaseException e) {
                 LOG.error("Error processing: {}", vertexId, e);
             }
