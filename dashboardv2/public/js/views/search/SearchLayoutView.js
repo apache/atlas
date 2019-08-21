@@ -89,9 +89,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns', 'searchTableFilters', 'entityCountCollection'));
+                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns', 'searchTableFilters', 'metricCollection'));
                 this.type = "basic";
-                this.entityCountObj = _.first(this.entityCountCollection.toJSON());
+                this.entityCountObj = _.first(this.metricCollection.toJSON());
                 this.filterTypeSelected = [];
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
@@ -358,16 +358,35 @@ define(['require',
                         includeDE: null
                     }), param);
             },
-            fetchCollection: function(value) {
-                this.typeHeaders.fetch({ reset: true });
-            },
             onRefreshButton: function() {
-                this.fetchCollection();
-                //to check url query param contain type or not
-                var checkURLValue = Utils.getUrlState.getQueryParams(this.url);
-                if (this.searchVent && (_.has(checkURLValue, "tag") || _.has(checkURLValue, "type") || _.has(checkURLValue, "query"))) {
-                    this.searchVent.trigger('search:refresh');
-                }
+                var that = this,
+                    apiCount = 2,
+                    updateSearchList = function() {
+                        if (apiCount === 0) {
+                            that.initializeValues();
+                            var checkURLValue = Utils.getUrlState.getQueryParams(that.url);
+                            if (that.searchVent && (_.has(checkURLValue, "tag") || _.has(checkURLValue, "type") || _.has(checkURLValue, "query"))) {
+                                that.searchVent.trigger('search:refresh');
+                            }
+                        }
+                    };
+                this.metricCollection.fetch({
+                    skipDefaultError: true,
+                    complete: function() {
+                        --apiCount;
+                        that.entityCountObj = _.first(that.metricCollection.toJSON());
+                        updateSearchList();
+                    }
+                });
+
+                this.typeHeaders.fetch({
+                    skipDefaultError: true,
+                    silent: true,
+                    complete: function() {
+                        --apiCount;
+                        updateSearchList();
+                    }
+                });
             },
             advancedInfo: function(e) {
                 require([

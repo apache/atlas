@@ -85,11 +85,9 @@ define(['require',
             },
             bindEvents: function() {},
             fetchMetricData: function(options) {
-                var that = this,
-                    entityCountCollection = new VTagList();
-                entityCountCollection.url = UrlLinks.entityCountApi();
-                entityCountCollection.modelAttrName = "data";
-                entityCountCollection.fetch({
+                var that = this;
+                this.metricCollection.fetch({
+                    skipDefaultError: true,
                     success: function(data) {
                         var data = _.first(data.toJSON());
                         that.renderStats({ valueObject: data.general.stats, dataObject: data.general });
