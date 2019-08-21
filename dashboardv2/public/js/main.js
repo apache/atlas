@@ -210,16 +210,16 @@ require(['App',
     this.enumDefCollection.url = UrlLinks.enumDefApiUrl();
     this.enumDefCollection.modelAttrName = "enumDefs";
     this.classificationDefCollection = new VTagList();
-    this.entityCountCollection = new VTagList();
-    this.entityCountCollection.url = UrlLinks.entityCountApi();
-    this.entityCountCollection.modelAttrName = "data";
+    this.metricCollection = new VTagList();
+    this.metricCollection.url = UrlLinks.metricsApiUrl();
+    this.metricCollection.modelAttrName = "data";
 
     App.appRouter = new Router({
         entityDefCollection: this.entityDefCollection,
         typeHeaders: this.typeHeaders,
         enumDefCollection: this.enumDefCollection,
         classificationDefCollection: this.classificationDefCollection,
-        entityCountCollection: this.entityCountCollection
+        metricCollection: this.metricCollection
     });
 
     var startApp = function() {
@@ -301,7 +301,7 @@ require(['App',
         }
     });
 
-    this.entityCountCollection.fetch({
+    this.metricCollection.fetch({
         skipDefaultError: true,
         complete: function() {
             --that.asyncFetchCounter;

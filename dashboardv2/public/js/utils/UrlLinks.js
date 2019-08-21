@@ -40,7 +40,7 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         enumDefApiUrl: function(name) {
             return this.getDefApiUrl('enum', name);
         },
-        entityCountApi: function(){
+        metricsApiUrl: function(){
             return this.baseUrl + '/admin/metrics'
         },
         getDefApiUrl: function(type, name) {

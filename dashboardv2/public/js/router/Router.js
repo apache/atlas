@@ -42,7 +42,7 @@ define([
             '*actions': 'defaultAction'
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'entityCountCollection'));
+            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'metricCollection'));
             this.showRegions();
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
@@ -58,7 +58,7 @@ define([
                 'enumDefCollection': this.enumDefCollection,
                 'classificationDefCollection': this.classificationDefCollection,
                 'glossaryCollection': this.glossaryCollection,
-                'entityCountCollection': this.entityCountCollection
+                'metricCollection': this.metricCollection
             }
             this.sharedObj = {
                 searchTableColumns: {},
@@ -77,7 +77,8 @@ define([
                 require([
                     'views/site/Statistics',
                 ], function(Statistics) {
-                    new Statistics();
+                    new Statistics(_.extend({}, that.preFetchedCollectionLists,
+                        that.sharedObj));
                 });
             });
             $('body').on('click', 'li.aboutAtlas', function() {
