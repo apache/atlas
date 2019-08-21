@@ -571,13 +571,7 @@ define(['require',
                         .attr("href", function(d) {
                             var that = this;
                             if (node) {
-                                // to check for IE-10
-                                var originLink = window.location.origin;
-                                if (platform.name === "IE") {
-                                    originLink = window.location.protocol + "//" + window.location.host;
-                                }
-                                var imageIconPath = Utils.getEntityIconPath({ entityData: node }),
-                                    imagePath = ((originLink + Utils.getBaseUrl(window.location.pathname)) + imageIconPath);
+                                var imageIconPath = Utils.getEntityIconPath({ entityData: node });
 
                                 var getImageData = function(options) {
                                     var imagePath = options.imagePath,
@@ -590,12 +584,12 @@ define(['require',
                                     if (platform.name !== "IE") {
                                         ajaxOptions["mimeType"] = "text/plain; charset=x-user-defined";
                                     }
+                                    shapeSvg.attr("data-iconpath", imagePath);
                                     $.ajax(ajaxOptions)
                                         .always(function(data, status, xhr) {
                                             if (data.status == 404) {
                                                 getImageData({
-                                                    "imagePath": Utils.getEntityIconPath({ entityData: node, errorUrl: imagePath }),
-                                                    "imageIconPath": imageIconPath
+                                                    "imagePath": Utils.getEntityIconPath({ entityData: node, errorUrl: imagePath })
                                                 });
                                             } else if (data) {
                                                 if (platform.name !== "IE") {
@@ -608,8 +602,7 @@ define(['require',
                                 }
                                 if (_.keys(imageObject).indexOf(imageIconPath) === -1) {
                                     getImageData({
-                                        "imagePath": imagePath,
-                                        "imageIconPath": imageIconPath
+                                        "imagePath": imageIconPath
                                     });
                                 }
 
@@ -621,6 +614,9 @@ define(['require',
                                     imageObject[imageIconPath].push(d3.select(that));
                                 } else {
                                     d3.select(that).attr("xlink:href", imageObject[imageIconPath]);
+                                    if (imageIconPath !== shapeSvg.attr("data-iconpath")) {
+                                        shapeSvg.attr("data-iconpathorigin", imageIconPath);
+                                    }
                                     return imageObject[imageIconPath];
                                 }
                             }
