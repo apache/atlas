@@ -383,6 +383,11 @@
             <type>war</type>
         </dependency>
         <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-dashboardv3</artifactId>
+            <type>war</type>
+        </dependency>
+        <dependency>
             <groupId>org.easymock</groupId>
             <artifactId>easymock</artifactId>
             <version>3.4</version>
@@ -490,6 +495,10 @@
                         <overlay>
                             <groupId>org.apache.atlas</groupId>
                             <artifactId>atlas-dashboardv2</artifactId>
+                        </overlay>
+                        <overlay>
+                            <groupId>org.apache.atlas</groupId>
+                            <artifactId>atlas-dashboardv3</artifactId>
                         </overlay>
                         <overlay>
                             <!-- empty groupId/artifactId represents the current build -->

@@ -1,13 +1,13 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
+ * or more contributor license agreements. See the NOTICE file
  * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
+ * regarding copyright ownership. The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,8 @@
 'use strict';
 module.exports = function(grunt) {
     var buildTime = new Date().getTime(),
-        distPath = './dist/',
-        libPath = distPath + 'js/libs/',
+        distPath = './dist',
+        libPath = distPath + '/js/libs/',
         isDashboardDirectory = grunt.file.isDir('public'),
         nodeModulePath = './node_modules/',
         modulesPath = 'public/';
@@ -32,19 +32,19 @@ module.exports = function(grunt) {
         watch: {
             js: {
                 files: ['public/**/*.js'],
-                tasks: ['copy:dist']
+                tasks: ['copy:build']
             },
             html: {
                 files: ['public/**/*.html'],
-                tasks: ['copy:dist']
+                tasks: ['copy:build']
             },
             css: {
                 files: ['public/**/*.scss', 'public/**/*.css'],
-                tasks: ['copy:dist', 'sass']
+                tasks: ['copy:build', 'sass']
             },
             image: {
                 files: ['public/**/*.{ico,gif,png}'],
-                tasks: ['copy:dist']
+                tasks: ['copy:build']
             }
         },
         connect: {
@@ -192,36 +192,24 @@ module.exports = function(grunt) {
         rename: {
             main: {
                 files: [
-                    { src: [libPath + '/jstree/css/default/style.min.css'], dest: libPath + '/jstree/css/default/default-theme.min.css' },
-                    { src: [libPath + '/jstree/css/default-dark/style.min.css'], dest: libPath + '/jstree/css/default-dark/default-dark-theme.min.css' },
+                    { src: [libPath + 'jstree/css/default/style.min.css'], dest: libPath + 'jstree/css/default/default-theme.min.css' },
+                    { src: [libPath + 'jstree/css/default-dark/style.min.css'], dest: libPath + 'jstree/css/default-dark/default-dark-theme.min.css' },
                 ]
             }
         },
         sass: {
-            dist: {
-                files: {
-                    'dist/css/style.css': 'public/css/scss/style.scss',
-                    'dist/css/login.css': 'public/css/scss/login.scss'
-                }
-            },
             build: {
                 files: {
-                    'dist/css/style.css': 'dist/css/scss/style.scss',
-                    'dist/css/login.css': 'dist/css/scss/login.scss'
+                    [distPath + '/css/style.css']: modulesPath + 'css/scss/style.scss',
+                    [distPath + '/css/login.css']: modulesPath + 'css/scss/login.scss'
                 }
             }
         },
         copy: {
-            dist: {
-                expand: true,
-                cwd: modulesPath,
-                src: ['**', '!**/scss/**'],
-                dest: distPath
-            },
             build: {
                 expand: true,
                 cwd: modulesPath,
-                src: ['**'],
+                src: ['**', '!**/scss/**', "!index.html.tpl"],
                 dest: distPath
             }
         },
@@ -240,9 +228,9 @@ module.exports = function(grunt) {
                 },
                 files: [{
                     expand: true,
-                    cwd: 'dist/js',
+                    cwd: distPath + '/js',
                     src: ['external_lib/**/*.js', 'libs/**/*.js'],
-                    dest: 'dist/js'
+                    dest: distPath + '/js'
                 }]
             },
             buildjs: {
@@ -253,9 +241,9 @@ module.exports = function(grunt) {
                 },
                 files: [{
                     expand: true,
-                    cwd: 'dist/js',
+                    cwd: distPath + '/js',
                     src: ['**/*.js', '!libs/**', '!external_lib/**'],
-                    dest: 'dist/js'
+                    dest: distPath + '/js'
                 }]
             }
         },
@@ -263,9 +251,9 @@ module.exports = function(grunt) {
             build: {
                 files: [{
                     expand: true,
-                    cwd: 'dist/css',
+                    cwd: distPath + '/css',
                     src: '*.css',
-                    dest: 'dist/css'
+                    dest: distPath + '/css'
                 }]
             }
         },
@@ -277,9 +265,9 @@ module.exports = function(grunt) {
                 },
                 files: [{
                     expand: true,
-                    cwd: 'dist/js/templates',
+                    cwd: distPath + '/js/templates',
                     src: '**/*.html',
-                    dest: 'dist/js/templates'
+                    dest: distPath + '/js/templates'
                 }]
             }
         },
@@ -291,7 +279,7 @@ module.exports = function(grunt) {
                     }
                 },
                 files: {
-                    [distPath + 'index.html']: [modulesPath + 'index.html.tpl']
+                    [distPath + '/index.html']: [modulesPath + 'index.html.tpl']
                 }
             }
         }
@@ -351,9 +339,9 @@ module.exports = function(grunt) {
     grunt.registerTask('dev', [
         'clean',
         'copy:libs',
-        'copy:dist',
+        'copy:build',
         'rename',
-        'sass:dist',
+        'sass:build',
         'template',
         'setupProxies:server',
         'connect:server',
@@ -372,9 +360,9 @@ module.exports = function(grunt) {
     grunt.registerTask('dev-minify', [
         'clean',
         'copy:libs',
-        'copy:dist',
+        'copy:build',
         'rename',
-        'sass:dist',
+        'sass:build',
         'uglify',
         'cssmin',
         'template',

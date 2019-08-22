@@ -70,6 +70,8 @@ define(['require',
                 $('body').toggleClass("full-screen");
             };
             events['click ' + this.ui.signOut] = function() {
+
+                Utils.localStorage.setValue("atlas_ui","classic");
                 var path = Utils.getBaseUrl(window.location.pathname);
                 window.location = path + "/logout.html";
             };

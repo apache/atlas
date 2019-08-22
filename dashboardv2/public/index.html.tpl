@@ -73,6 +73,9 @@
                 </div>
             </div>
         </div>
+        <div class="footer-content">
+            <a href="javascript:void(0)" id="sUI">Switch to Beta UI</a>
+        </div>
     </div>
     <!-- build:js scripts/main.js -->
     <script data-main="js/main.js?bust=<%- bust %>" src="js/libs/requirejs/require.js?bust=<%- bust %>"></script>

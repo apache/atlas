@@ -260,10 +260,10 @@ define(['require',
                     .links(data.links)
                     .size([width, height])
                     .linkDistance(200)
-                    .gravity(0.0)
+                    .gravity(0.5)
                     .friction(0.1)
                     .charge(function(d) {
-                        var charge = -500;
+                        var charge = -2000;
                         if (d.index === 0) charge = 100
                         return charge;
                     })

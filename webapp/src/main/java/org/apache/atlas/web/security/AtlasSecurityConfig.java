@@ -167,10 +167,13 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     public void configure(WebSecurity web) throws Exception {
         List<String> matchers = new ArrayList<>(
-          Arrays.asList("/css/**",
+          Arrays.asList("/css/**","/n/css/**",
             "/img/**",
+            "/n/img/**",
             "/libs/**",
+            "/n/libs/**",
             "/js/**",
+            "/n/js/**",
             "/ieerror.html",
             "/api/atlas/admin/status",
             "/api/atlas/admin/metrics"));

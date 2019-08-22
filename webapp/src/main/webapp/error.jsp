@@ -43,10 +43,10 @@ Redirect();
 </head>
 
 <body>
-<div id="wrapper">
+<div>
     <!-- Page Content Begin -->
     <div id="page-content-wrapper">
-        <div class="page-title clearfix">
+        <div class="page-title clearfix" style="background: none;">
             <h3>Looking for something?</h3>
             <p>We're sorry. The web address you're looking for is not a functioning page in Apache Atlas. Please try navigating from <a href="index.html">Apache Atlas Home</a></p>
         </div>
