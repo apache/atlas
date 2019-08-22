@@ -17,17 +17,23 @@
  */
 package org.apache.atlas.query;
 
+import afu.org.checkerframework.checker.igj.qual.I;
+import jnr.ffi.annotations.In;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.antlr4.AtlasDSLParser;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -163,6 +169,8 @@ public class GremlinQueryComposerTest {
         verify("from DB where (name = \"Reporting\") select name, owner", getExpected(exSel, exMain));
         verify("Table where Asset.name like \"Tab*\"",
                 "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"Tab.*\")).dedup().limit(25).toList()");
+        verify("Table where owner like \"Tab*\"",
+          "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textContainsRegex(\"Tab.*\")).dedup().limit(25).toList()");
         verify("from Table where (db.name = \"Reporting\")",
                 "g.V().has('__typeName', 'Table').out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db').dedup().limit(25).toList()");
     }
@@ -409,6 +417,21 @@ public class GremlinQueryComposerTest {
             } else {
                 type = mock(AtlasEntityType.class);
                 when(type.getTypeCategory()).thenReturn(TypeCategory.ENTITY);
+
+                AtlasStructType.AtlasAttribute attr = mock(AtlasStructType.AtlasAttribute.class);
+                AtlasStructDef.AtlasAttributeDef def = mock(AtlasStructDef.AtlasAttributeDef.class);
+                when(def.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.DEFAULT);
+                when(attr.getAttributeDef()).thenReturn(def);
+
+                AtlasStructType.AtlasAttribute attr_s = mock(AtlasStructType.AtlasAttribute.class);
+                AtlasStructDef.AtlasAttributeDef def_s = mock(AtlasStructDef.AtlasAttributeDef.class);
+                when(def_s.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.STRING);
+
+                when(attr_s.getAttributeDef()).thenReturn(def_s);
+
+                when(((AtlasEntityType) type).getAttribute(anyString())).thenReturn(attr);
+                when(((AtlasEntityType) type).getAttribute(eq("name"))).thenReturn(attr_s);
+
             }
 
             if(typeName.equals("PIII")) {

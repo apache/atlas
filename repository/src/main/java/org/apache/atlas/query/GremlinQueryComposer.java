@@ -171,6 +171,7 @@ public class GremlinQueryComposer {
         }
 
         String                currentType = context.getActiveTypeName();
+
         IdentifierHelper.Info org         = null;
         IdentifierHelper.Info lhsI        = createInfo(lhs);
         if (!lhsI.isPrimitive()) {
@@ -193,7 +194,14 @@ public class GremlinQueryComposer {
         rhs = addQuotesIfNecessary(lhsI, rhs);
         SearchParameters.Operator op = SearchParameters.Operator.fromString(operator);
         if (op == SearchParameters.Operator.LIKE) {
-            add(GremlinClause.TEXT_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
+            final AtlasStructType.AtlasAttribute attribute = context.getActiveEntityType().getAttribute(lhsI.getAttributeName());
+            final AtlasStructDef.AtlasAttributeDef.IndexType indexType = attribute.getAttributeDef().getIndexType();
+
+            if (indexType == AtlasStructDef.AtlasAttributeDef.IndexType.STRING) {
+                add(GremlinClause.STRING_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
+            } else {
+                add(GremlinClause.TEXT_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
+            }
         } else if (op == SearchParameters.Operator.IN) {
             add(GremlinClause.HAS_OPERATOR, getPropertyForClause(lhsI), "within", rhs);
         } else {
