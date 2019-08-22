@@ -4,10 +4,10 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://gitbox.apache.org/repos/asf/incubator-atlas.git"
+    "url": "https://git-wip-us.apache.org/repos/asf/incubator-atlas.git"
   },
   "scripts": {
-    "dev": "grunt dev",
+    "start": "grunt dev",
     "build": "grunt build",
     "dev-minify": "grunt dev-minify",
     "build-minify": "grunt build-minify"
@@ -43,7 +43,6 @@
     "jstree": "3.3.5",
     "moment": "2.21.0",
     "moment-timezone": "0.5.14",
-    "npm": "^5.8.0",
     "nvd3": "1.8.5",
     "platform": "1.3.4",
     "pnotify": "3.2.0",
@@ -55,16 +54,16 @@
     "underscore": "1.8.3"
   },
   "devDependencies": {
-    "grunt": "1.0.2",
+    "grunt": "1.0.4",
     "grunt-cli": "1.2.0",
     "grunt-contrib-clean": "1.1.0",
     "grunt-contrib-connect": "1.0.2",
     "grunt-contrib-copy": "1.0.0",
     "grunt-contrib-cssmin": "2.0.0",
     "grunt-contrib-htmlmin": "2.2.0",
-    "grunt-contrib-rename": "^0.2.0",
+    "grunt-contrib-rename": "0.2.0",
     "grunt-contrib-uglify": "2.1.0",
-    "grunt-contrib-watch": "1.0.0",
+    "grunt-contrib-watch": "1.1.0",
     "grunt-middleware-proxy": "1.0.7",
     "grunt-sass": "2.1.0",
     "grunt-template": "1.0.0",

@@ -284,7 +284,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
                 table += '<tr class="' + appendClass + '"><td>' + (_.escape(key) + listCount) + '</td><td>' + htmlTag + '</td></tr>';
             } else {
-                table += '<div>' + val + '</div>';
+                table += '<span>' + val + '</span>';
             }
 
         });
