@@ -54,6 +54,7 @@ import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.utils.HttpClientUtils;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.auth.KerberosScheme;
 import org.apache.http.protocol.HttpContext;
@@ -139,7 +140,7 @@ public class Solr6Index implements IndexProvider {
     private static final char   CHROOT_START_CHAR = '/';
 
     private static Solr6Index instance = null;
-    public static final ConfigOption<Boolean> CREATE_SOLR_CLIENT_PER_REQUEST = new ConfigOption(SOLR_NS, "create-client-per-request", "when false, allows the sharing of solr client across other components.", org.janusgraph.diskstorage.configuration.ConfigOption.Type.LOCAL, true);
+    public static final ConfigOption<Boolean> CREATE_SOLR_CLIENT_PER_REQUEST = new ConfigOption(SOLR_NS, "create-client-per-request", "when false, allows the sharing of solr client across other components.", org.janusgraph.diskstorage.configuration.ConfigOption.Type.LOCAL, false);
 
     private enum Mode {
         HTTP, CLOUD;
@@ -251,6 +252,9 @@ public class Solr6Index implements IndexProvider {
     }
 
     private SolrClient createSolrClient() {
+        if(logger.isDebugEnabled()) {
+            logger.debug("HttpClientBuilder = {}", HttpClientUtil.getHttpClientBuilder(), new Exception());
+        }
         final ModifiableSolrParams clientParams = new ModifiableSolrParams();
         SolrClient solrClient = null;
 
