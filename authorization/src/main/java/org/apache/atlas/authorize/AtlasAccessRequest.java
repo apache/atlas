@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,6 +44,8 @@ public class AtlasAccessRequest {
     private       String         user            = null;
     private       Set<String>    userGroups      = null;
     private       String         clientIPAddress = null;
+    private       List<String>   forwardedAddresses;
+    private       String         remoteIPAddress;
 
 
     protected AtlasAccessRequest(AtlasPrivilege action) {
@@ -50,7 +53,14 @@ public class AtlasAccessRequest {
     }
 
     protected AtlasAccessRequest(AtlasPrivilege action, String user, Set<String> userGroups) {
-        this(action, user, userGroups, new Date(), null);
+        this(action, user, userGroups, new Date(), null, null, null);
+    }
+
+    protected AtlasAccessRequest(AtlasPrivilege action, String user, Set<String> userGroups, Date accessTime,
+                                 String clientIPAddress, List<String> forwardedAddresses, String remoteIPAddress) {
+        this(action, user, userGroups, accessTime, clientIPAddress);
+        this.forwardedAddresses  = forwardedAddresses;
+        this.remoteIPAddress     = remoteIPAddress;
     }
 
     protected AtlasAccessRequest(AtlasPrivilege action, String user, Set<String> userGroups, Date accessTime, String clientIPAddress) {
@@ -82,8 +92,24 @@ public class AtlasAccessRequest {
         this.userGroups = userGroups;
     }
 
+    public List<String> getForwardedAddresses() {
+        return forwardedAddresses;
+    }
+
+    public String getRemoteIPAddress() {
+        return remoteIPAddress;
+    }
+
     public String getClientIPAddress() {
         return clientIPAddress;
+    }
+
+    public void setForwardedAddresses(List<String> forwardedAddresses) {
+        this.forwardedAddresses = forwardedAddresses;
+    }
+
+    public void setRemoteIPAddress(String remoteIPAddress) {
+        this.remoteIPAddress = remoteIPAddress;
     }
 
     public void setClientIPAddress(String clientIPAddress) {
@@ -168,7 +194,10 @@ public class AtlasAccessRequest {
 
     @Override
     public String toString() {
-        return "AtlasAccessRequest[action=" + action + ", accessTime=" + accessTime + ", user=" + user +
-                                   ", userGroups=" + userGroups + ", clientIPAddress=" + clientIPAddress + "]";
+        return "AtlasAccessRequest[" + "action=" + action + ", accessTime=" + accessTime +", user='" + user + '\'' +
+                ", userGroups=" + userGroups + ", clientIPAddress='" + clientIPAddress + '\'' +
+                ", forwardedAddresses=" + forwardedAddresses + ", remoteIPAddress='" + remoteIPAddress + '\'' +
+                ']';
+
     }
 }

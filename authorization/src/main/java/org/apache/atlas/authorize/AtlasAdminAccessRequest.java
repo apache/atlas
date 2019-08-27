@@ -33,6 +33,7 @@ public class AtlasAdminAccessRequest extends AtlasAccessRequest {
     @Override
     public String toString() {
         return "AtlasAdminAccessRequest[action=" + getAction() + ", accessTime=" + getAccessTime() + ", user=" + getUser() +
-                                        ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() + "]";
+                                        ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() +
+                ", forwardedAddresses=" + getForwardedAddresses() + ", remoteIPAddress=" + getRemoteIPAddress() + "]";
     }
 }

@@ -88,6 +88,7 @@ public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
     public String toString() {
         return "AtlasRelationshipAccessRequest[relationshipType=" + relationshipType + ", end1Entity=" + end1Entity + ", end2Entity=" + end2Entity +
                 ", action=" + getAction() + ", accessTime=" + getAccessTime() + ", user=" + getUser() +
-                ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() + "]";
+                ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() +
+                ", forwardedAddresses=" + getForwardedAddresses() + ", remoteIPAddress=" + getRemoteIPAddress() + "]";
     }
 }

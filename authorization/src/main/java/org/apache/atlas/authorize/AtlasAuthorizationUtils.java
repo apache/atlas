@@ -35,6 +35,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
+import java.util.Arrays;
 
 public class AtlasAuthorizationUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
@@ -79,6 +81,8 @@ public class AtlasAuthorizationUtils {
 
                 request.setUser(userName, getCurrentUserGroups());
                 request.setClientIPAddress(RequestContext.get().getClientIPAddress());
+                request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
+                request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
 
                 authorizer.scrubSearchResults(request);
             } catch (AtlasAuthorizationException e) {
@@ -99,6 +103,8 @@ public class AtlasAuthorizationUtils {
 
                 request.setUser(userName, getCurrentUserGroups());
                 request.setClientIPAddress(RequestContext.get().getClientIPAddress());
+                request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
+                request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
                 ret = authorizer.isAccessAllowed(request);
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
@@ -124,6 +130,8 @@ public class AtlasAuthorizationUtils {
 
                 request.setUser(getCurrentUserName(), getCurrentUserGroups());
                 request.setClientIPAddress(RequestContext.get().getClientIPAddress());
+                request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
+                request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
                 ret = authorizer.isAccessAllowed(request);
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
@@ -149,6 +157,8 @@ public class AtlasAuthorizationUtils {
 
                 request.setUser(getCurrentUserName(), getCurrentUserGroups());
                 request.setClientIPAddress(RequestContext.get().getClientIPAddress());
+                request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
+                request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
                 ret = authorizer.isAccessAllowed(request);
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
@@ -174,6 +184,8 @@ public class AtlasAuthorizationUtils {
 
                 request.setUser(getCurrentUserName(), getCurrentUserGroups());
                 request.setClientIPAddress(RequestContext.get().getClientIPAddress());
+                request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
+                request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
                 ret = authorizer.isAccessAllowed(request);
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
@@ -185,6 +197,16 @@ public class AtlasAuthorizationUtils {
         RequestContext.get().endMetricRecord(metric);
 
         return ret;
+    }
+
+    public static List<String> getForwardedAddressesFromRequest(HttpServletRequest httpServletRequest){
+        String ipAddress = httpServletRequest.getHeader("X-FORWARDED-FOR");
+        String[] forwardedAddresses = null ;
+
+        if(!StringUtils.isEmpty(ipAddress)){
+            forwardedAddresses = ipAddress.split(",");
+        }
+        return forwardedAddresses != null ? Arrays.asList(forwardedAddresses) : null;
     }
 
     public static String getRequestIpAddress(HttpServletRequest httpServletRequest) {
