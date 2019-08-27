@@ -44,6 +44,7 @@ public class AtlasTypeAccessRequest extends AtlasAccessRequest {
     @Override
     public String toString() {
         return "AtlasEntityAccessRequest[typeDef=" + typeDef + ", action=" + getAction() + ", accessTime=" + getAccessTime() +
-                                         ", user=" + getUser() + ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() + "]";
+                ", user=" + getUser() + ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() +
+                ", forwardedAddresses=" + getForwardedAddresses() + ", remoteIPAddress=" + getRemoteIPAddress() + "]";
     }
 }

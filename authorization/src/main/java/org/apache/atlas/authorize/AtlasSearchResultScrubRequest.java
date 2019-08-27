@@ -47,7 +47,8 @@ public class AtlasSearchResultScrubRequest extends AtlasAccessRequest {
     @Override
     public String toString() {
         return "AtlasSearchResultScrubRequest[searchResult=" + searchResult + ", action=" + getAction() + ", accessTime=" + getAccessTime() + ", user=" + getUser() +
-                                         ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() + "]";
+                ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() +
+                ", forwardedAddresses=" + getForwardedAddresses() + ", remoteIPAddress=" + getRemoteIPAddress() + "]";
     }
 }
 

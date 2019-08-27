@@ -91,6 +91,7 @@ public class AuditFilter implements Filter {
             requestContext.setUser(user, userGroups);
             requestContext.setClientIPAddress(AtlasAuthorizationUtils.getRequestIpAddress(httpRequest));
             requestContext.setCreateShellEntityForNonExistingReference(createShellEntityForNonExistingReference);
+            requestContext.setForwardedAddresses(AtlasAuthorizationUtils.getForwardedAddressesFromRequest(httpRequest));
 
             if (StringUtils.isNotEmpty(deleteType)) {
                 if (deleteTypeOverrideEnabled) {

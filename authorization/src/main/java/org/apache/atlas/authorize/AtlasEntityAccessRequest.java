@@ -107,8 +107,9 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
     @Override
     public String toString() {
         return "AtlasEntityAccessRequest[entity=" + entity + ", classification=" + classification + ", attributeName=" + attributeName +
-                                         ", action=" + getAction() + ", accessTime=" + getAccessTime() + ", user=" + getUser() +
-                                         ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() + "]";
+                ", action=" + getAction() + ", accessTime=" + getAccessTime() + ", user=" + getUser() +
+                ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() +
+                ", forwardedAddresses=" + getForwardedAddresses() + ", remoteIPAddress=" + getRemoteIPAddress() + "]";
     }
 }
 
