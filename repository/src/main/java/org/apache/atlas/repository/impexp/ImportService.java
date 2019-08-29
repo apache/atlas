@@ -24,8 +24,10 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.entitytransform.BaseEntityHandler;
 import org.apache.atlas.entitytransform.TransformerContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
@@ -54,24 +56,28 @@ import static org.apache.atlas.model.impexp.AtlasImportRequest.TRANSFORMS_KEY;
 public class ImportService {
     private static final Logger LOG = LoggerFactory.getLogger(ImportService.class);
 
+    private static final String ATLAS_TYPE_HIVE_TABLE = "hive_table";
     private final AtlasTypeDefStore typeDefStore;
     private final AtlasTypeRegistry typeRegistry;
     private final BulkImporter bulkImporter;
     private final AuditsWriter auditsWriter;
     private final ImportTransformsShaper importTransformsShaper;
 
+    private TableReplicationRequestProcessor tableReplicationRequestProcessor;
+
     private long startTimestamp;
     private long endTimestamp;
 
     @Inject
     public ImportService(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry, BulkImporter bulkImporter,
-                         AuditsWriter auditsWriter,
-                         ImportTransformsShaper importTransformsShaper) {
+                         AuditsWriter auditsWriter, ImportTransformsShaper importTransformsShaper,
+                         TableReplicationRequestProcessor tableReplicationRequestProcessor) {
         this.typeDefStore = typeDefStore;
         this.typeRegistry = typeRegistry;
         this.bulkImporter = bulkImporter;
         this.auditsWriter = auditsWriter;
         this.importTransformsShaper = importTransformsShaper;
+        this.tableReplicationRequestProcessor = tableReplicationRequestProcessor;
     }
 
     public AtlasImportResult run(InputStream inputStream, String userName,
@@ -109,7 +115,11 @@ public class ImportService {
             startTimestamp = System.currentTimeMillis();
             processTypes(source.getTypesDef(), result);
             setStartPosition(request, source);
+
             processEntities(userName, source, result);
+
+            processReplicationDeletion(source.getExportResult().getRequest(), request);
+
         } catch (AtlasBaseException excp) {
             LOG.error("import(user={}, from={}): failed", userName, requestingIP, excp);
 
@@ -228,6 +238,12 @@ public class ImportService {
         auditsWriter.write(userName, result, startTimestamp, endTimestamp, importSource.getCreationOrder());
     }
 
+    private void processReplicationDeletion(AtlasExportRequest exportRequest, AtlasImportRequest importRequest) throws AtlasBaseException {
+        if (checkHiveTableIncrementalSkipLineage(importRequest, exportRequest)) {
+            tableReplicationRequestProcessor.process(exportRequest, importRequest);
+        }
+    }
+
     private int getDuration(long endTime, long startTime) {
         return (int) (endTime - startTime);
     }
@@ -239,9 +255,25 @@ public class ImportService {
             }
 
             return new ZipSourceWithBackingDirectory(inputStream, configuredTemporaryDirectory);
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             throw new AtlasBaseException(ex);
         }
+    }
+
+    @VisibleForTesting
+    boolean checkHiveTableIncrementalSkipLineage(AtlasImportRequest importRequest, AtlasExportRequest exportRequest) {
+        if (CollectionUtils.isEmpty(exportRequest.getItemsToExport())) {
+            return false;
+        }
+
+        for (AtlasObjectId itemToExport : exportRequest.getItemsToExport()) {
+            if (!itemToExport.getTypeName().equalsIgnoreCase(ATLAS_TYPE_HIVE_TABLE)){
+                return false;
+            }
+        }
+
+        return importRequest.isReplicationOptionSet() && exportRequest.isReplicationOptionSet() &&
+                exportRequest.getFetchTypeOptionValue().equalsIgnoreCase(AtlasExportRequest.FETCH_TYPE_INCREMENTAL) &&
+                exportRequest.getSkipLineageOptionValue();
     }
 }

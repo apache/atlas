@@ -24,9 +24,11 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -41,10 +43,7 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.shaded.kryo.io.Input;
 import org.mockito.stubbing.Answer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.ITestContext;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterTest;
@@ -55,6 +54,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,11 +62,17 @@ import java.util.Map;
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getDefaultImportRequest;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getInputStreamFrom;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromResourcesJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runAndVerifyQuickStart_v1_Import;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithParameters;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.OPTION_FETCH_TYPE;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.OPTION_KEY_REPLICATED_TO;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.OPTION_SKIP_LINEAGE;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_FULL;
+import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_INCREMENTAL;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -398,7 +404,7 @@ public class ImportServiceTest extends ExportImportTestBase {
 
     @Test
     public void importServiceProcessesIOException() {
-        ImportService importService = new ImportService(typeDefStore, typeRegistry, null, null,null);
+        ImportService importService = new ImportService(typeDefStore, typeRegistry, null,null, null,null);
         AtlasImportRequest req = mock(AtlasImportRequest.class);
 
         Answer<Map> answer = invocationOnMock -> {
@@ -453,8 +459,8 @@ public class ImportServiceTest extends ExportImportTestBase {
 
     @Test(dataProvider = "salesNewTypeAttrs-next")
     public void transformUpdatesForSubTypesAddsToExistingTransforms(InputStream inputStream) throws IOException, AtlasBaseException {
-            loadBaseModel();
-            loadHiveModel();
+        loadBaseModel();
+        loadHiveModel();
 
         String transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"replace:@cl1:@cl2\" ] }, \"hive_table\": { \"qualifiedName\":[ \"lowercase\" ] } }";
         ZipSource zipSource = new ZipSource(inputStream);
@@ -467,10 +473,71 @@ public class ImportServiceTest extends ExportImportTestBase {
         assertEquals(importTransforms.getTransforms().get("hive_table").get("qualifiedName").size(), 2);
     }
 
-
     @Test(expectedExceptions = AtlasBaseException.class)
     public void importEmptyZip() throws IOException, AtlasBaseException {
-        new ZipSource((InputStream) getZipSource("empty.zip")[0][0]);
+        new ZipSource(getInputStreamFrom("empty.zip"));
+    }
+
+    @Test
+    public void testCheckHiveTableIncrementalSkipLineage() {
+        AtlasImportRequest importRequest;
+        AtlasExportRequest exportRequest;
+
+        importRequest = getImportRequest("cl1");
+        exportRequest = getExportRequest(FETCH_TYPE_INCREMENTAL, "cl2", true, getItemsToExport("hive_table", "hive_table"));
+        assertTrue(importService.checkHiveTableIncrementalSkipLineage(importRequest, exportRequest));
+
+        exportRequest = getExportRequest(FETCH_TYPE_INCREMENTAL, "cl2", true, getItemsToExport("hive_table", "hive_db", "hive_table"));
+        assertFalse(importService.checkHiveTableIncrementalSkipLineage(importRequest, exportRequest));
+
+        exportRequest = getExportRequest(FETCH_TYPE_FULL, "cl2", true, getItemsToExport("hive_table", "hive_table"));
+        assertFalse(importService.checkHiveTableIncrementalSkipLineage(importRequest, exportRequest));
+
+        exportRequest = getExportRequest(FETCH_TYPE_FULL, "", true, getItemsToExport("hive_table", "hive_table"));
+        assertFalse(importService.checkHiveTableIncrementalSkipLineage(importRequest, exportRequest));
+
+        importRequest = getImportRequest("");
+        exportRequest = getExportRequest(FETCH_TYPE_INCREMENTAL, "cl2", true, getItemsToExport("hive_table", "hive_table"));
+        assertFalse(importService.checkHiveTableIncrementalSkipLineage(importRequest, exportRequest));
+    }
+
+    private AtlasImportRequest getImportRequest(String replicatedFrom){
+        AtlasImportRequest importRequest = getDefaultImportRequest();
+
+        if (!StringUtils.isEmpty(replicatedFrom)) {
+            importRequest.setOption(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM, replicatedFrom);
+        }
+        return importRequest;
+    }
+
+    private AtlasExportRequest getExportRequest(String fetchType, String replicatedTo, boolean skipLineage, List<AtlasObjectId> itemsToExport){
+        AtlasExportRequest request = new AtlasExportRequest();
+
+        request.setOptions(getOptionsMap(fetchType, replicatedTo, skipLineage));
+        request.setItemsToExport(itemsToExport);
+        return request;
+    }
+
+    private List<AtlasObjectId> getItemsToExport(String... typeNames){
+        List<AtlasObjectId> itemsToExport = new ArrayList<>();
+        for (String typeName : typeNames) {
+            itemsToExport.add(new AtlasObjectId(typeName, "qualifiedName", "db.table@cluster"));
+        }
+        return itemsToExport;
+    }
+
+    private Map<String, Object> getOptionsMap(String fetchType, String replicatedTo, boolean skipLineage){
+        Map<String, Object> options = new HashMap<>();
+
+        if (!StringUtils.isEmpty(fetchType)) {
+            options.put(OPTION_FETCH_TYPE, fetchType);
+        }
+        if (!StringUtils.isEmpty(replicatedTo)) {
+            options.put(OPTION_KEY_REPLICATED_TO, replicatedTo);
+        }
+        options.put(OPTION_SKIP_LINEAGE, skipLineage);
+
+        return options;
     }
 
     @Test(dataProvider = "dup_col_data")
