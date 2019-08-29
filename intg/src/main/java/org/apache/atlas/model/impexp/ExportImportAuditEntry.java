@@ -37,6 +37,7 @@ public class ExportImportAuditEntry extends AtlasBaseModelObject implements Seri
     private static final long serialVersionUID = 1L;
     public static final String OPERATION_EXPORT = "EXPORT";
     public static final String OPERATION_IMPORT = "IMPORT";
+    public static final String OPERATION_IMPORT_DELETE_REPL = "IMPORT_DELETE_REPL";
 
     private String userName;
     private String operation;

@@ -44,6 +44,7 @@ import org.springframework.util.CollectionUtils;
 import javax.inject.Inject;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class AuditsWriter {
@@ -68,6 +69,10 @@ public class AuditsWriter {
         this.auditService = auditService;
     }
 
+    public AtlasServerService getAtlasServerService() {
+        return atlasServerService;
+    }
+
     public void write(String userName, AtlasExportResult result,
                       long startTime, long endTime,
                       List<String> entityCreationOrder) throws AtlasBaseException {
@@ -78,6 +83,12 @@ public class AuditsWriter {
                       long startTime, long endTime,
                       List<String> entityCreationOrder) throws AtlasBaseException {
         auditForImport.add(userName, result, startTime, endTime, entityCreationOrder);
+    }
+
+    public void write(String userName, String sourceCluster,
+                      long startTime, long endTime,
+                      Set<String> entityCreationOrder) throws AtlasBaseException {
+        auditForImport.add(userName, sourceCluster, startTime, endTime, entityCreationOrder);
     }
 
     private void updateReplicationAttribute(boolean isReplicationSet,
@@ -239,6 +250,17 @@ public class AuditsWriter {
 
             updateReplicationAttribute(replicationOptionState, sourceServerName, sourceServerFullName, entityGuids,
                     Constants.ATTR_NAME_REPLICATED_FROM, result.getExportResult().getChangeMarker());
+        }
+
+        public void add(String userName, String sourceCluster, long startTime,
+                        long endTime, Set<String> entityGuids) throws AtlasBaseException {
+
+            sourceServerName = getServerNameFromFullName(sourceCluster);
+            auditService.add(userName,
+                    sourceServerName, getCurrentClusterName(),
+                    ExportImportAuditEntry.OPERATION_IMPORT_DELETE_REPL,
+                    AtlasType.toJson(entityGuids), startTime, endTime, !entityGuids.isEmpty());
+
         }
     }
 }
