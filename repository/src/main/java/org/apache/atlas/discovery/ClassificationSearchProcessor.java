@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.discovery;
 
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -58,6 +59,8 @@ import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPE
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.EQUAL;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
 
 
 public class ClassificationSearchProcessor extends SearchProcessor {
@@ -72,7 +75,6 @@ public class ClassificationSearchProcessor extends SearchProcessor {
     private final String              gremlinTagFilterQuery;
     private final Map<String, Object> gremlinQueryBindings;
 
-
     public ClassificationSearchProcessor(SearchContext context) {
         super(context);
 
@@ -83,6 +85,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         final Set<String>             allAttributes      = new HashSet<>();
         final Set<String>             typeAndSubTypes       = context.getClassificationTypes();
         final String                  typeAndSubTypesQryStr = context.getClassificationTypesQryStr();
+        final String                  sortBy                = context.getSearchParameters().getSortBy();
+        final SortOrder               sortOrder             = context.getSearchParameters().getSortOrder();
 
         processSearchAttributes(classificationType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
 
@@ -185,6 +189,11 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 final Predicate activePredicate = SearchPredicateUtil.getEQPredicateGenerator().generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
 
                 entityPredicateTraitNames = PredicateUtils.andPredicate(entityPredicateTraitNames, activePredicate);
+            }
+
+            if (sortBy != null && !sortBy.isEmpty()) {
+                AtlasGraphQuery.SortOrder qrySortOrder = sortOrder == SortOrder.ASCENDING ? ASC : DESC;
+                entityGraphQueryTraitNames.orderBy(sortBy, qrySortOrder);
             }
 
             gremlinTagFilterQuery = null;

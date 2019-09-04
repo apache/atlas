@@ -106,6 +106,9 @@ public class SearchContext {
         // Invalid attributes will raise an exception with 400 error code
         validateAttributes(entityType, searchParameters.getEntityFilters());
 
+        // Invalid attribute will raise an exception with 400 error code
+        validateAttributes(entityType, searchParameters.getSortBy());
+
         // Invalid attributes will raise an exception with 400 error code
         validateAttributes(classificationType, searchParameters.getTagFilters());
 
@@ -253,10 +256,15 @@ public class SearchContext {
                 }
             } else {
                 String attributeName = filterCriteria.getAttributeName();
+                validateAttributes(structType, attributeName);
+            }
+        }
+    }
 
-                if (StringUtils.isNotEmpty(attributeName) && structType.getAttributeType(attributeName) == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attributeName, structType.getTypeName());
-                }
+    private void validateAttributes(final AtlasStructType structType, final String... attributeNames) throws AtlasBaseException {
+        for (String attributeName : attributeNames) {
+            if (StringUtils.isNotEmpty(attributeName) && structType.getAttributeType(attributeName) == null) {
+                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attributeName, structType.getTypeName());
             }
         }
     }

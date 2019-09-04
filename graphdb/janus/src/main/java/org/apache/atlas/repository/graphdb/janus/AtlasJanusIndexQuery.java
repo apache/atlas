@@ -25,6 +25,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.janusgraph.core.JanusGraphIndexQuery;
 import org.janusgraph.core.JanusGraphVertex;
 
@@ -61,6 +62,29 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         Preconditions.checkArgument(offset >=0, "Index offset should be greater than or equals to 0");
         Preconditions.checkArgument(limit >=0, "Index limit should be greater than or equals to 0");
         Iterator<JanusGraphIndexQuery.Result<JanusGraphVertex>> results = query
+                .offset(offset)
+                .limit(limit)
+                .vertices().iterator();
+
+        Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
+                new Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
+
+                    @Override
+                    public Result<AtlasJanusVertex, AtlasJanusEdge> apply(JanusGraphIndexQuery.Result<JanusGraphVertex> source) {
+                        return new ResultImpl(source);
+                    }
+                };
+
+        return Iterators.transform(results, function);
+    }
+
+    @Override
+    public Iterator<Result<AtlasJanusVertex, AtlasJanusEdge>> vertices(int offset, int limit, String sortBy, Order sortOrder) {
+        Preconditions.checkArgument(offset >=0, "Index offset should be greater than or equals to 0");
+        Preconditions.checkArgument(limit >=0, "Index limit should be greater than or equals to 0");
+
+        Iterator<JanusGraphIndexQuery.Result<JanusGraphVertex>> results = query
+                .orderBy(sortBy, sortOrder)
                 .offset(offset)
                 .limit(limit)
                 .vertices().iterator();

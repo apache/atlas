@@ -129,6 +129,12 @@ public class BasicSearchIT extends BaseResourceIT {
                     assertNotNull(searchResult.getEntities());
                     assertEquals(searchResult.getEntities().size(), testExpectation.expectedCount);
                 }
+
+                if (testExpectation.searchParameters.getSortBy() != null && !testExpectation.searchParameters.getSortBy().isEmpty()) {
+                    assertNotNull(searchResult.getEntities());
+                    assertEquals(searchResult.getEntities().get(0).getAttribute("name"),
+                            "testtable_3");
+                }
             }
         } catch (IOException | AtlasServiceException e) {
             fail(e.getMessage());
