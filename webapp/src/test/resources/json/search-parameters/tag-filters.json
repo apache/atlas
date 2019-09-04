@@ -12,5 +12,22 @@
       "classification":"fooTag"
     },
     "expectedCount": 1
+  },
+  {
+    "testDescription": "Search for exact Tag name order by",
+    "searchParameters": {
+      "entityFilters":null,
+      "tagFilters":null,
+      "attributes":null,
+      "query":null,
+      "excludeDeletedEntities":true,
+      "limit":25,
+      "typeName":null,
+      "sortBy": "name",
+      "sortOrder": "DESCENDING",
+      "classification":"fooTag"
+    },
+    "expectedCount": 1
   }
+
 ]

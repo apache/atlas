@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.discovery;
 
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
@@ -24,11 +25,14 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.PredicateUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +43,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
@@ -46,6 +51,8 @@ import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPE
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.EQUAL;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
 
 public class EntitySearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(EntitySearchProcessor.class);
@@ -66,6 +73,8 @@ public class EntitySearchProcessor extends SearchProcessor {
         final Set<String>     allAttributes   = new HashSet<>();
         final Set<String>     typeAndSubTypes       = context.getEntityTypes();
         final String          typeAndSubTypesQryStr = context.getEntityTypesQryStr();
+        final String          sortBy                = context.getSearchParameters().getSortBy();
+        final SortOrder       sortOrder             = context.getSearchParameters().getSortOrder();
 
         final AtlasClassificationType classificationType            = context.getClassificationType();
         final Set<String>             classificationTypeAndSubTypes = context.getClassificationTypes();
@@ -190,11 +199,17 @@ public class EntitySearchProcessor extends SearchProcessor {
                     graphQueryPredicate = activePredicate;
                 }
             }
+
+            if (sortBy != null && !sortBy.isEmpty()) {
+                AtlasGraphQuery.SortOrder qrySortOrder = sortOrder == SortOrder.ASCENDING ? ASC : DESC;
+                graphQuery.orderBy(sortBy, qrySortOrder);
+            }
+
+
         } else {
             graphQuery = null;
             graphQueryPredicate = null;
         }
-
 
         // Prepare the graph query and in-memory filter for the filtering phase
         filterGraphQueryPredicate = typeNamePredicate;
@@ -213,6 +228,7 @@ public class EntitySearchProcessor extends SearchProcessor {
         if (context.getSearchParameters().getExcludeDeletedEntities()) {
             filterGraphQueryPredicate = PredicateUtils.andPredicate(filterGraphQueryPredicate, activePredicate);
         }
+
     }
 
     @Override
@@ -241,6 +257,19 @@ public class EntitySearchProcessor extends SearchProcessor {
 
             final List<AtlasVertex> entityVertices = new ArrayList<>();
 
+            SortOrder sortOrder = context.getSearchParameters().getSortOrder();
+            String sortBy = context.getSearchParameters().getSortBy();
+
+            final AtlasEntityType entityType = context.getEntityType();
+            AtlasStructType.AtlasAttribute sortByAttribute = entityType.getAttribute(sortBy);
+            if (sortByAttribute == null) {
+                sortBy = null;
+            } else {
+                sortBy = sortByAttribute.getVertexPropertyName();
+            }
+
+            if (sortOrder == null) { sortOrder = ASCENDING; }
+
             for (; ret.size() < limit; qryOffset += limit) {
                 entityVertices.clear();
 
@@ -253,7 +282,14 @@ public class EntitySearchProcessor extends SearchProcessor {
                 final boolean isLastResultPage;
 
                 if (indexQuery != null) {
-                    Iterator<AtlasIndexQuery.Result> idxQueryResult = indexQuery.vertices(qryOffset, limit);
+                    Iterator<AtlasIndexQuery.Result> idxQueryResult;
+
+                    if (StringUtils.isEmpty(sortBy)) {
+                        idxQueryResult = indexQuery.vertices(qryOffset, limit);
+                    } else {
+                        Order qrySortOrder = sortOrder == SortOrder.ASCENDING ? Order.asc : Order.desc;
+                        idxQueryResult = indexQuery.vertices(qryOffset, limit, sortBy, qrySortOrder);
+                    }
 
                     getVerticesFromIndexQueryResult(idxQueryResult, entityVertices);
 

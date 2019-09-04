@@ -609,12 +609,7 @@ public class Solr6Index implements IndexProvider {
         final String queryFilter = buildQueryFilter(query.getCondition(), information.get(collection));
         solrQuery.addFilterQuery(queryFilter);
         if (!query.getOrder().isEmpty()) {
-            final List<IndexQuery.OrderEntry> orders = query.getOrder();
-            for (final IndexQuery.OrderEntry order1 : orders) {
-                final String item = order1.getKey();
-                final SolrQuery.ORDER order = order1.getOrder() == Order.ASC ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc;
-                solrQuery.addSort(new SolrQuery.SortClause(item, order));
-            }
+            addOrderToQuery(solrQuery, query.getOrder());
         }
         solrQuery.setStart(0);
         if (query.hasLimit()) {
@@ -624,6 +619,14 @@ public class Solr6Index implements IndexProvider {
         }
         return executeQuery(query.hasLimit() ? query.getLimit() : null, 0, collection, solrQuery,
                 doc -> doc.getFieldValue(keyIdField).toString());
+    }
+
+    private void addOrderToQuery(SolrQuery solrQuery, List<IndexQuery.OrderEntry> orders) {
+        for (final IndexQuery.OrderEntry order1 : orders) {
+            final String item = order1.getKey();
+            final SolrQuery.ORDER order = order1.getOrder() == Order.ASC ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc;
+            solrQuery.addSort(new SolrQuery.SortClause(item, order));
+        }
     }
 
     private <E> Stream<E> executeQuery(Integer limit, int offset, String collection, SolrQuery solrQuery,
@@ -653,6 +656,9 @@ public class Solr6Index implements IndexProvider {
             solrQuery.setRows(Math.min(query.getLimit(), batchSize));
         } else {
             solrQuery.setRows(batchSize);
+        }
+        if (!query.getOrders().isEmpty()) {
+            addOrderToQuery(solrQuery, query.getOrders());
         }
 
         for(final Parameter parameter: query.getParameters()) {

@@ -18,6 +18,8 @@
 
 package org.apache.atlas.repository.graphdb;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+
 import java.util.Iterator;
 
 /**
@@ -34,6 +36,14 @@ public interface AtlasIndexQuery<V, E> {
      * @return
      */
     Iterator<Result<V, E>> vertices();
+
+    /**
+     * Gets the sorted query results
+     * @param offset starting offset
+     * @param limit max number of results
+     * @return
+     */
+    Iterator<Result<V, E>> vertices(int offset, int limit, String sortBy, Order sortOrder);
 
     /**
      * Gets the query results

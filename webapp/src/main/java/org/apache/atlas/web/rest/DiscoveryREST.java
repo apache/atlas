@@ -188,11 +188,14 @@ public class DiscoveryREST {
     public AtlasSearchResult searchUsingBasic(@QueryParam("query")                  String  query,
                                               @QueryParam("typeName")               String  typeName,
                                               @QueryParam("classification")         String  classification,
+                                              @QueryParam("sortBy")                 String    sortByAttribute,
+                                              @QueryParam("sortOrder")              SortOrder sortOrder,
                                               @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
                                               @QueryParam("limit")                  int     limit,
                                               @QueryParam("offset")                 int     offset) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
         Servlets.validateQueryParamLength("classification", classification);
+        Servlets.validateQueryParamLength("sortBy", sortByAttribute);
         if (StringUtils.isNotEmpty(query) && query.length() > maxFullTextQueryLength) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
         }
@@ -212,6 +215,8 @@ public class DiscoveryREST {
             searchParameters.setExcludeDeletedEntities(excludeDeletedEntities);
             searchParameters.setLimit(limit);
             searchParameters.setOffset(offset);
+            searchParameters.setSortBy(sortByAttribute);
+            searchParameters.setSortOrder(sortOrder);
 
             return discoveryService.searchWithParameters(searchParameters);
         } finally {
@@ -690,6 +695,7 @@ public class DiscoveryREST {
         if (parameters != null) {
             Servlets.validateQueryParamLength("typeName", parameters.getTypeName());
             Servlets.validateQueryParamLength("classification", parameters.getClassification());
+            Servlets.validateQueryParamLength("sortBy", parameters.getSortBy());
             if (StringUtils.isNotEmpty(parameters.getQuery()) && parameters.getQuery().length() > maxFullTextQueryLength) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
             }
