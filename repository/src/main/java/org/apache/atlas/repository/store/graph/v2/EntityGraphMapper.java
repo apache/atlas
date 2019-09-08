@@ -45,6 +45,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
+import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes;
@@ -140,14 +141,49 @@ public class EntityGraphMapper {
         return createVertexWithGuid(entity, guid);
     }
 
+    public AtlasVertex createShellEntityVertex(AtlasObjectId objectId, EntityGraphDiscoveryContext context) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> createShellEntityVertex({})", objectId.getTypeName());
+        }
+
+        final String    guid       = UUID.randomUUID().toString();
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(objectId.getTypeName());
+        AtlasVertex     ret        = createStructVertex(objectId);
+
+        for (String superTypeName : entityType.getAllSuperTypes()) {
+            AtlasGraphUtilsV2.addEncodedProperty(ret, SUPER_TYPES_PROPERTY_KEY, superTypeName);
+        }
+
+        AtlasGraphUtilsV2.setEncodedProperty(ret, GUID_PROPERTY_KEY, guid);
+        AtlasGraphUtilsV2.setEncodedProperty(ret, VERSION_PROPERTY_KEY, getEntityVersion(null));
+        AtlasGraphUtilsV2.setEncodedProperty(ret, IS_INCOMPLETE_PROPERTY_KEY, INCOMPLETE_ENTITY_VALUE);
+
+        // map unique attributes
+        Map<String, Object>   uniqueAttributes = objectId.getUniqueAttributes();
+        EntityMutationContext mutationContext  = new EntityMutationContext(context);
+
+        for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
+            String attrName  = attribute.getName();
+
+            if (uniqueAttributes.containsKey(attrName)) {
+                Object attrValue = attribute.getAttributeType().getNormalizedValue(uniqueAttributes.get(attrName));
+
+                mapAttribute(attribute, attrValue, ret, CREATE, mutationContext);
+            }
+        }
+
+        GraphTransactionInterceptor.addToVertexCache(guid, ret);
+
+        return ret;
+    }
+
     public AtlasVertex createVertexWithGuid(AtlasEntity entity, String guid) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> createVertex({})", entity.getTypeName());
+            LOG.debug("==> createVertexWithGuid({})", entity.getTypeName());
         }
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-
-        AtlasVertex ret = createStructVertex(entity);
+        AtlasVertex     ret        = createStructVertex(entity);
 
         for (String superTypeName : entityType.getAllSuperTypes()) {
             AtlasGraphUtilsV2.addEncodedProperty(ret, SUPER_TYPES_PROPERTY_KEY, superTypeName);
@@ -271,13 +307,21 @@ public class EntityGraphMapper {
     }
 
     private AtlasVertex createStructVertex(AtlasStruct struct) {
+        return createStructVertex(struct.getTypeName());
+    }
+
+    private AtlasVertex createStructVertex(AtlasObjectId objectId) {
+        return createStructVertex(objectId.getTypeName());
+    }
+
+    private AtlasVertex createStructVertex(String typeName) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> createStructVertex({})", struct.getTypeName());
+            LOG.debug("==> createStructVertex({})", typeName);
         }
 
         final AtlasVertex ret = graph.addVertex();
 
-        AtlasGraphUtilsV2.setEncodedProperty(ret, ENTITY_TYPE_PROPERTY_KEY, struct.getTypeName());
+        AtlasGraphUtilsV2.setEncodedProperty(ret, ENTITY_TYPE_PROPERTY_KEY, typeName);
         AtlasGraphUtilsV2.setEncodedProperty(ret, STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
         AtlasGraphUtilsV2.setEncodedProperty(ret, TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
         AtlasGraphUtilsV2.setEncodedProperty(ret, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
@@ -285,7 +329,7 @@ public class EntityGraphMapper {
         AtlasGraphUtilsV2.setEncodedProperty(ret, MODIFIED_BY_KEY, RequestContext.get().getUser());
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== createStructVertex({})", struct.getTypeName());
+            LOG.debug("<== createStructVertex({})", typeName);
         }
 
         return ret;
@@ -1437,6 +1481,7 @@ public class EntityGraphMapper {
 
         header.setGuid(getIdFromVertex(vertex));
         header.setStatus(entity.getStatus());
+        header.setIsIncomplete(entity.getIsIncomplete());
 
         for (AtlasAttribute attribute : type.getUniqAttributes().values()) {
             header.setAttribute(attribute.getName(), entity.getAttribute(attribute.getName()));

@@ -59,16 +59,17 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasEntity extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public static final String KEY_GUID               = "guid";
-    public static final String KEY_HOME_ID            = "homeId";
-    public static final String KEY_IS_PROXY           = "isProxy";
-    public static final String KEY_PROVENANCE_TYPE    = "provenanceType";
-    public static final String KEY_STATUS             = "status";
-    public static final String KEY_CREATED_BY         = "createdBy";
-    public static final String KEY_UPDATED_BY         = "updatedBy";
-    public static final String KEY_CREATE_TIME        = "createTime";
-    public static final String KEY_UPDATE_TIME        = "updateTime";
-    public static final String KEY_VERSION            = "version";
+    public static final String KEY_GUID            = "guid";
+    public static final String KEY_HOME_ID         = "homeId";
+    public static final String KEY_IS_PROXY        = "isProxy";
+    public static final String KEY_IS_INCOMPLETE   = "isIncomplete";
+    public static final String KEY_PROVENANCE_TYPE = "provenanceType";
+    public static final String KEY_STATUS          = "status";
+    public static final String KEY_CREATED_BY      = "createdBy";
+    public static final String KEY_UPDATED_BY      = "updatedBy";
+    public static final String KEY_CREATE_TIME     = "createTime";
+    public static final String KEY_UPDATE_TIME     = "updateTime";
+    public static final String KEY_VERSION         = "version";
 
     /**
      * Status of the entity - can be active or deleted. Deleted entities are not removed from Atlas store.
@@ -78,6 +79,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private String  guid           = null;
     private String  homeId         = null;
     private Boolean isProxy        = Boolean.FALSE;
+    private Boolean isIncomplete   = Boolean.FALSE;
     private Integer provenanceType = 0;
     private Status  status         = Status.ACTIVE;
     private String  createdBy      = null;
@@ -133,6 +135,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             Object oGuid             = map.get(KEY_GUID);
             Object homeId            = map.get(KEY_HOME_ID);
             Object isProxy           = map.get(KEY_IS_PROXY);
+            Object isIncomplete      = map.get(KEY_IS_INCOMPLETE);
             Object provenanceType    = map.get(KEY_PROVENANCE_TYPE);
             Object status            = map.get(KEY_STATUS);
             Object createdBy         = map.get(KEY_CREATED_BY);
@@ -154,6 +157,12 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             }
             else {
                 setIsProxy(Boolean.FALSE);
+            }
+
+            if (isIncomplete != null) {
+                setIsIncomplete((Boolean) isIncomplete);
+            } else {
+                setIsIncomplete(Boolean.FALSE);
             }
 
             if (provenanceType instanceof Number) {
@@ -193,6 +202,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setGuid(other.getGuid());
             setHomeId(other.getHomeId());
             setIsProxy(other.isProxy());
+            setIsIncomplete(other.getIsIncomplete());
             setProvenanceType(other.getProvenanceType());
             setStatus(other.getStatus());
             setCreatedBy(other.getCreatedBy());
@@ -228,6 +238,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     public void setIsProxy(Boolean isProxy) {
         this.isProxy = isProxy;
+    }
+
+    public Boolean getIsIncomplete() {
+        return isIncomplete;
+    }
+
+    public void setIsIncomplete(Boolean isIncomplete) {
+        this.isIncomplete = isIncomplete;
     }
 
     public Integer getProvenanceType() {
@@ -355,6 +373,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setGuid(nextInternalId());
         setHomeId(null);
         setIsProxy(Boolean.FALSE);
+        setIsIncomplete(Boolean.FALSE);
         setProvenanceType(0);
         setStatus(null);
         setCreatedBy(null);
@@ -380,6 +399,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append("guid='").append(guid).append('\'');
         sb.append(", homeId='").append(homeId).append('\'');
         sb.append(", isProxy='").append(isProxy).append('\'');
+        sb.append(", isIncomplete=").append(isIncomplete);
         sb.append(", provenanceType=").append(provenanceType);
         sb.append(", status=").append(status);
         sb.append(", createdBy='").append(createdBy).append('\'');
@@ -411,6 +431,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         return Objects.equals(guid, that.guid) &&
                 Objects.equals(homeId, that.homeId) &&
                 Objects.equals(isProxy, that.isProxy) &&
+                Objects.equals(isIncomplete, that.isIncomplete) &&
                 Objects.equals(provenanceType, that.provenanceType) &&
                 status == that.status &&
                 Objects.equals(createdBy, that.createdBy) &&
@@ -424,8 +445,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, homeId, isProxy, provenanceType, status, createdBy, updatedBy, createTime, updateTime, version,
-                            relationshipAttributes, classifications);
+        return Objects.hash(super.hashCode(), guid, homeId, isProxy, isIncomplete, provenanceType, status,
+                createdBy, updatedBy, createTime, updateTime, version, relationshipAttributes, classifications);
     }
 
     @Override

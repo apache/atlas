@@ -56,10 +56,12 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
 
     private final AtlasTypeRegistry           typeRegistry;
     private final EntityGraphDiscoveryContext discoveryContext;
+    private final EntityGraphMapper           entityGraphMapper;
 
-    public AtlasEntityGraphDiscoveryV2(AtlasTypeRegistry typeRegistry, EntityStream entityStream) {
-        this.typeRegistry     = typeRegistry;
-        this.discoveryContext = new EntityGraphDiscoveryContext(typeRegistry, entityStream);
+    public AtlasEntityGraphDiscoveryV2(AtlasTypeRegistry typeRegistry, EntityStream entityStream, EntityGraphMapper entityGraphMapper) {
+        this.typeRegistry      = typeRegistry;
+        this.discoveryContext  = new EntityGraphDiscoveryContext(typeRegistry, entityStream);
+        this.entityGraphMapper = entityGraphMapper;
     }
 
     @Override
@@ -177,8 +179,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     protected void resolveReferences() throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("resolveReferences");
 
-        EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(typeRegistry),
-                                                                  new UniqAttrBasedEntityResolver(typeRegistry)
+        EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(typeRegistry, entityGraphMapper),
+                                                                  new UniqAttrBasedEntityResolver(typeRegistry, entityGraphMapper)
                                                                 };
 
         for (EntityResolver resolver : entityResolvers) {

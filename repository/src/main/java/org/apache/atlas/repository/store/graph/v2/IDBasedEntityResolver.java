@@ -36,9 +36,11 @@ public class IDBasedEntityResolver implements EntityResolver {
     private static final Logger LOG = LoggerFactory.getLogger(IDBasedEntityResolver.class);
 
     private final AtlasTypeRegistry typeRegistry;
+    private final EntityGraphMapper entityGraphMapper;
 
-    public IDBasedEntityResolver(AtlasTypeRegistry typeRegistry) {
-        this.typeRegistry = typeRegistry;
+    public IDBasedEntityResolver(AtlasTypeRegistry typeRegistry, EntityGraphMapper entityGraphMapper) {
+        this.typeRegistry      = typeRegistry;
+        this.entityGraphMapper = entityGraphMapper;
     }
 
     public EntityGraphDiscoveryContext resolveEntityReferences(EntityGraphDiscoveryContext context) throws AtlasBaseException {

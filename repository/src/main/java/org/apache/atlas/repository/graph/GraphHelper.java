@@ -78,28 +78,8 @@ import java.util.UUID;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.ATTRIBUTE_KEY_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_STATUS;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
 
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAME_DELIMITER;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_NAME_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY;
-import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
-import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
-import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY;
-import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
-import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -1076,6 +1056,13 @@ public final class GraphHelper {
 
     public static Boolean isProxy(AtlasElement element) {
         return element.getProperty(Constants.IS_PROXY_KEY, Boolean.class);
+    }
+
+    public static Boolean isEntityIncomplete(AtlasElement element) {
+        Integer value = element.getProperty(Constants.IS_INCOMPLETE_PROPERTY_KEY, Integer.class);
+        Boolean ret   = (value != null && value == INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
+
+        return ret;
     }
 
     public static Integer getProvenanceType(AtlasElement element) {

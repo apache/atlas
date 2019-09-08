@@ -135,6 +135,8 @@ public final class Constants {
 
     public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp");
 
+    public static final String IS_INCOMPLETE_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "isIncomplete");
+
     /**
      * search backing index name.
      */
@@ -192,9 +194,10 @@ public final class Constants {
      * replication attributes
      */
 
-    public static final String ATTR_NAME_REFERENCEABLE = "Referenceable.";
-    public static final String ATTR_NAME_REPLICATED_TO = "replicatedTo";
-    public static final String ATTR_NAME_REPLICATED_FROM = "replicatedFrom";
+    public static final String  ATTR_NAME_REFERENCEABLE   = "Referenceable.";
+    public static final String  ATTR_NAME_REPLICATED_TO   = "replicatedTo";
+    public static final String  ATTR_NAME_REPLICATED_FROM = "replicatedFrom";
+    public static final Integer INCOMPLETE_ENTITY_VALUE   = Integer.valueOf(1);
 
     private Constants() {
     }

@@ -20,12 +20,7 @@ package org.apache.atlas.notification;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import kafka.utils.ShutdownableThread;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasClientV2;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.RequestContext;
+import org.apache.atlas.*;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
@@ -171,6 +166,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final boolean                       hiveTypesRemoveOwnedRefAttrs;
     private final boolean                       rdbmsTypesRemoveOwnedRefAttrs;
     private final boolean                       preprocessEnabled;
+    private final boolean createShellEntityForNonExistingReference;
     private final NotificationInterface         notificationInterface;
     private final Configuration                 applicationProperties;
     private       ExecutorService               executors;
@@ -205,6 +201,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         skipHiveColumnLineageHive20633InputsThreshold = applicationProperties.getInt(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
         consumerDisabled                              = applicationProperties.getBoolean(CONSUMER_DISABLED, false);
         largeMessageProcessingTimeThresholdMs         = applicationProperties.getInt("atlas.notification.consumer.large.message.processing.time.threshold.ms", 60 * 1000);  //  60 sec by default
+        createShellEntityForNonExistingReference      = AtlasConfiguration.NOTIFICATION_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF.getBoolean();
 
         String[] patternHiveTablesToIgnore = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN);
         String[] patternHiveTablesToPrune  = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN);
@@ -586,6 +583,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                         requestContext.setUser(messageUser, null);
                         requestContext.setInNotificationProcessing(true);
+                        requestContext.setCreateShellEntityForNonExistingReference(createShellEntityForNonExistingReference);
 
                         switch (message.getType()) {
                             case ENTITY_CREATE: {

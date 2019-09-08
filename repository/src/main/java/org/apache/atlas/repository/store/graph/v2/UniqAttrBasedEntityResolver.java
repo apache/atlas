@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -32,14 +33,15 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class UniqAttrBasedEntityResolver implements EntityResolver {
     private static final Logger LOG = LoggerFactory.getLogger(UniqAttrBasedEntityResolver.class);
 
     private final AtlasTypeRegistry typeRegistry;
+    private final EntityGraphMapper entityGraphMapper;
 
-    public UniqAttrBasedEntityResolver(AtlasTypeRegistry typeRegistry) {
-        this.typeRegistry = typeRegistry;
+    public UniqAttrBasedEntityResolver(AtlasTypeRegistry typeRegistry, EntityGraphMapper entityGraphMapper) {
+        this.typeRegistry      = typeRegistry;
+        this.entityGraphMapper = entityGraphMapper;
     }
 
     @Override
@@ -61,6 +63,10 @@ public class UniqAttrBasedEntityResolver implements EntityResolver {
 
             AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(entityType, objId.getUniqueAttributes());
 
+            if (vertex == null && RequestContext.get().isCreateShellEntityForNonExistingReference()) {
+                vertex = entityGraphMapper.createShellEntityVertex(objId, context);
+            }
+
             if (vertex != null) {
                 context.addResolvedIdByUniqAttribs(objId, vertex);
                 resolvedReferences.add(objId);
@@ -72,4 +78,3 @@ public class UniqAttrBasedEntityResolver implements EntityResolver {
         return context;
     }
 }
-

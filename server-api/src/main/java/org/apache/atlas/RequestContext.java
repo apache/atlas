@@ -57,7 +57,7 @@ public class RequestContext {
     private boolean     isImportInProgress = false;
     private boolean     isInNotificationProcessing = false;
     private boolean     isInTypePatching           = false;
-
+    private boolean     createShellEntityForNonExistingReference = false;
 
     private RequestContext() {
     }
@@ -182,6 +182,13 @@ public class RequestContext {
         isInTypePatching = inTypePatching;
     }
 
+    public boolean isCreateShellEntityForNonExistingReference() {
+        return createShellEntityForNonExistingReference;
+    }
+
+    public void setCreateShellEntityForNonExistingReference(boolean createShellEntityForNonExistingReference) {
+        this.createShellEntityForNonExistingReference = createShellEntityForNonExistingReference;
+    }
 
     public void recordEntityUpdate(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null) {
