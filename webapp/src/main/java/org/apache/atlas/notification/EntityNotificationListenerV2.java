@@ -177,6 +177,8 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
         ret.setGuid(entity.getGuid());
         ret.setStatus(entity.getStatus());
+        ret.setIsIncomplete(entity.getIsIncomplete());
+
         setAttribute(ret, NAME, name);
         setAttribute(ret, DESCRIPTION, entity.getAttribute(DESCRIPTION));
         setAttribute(ret, OWNER, entity.getAttribute(OWNER));
