@@ -37,6 +37,7 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
@@ -86,11 +87,13 @@ public class ExportSkipLineageTest extends ExportImportTestBase {
     }
 
     @Test
-    public void exportWithoutLineage() {
+    public void exportWithoutLineage() throws IOException, AtlasBaseException {
         final int expectedEntityCount = 3;
 
         AtlasExportRequest request = getRequest();
-        ZipSource source = runExportWithParameters(exportService, request);
+        InputStream inputStream = runExportWithParameters(exportService, request);
+
+        ZipSource source = new ZipSource(inputStream);
         AtlasEntity.AtlasEntityWithExtInfo entities = ZipFileResourceTestUtils.getEntities(source, expectedEntityCount);
 
         int count = 0;

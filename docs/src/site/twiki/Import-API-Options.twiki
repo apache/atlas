@@ -26,6 +26,7 @@ Following options are supported for Import process:
    * Specify transforms during import operation.
    * Resume import by specifying starting entity guid.
    * Optionally import type definition.
+   * Handling large imports.
 
 ---++++ Transforms
 
@@ -133,3 +134,13 @@ curl -g -X POST -u adminuser:password -H "Content-Type: application/json"
             -d r@importOptions.json
             "http://localhost:21000/api/atlas/admin/importfile"
 </verbatim>
+
+---++++ Handling Large Imports
+
+By default, the Import Service stores all of the data in memory. This may be limiting for ZIPs containing large amount of data.
+
+To configure temporary directory use the application property _atlas.import.temp.directory_. If this property is left blank, default in-memory implementation is used.
+
+Please ensure that there is sufficient disk space available for the operation.
+
+The contents of the directory created as backing store for the import operation will be erased after the operation is over.

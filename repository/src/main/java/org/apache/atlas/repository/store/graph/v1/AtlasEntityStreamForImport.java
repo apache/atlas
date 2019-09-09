@@ -17,8 +17,15 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.entitytransform.BaseEntityHandler;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.impexp.ImportTransforms;
+
+import java.util.List;
 
 public class AtlasEntityStreamForImport extends AtlasEntityStream implements EntityImportStream {
     private int currentPosition = 0;
@@ -33,6 +40,11 @@ public class AtlasEntityStreamForImport extends AtlasEntityStream implements Ent
         AtlasEntity entity = next();
 
         return entity != null ? new AtlasEntityWithExtInfo(entity, super.entitiesWithExtInfo) : null;
+    }
+
+    @Override
+    public AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
+        return null;
     }
 
     @Override
@@ -67,6 +79,46 @@ public class AtlasEntityStreamForImport extends AtlasEntityStream implements Ent
 
     @Override
     public void onImportComplete(String guid) {
+
+    }
+
+    @Override
+    public void setImportTransform(ImportTransforms importTransform) {
+
+    }
+
+    @Override
+    public ImportTransforms getImportTransform() {
+        return null;
+    }
+
+    @Override
+    public void setEntityHandlers(List<BaseEntityHandler> entityHandlers) {
+
+    }
+
+    @Override
+    public List<BaseEntityHandler> getEntityHandlers() {
+        return null;
+    }
+
+    @Override
+    public AtlasTypesDef getTypesDef() throws AtlasBaseException {
+        return null;
+    }
+
+    @Override
+    public AtlasExportResult getExportResult() throws AtlasBaseException {
+        return null;
+    }
+
+    @Override
+    public List<String> getCreationOrder() {
+        return null;
+    }
+
+    @Override
+    public void close() {
 
     }
 }

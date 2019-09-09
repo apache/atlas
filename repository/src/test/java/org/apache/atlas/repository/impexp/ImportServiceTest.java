@@ -18,15 +18,11 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.inject.Inject;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContextV1;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -43,16 +39,23 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.*;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getDefaultImportRequest;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromResourcesJson;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runAndVerifyQuickStart_v1_Import;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParametersUsingBackingDirectory;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithParameters;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ImportServiceTest extends ExportImportTestBase {
@@ -90,9 +93,9 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "sales")
-    public void importDB1(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB1(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
-        runAndVerifyQuickStart_v1_Import(importService, zipSource);
+        runAndVerifyQuickStart_v1_Import(importService, inputStream);
     }
 
     @DataProvider(name = "reporting")
@@ -101,9 +104,9 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "reporting")
-    public void importDB2(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB2(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
-        runAndVerifyQuickStart_v1_Import(importService, zipSource);
+        runAndVerifyQuickStart_v1_Import(importService, inputStream);
     }
 
     @DataProvider(name = "logging")
@@ -112,9 +115,9 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "logging")
-    public void importDB3(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB3(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
-        runAndVerifyQuickStart_v1_Import(importService, zipSource);
+        runAndVerifyQuickStart_v1_Import(importService, inputStream);
     }
 
     @DataProvider(name = "salesNewTypeAttrs")
@@ -123,9 +126,9 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "salesNewTypeAttrs", dependsOnMethods = "importDB1")
-    public void importDB4(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB4(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
-        runImportWithParameters(importService, getDefaultImportRequest(), zipSource);
+        runImportWithParameters(importService, getDefaultImportRequest(), inputStream);
     }
 
     @DataProvider(name = "salesNewTypeAttrs-next")
@@ -135,7 +138,7 @@ public class ImportServiceTest extends ExportImportTestBase {
 
 
     @Test(dataProvider = "salesNewTypeAttrs-next", dependsOnMethods = "importDB4")
-    public void importDB5(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB5(InputStream inputStream) throws AtlasBaseException, IOException {
         final String newEnumDefName = "database_action";
 
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
@@ -145,13 +148,13 @@ public class ImportServiceTest extends ExportImportTestBase {
         options.put("updateTypeDefinition", "false");
         request.setOptions(options);
 
-        runImportWithParameters(importService, request, zipSource);
+        runImportWithParameters(importService, request, inputStream);
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
         assertEquals(typeDefStore.getEnumDefByName(newEnumDefName).getElementDefs().size(), 4);
     }
 
     @Test(dataProvider = "salesNewTypeAttrs-next", dependsOnMethods = "importDB4")
-    public void importDB6(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB6(InputStream inputStream) throws AtlasBaseException, IOException {
         final String newEnumDefName = "database_action";
 
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
@@ -161,7 +164,7 @@ public class ImportServiceTest extends ExportImportTestBase {
         options.put("updateTypeDefinition", "true");
         request.setOptions(options);
 
-        runImportWithParameters(importService, request, zipSource);
+        runImportWithParameters(importService, request, inputStream);
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
         assertEquals(typeDefStore.getEnumDefByName(newEnumDefName).getElementDefs().size(), 8);
     }
@@ -172,11 +175,11 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "ctas")
-    public void importCTAS(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void importCTAS(InputStream inputStream) throws IOException, AtlasBaseException {
         loadBaseModel();
         loadHiveModel();
 
-        runImportWithNoParameters(importService, zipSource);
+        runImportWithNoParameters(importService, inputStream);
     }
 
     @DataProvider(name = "hdfs_path1")
@@ -186,13 +189,13 @@ public class ImportServiceTest extends ExportImportTestBase {
 
 
     @Test(dataProvider = "hdfs_path1", expectedExceptions = AtlasBaseException.class)
-    public void importHdfs_path1(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void importHdfs_path1(InputStream inputStream) throws IOException, AtlasBaseException {
         loadBaseModel();
         loadFsModel();
         loadModelFromResourcesJson("tag1.json", typeDefStore, typeRegistry);
 
         try {
-            runImportWithNoParameters(importService, zipSource);
+            runImportWithNoParameters(importService, inputStream);
         } catch (AtlasBaseException e) {
             assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED);
             AtlasClassificationType tag1 = typeRegistry.getClassificationTypeByName("tag1");
@@ -200,6 +203,14 @@ public class ImportServiceTest extends ExportImportTestBase {
             assertEquals(tag1.getAllAttributes().size(), 2);
             throw e;
         }
+    }
+
+    @Test(dataProvider = "ctas")
+    public void importWithBackingDirectory(InputStream inputStream) throws IOException, AtlasBaseException {
+        loadBaseModel();
+        loadFsModel();
+
+        runImportWithNoParametersUsingBackingDirectory(importService, inputStream);
     }
 
     @Test
@@ -238,11 +249,12 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "salesNewTypeAttrs-next")
-    public void transformUpdatesForSubTypes(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void transformUpdatesForSubTypes(InputStream inputStream) throws IOException, AtlasBaseException {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
         loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
 
         String transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
+        ZipSource zipSource = new ZipSource(inputStream);
         importService.setImportTransform(zipSource, transformJSON);
         ImportTransforms importTransforms = zipSource.getImportTransform();
 
@@ -252,11 +264,12 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "salesNewTypeAttrs-next")
-    public void transformUpdatesForSubTypesAddsToExistingTransforms(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void transformUpdatesForSubTypesAddsToExistingTransforms(InputStream inputStream) throws IOException, AtlasBaseException {
         loadModelFromJson("0010-base_model.json", typeDefStore, typeRegistry);
         loadModelFromJson("0030-hive_model.json", typeDefStore, typeRegistry);
 
         String transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"replace:@cl1:@cl2\" ] }, \"hive_table\": { \"qualifiedName\":[ \"lowercase\" ] } }";
+        ZipSource zipSource = new ZipSource(inputStream);
         importService.setImportTransform(zipSource, transformJSON);
         ImportTransforms importTransforms = zipSource.getImportTransform();
 
@@ -266,13 +279,8 @@ public class ImportServiceTest extends ExportImportTestBase {
         assertEquals(importTransforms.getTransforms().get("hive_table").get("qualifiedName").size(), 2);
     }
 
-    @Test(dataProvider = "empty-zip", expectedExceptions = AtlasBaseException.class)
-    public void importEmptyZip(ZipSource zipSource) {
-
-    }
-
     @Test(expectedExceptions = AtlasBaseException.class)
     public void importEmptyZip() throws IOException, AtlasBaseException {
-        getZipSource("empty.zip");
+        new ZipSource((InputStream) getZipSource("empty.zip")[0][0]);
     }
 }

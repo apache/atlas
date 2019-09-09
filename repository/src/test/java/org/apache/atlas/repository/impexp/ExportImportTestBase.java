@@ -18,9 +18,6 @@
 
 package org.apache.atlas.repository.impexp;
 
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.instance.AtlasEntity;

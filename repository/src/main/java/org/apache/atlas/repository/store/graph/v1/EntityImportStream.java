@@ -18,17 +18,46 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 
+import org.apache.atlas.entitytransform.BaseEntityHandler;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasExportResult;
+import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.impexp.ImportTransforms;
+
+import java.util.List;
 
 public interface EntityImportStream extends EntityStream {
 
     int size();
+
     void setPosition(int position);
+
     int getPosition();
 
     void setPositionUsingEntityGuid(String guid);
 
     AtlasEntityWithExtInfo getNextEntityWithExtInfo();
 
+    AtlasEntity.AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException;
+
     void onImportComplete(String guid);
+
+    void setImportTransform(ImportTransforms importTransform);
+
+    public ImportTransforms getImportTransform();
+
+    void setEntityHandlers(List<BaseEntityHandler> entityHandlers);
+
+    List<BaseEntityHandler> getEntityHandlers();
+
+    AtlasTypesDef getTypesDef() throws AtlasBaseException;
+
+    AtlasExportResult getExportResult() throws AtlasBaseException;
+
+    List<String> getCreationOrder();
+
+    void close();
 }

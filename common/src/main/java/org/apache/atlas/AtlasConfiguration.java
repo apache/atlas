@@ -47,7 +47,9 @@ public enum AtlasConfiguration {
 
     //search configuration
     SEARCH_MAX_LIMIT("atlas.search.maxlimit", 10000),
-    SEARCH_DEFAULT_LIMIT("atlas.search.defaultlimit", 100);
+    SEARCH_DEFAULT_LIMIT("atlas.search.defaultlimit", 100),
+
+    IMPORT_TEMP_DIRECTORY("atlas.import.temp.directory", "");
 
     private static final Configuration APPLICATION_PROPERTIES;
 

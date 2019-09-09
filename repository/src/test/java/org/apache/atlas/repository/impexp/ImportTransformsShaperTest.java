@@ -66,7 +66,7 @@ public class ImportTransformsShaperTest extends ExportImportTestBase {
     public void newTagIsCreatedAndEntitiesAreTagged() throws AtlasBaseException, IOException {
         AtlasImportResult result = ZipFileResourceTestUtils.runImportWithParameters(importService,
                 getImporRequest(),
-                ZipFileResourceTestUtils.getZipSourceFrom("stocks.zip"));
+                ZipFileResourceTestUtils.getInputStreamFrom("stocks.zip"));
 
         AtlasClassificationType classification = typeRegistry.getClassificationTypeByName(TAG_NAME);
         assertNotNull(classification);

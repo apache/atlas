@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.entitytransform.BaseEntityHandler;
 import org.apache.atlas.entitytransform.TransformerContext;
@@ -26,22 +27,23 @@ import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.BulkImporter;
+import org.apache.atlas.repository.store.graph.v1.EntityImportStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import static org.apache.atlas.model.impexp.AtlasImportRequest.TRANSFORMERS_KEY;
@@ -71,18 +73,25 @@ public class ImportService {
         this.importTransformsShaper = importTransformsShaper;
     }
 
-    public AtlasImportResult run(ZipSource source, String userName,
+    public AtlasImportResult run(InputStream inputStream, String userName,
                                  String hostName, String requestingIP) throws AtlasBaseException {
-        return run(source, null, userName, hostName, requestingIP);
+        return run(inputStream, null, userName, hostName, requestingIP);
     }
 
 
-    public AtlasImportResult run(ZipSource source, AtlasImportRequest request, String userName,
+    public AtlasImportResult run(InputStream inputStream, AtlasImportRequest request, String userName,
                                  String hostName, String requestingIP) throws AtlasBaseException {
         if (request == null) {
             request = new AtlasImportRequest();
         }
 
+        EntityImportStream source = createZipSource(inputStream, AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
+        return run(source, request, userName, hostName, requestingIP);
+    }
+
+    @VisibleForTesting
+    AtlasImportResult run(EntityImportStream source, AtlasImportRequest request, String userName,
+                                 String hostName, String requestingIP) throws AtlasBaseException {
         AtlasImportResult result = new AtlasImportResult(request, userName, requestingIP, hostName, System.currentTimeMillis());
 
         try {
@@ -107,7 +116,10 @@ public class ImportService {
 
             throw new AtlasBaseException(excp);
         } finally {
-            source.close();
+            if (source != null) {
+                source.close();
+            }
+
             LOG.info("<== import(user={}, from={}): status={}", userName, requestingIP, result.getOperationStatus());
         }
 
@@ -115,7 +127,7 @@ public class ImportService {
     }
 
     @VisibleForTesting
-    void setImportTransform(ZipSource source, String transforms) throws AtlasBaseException {
+    void setImportTransform(EntityImportStream source, String transforms) throws AtlasBaseException {
         ImportTransforms importTransform = ImportTransforms.fromJson(transforms);
         if (importTransform == null) {
             return;
@@ -127,11 +139,10 @@ public class ImportService {
         if(LOG.isDebugEnabled()) {
             debugLog("   => transforms: {}", AtlasType.toJson(importTransform));
         }
-
     }
 
     @VisibleForTesting
-    void setEntityTransformerHandlers(ZipSource source, String transformersJson) throws AtlasBaseException {
+    void setEntityTransformerHandlers(EntityImportStream source, String transformersJson) throws AtlasBaseException {
         if (StringUtils.isEmpty(transformersJson)) {
             return;
         }
@@ -151,7 +162,7 @@ public class ImportService {
         LOG.debug(s, params);
     }
 
-    private void setStartPosition(AtlasImportRequest request, ZipSource source) throws AtlasBaseException {
+    private void setStartPosition(AtlasImportRequest request, EntityImportStream source) throws AtlasBaseException {
         if (request.getStartGuid() != null) {
             source.setPositionUsingEntityGuid(request.getStartGuid());
         } else if (request.getStartPosition() != null) {
@@ -159,8 +170,7 @@ public class ImportService {
         }
     }
 
-    public AtlasImportResult run(AtlasImportRequest request, String userName, String hostName, String requestingIP)
-            throws AtlasBaseException {
+    public AtlasImportResult run(AtlasImportRequest request, String userName, String hostName, String requestingIP) throws AtlasBaseException {
         String fileName = request.getFileName();
 
         if (StringUtils.isBlank(fileName)) {
@@ -168,14 +178,11 @@ public class ImportService {
         }
 
         AtlasImportResult result = null;
-
         try {
             LOG.info("==> import(user={}, from={}, fileName={})", userName, requestingIP, fileName);
 
-            String transforms = MapUtils.isNotEmpty(request.getOptions()) ? request.getOptions().get(TRANSFORMS_KEY) : null;
             File file = new File(fileName);
-            ZipSource source = new ZipSource(new ByteArrayInputStream(FileUtils.readFileToByteArray(file)), ImportTransforms.fromJson(transforms));
-            result = run(source, request, userName, hostName, requestingIP);
+            result = run(new FileInputStream(file), request, userName, hostName, requestingIP);
         } catch (AtlasBaseException excp) {
             LOG.error("import(user={}, from={}, fileName={}): failed", userName, requestingIP, excp);
 
@@ -184,10 +191,6 @@ public class ImportService {
             LOG.error("import(user={}, from={}, fileName={}): file not found", userName, requestingIP, excp);
 
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, fileName + ": file not found");
-        } catch (IOException excp) {
-            LOG.error("import(user={}, from={}, fileName={}): cannot read file", userName, requestingIP, excp);
-
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, fileName + ": cannot read file");
         } catch (Exception excp) {
             LOG.error("import(user={}, from={}, fileName={}): failed", userName, requestingIP, excp);
 
@@ -209,7 +212,7 @@ public class ImportService {
         importTypeDefProcessor.processTypes(typeDefinitionMap, result);
     }
 
-    private void processEntities(String userName, ZipSource importSource, AtlasImportResult result) throws AtlasBaseException {
+    private void processEntities(String userName, EntityImportStream importSource, AtlasImportResult result) throws AtlasBaseException {
         this.bulkImporter.bulkImport(importSource, result);
 
         endTimestamp = System.currentTimeMillis();
@@ -222,5 +225,18 @@ public class ImportService {
 
     private int getDuration(long endTime, long startTime) {
         return (int) (endTime - startTime);
+    }
+
+    private EntityImportStream createZipSource(InputStream inputStream, String configuredTemporaryDirectory) throws AtlasBaseException {
+        try {
+            if (StringUtils.isEmpty(configuredTemporaryDirectory)) {
+                return new ZipSource(inputStream);
+            }
+
+            return new ZipSourceWithBackingDirectory(inputStream, configuredTemporaryDirectory);
+        }
+        catch (IOException ex) {
+            throw new AtlasBaseException(ex);
+        }
     }
 }
