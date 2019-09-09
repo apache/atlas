@@ -1060,7 +1060,7 @@ public final class GraphHelper {
 
     public static Boolean isEntityIncomplete(AtlasElement element) {
         Integer value = element.getProperty(Constants.IS_INCOMPLETE_PROPERTY_KEY, Integer.class);
-        Boolean ret   = (value != null && value == INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
+        Boolean ret   = value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
 
         return ret;
     }
