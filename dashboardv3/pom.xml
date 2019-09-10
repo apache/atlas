@@ -76,6 +76,7 @@
                                     <directory>${basedir}</directory>
                                     <includes>
                                         <include>package.json</include>
+                                        <include>package-lock.json</include>
                                         <include>gruntfile.js</include>
                                     </includes>
                                 </resource>
