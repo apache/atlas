@@ -24,10 +24,10 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.repository.Constants;
@@ -40,6 +40,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
+import org.apache.commons.io.IOUtils;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -47,7 +48,10 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import static org.apache.atlas.model.impexp.AtlasExportRequest.OPTION_KEY_REPLICATED_TO;
@@ -88,7 +92,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
     @Inject
     private AtlasEntityStoreV2 entityStore;
 
-    private ZipSource zipSource;
+    private InputStream inputStream;
 
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
@@ -107,13 +111,19 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
     }
 
     @Test
-    public void exportWithReplicationToOption_AddsClusterObjectIdToReplicatedFromAttribute() throws AtlasBaseException {
+    public void exportWithReplicationToOption_AddsClusterObjectIdToReplicatedFromAttribute() throws AtlasBaseException, IOException {
         final int expectedEntityCount = 2;
 
         AtlasExportRequest request = getUpdateMetaInfoUpdateRequest();
-        zipSource = runExportWithParameters(exportService, request);
+        InputStream inputStream = runExportWithParameters(exportService, request);
 
-        assertNotNull(zipSource);
+        assertNotNull(inputStream);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IOUtils.copy(inputStream, baos);
+        this.inputStream = new ByteArrayInputStream(baos.toByteArray());
+
+        ZipSource zipSource = new ZipSource(new ByteArrayInputStream(baos.toByteArray()));
         assertNotNull(zipSource.getCreationOrder());
         assertEquals(zipSource.getCreationOrder().size(), expectedEntityCount);
 
@@ -139,7 +149,7 @@ public class ReplicationEntityAttributeTest extends ExportImportTestBase {
     @Test(dependsOnMethods = "exportWithReplicationToOption_AddsClusterObjectIdToReplicatedFromAttribute")
     public void importWithReplicationFromOption_AddsClusterObjectIdToReplicatedFromAttribute() throws AtlasBaseException, IOException {
         AtlasImportRequest request = getImportRequestWithReplicationOption();
-        AtlasImportResult importResult = runImportWithParameters(importService, request, zipSource);
+        AtlasImportResult importResult = runImportWithParameters(importService, request, inputStream);
 
         assertCluster(
                 AuditsWriter.getServerNameFromFullName(REPLICATED_FROM_CLUSTER_NAME),

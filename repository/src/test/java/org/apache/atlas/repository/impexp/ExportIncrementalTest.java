@@ -33,16 +33,20 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
+import org.apache.commons.io.IOUtils;
 import org.testng.ITestContext;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
 
 import javax.inject.Inject;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,8 +56,8 @@ import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_INCREM
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.createTypes;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getEntities;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runExportWithParameters;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -107,11 +111,13 @@ public class ExportIncrementalTest extends ExportImportTestBase {
     }
 
     @Test
-    public void atT0_ReturnsAllEntities() throws AtlasBaseException {
+    public void atT0_ReturnsAllEntities() throws AtlasBaseException, IOException {
         final int expectedEntityCount = 2;
 
         AtlasExportRequest request = getIncrementalRequest(0);
-        ZipSource source = runExportWithParameters(exportService, request);
+        InputStream inputStream = runExportWithParameters(exportService, request);
+
+        ZipSource source = getZipSourceFromInputStream(inputStream);
         AtlasEntity.AtlasEntityWithExtInfo entities = getEntities(source, expectedEntityCount);
 
         int count = 0;
@@ -129,13 +135,15 @@ public class ExportIncrementalTest extends ExportImportTestBase {
     }
 
     @Test(dependsOnMethods = "atT0_ReturnsAllEntities")
-    public void atT1_NewClassificationAttachedToTable_ReturnsChangedTable() throws AtlasBaseException {
+    public void atT1_NewClassificationAttachedToTable_ReturnsChangedTable() throws AtlasBaseException, IOException {
         final int expectedEntityCount = 1;
 
         entityStore.addClassifications(TABLE_GUID, ImmutableList.of(classificationTypeT1.createDefaultValue()));
 
         AtlasExportRequest request = getIncrementalRequest(nextTimestamp);
-        ZipSource source = runExportWithParameters(exportService, request);
+        InputStream inputStream = runExportWithParameters(exportService, request);
+
+        ZipSource source = getZipSourceFromInputStream(inputStream);
         AtlasEntity.AtlasEntityWithExtInfo entities = getEntities(source, expectedEntityCount);
 
         AtlasEntity entity = null;
@@ -155,7 +163,7 @@ public class ExportIncrementalTest extends ExportImportTestBase {
     }
 
     @Test(dependsOnMethods = "atT1_NewClassificationAttachedToTable_ReturnsChangedTable")
-    public void atT2_NewClassificationAttachedToColumn_ReturnsChangedColumn() throws AtlasBaseException {
+    public void atT2_NewClassificationAttachedToColumn_ReturnsChangedColumn() throws AtlasBaseException, IOException {
         final int expectedEntityCount = 1;
 
         AtlasEntity.AtlasEntityWithExtInfo tableEntity = entityStore.getById(TABLE_GUID);
@@ -163,7 +171,9 @@ public class ExportIncrementalTest extends ExportImportTestBase {
 
         entityStore.addClassifications(COLUMN_GUID_HIGH, ImmutableList.of(typeRegistry.getClassificationTypeByName("T1").createDefaultValue()));
 
-        ZipSource source = runExportWithParameters(exportService, getIncrementalRequest(nextTimestamp));
+        InputStream inputStream = runExportWithParameters(exportService, getIncrementalRequest(nextTimestamp));
+
+        ZipSource source = getZipSourceFromInputStream(inputStream);
         AtlasEntity.AtlasEntityWithExtInfo entities = getEntities(source, expectedEntityCount);
 
         for (Map.Entry<String, AtlasEntity> entry : entities.getReferredEntities().entrySet()) {
@@ -176,17 +186,26 @@ public class ExportIncrementalTest extends ExportImportTestBase {
         assertEquals(preExportTableEntityTimestamp, postUpdateTableEntityTimestamp);
     }
 
+    private ZipSource getZipSourceFromInputStream(InputStream inputStream) {
+        try {
+            return new ZipSource(inputStream);
+        } catch (IOException | AtlasBaseException e) {
+            return null;
+        }
+    }
+
     @Test(dependsOnMethods = "atT2_NewClassificationAttachedToColumn_ReturnsChangedColumn")
     public void exportingWithSameParameters_Succeeds() {
-        ZipSource source = runExportWithParameters(exportService, getIncrementalRequest(nextTimestamp));
+        InputStream inputStream = runExportWithParameters(exportService, getIncrementalRequest(nextTimestamp));
 
-        assertNotNull(source);
+        assertNotNull(getZipSourceFromInputStream(inputStream));
     }
 
     @Test
     public void connectedExport() {
-        ZipSource source = runExportWithParameters(exportService, getConnected());
+        InputStream inputStream = runExportWithParameters(exportService, getConnected());
 
+        ZipSource source = getZipSourceFromInputStream(inputStream);
         UniqueList<String> creationOrder = new UniqueList<>();
         List<String> zipCreationOrder = source.getCreationOrder();
         creationOrder.addAll(zipCreationOrder);
@@ -200,27 +219,29 @@ public class ExportIncrementalTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "hiveDb")
-    public void importHiveDb(ZipSource zipSource) throws AtlasBaseException, IOException {
-        runImportWithNoParameters(importService, zipSource);
+    public void importHiveDb(InputStream stream) throws AtlasBaseException, IOException {
+        runImportWithNoParameters(importService, stream);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
-    public void exportTableInrementalConnected() throws AtlasBaseException {
-        ZipSource source = runExportWithParameters(exportService, getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_LINEAGE, EXPORT_INCREMENTAL, 0, true));
-        verifyExpectedEntities(getFileNames(source), GUID_DB, GUID_TABLE_CTAS_2);
+    public void exportTableInrementalConnected() throws AtlasBaseException, IOException {
+        InputStream source = runExportWithParameters(exportService, getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_LINEAGE, EXPORT_INCREMENTAL, 0, true));
 
-        nextTimestamp = updateTimesampForNextIncrementalExport(source);
+        ZipSource sourceCopy = getZipSourceCopy(source);
+        verifyExpectedEntities(getFileNames(sourceCopy), GUID_DB, GUID_TABLE_CTAS_2);
+
+        nextTimestamp = updateTimesampForNextIncrementalExport(sourceCopy);
 
         try {
             source = runExportWithParameters(exportService, getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_LINEAGE, EXPORT_INCREMENTAL, nextTimestamp, true));
-        }catch (SkipException e){
-
+        } catch (SkipException e) {
+            throw e;
         }
 
         entityStore.addClassifications(GUID_TABLE_CTAS_2, ImmutableList.of(classificationTypeT1.createDefaultValue()));
 
         source = runExportWithParameters(exportService, getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_LINEAGE, EXPORT_INCREMENTAL, nextTimestamp, true));
-        verifyExpectedEntities(getFileNames(source), GUID_TABLE_CTAS_2);
+        verifyExpectedEntities(getFileNames(getZipSourceCopy(source)), GUID_TABLE_CTAS_2);
     }
 
 
@@ -280,5 +301,12 @@ public class ExportIncrementalTest extends ExportImportTestBase {
             ret.add(atlasEntity.getGuid());
         }
         return ret;
+    }
+
+    private ZipSource getZipSourceCopy(InputStream is) throws IOException, AtlasBaseException {
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IOUtils.copy(is, baos);
+
+        return new ZipSource(new ByteArrayInputStream(baos.toByteArray()));
     }
 }

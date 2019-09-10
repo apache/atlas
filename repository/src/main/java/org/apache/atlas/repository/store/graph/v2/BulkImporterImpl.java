@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
@@ -57,12 +58,14 @@ public class BulkImporterImpl implements BulkImporter {
     private final EntityGraphRetriever entityGraphRetriever;
     private AtlasTypeRegistry typeRegistry;
     private final int MAX_ATTEMPTS = 2;
+    private boolean directoryBasedImportConfigured;
 
     @Inject
     public BulkImporterImpl(AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
         this.entityStore = entityStore;
         this.entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
         this.typeRegistry = typeRegistry;
+        this.directoryBasedImportConfigured = StringUtils.isNotEmpty(AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
     }
 
     @Override
@@ -205,9 +208,11 @@ public class BulkImporterImpl implements BulkImporter {
                                       AtlasImportResult                  importResult,
                                       Set<String>                        processedGuids,
                                       int currentIndex, int streamSize, float currentPercent) {
-        updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
-        updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
-        updateImportMetrics("entity:%s:deleted", resp.getDeletedEntities(), processedGuids, importResult);
+        if (!directoryBasedImportConfigured) {
+            updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
+            updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
+            updateImportMetrics("entity:%s:deleted", resp.getDeletedEntities(), processedGuids, importResult);
+        }
 
         String lastEntityImported = String.format("entity:last-imported:%s:[%s]:(%s)", currentEntity.getEntity().getTypeName(), currentIndex, currentEntity.getEntity().getGuid());
 

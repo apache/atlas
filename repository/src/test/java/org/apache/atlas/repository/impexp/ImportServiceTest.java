@@ -52,6 +52,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +75,6 @@ import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ImportServiceTest extends ExportImportTestBase {
-    private static final Logger LOG = LoggerFactory.getLogger(ImportServiceTest.class);
     private static final int DEFAULT_LIMIT = 25;
     private final ImportService importService;
 
@@ -124,9 +124,9 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "sales")
-    public void importDB1(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB1(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
-        runAndVerifyQuickStart_v1_Import(importService, zipSource);
+        runAndVerifyQuickStart_v1_Import(importService, inputStream);
 
         assertEntityCount("DB_v1", "bfe88eb8-7556-403c-8210-647013f44a44", 1);
 
@@ -141,9 +141,9 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "reporting")
-    public void importDB2(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB2(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
-        runAndVerifyQuickStart_v1_Import(importService, zipSource);
+        runAndVerifyQuickStart_v1_Import(importService, inputStream);
     }
 
     @DataProvider(name = "logging")
@@ -152,9 +152,9 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "logging")
-    public void importDB3(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB3(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
-        runAndVerifyQuickStart_v1_Import(importService, zipSource);
+        runAndVerifyQuickStart_v1_Import(importService, inputStream);
     }
 
     @DataProvider(name = "salesNewTypeAttrs")
@@ -163,9 +163,9 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "salesNewTypeAttrs", dependsOnMethods = "importDB1")
-    public void importDB4(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB4(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
-        runImportWithParameters(importService, getDefaultImportRequest(), zipSource);
+        runImportWithParameters(importService, getDefaultImportRequest(), inputStream);
     }
 
     @DataProvider(name = "salesNewTypeAttrs-next")
@@ -174,7 +174,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "salesNewTypeAttrs-next", dependsOnMethods = "importDB4")
-    public void importDB5(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB5(InputStream inputStream) throws AtlasBaseException, IOException {
         final String newEnumDefName = "database_action";
 
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
@@ -184,13 +184,13 @@ public class ImportServiceTest extends ExportImportTestBase {
         options.put("updateTypeDefinition", "false");
         request.setOptions(options);
 
-        runImportWithParameters(importService, request, zipSource);
+        runImportWithParameters(importService, request, inputStream);
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
         assertEquals(typeDefStore.getEnumDefByName(newEnumDefName).getElementDefs().size(), 4);
     }
 
     @Test(dataProvider = "salesNewTypeAttrs-next", dependsOnMethods = "importDB4")
-    public void importDB6(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB6(InputStream inputStream) throws AtlasBaseException, IOException {
         final String newEnumDefName = "database_action";
 
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
@@ -200,7 +200,7 @@ public class ImportServiceTest extends ExportImportTestBase {
         options.put("updateTypeDefinition", "true");
         request.setOptions(options);
 
-        runImportWithParameters(importService, request, zipSource);
+        runImportWithParameters(importService, request, inputStream);
         assertNotNull(typeDefStore.getEnumDefByName(newEnumDefName));
         assertEquals(typeDefStore.getEnumDefByName(newEnumDefName).getElementDefs().size(), 8);
     }
@@ -211,11 +211,11 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "ctas")
-    public void importCTAS(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void importCTAS(InputStream inputStream) throws IOException, AtlasBaseException {
         loadBaseModel();
         loadHiveModel();
 
-        runImportWithNoParameters(importService, zipSource);
+        runImportWithNoParameters(importService, inputStream);
     }
 
     @DataProvider(name = "stocks-legacy")
@@ -224,12 +224,12 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "stocks-legacy")
-    public void importLegacy(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void importLegacy(InputStream inputStream) throws IOException, AtlasBaseException {
         loadBaseModel();
         loadFsModel();
         loadHiveModel();
 
-        runImportWithNoParameters(importService, zipSource);
+        runImportWithNoParameters(importService, inputStream);
         List<AtlasEntityHeader> result = getImportedEntities("hive_db", "886c5e9c-3ac6-40be-8201-fb0cebb64783");
         assertEquals(result.size(), 1);
 
@@ -244,12 +244,12 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "tag-prop-2")
-    public void importTagProp2(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void importTagProp2(InputStream inputStream) throws IOException, AtlasBaseException {
         loadBaseModel();
         loadFsModel();
         loadHiveModel();
 
-        runImportWithNoParameters(importService, zipSource);
+        runImportWithNoParameters(importService, inputStream);
         assertEntityCount("hive_db", "7d7d5a18-d992-457e-83c0-e36f5b95ebdb", 1);
         assertEntityCount("hive_table", "dbe729bb-c614-4e23-b845-3258efdf7a58", 1);
         AtlasEntity entity = assertEntity("hive_table", "092e9888-de96-4908-8be3-925ee72e3395");
@@ -260,7 +260,7 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "stocks-legacy")
-    public void importExistingTopLevelEntity(ZipSource zipSource) throws IOException, AtlasBaseException{
+    public void importExistingTopLevelEntity(InputStream inputStream) throws IOException, AtlasBaseException{
         loadBaseModel();
         loadFsModel();
         loadHiveModel();
@@ -277,7 +277,7 @@ public class ImportServiceTest extends ExportImportTestBase {
         assertNotNull(createResponse);
 
         String preImportGuid = createResponse.getCreatedEntities().get(0).getGuid();
-        runImportWithNoParameters(importService, zipSource);
+        runImportWithNoParameters(importService, inputStream);
 
         AtlasVertex v = AtlasGraphUtilsV2.findByGuid("886c5e9c-3ac6-40be-8201-fb0cebb64783");
         assertNotNull(v);
@@ -295,10 +295,10 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "stocks-glossary")
-    public void importGlossary(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void importGlossary(InputStream inputStream) throws IOException, AtlasBaseException {
         loadBaseModel();
         loadGlossary();
-        runImportWithNoParameters(importService, zipSource);
+        runImportWithNoParameters(importService, inputStream);
 
         assertEntityCount("AtlasGlossary", "40c80052-3129-4f7c-8f2f-391677935416", 1);
         assertEntityCount("AtlasGlossaryTerm", "e93ac426-de04-4d54-a7c9-d76c1e96369b", 1);
@@ -317,13 +317,13 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "hdfs_path1", expectedExceptions = AtlasBaseException.class)
-    public void importHdfs_path1(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void importHdfs_path1(InputStream inputStream) throws IOException, AtlasBaseException {
         loadBaseModel();
         loadFsModel();
         loadModelFromResourcesJson("tag1.json", typeDefStore, typeRegistry);
 
         try {
-            runImportWithNoParameters(importService, zipSource);
+            runImportWithNoParameters(importService, inputStream);
         } catch (AtlasBaseException e) {
             assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED);
             AtlasClassificationType tag1 = typeRegistry.getClassificationTypeByName("tag1");
@@ -344,11 +344,11 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "relationshipLineage")
-    public void importDB8(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB8(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
         loadHiveModel();
         AtlasImportRequest request = getDefaultImportRequest();
-        runImportWithParameters(importService, request, zipSource);
+        runImportWithParameters(importService, request, inputStream);
     }
 
     @DataProvider(name = "relationship")
@@ -357,11 +357,11 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "relationship")
-    public void importDB7(ZipSource zipSource) throws AtlasBaseException, IOException {
+    public void importDB7(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
         loadHiveModel();
         AtlasImportRequest request = getDefaultImportRequest();
-        runImportWithParameters(importService, request, zipSource);
+        runImportWithParameters(importService, request, inputStream);
 
         assertEntityCount("hive_db", "d7dc0848-fbba-4d63-9264-a460798361f5", 1);
         assertEntityCount("hive_table", "2fb31eaa-4bb2-4eb8-b333-a888ba7c84fe", 1);
@@ -430,11 +430,12 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "salesNewTypeAttrs-next")
-    public void transformUpdatesForSubTypes(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void transformUpdatesForSubTypes(InputStream inputStream) throws IOException, AtlasBaseException {
         loadBaseModel();
         loadHiveModel();
 
         String transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
+        ZipSource zipSource = new ZipSource(inputStream);
         importService.setImportTransform(zipSource, transformJSON);
         ImportTransforms importTransforms = zipSource.getImportTransform();
 
@@ -444,11 +445,12 @@ public class ImportServiceTest extends ExportImportTestBase {
     }
 
     @Test(dataProvider = "salesNewTypeAttrs-next")
-    public void transformUpdatesForSubTypesAddsToExistingTransforms(ZipSource zipSource) throws IOException, AtlasBaseException {
-        loadBaseModel();
-        loadHiveModel();
+    public void transformUpdatesForSubTypesAddsToExistingTransforms(InputStream inputStream) throws IOException, AtlasBaseException {
+            loadBaseModel();
+            loadHiveModel();
 
         String transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"replace:@cl1:@cl2\" ] }, \"hive_table\": { \"qualifiedName\":[ \"lowercase\" ] } }";
+        ZipSource zipSource = new ZipSource(inputStream);
         importService.setImportTransform(zipSource, transformJSON);
         ImportTransforms importTransforms = zipSource.getImportTransform();
 

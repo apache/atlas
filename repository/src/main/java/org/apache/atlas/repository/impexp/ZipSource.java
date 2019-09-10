@@ -82,20 +82,25 @@ public class ZipSource implements EntityImportStream {
                                  guidEntityJsonMap.get(key).equals("[]"));
     }
 
+    @Override
     public ImportTransforms getImportTransform() { return this.importTransform; }
 
+    @Override
     public void setImportTransform(ImportTransforms importTransform) {
         this.importTransform = importTransform;
     }
 
+    @Override
     public List<BaseEntityHandler> getEntityHandlers() {
         return entityHandlers;
     }
 
+    @Override
     public void setEntityHandlers(List<BaseEntityHandler> entityHandlers) {
         this.entityHandlers = entityHandlers;
     }
 
+    @Override
     public AtlasTypesDef getTypesDef() throws AtlasBaseException {
         final String fileName = ZipExportFileNames.ATLAS_TYPESDEF_NAME.toString();
 
@@ -103,6 +108,7 @@ public class ZipSource implements EntityImportStream {
         return convertFromJson(AtlasTypesDef.class, s);
     }
 
+    @Override
     public AtlasExportResult getExportResult() throws AtlasBaseException {
         final String fileName = ZipExportFileNames.ATLAS_EXPORT_INFO_NAME.toString();
 
@@ -147,6 +153,7 @@ public class ZipSource implements EntityImportStream {
         zipInputStream.close();
     }
 
+    @Override
     public List<String> getCreationOrder() {
         return this.creationOrder;
     }
@@ -210,6 +217,7 @@ public class ZipSource implements EntityImportStream {
         return s;
     }
 
+    @Override
     public void close() {
         try {
             inputStream.close();
@@ -284,7 +292,7 @@ public class ZipSource implements EntityImportStream {
         currentPosition = index;
         reset();
         for (int i = 0; i < creationOrder.size() && i <= index; i++) {
-            iterator.next();
+            onImportComplete(iterator.next());
         }
     }
 
