@@ -39,6 +39,7 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -246,9 +247,8 @@ public class MetricsServiceTest {
         }
     }
 
-    public static ZipSource getZipSource(String fileName) throws IOException, AtlasBaseException {
-        FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream(fileName);
-        return new ZipSource(fs);
+    public static InputStream getZipSource(String fileName) throws AtlasBaseException {
+        return ZipFileResourceTestUtils.getFileInputStream(fileName);
     }
 
     private static class TestClock extends Clock {

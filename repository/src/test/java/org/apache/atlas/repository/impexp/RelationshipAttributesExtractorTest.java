@@ -41,6 +41,7 @@ import javax.inject.Inject;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
@@ -106,8 +107,8 @@ public class RelationshipAttributesExtractorTest {
     }
 
     @Test(dataProvider = "hiveDb")
-    public void importHiveDb(ZipSource zipSource) throws AtlasBaseException, IOException {
-        runImportWithNoParameters(importService, zipSource);
+    public void importHiveDb(InputStream inputStream) throws AtlasBaseException, IOException {
+        runImportWithNoParameters(importService, inputStream);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
