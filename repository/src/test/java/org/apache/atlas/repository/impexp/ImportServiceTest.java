@@ -40,6 +40,7 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.shaded.kryo.io.Input;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -463,6 +464,6 @@ public class ImportServiceTest extends ExportImportTestBase {
 
     @Test(expectedExceptions = AtlasBaseException.class)
     public void importEmptyZip() throws IOException, AtlasBaseException {
-        getZipSource("empty.zip");
+        new ZipSource((InputStream) getZipSource("empty.zip")[0][0]);
     }
 }
