@@ -689,7 +689,11 @@
                         </systemProperty>
                         <systemProperty>
                             <name>org.eclipse.jetty.annotations.maxWait</name>
-                            <value>3000</value>
+                            <value>5000</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>org.eclipse.jetty.annotations.maxWait</name>
+                            <value>5000</value>
                         </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>

@@ -343,7 +343,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     public void releaseGremlinScriptEngine(ScriptEngine scriptEngine) {
         if (scriptEngine instanceof GremlinGroovyScriptEngine) {
             try {
-                ((GremlinGroovyScriptEngine) scriptEngine).close();
+                ((GremlinGroovyScriptEngine) scriptEngine).reset();
             } catch (Exception e) {
                 // ignore
             }
