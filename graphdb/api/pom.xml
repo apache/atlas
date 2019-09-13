@@ -49,7 +49,7 @@
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-core</artifactId>
-            <version>3.3.3</version>
+            <version>${tinkerpop.version}</version>
         </dependency>
     </dependencies>
 

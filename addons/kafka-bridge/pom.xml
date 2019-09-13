@@ -287,6 +287,10 @@
                             <key>embedded.solr.directory</key>
                             <value>${project.build.directory}</value>
                         </systemProperty>
+                        <systemProperty>
+                            <name>org.eclipse.jetty.annotations.maxWait</name>
+                            <value>5000</value>
+                        </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>
