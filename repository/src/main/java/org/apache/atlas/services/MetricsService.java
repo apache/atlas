@@ -22,6 +22,8 @@ import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasMetricsUtil;
@@ -30,16 +32,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.discovery.SearchProcessor.AND_STR;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIndexSearchPrefix;
 
 @AtlasService
 public class MetricsService {
@@ -59,6 +59,7 @@ public class MetricsService {
     protected static final String METRIC_ENTITY_COUNT      = ENTITY + "Count";
     protected static final String METRIC_ENTITY_DELETED    = ENTITY + "Deleted";
     protected static final String METRIC_ENTITY_ACTIVE     = ENTITY + "Active";
+    protected static final String METRIC_ENTITY_SHELL      = ENTITY + "Shell";
     protected static final String METRIC_TAG_COUNT         = TAG + "Count";
     protected static final String METRIC_ENTITIES_PER_TAG  = TAG + "Entities";
 
@@ -127,6 +128,7 @@ public class MetricsService {
 
         metrics.addMetric(ENTITY, METRIC_ENTITY_ACTIVE, activeEntityCount);
         metrics.addMetric(ENTITY, METRIC_ENTITY_DELETED, deletedEntityCount);
+        metrics.addMetric(ENTITY, METRIC_ENTITY_SHELL, getShellEntityCount());
 
         metrics.addMetric(TAG, METRIC_ENTITIES_PER_TAG, taggedEntityCount);
 
@@ -147,6 +149,33 @@ public class MetricsService {
         }
 
         return ret == null ? 0L : ret;
+    }
+
+    private Map<String, Long> getShellEntityCount() {
+        Map<String, Long> ret            = new HashMap<>();
+        String            idxQueryString = getIndexSearchPrefix() + "\"" + IS_INCOMPLETE_PROPERTY_KEY + "\" : " + INCOMPLETE_ENTITY_VALUE.intValue();
+        AtlasIndexQuery   idxQuery       = atlasGraph.indexQuery(VERTEX_INDEX, idxQueryString);
+
+        try {
+            Iterator<AtlasIndexQuery.Result<Object, Object>> results = idxQuery.vertices();
+
+            while (results != null && results.hasNext()) {
+                AtlasVertex entityVertex = results.next().getVertex();
+                String      typeName     = getTypeName(entityVertex);
+
+                if (!ret.containsKey(typeName)) {
+                    ret.put(typeName, 1L);
+                } else {
+                    ret.put(typeName, ret.get(typeName) + 1);
+                }
+            }
+        } catch (Throwable t) {
+            LOG.warn("getShellEntityCount(): Returned empty result", t);
+        } finally {
+            atlasGraph.commit();
+        }
+
+        return ret;
     }
 
     private int getAllTypesCount() {
