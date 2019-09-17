@@ -1,3 +1,0 @@
-All files in this directory and subdirectories are under Apache License Version 2.0.
-The reason being Maven Doxia plugin that converts twiki to html does not have
-commenting out feature.
