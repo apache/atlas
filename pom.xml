@@ -2091,6 +2091,11 @@
                         <exclude>**/*rebel*.xml</exclude>
                         <exclude>**/*rebel*.xml.bak</exclude>
                         <exclude>**/test/resources/**</exclude>
+
+                        <!-- atlas doc directory -->
+                        <exclude>**/docz-lib/**</exclude>
+                        <exclude>**/.docz/**</exclude>
+                        
                     </excludes>
                 </configuration>
                 <executions>
