@@ -92,6 +92,7 @@ public class HiveMetaStoreBridge {
     public static final String ATLAS_ENDPOINT                  = "atlas.rest.address";
     public static final String SEP                             = ":".intern();
     public static final String HDFS_PATH                       = "hdfs_path";
+    public static final String DEFAULT_METASTORE_CATALOG       = "hive";
 
     private static final int    EXIT_CODE_SUCCESS = 0;
     private static final int    EXIT_CODE_FAILED  = 1;
@@ -553,7 +554,7 @@ public class HiveMetaStoreBridge {
             dbEntity = new AtlasEntity(HiveDataTypes.HIVE_DB.getName());
         }
 
-        String dbName = hiveDB.getName().toLowerCase();
+        String dbName = getDatabaseName(hiveDB);
 
         dbEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getDBQualifiedName(metadataNamespace, dbName));
         dbEntity.setAttribute(ATTRIBUTE_NAME, dbName);
@@ -570,6 +571,18 @@ public class HiveMetaStoreBridge {
 
         return dbEntity;
     }
+
+    public static String getDatabaseName(Database hiveDB) {
+        String dbName      = hiveDB.getName().toLowerCase();
+        String catalogName = hiveDB.getCatalogName() != null ? hiveDB.getCatalogName().toLowerCase() : null;
+
+        if (StringUtils.isNotEmpty(catalogName) && !StringUtils.equals(catalogName, DEFAULT_METASTORE_CATALOG)) {
+            dbName = catalogName + SEP + dbName;
+        }
+
+        return dbName;
+    }
+
     /**
      * Create a new table instance in Atlas
      * @param  database AtlasEntity for Hive  {@link AtlasEntity} to which this table belongs

@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 
+import static org.apache.atlas.hive.bridge.HiveMetaStoreBridge.getDatabaseName;
 import static org.apache.hadoop.hive.ql.hooks.Entity.Type.DATABASE;
 
 public class CreateDatabase extends BaseHiveEvent {
@@ -80,7 +81,7 @@ public class CreateDatabase extends BaseHiveEvent {
                 Database db = entity.getDatabase();
 
                 if (db != null) {
-                    db = getHive().getDatabase(db.getName());
+                    db = getHive().getDatabase(getDatabaseName(db));
                 }
 
                 if (db != null) {

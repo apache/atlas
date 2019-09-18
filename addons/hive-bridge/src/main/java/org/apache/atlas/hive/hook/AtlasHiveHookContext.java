@@ -34,6 +34,7 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 
 import java.util.*;
 
+import static org.apache.atlas.hive.bridge.HiveMetaStoreBridge.getDatabaseName;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.toTable;
 
 
@@ -192,7 +193,7 @@ public class AtlasHiveHookContext {
     }
 
     public String getQualifiedName(Database db) {
-        return (db.getName() + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + getMetadataNamespace();
+        return getDatabaseName(db) + QNAME_SEP_METADATA_NAMESPACE + getMetadataNamespace();
     }
 
     public String getQualifiedName(Table table) {
