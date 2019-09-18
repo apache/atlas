@@ -62,6 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.hive.bridge.HiveMetaStoreBridge.getDatabaseName;
 import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_METADATA_NAMESPACE;
 import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_ENTITY_NAME;
 import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_PROCESS;
@@ -257,8 +258,10 @@ public abstract class BaseHiveEvent {
 
         switch (entity.getType()) {
             case DATABASE: {
-                if (!context.getIgnoreDummyDatabaseName().contains(entity.getDatabase().getName())) {
-                    Database db = getHive().getDatabase(entity.getDatabase().getName());
+                String dbName = getDatabaseName(entity.getDatabase());
+
+                if (!context.getIgnoreDummyDatabaseName().contains(dbName)) {
+                    Database db = getHive().getDatabase(dbName);
 
                     ret = toDbEntity(db);
                 }
@@ -302,10 +305,10 @@ public abstract class BaseHiveEvent {
     }
 
     protected AtlasEntity toDbEntity(Database db) throws Exception {
-        String  dbQualifiedName = getQualifiedName(db);
-        boolean isKnownDatabase = context.isKnownDatabase(dbQualifiedName);
-
-        AtlasEntity ret = context.getEntity(dbQualifiedName);
+        String      dbName          = getDatabaseName(db);
+        String      dbQualifiedName = getQualifiedName(db);
+        boolean     isKnownDatabase = context.isKnownDatabase(dbQualifiedName);
+        AtlasEntity ret             = context.getEntity(dbQualifiedName);
 
         if (ret == null) {
             ret = new AtlasEntity(HIVE_TYPE_DB);
@@ -318,7 +321,7 @@ public abstract class BaseHiveEvent {
             }
 
             ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, dbQualifiedName);
-            ret.setAttribute(ATTRIBUTE_NAME, db.getName().toLowerCase());
+            ret.setAttribute(ATTRIBUTE_NAME, dbName);
             ret.setAttribute(ATTRIBUTE_DESCRIPTION, db.getDescription());
             ret.setAttribute(ATTRIBUTE_OWNER, db.getOwnerName());
 
