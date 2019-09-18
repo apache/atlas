@@ -475,7 +475,7 @@ define(['require',
                         that.ui.activePage.attr('title', "Page " + that.activePage);
                         that.ui.activePage.text(that.activePage);
                         that.renderTableLayoutView();
-                        if(dataLength>0){
+                        if (dataLength > 0) {
                             that.$('.searchTable').removeClass('noData')
                         }
                         if (Utils.getUrlState.isSearchTab() && value && !value.profileDBView) {
@@ -676,7 +676,7 @@ define(['require',
                             }
                             if (obj.status && Enums.entityStateReadOnly[obj.status]) {
                                 nameHtml += '<button type="button" title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
-                                return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
+                                nameHtml = '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                             }
                             return nameHtml;
                         }
