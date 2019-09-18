@@ -427,9 +427,9 @@ define(['require',
                 var that = this,
                     termData = "";
                 _.each(data, function(val) {
-                    if (val.relationshipStatus == "ACTIVE") {
-                        termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span title=' + _.escape(val.displayText) + '>' + _.escape(val.displayText) + '</span><i class="fa fa-close" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
-                    }
+                    // if (val.relationshipStatus == "ACTIVE") {
+                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span title=' + _.escape(val.displayText) + '>' + _.escape(val.displayText) + '</span><i class="'+(val.relationshipStatus == "ACTIVE" ? 'fa fa-close': "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
+                    // }
                 });
                 this.ui.termList.find("span.btn").remove();
                 this.ui.termList.prepend(termData);
