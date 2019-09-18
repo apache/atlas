@@ -688,7 +688,7 @@ define(['require',
                             }
                             if (obj.status && Enums.entityStateReadOnly[obj.status]) {
                                 nameHtml += '<button type="button" title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
-                                return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
+                                nameHtml = '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                             }
                             var getImageData = function(options) {
                                 var imagePath = options.imagePath,
