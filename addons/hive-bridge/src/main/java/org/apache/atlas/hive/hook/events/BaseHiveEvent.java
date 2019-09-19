@@ -52,15 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.hive.bridge.HiveMetaStoreBridge.getDatabaseName;
 import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_METADATA_NAMESPACE;
@@ -640,18 +632,29 @@ public abstract class BaseHiveEvent {
     }
 
     protected AtlasEntity getHiveProcessEntity(List<AtlasEntity> inputs, List<AtlasEntity> outputs) throws Exception {
-        AtlasEntity ret         = new AtlasEntity(HIVE_TYPE_PROCESS);
-        String      queryStr    = getQueryString();
+        AtlasEntity ret = new AtlasEntity(HIVE_TYPE_PROCESS);
+        String queryStr = getQueryString();
 
         if (queryStr != null) {
             queryStr = queryStr.toLowerCase().trim();
         }
+        ret.setAttribute(ATTRIBUTE_NAME, queryStr);
 
-        ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(inputs, outputs));
+        ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, getOperationName());
+        String qualifiedName = getQualifiedName(inputs, outputs);
+        if (context.isMetastoreHook()) {
+            HiveOperation operation = context.getHiveOperation();
+            if (operation == HiveOperation.CREATETABLE || operation == HiveOperation.CREATETABLE_AS_SELECT) {
+                AtlasEntity table = outputs.get(0);
+                long createTime = Long.valueOf((Long)table.getAttribute(ATTRIBUTE_CREATE_TIME));
+                qualifiedName =  (String) table.getAttribute(ATTRIBUTE_QUALIFIED_NAME) + QNAME_SEP_PROCESS + createTime;
+                ret.setAttribute(ATTRIBUTE_NAME, "dummyProcess:" + UUID.randomUUID());
+                ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, operation.getOperationName());
+            }
+        }
+        ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, qualifiedName);
         ret.setRelationshipAttribute(ATTRIBUTE_INPUTS, AtlasTypeUtil.getAtlasRelatedObjectIds(inputs, RELATIONSHIP_DATASET_PROCESS_INPUTS));
         ret.setRelationshipAttribute(ATTRIBUTE_OUTPUTS, AtlasTypeUtil.getAtlasRelatedObjectIds(outputs, RELATIONSHIP_PROCESS_DATASET_OUTPUTS));
-        ret.setAttribute(ATTRIBUTE_NAME, queryStr);
-        ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, getOperationName());
 
         // We are setting an empty value to these attributes, since now we have a new entity type called hive process
         // execution which captures these values. We have to set empty values here because these attributes are
