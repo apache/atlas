@@ -30,6 +30,8 @@ import org.apache.hadoop.hive.metastore.events.ListenerEvent;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +40,7 @@ import static org.apache.hadoop.hive.metastore.TableType.EXTERNAL_TABLE;
 import static org.apache.hadoop.hive.ql.plan.HiveOperation.*;
 
 public class CreateTable extends BaseHiveEvent {
+    private static final Logger LOG = LoggerFactory.getLogger(CreateTable.class);
     private final boolean skipTempTables;
 
     public CreateTable(AtlasHiveHookContext context, boolean skipTempTables) {
@@ -48,7 +51,7 @@ public class CreateTable extends BaseHiveEvent {
 
     @Override
     public List<HookNotification> getNotificationMessages() throws Exception {
-        List<HookNotification>   ret      = null;
+        List<HookNotification> ret = null;
         AtlasEntitiesWithExtInfo entities = context.isMetastoreHook() ? getHiveMetastoreEntities() : getHiveEntities();
 
         if (entities != null && CollectionUtils.isNotEmpty(entities.getEntities())) {
@@ -117,41 +120,70 @@ public class CreateTable extends BaseHiveEvent {
         if (table != null) {
             AtlasEntity tblEntity = toTableEntity(table, ret);
 
-            if (tblEntity != null && !context.isMetastoreHook()) {
+            if (tblEntity != null) {
                 if (isHBaseStore(table)) {
-                    // This create lineage to HBase table in case of Hive on HBase
-                    AtlasEntity hbaseTableEntity = toReferencedHBaseTable(table, ret);
+                    if (context.isMetastoreHook()) {
+                        //do nothing
+                    } else {
+                        // This create lineage to HBase table in case of Hive on HBase
+                        AtlasEntity hbaseTableEntity = toReferencedHBaseTable(table, ret);
 
-                    if (hbaseTableEntity != null) {
-                        final AtlasEntity processEntity;
+                        //not a hive metastore hook
+                        //it is running in the context of Hbase.
+                        if (hbaseTableEntity != null) {
+                            final AtlasEntity processEntity;
 
-                        if (EXTERNAL_TABLE.equals(table.getTableType())) {
-                            processEntity = getHiveProcessEntity(Collections.singletonList(hbaseTableEntity), Collections.singletonList(tblEntity));
-                        } else {
-                            processEntity = getHiveProcessEntity(Collections.singletonList(tblEntity), Collections.singletonList(hbaseTableEntity));
+                            if (EXTERNAL_TABLE.equals(table.getTableType())) {
+                                processEntity = getHiveProcessEntity(Collections.singletonList(hbaseTableEntity), Collections.singletonList(tblEntity));
+                            } else {
+                                processEntity = getHiveProcessEntity(Collections.singletonList(tblEntity), Collections.singletonList(hbaseTableEntity));
+                            }
+                            ret.addEntity(processEntity);
+
+                            AtlasEntity processExecution = getHiveProcessExecutionEntity(processEntity);
+                            ret.addEntity(processExecution);
                         }
-                        ret.addEntity(processEntity);
-
-                        AtlasEntity processExecution = getHiveProcessExecutionEntity(processEntity);
-                        ret.addEntity(processExecution);
                     }
+
                 } else {
-                    if (EXTERNAL_TABLE.equals(table.getTableType())) {
-                        AtlasEntity hdfsPathEntity = getPathEntity(table.getDataLocation(), ret);
-                        AtlasEntity processEntity  = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity), Collections.singletonList(tblEntity));
+                    if (context.isMetastoreHook()) {
+                        //it is running in the context of HiveMetastore
+                        //not a hive metastore hook
+                        if (EXTERNAL_TABLE.equals(table.getTableType())) {
+                            AtlasEntity hdfsPathEntity = getPathEntity(table.getDataLocation(), ret);
+                            if(LOG.isDebugEnabled()) {
+                                LOG.debug("Creating a dummy process with lineage from hdfs path to table");
+                            }
+                            AtlasEntity processEntity = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity),
+                                    Collections.singletonList(tblEntity));
 
-                        ret.addEntity(processEntity);
-                        ret.addReferredEntity(hdfsPathEntity);
+                            ret.addEntity(processEntity);
+                            ret.addReferredEntity(hdfsPathEntity);
+                            //hive process entity will be created by hiveserver hook.
+                        }
+                    } else {
+                        //not a hive metastore hook
+                        //it is running in the context of HiveServer2
+                        if (EXTERNAL_TABLE.equals(table.getTableType())) {
+                            AtlasEntity hdfsPathEntity = getPathEntity(table.getDataLocation(), ret);
+                            AtlasEntity processEntity = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity), Collections.singletonList(tblEntity));
 
-                        AtlasEntity processExecution = getHiveProcessExecutionEntity(processEntity);
-                        ret.addEntity(processExecution);
+                            ret.addEntity(processEntity);
+                            ret.addReferredEntity(hdfsPathEntity);
+
+                            AtlasEntity processExecution = getHiveProcessExecutionEntity(processEntity);
+                            ret.addEntity(processExecution);
+                        }
                     }
+
                 }
 
-                AtlasEntity tableDDLEntity = createHiveDDLEntity(tblEntity);
+                if (!context.isMetastoreHook()) {
+                    AtlasEntity tableDDLEntity = createHiveDDLEntity(tblEntity);
 
-                if (tableDDLEntity != null) {
-                    ret.addEntity(tableDDLEntity);
+                    if (tableDDLEntity != null) {
+                        ret.addEntity(tableDDLEntity);
+                    }
                 }
             }
         }
