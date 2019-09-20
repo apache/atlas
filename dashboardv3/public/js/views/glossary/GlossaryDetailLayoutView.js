@@ -157,7 +157,9 @@ define(['require',
                                             }
                                         });
                                     }
-                                    that.glossaryCollection.trigger("update:details", { data: that.data });
+                                    that.options.categoryEvent.trigger("Success:TermRename", true);
+                                    // that.glossaryCollection.trigger("test");
+                                    // that.glossaryCollection.trigger("update:details", { data: that.data });
                                 }
                                 that.data = data;
                                 that.renderDetails(that.data);

@@ -74,6 +74,7 @@ define([
 
             events["click " + this.ui.showGlossaryType] = function(e) {
                 var getTreeData, displayText;
+                e.stopPropagation();
                 this.isTermView = !this.isTermView;
                 this.glossarySwitchBtnUpdate();
             };
@@ -93,6 +94,12 @@ define([
                 },
                 this
             );
+            if (this.options.categoryEvent) {
+                this.options.categoryEvent.on("Success:TermRename", function(options) {
+                    that.refresh();
+                })
+            }
+
             $('body').on('click', '.termPopoverOptions li, .categoryPopoverOptions li', function(e) {
                 that.$('.termPopover,.categoryPopover').popover('hide');
                 that[$(this).find('a').data('fn')](e)
@@ -103,6 +110,7 @@ define([
             this.ui.showGlossaryType.attr("data-original-title", (this.isTermView ? "Show Category" : "Show Term"));
             this.ui.showGlossaryType.tooltip('hide');
             this.ui.showGlossaryType.find("i").toggleClass("switch-button");
+            // this.ui.showGlossaryType.find("span").html(this.isTermView ? "Show Category" : "Show Term");
             this.ui.termSearchTree.jstree(true).refresh();
             //this.showDefaultPage();
             // if(this.isTermView){
@@ -145,6 +153,10 @@ define([
             // $('#r_glossaryDetailLayoutView')
             this.fetchGlossary();
 
+        },
+
+        onBeforeDestroy: function() {
+            this.options.categoryEvent.off("Success:TermRename")
         },
         getViewType: function() {
             if (this.options.value) {

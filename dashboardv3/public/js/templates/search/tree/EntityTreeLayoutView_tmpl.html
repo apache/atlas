@@ -18,10 +18,10 @@
     <div class="panel-heading dash-button-icon" data-toggle="collapse" aria-expanded="true" href="#c_entity">
         <i class="ec-icon fa"></i>
         <h4 class="panel-title">Entities</h4>
-        <div class="btn-group pull-right menu-items">
-            <button type="button" class="typeRefresh" data-id="groupOrFlatTreeView" data-type="entity" title="Show group tree">
-                <i class="fa fa-sitemap group-tree-deactivate"></i>
-            </button>
+        <div class="btn-group pull-right">
+            <!--   <button type="button" class="typeRefresh" data-id="groupOrFlatTreeView" data-type="entity" title="Show flat tree">
+                <i class="fa fa-sitemap"></i>
+            </button> -->
             <button type="button" class="typeRefresh" data-id="refreshTree" data-type="entity" title="Refresh">
                 <i class="fa fa-refresh"></i>
             </button>
@@ -33,9 +33,19 @@
             <button type="button" class="typeRefresh" data-id="showEmptyServiceType" data-type="entity" title="Show empty service types">
                 <i class="fa fa-toggle-off"></i>
             </button>
-            <!--  <button class="" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" type="button">
-                <i class="fa fa-ellipsis-v"></i>
-            </button> -->
+            <button type="button" class="typeRefresh dropdown">
+                <div class=" btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-ellipsis-v"></i>
+                </div>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <li data-id="groupOrFlatTreeView" data-type="entity"> <i class="fa fa-list-ul"></i><span>Show flat tree</span>
+                    </li>
+                    <!--  <li data-id="showEmptyServiceType" data-type="entity"> <i class="fa fa-toggle-off"></i><span >Show empty service types</span>
+                    </li>
+                    <li data-id="refreshTree" data-type="entity"><i class="fa fa-refresh"></i><span >Refresh</span>
+                    </li> -->
+                </ul>
+            </button>
         </div>
     </div>
     <div id="c_entity" class="panel-collapse collapse jstree-with-action in">

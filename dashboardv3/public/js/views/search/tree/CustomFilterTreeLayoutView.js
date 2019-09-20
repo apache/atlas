@@ -42,6 +42,7 @@ define([
         ui: {
             //refresh
             refreshTree: '[data-id="refreshTree"]',
+            groupOrFlatTree: '[data-id="groupOrFlatTreeView"]',
             customFilterSearchTree: '[data-id="customFilterSearchTree"]',
             showCustomFilter: '[data-id="showCustomFilter"]'
 
@@ -63,6 +64,17 @@ define([
             events["click " + this.ui.showCustomFilter] = function(e) {
                 that.isBasic = !that.isBasic;
                 this.customFilterSwitchBtnUpdate();
+            };
+            events["click " + this.ui.groupOrFlatTree] = function(e) {
+                var type = $(e.currentTarget).data("type");
+                e.stopPropagation();
+                this.isGroupView = !this.isGroupView;
+                this.ui.groupOrFlatTree.attr("data-original-title", (this.isGroupView ? "Show all" : "Show type"));
+                this.ui.groupOrFlatTree.tooltip('hide');
+                this.ui.groupOrFlatTree.find("i").toggleClass("group-tree-deactivate");
+                this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
+                that.ui[type + "SearchTree"].jstree(true).destroy();
+                that.renderCustomFilter();
             };
 
             return events;
@@ -125,6 +137,7 @@ define([
             this.customFilterData = null;
             this.isBasic = true;
             this.customFilterId = null;
+            this.isGroupView = true;
         },
         onRender: function() {
             this.renderCustomFilter();
@@ -176,7 +189,18 @@ define([
                 getEntityTreeConfig = function(opt) {
                     return {
                         plugins: ["search", "core", "sort", "conditionalselect", "changed", "wholerow", "node_customize"],
-
+                        conditionalselect: function(node) {
+                            var type = node.original.type;
+                            if (type == "customFilterFolder") {
+                                if (node.children.length) {
+                                    return false;
+                                } else {
+                                    return true;
+                                }
+                            } else {
+                                return true;
+                            }
+                        },
                         state: { opened: true },
                         search: {
                             show_only_matches: true,
@@ -193,7 +217,6 @@ define([
                             multiple: false,
                             data: function(node, cb) {
                                 if (node.id === "#") {
-                                    var testData = that.getCustomFilterTree();
                                     cb(that.getCustomFilterTree());
                                 }
                             }
@@ -249,6 +272,7 @@ define([
             var that = this,
                 customFilterBasicList = [],
                 customFilterAdvanceList = [],
+                allCustomFilter = [],
                 customFilterBasicTreeData = that.saveSearchBaiscCollection.fullCollection.models,
                 customFilterAdvanceTreeData = that.saveSearchAdvanceCollection.fullCollection.models,
                 openClassificationNodesState = function(treeDate) {
@@ -259,12 +283,13 @@ define([
                     }
                 },
                 generateNode = function(nodeOptions) {
+                    var searchType = nodeOptions.get('searchType');
                     var nodeStructure = {
                         text: nodeOptions.get('name'),
                         name: nodeOptions.get('name'),
                         type: "customFilter",
                         id: nodeOptions.get('guid'),
-                        icon: "fa fa-search",
+                        icon: (searchType === 'BASIC' ? "fa fa-circle-thin basic-tree" : "fa fa-circle-thin advance-tree"),
                         gType: "CustomFilter",
                         model: nodeOptions
                     }
@@ -274,11 +299,32 @@ define([
             that.customFilterId = null;
             _.each(customFilterBasicTreeData, function(filterNode) {
                 customFilterBasicList.push(generateNode(filterNode));
+                allCustomFilter.push(generateNode(filterNode));
             });
             _.each(customFilterAdvanceTreeData, function(filterNode) {
                 customFilterAdvanceList.push(generateNode(filterNode));
+                allCustomFilter.push(generateNode(filterNode));
             });
-            var customFilterList = that.isBasic ? customFilterBasicList : customFilterAdvanceList;
+
+            // var customFilterList = that.isBasic ? customFilterBasicList : customFilterAdvanceList;
+            var treeView = [{
+                icon: "fa fa-folder-o",
+                gType: "customFilter",
+                type: "customFilterFolder",
+                children: customFilterBasicList,
+                text: "Basic Search",
+                name: "Basic Search",
+                state: { opened: true }
+            }, {
+                icon: "fa fa-folder-o",
+                gType: "customFilter",
+                type: "customFilterFolder",
+                children: customFilterAdvanceList,
+                text: "Advance Search",
+                name: "Advance Search",
+                state: { opened: true }
+            }];
+            var customFilterList = that.isGroupView ? treeView : allCustomFilter;
             return customFilterList;
         },
         onNodeSelect: function(nodeData) {
@@ -289,11 +335,13 @@ define([
                 that.customFilterId = selectedNodeId;
                 if (options && options.model) {
                     var searchParameters = options.model.get('searchParameters'),
+                        searchType = options.model.get('searchType'),
                         params = CommonViewFunction.generateUrlFromSaveSearchObject({
                             value: { "searchParameters": searchParameters },
                             classificationDefCollection: that.classificationDefCollection,
                             entityDefCollection: that.entityDefCollection
                         });
+                    searchType === 'ADVANCED' ? that.isBasic = false : that.isBasic = true;
                     _.extend({}, this.options.value, params),
 
                         Utils.setUrl({
