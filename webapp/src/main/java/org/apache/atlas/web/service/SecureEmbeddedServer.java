@@ -21,6 +21,7 @@ package org.apache.atlas.web.service;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
@@ -35,7 +36,23 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.List;
 
 import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_CIPHER_SUITES;
@@ -60,6 +77,14 @@ public class SecureEmbeddedServer extends EmbeddedServer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SecureEmbeddedServer.class);
 
+    public static final String ATLAS_KEYSTORE_FILE_TYPE_DEFAULT = "jks";
+    public static final String ATLAS_TRUSTSTORE_FILE_TYPE_DEFAULT = "jks";
+    public static final String ATLAS_TLS_CONTEXT_ALGO_TYPE = "TLS";
+    public static final String ATLAS_TLS_KEYMANAGER_DEFAULT_ALGO_TYPE = KeyManagerFactory.getDefaultAlgorithm();
+    public static final String ATLAS_TLS_TRUSTMANAGER_DEFAULT_ALGO_TYPE = TrustManagerFactory.getDefaultAlgorithm();
+
+
+
     public SecureEmbeddedServer(String host, int port, String path) throws IOException {
         super(host, port, path);
     }
@@ -67,6 +92,11 @@ public class SecureEmbeddedServer extends EmbeddedServer {
     @Override
     protected Connector getConnector(String host, int port) throws IOException {
         org.apache.commons.configuration.Configuration config = getConfiguration();
+
+        SSLContext sslContext = getSSLContext();
+        if (sslContext != null) {
+            SSLContext.setDefault(sslContext);
+        }
 
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(config.getString(KEYSTORE_FILE_KEY,
@@ -154,6 +184,160 @@ public class SecureEmbeddedServer extends EmbeddedServer {
             return ApplicationProperties.get();
         } catch (AtlasException e) {
             throw new RuntimeException("Unable to load configuration: " + ApplicationProperties.APPLICATION_PROPERTIES);
+        }
+    }
+
+    /**
+     * creates the SSLContext using the available keystore and truststore.
+     * @return
+     */
+    private SSLContext getSSLContext() {
+        KeyManager[] kmList = getKeyManagers();
+        TrustManager[] tmList = getTrustManagers();
+        SSLContext sslContext = null;
+        if (tmList != null) {
+            try {
+                sslContext = SSLContext.getInstance(ATLAS_TLS_CONTEXT_ALGO_TYPE);
+                sslContext.init(kmList, tmList, new SecureRandom());
+            } catch (NoSuchAlgorithmException e) {
+                LOG.error("SSL algorithm is not available in the environment. Reason: " + e.toString());
+            } catch (KeyManagementException e) {
+                LOG.error("Unable to initials the SSLContext. Reason: " + e.toString());
+            }
+        }
+        return sslContext;
+    }
+
+    /**
+     * Generating the KeyManager using the provided keystore.
+     * @return
+     */
+    private KeyManager[] getKeyManagers() {
+        KeyManager[] kmList = null;
+        try {
+
+            String keyStoreFile = getConfiguration().getString(KEYSTORE_FILE_KEY,
+              System.getProperty(KEYSTORE_FILE_KEY, DEFAULT_KEYSTORE_FILE_LOCATION));
+            String keyStoreFilepwd = getPassword(getConfiguration(), KEYSTORE_PASSWORD_KEY);
+
+            if (StringUtils.isNotEmpty(keyStoreFile) && StringUtils.isNotEmpty(keyStoreFilepwd)) {
+                InputStream in = null;
+
+                try {
+                    in = getFileInputStream(keyStoreFile);
+
+                    if (in != null) {
+                        KeyStore keyStore = KeyStore.getInstance(ATLAS_KEYSTORE_FILE_TYPE_DEFAULT);
+
+                        keyStore.load(in, keyStoreFilepwd.toCharArray());
+
+                        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(ATLAS_TLS_KEYMANAGER_DEFAULT_ALGO_TYPE);
+
+                        keyManagerFactory.init(keyStore, keyStoreFilepwd.toCharArray());
+
+                        kmList = keyManagerFactory.getKeyManagers();
+                    } else {
+                        LOG.error("Unable to obtain keystore from file [" + keyStoreFile + "]");
+                    }
+                } catch (KeyStoreException e) {
+                    LOG.error("Unable to obtain from KeyStore :" + e.getMessage(), e);
+                } catch (NoSuchAlgorithmException e) {
+                    LOG.error("SSL algorithm is NOT available in the environment", e);
+                } catch (CertificateException e) {
+                    LOG.error("Unable to obtain the requested certification ", e);
+                } catch (FileNotFoundException e) {
+                    LOG.error("Unable to find the necessary TLS Keystore Files", e);
+                } catch (IOException e) {
+                    LOG.error("Unable to read the necessary TLS Keystore Files", e);
+                } catch (UnrecoverableKeyException e) {
+                    LOG.error("Unable to recover the key from keystore", e);
+                } finally {
+                    close(in, keyStoreFile);
+                }
+            }
+
+        }catch (IOException exception) {
+            LOG.error(exception.getMessage());
+        }
+        return kmList;
+    }
+
+    /**
+     * Generating the TrustManager using the provided truststore
+     * @return
+     */
+    private TrustManager[] getTrustManagers() {
+        TrustManager[] tmList = null;
+        try {
+            String truststoreFile = getConfiguration().getString(TRUSTSTORE_FILE_KEY,
+              System.getProperty(TRUSTSTORE_FILE_KEY, DEFATULT_TRUSTORE_FILE_LOCATION));
+            String trustStoreFilepwd = getPassword(getConfiguration(), TRUSTSTORE_PASSWORD_KEY);
+
+            if (StringUtils.isNotEmpty(truststoreFile) && StringUtils.isNotEmpty(trustStoreFilepwd)) {
+                InputStream in = null;
+
+                try {
+                    in = getFileInputStream(truststoreFile);
+
+                    if (in != null) {
+                        KeyStore trustStore = KeyStore.getInstance(ATLAS_TRUSTSTORE_FILE_TYPE_DEFAULT);
+
+                        trustStore.load(in, trustStoreFilepwd.toCharArray());
+
+                        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(ATLAS_TLS_TRUSTMANAGER_DEFAULT_ALGO_TYPE);
+
+                        trustManagerFactory.init(trustStore);
+
+                        tmList = trustManagerFactory.getTrustManagers();
+                    } else {
+                        LOG.error("Unable to obtain truststore from file [" + truststoreFile + "]");
+                    }
+                } catch (KeyStoreException e) {
+                    LOG.error("Unable to obtain from KeyStore", e);
+                } catch (NoSuchAlgorithmException e) {
+                    LOG.error("SSL algorithm is NOT available in the environment :" + e.getMessage(), e);
+                } catch (CertificateException e) {
+                    LOG.error("Unable to obtain the requested certification :" + e.getMessage(), e);
+                } catch (FileNotFoundException e) {
+                    LOG.error("Unable to find the necessary TLS TrustStore File:" + truststoreFile, e);
+                } catch (IOException e) {
+                    LOG.error("Unable to read the necessary TLS TrustStore Files :" + truststoreFile, e);
+                } finally {
+                    close(in, truststoreFile);
+                }
+            }
+
+        }catch (IOException exception) {
+            LOG.error(exception.getMessage());
+        }
+        return tmList;
+    }
+
+    private InputStream getFileInputStream(String fileName) throws IOException {
+        InputStream in = null;
+        if (StringUtils.isNotEmpty(fileName)) {
+            File f = new File(fileName);
+            if (f.exists()) {
+                in = new FileInputStream(f);
+            } else {
+                in = ClassLoader.getSystemResourceAsStream(fileName);
+            }
+        }
+        return in;
+    }
+
+    /**
+     * Closing file-stream.
+     * @param str
+     * @param filename
+     */
+    private void close(InputStream str, String filename) {
+        if (str != null) {
+            try {
+                str.close();
+            } catch (IOException excp) {
+                LOG.error("Error while closing file: [" + filename + "]", excp);
+            }
         }
     }
 }
