@@ -36,6 +36,7 @@ define([
         ui: {
             //refresh
             refreshTree: '[data-id="refreshTree"]',
+            groupOrFlatTree: '[data-id="groupOrFlatTreeView"]',
 
             // menuItems: '.menu-items>ul>li',
 
@@ -70,8 +71,22 @@ define([
 
             events["click " + this.ui.showEmptyClassifications] = function(e) {
                 var getTreeData, displayText;
+                e.stopPropagation();
                 this.isEmptyClassification = !this.isEmptyClassification;
                 this.classificationSwitchBtnUpdate();
+            };
+
+            events["click " + this.ui.groupOrFlatTree] = function(e) {
+                var type = $(e.currentTarget).data("type");
+                e.stopPropagation();
+                this.isGroupView = !this.isGroupView;
+                // this.ui.groupOrFlatTree.attr("data-original-title", (this.isGroupView ? "Show flat tree" : "Show group tree"));
+                this.ui.groupOrFlatTree.tooltip('hide');
+                // this.ui.groupOrFlatTree.find("i").toggleClass("group-tree-deactivate");
+                this.ui.groupOrFlatTree.find("i").toggleClass("fa-sitemap fa-list-ul");
+                this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
+                that.ui[type + "SearchTree"].jstree(true).destroy();
+                that.renderClassificationTree();
             };
 
             return events;
@@ -97,6 +112,7 @@ define([
             this.isEmptyClassification = true;
             this.entityTreeData = {};
             this.tagId = null;
+            this.isGroupView = true;
         },
         onRender: function() {
             this.renderClassificationTree();
@@ -147,6 +163,7 @@ define([
             this.ui.showEmptyClassifications.attr("data-original-title", (this.isEmptyClassification ? "Show" : "Hide") + " unused classification");
             this.ui.showEmptyClassifications.tooltip('hide');
             this.ui.showEmptyClassifications.find("i").toggleClass("fa-toggle-on fa-toggle-off");
+            this.ui.showEmptyClassifications.find("span").html((this.isEmptyClassification ? "Show" : "Hide") + " unused classification");
             this.ui.classificationSearchTree.jstree(true).refresh();
         },
         createClassificationAction: function() {
@@ -293,29 +310,30 @@ define([
                 collection = (options && options.collection) || this.classificationDefCollection.fullCollection,
                 listOfParents = [],
                 listWithEmptyParents = [],
+                listWithEmptyParentsFlatView = [],
+                flatViewList = [],
                 isSelectedChild = false,
                 openClassificationNodesState = function(treeDate) {
-                    if (treeDate.length == 1) {
-                        _.each(treeDate, function(model) {
-                            model.state['opeaned'] = true;
-                        })
-                    }
+                    // if (treeDate.length == 1) {
+                    _.each(treeDate, function(model) {
+                        model.state['opened'] = true;
+                    })
+                    // }
                 },
                 generateNode = function(nodeOptions, options, isChild) {
                     var nodeStructure = {
                         text: nodeOptions.name,
                         name: nodeOptions.name,
-                        children: getChildren({
+                        children: that.isGroupView ? getChildren({
                             children: isChild ? nodeOptions.model.subTypes : nodeOptions.model.get("subTypes"),
                             parent: isChild ? options.parentName : nodeOptions.name
-                        }),
+                        }) : null,
                         type: isChild ? nodeOptions.children.get("category") : nodeOptions.model.get("category"),
                         id: isChild ? nodeOptions.children.get("guid") : nodeOptions.model.get("guid"),
                         icon: "fa fa-tag",
                         gType: "Classification",
                     }
                     return nodeStructure;
-
                 },
 
                 getChildren = function(options) {
@@ -346,13 +364,14 @@ define([
                                     },
                                     nodeProperties = {
                                         parent: options.parentName,
+                                        text: tagname,
                                         guid: child.get("guid"),
                                         model: child,
-                                        state: { selected: isSelectedChild }
+                                        state: { selected: isSelectedChild, opened: true }
                                     },
                                     isChild = true,
                                     getNodeDetails = generateNode(nodeDetails, options, isChild),
-                                    classificationNode = (_.extend(nodeProperties, getNodeDetails));
+                                    classificationNode = (_.extend(getNodeDetails, nodeProperties));
                                 data.push(classificationNode);
                                 if (that.isEmptyClassification) {
                                     var isTagEntityCount = _.isNaN(tagEntityCount) ? 0 : tagEntityCount;
@@ -368,45 +387,56 @@ define([
                 }
             collection.each(function(model) {
                 var modelJSON = model.toJSON();
-                if (modelJSON.superTypes.length == 0) {
-                    var name = modelJSON.name;
-                    var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
-                    var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComa(tagEntityCount) + ")" : name,
-                        isSelected = false;
+                var name = modelJSON.name;
+                var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
+                var tagname = tagEntityCount ? name + " (" + _.numberFormatWithComa(tagEntityCount) + ")" : name,
+                    isSelected = false;
 
-                    if (that.options.value) {
-                        isSelected = that.options.value.tag ? that.options.value.tag == name : false;
-                        if (!that.tagId) {
-                            that.tagId = isSelected ? model.get("guid") : null;
-                        }
-                    }
-                    var parentNodeDetails = {
-                            name: name,
-                            model: model,
-                            isSelectedChild: isSelectedChild
-                        },
-                        parentNodeProperties = {
-                            text: tagname,
-                            state: {
-                                disabled: tagEntityCount == 0 ? true : false,
-                                selected: isSelected
-                            }
-                        },
-                        isChild = false,
-                        getParentNodeDetails = generateNode(parentNodeDetails, model, isChild),
-                        classificationParentNode = (_.extend(getParentNodeDetails, parentNodeProperties));
-                    listOfParents.push(classificationParentNode);
-                    if (that.isEmptyClassification) {
-                        var isTagEntityCount = _.isNaN(tagEntityCount) ? 0 : tagEntityCount;
-                        if (isTagEntityCount) {
-                            listWithEmptyParents.push(classificationParentNode);
-                        }
-
+                if (that.options.value) {
+                    isSelected = that.options.value.tag ? that.options.value.tag == name : false;
+                    if (!that.tagId) {
+                        that.tagId = isSelected ? model.get("guid") : null;
                     }
                 }
+                var parentNodeDetails = {
+                        name: name,
+                        model: model,
+                        isSelectedChild: isSelectedChild
+                    },
+                    parentNodeProperties = {
+                        text: tagname,
+                        state: {
+                            disabled: tagEntityCount == 0 ? true : false,
+                            selected: isSelected,
+                            opened: true
+                        }
+                    },
+                    isChild = false,
+                    getParentNodeDetails,
+                    classificationParentNode, getParentFlatView, classificationParentFlatView;
+                if (modelJSON.superTypes.length == 0) {
+                    getParentNodeDetails = generateNode(parentNodeDetails, model, isChild);
+                    classificationParentNode = (_.extend(getParentNodeDetails, parentNodeProperties));
+                    listOfParents.push(classificationParentNode);
+                }
+                getParentFlatView = generateNode(parentNodeDetails, model);
+                classificationParentFlatView = (_.extend(getParentFlatView, parentNodeProperties));
+                flatViewList.push(classificationParentFlatView);
+                if (that.isEmptyClassification) {
+                    var isTagEntityCount = _.isNaN(tagEntityCount) ? 0 : tagEntityCount;
+                    if (isTagEntityCount) {
+                        if (modelJSON.superTypes.length == 0) {
+                            listWithEmptyParents.push(classificationParentNode);
+                        }
+                        listWithEmptyParentsFlatView.push(classificationParentFlatView);
+                    }
+
+                }
             });
-            var classificationData = that.isEmptyClassification ? listWithEmptyParents : listOfParents;
-            openClassificationNodesState(classificationData);
+            var classificationTreeData = that.isEmptyClassification ? listWithEmptyParents : listOfParents;
+            var flatViewClassificaton = that.isEmptyClassification ? listWithEmptyParentsFlatView : flatViewList;
+            var classificationData = that.isGroupView ? classificationTreeData : flatViewClassificaton;
+            // openClassificationNodesState(classificationData);
             return classificationData;
         },
         generateSearchTree: function(options) {
@@ -435,9 +465,9 @@ define([
                         },
                         node_customize: {
                             default: function(el) {
-                                if ($(el).find(".fa-ellipsis-h").length === 0) {
-                                    $(el).append('<div class="tools"><i class="fa fa-ellipsis-h classificationPopover" rel="popover"></i></div>');
-                                }
+                                // if ($(el).find(".fa-ellipsis-h").length === 0) {
+                                $(el).append('<div class="tools"><i class="fa fa-ellipsis-h classificationPopover" rel="popover"></i></div>');
+                                // }
                             }
                         },
                         core: {

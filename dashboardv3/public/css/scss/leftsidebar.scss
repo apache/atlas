@@ -47,6 +47,10 @@
                 }
             }
         }
+
+        .dropdown-toggle {
+            width: 15px;
+        }
     }
 
     .filter-tree-content {
@@ -164,6 +168,7 @@
 
         .dropdown-menu {
             min-width: 182px;
+            left: -155px;
 
             &>li {
                 padding: 3px 15px;
@@ -177,18 +182,40 @@
                         background-color: $color_havelock_blue_approx;
                         color: #fff !important;
                     }
+
+                    span {
+                        color: #fff !important;
+                    }
                 }
 
                 a {
                     display: inline-block;
                     padding: 0px 3px;
                 }
+
+                span {
+                    color: #686868;
+                    margin-left: 10px;
+                }
             }
         }
 
         .custom-filter {
-            .fa {
-                font-size: 12px;
+            .fa-circle-thin:after {
+                font-family: Source Sans Pro, sans-serif;
+                position: absolute;
+                left: 0px;
+                margin-left: 9px;
+                font-size: 11px;
+                font-weight: bold;
+            }
+
+            .advance-tree:after {
+                content: "A";
+            }
+
+            .basic-tree:after {
+                content: "B";
             }
         }
 

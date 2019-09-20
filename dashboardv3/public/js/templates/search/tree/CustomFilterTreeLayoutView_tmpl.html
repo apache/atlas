@@ -18,16 +18,30 @@
     <div class="panel-heading dash-button-icon" data-toggle="collapse" aria-expanded="true" href="#c_customFilter">
         <i class="ec-icon fa"></i>
         <h4 class="panel-title">Custom Filters</h4>
-        <div class="btn-group pull-right menu-items">
+        <div class="btn-group pull-right ">
+            <button type="button" class="typeRefresh" data-id="groupOrFlatTreeView" data-type="customFilter" title="Show all">
+                <i class="fa fa-sitemap"></i>
+            </button>
             <button type="button" class="typeRefresh" data-id="refreshTree" data-type="CustomFilter" title="Refresh">
                 <i class="fa fa-refresh"></i>
             </button>
-            <button type="button" class="typeRefresh" data-id="showCustomFilter" title="Show Advanced search">
+            <!-- <button type="button" class="typeRefresh" data-id="showCustomFilter" title="Show Advanced search">
                 <i class="fa fa-toggle-on switch-button"></i>
-            </button>
+            </button> -->
+            <!--   <button type="button" class="typeRefresh dropdown">
+                <div class=" btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-ellipsis-v"></i>
+                </div>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <li data-id="groupOrFlatTreeView" data-type="customFilter"> <i class="fa fa-sitemap"></i><span>Show flat tree</span>
+                    </li>
+                    <li data-id="refreshTree" data-type="customFilter"><i class="fa fa-refresh"></i><span>Refresh</span>
+                    </li>
+                </ul>
+            </button> -->
         </div>
     </div>
     <div id="c_customFilter" class="panel-collapse collapse jstree-with-action in">
-        <div  class="custom-filter" data-id="customFilterSearchTree"></div>
+        <div class="custom-filter" data-id="customFilterSearchTree"></div>
     </div>
 </div>

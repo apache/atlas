@@ -61,6 +61,7 @@ define([
 
             // show and hide entities and classifications with 0 numbers
             events["click " + this.ui.showEmptyServiceType] = function(e) {
+                e.stopPropagation();
                 this.isEmptyServicetype = !this.isEmptyServicetype;
                 this.entitySwitchBtnUpdate();
             };
@@ -69,9 +70,12 @@ define([
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 this.isGroupView = !this.isGroupView;
-                this.ui.groupOrFlatTree.attr("data-original-title", (this.isGroupView ? "Show flat tree" : "Show group tree"));
+                // this.ui.groupOrFlatTree.attr("data-original-title", (this.isGroupView ? "Show flat tree" : "Show group tree"));
                 this.ui.groupOrFlatTree.tooltip('hide');
-                this.ui.groupOrFlatTree.find("i").toggleClass("group-tree-deactivate");
+                // this.ui.groupOrFlatTree.find("i").toggleClass("group-tree-deactivate");
+                this.ui.groupOrFlatTree.find("i").toggleClass("fa-sitemap fa-list-ul");
+                this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
+
                 that.ui[type + "SearchTree"].jstree(true).destroy();
                 that.renderEntityTree();
             };
@@ -121,7 +125,7 @@ define([
             this.isEmptyServicetype = true;
             this.entityTreeData = {};
             this.typeId = null;
-            this.isGroupView = false;
+            this.isGroupView = true;
         },
         onRender: function() {
             this.renderEntityTree();
@@ -158,6 +162,7 @@ define([
             this.ui.showEmptyServiceType.attr("data-original-title", (this.isEmptyServicetype ? "Show" : "Hide") + " empty service types");
             this.ui.showEmptyServiceType.tooltip('hide');
             this.ui.showEmptyServiceType.find("i").toggleClass("fa-toggle-on fa-toggle-off");
+            // this.ui.showEmptyServiceType.find("span").html((this.isEmptyServicetype ? "Show" : "Hide") + " empty service types");
             this.ui.entitySearchTree.jstree(true).refresh();
         },
         manualRender: function(options) {
@@ -173,7 +178,6 @@ define([
                 var dataFound = this.typeHeaders.fullCollection.find(function(obj) {
                     return obj.get("name") === that.options.value.type
                 });
-
                 if (dataFound) {
                     if ((this.typeId && this.typeId !== dataFound.get("guid")) || this.typeId === null) {
                         if (this.typeId) {
