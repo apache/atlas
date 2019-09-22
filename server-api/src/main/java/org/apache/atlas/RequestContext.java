@@ -45,15 +45,16 @@ public class RequestContext {
     private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
     private static final boolean                     isMetricsEnabled = METRICS.isDebugEnabled();
 
-    private final long                                   requestTime         = System.currentTimeMillis();
-    private final Map<String, AtlasEntityHeader>         updatedEntities     = new HashMap<>();
-    private final Map<String, AtlasEntityHeader>         deletedEntities     = new HashMap<>();
-    private final Map<String, AtlasEntity>               entityCache         = new HashMap<>();
-    private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache  = new HashMap<>();
-    private final Map<String, List<AtlasClassification>> addedPropagations   = new HashMap<>();
-    private final Map<String, List<AtlasClassification>> removedPropagations = new HashMap<>();
-    private final AtlasPerfMetrics                       metrics             = isMetricsEnabled ? new AtlasPerfMetrics() : null;
-    private       List<EntityGuidPair>                   entityGuidInRequest = null;
+    private final long                                   requestTime          = System.currentTimeMillis();
+    private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
+    private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
+    private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
+    private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
+    private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
+    private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
+    private final AtlasPerfMetrics                       metrics              = isMetricsEnabled ? new AtlasPerfMetrics() : null;
+    private       List<EntityGuidPair>                   entityGuidInRequest  = null;
+    private final Set<String>                            entitiesToSkipUpdate = new HashSet<>();
 
     private String       user;
     private Set<String>  userGroups;
@@ -108,6 +109,7 @@ public class RequestContext {
         this.entityExtInfoCache.clear();
         this.addedPropagations.clear();
         this.removedPropagations.clear();
+        this.entitiesToSkipUpdate.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -199,16 +201,17 @@ public class RequestContext {
     }
 
     public void recordEntityUpdate(AtlasEntityHeader entity) {
-        if (entity != null && entity.getGuid() != null) {
+        if (entity != null && entity.getGuid() != null && ! entitiesToSkipUpdate.contains(entity.getGuid())) {
             updatedEntities.put(entity.getGuid(), entity);
         }
     }
 
-    public void removeEntityUpdate(AtlasEntity entity) {
-        if (entity != null && entity.getGuid() != null) {
-            updatedEntities.remove(entity.getGuid());
+    public void recordEntityToSkip(String guid) {
+        if(! StringUtils.isEmpty(guid)) {
+            entitiesToSkipUpdate.add(guid);
         }
     }
+
 
     public void recordEntityDelete(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null) {
