@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 /* theme.scss */
 
 body {
@@ -34,11 +33,10 @@ header.atlas-header {
             float: none;
             display: table-cell;
             padding: 0px 5px;
-
         }
     }
 
-    &>table {
+    & > table {
         td {
             padding: 3px 2px;
             position: relative;
@@ -47,7 +45,7 @@ header.atlas-header {
     }
 
     .header-menu {
-        .dropdown-menu>li>a {
+        .dropdown-menu > li > a {
             color: $color_ironside_gray_approx;
 
             &:hover {
@@ -59,7 +57,7 @@ header.atlas-header {
             }
         }
 
-        td>a {
+        td > a {
             display: inline-block;
             color: $color_ironside_gray_approx;
             padding: 15px 14px;
@@ -81,7 +79,12 @@ header.atlas-header {
     }
 }
 
-
+.sidebar-brand {
+    .logo {
+        height: 50px;
+        padding: 6px;
+    }
+}
 
 .main-search {
     .form-control {
@@ -102,7 +105,6 @@ header.atlas-header {
     }
 }
 
-
 .close {
     font-size: 2em;
 }
@@ -114,7 +116,6 @@ header.atlas-header {
         color: $white;
         font-size: 16px !important;
 
-
         .well {
             background: transparent;
             border: 1px solid #666363;
@@ -123,7 +124,6 @@ header.atlas-header {
         }
     }
 }
-
 
 .page-title {
     background-color: $color_white_lilac_approx;
@@ -218,7 +218,6 @@ a[href^="#!/"]:not(.btn, .not-blue-link) {
     @extend .blue-link;
 }
 
-
 th {
     text-transform: capitalize;
 }
@@ -258,9 +257,8 @@ hr[size="10"] {
 }
 
 .gray-bg {
-    background-color: $color_white_lilac_approx
+    background-color: $color_white_lilac_approx;
 }
-
 
 .comment-input {
     background-color: $color_white_lilac_approx;
@@ -287,7 +285,6 @@ hr[size="10"] {
         color: $color_star_dust_approx;
     }
 }
-
 
 @media (min-width: 768px) {
     .col-sm-custom {
@@ -386,10 +383,10 @@ hr[size="10"] {
 }
 
 .inline-content {
-    >.inline {
+    > .inline {
         display: inline-block;
 
-        &+.inline {
+        & + .inline {
             margin-left: 5px;
         }
     }
@@ -398,7 +395,7 @@ hr[size="10"] {
 .inline-content-fl {
     @extend .inline-content;
 
-    >.inline {
+    > .inline {
         display: block;
         float: left;
     }
@@ -407,17 +404,16 @@ hr[size="10"] {
 .inline-content-fr {
     @extend .inline-content-fl;
 
-    >.inline {
+    > .inline {
         float: right;
 
-        &+.inline {
+        & + .inline {
             margin-right: 5px;
         }
     }
 }
 
 .has-error {
-
     .select2-selection--single,
     .select2-selection--multiple {
         border-color: $color_apple_blossom_approx;
@@ -453,7 +449,6 @@ hr[size="10"] {
         height: 50px;
     }
 }
-
 
 .ui-menu.ui-widget-content.ui-autocomplete {
     box-shadow: 0px 11px 30px -8px grey;

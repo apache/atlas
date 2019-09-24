@@ -33,8 +33,8 @@
     <title>Atlas</title>
     <meta name="description" content="" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="shortcut icon" href="favicon.ico?bust=<%- bust %>" type="image/x-icon" />
-    <link rel="icon" href="favicon.ico?bust=<%- bust %>" type="image/x-icon" />
+    <link rel="shortcut icon" href="img/favicon.ico?bust=<%- bust %>" type="image/x-icon" />
+    <link rel="icon" href="img/favicon.ico?bust=<%- bust %>" type="image/x-icon" />
     <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
     <link rel="stylesheet" type="text/css" href="css/animate.min.css?bust=<%- bust %>" />
     <link rel="stylesheet" href="js/libs/backgrid/css/backgrid.css?bust=<%- bust %>" />

@@ -52,7 +52,7 @@
 <body class="login-body">
     <div class="login-form">
         <div class="logo-container text-center">
-            <img src="img/atlas-logo.png" />
+            <img src="img/atlas_logo.svg" />
         </div>
         <h4>Sign In to your account</h4>
         <form action="" method="post" accept-charset="utf-8">
