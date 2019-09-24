@@ -38,6 +38,8 @@ public class CassandraAuditRepositoryTest extends AuditRepositoryTestBase {
     private final String CLUSTER_HOST       = "localhost";
     private final String CLUSTER_NAME_TEST  = "Test Cluster";
     private final int CLUSTER_PORT          = 9042;
+    private final String CLUSTER_USERNAME   = "";
+    private final String CLUSTER_PASSWORD   = "";
 
     @BeforeClass
     public void setup() {
@@ -61,6 +63,8 @@ public class CassandraAuditRepositoryTest extends AuditRepositoryTestBase {
         props.put(CassandraBasedAuditRepository.CASSANDRA_CLUSTERNAME_PROPERTY, CLUSTER_NAME_TEST);
         props.put(CassandraBasedAuditRepository.CASSANDRA_HOSTNAME_PROPERTY, CLUSTER_HOST);
         props.put(CassandraBasedAuditRepository.CASSANDRA_PORT_PROPERTY, CLUSTER_PORT);
+        props.put(CassandraBasedAuditRepository.CASSANDRA_USERNAME_PROPERTY, CLUSTER_USERNAME);
+        props.put(CassandraBasedAuditRepository.CASSANDRA_PASSWORD_PROPERTY, CLUSTER_PASSWORD);
         return props;
     }
 
@@ -69,6 +73,7 @@ public class CassandraAuditRepositoryTest extends AuditRepositoryTestBase {
         Cluster.Builder cassandraClusterBuilder = Cluster.builder();
         Cluster cluster =
                 cassandraClusterBuilder.addContactPoint(CLUSTER_HOST).withClusterName(CLUSTER_NAME_TEST).withPort(CLUSTER_PORT)
+                    .withCredentials(CLUSTER_USERNAME.trim(), CLUSTER_PASSWORD.trim())
                         .build();
         int retryCount = 0;
 
