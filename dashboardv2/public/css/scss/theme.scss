@@ -36,7 +36,7 @@ header.atlas-header {
         }
     }
 
-    & > table {
+    &>table {
         td {
             padding: 3px 2px;
             position: relative;
@@ -45,7 +45,7 @@ header.atlas-header {
     }
 
     .header-menu {
-        .dropdown-menu > li > a {
+        .dropdown-menu>li>a {
             color: $color_ironside_gray_approx;
 
             &:hover {
@@ -57,7 +57,7 @@ header.atlas-header {
             }
         }
 
-        td > a {
+        td>a {
             display: inline-block;
             color: $color_ironside_gray_approx;
             padding: 15px 14px;
@@ -80,8 +80,10 @@ header.atlas-header {
 }
 
 .sidebar-brand {
+    padding-left: 6px !important;
+
     .logo {
-        height: 50px;
+        height: 42px;
         padding: 6px;
     }
 }
@@ -383,10 +385,10 @@ hr[size="10"] {
 }
 
 .inline-content {
-    > .inline {
+    >.inline {
         display: inline-block;
 
-        & + .inline {
+        &+.inline {
             margin-left: 5px;
         }
     }
@@ -395,7 +397,7 @@ hr[size="10"] {
 .inline-content-fl {
     @extend .inline-content;
 
-    > .inline {
+    >.inline {
         display: block;
         float: left;
     }
@@ -404,16 +406,17 @@ hr[size="10"] {
 .inline-content-fr {
     @extend .inline-content-fl;
 
-    > .inline {
+    >.inline {
         float: right;
 
-        & + .inline {
+        &+.inline {
             margin-right: 5px;
         }
     }
 }
 
 .has-error {
+
     .select2-selection--single,
     .select2-selection--multiple {
         border-color: $color_apple_blossom_approx;
