@@ -50,7 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
@@ -58,9 +58,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
@@ -633,5 +635,22 @@ public class AtlasGraphUtilsV2 {
 
     public static String getIndexSearchPrefix() {
         return INDEX_SEARCH_PREFIX;
+    }
+
+    public static List<String> getClassificationNames(AtlasVertex entityVertex) {
+        return getClassificationNamesHelper(entityVertex, CLASSIFICATION_NAMES_KEY);
+    }
+
+    public static List<String> getPropagatedClassificationNames(AtlasVertex entityVertex) {
+        return getClassificationNamesHelper(entityVertex, PROPAGATED_CLASSIFICATION_NAMES_KEY);
+    }
+
+    private static List<String> getClassificationNamesHelper(AtlasVertex entityVertex, String propertyKey) {
+        List<String> classificationNames = null;
+        String classificationNamesString =  entityVertex.getProperty(propertyKey, String.class);
+        if (StringUtils.isNotEmpty(classificationNamesString)) {
+            classificationNames = Arrays.asList(classificationNamesString.split("\\|"));
+        }
+        return classificationNames;
     }
 }

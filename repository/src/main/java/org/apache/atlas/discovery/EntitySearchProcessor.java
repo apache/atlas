@@ -111,7 +111,7 @@ public class EntitySearchProcessor extends SearchProcessor {
         StringBuilder indexQuery = new StringBuilder();
 
         if (typeSearchByIndex) {
-            constructTypeTestQuery(indexQuery, typeAndSubTypesQryStr);
+            graphIndexQueryBuilder.addTypeAndSubTypesQueryFilter(indexQuery, typeAndSubTypesQryStr);
 
             // TypeName check to be done in-memory as well to address ATLAS-2121 (case sensitivity)
             inMemoryPredicate = typeNamePredicate;
@@ -131,9 +131,8 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         if (indexQuery.length() > 0) {
-            if (context.getSearchParameters().getExcludeDeletedEntities()) {
-                constructStateTestQuery(indexQuery);
-            }
+
+            graphIndexQueryBuilder.addActiveStateQueryFilter(indexQuery);
 
             String indexQueryString = STRAY_AND_PATTERN.matcher(indexQuery).replaceAll(")");
 

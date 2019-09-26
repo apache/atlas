@@ -33,10 +33,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
-/**
- *
- */
 public abstract class AbstractGraphDatabaseTest {
 
     protected static final String WEIGHT_PROPERTY = "weight";
@@ -112,12 +108,7 @@ public abstract class AbstractGraphDatabaseTest {
             //ok
             t.printStackTrace();
         }
-
-
     }
-
-
-
 
     protected final <V, E> AtlasGraph<V, E> getGraph() {
         if (graph == null) {
@@ -184,5 +175,4 @@ public abstract class AbstractGraphDatabaseTest {
             return exceptionThrown;
         }
     }
-
 }
