@@ -63,6 +63,7 @@ public class SearchContext {
     private final Set<String>             entityAttributes;
     private final AtlasEntityType         entityType;
     private final AtlasClassificationType classificationType;
+    private final String                  classificationName;
     private       SearchProcessor         searchProcessor;
     private       boolean                 terminateSearch = false;
     private final Set<String>             typeAndSubTypes;
@@ -74,10 +75,8 @@ public class SearchContext {
     public final static AtlasClassificationType MATCH_ALL_CLASSIFIED              = new AtlasClassificationType(new AtlasClassificationDef(ALL_CLASSIFICATIONS));
     public final static AtlasClassificationType MATCH_ALL_NOT_CLASSIFIED          = new AtlasClassificationType(new AtlasClassificationDef(NO_CLASSIFICATIONS));
 
-
     public SearchContext(SearchParameters searchParameters, AtlasTypeRegistry typeRegistry, AtlasGraph graph, Set<String> indexedKeys) throws AtlasBaseException {
-        String classificationName = searchParameters.getClassification();
-
+        this.classificationName = searchParameters.getClassification();
         this.searchParameters   = searchParameters;
         this.typeRegistry       = typeRegistry;
         this.graph              = graph;
@@ -92,7 +91,7 @@ public class SearchContext {
         }
 
         // Validate if the classification exists
-        if (StringUtils.isNotEmpty(classificationName) && classificationType == null) {
+        if ((StringUtils.isNotEmpty(classificationName) && classificationType == null && !classificationName.contains(WILDCARD_CLASSIFICATIONS))) {
             throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_CLASSIFICATION, classificationName);
         }
 
@@ -239,7 +238,21 @@ public class SearchContext {
     }
 
     boolean needClassificationProcessor() {
-        return classificationType != null && (entityType == null || hasAttributeFilter(searchParameters.getTagFilters()));
+        return (classificationType != null || isWildCardSearch());
+    }
+
+    boolean isBuiltInClassificationType() {
+        return getClassificationType() == MATCH_ALL_WILDCARD_CLASSIFICATION
+            || getClassificationType() == MATCH_ALL_CLASSIFIED
+            || getClassificationType() == MATCH_ALL_NOT_CLASSIFIED;
+    }
+
+    boolean isWildCardSearch () {
+        String classification = getSearchParameters().getClassification();
+        if (StringUtils.isNotEmpty(classification) && getClassificationType() == null) {
+            return classification.contains("*");
+        }
+        return false;
     }
 
     boolean needEntityProcessor() {
@@ -263,7 +276,10 @@ public class SearchContext {
 
     private void validateAttributes(final AtlasStructType structType, final String... attributeNames) throws AtlasBaseException {
         for (String attributeName : attributeNames) {
-            if (StringUtils.isNotEmpty(attributeName) && structType.getAttributeType(attributeName) == null) {
+            if (StringUtils.isNotEmpty(attributeName) && (structType == null || structType.getAttributeType(attributeName) == null)) {
+                if (structType == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, "NULL");
+                }
                 throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attributeName, structType.getTypeName());
             }
         }

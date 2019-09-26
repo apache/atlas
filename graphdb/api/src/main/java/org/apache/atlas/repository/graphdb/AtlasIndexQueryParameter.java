@@ -18,8 +18,6 @@
 
 package org.apache.atlas.repository.graphdb;
 
-import java.util.Iterator;
-
 /**
  * Represents an index query parameter for use with AtlasGraph queries.
  */

@@ -110,13 +110,14 @@ public abstract class SearchProcessor {
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NOT_NULL, getNotNullPredicateGenerator());
     }
 
-    protected final SearchContext   context;
-    protected       SearchProcessor nextProcessor;
-    protected       Predicate       inMemoryPredicate;
-
+    protected final SearchContext          context;
+    protected       SearchProcessor        nextProcessor;
+    protected       Predicate              inMemoryPredicate;
+    protected       GraphIndexQueryBuilder graphIndexQueryBuilder;
 
     protected SearchProcessor(SearchContext context) {
         this.context = context;
+        this.graphIndexQueryBuilder = new GraphIndexQueryBuilder(context);
     }
 
     public void addProcessor(SearchProcessor processor) {
@@ -239,13 +240,30 @@ public abstract class SearchProcessor {
         return ret;
     }
 
-    protected void constructTypeTestQuery(StringBuilder indexQuery, String typeAndAllSubTypesQryStr) {
-        if (StringUtils.isNotEmpty(typeAndAllSubTypesQryStr)) {
-            if (indexQuery.length() > 0) {
-                indexQuery.append(AND_STR);
-            }
+    protected void filterWhiteSpaceClassification(List<AtlasVertex> entityVertices) {
+        if (CollectionUtils.isNotEmpty(entityVertices)) {
 
-            indexQuery.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.TYPE_NAME_PROPERTY_KEY).append("\":").append(typeAndAllSubTypesQryStr);
+            boolean hasExactMatch = false;
+            Iterator<AtlasVertex> it = entityVertices.iterator();
+
+            while (it.hasNext()) {
+                AtlasVertex entityVertex = it.next();
+                List<String> classificationNames = AtlasGraphUtilsV2.getClassificationNames(entityVertex);
+                if (CollectionUtils.isNotEmpty(classificationNames) && classificationNames.contains(context.getClassificationType().getTypeName())) {
+                    hasExactMatch = true;
+                }
+
+                if (hasExactMatch) continue;
+
+                classificationNames = AtlasGraphUtilsV2.getPropagatedClassificationNames(entityVertex);
+                if (CollectionUtils.isNotEmpty(classificationNames) && classificationNames.contains(context.getClassificationType().getTypeName())) {
+                    hasExactMatch = true;
+                }
+
+                if (!hasExactMatch) {
+                    it.remove();
+                }
+            }
         }
     }
 
@@ -320,14 +338,6 @@ public abstract class SearchProcessor {
 
             }
         }
-    }
-
-    protected void constructStateTestQuery(StringBuilder indexQuery) {
-        if (indexQuery.length() > 0) {
-            indexQuery.append(AND_STR);
-        }
-
-        indexQuery.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.STATE_PROPERTY_KEY).append("\":ACTIVE");
     }
 
     private boolean isIndexSearchable(FilterCriteria filterCriteria, AtlasStructType structType) throws AtlasBaseException {
@@ -747,7 +757,7 @@ public abstract class SearchProcessor {
         return false;
     }
 
-    protected List<AtlasVertex> getVerticesFromIndexQueryResult(Iterator<AtlasIndexQuery.Result> idxQueryResult, List<AtlasVertex> vertices) {
+    protected Collection<AtlasVertex> getVerticesFromIndexQueryResult(Iterator<AtlasIndexQuery.Result> idxQueryResult, Collection<AtlasVertex> vertices) {
         if (idxQueryResult != null) {
             while (idxQueryResult.hasNext()) {
                 AtlasVertex vertex = idxQueryResult.next().getVertex();
@@ -759,7 +769,7 @@ public abstract class SearchProcessor {
         return vertices;
     }
 
-    protected List<AtlasVertex> getVertices(Iterator<AtlasVertex> iterator, List<AtlasVertex> vertices) {
+    protected Collection<AtlasVertex> getVertices(Iterator<AtlasVertex> iterator, Collection<AtlasVertex> vertices) {
         if (iterator != null) {
             while (iterator.hasNext()) {
                 AtlasVertex vertex = iterator.next();

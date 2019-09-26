@@ -370,6 +370,11 @@ public class Solr6Index implements IndexProvider {
         String analyzer = ParameterType.STRING_ANALYZER.findParameter(information.getParameters(), null);
         if (analyzer != null) {
             //If the key have a tokenizer, we try to get it by reflection
+            // some referred classes might not be able to be found via SystemClassLoader
+            // since they might be associated with other classloader, in this situation
+            // ClassNotFound exception will be thrown. instead of using SystemClassLoader
+            // for all classes, we find its classloader first and then load the class, please
+            // call - instantiateUsingClassLoader()
             try {
                 ((Constructor<Tokenizer>) ClassLoader.getSystemClassLoader().loadClass(analyzer)
                         .getConstructor()).newInstance();
@@ -386,6 +391,17 @@ public class Solr6Index implements IndexProvider {
             } catch (final ReflectiveOperationException e) {
                 throw new PermanentBackendException(e.getMessage(),e);
             }
+        }
+    }
+
+    private void instantiateUsingClassLoader(String analyzer) throws PermanentBackendException {
+        if (analyzer == null) return;
+        try {
+            Class analyzerClass = Class.forName(analyzer);
+            ClassLoader cl = analyzerClass.getClassLoader();
+            ((Constructor<Tokenizer>) cl.loadClass(analyzer).getConstructor()).newInstance();
+        } catch (final ReflectiveOperationException e) {
+            throw new PermanentBackendException(e.getMessage(),e);
         }
     }
 

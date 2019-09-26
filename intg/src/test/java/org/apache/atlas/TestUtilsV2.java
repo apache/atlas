@@ -544,6 +544,8 @@ public final class TestUtilsV2 {
     public static final String COLUMN_TYPE = "column_type";
     public static final String TABLE_NAME = "bar";
     public static final String CLASSIFICATION = "classification";
+    public static final String FETL_CLASSIFICATION = "fetl" + CLASSIFICATION;
+
     public static final String PII = "PII";
     public static final String PHI = "PHI";
     public static final String SUPER_TYPE_NAME = "Base";
