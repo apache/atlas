@@ -164,7 +164,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.databind.version}</version>
         </dependency>
 
         <dependency>
@@ -284,7 +284,7 @@
                                         <artifactItem>
                                             <groupId>com.fasterxml.jackson.core</groupId>
                                             <artifactId>jackson-databind</artifactId>
-                                            <version>${jackson.version}</version>
+                                            <version>${jackson.databind.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.fasterxml.jackson.core</groupId>
