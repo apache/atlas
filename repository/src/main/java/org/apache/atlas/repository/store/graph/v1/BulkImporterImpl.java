@@ -80,7 +80,7 @@ public class BulkImporterImpl implements BulkImporter {
             AtlasEntityWithExtInfo entityWithExtInfo = entityImportStreamWithResidualList.getNextEntityWithExtInfo();
             AtlasEntity            entity            = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
 
-            if (entity == null || processedGuids.contains(entity.getGuid())) {
+            if (entity == null) {
                 continue;
             }
 

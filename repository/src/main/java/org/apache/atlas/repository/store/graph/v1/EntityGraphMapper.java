@@ -39,6 +39,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasArrayType;
@@ -67,6 +68,8 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CR
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PARTIAL_UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
+import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
+import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 
@@ -1162,5 +1165,38 @@ public class EntityGraphMapper {
         }
 
         return ret;
+    }
+
+    public void importActivateEntity(AtlasVertex vertex, List<String> relatedEntitiesGuids) {
+        AtlasGraphUtilsV1.setEncodedProperty(vertex, STATE_PROPERTY_KEY, ACTIVE);
+
+        if(CollectionUtils.isEmpty(relatedEntitiesGuids)){
+           return;
+        }
+        activateEntityEdges(vertex, relatedEntitiesGuids);
+    }
+
+    private void activateEntityEdges(AtlasVertex vertex, List<String> relatedEntitiesGuids) {
+        Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
+
+        while (edgeIterator.hasNext()) {
+            AtlasEdge edge = edgeIterator.next();
+
+            if (AtlasGraphUtilsV1.getState(edge) != DELETED) {
+                continue;
+            }
+
+            String relatedEntityGuid = (edge.getInVertex() != null &&
+                                        Objects.equals(edge.getInVertex().getId(), vertex.getId()) &&
+                                        edge.getOutVertex() != null)
+                    ? AtlasGraphUtilsV1.getIdFromVertex(edge.getOutVertex())
+                    : AtlasGraphUtilsV1.getIdFromVertex(edge.getInVertex());
+
+            if (StringUtils.isEmpty(relatedEntityGuid) || !relatedEntitiesGuids.contains(relatedEntityGuid)) {
+                continue;
+            }
+
+            edge.setProperty(STATE_PROPERTY_KEY, ACTIVE);
+        }
     }
 }

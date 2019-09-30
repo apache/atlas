@@ -733,6 +733,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
             if (entity != null) {
                 AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
                 if (vertex != null) {
                     // entity would be null if guid is not in the stream but referenced by an entity in the stream
@@ -742,7 +743,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                         graphDiscoverer.validateAndNormalizeForUpdate(entity);
                     }
 
-                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
                     String          guidVertex = AtlasGraphUtilsV1.getIdFromVertex(vertex);
 
                     if (!StringUtils.equals(guidVertex, guid)) { // if entity was found by unique attribute
@@ -754,8 +754,6 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                     context.addUpdated(guid, entity, entityType, vertex);
                 } else {
                     graphDiscoverer.validateAndNormalize(entity);
-
-                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
                     //Create vertices which do not exist in the repository
                     if ((entityStream instanceof EntityImportStream) && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
@@ -791,9 +789,9 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
                             context.addEntityToDelete(vertex);
                         } else if (currStatus == AtlasEntity.Status.DELETED && newStatus == AtlasEntity.Status.ACTIVE) {
-                            LOG.warn("attempt to activate deleted entity (guid={}). Ignored", guid);
-
-                            entity.setStatus(currStatus);
+                            LOG.warn("Import is attempting to activate deleted entity (guid={}).", guid);
+                            entityGraphMapper.importActivateEntity(vertex, discoveryContext.getReferencedGuids());
+                            context.addCreated(guid, entity, entityType, vertex);
                         }
                     }
 
