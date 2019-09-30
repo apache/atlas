@@ -20,7 +20,7 @@ import menu from "./docz-lib/config/menu";
 import versions from './docz-lib/config/versions';
 
 module.exports = {
-	title: "Apache Atlas",
+	title: "Apache Atlas – Data Governance and Metadata framework for Hadoop",
 	files: "**/*.{md,mdx}",
 	base: "/",
 	baseUrl:"./public",
@@ -29,6 +29,9 @@ module.exports = {
 	menu: menu,
 	atlasVersions: versions,
 	theme: "theme/",
+	htmlContext:{
+		favicon: "public/images/favicon.ico"
+	},
 	modifyBundlerConfig: config => {
 		config.module.rules.push(
 			{
