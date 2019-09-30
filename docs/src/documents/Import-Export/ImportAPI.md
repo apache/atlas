@@ -1,6 +1,6 @@
 ---
 name: Import API
-route: /Import-API
+route: /ImportAPI
 menu: Documentation
 submenu: Import/Export
 ---
@@ -63,7 +63,7 @@ __Method Signature for Import File__
 </SyntaxHighlighter>
 
 __Import Options__
-Please see [here](Import-API-Options) for the available options during import process.
+Please see [here](#/ImportAPIOptions) for the available options during import process.
 
 __AtlasImportResult Response__
 The API will return the results of the import operation in the format defined by the _AtlasImportResult_:

@@ -1,6 +1,6 @@
 ---
 name: REST API
-route: /rest-api
+route: /RestApi
 menu: Documentation
 submenu: REST API
 ---

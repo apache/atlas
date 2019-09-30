@@ -1,6 +1,6 @@
 ---
 name: Build Instruction
-route: /Build-Installation
+route: /BuildInstallation
 menu: Documentation
 submenu: Setup
 ---
@@ -12,7 +12,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 ## Building & Installing Apache Atlas
 
 ### Building Apache Atlas
-Download Apache Atlas 1.0.0 release sources, apache-atlas-1.0.0-sources.tar.gz, from the [downloads](http://atlas.apache.org/Downloads.html) page.
+Download Apache Atlas 1.0.0 release sources, apache-atlas-1.0.0-sources.tar.gz, from the [downloads](#/Downloads) page.
 Then follow the instructions below to to build Apache Atlas.
 
 
@@ -38,10 +38,10 @@ mvn clean -DskipTests package -Pdist
 
 
 Above will build Apache Atlas for an environment having functional HBase and Solr instances. Apache Atlas needs to be setup with the following to run in this environment:
-   * Configure atlas.graph.storage.hostname (see "Graph persistence engine - HBase" in the [Configuration](Configuration) section).
-   * Configure atlas.graph.index.search.solr.zookeeper-url (see "Graph Search Index - Solr" in the [Configuration](Configuration) section).
-   * Set HBASE_CONF_DIR to point to a valid Apache HBase config directory (see "Graph persistence engine - HBase" in the [Configuration](Configuration) section).
-   * Create indices in Apache Solr (see "Graph Search Index - Solr" in the [Configuration](Configuration) section).
+   * Configure atlas.graph.storage.hostname (see "Graph persistence engine - HBase" in the [Configuration](#/Configuration) section).
+   * Configure atlas.graph.index.search.solr.zookeeper-url (see "Graph Search Index - Solr" in the [Configuration](#/Configuration) section).
+   * Set HBASE_CONF_DIR to point to a valid Apache HBase config directory (see "Graph persistence engine - HBase" in the [Configuration](#/Configuration) section).
+   * Create indices in Apache Solr (see "Graph Search Index - Solr" in the [Configuration](#/Configuration) section).
 
 
 ### Packaging Apache Atlas with embedded Apache HBase & Apache Solr

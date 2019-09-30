@@ -16,7 +16,7 @@ import Img from 'theme/components/shared/Img'
 
 ## Setting up Apache Atlas to use Apache Ranger Authorization
 
-As detailed in [Atlas Authorization Model](http://atlas.apache.org//Atlas-Authorization-Model.html), Apache Atlas supports pluggable authorization
+As detailed in [Atlas Authorization Model](#/AuthorizationModel), Apache Atlas supports pluggable authorization
 model. Apache Ranger provides an authorizer implementation that uses Apache Ranger policies for authorization. In
 addition, the authorizer provided by Apache Ranger audits all authorizations into a central audit store.
 

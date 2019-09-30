@@ -97,7 +97,7 @@ The name of the class implementing the authorization interface can be registered
 ## Simple Authorizer
 
 Simple authorizer is the default authorizer implementation included in Apache Atlas. For details of setting up Apache Atlas
-to use simple authorizer, please see [Setting up Atlas to use Simple Authorizer](http://atlas.apache.org/Atlas-Authorization-Simple-Authorizer.html)
+to use simple authorizer, please see [Setting up Atlas to use Simple Authorizer](#/AtlasSimpleAuthorizer)
 
 ## Ranger Authorizer
 
@@ -109,7 +109,7 @@ in application.properties config file:
 </SyntaxHighlighter>
 
 Apache Ranger Authorizer requires configuration files to be setup, for example to specify Apache Ranger admin server URL,
-name of the service containing authorization policies, etc. For more details please see, [Setting up Atlas to use Ranger Authorizer](http://atlas.apache.org/Atlas-Authorization-Ranger-Authorizer.html).
+name of the service containing authorization policies, etc. For more details please see, [Setting up Atlas to use Ranger Authorizer](#/AtlasRangerAuthorizer).
 
 
 ##  None authorizer

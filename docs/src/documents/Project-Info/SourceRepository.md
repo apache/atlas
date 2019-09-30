@@ -1,6 +1,6 @@
 ---
 name: Source Repository
-route: /Source-Repository
+route: /SourceRepository
 menu: Project Info
 submenu: Source Repository
 ---

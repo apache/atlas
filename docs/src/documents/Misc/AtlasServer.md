@@ -17,7 +17,7 @@ The _AtlasServer_ entity type is special entity type in following ways:
 
 * Gets created during Export or Import operation.
 * It also has special property pages that display detailed audits for export and import operations.
-* Entities are linked to it using the new option within entity's attribute _[SoftReference](SoftReference)_.
+* Entities are linked to it using the new option within entity's attribute _[SoftReference](#/SoftReference)_.
 
 The new type is available within the _Search By Type_ dropdown in both _Basic_ and _Advanced_ search.
 
@@ -76,7 +76,7 @@ The _AtlasServer_ will handle this and set its name as 'cl1' and _fullName_ as '
 
 This property in _AtlasServer_ is a map with key and value both as String. This can be used to store any information pertaining to this instance.
 
-Please see [Incremental Export](IncrementalExport) for and example of how this property can be used.
+Please see [Incremental Export](#/IncrementalExport) for and example of how this property can be used.
 
 #### REST APIs
 **Title**           |**Atlas Server API**                       |

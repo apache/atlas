@@ -1,6 +1,6 @@
 ---
 name: License
-route: /Project-License
+route: /ProjectLicense
 menu: Project Info
 submenu: License
 ---

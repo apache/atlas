@@ -1,6 +1,6 @@
 ---
 name: Hive
-route: /Hook-Hive
+route: /HookHive
 menu: Documentation
 submenu: Hooks
 ---

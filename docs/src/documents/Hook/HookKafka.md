@@ -1,6 +1,6 @@
 ---
 name: Kafka
-route: /Hook-Kafka
+route: /HookKafka
 menu: Documentation
 submenu: Hooks
 ---

@@ -1,6 +1,6 @@
 ---
 name: Basic Search
-route: /Search-Basic
+route: /SearchBasic
 menu: Documentation
 submenu: Search 
 ---

@@ -92,7 +92,7 @@ or
 **[Atlas 1.1.0](../1.1.0/index) (Released on 2018/09/17)**
    * Updated authorization model to support access control on relationship operations
    * Added support for AWS S3 datatypes, in Atlas server and Hive hook
-   * Updated [[http://atlas.apache.org/JanusGraph.html][JanusGraph]] version from 0.2.0 to 0.3.0
+   * Updated [JanusGraph](https://janusgraph.org/) version from 0.2.0 to 0.3.0
    * Updated hooks to send Kafka notifications asynchronously
    * Enhanced classification-propagation with options to handle entity-deletes
    * BugFixes and Optimizations

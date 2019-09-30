@@ -1,6 +1,6 @@
 ---
 name: Falcon
-route: /Hook-Falcon
+route: /HookFalcon
 menu: Documentation
 submenu: Hooks
 ---
@@ -62,7 +62,7 @@ The following properties in `<atlas-conf>`/atlas-application.properties control 
    * atlas.hook.falcon.keepAliveTime - keep alive time in msecs. default 10
    * atlas.hook.falcon.queueSize     - queue size for the threadpool. default 10000
 
-Refer [Configuration](Configuration) for notification related configurations
+Refer [Configuration](#/Configuration) for notification related configurations
 
 
 ## NOTES

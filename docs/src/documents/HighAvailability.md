@@ -19,7 +19,7 @@ of service availability with Atlas. This document describes the state of high av
 including its capabilities and current limitations, and also the configuration required for achieving this level of
 high availability.
 
-[The architecture page](Architecture) in the wiki gives an overview of the various components that make up Atlas.
+[The architecture page](#/Architecture) in the wiki gives an overview of the various components that make up Atlas.
 The options mentioned below for various components derive context from the above page, and would be worthwhile to
 review before proceeding to read this page.
 
@@ -59,7 +59,7 @@ The following pre-requisites must be met for setting up the High Availability fe
    * Select 2 or more physical machines to run the Atlas Web Service instances on. These machines define what we refer to as a 'server ensemble' for Atlas.
 
 To setup High Availability in Atlas, a few configuration options must be defined in the `atlas-application.properties`
-file. While the complete list of configuration items are defined in the [Configuration Page](Configuration), this
+file. While the complete list of configuration items are defined in the [Configuration Page](#/Configuration), this
 section lists a few of the main options.
 
    * High Availability is an optional feature in Atlas. Hence, it must be enabled by setting the configuration option `atlas.server.ha.enabled` to true.
@@ -179,9 +179,9 @@ configured to use distributed HBase as the backing store for JanusGraph.  Doing 
 HA guarantees HBase provides. In order to configure Atlas to use HBase in HA mode, do the following:
 
    * Choose an existing HBase cluster that is set up in HA mode to configure in Atlas (OR) Set up a new HBase cluster in [HA mode](http://hbase.apache.org/book.html#quickstart_fully_distributed).
-      * If setting up HBase for Atlas, please following instructions listed for setting up HBase in the [Installation Steps](InstallationSteps).
+      * If setting up HBase for Atlas, please following instructions listed for setting up HBase in the [Installation Steps](#/Installation).
    * We recommend using more than one HBase masters (at least 2) in the cluster on different physical hosts that use Zookeeper for coordination to provide redundancy and high availability of HBase.
-      * Refer to the [Configuration page](Configuration) for the options to configure in atlas.properties to setup Atlas with HBase.
+      * Refer to the [Configuration page](#/Configuration) for the options to configure in atlas.properties to setup Atlas with HBase.
 
 ## Index Store
 
@@ -194,8 +194,8 @@ In order to configure Atlas to use Solr in HA mode, do the following:
    * Choose an existing !SolrCloud cluster setup in HA mode to configure in Atlas (OR) Set up a new [SolrCloud cluster](https://cwiki.apache.org/confluence/display/solr/SolrCloud).
       * Ensure Solr is brought up on at least 2 physical hosts for redundancy, and each host runs a Solr node.
       * We recommend the number of replicas to be set to at least 2 for redundancy.
-   * Create the !SolrCloud collections required by Atlas, as described in [Installation Steps](InstallationSteps)
-   * Refer to the [Configuration page](Configuration) for the options to configure in atlas.properties to setup Atlas with Solr.
+   * Create the !SolrCloud collections required by Atlas, as described in [Installation Steps](#/Installation)
+   * Refer to the [Configuration page](#/Configuration) for the options to configure in atlas.properties to setup Atlas with Solr.
 
 ### Elasticsearch  (Tech Preview)
 In order to configure Atlas to use Elasticsearch in HA mode, do the following:
@@ -203,7 +203,7 @@ In order to configure Atlas to use Elasticsearch in HA mode, do the following:
    * Choose an existing Elasticsearch cluster setup, (OR) setup a new cluster [Elasticsearch cluster](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/setup.html).
       * Ensure that Elasticsearch is brought up on at least five physical hosts for redundancy.
       * A replica count of 3 is recommended
-   * Refer to the [Configuration page](Configuration) for the options to configure in atlas.properties to setup Atlas with Elasticsearch.
+   * Refer to the [Configuration page](#/Configuration) for the options to configure in atlas.properties to setup Atlas with Elasticsearch.
 
 ## Notification Server
 

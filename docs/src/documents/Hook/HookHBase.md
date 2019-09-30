@@ -1,6 +1,6 @@
 ---
 name: HBase
-route: /Hook-HBase
+route: /HookHBase
 menu: Documentation
 submenu: Hooks
 ---

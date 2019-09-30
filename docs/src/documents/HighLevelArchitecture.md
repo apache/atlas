@@ -55,11 +55,11 @@ notification events. Events are written by the hooks and Atlas to different Kafk
 ### Metadata sources
 Atlas supports integration with many sources of metadata out of the box. More integrations will be added in future
 as well. Currently, Atlas supports ingesting and managing metadata from the following sources:
-   *  [HBase](/Hook-HBase)
-   *  [Hive](/Hook-Hive)
-   *  [Sqoop](/Hook-Sqoop)
-   *  [Storm](/Hook-Storm)
-   *  [Kafka](/Hook-Kafka)
+   *  [HBase](#/HookHBase)
+   *  [Hive](#/HookHive)
+   *  [Sqoop](#/HookSqoop)
+   *  [Storm](#/HookStorm)
+   *  [Kafka](#/HookKafka)
 
 The integration implies two things:
 There are metadata models that Atlas defines natively to represent objects of these components.

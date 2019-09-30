@@ -40,7 +40,7 @@ the term gets deleted as well. A term can belong to zero or more categories, whi
 wider contexts. A term can be assigned/linked to zero or more entities in Apache Atlas. A term can be classified using
 classifications (tags) and the same classification gets applied to the entities that the term is assigned to.
 
-###What is a Glossary category ?
+### What is a Glossary category ?
 
 A category is a way of organizing the term(s) so that the term's context can be enriched. A category may or may not have
 contained hierarchies i.e. child category hierarchy. A category's qualifiedName is derived using it's hierarchical location
@@ -221,6 +221,7 @@ Following operations are supported by Atlas, the details of REST interface can b
 ##### JSON structure
 
 * Glossary
+
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{
 	"guid": "2f341934-f18c-48b3-aa12-eaa0a2bfce85",
@@ -267,6 +268,7 @@ Following operations are supported by Atlas, the details of REST interface can b
 </SyntaxHighlighter>
 
 * Term
+
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{
 	"guid": "e441a540-ee55-4fc8-8eaf-4b9943d8929c",
@@ -303,6 +305,7 @@ Following operations are supported by Atlas, the details of REST interface can b
 </SyntaxHighlighter>
 
 * Category
+
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{
 	"guid": "7f041401-de8c-443f-a3b7-7bf5a910ff6f",

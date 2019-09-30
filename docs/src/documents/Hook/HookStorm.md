@@ -1,6 +1,6 @@
 ---
 name: Storm
-route: /Hook-Storm
+route: /HookStorm
 menu: Documentation
 submenu: Hooks
 ---

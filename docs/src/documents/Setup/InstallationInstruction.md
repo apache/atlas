@@ -127,7 +127,7 @@ and change it to look as below
 
 #### Configuring Apache HBase as the storage backend for the Graph Repository
 
-By default, Apache Atlas uses JanusGraph as the graph repository and is the only graph repository implementation available currently. Apache HBase versions currently supported are 1.1.x. For configuring Apache Atlas graph persistence on Apache HBase, please see "Graph persistence engine - HBase" in the [Configuration](Configuration) section for more details.
+By default, Apache Atlas uses JanusGraph as the graph repository and is the only graph repository implementation available currently. Apache HBase versions currently supported are 1.1.x. For configuring Apache Atlas graph persistence on Apache HBase, please see "Graph persistence engine - HBase" in the [Configuration](#/Configuration) section for more details.
 
 Apache HBase tables used by Apache Atlas can be set using the following configurations:
 
@@ -190,7 +190,7 @@ Pre-requisites for running Apache Solr in cloud mode
 
 *Configuring Elasticsearch as the indexing backend for the Graph Repository (Tech Preview)*
 
-By default, Apache Atlas uses [JanusGraph](https://atlas.apache.org/JanusGraph.html) as the graph repository and is the only graph repository implementation available currently. For configuring [JanusGraph](https://atlas.apache.org/JanusGraph.html) to work with Elasticsearch, please follow the instructions below
+By default, Apache Atlas uses [JanusGraph](https://janusgraph.org/) as the graph repository and is the only graph repository implementation available currently. For configuring [JanusGraph](https://janusgraph.org/) to work with Elasticsearch, please follow the instructions below
 
    * Install an Elasticsearch cluster. The version currently supported is 5.6.4, and can be acquired from: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.6.4.tar.gz
 
@@ -207,18 +207,18 @@ For more information on JanusGraph configuration for elasticsearch, please refer
 
 #### Configuring Kafka Topics
 
-Apache Atlas uses Apache Kafka to ingest metadata from other components at runtime. This is described in the [[Architecture][Architecture page]]
+Apache Atlas uses Apache Kafka to ingest metadata from other components at runtime. This is described in the [Architecture](#/Architecture)
 in more detail. Depending on the configuration of Apache Kafka, sometimes you might need to setup the topics explicitly before
 using Apache Atlas. To do so, Apache Atlas provides a script =bin/atlas_kafka_setup.py= which can be run from Apache Atlas server. In some
 environments, the hooks might start getting used first before Apache Atlas server itself is setup. In such cases, the topics
 can be run on the hosts where hooks are installed using a similar script `hook-bin/atlas_kafka_setup_hook.py`. Both these
-use configuration in `atlas-application.properties` for setting up the topics. Please refer to the [[Configuration][Configuration page]]
+use configuration in `atlas-application.properties` for setting up the topics. Please refer to the [Configuration](#/Configuration])
 for these details.
 
 #### Setting up Apache Atlas
 There are a few steps that setup dependencies of Apache Atlas. One such example is setting up the JanusGraph schema in the storage backend of choice. In a simple single server setup, these are automatically setup with default configuration when the server first accesses these dependencies.
 
-However, there are scenarios when we may want to run setup steps explicitly as one time operations. For example, in a multiple server scenario using [High Availability](HighAvailability), it is preferable to run setup steps from one of the server instances the first time, and then start the services.
+However, there are scenarios when we may want to run setup steps explicitly as one time operations. For example, in a multiple server scenario using [High Availability](#/HighAvailability), it is preferable to run setup steps from one of the server instances the first time, and then start the services.
 
 To run these steps one time, execute the command =bin/atlas_start.py -setup= from a single Apache Atlas server instance.
 

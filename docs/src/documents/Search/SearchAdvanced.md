@@ -1,6 +1,6 @@
 ---
 name: Advance Search
-route: /Search-Advance
+route: /SearchAdvance
 menu: Documentation
 submenu: Search 
 ---

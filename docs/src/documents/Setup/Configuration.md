@@ -16,7 +16,7 @@ All configuration in Atlas uses java properties style configuration. The main co
 ## Graph Configs
 
 ### Graph Persistence engine - HBase
-Set the following properties to configure [JanusGraph](http://atlas.apache.org/JanusGraph.html) to use HBase as the persistence engine. Please refer to [link](http://docs.janusgraph.org/0.2.0/configuration.html#_hbase_caching) for more details.
+Set the following properties to configure [JanusGraph](https://janusgraph.org/) to use HBase as the persistence engine. Please refer to [link](http://docs.janusgraph.org/0.2.0/configuration.html#_hbase_caching) for more details.
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`atlas.graph.storage.backend=hbase
