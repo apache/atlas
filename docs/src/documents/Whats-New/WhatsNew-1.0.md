@@ -29,7 +29,7 @@ submenu: Whats New
 ### DSL search
 
 With DSL rewrite and simplification, some older constructs may not work. Here's a list of behavior changes from previous
-releases. More DSL related changes can be found [here](Search-Advanced.html).
+releases. More DSL related changes can be found [here](#/SearchAdvance).
 
    * When filtering or narrowing results using string attribute, the value **MUST** be enclosed in double quotes
       * Table name="Table1"

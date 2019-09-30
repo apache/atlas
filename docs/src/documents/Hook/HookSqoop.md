@@ -1,6 +1,6 @@
 ---
 name: Sqoop
-route: /Hook-Sqoop
+route: /HookSqoop
 menu: Documentation
 submenu: Hooks
 ---

@@ -1,6 +1,6 @@
 ---
 name: Export API
-route: /Export-API
+route: /ExportAPI
 menu: Documentation
 submenu: Import/Export
 ---
@@ -15,7 +15,7 @@ The general approach is:
    * The API if successful, will return the stream in the format specified.
    * Error will be returned on failure of the call.
 
-See [here](http://atlas.apache.org/Export-HDFS-API.html) for details on exporting *hdfs_path* entities.
+See [here](#/ExportHDFSAPI) for details on exporting *hdfs_path* entities.
 
 |**Title**|**Export API**|
 | ------------ | ------------ |
@@ -49,11 +49,11 @@ Current implementation has 2 options. Both are optional:
    * _fetchType_ This option configures the approach used for fetching entities. It has following values:
       * _FULL_: This fetches all the entities that are connected directly and indirectly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table, database and all the other tables within the database.
       * _CONNECTED_: This fetches all the etnties that are connected directly to the starting entity. E.g. If a starting entity specified is a table, then this option will fetch the table and the database entity only.
-      * _INCREMENTAL_: See [here](http://atlas.apache.org/Incremental-Export.html) for details.
+      * _INCREMENTAL_: See [here](#/IncrementalExport) for details.
 
 If no _matchType_ is specified, exact match is used. Which means, that the entire string is used in the search criteria.
 
-Searching using _matchType_ applies for all types of entities. It is particularly useful for matching entities of type hdfs_path (see (here)[Export-HDFS-API]).
+Searching using _matchType_ applies for all types of entities. It is particularly useful for matching entities of type hdfs_path (see [here](#/ExportHDFSAPI)).
 
 The _fetchType_ option defaults to _FULL_.
 

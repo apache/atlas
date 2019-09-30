@@ -1,6 +1,6 @@
 ---
 name: Mailing Lists
-route: /Mailing-Lists
+route: /MailingLists
 menu: Project Info
 submenu: Mailing Lists
 ---

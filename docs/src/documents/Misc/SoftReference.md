@@ -5,7 +5,8 @@ menu: Documentation
 submenu: Misc
 ---
 
-import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import  themen  from 'theme/styles/styled-colors';
+import  * as theme  from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 
 # Entity Attribute Option: SoftReference
@@ -24,7 +25,7 @@ Attribute with _isSoftReference_ option set to _true_, is non-primitive attribut
 
 Below is an example of using the new attribute option.
 
-<SyntaxHighlighter wrapLines={true} language="json" style={dark}>
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
   {`"attributeDefs": [
       {
         "name": "replicatedFrom",
@@ -36,5 +37,5 @@ Below is an example of using the new attribute option.
         "options": {
           "isSoftReference": "true"
         }
-      }`}
+      },...]`}
 </SyntaxHighlighter>

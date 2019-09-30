@@ -1,6 +1,6 @@
 ---
 name: Incremental Export
-route: /Incremental-Export
+route: /IncrementalExport
 menu: Documentation
 submenu: Import/Export
 ---

@@ -1,6 +1,6 @@
 ---
 name: Export HDFS API
-route: /Export-HDFS-API
+route: /ExportHDFSAPI
 menu: Documentation
 submenu: Import/Export
 ---
@@ -30,7 +30,7 @@ __Sample HDFS Setup__
 
 
 ### Export API Using matchType
-To export entities that represent HDFS path, use the Export API using the _matchType_ option. Details can be found [here](Export-API).
+To export entities that represent HDFS path, use the Export API using the _matchType_ option. Details can be found [here](#/ExportAPI).
 
 ### Example Using CURL Calls
 Below are sample CURL calls that performs export operation on the _Sample HDFS Setup_ shown above.

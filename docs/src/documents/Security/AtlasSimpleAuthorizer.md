@@ -13,7 +13,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 
 ## Setting up Atlas to use Simple Authorizer
 
-As detailed in Atlas Authorization Model](http://atlas.apache.org/Atlas-Authorization-Model.html), Apache Atlas supports a pluggable authorization
+As detailed in Atlas [Authorization Model](#/AuthorizationModel), Apache Atlas supports a pluggable authorization
 model. Simple authorizer is the default authorizer implementation included in Apache Atlas. Simple authorizer uses
 policies defined in a JSON file. This document provides details of steps to configure Apache Atlas to use the simple
 authorizer and details of the JSON file format containing authorization policies.

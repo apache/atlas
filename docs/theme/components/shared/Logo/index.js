@@ -68,7 +68,8 @@ Wrapper.defaultProps = WrapperProps;
 
 const LogoImg = styled("img")`
   padding: 0;
-  margin: 5px 0;
+  height: 50px;
+  margin: 2px 0;
 `;
 
 const LogoText = styled("h1")`
@@ -89,7 +90,7 @@ export const Logo = ({ showBg }) => {
   return (
     <Wrapper showBg={showBg}>
       <Link to={typeof base === "string" ? base : "/"}>
-        <LogoImg src={`${baseUrl}/images/atlas-logo-grey.png`} alt={title} />
+        <LogoImg src={`${baseUrl}/images/atlas_logo.svg`} alt={title} />
       </Link>
     </Wrapper>
   );
