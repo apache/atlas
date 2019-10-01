@@ -107,10 +107,16 @@ public class SolrIndexHelper implements IndexChangeListener {
         ret.put(typeRegistry.getIndexFieldName(CLASSIFICATION_TEXT_KEY), SEARCHWEIGHT_FOR_CLASSIFICATIONS);
         ret.put(typeRegistry.getIndexFieldName(TYPE_NAME_PROPERTY_KEY), SEARCHWEIGHT_FOR_TYPENAME);
 
-        if (CollectionUtils.isNotEmpty(entityTypes)) {
-            for (AtlasEntityType entityType : entityTypes) {
-                processEntityType(ret, entityType);
+        if (!CollectionUtils.isNotEmpty(entityTypes)) {
+            return ret;
+        }
+
+        for (AtlasEntityType entityType : entityTypes) {
+            if (entityType.isInternalType()) {
+                continue;
             }
+
+            processEntityType(ret, entityType);
         }
 
         return ret;
