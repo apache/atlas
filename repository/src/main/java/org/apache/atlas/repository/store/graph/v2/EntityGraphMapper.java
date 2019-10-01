@@ -42,6 +42,7 @@ import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graph.FullTextMapperV2;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -2098,5 +2099,56 @@ public class EntityGraphMapper {
 
     private static String getSoftRefFormattedString(String typeName, String resolvedGuid) {
         return String.format(SOFT_REF_FORMAT, typeName, resolvedGuid);
+    }
+
+    public void importActivateEntity(AtlasVertex vertex, AtlasEntity entity) {
+        AtlasGraphUtilsV2.setEncodedProperty(vertex, STATE_PROPERTY_KEY, ACTIVE);
+
+        if (MapUtils.isNotEmpty(entity.getRelationshipAttributes())) {
+            Set<String> relatedEntitiesGuids = getRelatedEntitiesGuids(entity);
+            activateEntityRelationships(vertex, relatedEntitiesGuids);
+        }
+    }
+
+    private void activateEntityRelationships(AtlasVertex vertex, Set<String> relatedEntitiesGuids) {
+        Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
+
+        while (edgeIterator.hasNext()) {
+            AtlasEdge edge = edgeIterator.next();
+
+            if (AtlasGraphUtilsV2.getState(edge) != DELETED) {
+                continue;
+            }
+
+            final String relatedEntityGuid;
+            if (Objects.equals(edge.getInVertex().getId(), vertex.getId())) {
+                relatedEntityGuid = AtlasGraphUtilsV2.getIdFromVertex(edge.getOutVertex());
+            } else {
+                relatedEntityGuid = AtlasGraphUtilsV2.getIdFromVertex(edge.getInVertex());
+            }
+
+            if (StringUtils.isEmpty(relatedEntityGuid) || !relatedEntitiesGuids.contains(relatedEntityGuid)) {
+                continue;
+            }
+
+            edge.setProperty(STATE_PROPERTY_KEY, AtlasRelationship.Status.ACTIVE);
+        }
+    }
+
+    private Set<String> getRelatedEntitiesGuids(AtlasEntity entity) {
+        Set<String> relGuidsSet = new HashSet<>();
+
+        for (Object o : entity.getRelationshipAttributes().values()) {
+            if (o instanceof AtlasObjectId) {
+                relGuidsSet.add(((AtlasObjectId) o).getGuid());
+            } else if (o instanceof List) {
+                for (Object id : (List) o) {
+                    if (id instanceof AtlasObjectId) {
+                        relGuidsSet.add(((AtlasObjectId) id).getGuid());
+                    }
+                }
+            }
+        }
+        return relGuidsSet;
     }
 }
