@@ -959,9 +959,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                             context.addEntityToDelete(vertex);
                         } else if (currStatus == Status.DELETED && newStatus == Status.ACTIVE) {
-                            LOG.warn("attempt to activate deleted entity (guid={}). Ignored", guid);
-
-                            entity.setStatus(currStatus);
+                            LOG.warn("Import is attempting to activate deleted entity (guid={}).", guid);
+                            entityGraphMapper.importActivateEntity(vertex, entity);
+                            context.addCreated(guid, entity, entityType, vertex);
                         }
                     }
 
