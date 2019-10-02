@@ -91,6 +91,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Map<String, Object>             relationshipAttributes;
     private List<AtlasClassification>       classifications;
     private List<AtlasTermAssignmentHeader> meanings;
+    private Map<String, String>             customAttributes;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -213,6 +214,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setClassifications(other.getClassifications());
             setRelationshipAttributes(other.getRelationshipAttributes());
             setMeanings(other.getMeanings());
+            setCustomAttributes(other.getCustomAttributes());
         }
     }
 
@@ -335,6 +337,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         return r != null ? r.containsKey(name) : false;
     }
 
+    public Map<String, String> getCustomAttributes() {
+        return customAttributes;
+    }
+
+    public void setCustomAttributes(Map<String, String> customAttributes) {
+        this.customAttributes = customAttributes;
+    }
+
     public List<AtlasClassification> getClassifications() { return classifications; }
 
     public void setClassifications(List<AtlasClassification> classifications) { this.classifications = classifications; }
@@ -382,6 +392,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setUpdateTime(null);
         setClassifications(null);
         setMeanings(null);
+        setCustomAttributes(null);
     }
 
     private static String nextInternalId() {
@@ -416,6 +427,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append(", meanings=[");
         AtlasBaseTypeDef.dumpObjects(meanings, sb);
         sb.append(']');
+        sb.append(", customAttributes=[");
+        dumpObjects(customAttributes, sb);
+        sb.append("]");
         sb.append('}');
 
         return sb;
@@ -440,13 +454,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                 Objects.equals(updateTime, that.updateTime) &&
                 Objects.equals(version, that.version) &&
                 Objects.equals(relationshipAttributes, that.relationshipAttributes) &&
+                Objects.equals(customAttributes, that.customAttributes) &&
                 Objects.equals(classifications, that.classifications);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), guid, homeId, isProxy, isIncomplete, provenanceType, status,
-                createdBy, updatedBy, createTime, updateTime, version, relationshipAttributes, classifications);
+                createdBy, updatedBy, createTime, updateTime, version, relationshipAttributes, classifications, customAttributes);
     }
 
     @Override

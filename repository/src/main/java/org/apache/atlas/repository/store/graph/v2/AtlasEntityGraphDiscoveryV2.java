@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateCustomAttributes;
 
 public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityGraphDiscoveryV2.class);
@@ -84,7 +85,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     public void validateAndNormalize(AtlasEntity entity) throws AtlasBaseException {
         List<String> messages = new ArrayList<>();
 
-        if (! AtlasTypeUtil.isValidGuid(entity.getGuid())) {
+        if (!AtlasTypeUtil.isValidGuid(entity.getGuid())) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "invalid guid " + entity.getGuid());
         }
 
@@ -93,6 +94,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         if (type == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
         }
+
+        validateCustomAttributes(entity);
 
         type.validateValue(entity, entity.getTypeName(), messages);
 
@@ -107,7 +110,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     public void validateAndNormalizeForUpdate(AtlasEntity entity) throws AtlasBaseException {
         List<String> messages = new ArrayList<>();
 
-        if (! AtlasTypeUtil.isValidGuid(entity.getGuid())) {
+        if (!AtlasTypeUtil.isValidGuid(entity.getGuid())) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, "invalid guid " + entity.getGuid());
         }
 
@@ -116,6 +119,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         if (type == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
         }
+
+        validateCustomAttributes(entity);
 
         type.validateValueForUpdate(entity, entity.getTypeName(), messages);
 

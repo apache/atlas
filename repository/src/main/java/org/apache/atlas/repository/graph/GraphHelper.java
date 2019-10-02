@@ -1065,6 +1065,17 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static Map getCustomAttributes(AtlasElement element) {
+        Map    ret               = null;
+        String customAttrsString = element.getProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, String.class);
+
+        if (customAttrsString != null) {
+            ret = AtlasType.fromJson(customAttrsString, Map.class);
+        }
+
+        return ret;
+    }
+
     public static Integer getProvenanceType(AtlasElement element) {
         return element.getProperty(Constants.PROVENANCE_TYPE_KEY, Integer.class);
     }
