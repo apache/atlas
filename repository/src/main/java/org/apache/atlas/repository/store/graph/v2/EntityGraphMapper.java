@@ -72,6 +72,8 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
@@ -109,10 +111,13 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 public class EntityGraphMapper {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphMapper.class);
 
-    private static final String SOFT_REF_FORMAT               = "%s:%s";
-    private static final int INDEXED_STR_SAFE_LEN             = AtlasConfiguration.GRAPHSTORE_INDEXED_STRING_SAFE_LENGTH.getInt();
-    private static final boolean WARN_ON_NO_RELATIONSHIP       = AtlasConfiguration.RELATIONSHIP_WARN_NO_RELATIONSHIPS.getBoolean();
-    private static final String CLASSIFICATION_NAME_DELIMITER = "|";
+    private static final String  SOFT_REF_FORMAT                   = "%s:%s";
+    private static final int     INDEXED_STR_SAFE_LEN              = AtlasConfiguration.GRAPHSTORE_INDEXED_STRING_SAFE_LENGTH.getInt();
+    private static final boolean WARN_ON_NO_RELATIONSHIP           = AtlasConfiguration.RELATIONSHIP_WARN_NO_RELATIONSHIPS.getBoolean();
+    private static final String  CLASSIFICATION_NAME_DELIMITER     = "|";
+    private static final Pattern CUSTOM_ATTRIBUTE_KEY_REGEX        = Pattern.compile("^[a-zA-Z0-9_-]*$");
+    private static final int     CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH   = AtlasConfiguration.CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH.getInt();
+    private static final int     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH = AtlasConfiguration.CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH.getInt();
 
     private final GraphHelper               graphHelper = GraphHelper.getInstance();
     private final AtlasGraph                graph;
@@ -138,7 +143,7 @@ public class EntityGraphMapper {
         this.fullTextMapperV2     = fullTextMapperV2;
     }
 
-    public AtlasVertex createVertex(AtlasEntity entity) {
+    public AtlasVertex createVertex(AtlasEntity entity) throws AtlasBaseException {
         final String guid = UUID.randomUUID().toString();
         return createVertexWithGuid(entity, guid);
     }
@@ -179,7 +184,7 @@ public class EntityGraphMapper {
         return ret;
     }
 
-    public AtlasVertex createVertexWithGuid(AtlasEntity entity, String guid) {
+    public AtlasVertex createVertexWithGuid(AtlasEntity entity, String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createVertexWithGuid({})", entity.getTypeName());
         }
@@ -194,12 +199,14 @@ public class EntityGraphMapper {
         AtlasGraphUtilsV2.setEncodedProperty(ret, GUID_PROPERTY_KEY, guid);
         AtlasGraphUtilsV2.setEncodedProperty(ret, VERSION_PROPERTY_KEY, getEntityVersion(entity));
 
+        setCustomAttributes(ret, entity);
+
         GraphTransactionInterceptor.addToVertexCache(guid, ret);
 
         return ret;
     }
 
-    public void updateSystemAttributes(AtlasVertex vertex, AtlasEntity entity) {
+    public void updateSystemAttributes(AtlasVertex vertex, AtlasEntity entity) throws AtlasBaseException {
         if (entity.getVersion() != null) {
             AtlasGraphUtilsV2.setEncodedProperty(vertex, VERSION_PROPERTY_KEY, entity.getVersion());
         }
@@ -230,6 +237,10 @@ public class EntityGraphMapper {
 
         if (entity.getProvenanceType() != null) {
             AtlasGraphUtilsV2.setEncodedProperty(vertex, PROVENANCE_TYPE_KEY, entity.getProvenanceType());
+        }
+
+        if (entity.getCustomAttributes() != null) {
+            setCustomAttributes(vertex, entity);
         }
     }
 
@@ -306,6 +317,14 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metric);
 
         return resp;
+    }
+
+    public void setCustomAttributes(AtlasVertex vertex, AtlasEntity entity) throws AtlasBaseException {
+        String customAttributesString = getCustomAttributesString(entity);
+
+        if (customAttributesString != null) {
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, CUSTOM_ATTRIBUTES_PROPERTY_KEY, customAttributesString);
+        }
     }
 
     private AtlasVertex createStructVertex(AtlasStruct struct) {
@@ -1148,6 +1167,17 @@ public class EntityGraphMapper {
     private Long getEntityVersion(AtlasEntity entity) {
         Long ret = entity != null ? entity.getVersion() : null;
         return (ret != null) ? ret : 0;
+    }
+
+    private String getCustomAttributesString(AtlasEntity entity) {
+        String              ret              = null;
+        Map<String, String> customAttributes = entity.getCustomAttributes();
+
+        if (customAttributes != null) {
+            ret = AtlasType.toJson(customAttributes);
+        }
+
+        return ret;
     }
 
     private AtlasStructType getStructType(String typeName) throws AtlasBaseException {
@@ -2150,5 +2180,30 @@ public class EntityGraphMapper {
             }
         }
         return relGuidsSet;
+    }
+
+    public static void validateCustomAttributes(AtlasEntity entity) throws AtlasBaseException {
+        Map<String, String> customAttributes = entity.getCustomAttributes();
+
+        if (MapUtils.isNotEmpty(customAttributes)) {
+            for (Map.Entry<String, String> entry : customAttributes.entrySet()) {
+                String key   = entry.getKey();
+                String value = entry.getValue();
+
+                if (key.length() > CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_KEY_LENGTH, key);
+                }
+
+                Matcher matcher = CUSTOM_ATTRIBUTE_KEY_REGEX.matcher(key);
+
+                if (!matcher.matches()) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS, key);
+                }
+
+                if (value.length() > CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_VALUE, value, String.valueOf(CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH));
+                }
+            }
+        }
     }
 }

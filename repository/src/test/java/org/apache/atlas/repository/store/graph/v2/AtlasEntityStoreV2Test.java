@@ -55,10 +55,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.TestUtilsV2.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtilsV2.COLUMN_TYPE;
 import static org.apache.atlas.TestUtilsV2.NAME;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
+import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -981,5 +983,129 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
         entityStore.deleteClassification(dbEntityGuid, TAG_NAME);
         entityStore.deleteClassification(tblEntityGuid, TAG_NAME);
+    }
+
+    @Test (dependsOnMethods = "testCreate")
+    public void addCustomAttributesToEntity() throws AtlasBaseException {
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("key1", "val1");
+        customAttributes.put("key2", "val2");
+        customAttributes.put("key3", "val3");
+        customAttributes.put("key4", "val4");
+        customAttributes.put("key5", "val5");
+
+        tblEntity.setCustomAttributes(customAttributes);
+
+        entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
+
+        tblEntity = getEntityFromStore(tblEntityGuid);
+
+        assertEquals(customAttributes, tblEntity.getCustomAttributes());
+    }
+
+    @Test (dependsOnMethods = "addCustomAttributesToEntity")
+    public void updateCustomAttributesToEntity() throws AtlasBaseException {
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+
+        // update custom attributes, remove key3, key4 and key5
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("key1", "val1");
+        customAttributes.put("key2", "val2");
+
+        tblEntity.setCustomAttributes(customAttributes);
+
+        entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
+
+        tblEntity = getEntityFromStore(tblEntityGuid);
+
+        assertEquals(customAttributes, tblEntity.getCustomAttributes());
+    }
+
+    @Test (dependsOnMethods = "updateCustomAttributesToEntity")
+    public void deleteCustomAttributesToEntity() throws AtlasBaseException {
+        AtlasEntity         tblEntity             = getEntityFromStore(tblEntityGuid);
+        Map<String, String> emptyCustomAttributes = new HashMap<>();
+
+        // remove all custom attributes
+        tblEntity.setCustomAttributes(emptyCustomAttributes);
+
+        entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
+
+        tblEntity = getEntityFromStore(tblEntityGuid);
+
+        assertEquals(emptyCustomAttributes, tblEntity.getCustomAttributes());
+    }
+
+    @Test (dependsOnMethods = "deleteCustomAttributesToEntity")
+    public void nullCustomAttributesToEntity() throws AtlasBaseException {
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("key1", "val1");
+        customAttributes.put("key2", "val2");
+
+        tblEntity.setCustomAttributes(customAttributes);
+
+        entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
+
+        // assign custom attributes to null
+        tblEntity.setCustomAttributes(null);
+
+        entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
+
+        tblEntity = getEntityFromStore(tblEntityGuid);
+
+        assertEquals(customAttributes, tblEntity.getCustomAttributes());
+    }
+
+    @Test (dependsOnMethods = "nullCustomAttributesToEntity")
+    public void addInvalidKeysToEntityCustomAttributes() throws AtlasBaseException {
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+
+        // key should contain 1 to 50 alphanumeric characters, '_' or '-'
+        Map<String, String> invalidCustomAttributes = new HashMap<>();
+        invalidCustomAttributes.put("key0_65765-6565", "val0");
+        invalidCustomAttributes.put("key1-aaa_bbb-ccc", "val1");
+        invalidCustomAttributes.put("key2!@#$%&*()", "val2"); // invalid key characters
+
+        tblEntity.setCustomAttributes(invalidCustomAttributes);
+
+        try {
+            entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
+        } catch (AtlasBaseException ex) {
+            assertEquals(ex.getAtlasErrorCode(), INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS);
+        }
+
+        invalidCustomAttributes = new HashMap<>();
+        invalidCustomAttributes.put("bigValue_lengthEquals_50", randomAlphanumeric(50));
+        invalidCustomAttributes.put("bigValue_lengthEquals_51", randomAlphanumeric(51));
+
+        tblEntity.setCustomAttributes(invalidCustomAttributes);
+
+        try {
+            entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
+        } catch (AtlasBaseException ex) {
+            assertEquals(ex.getAtlasErrorCode(), INVALID_CUSTOM_ATTRIBUTE_KEY_LENGTH);
+        }
+    }
+
+    @Test (dependsOnMethods = "addInvalidKeysToEntityCustomAttributes")
+    public void addInvalidValuesToEntityCustomAttributes() throws AtlasBaseException {
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+
+        // value length is greater than 500
+        Map<String, String> invalidCustomAttributes = new HashMap<>();
+        invalidCustomAttributes.put("key1", randomAlphanumeric(500));
+        invalidCustomAttributes.put("key2", randomAlphanumeric(501));
+
+        tblEntity.setCustomAttributes(invalidCustomAttributes);
+
+        try {
+            entityStore.createOrUpdate(new AtlasEntityStream(tblEntity), false);
+        } catch (AtlasBaseException ex) {
+            assertEquals(ex.getAtlasErrorCode(), INVALID_CUSTOM_ATTRIBUTE_VALUE);
+        }
     }
 }

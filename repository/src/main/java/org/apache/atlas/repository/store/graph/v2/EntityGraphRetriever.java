@@ -582,6 +582,7 @@ public class EntityGraphRetriever {
         entity.setIsIncomplete(isEntityIncomplete(entityVertex));
 
         entity.setProvenanceType(GraphHelper.getProvenanceType(entityVertex));
+        entity.setCustomAttributes(getCustomAttributes(entityVertex));
 
         return entity;
     }
