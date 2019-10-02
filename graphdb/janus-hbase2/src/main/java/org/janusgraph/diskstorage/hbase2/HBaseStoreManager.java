@@ -225,7 +225,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final int PORT_DEFAULT = 9160;
 
-    public static final TimestampProviders PREFERRED_TIMESTAMPS = TimestampProviders.MILLI;
+    public static final TimestampProviders PREFERRED_TIMESTAMPS = TimestampProviders.MICRO;
 
     public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE =
             new ConfigNamespace(HBASE_NS, "ext", "Overrides for hbase-{site,default}.xml options", true);
