@@ -65,4 +65,4 @@ Build Process
    distro/target/apache-atlas-1.0.0-sqoop-hook.tar.gz
    distro/target/apache-atlas-1.0.0-storm-hook.tar.gz
 
-4. For more details on building and running Apache Atlas, please refer to http://atlas.apache.org/InstallationSteps.html
+4. For more details on building and running Apache Atlas, please refer to https://atlas.apache.org/#/Installation
