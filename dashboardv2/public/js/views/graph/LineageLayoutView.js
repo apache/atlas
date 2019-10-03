@@ -329,6 +329,7 @@ define(['require',
                             toolTipLabel: relationObj.displayText,
                             id: relationObj.guid,
                             isLineage: true,
+                            isIncomplete: relationObj.isIncomplete,
                             entityDef: this.getEntityDef(relationObj.typeName)
                         }, relationObj);
                         obj["serviceType"] = this.getServiceType({ typeName: relationObj.typeName, entityDef: obj.entityDef });
@@ -559,6 +560,12 @@ define(['require',
                     if (currentNode) {
                         shapeSvg.attr("stroke", "#fb4200")
                     }
+                    if (node.isIncomplete === true) {
+                        parent.attr("class", "isIncomplete show");
+                    } else {
+                        parent.attr("class", "isIncomplete");
+                    }
+
                     parent.insert("defs")
                         .append("pattern")
                         .attr("x", "0%")
@@ -624,6 +631,15 @@ define(['require',
                         .attr("x", "4")
                         .attr("y", currentNode ? "3" : "4").attr("width", "40")
                         .attr("height", "40");
+
+                    parent.insert("foreignObject")
+                        .attr("x", "-25")
+                        .attr("y", "-25")
+                        .attr("width", "50")
+                        .attr("height", "50")
+                        .append("xhtml:div")
+                        .insert("i")
+                        .attr("class", "fa fa-refresh fa-spin-custom");
 
                     node.intersect = function(point) {
                         return dagreD3.intersect.circle(node, currentNode ? 24 : 21, point);
