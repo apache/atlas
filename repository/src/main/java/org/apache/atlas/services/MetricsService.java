@@ -27,6 +27,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasMetricsUtil;
+import org.apache.atlas.util.AtlasMetricJVMUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class MetricsService {
     public static final String ENTITY  = "entity";
     public static final String TAG     = "tag";
     public static final String GENERAL = "general";
+    public static final String SYSTEM  = "system";
 
     // Query names
     protected static final String METRIC_COLLECTION_TIME   = "collectionTime";
@@ -62,6 +64,9 @@ public class MetricsService {
     protected static final String METRIC_ENTITY_SHELL      = ENTITY + "Shell";
     protected static final String METRIC_TAG_COUNT         = TAG + "Count";
     protected static final String METRIC_ENTITIES_PER_TAG  = TAG + "Entities";
+    protected static final String METRIC_RUNTIME           = "runtime";
+    protected static final String METRIC_MEMORY            = "memory";
+    protected static final String METRIC_OS                = "os";
 
     private final AtlasGraph        atlasGraph;
     private final AtlasTypeRegistry typeRegistry;
@@ -131,6 +136,9 @@ public class MetricsService {
         metrics.addMetric(ENTITY, METRIC_ENTITY_SHELL, getShellEntityCount());
 
         metrics.addMetric(TAG, METRIC_ENTITIES_PER_TAG, taggedEntityCount);
+        metrics.addMetric(SYSTEM, METRIC_MEMORY, AtlasMetricJVMUtil.getMemoryDetails());
+        metrics.addMetric(SYSTEM, METRIC_OS, AtlasMetricJVMUtil.getSystemInfo());
+        metrics.addMetric(SYSTEM, METRIC_RUNTIME, AtlasMetricJVMUtil.getRuntimeInfo());
 
         return metrics;
     }
