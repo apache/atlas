@@ -96,24 +96,24 @@ define(['require',
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
                     dsl: {
-                        query: null,
-                        type: null,
-                        pageOffset: null,
-                        pageLimit: null
+                        query: this.value ? this.value.query : null,
+                        type: this.value ? this.value.type : null,
+                        pageOffset: this.value ? this.value.pageOffset : null,
+                        pageLimit: this.value ? this.value.pageLimit : null
                     },
                     basic: {
-                        query: null,
-                        type: null,
-                        tag: null,
-                        term: null,
-                        attributes: null,
-                        tagFilters: null,
-                        pageOffset: null,
-                        pageLimit: null,
-                        entityFilters: null,
-                        includeDE: null,
-                        excludeST: null,
-                        excludeSC: null
+                        query:  this.value ? this.value.query: null,
+                        type:  this.value ?  this.value.type: null,
+                        tag:  this.value ?  this.value.tag: null,
+                        term:  this.value ?  this.value.term: null,
+                        attributes:  this.value ? this.value.attributes: null,
+                        tagFilters:  this.value ? this.value.tagFilters: null,
+                        pageOffset:  this.value ? this.value.pageOffset: null,
+                        pageLimit:  this.value ? this.value.pageLimit: null,
+                        entityFilters: this.value ? this.value.entityFilters: null,
+                        includeDE: this.value ? this.value.includeDE: null,
+                        excludeST: this.value ? this.value.excludeST: null,
+                        excludeSC:  this.value ? this.value.excludeSC: null
                     }
                 };
                 if (!this.value) {
@@ -263,7 +263,7 @@ define(['require',
                         isTypeEl = $el.data('id') == "typeLOV",
                         select2Data = $el.select2('data');
                     if (e.type == "change" && select2Data) {
-                        var value = (_.isEmpty(select2Data) ? select2Data : _.first(select2Data).id),
+                        var value = (_.isEmpty(select2Data) ? select2Data : _.first(select2Data).id) || this.value.tag,
                             key = "tag",
                             filterType = isBasicSearch ? 'tagFilters' : null,
                             value = value && value.length ? value : null;
@@ -506,7 +506,8 @@ define(['require',
                     that.ui.tagLov.html(tagStr);
                     this.ui.tagLov.select2({
                         placeholder: "Select Classification",
-                        allowClear: true
+                        allowClear: true,
+                        tags: true
                     });
                 }
                 that.ui.typeLov.html(typeStr);
@@ -594,27 +595,33 @@ define(['require',
                             this.ui.searchType.prop("checked", false).trigger("change");
                         }
                     }
-                    this.ui.typeLov.val(this.value.type);
-                    if (this.ui.typeLov.data('select2')) {
-                        if (this.ui.typeLov.val() !== this.value.type) {
-                            this.value.type = null;
-                            this.ui.typeLov.val("").trigger("change", { 'manual': true });
-                        } else {
-                            this.ui.typeLov.trigger("change", { 'manual': true });
+                    if (this.value.type) {
+                        this.ui.typeLov.val(this.value.type);
+                        if (this.ui.typeLov.data('select2')) {
+                            if (this.ui.typeLov.val() !== this.value.type) {
+                                this.value.type = null;
+                                this.ui.typeLov.val("").trigger("change", { 'manual': true });
+                            } else {
+                                this.ui.typeLov.trigger("change", { 'manual': true });
+                            }
                         }
                     }
 
+
                     if (!this.dsl) {
-                        this.ui.tagLov.val(this.value.tag);
-                        if (this.ui.tagLov.data('select2')) {
-                            // To handle delete scenario.
-                            if (this.ui.tagLov.val() !== this.value.tag) {
-                                this.value.tag = null;
-                                this.ui.tagLov.val("").trigger("change", { 'manual': true });
-                            } else {
-                                this.ui.tagLov.trigger("change", { 'manual': true });
+                        if (this.value.tag) {
+                            this.ui.tagLov.val(this.value.tag);
+                            if (this.ui.tagLov.data('select2')) {
+                                // To handle delete scenario.
+                                if (this.ui.tagLov.val() !== this.value.tag) {
+                                    // this.value.tag = null;
+                                    this.ui.tagLov.val("").trigger("change", { 'manual': true });
+                                } else {
+                                    this.ui.tagLov.trigger("change", { 'manual': true });
+                                }
                             }
                         }
+
                         if (this.value.term) {
                             this.ui.termLov.append('<option value="' + this.value.term + '" selected="selected">' + this.value.term + '</option>');
                         }
@@ -642,8 +649,8 @@ define(['require',
                         tagFilters: null,
                         entityFilters: null
                     },
-                    typeLovValue = this.ui.typeLov.find(':selected').data('name'),
-                    tagLovValue = this.ui.tagLov.find(':selected').data('name'),
+                    typeLovValue = this.ui.typeLov.find(':selected').data('name'), // to get count of selected element used data
+                    tagLovValue = this.ui.tagLov.find(':selected').data('name') || this.ui.tagLov.val(),
                     termLovValue = this.ui.termLov.select2('val')
                 params['type'] = typeLovValue || null;
                 if (!this.dsl) {

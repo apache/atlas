@@ -19,25 +19,12 @@
         <i class="ec-icon fa"></i>
         <h4 class="panel-title">Classifications</h4>
         <div class="btn-group pull-right">
-            <!-- <button type="button" class="typeRefresh" data-id="groupOrFlatTreeView" data-type="classification" title="Show flat tree">
-                <i class="fa fa-sitemap"></i>
-            </button> -->
-            <button type="button" class="typeRefresh" data-id="refreshTree" data-type="classification" title="Refresh">
+            <button type="button" class="typeRefresh drop-down-menu-view" data-id="refreshTree" data-type="classification" title="Refresh">
                 <i class="fa fa-refresh"></i>
             </button>
-            <button type="button" class="typeRefresh" data-id="showEmptyClassifications" title="Show unused classification">
+            <button type="button" class="typeRefresh drop-down-menu-view" data-id="showEmptyClassifications" title="Show unused classification">
                 <i class="fa fa-toggle-off"></i>
             </button>
-            <!-- <button type="button" data-id="createTag" data-type="classification" title="Create Classification">
-                <i class="fa fa-plus"></i>
-            </button> -->
-            <!-- <ul class="dropdown-menu right-align tree-menu">
-                <li data-id="createTag"><i class="fa fa-plus"></i><a>Create Classification</a></li>
-                <li data-id="showEmptyClassifications"><i class="fa fa-check-circle"></i> <a>Show Empty</a></li>
-            </ul> -->
-            <!-- <button data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" type="button" data-id="tagMenu">
-                <i class="fa fa-ellipsis-v"></i>
-            </button> -->
             <button type="button" class="typeRefresh dropdown">
                 <div class=" btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i class="fa fa-ellipsis-v"></i>
@@ -45,11 +32,16 @@
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                     <li data-id="groupOrFlatTreeView" data-type="classification"> <i class="fa fa-list-ul"></i><span>Show flat tree</span>
                     </li>
-                    <!--  <li data-id="showEmptyClassifications" data-type="classification"> <i class="fa fa-toggle-off"></i><span>Show unused classification</span>
-                    </li> -->
                     <li data-id="createTag" data-type="classification"> <i class="fa fa-plus"></i><span>Create Classification</span>
                     </li>
-                </ul>
+                    <li data-id="wildCardClick" data-type="classification">
+                        <div class="has-feedback align-left-right-icon search-box">
+                            <input type="text" class="form-control" name="wildcard search" placeholder="Wildcard search" data-id="wildCardValue" />
+                            <span class="fa fa-times clear-icon" data-id="clearWildCard"> </span>
+                        </div>
+                    </li>
+            </button>
+            </ul>
             </button>
         </div>
     </div>

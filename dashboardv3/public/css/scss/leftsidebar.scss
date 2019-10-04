@@ -53,9 +53,31 @@
         }
     }
 
+    // .remove-drop-down {
+    //     .drop-down-menu-view {
+    //         display: inline-block;
+    //     }
+
+    //     .show-in-drop-down {
+    //         display: none;
+    //     }
+    // }
+
+    // .add-drop-down {
+    //     .drop-down-menu-view {
+    //         display: none;
+    //     }
+
+    //     .show-in-drop-down {
+    //         display: block;
+    //     }
+    // }
+
     .filter-tree-content {
         overflow: auto;
         height: calc(100vh - 188px);
+
+
 
         .panel-collapse {
             padding-top: 7px;
@@ -188,6 +210,20 @@
                     }
                 }
 
+                input {
+                    color: $color_ironside_gray_approx !important;
+                    width: 150px;
+                    display: inline-block;
+                }
+
+                input:hover {
+                    background-color: #fff;
+                }
+
+                &:hover .clear-icon {
+                    color: $color_ironside_gray_approx !important;
+                }
+
                 a {
                     display: inline-block;
                     padding: 0px 3px;
@@ -198,6 +234,21 @@
                     margin-left: 10px;
                 }
             }
+
+            .clear-icon {
+                color: $color_ironside_gray_approx !important;
+                position: absolute;
+                top: 30%;
+                right: 12px;
+            }
+
+            .has-feedback .form-control {
+                padding: 6px 12px;
+            }
+        }
+
+        .hide-icon {
+            display: none;
         }
 
         .custom-filter {
@@ -227,6 +278,8 @@
             color: $action_gray;
         }
     }
+
+
 }
 
 .sidebar-content {
