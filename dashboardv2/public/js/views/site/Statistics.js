@@ -128,18 +128,24 @@ define(['require',
                     entityData = data.entity,
                     activeEntities = entityData.entityActive || {},
                     deletedEntities = entityData.entityDeleted || {},
+                    shellEntities = entityData.entityShell || {},
                     stats = {},
                     activeEntityCount = 0,
                     deletedEntityCount = 0,
+                    shellEntityCount = 0,
                     createEntityData = function(opt) {
                         var entityData = opt.entityData,
                             type = opt.type;
                         _.each(entityData, function(val, key) {
                             var intVal = _.isUndefined(val) ? 0 : val;
-                            if (type == "active") {
+                            if (type === "active") {
                                 activeEntityCount += intVal;
-                            } else {
+                            }
+                            if(type === "deleted"){
                                 deletedEntityCount += intVal;
+                            } 
+                            if(type === "shell") {
+                                shellEntityCount += intVal
                             }
                             intVal = _.numberFormatWithComa(intVal)
                             if (stats[key]) {
@@ -158,6 +164,10 @@ define(['require',
                     "entityData": deletedEntities,
                     "type": "deleted"
                 });
+                createEntityData({
+                    "entityData": shellEntities,
+                    "type": "shell"
+                });
                 if (!_.isEmpty(stats)) {
                     that.ui.entityCard.html(
                         EntityTable({
@@ -166,6 +176,7 @@ define(['require',
                     );
                     that.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComa(activeEntityCount) + ")");
                     that.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComa(deletedEntityCount) + ")");
+                    that.$('[data-id="shellEntity"]').html("&nbsp;(" + _.numberFormatWithComa(shellEntityCount) + ")");
                     that.ui.entityHeader.html("&nbsp;(" + _.numberFormatWithComa(data.general.entityCount) + ")");
                 }
             },
