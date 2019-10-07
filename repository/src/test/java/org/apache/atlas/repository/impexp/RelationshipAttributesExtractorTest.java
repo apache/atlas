@@ -26,6 +26,7 @@ import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -48,25 +49,44 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.*;
-import static org.testng.Assert.*;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class RelationshipAttributesExtractorTest {
+public class RelationshipAttributesExtractorTest extends ExportImportTestBase {
 
-    private static final String EXPORT_FULL = "full";
+    private static final String EXPORT_FULL      = "full";
     private static final String EXPORT_CONNECTED = "connected";
-    private static final String QUALIFIED_NAME_DB = "db_test_1@02052019";
-    private static final String QUALIFIED_NAME_TABLE_LINEAGE = "db_test_1.test_tbl_ctas_2@02052019";
+    private static final String ENTITIES_SUB_DIR = "entities";
+
+    private static final String QUALIFIED_NAME_DB                = "db_test_1@02052019";
+    private static final String QUALIFIED_NAME_TABLE_LINEAGE     = "db_test_1.test_tbl_ctas_2@02052019";
     private static final String QUALIFIED_NAME_TABLE_NON_LINEAGE = "db_test_1.test_tbl_1@02052019";
 
-    private static final String GUID_DB = "f0b72ab4-7452-4e42-ac74-2aee7728cce4";
-    private static final String GUID_TABLE_1 = "4d5adf00-2c9b-4877-ad23-c41fd7319150";
-    private static final String GUID_TABLE_2 = "8d0b834c-61ce-42d8-8f66-6fa51c36bccb";
+    private static final String GUID_DB           = "f0b72ab4-7452-4e42-ac74-2aee7728cce4";
+    private static final String GUID_TABLE_1      = "4d5adf00-2c9b-4877-ad23-c41fd7319150";
+    private static final String GUID_TABLE_2      = "8d0b834c-61ce-42d8-8f66-6fa51c36bccb";
     private static final String GUID_TABLE_CTAS_2 = "eaec545b-3ac7-4e1b-a497-bd4a2b6434a2";
     private static final String GUID_HIVE_PROCESS = "bd3138b2-f29e-4226-b859-de25eaa1c18b";
+
+    private static final String DB1                 = "db1";
+    private static final String DB2                 = "db2";
+    private static final String TBL1                = "table1";
+    private static final String TBL2                = "table2";
+    private static final String HIVE_PROCESS        = "table-lineage";
+    private static final String HIVE_COLUMN_LINEAGE = "column-lineage";
+
+    private static final String GUID_DB1            = "1c4e939e-ff6b-4229-92a4-b60c00deb547";
+    private static final String GUID_DB2            = "77c3bccf-ca3f-42e7-b2dd-f5a35f63eea6";
+    private static final String GUID_TBL1           = "3f6c02be-61e8-4dae-a7b8-cc37f289ce6e";
+    private static final String GUID_TBL2           = "b8cbc39f-4467-429b-a7fe-4ba2c28cceca";
+    private static final String GUID_PROCESS        = "caf7f40a-b334-4f9e-9bf2-f24ce43db47f";
+    private static final String GUID_COLUMN_LINEAGE = "d4cf482b-423c-4c88-9bd1-701477ed6fd8";
 
     @Inject
     private ImportService importService;
@@ -79,6 +99,9 @@ public class RelationshipAttributesExtractorTest {
 
     @Inject
     private ExportService exportService;
+
+    @Inject
+    private AtlasEntityStoreV2 entityStore;
 
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
@@ -181,6 +204,22 @@ public class RelationshipAttributesExtractorTest {
     public void exportTableWithoutLineageSkipLineageConn() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_NON_LINEAGE, EXPORT_CONNECTED, true));
         verifyTableWithoutLineageSkipLineageConn(source);
+    }
+
+    @Test
+    public void interDbLineageConnectedExportTest() throws Exception {
+        setupInterDbLineageData();
+
+        ZipSource source = runExport(getExportRequestForHiveTable("db_1.table_1@cl1", EXPORT_CONNECTED, false));
+        assertInterDbLineageConnectedExport(source);
+    }
+
+    private void setupInterDbLineageData() {
+        RequestContext.get().setImportInProgress(true);
+        createEntities(entityStore, ENTITIES_SUB_DIR, new String[]{DB1, DB2, TBL1, TBL2, HIVE_PROCESS, HIVE_COLUMN_LINEAGE});
+        final String[] entityGuids = {GUID_DB1, GUID_DB2, GUID_TBL1, GUID_TBL2, GUID_PROCESS, GUID_COLUMN_LINEAGE};
+        verifyCreatedEntities(entityStore, entityGuids, 6);
+        RequestContext.get().setImportInProgress(false);
     }
 
     private void loadHiveModel() throws IOException, AtlasBaseException {
@@ -332,6 +371,14 @@ public class RelationshipAttributesExtractorTest {
 
         assertFalse(zipSource.getCreationOrder().contains(GUID_HIVE_PROCESS));
         verifyExpectedEntities(getFileNames(zipSource), GUID_DB, GUID_TABLE_1);
+    }
+
+    private void assertInterDbLineageConnectedExport(ZipSource zipSource) {
+        assertNotNull(zipSource.getCreationOrder());
+        assertEquals(zipSource.getCreationOrder().size(), 5);
+
+        assertTrue(zipSource.getCreationOrder().contains(GUID_PROCESS));
+        verifyExpectedEntities(getFileNames(zipSource), GUID_DB1, GUID_DB2, GUID_TBL1, GUID_TBL2, GUID_PROCESS);
     }
 
     private void verifyExpectedEntities(List<String> fileNames, String... guids){
