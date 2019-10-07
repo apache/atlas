@@ -19,6 +19,7 @@
         <th>Entities</th>
         <th>Active <span data-id="activeEntity"></span></th>
         <th>Deleted <span data-id="deletedEntity"></span></th>
+        <th>Shell <span data-id="shellEntity"></span></th>
     </tr>
 </thead>
 {{#if data}}
@@ -33,6 +34,11 @@
         {{/if}}
         {{#if this.deleted}}
         <td>{{this.deleted}}</td>
+        {{else}}
+        <td>0</td>
+        {{/if}}
+        {{#if this.shell}}
+        <td>{{this.shell}}</td>
         {{else}}
         <td>0</td>
         {{/if}}
