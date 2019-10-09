@@ -102,18 +102,18 @@ define(['require',
                         pageLimit: this.value ? this.value.pageLimit : null
                     },
                     basic: {
-                        query:  this.value ? this.value.query: null,
-                        type:  this.value ?  this.value.type: null,
-                        tag:  this.value ?  this.value.tag: null,
-                        term:  this.value ?  this.value.term: null,
-                        attributes:  this.value ? this.value.attributes: null,
-                        tagFilters:  this.value ? this.value.tagFilters: null,
-                        pageOffset:  this.value ? this.value.pageOffset: null,
-                        pageLimit:  this.value ? this.value.pageLimit: null,
-                        entityFilters: this.value ? this.value.entityFilters: null,
-                        includeDE: this.value ? this.value.includeDE: null,
-                        excludeST: this.value ? this.value.excludeST: null,
-                        excludeSC:  this.value ? this.value.excludeSC: null
+                        query: this.value ? this.value.query : null,
+                        type: this.value ? this.value.type : null,
+                        tag: this.value ? this.value.tag : null,
+                        term: this.value ? this.value.term : null,
+                        attributes: this.value ? this.value.attributes : null,
+                        tagFilters: this.value ? this.value.tagFilters : null,
+                        pageOffset: this.value ? this.value.pageOffset : null,
+                        pageLimit: this.value ? this.value.pageLimit : null,
+                        entityFilters: this.value ? this.value.entityFilters : null,
+                        includeDE: this.value ? this.value.includeDE : null,
+                        excludeST: this.value ? this.value.excludeST : null,
+                        excludeSC: this.value ? this.value.excludeSC : null
                     }
                 };
                 if (!this.value) {
@@ -263,7 +263,7 @@ define(['require',
                         isTypeEl = $el.data('id') == "typeLOV",
                         select2Data = $el.select2('data');
                     if (e.type == "change" && select2Data) {
-                        var value = (_.isEmpty(select2Data) ? select2Data : _.first(select2Data).id) || this.value.tag,
+                        var value = (_.isEmpty(select2Data) ? select2Data : _.first(select2Data).id),
                             key = "tag",
                             filterType = isBasicSearch ? 'tagFilters' : null,
                             value = value && value.length ? value : null;
@@ -486,7 +486,9 @@ define(['require',
                 var isTypeOnly = options && options.isTypeOnly;
                 this.ui.typeLov.empty();
                 var typeStr = '<option></option>',
-                    tagStr = typeStr;
+                    tagStr = typeStr,
+                    foundNewClassification = false,
+                    optionsValue = this.options.value;
                 this.typeHeaders.fullCollection.each(function(model) {
                     var name = Utils.getName(model.toJSON(), 'name');
                     if (model.get('category') == 'ENTITY' && (serviceTypeToBefiltered && serviceTypeToBefiltered.length ? _.contains(serviceTypeToBefiltered, model.get('serviceType')) : true)) {
@@ -495,9 +497,21 @@ define(['require',
                     }
                     if (isTypeOnly == undefined && model.get('category') == 'CLASSIFICATION') {
                         var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
+                        if (optionsValue) { // to check if wildcard classification is present in our data
+                            if (name === optionsValue.tag) {
+                                foundNewClassification = true;
+                            }
+                        }
                         tagStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (tagEntityCount ? "(" + _.numberFormatWithComa(tagEntityCount) + ")" : '') + '</option>';
                     }
                 });
+
+                if (!foundNewClassification && optionsValue) {
+                    if (optionsValue.tag) {
+                        var classificationValue = decodeURIComponent(optionsValue.tag);
+                        tagStr += '<option  value="' + (classificationValue) + '" data-name="' + (classificationValue) + '">' + classificationValue + '</option>';
+                    }
+                }
                 if (_.isUndefined(isTypeOnly)) {
                     //to insert extra classification list
                     _.each(Enums.addOnClassification, function(classificationName) {
@@ -595,30 +609,26 @@ define(['require',
                             this.ui.searchType.prop("checked", false).trigger("change");
                         }
                     }
-                    if (this.value.type) {
-                        this.ui.typeLov.val(this.value.type);
-                        if (this.ui.typeLov.data('select2')) {
-                            if (this.ui.typeLov.val() !== this.value.type) {
-                                this.value.type = null;
-                                this.ui.typeLov.val("").trigger("change", { 'manual': true });
-                            } else {
-                                this.ui.typeLov.trigger("change", { 'manual': true });
-                            }
+                    this.ui.typeLov.val(this.value.type);
+                    if (this.ui.typeLov.data('select2')) {
+                        if (this.ui.typeLov.val() !== this.value.type) {
+                            this.value.type = null;
+                            this.ui.typeLov.val("").trigger("change", { 'manual': true });
+                        } else {
+                            this.ui.typeLov.trigger("change", { 'manual': true });
                         }
                     }
 
 
                     if (!this.dsl) {
-                        if (this.value.tag) {
-                            this.ui.tagLov.val(this.value.tag);
-                            if (this.ui.tagLov.data('select2')) {
-                                // To handle delete scenario.
-                                if (this.ui.tagLov.val() !== this.value.tag) {
-                                    // this.value.tag = null;
-                                    this.ui.tagLov.val("").trigger("change", { 'manual': true });
-                                } else {
-                                    this.ui.tagLov.trigger("change", { 'manual': true });
-                                }
+                        this.ui.tagLov.val(this.value.tag);
+                        if (this.ui.tagLov.data('select2')) {
+                            // To handle delete scenario.
+                            if (this.ui.tagLov.val() !== this.value.tag) {
+                                this.value.tag = null;
+                                this.ui.tagLov.val("").trigger("change", { 'manual': true });
+                            } else {
+                                this.ui.tagLov.trigger("change", { 'manual': true });
                             }
                         }
 
