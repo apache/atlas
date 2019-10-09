@@ -14,23 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="entity-detail-table">
-    <div class="entity-detail-table-toggle">
-        <div class="pretty p-switch p-fill">
-            <input type="checkbox" data-id="noValueToggle" />
-            <div class="state p-primary">
-                <label>Show Empty Values</label>
+<div class="panel-group" id="accordion">
+    <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="entity">
+        <div class="panel-heading" data-toggle="collapse" href="#collapse1" aria-expanded="true" style="width: 58%">
+            <h4 class="panel-title">
+                <a>Technical properties </a>
+            </h4>
+            <div class="btn-group pull-left">
+                <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+            </div>
+        </div>
+        <div class="panel-actions">
+            <div class="pretty p-switch p-fill">
+                <input type="checkbox" data-id="noValueToggle" />
+                <div class="state p-primary">
+                    <label>Show Empty Values</label>
+                </div>
+            </div>
+        </div>
+        <div id="collapse1" class="panel-collapse collapse in">
+            <div class="panel-body">
+                    <div class="entity-detail-table">
+                        <table class="table">
+                            <tbody data-id="detailValue" class="hide-empty-value">
+                            </tbody>
+                        </table>
+                    </div>
             </div>
         </div>
     </div>
-    <table class="table table-quickMenu">
-        <thead>
-            <tr>
-                <th>Key</th>
-                <th>Value</th>
-            </tr>
-        </thead>
-        <tbody data-id="detailValue" class="hide-empty-value">
-        </tbody>
-    </table>
 </div>

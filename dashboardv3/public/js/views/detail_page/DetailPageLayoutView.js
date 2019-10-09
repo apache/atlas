@@ -45,7 +45,8 @@ define(['require',
                 RAuditTableLayoutView: "#r_auditTableLayoutView",
                 RReplicationAuditTableLayoutView: "#r_replicationAuditTableLayoutView",
                 RProfileLayoutView: "#r_profileLayoutView",
-                RRelationshipLayoutView: "#r_relationshipLayoutView"
+                RRelationshipLayoutView: "#r_relationshipLayoutView",
+                REntityUserDefineView: "#r_entityUserDefineView",
             },
             /** ui selector cache */
             ui: {
@@ -249,6 +250,7 @@ define(['require',
                         })()
                     }
                     this.renderEntityDetailTableLayoutView(obj);
+                    this.renderEntityUserDefineView(obj);
                     this.renderRelationshipLayoutView(obj);
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
@@ -494,6 +496,12 @@ define(['require',
                 var that = this;
                 require(['views/entity/EntityDetailTableLayoutView'], function(EntityDetailTableLayoutView) {
                     that.REntityDetailTableLayoutView.show(new EntityDetailTableLayoutView(obj));
+                });
+            },
+            renderEntityUserDefineView: function(obj) {
+                var that = this;
+                require(['views/entity/EntityUserDefineView'], function(EntityUserDefineView) {
+                    that.REntityUserDefineView.show(new EntityUserDefineView(obj));
                 });
             },
             renderTagTableLayoutView: function(obj) {
