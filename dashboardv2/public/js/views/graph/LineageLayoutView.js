@@ -561,9 +561,9 @@ define(['require',
                         shapeSvg.attr("stroke", "#fb4200")
                     }
                     if (node.isIncomplete === true) {
-                        parent.attr("class", "isIncomplete show");
+                        parent.attr("class", "node isIncomplete show");
                     } else {
-                        parent.attr("class", "isIncomplete");
+                        parent.attr("class", "node isIncomplete");
                     }
 
                     parent.insert("defs")
