@@ -691,3 +691,28 @@ hr[size="10"] {
 .tooltip.bottom .tooltip-arrow {
     border-bottom-color: #000;
 }
+
+.entityDetail {
+    .isIncomplete {
+        &.show {
+            img {
+                opacity: .2;
+                animation: blink 2.5s infinite;
+            }
+
+            i.fa.fa-refresh {
+                display: block;
+            }
+        }
+
+        i.fa.fa-refresh {
+            display: none;
+            text-align: center;
+            font-size: 20px;
+            top: 0;
+            position: absolute;
+            z-index: 1;
+            left: calc(50% - 8px);
+        }
+    }
+}

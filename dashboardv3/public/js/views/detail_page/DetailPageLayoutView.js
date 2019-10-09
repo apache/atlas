@@ -198,7 +198,10 @@ define(['require',
                                 } else {
                                     this.ui.entityIcon.removeClass('disabled');
                                 }
-                                this.ui.entityIcon.attr('title', _.escape(collectionJSON.typeName)).html('<img src="' + Utils.getEntityIconPath({ entityData: entityData }) + '"/>').find("img").on('error', function() {
+                                if (collectionJSON.isIncomplete === true) {
+                                    this.$(".isIncomplete").addClass("show");
+                                }
+                                this.ui.entityIcon.attr('title', _.escape(collectionJSON.typeName)).html('<img src="' + Utils.getEntityIconPath({ entityData: entityData }) + '"/><i class="fa fa-refresh fa-spin-custom"></i>').find("img").on('error', function() {
                                     this.src = Utils.getEntityIconPath({ entityData: entityData, errorUrl: this.src });
                                 });
                             } else {
