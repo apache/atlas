@@ -1,0 +1,73 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<div class="panel-group" id="accordion">
+    <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="userDefine">
+        {{#ifCond customAttibutes.length "===" 0}}
+            <div class="panel-heading collapsed" data-toggle="collapse" href="#collapse2" aria-expanded="false" style="width: 70%">
+                <h4 class="panel-title">
+                    <a>User-defined properties </a>
+                </h4>
+                <div class="btn-group pull-left">
+                    <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+                </div>
+            </div>
+            <div class="panel-actions">
+                {{#ifCond readOnlyEntity "===" false}}
+                    <button class="btn btn-action btn-sm"  data-id="editAttr" data-original-title="Add User-Defined"> Add</button>
+                {{/ifCond}}
+            </div>
+        {{else}}
+            <div class="panel-heading" data-toggle="collapse" href="#collapse2" aria-expanded="true" style="width: 60%">
+                <h4 class="panel-title">
+                    <a>User-defined properties </a>
+                </h4>
+                <div class="btn-group pull-left">
+                    <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+                </div>
+            </div>
+            <div class="panel-actions">
+                {{#ifCond readOnlyEntity "===" false}}
+                    <button class="btn btn-action btn-sm"  data-id="editAttr" data-original-title="Edit User-Defined Attributes">Edit</button>
+                {{/ifCond}}
+            </div>
+        {{/ifCond}}
+
+        <div id="collapse2" {{#ifCond customAttibutes.length "===" 0}} class="panel-collapse collapse" {{else}} class="panel-collapse collapse in" {{/ifCond}} >
+            <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="entity-detail-table">
+                                <table class="table">
+                                    <tbody>
+                                        {{#each customAttibutes}}
+                                            <tr>
+                                                <td>
+                                                    <div class="scroll-y">{{key}}</div>                                              </div></td>
+                                                <td>
+                                                    <div class="scroll-y">{{value}}</div>
+                                                </td>
+                                            </tr>
+                                        {{/each}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>

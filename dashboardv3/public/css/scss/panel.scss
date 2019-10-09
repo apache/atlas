@@ -135,3 +135,37 @@
         }
     }
 }
+
+.panel-default.custom-panel>.panel-heading {
+    color: $black;
+    cursor: pointer;
+    border-bottom: none;
+    display: inline-block;
+
+    .panel-title {
+        font-weight: normal;
+        a:hover {
+            color: $black;
+            opacity: 0.7;
+        }
+    }
+    .btn-group {
+        margin-top: 3px;
+    }
+}
+
+.panel-default.custom-panel>.panel-actions {
+    float: right;
+    margin-top: 15px;
+    button {
+        margin-right: 10px;
+        margin-top: -4px;
+    }
+}
+
+.panel-default.custom-panel>.panel-collapse>.panel-body {
+    border-top: none;
+}
+.panel-default.custom-panel>.panel-heading > .btn-group > button {
+    color: $black;
+}

@@ -1,0 +1,1401 @@
+From 8e806aae327b3179a26e6627fd42c80f6ec615f4 Mon Sep 17 00:00:00 2001
+From: sameer79 <findsameershaikh@yahoo.co.in>
+Date: Wed, 9 Oct 2019 17:35:12 +0530
+Subject: [PATCH] ATLAS-3439: Add User-defined properties in entity details
+ page.
+
+---
+ dashboardv2/public/css/scss/common.scss            |  47 +++++-
+ dashboardv2/public/css/scss/override.scss          |   3 +-
+ dashboardv2/public/css/scss/panel.scss             |  35 +++-
+ .../detail_page/DetailPageLayoutView_tmpl.html     |  15 +-
+ .../entity/EntityDetailTableLayoutView_tmpl.html   |  44 +++--
+ .../entity/EntityUserDefineItemView_tmpl.html      |  45 +++++
+ .../entity/EntityUserDefineView_tmpl.html          |  65 ++++++++
+ .../templates/search/AdvancedSearchInfo_tmpl.html  |   2 +-
+ .../js/views/detail_page/DetailPageLayoutView.js   |  12 +-
+ .../js/views/entity/EntityDetailTableLayoutView.js |   2 +-
+ .../js/views/entity/EntityUserDefineItemView.js    |  98 +++++++++++
+ .../public/js/views/entity/EntityUserDefineView.js | 184 +++++++++++++++++++++
+ dashboardv3/public/css/scss/common.scss            |  43 +++++
+ dashboardv3/public/css/scss/panel.scss             |  35 +++-
+ dashboardv3/public/css/scss/table.scss             |   1 +
+ .../detail_page/DetailPageLayoutView_tmpl.html     |  15 +-
+ .../entity/EntityDetailTableLayoutView_tmpl.html   |  44 +++--
+ .../entity/EntityUserDefineItemView_tmpl.html      |  45 +++++
+ .../entity/EntityUserDefineView_tmpl.html          |  65 ++++++++
+ .../js/views/detail_page/DetailPageLayoutView.js   |  12 +-
+ .../js/views/entity/EntityDetailTableLayoutView.js |   2 +-
+ .../js/views/entity/EntityUserDefineItemView.js    |  98 +++++++++++
+ .../public/js/views/entity/EntityUserDefineView.js | 184 +++++++++++++++++++++
+ 23 files changed, 1042 insertions(+), 54 deletions(-)
+ create mode 100644 dashboardv2/public/js/templates/entity/EntityUserDefineItemView_tmpl.html
+ create mode 100644 dashboardv2/public/js/templates/entity/EntityUserDefineView_tmpl.html
+ create mode 100644 dashboardv2/public/js/views/entity/EntityUserDefineItemView.js
+ create mode 100644 dashboardv2/public/js/views/entity/EntityUserDefineView.js
+ create mode 100644 dashboardv3/public/js/templates/entity/EntityUserDefineItemView_tmpl.html
+ create mode 100644 dashboardv3/public/js/templates/entity/EntityUserDefineView_tmpl.html
+ create mode 100644 dashboardv3/public/js/views/entity/EntityUserDefineItemView.js
+ create mode 100644 dashboardv3/public/js/views/entity/EntityUserDefineView.js
+
+diff --git a/dashboardv2/public/css/scss/common.scss b/dashboardv2/public/css/scss/common.scss
+index d42e5a9..b24c3c3 100644
+--- a/dashboardv2/public/css/scss/common.scss
++++ b/dashboardv2/public/css/scss/common.scss
+@@ -15,7 +15,7 @@
+ // limitations under the License.
+ 
+ 
+-/* common.scss */ 
++/* common.scss */
+ 
+ .readOnly {
+ 
+@@ -201,4 +201,47 @@ pre {
+     .panel-default>.panel-heading {
+         cursor: pointer;
+     }
+-}
+\ No newline at end of file
++}
++
++.custom-table {
++    width: 100%;
++
++    .custom-tr {
++        margin-left: 15px;
++        margin-right: 15px;
++
++        .custom-col-0,
++        .custom-col-1,
++        .custom-col-2 {
++            vertical-align: top;
++            display: inline-block;
++
++            textarea {
++                resize: vertical;
++                height: 34px;
++                min-height: 34px;
++                max-height: 70px;
++            }
++        }
++
++
++        .custom-col-0{
++            text-align: center;
++            vertical-align: middle;
++            width: 2%;
++        }
++
++        .custom-col-1{
++            width: 43%;
++        }
++
++        .custom-col-2{
++            text-align: center;
++            width: 10%;
++        }
++    }
++}
++
++.errorMsg {
++    color: $red;
++}
+diff --git a/dashboardv2/public/css/scss/override.scss b/dashboardv2/public/css/scss/override.scss
+index c8a1d89..c95ee58 100644
+--- a/dashboardv2/public/css/scss/override.scss
++++ b/dashboardv2/public/css/scss/override.scss
+@@ -128,6 +128,7 @@ td {
+     pre.scroll-y {
+         max-height: 200px;
+         overflow-y: auto;
++        word-break: break-word;
+     }
+ }
+ 
+@@ -469,4 +470,4 @@ div.columnmanager-dropdown-container {
+ 
+ .w30 {
+     width: 30% !important;
+-}
+\ No newline at end of file
++}
+diff --git a/dashboardv2/public/css/scss/panel.scss b/dashboardv2/public/css/scss/panel.scss
+index c1ac042..52b3dbe 100644
+--- a/dashboardv2/public/css/scss/panel.scss
++++ b/dashboardv2/public/css/scss/panel.scss
+@@ -118,4 +118,37 @@
+             }
+         }
+     }
+-}
+\ No newline at end of file
++}
++
++.panel-default.custom-panel>.panel-heading {
++    color: $black;
++    cursor: pointer;
++    border-bottom: none;
++    display: inline-block;
++
++    .panel-title {
++        font-weight: normal;
++        a:hover {
++            color: $black;
++            opacity: 0.7;
++        }
++    }
++    .btn-group {
++        margin-top: 3px;
++    }
++}
++
++.panel-default.custom-panel>.panel-actions {
++    float: right;
++    margin-top: 15px;
++    button {
++        margin-right: 10px;
++    }
++}
++
++.panel-default.custom-panel>.panel-collapse>.panel-body {
++    border-top: none;
++}
++.panel-default.custom-panel>.panel-heading > .btn-group > button {
++    color: $black;
++}
+diff --git a/dashboardv2/public/js/templates/detail_page/DetailPageLayoutView_tmpl.html b/dashboardv2/public/js/templates/detail_page/DetailPageLayoutView_tmpl.html
+index c395799..d35debc 100644
+--- a/dashboardv2/public/js/templates/detail_page/DetailPageLayoutView_tmpl.html
++++ b/dashboardv2/public/js/templates/detail_page/DetailPageLayoutView_tmpl.html
+@@ -65,9 +65,16 @@
+ <div>
+     <div class="tab-content">
+         <div id="tab-details" role="properties" class="tab-pane active animated fadeIn">
+-            <div id="r_entityDetailTableLayoutView">
+-                <div class="fontLoader-relative">
+-                    <i class="fa fa-refresh fa-spin-custom"></i>
++            <div class="row">
++                <div class="col-md-6">
++                    <div id="r_entityDetailTableLayoutView">
++                        <div class="fontLoader-relative">
++                            <i class="fa fa-refresh fa-spin-custom"></i>
++                        </div>
++                    </div>
++                </div>
++                <div class="col-md-6">
++                    <div id="r_entityUserDefineView"></div>
+                 </div>
+             </div>
+         </div>
+@@ -122,4 +129,4 @@
+         </div>
+     </div>
+ </div>
+-</div>
+\ No newline at end of file
++</div>
+diff --git a/dashboardv2/public/js/templates/entity/EntityDetailTableLayoutView_tmpl.html b/dashboardv2/public/js/templates/entity/EntityDetailTableLayoutView_tmpl.html
+index 1c01077..18a9435 100644
+--- a/dashboardv2/public/js/templates/entity/EntityDetailTableLayoutView_tmpl.html
++++ b/dashboardv2/public/js/templates/entity/EntityDetailTableLayoutView_tmpl.html
+@@ -14,23 +14,33 @@
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+ -->
+-<div class="entity-detail-table">
+-    <div class="entity-detail-table-toggle">
+-        <div class="pretty p-switch p-fill">
+-            <input type="checkbox" data-id="noValueToggle" />
+-            <div class="state p-primary">
+-                <label>Show Empty Values</label>
++<div class="panel-group" id="accordion">
++    <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="entity">
++        <div class="panel-heading" data-toggle="collapse" href="#collapse1" aria-expanded="true" style="width: 58%">
++            <h4 class="panel-title">
++                <a>Technical properties </a>
++            </h4>
++            <div class="btn-group pull-left">
++                <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
++            </div>
++        </div>
++        <div class="panel-actions">
++            <div class="pretty p-switch p-fill">
++                <input type="checkbox" data-id="noValueToggle" />
++                <div class="state p-primary">
++                    <label>Show Empty Values</label>
++                </div>
++            </div>
++        </div>
++        <div id="collapse1" class="panel-collapse collapse in">
++            <div class="panel-body">
++                    <div class="entity-detail-table">
++                        <table class="table">
++                            <tbody data-id="detailValue" class="hide-empty-value">
++                            </tbody>
++                        </table>
++                    </div>
+             </div>
+         </div>
+     </div>
+-    <table class="table table-quickMenu">
+-        <thead>
+-            <tr>
+-                <th>Key</th>
+-                <th>Value</th>
+-            </tr>
+-        </thead>
+-        <tbody data-id="detailValue" class="hide-empty-value">
+-        </tbody>
+-    </table>
+-</div>
+\ No newline at end of file
++</div>
+diff --git a/dashboardv2/public/js/templates/entity/EntityUserDefineItemView_tmpl.html b/dashboardv2/public/js/templates/entity/EntityUserDefineItemView_tmpl.html
+new file mode 100644
+index 0000000..a06039f
+--- /dev/null
++++ b/dashboardv2/public/js/templates/entity/EntityUserDefineItemView_tmpl.html
+@@ -0,0 +1,45 @@
++<!--
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++-->
++
++<div data-id="userDefineItems">
++    <table class="custom-table">
++        {{#each items}}
++            <tr class="custom-tr">
++                <td class="custom-col-1">
++                    <input placeholder="key" type="text"  data-type="key" data-index={{@index}} class="form-control" value={{key}}></input>
++                    <p class="errorMsg"></p>
++                </td >
++                <td  class="custom-col-0"> : </td >
++                <td  class="custom-col-1">
++                    <textarea placeholder="value"  data-type="value" data-index={{@index}} class="form-control" class="form-control">{{value}}</textarea>
++                    <p class="errorMsg"></p>
++                </td >
++                <td  class="custom-col-2">
++                    <button class="btn btn-default btn-sm" title=""  data-index={{@index}} data-id="deleteItem">
++                        <i class="fa fa-minus"> </i>
++                    </button>
++                    <button class="btn btn-default btn-sm" title="" data-index={{@index}} data-id="addItem">
++                        <i class="fa fa-plus"> </i>
++                    </button>
++                </td >
++            </tr>
++        {{/each}}
++        {{#ifCond items.length "===" 0}}
++            No properties have been created yet. To add a property, click <a href="javascript:void(0)" data-id="addItem">here</a>
++        {{/ifCond}}
++    </table>
++</div>
+diff --git a/dashboardv2/public/js/templates/entity/EntityUserDefineView_tmpl.html b/dashboardv2/public/js/templates/entity/EntityUserDefineView_tmpl.html
+new file mode 100644
+index 0000000..e3f4791
+--- /dev/null
++++ b/dashboardv2/public/js/templates/entity/EntityUserDefineView_tmpl.html
+@@ -0,0 +1,65 @@
++<!--
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++-->
++<div class="panel-group" id="accordion">
++    <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="userDefine">
++        <div class="panel-heading" data-toggle="collapse" href="#collapse2" aria-expanded="true" {{#ifCond customAttibutes.length ">" 0}} style="width: 60%" {{else}} style="width: 100%" {{/ifCond}}>
++            <h4 class="panel-title">
++                <a>User-defined properties </a>
++            </h4>
++            <div class="btn-group pull-left">
++                <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
++            </div>
++        </div>
++        {{#ifCond customAttibutes.length ">" 0}}
++            <div class="panel-actions">
++                {{#ifCond readOnlyEntity "===" false}}
++                    <button class="btn btn-action btn-sm"  data-id="editAttr" data-original-title="Edit User-Defined Attributes">Edit</button>
++                {{/ifCond}}
++            </div>
++        {{/ifCond}}
++        <div id="collapse2" class="panel-collapse collapse in">
++            <div class="panel-body">
++                    <div class="row">
++                        <div class="col-md-12">
++                            <div class="entity-detail-table">
++                                <table class="table">
++                                    {{#ifCond customAttibutes.length "===" 0}}
++                                        <span>No properties have been created yet.
++                                            {{#ifCond readOnlyEntity "==" false}}
++                                                <span>To add a property, click <a href="javascript:void(0)" data-id="editAttr">here</a></span>
++                                            {{/ifCond}}
++                                        </span>
++                                    {{/ifCond}}
++                                    <tbody>
++                                        {{#each customAttibutes}}
++                                            <tr>
++                                                <td>
++                                                    <div class="scroll-y">{{key}}</div>                                              </div></td>
++                                                <td>
++                                                    <div class="scroll-y">{{value}}</div>
++                                                </td>
++                                            </tr>
++                                        {{/each}}
++                                    </tbody>
++                                </table>
++                            </div>
++                        </div>
++                    </div>
++            </div>
++        </div>
++    </div>
++</div>
+diff --git a/dashboardv2/public/js/templates/search/AdvancedSearchInfo_tmpl.html b/dashboardv2/public/js/templates/search/AdvancedSearchInfo_tmpl.html
+index 64f1a31..7746974 100644
+--- a/dashboardv2/public/js/templates/search/AdvancedSearchInfo_tmpl.html
++++ b/dashboardv2/public/js/templates/search/AdvancedSearchInfo_tmpl.html
+@@ -31,6 +31,6 @@
+         </li>
+     </ul>
+     <h5 style="padding-left: 22.5px;">
+-        <a href="http://atlas.apache.org/#/SearchAdvance" target="_blank"><i class="fa fa-info-circle" aria-hidden="true"></i> &nbsp; More sample queries and use-cases</a>
++        <a href="http://atlas.apache.org/Search-Advanced.html" target="_blank"><i class="fa fa-info-circle" aria-hidden="true"></i> &nbsp; More sample queries and use-cases</a>
+     </h5>
+ </div>
+\ No newline at end of file
+diff --git a/dashboardv2/public/js/views/detail_page/DetailPageLayoutView.js b/dashboardv2/public/js/views/detail_page/DetailPageLayoutView.js
+index 5fe5a9e..4f48693 100644
+--- a/dashboardv2/public/js/views/detail_page/DetailPageLayoutView.js
++++ b/dashboardv2/public/js/views/detail_page/DetailPageLayoutView.js
+@@ -45,7 +45,8 @@ define(['require',
+                 RAuditTableLayoutView: "#r_auditTableLayoutView",
+                 RReplicationAuditTableLayoutView: "#r_replicationAuditTableLayoutView",
+                 RProfileLayoutView: "#r_profileLayoutView",
+-                RRelationshipLayoutView: "#r_relationshipLayoutView"
++                RRelationshipLayoutView: "#r_relationshipLayoutView",
++                REntityUserDefineView: "#r_entityUserDefineView",
+             },
+             /** ui selector cache */
+             ui: {
+@@ -243,6 +244,7 @@ define(['require',
+                         })()
+                     }
+                     this.renderEntityDetailTableLayoutView(obj);
++                    this.renderEntityUserDefineView(obj);
+                     this.renderRelationshipLayoutView(obj);
+                     this.renderAuditTableLayoutView(obj);
+                     this.renderTagTableLayoutView(obj);
+@@ -484,6 +486,12 @@ define(['require',
+                     that.REntityDetailTableLayoutView.show(new EntityDetailTableLayoutView(obj));
+                 });
+             },
++            renderEntityUserDefineView: function(obj) {
++                var that = this;
++                require(['views/entity/EntityUserDefineView'], function(EntityUserDefineView) {
++                    that.REntityUserDefineView.show(new EntityUserDefineView(obj));
++                });
++            },
+             renderTagTableLayoutView: function(obj) {
+                 var that = this;
+                 require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
+@@ -545,4 +553,4 @@ define(['require',
+             }
+         });
+     return DetailPageLayoutView;
+-});
+\ No newline at end of file
++});
+diff --git a/dashboardv2/public/js/views/entity/EntityDetailTableLayoutView.js b/dashboardv2/public/js/views/entity/EntityDetailTableLayoutView.js
+index 381d99e..6572292 100644
+--- a/dashboardv2/public/js/views/entity/EntityDetailTableLayoutView.js
++++ b/dashboardv2/public/js/views/entity/EntityDetailTableLayoutView.js
+@@ -83,4 +83,4 @@ define(['require',
+             }
+         });
+     return EntityDetailTableLayoutView;
+-});
+\ No newline at end of file
++});
+diff --git a/dashboardv2/public/js/views/entity/EntityUserDefineItemView.js b/dashboardv2/public/js/views/entity/EntityUserDefineItemView.js
+new file mode 100644
+index 0000000..a649ca8
+--- /dev/null
++++ b/dashboardv2/public/js/views/entity/EntityUserDefineItemView.js
+@@ -0,0 +1,98 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++define(['require',
++    'backbone',
++    'hbs!tmpl/entity/EntityUserDefineItemView_tmpl'
++
++], function(require, Backbone, EntityUserDefineItemView_tmpl) {
++    'use strict';
++
++    return Backbone.Marionette.ItemView.extend({
++        _viewName: 'EntityUserDefineItemView',
++
++        template: EntityUserDefineItemView_tmpl,
++
++        templateHelpers: function() {
++            return {
++                items: this.items
++            };
++        },
++
++        /** Layout sub regions */
++        regions: {},
++
++        /** ui selector cache */
++        ui: {
++            itemKey: "[data-type='key']",
++            itemValue: "[data-type='value']",
++            addItem: "[data-id='addItem']",
++            deleteItem: "[data-id='deleteItem']"
++        },
++        /** ui events hash */
++        events: function() {
++            var events = {};
++            events['input ' + this.ui.itemKey] = 'onItemKeyChange';
++            events['input ' + this.ui.itemValue] = 'onItemValueChange';
++            events['click ' + this.ui.addItem] = 'onAddItemClick';
++            events['click ' + this.ui.deleteItem] = 'onDeleteItemClick';
++            return events;
++        },
++
++        /**
++         * intialize a new GlobalExclusionComponentView Layout
++         * @constructs
++         */
++        initialize: function(options) {
++            var that = this;
++            this.editMode = options.mode;
++            if (options.items.length === 0) {
++                this.items = [{ key: "", value: "", mode: this.editMode}];
++
++            } else {
++                this.items = options.items.map(function(m) {
++                    m.mode = that.editMode;
++                    return m;
++                });
++            }
++        },
++        onRender: function() {
++
++        },
++        onAddItemClick: function(e) {
++            var el = e.currentTarget;
++            this.items.splice(parseInt(el.dataset.index) + 1, 0, { key: "", value: "", mode: this.editMode});
++            this.render();
++        },
++        onDeleteItemClick: function(e) {
++            var el = e.currentTarget;
++            this.items.splice(el.dataset.index, 1);
++            this.render();
++        },
++        onItemKeyChange: function (e) {
++            var el = e.currentTarget;
++            var val = el.value;
++            this.items[ el.dataset.index].key = val;
++        },
++        onItemValueChange: function (e) {
++            var el = e.currentTarget;
++            var val = el.value;
++            this.items[ el.dataset.index].value = el.value;
++        }
++    });
++
++});
+diff --git a/dashboardv2/public/js/views/entity/EntityUserDefineView.js b/dashboardv2/public/js/views/entity/EntityUserDefineView.js
+new file mode 100644
+index 0000000..4fc2f02
+--- /dev/null
++++ b/dashboardv2/public/js/views/entity/EntityUserDefineView.js
+@@ -0,0 +1,184 @@
++/**
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++define(['require',
++'backbone',
++'hbs!tmpl/entity/EntityUserDefineView_tmpl',
++'views/entity/EntityUserDefineItemView',
++'utils/CommonViewFunction',
++'modules/Modal',
++'models/VEntity',
++'utils/Utils',
++'utils/Enums'
++], function(require, Backbone, EntityUserDefineView_tmpl, EntityUserDefineItemView, CommonViewFunction, Modal, VEntity, Utils, Enums) {
++'use strict';
++
++    return Backbone.Marionette.LayoutView.extend({
++        _viewName: 'EntityUserDefineView',
++        template: EntityUserDefineView_tmpl,
++        templateHelpers: function() {
++            return {
++                customAttibutes: this.customAttibutes,
++                readOnlyEntity : this.readOnlyEntity
++            };
++        },
++        ui: {
++            addAttr: "[data-id='addAttr']",
++            editAttr: "[data-id='editAttr']",
++            deleteAttr: "[data-id='deleteAttr']"
++        },
++        events: function() {
++            var events = {};
++            events["click " + this.ui.editAttr] = 'onEditAttrClick';
++            return events;
++        },
++        initialize: function(options) {
++            _.extend(this, _.pick(options, 'entity'));
++            this.userDefineAttr = this.entity.customAttributes || [];
++            this.editMode = false;
++            this.readOnlyEntity = Enums.entityStateReadOnly[this.entity.status];
++            this.entityModel = new VEntity(this.entity);
++            this.generateTableFields();
++        },
++        onRender: function() {
++        },
++        bindEvents: {},
++        customAtributesFunc: function() {
++
++        },
++        generateTableFields: function() {
++            var that = this;
++            this.customAttibutes = [];
++            _.each(Object.keys(that.userDefineAttr), function(key, i) {
++                that.customAttibutes.push({
++                    key: key,
++                    value: that.userDefineAttr[key]
++                });
++            });
++        },
++        onEditAttrClick: function (e) {
++            this.editMode = true;
++            var options = {items: this.customAttibutes, mode: true};
++            var view = new EntityUserDefineItemView(options);
++            var modalObj = {
++                title: 'User-Defined Attributes',
++                content: view,
++                okText: 'Save',
++                okCloses: false,
++                cancelText: "Cancel",
++                mainClass: 'modal-lg',
++                allowCancel: true,
++            };
++           this.setAttributeModal(modalObj);
++        },
++        structureAttributes: function (list) {
++            var obj={}
++            list.map(function (o) {
++                obj[o.key] = o.value;
++            });
++            return obj;
++        },
++        saveAttributes: function (list) {
++            var that = this;
++            var entityJson = that.entityModel.toJSON();
++            var properties = that.structureAttributes(list);
++            entityJson.customAttributes = properties;
++            var payload = {entity: entityJson};
++            that.entityModel.createOreditEntity({
++                data: JSON.stringify(payload),
++                type: 'POST',
++                success: function() {
++                    var msg = "User-defined attribute(s) updated successfully";
++                    that.customAttibutes = list;
++                    Utils.notifySuccess({
++                        content: msg
++                    });
++                    that.modal && that.modal.trigger('cancel');
++                    that.render();
++                },
++                error: function (e) {
++                    that.editMode = false;
++                    Utils.notifySuccess({
++                        content: e.message
++                    });
++                    that.modal && that.modal.$el.find('button.ok').attr("disabled", false);
++                },
++                complete: function () {
++                    that.modal && that.modal.$el.find('button.ok').attr("disabled", false);
++                    that.editMode = false;
++                }
++            });
++        },
++        setAttributeModal: function(modalObj) {
++            var self = this;
++            this.modal = new Modal(modalObj);
++            this.modal.open();
++            this. modal.on('ok', function() {
++                self.modal.$el.find('button.ok').attr("disabled", true);
++                var list = self.modal.$el.find("[data-type]"),
++                    keyMap = new Map(),
++                    validation = true,
++                    hasDup = [],
++                    dataList = [];
++                Array.prototype.push.apply(dataList, self.modal.options.content.items);
++                for(var i = 0; i < list.length ; i++) {
++                    var input = list[i],
++                        type = input.dataset.type,
++                        pEl = self.modal.$el.find(input.parentElement).find('p'),
++                        classes = 'form-control',
++                        val = input.value.trim();
++                        pEl[0].innerText = "";
++
++                    if (val === '') {
++                        classes = 'form-control errorClass';
++                        validation = false;
++                        pEl[0].innerText = 'Required!';
++                    } else {
++                        if (input.tagName === 'INPUT') {
++                            var duplicates = dataList.filter(function(c) {
++                                return c.key === val;
++                            });
++                            if (keyMap.has(val) || duplicates.length > 1 ) {
++                                classes = 'form-control errorClass';
++                                hasDup.push('duplicate');
++                                pEl[0].innerText = 'Duplicate key';
++                            } else {
++                                keyMap.set(val, val);
++                            }
++                        }
++                    }
++                    input.setAttribute('class', classes);
++                }
++
++                if (validation && hasDup.length === 0) {
++                    self.saveAttributes(self.modal.options.content.items);
++                } else {
++                    self.modal.$el.find('button.ok').attr("disabled", false);
++                }
++            });
++            this.modal.on('closeModal', function() {
++                self.editMode = false;
++                self.modal.trigger('cancel');
++            });
++        },
++        enableModalButton: function () {
++            var self = this;
++            self.modal.$el.find('button.ok').attr("disabled", false);
++        }
++    });
++});
+diff --git a/dashboardv3/public/css/scss/common.scss b/dashboardv3/public/css/scss/common.scss
+index 26bf82a..dfe0e4f 100644
+--- a/dashboardv3/public/css/scss/common.scss
++++ b/dashboardv3/public/css/scss/common.scss
+@@ -201,3 +201,46 @@ pre {
+     bottom: 0;
+     background: white;
+ }
++
++.custom-table {
++    width: 100%;
++
++    .custom-tr {
++        margin-left: 15px;
++        margin-right: 15px;
++
++        .custom-col-0,
++        .custom-col-1,
++        .custom-col-2 {
++            vertical-align: top;
++            display: inline-block;
++
++            textarea {
++                resize: vertical;
++                height: 34px;
++                min-height: 34px;
++                max-height: 70px;
++            }
++        }
++
++
++        .custom-col-0{
++            text-align: center;
++            vertical-align: middle;
++            width: 2%;
++        }
++
++        .custom-col-1{
++            width: 43%;
++        }
++
++        .custom-col-2{
++            text-align: center;
++            width: 10%;
++        }
++    }
++}
++
++.errorMsg {
++    color: $red;
++}
+diff --git a/dashboardv3/public/css/scss/panel.scss b/dashboardv3/public/css/scss/panel.scss
+index dfa0872..b06e63c 100644
+--- a/dashboardv3/public/css/scss/panel.scss
++++ b/dashboardv3/public/css/scss/panel.scss
+@@ -134,4 +134,37 @@
+             }
+         }
+     }
+-}
+\ No newline at end of file
++}
++
++.panel-default.custom-panel>.panel-heading {
++    color: $black;
++    cursor: pointer;
++    border-bottom: none;
++    display: inline-block;
++
++    .panel-title {
++        font-weight: normal;
++        a:hover {
++            color: $black;
++            opacity: 0.7;
++        }
++    }
++    .btn-group {
++        margin-top: 3px;
++    }
++}
++
++.panel-default.custom-panel>.panel-actions {
++    float: right;
++    margin-top: 15px;
++    button {
++        margin-right: 10px;
++    }
++}
++
++.panel-default.custom-panel>.panel-collapse>.panel-body {
++    border-top: none;
++}
++.panel-default.custom-panel>.panel-heading > .btn-group > button {
++    color: $black;
++}
+diff --git a/dashboardv3/public/css/scss/table.scss b/dashboardv3/public/css/scss/table.scss
+index 0f8ca75..06fb29b 100644
+--- a/dashboardv3/public/css/scss/table.scss
++++ b/dashboardv3/public/css/scss/table.scss
+@@ -212,6 +212,7 @@ td {
+     pre.scroll-y {
+         max-height: 200px;
+         overflow-y: auto;
++        word-break: break-word;
+     }
+ 
+     &.searchTableName {
+diff --git a/dashboardv3/public/js/templates/detail_page/DetailPageLayoutView_tmpl.html b/dashboardv3/public/js/templates/detail_page/DetailPageLayoutView_tmpl.html
+index 6519863..9c7cb81 100644
+--- a/dashboardv3/public/js/templates/detail_page/DetailPageLayoutView_tmpl.html
++++ b/dashboardv3/public/js/templates/detail_page/DetailPageLayoutView_tmpl.html
+@@ -68,9 +68,16 @@
+ <div>
+     <div class="tab-content">
+         <div id="tab-details" role="properties" class="tab-pane active animated fadeIn">
+-            <div id="r_entityDetailTableLayoutView">
+-                <div class="fontLoader-relative">
+-                    <i class="fa fa-refresh fa-spin-custom"></i>
++            <div class="row">
++                <div class="col-md-6">
++                    <div id="r_entityDetailTableLayoutView">
++                        <div class="fontLoader-relative">
++                            <i class="fa fa-refresh fa-spin-custom"></i>
++                        </div>
++                    </div>
++                </div>
++                <div class="col-md-6">
++                    <div id="r_entityUserDefineView"></div>
+                 </div>
+             </div>
+         </div>
+@@ -125,4 +132,4 @@
+         </div>
+     </div>
+ </div>
+-</div>
+\ No newline at end of file
++</div>
+diff --git a/dashboardv3/public/js/templates/entity/EntityDetailTableLayoutView_tmpl.html b/dashboardv3/public/js/templates/entity/EntityDetailTableLayoutView_tmpl.html
+index 1c01077..18a9435 100644
+--- a/dashboardv3/public/js/templates/entity/EntityDetailTableLayoutView_tmpl.html
++++ b/dashboardv3/public/js/templates/entity/EntityDetailTableLayoutView_tmpl.html
+@@ -14,23 +14,33 @@
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+ -->
+-<div class="entity-detail-table">
+-    <div class="entity-detail-table-toggle">
+-        <div class="pretty p-switch p-fill">
+-            <input type="checkbox" data-id="noValueToggle" />
+-            <div class="state p-primary">
+-                <label>Show Empty Values</label>
++<div class="panel-group" id="accordion">
++    <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="entity">
++        <div class="panel-heading" data-toggle="collapse" href="#collapse1" aria-expanded="true" style="width: 58%">
++            <h4 class="panel-title">
++                <a>Technical properties </a>
++            </h4>
++            <div class="btn-group pull-left">
++                <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
++            </div>
++        </div>
++        <div class="panel-actions">
++            <div class="pretty p-switch p-fill">
++                <input type="checkbox" data-id="noValueToggle" />
++                <div class="state p-primary">
++                    <label>Show Empty Values</label>
++                </div>
++            </div>
++        </div>
++        <div id="collapse1" class="panel-collapse collapse in">
++            <div class="panel-body">
++                    <div class="entity-detail-table">
++                        <table class="table">
++                            <tbody data-id="detailValue" class="hide-empty-value">
++                            </tbody>
++                        </table>
++                    </div>
+             </div>
+         </div>
+     </div>
+-    <table class="table table-quickMenu">
+-        <thead>
+-            <tr>
+-                <th>Key</th>
+-                <th>Value</th>
+-            </tr>
+-        </thead>
+-        <tbody data-id="detailValue" class="hide-empty-value">
+-        </tbody>
+-    </table>
+-</div>
+\ No newline at end of file
++</div>
+diff --git a/dashboardv3/public/js/templates/entity/EntityUserDefineItemView_tmpl.html b/dashboardv3/public/js/templates/entity/EntityUserDefineItemView_tmpl.html
+new file mode 100644
+index 0000000..a06039f
+--- /dev/null
++++ b/dashboardv3/public/js/templates/entity/EntityUserDefineItemView_tmpl.html
+@@ -0,0 +1,45 @@
++<!--
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++-->
++
++<div data-id="userDefineItems">
++    <table class="custom-table">
++        {{#each items}}
++            <tr class="custom-tr">
++                <td class="custom-col-1">
++                    <input placeholder="key" type="text"  data-type="key" data-index={{@index}} class="form-control" value={{key}}></input>
++                    <p class="errorMsg"></p>
++                </td >
++                <td  class="custom-col-0"> : </td >
++                <td  class="custom-col-1">
++                    <textarea placeholder="value"  data-type="value" data-index={{@index}} class="form-control" class="form-control">{{value}}</textarea>
++                    <p class="errorMsg"></p>
++                </td >
++                <td  class="custom-col-2">
++                    <button class="btn btn-default btn-sm" title=""  data-index={{@index}} data-id="deleteItem">
++                        <i class="fa fa-minus"> </i>
++                    </button>
++                    <button class="btn btn-default btn-sm" title="" data-index={{@index}} data-id="addItem">
++                        <i class="fa fa-plus"> </i>
++                    </button>
++                </td >
++            </tr>
++        {{/each}}
++        {{#ifCond items.length "===" 0}}
++            No properties have been created yet. To add a property, click <a href="javascript:void(0)" data-id="addItem">here</a>
++        {{/ifCond}}
++    </table>
++</div>
+diff --git a/dashboardv3/public/js/templates/entity/EntityUserDefineView_tmpl.html b/dashboardv3/public/js/templates/entity/EntityUserDefineView_tmpl.html
+new file mode 100644
+index 0000000..e3f4791
+--- /dev/null
++++ b/dashboardv3/public/js/templates/entity/EntityUserDefineView_tmpl.html
+@@ -0,0 +1,65 @@
++<!--
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++-->
++<div class="panel-group" id="accordion">
++    <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="userDefine">
++        <div class="panel-heading" data-toggle="collapse" href="#collapse2" aria-expanded="true" {{#ifCond customAttibutes.length ">" 0}} style="width: 60%" {{else}} style="width: 100%" {{/ifCond}}>
++            <h4 class="panel-title">
++                <a>User-defined properties </a>
++            </h4>
++            <div class="btn-group pull-left">
++                <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
++            </div>
++        </div>
++        {{#ifCond customAttibutes.length ">" 0}}
++            <div class="panel-actions">
++                {{#ifCond readOnlyEntity "===" false}}
++                    <button class="btn btn-action btn-sm"  data-id="editAttr" data-original-title="Edit User-Defined Attributes">Edit</button>
++                {{/ifCond}}
++            </div>
++        {{/ifCond}}
++        <div id="collapse2" class="panel-collapse collapse in">
++            <div class="panel-body">
++                    <div class="row">
++                        <div class="col-md-12">
++                            <div class="entity-detail-table">
++                                <table class="table">
++                                    {{#ifCond customAttibutes.length "===" 0}}
++                                        <span>No properties have been created yet.
++                                            {{#ifCond readOnlyEntity "==" false}}
++                                                <span>To add a property, click <a href="javascript:void(0)" data-id="editAttr">here</a></span>
++                                            {{/ifCond}}
++                                        </span>
++                                    {{/ifCond}}
++                                    <tbody>
++                                        {{#each customAttibutes}}
++                                            <tr>
++                                                <td>
++                                                    <div class="scroll-y">{{key}}</div>                                              </div></td>
++                                                <td>
++                                                    <div class="scroll-y">{{value}}</div>
++                                                </td>
++                                            </tr>
++                                        {{/each}}
++                                    </tbody>
++                                </table>
++                            </div>
++                        </div>
++                    </div>
++            </div>
++        </div>
++    </div>
++</div>
+diff --git a/dashboardv3/public/js/views/detail_page/DetailPageLayoutView.js b/dashboardv3/public/js/views/detail_page/DetailPageLayoutView.js
+index 682feb3..e1ab970 100644
+--- a/dashboardv3/public/js/views/detail_page/DetailPageLayoutView.js
++++ b/dashboardv3/public/js/views/detail_page/DetailPageLayoutView.js
+@@ -45,7 +45,8 @@ define(['require',
+                 RAuditTableLayoutView: "#r_auditTableLayoutView",
+                 RReplicationAuditTableLayoutView: "#r_replicationAuditTableLayoutView",
+                 RProfileLayoutView: "#r_profileLayoutView",
+-                RRelationshipLayoutView: "#r_relationshipLayoutView"
++                RRelationshipLayoutView: "#r_relationshipLayoutView",
++                REntityUserDefineView: "#r_entityUserDefineView",
+             },
+             /** ui selector cache */
+             ui: {
+@@ -249,6 +250,7 @@ define(['require',
+                         })()
+                     }
+                     this.renderEntityDetailTableLayoutView(obj);
++                    this.renderEntityUserDefineView(obj);
+                     this.renderRelationshipLayoutView(obj);
+                     this.renderAuditTableLayoutView(obj);
+                     this.renderTagTableLayoutView(obj);
+@@ -496,6 +498,12 @@ define(['require',
+                     that.REntityDetailTableLayoutView.show(new EntityDetailTableLayoutView(obj));
+                 });
+             },
++            renderEntityUserDefineView: function(obj) {
++                var that = this;
++                require(['views/entity/EntityUserDefineView'], function(EntityUserDefineView) {
++                    that.REntityUserDefineView.show(new EntityUserDefineView(obj));
++                });
++            },
+             renderTagTableLayoutView: function(obj) {
+                 var that = this;
+                 require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
+@@ -558,4 +566,4 @@ define(['require',
+             }
+         });
+     return DetailPageLayoutView;
+-});
+\ No newline at end of file
++});
+diff --git a/dashboardv3/public/js/views/entity/EntityDetailTableLayoutView.js b/dashboardv3/public/js/views/entity/EntityDetailTableLayoutView.js
+index 381d99e..6572292 100644
+--- a/dashboardv3/public/js/views/entity/EntityDetailTableLayoutView.js
++++ b/dashboardv3/public/js/views/entity/EntityDetailTableLayoutView.js
+@@ -83,4 +83,4 @@ define(['require',
+             }
+         });
+     return EntityDetailTableLayoutView;
+-});
+\ No newline at end of file
++});
+diff --git a/dashboardv3/public/js/views/entity/EntityUserDefineItemView.js b/dashboardv3/public/js/views/entity/EntityUserDefineItemView.js
+new file mode 100644
+index 0000000..a649ca8
+--- /dev/null
++++ b/dashboardv3/public/js/views/entity/EntityUserDefineItemView.js
+@@ -0,0 +1,98 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++define(['require',
++    'backbone',
++    'hbs!tmpl/entity/EntityUserDefineItemView_tmpl'
++
++], function(require, Backbone, EntityUserDefineItemView_tmpl) {
++    'use strict';
++
++    return Backbone.Marionette.ItemView.extend({
++        _viewName: 'EntityUserDefineItemView',
++
++        template: EntityUserDefineItemView_tmpl,
++
++        templateHelpers: function() {
++            return {
++                items: this.items
++            };
++        },
++
++        /** Layout sub regions */
++        regions: {},
++
++        /** ui selector cache */
++        ui: {
++            itemKey: "[data-type='key']",
++            itemValue: "[data-type='value']",
++            addItem: "[data-id='addItem']",
++            deleteItem: "[data-id='deleteItem']"
++        },
++        /** ui events hash */
++        events: function() {
++            var events = {};
++            events['input ' + this.ui.itemKey] = 'onItemKeyChange';
++            events['input ' + this.ui.itemValue] = 'onItemValueChange';
++            events['click ' + this.ui.addItem] = 'onAddItemClick';
++            events['click ' + this.ui.deleteItem] = 'onDeleteItemClick';
++            return events;
++        },
++
++        /**
++         * intialize a new GlobalExclusionComponentView Layout
++         * @constructs
++         */
++        initialize: function(options) {
++            var that = this;
++            this.editMode = options.mode;
++            if (options.items.length === 0) {
++                this.items = [{ key: "", value: "", mode: this.editMode}];
++
++            } else {
++                this.items = options.items.map(function(m) {
++                    m.mode = that.editMode;
++                    return m;
++                });
++            }
++        },
++        onRender: function() {
++
++        },
++        onAddItemClick: function(e) {
++            var el = e.currentTarget;
++            this.items.splice(parseInt(el.dataset.index) + 1, 0, { key: "", value: "", mode: this.editMode});
++            this.render();
++        },
++        onDeleteItemClick: function(e) {
++            var el = e.currentTarget;
++            this.items.splice(el.dataset.index, 1);
++            this.render();
++        },
++        onItemKeyChange: function (e) {
++            var el = e.currentTarget;
++            var val = el.value;
++            this.items[ el.dataset.index].key = val;
++        },
++        onItemValueChange: function (e) {
++            var el = e.currentTarget;
++            var val = el.value;
++            this.items[ el.dataset.index].value = el.value;
++        }
++    });
++
++});
+diff --git a/dashboardv3/public/js/views/entity/EntityUserDefineView.js b/dashboardv3/public/js/views/entity/EntityUserDefineView.js
+new file mode 100644
+index 0000000..4fc2f02
+--- /dev/null
++++ b/dashboardv3/public/js/views/entity/EntityUserDefineView.js
+@@ -0,0 +1,184 @@
++/**
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++define(['require',
++'backbone',
++'hbs!tmpl/entity/EntityUserDefineView_tmpl',
++'views/entity/EntityUserDefineItemView',
++'utils/CommonViewFunction',
++'modules/Modal',
++'models/VEntity',
++'utils/Utils',
++'utils/Enums'
++], function(require, Backbone, EntityUserDefineView_tmpl, EntityUserDefineItemView, CommonViewFunction, Modal, VEntity, Utils, Enums) {
++'use strict';
++
++    return Backbone.Marionette.LayoutView.extend({
++        _viewName: 'EntityUserDefineView',
++        template: EntityUserDefineView_tmpl,
++        templateHelpers: function() {
++            return {
++                customAttibutes: this.customAttibutes,
++                readOnlyEntity : this.readOnlyEntity
++            };
++        },
++        ui: {
++            addAttr: "[data-id='addAttr']",
++            editAttr: "[data-id='editAttr']",
++            deleteAttr: "[data-id='deleteAttr']"
++        },
++        events: function() {
++            var events = {};
++            events["click " + this.ui.editAttr] = 'onEditAttrClick';
++            return events;
++        },
++        initialize: function(options) {
++            _.extend(this, _.pick(options, 'entity'));
++            this.userDefineAttr = this.entity.customAttributes || [];
++            this.editMode = false;
++            this.readOnlyEntity = Enums.entityStateReadOnly[this.entity.status];
++            this.entityModel = new VEntity(this.entity);
++            this.generateTableFields();
++        },
++        onRender: function() {
++        },
++        bindEvents: {},
++        customAtributesFunc: function() {
++
++        },
++        generateTableFields: function() {
++            var that = this;
++            this.customAttibutes = [];
++            _.each(Object.keys(that.userDefineAttr), function(key, i) {
++                that.customAttibutes.push({
++                    key: key,
++                    value: that.userDefineAttr[key]
++                });
++            });
++        },
++        onEditAttrClick: function (e) {
++            this.editMode = true;
++            var options = {items: this.customAttibutes, mode: true};
++            var view = new EntityUserDefineItemView(options);
++            var modalObj = {
++                title: 'User-Defined Attributes',
++                content: view,
++                okText: 'Save',
++                okCloses: false,
++                cancelText: "Cancel",
++                mainClass: 'modal-lg',
++                allowCancel: true,
++            };
++           this.setAttributeModal(modalObj);
++        },
++        structureAttributes: function (list) {
++            var obj={}
++            list.map(function (o) {
++                obj[o.key] = o.value;
++            });
++            return obj;
++        },
++        saveAttributes: function (list) {
++            var that = this;
++            var entityJson = that.entityModel.toJSON();
++            var properties = that.structureAttributes(list);
++            entityJson.customAttributes = properties;
++            var payload = {entity: entityJson};
++            that.entityModel.createOreditEntity({
++                data: JSON.stringify(payload),
++                type: 'POST',
++                success: function() {
++                    var msg = "User-defined attribute(s) updated successfully";
++                    that.customAttibutes = list;
++                    Utils.notifySuccess({
++                        content: msg
++                    });
++                    that.modal && that.modal.trigger('cancel');
++                    that.render();
++                },
++                error: function (e) {
++                    that.editMode = false;
++                    Utils.notifySuccess({
++                        content: e.message
++                    });
++                    that.modal && that.modal.$el.find('button.ok').attr("disabled", false);
++                },
++                complete: function () {
++                    that.modal && that.modal.$el.find('button.ok').attr("disabled", false);
++                    that.editMode = false;
++                }
++            });
++        },
++        setAttributeModal: function(modalObj) {
++            var self = this;
++            this.modal = new Modal(modalObj);
++            this.modal.open();
++            this. modal.on('ok', function() {
++                self.modal.$el.find('button.ok').attr("disabled", true);
++                var list = self.modal.$el.find("[data-type]"),
++                    keyMap = new Map(),
++                    validation = true,
++                    hasDup = [],
++                    dataList = [];
++                Array.prototype.push.apply(dataList, self.modal.options.content.items);
++                for(var i = 0; i < list.length ; i++) {
++                    var input = list[i],
++                        type = input.dataset.type,
++                        pEl = self.modal.$el.find(input.parentElement).find('p'),
++                        classes = 'form-control',
++                        val = input.value.trim();
++                        pEl[0].innerText = "";
++
++                    if (val === '') {
++                        classes = 'form-control errorClass';
++                        validation = false;
++                        pEl[0].innerText = 'Required!';
++                    } else {
++                        if (input.tagName === 'INPUT') {
++                            var duplicates = dataList.filter(function(c) {
++                                return c.key === val;
++                            });
++                            if (keyMap.has(val) || duplicates.length > 1 ) {
++                                classes = 'form-control errorClass';
++                                hasDup.push('duplicate');
++                                pEl[0].innerText = 'Duplicate key';
++                            } else {
++                                keyMap.set(val, val);
++                            }
++                        }
++                    }
++                    input.setAttribute('class', classes);
++                }
++
++                if (validation && hasDup.length === 0) {
++                    self.saveAttributes(self.modal.options.content.items);
++                } else {
++                    self.modal.$el.find('button.ok').attr("disabled", false);
++                }
++            });
++            this.modal.on('closeModal', function() {
++                self.editMode = false;
++                self.modal.trigger('cancel');
++            });
++        },
++        enableModalButton: function () {
++            var self = this;
++            self.modal.$el.find('button.ok').attr("disabled", false);
++        }
++    });
++});
+-- 
+2.7.4
+
