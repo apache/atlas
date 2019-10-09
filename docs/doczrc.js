@@ -26,6 +26,7 @@ module.exports = {
 	baseUrl:"./public",
 	src: "./src",
 	public: "./src/resources",
+	dest: '/site',
 	menu: menu,
 	atlasVersions: versions,
 	theme: "theme/",
