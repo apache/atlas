@@ -1076,6 +1076,10 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static Set<String> getLabels(AtlasElement element) {
+        return parseLabelsString(element.getProperty(LABELS_PROPERTY_KEY, String.class));
+    }
+
     public static Integer getProvenanceType(AtlasElement element) {
         return element.getProperty(Constants.PROVENANCE_TYPE_KEY, Integer.class);
     }
@@ -1843,6 +1847,22 @@ public final class GraphHelper {
             ret = CLASSIFICATION_NAME_DELIMITER + StringUtils.join(classificationNames, CLASSIFICATION_NAME_DELIMITER)
                 + CLASSIFICATION_NAME_DELIMITER;
         }
+        return ret;
+    }
+
+    private static Set<String> parseLabelsString(String labels) {
+        Set<String> ret = null;
+
+        if (StringUtils.isNotEmpty(labels)) {
+            ret = new HashSet<>();
+
+            for (String label : labels.split("\\" + LABEL_NAME_DELIMITER)) {
+                if (StringUtils.isNotEmpty(label)) {
+                    ret.add(label);
+                }
+            }
+        }
+
         return ret;
     }
 }

@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateCustomAttributes;
+import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
 
 public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityGraphDiscoveryV2.class);
@@ -97,6 +98,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
 
         validateCustomAttributes(entity);
 
+        validateLabels(entity.getLabels());
+
         type.validateValue(entity, entity.getTypeName(), messages);
 
         if (!messages.isEmpty()) {
@@ -121,6 +124,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         }
 
         validateCustomAttributes(entity);
+
+        validateLabels(entity.getLabels());
 
         type.validateValueForUpdate(entity, entity.getTypeName(), messages);
 

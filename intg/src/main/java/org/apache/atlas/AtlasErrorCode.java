@@ -158,6 +158,8 @@ public enum AtlasErrorCode {
     INVALID_CUSTOM_ATTRIBUTE_KEY_LENGTH(400, "ATLAS-400-00-89", "Invalid key: {0} in custom attribute, key size should not be greater than 50"),
     INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS(400, "ATLAS-400-00-90", "Invalid key: {0} in custom attribute, key should only contain alphanumeric characters, '_' or '-'"),
     INVALID_CUSTOM_ATTRIBUTE_VALUE(400, "ATLAS-400-00-9A", "Invalid value: {0} in custom attribute, value length is greater than {1}"),
+    INVALID_LABEL_LENGTH(400, "ATLAS-400-00-9B", "Invalid label: {0}, label size should not be greater than {1}"),
+    INVALID_LABEL_CHARACTERS(400, "ATLAS-400-00-9C", "Invalid label: {0}, label should contain alphanumeric characters, '_' or '-'"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 

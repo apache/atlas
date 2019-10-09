@@ -67,6 +67,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -808,6 +809,30 @@ public class EntityREST {
 
             ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore);
             return associator.setClassifications(entityHeaders.getGuidHeaderMap());
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Set labels to a given entity
+     * @param guid - Unique entity identifier
+     * @param labels - set of labels to be set to the entity
+     * @throws AtlasBaseException
+     */
+    @POST
+    @Path("/guid/{guid}/labels")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void setLabels(@PathParam("guid") final String guid, Set<String> labels) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.setLabels()");
+            }
+
+            entitiesStore.setLabels(guid, labels);
         } finally {
             AtlasPerfTracer.log(perf);
         }

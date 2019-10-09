@@ -32,6 +32,7 @@ import org.apache.atlas.type.AtlasEntityType;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Persistence/Retrieval API for AtlasEntity
@@ -231,4 +232,9 @@ public interface AtlasEntityStore {
     AtlasClassification getClassification(String guid, String classificationName) throws AtlasBaseException;
 
     String setClassifications(AtlasEntityHeaders entityHeaders);
+
+    /**
+     * Set Labels
+     */
+    void setLabels(String guid, Set<String> labels) throws AtlasBaseException;
 }

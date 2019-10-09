@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -61,6 +62,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private List<String>                    meaningNames        = null;
     private List<AtlasTermAssignmentHeader> meanings            = null;
     private Boolean                         isIncomplete        = Boolean.FALSE;
+    private Set<String>                     labels              = null;
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -79,6 +81,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
         setClassificationNames(null);
         setClassifications(null);
+        setLabels(null);
     }
 
 
@@ -87,6 +90,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         setGuid(guid);
         setClassificationNames(null);
         setClassifications(null);
+        setLabels(null);
     }
 
 
@@ -100,6 +104,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             setClassificationNames(other.getClassificationNames());
             setClassifications(other.getClassifications());
             setIsIncomplete(other.getIsIncomplete());
+            setLabels(other.getLabels());
         }
     }
 
@@ -116,6 +121,10 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             for (AtlasClassification classification : entity.getClassifications()) {
                 this.classificationNames.add(classification.getTypeName());
             }
+        }
+
+        if (CollectionUtils.isNotEmpty(entity.getLabels())) {
+            setLabels(entity.getLabels());
         }
     }
 
@@ -159,6 +168,14 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         this.classifications = classifications;
     }
 
+    public Set<String> getLabels() {
+        return labels;
+    }
+
+    public void setLabels(Set<String> labels) {
+        this.labels = labels;
+    }
+
     public Boolean getIsIncomplete() {
         return isIncomplete;
     }
@@ -183,6 +200,9 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         sb.append("classifications=[");
         AtlasBaseTypeDef.dumpObjects(classifications, sb);
         sb.append("], ");
+        sb.append("labels=[");
+        dumpObjects(labels, sb);
+        sb.append("], ");
         sb.append("isIncomplete=").append(isIncomplete);
         super.toString(sb);
         sb.append('}');
@@ -202,13 +222,14 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
                        Objects.equals(classificationNames, that.classificationNames) &&
                        Objects.equals(meaningNames, that.classificationNames) &&
                        Objects.equals(classifications, that.classifications) &&
+                       Objects.equals(labels, that.labels) &&
                        Objects.equals(isIncomplete, that.isIncomplete) &&
                        Objects.equals(meanings, that.meanings);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, status, displayText, classificationNames, classifications, meaningNames, meanings, isIncomplete);
+        return Objects.hash(super.hashCode(), guid, status, displayText, classificationNames, classifications, meaningNames, meanings, isIncomplete, labels);
     }
 
     @Override

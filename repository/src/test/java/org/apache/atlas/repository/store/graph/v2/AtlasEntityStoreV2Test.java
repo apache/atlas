@@ -1108,4 +1108,81 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
             assertEquals(ex.getAtlasErrorCode(), INVALID_CUSTOM_ATTRIBUTE_VALUE);
         }
     }
+
+    @Test(dependsOnMethods = "testCreate")
+    public void addLabelsToEntity() throws AtlasBaseException {
+        Set<String> labels = new HashSet<>();
+        labels.add("label_1");
+        labels.add("label_2");
+        labels.add("label_3");
+        labels.add("label_4");
+        labels.add("label_5");
+
+        entityStore.setLabels(tblEntityGuid, labels);
+
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+
+        assertEquals(labels, tblEntity.getLabels());
+    }
+
+    @Test (dependsOnMethods = "addLabelsToEntity")
+    public void updateLabelsToEntity() throws AtlasBaseException {
+        Set<String> labels = new HashSet<>();
+        labels.add("label_1_update");
+        labels.add("label_2_update");
+        labels.add("label_3_update");
+
+        entityStore.setLabels(tblEntityGuid, labels);
+
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+
+        assertEquals(labels, tblEntity.getLabels());
+    }
+
+    @Test (dependsOnMethods = "updateLabelsToEntity")
+    public void clearLabelsToEntity() throws AtlasBaseException {
+        HashSet<String> emptyLabels = new HashSet<>();
+
+        entityStore.setLabels(tblEntityGuid, emptyLabels);
+
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+
+        Assert.assertNull(tblEntity.getLabels());
+    }
+
+    @Test (dependsOnMethods = "clearLabelsToEntity")
+    public void nullLabelsToEntity() throws AtlasBaseException {
+        entityStore.setLabels(tblEntityGuid, null);
+
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+
+        Assert.assertNull(tblEntity.getLabels());
+    }
+
+    @Test (dependsOnMethods = "nullLabelsToEntity")
+    public void invalidLabelLengthToEntity() throws AtlasBaseException {
+        Set<String> labels = new HashSet<>();
+        labels.add(randomAlphanumeric(50));
+        labels.add(randomAlphanumeric(51));
+
+        try {
+            entityStore.setLabels(tblEntityGuid, labels);
+        } catch (AtlasBaseException ex) {
+            assertEquals(ex.getAtlasErrorCode(), INVALID_LABEL_LENGTH);
+        }
+    }
+
+    @Test (dependsOnMethods = "invalidLabelLengthToEntity")
+    public void invalidLabelCharactersToEntity() throws AtlasBaseException {
+        Set<String> labels = new HashSet<>();
+        labels.add("label-1_100_45");
+        labels.add("LABEL-1_200-55");
+        labels.add("LaBeL-1-)(*U&%^%#$@!~");
+
+        try {
+            entityStore.setLabels(tblEntityGuid, labels);
+        } catch (AtlasBaseException ex) {
+            assertEquals(ex.getAtlasErrorCode(), INVALID_LABEL_CHARACTERS);
+        }
+    }
 }
