@@ -22,15 +22,22 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.instance.*;
+import org.apache.atlas.model.instance.AtlasCheckStateRequest;
+import org.apache.atlas.model.instance.AtlasCheckStateResult;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasEntityHeaders;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
@@ -53,7 +60,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
@@ -61,6 +74,7 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UP
 import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getCustomAttributes;
 import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
+import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
 
 
 @Component
@@ -725,6 +739,32 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     public String setClassifications(AtlasEntityHeaders entityHeaders) {
         ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, this);
         return associator.setClassifications(entityHeaders.getGuidHeaderMap());
+    }
+
+    @Override
+    @GraphTransaction
+    public void setLabels(String guid, Set<String> labels) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> setLabels()");
+        }
+
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        validateLabels(labels);
+
+        entityGraphMapper.setLabels(entityVertex, labels);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== setLabels()");
+        }
     }
 
     private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications) throws AtlasBaseException {

@@ -583,6 +583,7 @@ public class EntityGraphRetriever {
 
         entity.setProvenanceType(GraphHelper.getProvenanceType(entityVertex));
         entity.setCustomAttributes(getCustomAttributes(entityVertex));
+        entity.setLabels(getLabels(entityVertex));
 
         return entity;
     }

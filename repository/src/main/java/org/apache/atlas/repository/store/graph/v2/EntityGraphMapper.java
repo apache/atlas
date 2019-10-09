@@ -76,6 +76,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -116,6 +117,7 @@ public class EntityGraphMapper {
     private static final boolean WARN_ON_NO_RELATIONSHIP           = AtlasConfiguration.RELATIONSHIP_WARN_NO_RELATIONSHIPS.getBoolean();
     private static final String  CLASSIFICATION_NAME_DELIMITER     = "|";
     private static final Pattern CUSTOM_ATTRIBUTE_KEY_REGEX        = Pattern.compile("^[a-zA-Z0-9_-]*$");
+    private static final Pattern LABEL_REGEX                       = Pattern.compile("^[a-zA-Z0-9_-]*$");
     private static final int     CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH   = AtlasConfiguration.CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH.getInt();
     private static final int     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH = AtlasConfiguration.CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH.getInt();
 
@@ -200,6 +202,8 @@ public class EntityGraphMapper {
         AtlasGraphUtilsV2.setEncodedProperty(ret, VERSION_PROPERTY_KEY, getEntityVersion(entity));
 
         setCustomAttributes(ret, entity);
+
+        setLabels(ret, entity.getLabels());
 
         GraphTransactionInterceptor.addToVertexCache(guid, ret);
 
@@ -319,12 +323,30 @@ public class EntityGraphMapper {
         return resp;
     }
 
-    public void setCustomAttributes(AtlasVertex vertex, AtlasEntity entity) throws AtlasBaseException {
+    public void setCustomAttributes(AtlasVertex vertex, AtlasEntity entity) {
         String customAttributesString = getCustomAttributesString(entity);
 
         if (customAttributesString != null) {
             AtlasGraphUtilsV2.setEncodedProperty(vertex, CUSTOM_ATTRIBUTES_PROPERTY_KEY, customAttributesString);
         }
+    }
+
+    public void setLabels(AtlasVertex vertex, Set<String> labels) {
+        if (CollectionUtils.isNotEmpty(labels)) {
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, LABELS_PROPERTY_KEY, getLabelString(labels));
+        } else {
+            vertex.removeProperty(LABELS_PROPERTY_KEY);
+        }
+    }
+
+    private String getLabelString(Set<String> labels) {
+        String ret = null;
+
+        if (!labels.isEmpty()) {
+            ret = LABEL_NAME_DELIMITER + String.join(LABEL_NAME_DELIMITER, labels) + LABEL_NAME_DELIMITER;
+        }
+
+        return ret;
     }
 
     private AtlasVertex createStructVertex(AtlasStruct struct) {
@@ -2202,6 +2224,22 @@ public class EntityGraphMapper {
 
                 if (value.length() > CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH) {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_VALUE, value, String.valueOf(CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH));
+                }
+            }
+        }
+    }
+
+    public static void validateLabels(Set<String> labels) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(labels)) {
+            for (String label : labels) {
+                if (label.length() > LABEL_MAX_LENGTH.getInt()) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_LABEL_LENGTH, label, String.valueOf(LABEL_MAX_LENGTH.getInt()));
+                }
+
+                Matcher matcher = LABEL_REGEX.matcher(label);
+
+                if (!matcher.matches()) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_LABEL_CHARACTERS, label);
                 }
             }
         }

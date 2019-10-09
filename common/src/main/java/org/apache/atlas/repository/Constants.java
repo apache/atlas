@@ -92,6 +92,7 @@ public final class Constants {
     public static final String CLASSIFICATION_NAMES_KEY             = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "classificationNames");
     public static final String PROPAGATED_CLASSIFICATION_NAMES_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "propagatedClassificationNames");
     public static final String CUSTOM_ATTRIBUTES_PROPERTY_KEY       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "customAttributes");
+    public static final String LABELS_PROPERTY_KEY                  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "labels");
 
     public static final String MODIFIED_BY_KEY                      = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modifiedBy");
 
@@ -184,6 +185,7 @@ public final class Constants {
     public static final String CLASSIFICATION_EDGE_STATE_PROPERTY_KEY         = STATE_PROPERTY_KEY;
     public static final String CLASSIFICATION_LABEL                           = "classifiedAs";
     public static final String CLASSIFICATION_NAME_DELIMITER                  = "|";
+    public static final String LABEL_NAME_DELIMITER                           = CLASSIFICATION_NAME_DELIMITER;
     public static final String TERM_ASSIGNMENT_LABEL                          = "r:AtlasGlossarySemanticAssignment";
     public static final String ATTRIBUTE_INDEX_PROPERTY_KEY                   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "index");
     public static final String ATTRIBUTE_KEY_PROPERTY_KEY                     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "key");
