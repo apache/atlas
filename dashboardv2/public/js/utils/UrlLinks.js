@@ -78,6 +78,9 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                 return entitiesUrl += '?minExtInfo=' + (minExtInfo);
             }
         },
+        entityLabelsAPIUrl: function(guid) {
+            return this.entitiesApiUrl({ guid: guid }) + "/labels";
+        },
         entityHeaderApiUrl: function(guid) {
             return this.entitiesApiUrl({ guid: guid }) + "/header"
         },

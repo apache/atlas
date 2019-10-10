@@ -1,0 +1,97 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<div class="panel-group" id="accordion">
+
+    <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="userDefineLabel">
+        {{#ifCond labels.length "===" 0}}
+            <div class="panel-heading collapsed" data-toggle="collapse" href="#collapse3" aria-expanded="false" style="width: 70%">
+                <h4 class="panel-title">
+                    <a>Labels </a>
+                </h4>
+                <div class="btn-group pull-left">
+                    <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+                </div>
+            </div>
+        {{else}}
+            <div class="panel-heading" data-toggle="collapse" href="#collapse3" aria-expanded="true" style="width: 70%">
+                <h4 class="panel-title">
+                    <a>Labels </a>
+                </h4>
+                <div class="btn-group pull-left">
+                    <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+                </div>
+            </div>
+
+        {{/ifCond}}
+
+        {{#ifCond readOnlyEntity "===" false}}
+            <div class="panel-actions">
+                    {{#ifCond  swapItem "!==" true}}
+                        <button class="btn btn-action btn-sm"  data-id="addLabels" {{#ifCond labels.length "===" 0}} data-original-title="Add User-Defined Labels" {{else}} data-original-title="Edit User-Defined Labels"  {{/ifCond}}>
+                            {{#ifCond labels.length "===" 0}} Add {{else}} Edit {{/ifCond}}
+                        </button>
+                    {{/ifCond}}
+                    {{#ifCond saveLabels "===" true}}
+                        <button class="btn btn-action btn-sm"  data-id="saveLabels"  data-original-title="Save User-Defined Labels">Save</button>
+                    {{/ifCond}}
+            </div>
+        {{/ifCond}}
+
+        <div id="collapse3" {{#ifCond swapItem "===" false}} class="panel-collapse collapse" {{else}} class="panel-collapse collapse in" {{/ifCond}}>
+            {{#ifCond labels.length "===" 0}}
+                <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                {{#ifCond swapItem "===" true}}
+                                    <select class="form-control" data-id="addLabelOptions" multiple="multiple"></select>
+                                {{else}}
+                                <div class="badge-container">
+                                        {{#each labels}}
+                                            <label class="label badge-default">{{this}}</label>
+                                        {{/each}}
+                                </div>
+                                {{/ifCond}}
+                            </div>
+                        </div>
+                </div>
+            {{/ifCond}}
+        </div>
+
+        {{#ifCond labels.length ">" 0}}
+            <div id="collapse3" class="panel-collapse collapse in" >
+                <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                {{#ifCond swapItem "===" true}}
+                                    <select class="form-control" data-id="addLabelOptions" multiple="multiple"></select>
+                                {{else}}
+                                <div class="badge-container">
+                                        {{#each labels}}
+                                            <label class="label badge-default">{{this}}</label>
+                                        {{/each}}
+                                </div>
+                                {{/ifCond}}
+                            </div>
+                        </div>
+                </div>
+            </div>
+        {{/ifCond}}
+
+
+    </div>
+</div>

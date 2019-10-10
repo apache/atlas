@@ -87,6 +87,14 @@ define(['require',
                 dataType: 'json'
             }, options);
             return this.constructor.nonCrudOperation.call(this, url, "", options);
+        },
+        saveEntityLabels: function(guid, options) {
+            var url = UrlLinks.entityLabelsAPIUrl(guid);
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+            return this.constructor.nonCrudOperation.call(this, url, "POST", options);
         }
     }, {});
     return VEntity;

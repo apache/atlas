@@ -228,20 +228,29 @@ pre {
         .custom-col-0{
             text-align: center;
             vertical-align: middle;
+            line-height: 31px;
             width: 2%;
         }
 
         .custom-col-1{
-            width: 43%;
+            width: 40%;
         }
 
         .custom-col-2{
             text-align: center;
-            width: 10%;
+            width: 12%;
+            margin-left: 2%;
         }
     }
 }
 
 .errorMsg {
     color: $red;
+}
+
+.badge-default {
+    background-color: $color_havelock_blue_approx;
+    color: $white;
+    font-size: 12px;
+    font-weight: normal;
 }
