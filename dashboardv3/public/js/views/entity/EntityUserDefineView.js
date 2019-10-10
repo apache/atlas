@@ -81,7 +81,7 @@ define(['require',
                 okText: 'Save',
                 okCloses: false,
                 cancelText: "Cancel",
-                mainClass: 'modal-lg',
+                mainClass: 'modal-md',
                 allowCancel: true,
             };
            this.setAttributeModal(modalObj);

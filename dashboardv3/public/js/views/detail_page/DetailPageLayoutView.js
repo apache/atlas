@@ -47,6 +47,7 @@ define(['require',
                 RProfileLayoutView: "#r_profileLayoutView",
                 RRelationshipLayoutView: "#r_relationshipLayoutView",
                 REntityUserDefineView: "#r_entityUserDefineView",
+                REntityLabelDefineView: "#r_entityLabelDefineView"
             },
             /** ui selector cache */
             ui: {
@@ -201,7 +202,7 @@ define(['require',
                                 if (collectionJSON.isIncomplete === true) {
                                     this.$(".isIncomplete").addClass("show");
                                 }
-                                this.ui.entityIcon.attr('title', _.escape(collectionJSON.typeName)).html('<img src="' + Utils.getEntityIconPath({ entityData: entityData }) + '"/><i class="fa fa-refresh fa-spin-custom"></i>').find("img").on('error', function() {
+                                this.ui.entityIcon.attr('title', _.escape(collectionJSON.typeName)).html('<img src="' + Utils.getEntityIconPath({ entityData: entityData }) + '"/><i class="fa fa-hourglass-half"></i>').find("img").on('error', function() {
                                     this.src = Utils.getEntityIconPath({ entityData: entityData, errorUrl: this.src });
                                 });
                             } else {
@@ -254,6 +255,7 @@ define(['require',
                     }
                     this.renderEntityDetailTableLayoutView(obj);
                     this.renderEntityUserDefineView(obj);
+                    this.renderEntityLabelDefineView(obj);
                     this.renderRelationshipLayoutView(obj);
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
@@ -505,6 +507,12 @@ define(['require',
                 var that = this;
                 require(['views/entity/EntityUserDefineView'], function(EntityUserDefineView) {
                     that.REntityUserDefineView.show(new EntityUserDefineView(obj));
+                });
+            },
+            renderEntityLabelDefineView: function(obj) {
+                var that = this;
+                require(['views/entity/EntityLabelDefineView'], function(EntityLabelDefineView) {
+                    that.REntityLabelDefineView.show(new EntityLabelDefineView(obj));
                 });
             },
             renderTagTableLayoutView: function(obj) {
