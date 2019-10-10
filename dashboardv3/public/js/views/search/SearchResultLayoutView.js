@@ -710,9 +710,13 @@ define(['require',
                                 return returnImgUrl;
                             }
                             var imgPath = getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) }),
-                                img = ""
+                                img = "",
+                                isIncompleteClass = "isIncomplete search-result-page";
+                            if (obj.isIncomplete === true) {
+                                isIncompleteClass += " show";
+                            }
                             if (imgPath) {
-                                img = "<img src='" + imgPath + "'>";
+                                img = "<div class='" + isIncompleteClass + "'><img src='" + imgPath + "'><i class='fa fa-hourglass-half'></i></div>";
                             }
                             return (img + nameHtml);
                         }

@@ -639,7 +639,7 @@ define(['require',
                         .attr("height", "50")
                         .append("xhtml:div")
                         .insert("i")
-                        .attr("class", "fa fa-refresh fa-spin-custom");
+                        .attr("class", "fa fa-hourglass-half");
 
                     node.intersect = function(point) {
                         return dagreD3.intersect.circle(node, currentNode ? 24 : 21, point);
@@ -876,7 +876,7 @@ define(['require',
                         } else if (that.filterObj.isDeletedEntityHideCheck && nodeData && nodeData.isDeleted) {
                             return
                         }
-                        typeStr += '<option value="' + obj.guid + '">' + obj.attributes.name + '</option>';
+                        typeStr += '<option value="' + obj.guid + '">' + obj.displayText + '</option>';
                     });
                 }
                 this.ui.lineageTypeSearch.html(typeStr);
@@ -997,6 +997,7 @@ define(['require',
                     }
                     $('.hidden-svg').html(svgClone);
                     $(svgClone).find('>g').attr("transform", "scale(" + scaleFactor + ")");
+                    $(svgClone).find("foreignObject").remove();
                     var canvasOffset = { x: 150, y: 150 },
                         setWidth = (svgClone.getBBox().width + (canvasOffset.x)),
                         setHeight = (svgClone.getBBox().height + (canvasOffset.y)),

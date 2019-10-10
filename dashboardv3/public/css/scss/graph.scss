@@ -443,33 +443,6 @@ span#zoom_in {
     }
 }
 
-.isIncomplete {
-
-    foreignObject {
-        display: none;
-    }
-
-    &.show {
-        image {
-            opacity: 0.2;
-            animation: blink 2.5s infinite;
-        }
-
-        foreignObject {
-            display: block;
-        }
-    }
-
-    i.fa-refresh {
-
-        text-align: center;
-        margin-top: 33%;
-        font-size: 15px;
-    }
-
-}
-
-
 @-webkit-keyframes blink {
     from {
         opacity: 0.2;

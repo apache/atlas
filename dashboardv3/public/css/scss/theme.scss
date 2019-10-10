@@ -692,27 +692,78 @@ hr[size="10"] {
     border-bottom-color: #000;
 }
 
-.entityDetail {
+
+td.searchTableName:hover {
     .isIncomplete {
-        &.show {
-            img {
-                opacity: .2;
-                animation: blink 2.5s infinite;
+        &.show.search-result-page {
+            i {
+                left: 7px;
             }
+        }
+    }
+}
 
-            i.fa.fa-refresh {
-                display: block;
+.isIncomplete {
+    &.show {
+        img {
+            opacity: .2;
+            //animation: blink 2.5s infinite;
+        }
+
+        i.fa {
+            display: block;
+        }
+
+        .entity-icon-box {
+            background: none;
+
+            i.fa {
+                top: 27px;
+                font-size: 18px;
             }
         }
 
-        i.fa.fa-refresh {
-            display: none;
-            text-align: center;
-            font-size: 20px;
-            top: 0;
-            position: absolute;
-            z-index: 1;
-            left: calc(50% - 8px);
+
+        foreignObject {
+            display: block;
+
+            i.fa {
+                font-size: 15px;
+                top: 17px;
+                left: 18.5px;
+            }
         }
+
+        image {
+            opacity: 0.2;
+            //animation: blink 2.5s infinite;
+        }
+
+        &.search-result-page {
+            position: relative;
+
+            i {
+                left: 13px;
+                font-size: 9px;
+                top: 5px;
+            }
+
+        }
+
+    }
+
+    foreignObject {
+        display: none;
+    }
+
+    i.fa {
+        color: #898989;
+        display: none;
+        text-align: center;
+        font-size: 16px;
+        top: 0;
+        position: absolute;
+        z-index: 1;
+        left: calc(50% - 8px);
     }
 }
