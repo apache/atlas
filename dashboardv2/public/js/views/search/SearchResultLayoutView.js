@@ -678,7 +678,35 @@ define(['require',
                                 nameHtml += '<button type="button" title="Deleted" class="btn btn-action btn-md deleteBtn"><i class="fa fa-trash"></i></button>';
                                 nameHtml = '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                             }
-                            return nameHtml;
+                            var getImageData = function(options) {
+                                var imagePath = options.imagePath,
+                                    returnImgUrl = null;
+                                $.ajax({
+                                        "url": imagePath,
+                                        "method": "get",
+                                        "async": false,
+                                    })
+                                    .always(function(data, status, xhr) {
+                                        if (data.status == 404) {
+                                            returnImgUrl = getImageData({
+                                                "imagePath": Utils.getEntityIconPath({ entityData: obj, errorUrl: imagePath })
+                                            });
+                                        } else if (data) {
+                                            returnImgUrl = imagePath;
+                                        }
+                                    });
+                                return returnImgUrl;
+                            }
+                            var imgPath = getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) }),
+                                img = "",
+                                isIncompleteClass = "isIncomplete search-result-page";
+                            if (obj.isIncomplete === true) {
+                                isIncompleteClass += " show";
+                            }
+                            if (imgPath) {
+                                img = "<div class='" + isIncompleteClass + "'><img src='" + imgPath + "'><i class='fa fa-hourglass-half'></i></div>";
+                            }
+                            return (img + nameHtml);
                         }
                     })
                 };
