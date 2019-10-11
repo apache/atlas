@@ -19,14 +19,13 @@
 define(['require',
     'backbone',
     'hbs!tmpl/detail_page/DetailPageLayoutView_tmpl',
-    'hbs!tmpl/common/buttons_tmpl',
     'utils/Utils',
     'utils/CommonViewFunction',
     'utils/Globals',
     'utils/Enums',
     'utils/Messages',
     'utils/UrlLinks'
-], function(require, Backbone, DetailPageLayoutViewTmpl, ButtonsTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
+], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, CommonViewFunction, Globals, Enums, Messages, UrlLinks) {
     'use strict';
 
     var DetailPageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -55,8 +54,6 @@ define(['require',
                 termClick: '[data-id="termClick"]',
                 propagatedTagDiv: '[data-id="propagatedTagDiv"]',
                 title: '[data-id="title"]',
-                editButton: '[data-id="editButton"]',
-                editButtonContainer: '[data-id="editButtonContainer"]',
                 description: '[data-id="description"]',
                 editBox: '[data-id="editBox"]',
                 deleteTag: '[data-id="deleteTag"]',
@@ -77,7 +74,6 @@ define(['require',
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.editButton] = 'onClickEditEntity';
                 events["click " + this.ui.tagClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() != "i") {
                         Utils.setUrl({
@@ -219,10 +215,10 @@ define(['require',
                             this.generateTerm(collectionJSON.relationshipAttributes.meanings);
                         }
                         if (Globals.entityTypeConfList && _.isEmptyArray(Globals.entityTypeConfList)) {
-                            this.ui.editButtonContainer.html(ButtonsTmpl({ btn_edit: true }));
+                            this.editEntity = true;
                         } else {
                             if (_.contains(Globals.entityTypeConfList, collectionJSON.typeName)) {
-                                this.ui.editButtonContainer.html(ButtonsTmpl({ btn_edit: true }));
+                                this.editEntity = true;
                             }
                         }
                         if (collectionJSON.attributes && collectionJSON.attributes.columns) {
@@ -245,7 +241,8 @@ define(['require',
                         glossaryCollection: this.glossaryCollection,
                         attributeDefs: (function() {
                             return that.getEntityDef(collectionJSON);
-                        })()
+                        })(),
+                        editEntity: this.editEntity || false
                     }
                     this.renderEntityDetailTableLayoutView(obj);
                     this.renderEntityUserDefineView(obj);
@@ -543,23 +540,6 @@ define(['require',
                 var that = this;
                 require(['views/profile/ProfileLayoutView'], function(ProfileLayoutView) {
                     that.RProfileLayoutView.show(new ProfileLayoutView(obj));
-                });
-            },
-            onClickEditEntity: function(e) {
-                var that = this;
-                $(e.currentTarget).blur();
-                require([
-                    'views/entity/CreateEntityLayoutView'
-                ], function(CreateEntityLayoutView) {
-                    var view = new CreateEntityLayoutView({
-                        guid: that.id,
-                        entityDefCollection: that.entityDefCollection,
-                        typeHeaders: that.typeHeaders,
-                        callback: function() {
-                            that.fetchCollection();
-                        }
-                    });
-
                 });
             }
         });

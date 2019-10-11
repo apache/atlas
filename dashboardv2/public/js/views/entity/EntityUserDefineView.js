@@ -19,13 +19,11 @@
 define(['require',
 'backbone',
 'hbs!tmpl/entity/EntityUserDefineView_tmpl',
-'views/entity/EntityUserDefineItemView',
-'utils/CommonViewFunction',
-'modules/Modal',
 'models/VEntity',
 'utils/Utils',
-'utils/Enums'
-], function(require, Backbone, EntityUserDefineView_tmpl, EntityUserDefineItemView, CommonViewFunction, Modal, VEntity, Utils, Enums) {
+'utils/Enums',
+'utils/Messages'
+], function(require, Backbone, EntityUserDefineView_tmpl, VEntity, Utils, Enums, Messages) {
 'use strict';
 
     return Backbone.Marionette.LayoutView.extend({
@@ -34,32 +32,57 @@ define(['require',
         templateHelpers: function() {
             return {
                 customAttibutes: this.customAttibutes,
-                readOnlyEntity : this.readOnlyEntity
+                readOnlyEntity : this.readOnlyEntity,
+                swapItem: this.swapItem,
+                saveAttrItems: this.saveAttrItems
             };
         },
         ui: {
             addAttr: "[data-id='addAttr']",
             editAttr: "[data-id='editAttr']",
-            deleteAttr: "[data-id='deleteAttr']"
+            saveAttrItems: "[data-id='saveAttrItems']"
         },
         events: function() {
             var events = {};
+            events["click " + this.ui.addAttr] = 'onAddAttrClick';
             events["click " + this.ui.editAttr] = 'onEditAttrClick';
+            events["click " + this.ui.saveAttrItems] = 'onEditAttrClick';
             return events;
         },
         initialize: function(options) {
             _.extend(this, _.pick(options, 'entity'));
             this.userDefineAttr = this.entity.customAttributes || [];
-            this.editMode = false;
+            this.initialCall = false;
+            this.swapItem = false, this.saveAttrItems = false;
             this.readOnlyEntity = Enums.entityStateReadOnly[this.entity.status];
             this.entityModel = new VEntity(this.entity);
             this.generateTableFields();
         },
         onRender: function() {
         },
-        bindEvents: {},
-        customAtributesFunc: function() {
+        renderEntityUserDefinedItems: function() {
+            var that = this;
 
+            require(['views/entity/EntityUserDefineItemView'], function(EntityUserDefineItemView) {
+                that.itemView = new EntityUserDefineItemView({items: that.customAttibutes});
+                that.REntityUserDefinedItemView.show(that.itemView);
+            });
+        },
+        bindEvents: {},
+        addChildRegion: function() {
+            this.addRegions({
+                REntityUserDefinedItemView: "#r_entityUserDefinedItemView"
+            });
+            this.renderEntityUserDefinedItems();
+        },
+        onAddAttrClick: function() {
+            this.swapItem = !this.swapItem;
+            this.saveAttrItems = this.swapItem === true ? true : false;
+            this.initialCall = true;
+            this.render();
+            if (this.swapItem === true) {
+                this.addChildRegion();
+            }
         },
         generateTableFields: function() {
             var that = this;
@@ -71,20 +94,9 @@ define(['require',
                 });
             });
         },
-        onEditAttrClick: function (e) {
-            this.editMode = true;
-            var options = {items: this.customAttibutes, mode: true};
-            var view = new EntityUserDefineItemView(options);
-            var modalObj = {
-                title: 'User-defined properties',
-                content: view,
-                okText: 'Save',
-                okCloses: false,
-                cancelText: "Cancel",
-                mainClass: 'modal-md',
-                allowCancel: true,
-            };
-           this.setAttributeModal(modalObj);
+        onEditAttrClick: function () {
+            this.initialCall = false;
+            this.setAttributeModal(this.itemView);
         },
         structureAttributes: function (list) {
             var obj={}
@@ -103,82 +115,71 @@ define(['require',
                 data: JSON.stringify(payload),
                 type: 'POST',
                 success: function() {
-                    var msg = "User-defined properties updated successfully";
+                    var msg = that.initialCall ? 'addSuccessMessage' : 'editSuccessMessage';
                     that.customAttibutes = list;
                     Utils.notifySuccess({
-                        content: msg
+                        content: "User-defined properties " + Messages[msg]
                     });
-                    that.modal && that.modal.trigger('cancel');
+                    that.swapItem = false;
+                    that.saveAttrItems = false;
                     that.render();
                 },
                 error: function (e) {
-                    that.editMode = false;
+                    that.initialCall = false;
                     Utils.notifySuccess({
                         content: e.message
                     });
-                    that.modal && that.modal.$el.find('button.ok').attr("disabled", false);
+                    that.ui.saveAttrItems.attr("disabled", false);
                 },
                 complete: function () {
-                    that.modal && that.modal.$el.find('button.ok').attr("disabled", false);
-                    that.editMode = false;
+                    that.ui.saveAttrItems.attr("disabled", false);
+                    that.initialCall = false;
                 }
             });
         },
-        setAttributeModal: function(modalObj) {
+        setAttributeModal: function(itemView) {
             var self = this;
-            this.modal = new Modal(modalObj);
-            this.modal.open();
-            this. modal.on('ok', function() {
-                self.modal.$el.find('button.ok').attr("disabled", true);
-                var list = self.modal.$el.find("[data-type]"),
-                    keyMap = new Map(),
-                    validation = true,
-                    hasDup = [],
-                    dataList = [];
-                Array.prototype.push.apply(dataList, self.modal.options.content.items);
-                for(var i = 0; i < list.length ; i++) {
-                    var input = list[i],
-                        type = input.dataset.type,
-                        pEl = self.modal.$el.find(input.parentElement).find('p'),
-                        classes = 'form-control',
-                        val = input.value.trim();
-                        pEl[0].innerText = "";
+            this.ui.saveAttrItems.attr("disabled", true);
+            var list = itemView.$el.find("[data-type]"),
+                keyMap = new Map(),
+                validation = true,
+                hasDup = [],
+                dataList = [];
+            Array.prototype.push.apply(dataList, itemView.items);
+            for(var i = 0; i < list.length ; i++) {
+                var input = list[i],
+                    type = input.dataset.type,
+                    pEl = itemView.$el.find(input.parentElement).find('p'),
+                    classes = 'form-control',
+                    val = input.value.trim();
+                    pEl[0].innerText = "";
 
-                    if (val === '') {
-                        classes = 'form-control errorClass';
-                        validation = false;
-                        pEl[0].innerText = 'Required!';
-                    } else {
-                        if (input.tagName === 'INPUT') {
-                            var duplicates = dataList.filter(function(c) {
-                                return c.key === val;
-                            });
-                            if (keyMap.has(val) || duplicates.length > 1 ) {
-                                classes = 'form-control errorClass';
-                                hasDup.push('duplicate');
-                                pEl[0].innerText = 'Duplicate key';
-                            } else {
-                                keyMap.set(val, val);
-                            }
+                if (val === '') {
+                    classes = 'form-control errorClass';
+                    validation = false;
+                    pEl[0].innerText = 'Required!';
+                } else {
+                    if (input.tagName === 'INPUT') {
+                        var duplicates = dataList.filter(function(c) {
+                            return c.key === val;
+                        });
+                        if (keyMap.has(val) || duplicates.length > 1 ) {
+                            classes = 'form-control errorClass';
+                            hasDup.push('duplicate');
+                            pEl[0].innerText = 'Duplicate key';
+                        } else {
+                            keyMap.set(val, val);
                         }
                     }
-                    input.setAttribute('class', classes);
                 }
+                input.setAttribute('class', classes);
+            }
 
-                if (validation && hasDup.length === 0) {
-                    self.saveAttributes(self.modal.options.content.items);
-                } else {
-                    self.modal.$el.find('button.ok').attr("disabled", false);
-                }
-            });
-            this.modal.on('closeModal', function() {
-                self.editMode = false;
-                self.modal.trigger('cancel');
-            });
-        },
-        enableModalButton: function () {
-            var self = this;
-            self.modal.$el.find('button.ok').attr("disabled", false);
+            if (validation && hasDup.length === 0) {
+                self.saveAttributes(itemView.items);
+            } else {
+                this.ui.saveAttrItems.attr("disabled", false);
+            }
         }
     });
 });

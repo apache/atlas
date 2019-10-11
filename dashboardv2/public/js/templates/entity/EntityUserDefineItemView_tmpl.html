@@ -15,31 +15,30 @@
  * limitations under the License.
 -->
 
-<div data-id="userDefineItems">
-    <table class="custom-table">
-        {{#each items}}
-            <tr class="custom-tr">
-                <td class="custom-col-1">
-                    <input placeholder="key" type="text"  data-type="key" data-index={{@index}} class="form-control" value={{key}}></input>
-                    <p class="errorMsg"></p>
-                </td >
-                <td  class="custom-col-0"> : </td >
-                <td  class="custom-col-1">
-                    <textarea placeholder="value"  data-type="value" data-index={{@index}} class="form-control" class="form-control">{{value}}</textarea>
-                    <p class="errorMsg"></p>
-                </td >
-                <td  class="custom-col-2">
-                    <button class="btn btn-default btn-sm" title=""  data-index={{@index}} data-id="deleteItem">
-                        <i class="fa fa-minus"> </i>
-                    </button>
-                    <button class="btn btn-default btn-sm" title="" data-index={{@index}} data-id="addItem">
-                        <i class="fa fa-plus"> </i>
-                    </button>
-                </td >
-            </tr>
-        {{/each}}
-        {{#ifCond items.length "===" 0}}
-            No properties have been created yet. To add a property, click <a href="javascript:void(0)" data-id="addItem">here</a>
-        {{/ifCond}}
-    </table>
-</div>
+
+<table class="custom-table">
+    {{#each items}}
+        <tr class="custom-tr">
+            <td class="custom-col-1">
+                <input placeholder="key" type="text"  data-type="key" data-index={{@index}} class="form-control" value={{key}}></input>
+                <p class="errorMsg"></p>
+            </td >
+            <td  class="custom-col-0"> : </td >
+            <td  class="custom-col-1">
+                <textarea placeholder="value"  data-type="value" data-index={{@index}} class="form-control" class="form-control">{{value}}</textarea>
+                <p class="errorMsg"></p>
+            </td >
+            <td  class="custom-col-2">
+                <button class="btn btn-default btn-sm" title=""  data-index={{@index}} data-id="deleteItem">
+                    <i class="fa fa-minus"> </i>
+                </button>
+                <button class="btn btn-default btn-sm" title="" data-index={{@index}} data-id="addItem">
+                    <i class="fa fa-plus"> </i>
+                </button>
+            </td >
+        </tr>
+    {{/each}}
+    {{#ifCond items.length "===" 0}}
+        All properties have been removed. To add a new property, click <a href="javascript:void(0)" data-id="addItem">here</a>
+    {{/ifCond}}
+</table>

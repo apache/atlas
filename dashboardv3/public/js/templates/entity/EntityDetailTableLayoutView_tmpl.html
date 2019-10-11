@@ -25,12 +25,15 @@
             </div>
         </div>
         <div class="panel-actions">
-            <div class="pretty p-switch p-fill">
-                <input type="checkbox" data-id="noValueToggle" />
+            <div class="pretty p-switch p-fill" style="margin-right: 20px">
+                <input type="checkbox" data-id="noValueToggle" title="Show Empty Values"/>
                 <div class="state p-primary">
-                    <label>Show Empty Values</label>
+                    <label></label>
                 </div>
             </div>
+            {{#ifCond editEntity "===" true}}
+                <button data-id="editButton" title="Edit Entity" class="btn btn-action btn-sm pull-right">Edit</button>
+            {{/ifCond}}
         </div>
         <div id="collapse1" class="panel-collapse collapse in">
             <div class="panel-body">

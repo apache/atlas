@@ -32,13 +32,20 @@ define(['require',
 
             template: EntityDetailTableLayoutView_tmpl,
 
+            templateHelpers: function() {
+                return {
+                    editEntity: this.editEntity
+                };
+            },
+
             /** Layout sub regions */
             regions: {},
 
             /** ui selector cache */
             ui: {
                 detailValue: "[data-id='detailValue']",
-                noValueToggle: "[data-id='noValueToggle']"
+                noValueToggle: "[data-id='noValueToggle']",
+                editButton: '[data-id="editButton"]',
             },
             /** ui events hash */
             events: function() {
@@ -49,6 +56,7 @@ define(['require',
                         "tableEl": this.ui.detailValue
                     });
                 };
+                events["click " + this.ui.editButton] = 'onClickEditEntity';
                 return events;
             },
             /**
@@ -56,7 +64,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'entity', 'typeHeaders', 'attributeDefs', 'attributes'));
+                _.extend(this, _.pick(options, 'entity', 'typeHeaders', 'attributeDefs', 'attributes', 'editEntity', 'guid', 'entityDefCollection', 'searchVent', 'fetchCollection'));
                 this.entityModel = new VEntity({});
             },
             bindEvents: function() {},
@@ -80,6 +88,24 @@ define(['require',
                 setTimeout(function() {
                     that.$el.find(".searched-term-highlight").addClass("bold");
                 }, 5000)
+            },
+            onClickEditEntity: function(e) {
+                var that = this;
+                $(e.currentTarget).blur();
+                require([
+                    'views/entity/CreateEntityLayoutView'
+                ], function(CreateEntityLayoutView) {
+                    var view = new CreateEntityLayoutView({
+                        guid: that.guid,
+                        searchVent: that.searchVent,
+                        entityDefCollection: that.entityDefCollection,
+                        typeHeaders: that.typeHeaders,
+                        callback: function() {
+                            that.fetchCollection();
+                        }
+                    });
+
+                });
             }
         });
     return EntityDetailTableLayoutView;
