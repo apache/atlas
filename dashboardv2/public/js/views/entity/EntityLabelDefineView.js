@@ -86,35 +86,37 @@ define(['require',
         saveUserDefinedLabels: function() {
             var that = this;
             var entityJson = that.entityModel.toJSON();
-            var payload = this.labels;
-            that.entityModel.saveEntityLabels(entityJson.guid ,{
-                data: JSON.stringify(payload),
-                type: 'POST',
-                success: function() {
-                    var msg = entityJson.labels === undefined ? 'addSuccessMessage' : 'editSuccessMessage';
-                    if (payload.length === 0) {
-                        that.entityModel.unset('labels');
-                    } else {
-                        that.entityModel.set('labels', payload);
+            if (entityJson.labels !== undefined || this.labels.length !== 0) {
+                var payload = this.labels;
+                that.entityModel.saveEntityLabels(entityJson.guid ,{
+                    data: JSON.stringify(payload),
+                    type: 'POST',
+                    success: function() {
+                        var msg = entityJson.labels === undefined ? 'addSuccessMessage' : 'editSuccessMessage';
+                        if (payload.length === 0) {
+                            that.entityModel.unset('labels');
+                        } else {
+                            that.entityModel.set('labels', payload);
+                        }
+                        Utils.notifySuccess({
+                            content: "Labels " + Messages[msg]
+                        });
+                        that.swapItem = false;
+                        that.saveLabels = false;
+                        that.render();
+                    },
+                    error: function (e) {
+                        that.ui.saveLabels.attr("disabled", false);
+                        Utils.notifySuccess({
+                            content: e.message
+                        });
+                    },
+                    complete: function () {
+                        that.ui.saveLabels.attr("disabled", false);
+                        that.render();
                     }
-                    Utils.notifySuccess({
-                        content: "User-defined labels " + Messages[msg]
-                    });
-                    that.swapItem = false;
-                    that.saveLabels = false;
-                    that.render();
-                },
-                error: function (e) {
-                    that.ui.saveLabels && that.ui.saveLabels.length > 0 &&  that.ui.saveLabels[0].setAttribute("disabled", false);
-                    Utils.notifySuccess({
-                        content: e.message
-                    });
-                },
-                complete: function () {
-                    that.ui.saveLabels && that.ui.saveLabels.length > 0 && that.ui.saveLabels[0].setAttribute("disabled", false);
-                    that.render();
-                }
-            });
+                });
+            }
         }
     });
 });

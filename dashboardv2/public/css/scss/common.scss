@@ -229,17 +229,17 @@ pre {
             text-align: center;
             vertical-align: middle;
             line-height: 31px;
-            width: 2%;
+            width: 3%;
         }
 
         .custom-col-1{
-            width: 40%;
+            width: 38%;
         }
 
         .custom-col-2{
             text-align: center;
-            width: 12%;
-            margin-left: 2%;
+            width: 17%;
+            margin-left: 1%;
         }
     }
 }
@@ -253,4 +253,7 @@ pre {
     color: $white;
     font-size: 12px;
     font-weight: normal;
+    margin-bottom: 5px;
+    margin-left: 5px;
+    float: left;
 }

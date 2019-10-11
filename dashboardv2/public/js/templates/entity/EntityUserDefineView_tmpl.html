@@ -15,59 +15,101 @@
  * limitations under the License.
 -->
 <div class="panel-group" id="accordion">
-    <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="userDefine">
-        {{#ifCond customAttibutes.length "===" 0}}
-            <div class="panel-heading collapsed" data-toggle="collapse" href="#collapse2" aria-expanded="false" style="width: 70%">
-                <h4 class="panel-title">
-                    <a>User-defined properties </a>
-                </h4>
-                <div class="btn-group pull-left">
-                    <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
-                </div>
-            </div>
-            <div class="panel-actions">
-                {{#ifCond readOnlyEntity "===" false}}
-                    <button class="btn btn-action btn-sm"  data-id="editAttr" data-original-title="Add User-Defined"> Add</button>
-                {{/ifCond}}
-            </div>
-        {{else}}
-            <div class="panel-heading" data-toggle="collapse" href="#collapse2" aria-expanded="true" style="width: 60%">
-                <h4 class="panel-title">
-                    <a>User-defined properties </a>
-                </h4>
-                <div class="btn-group pull-left">
-                    <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
-                </div>
-            </div>
-            <div class="panel-actions">
-                {{#ifCond readOnlyEntity "===" false}}
-                    <button class="btn btn-action btn-sm"  data-id="editAttr" data-original-title="Edit User-Defined Attributes">Edit</button>
-                {{/ifCond}}
-            </div>
-        {{/ifCond}}
 
-        <div id="collapse2" {{#ifCond customAttibutes.length "===" 0}} class="panel-collapse collapse" {{else}} class="panel-collapse collapse in" {{/ifCond}} >
-            <div class="panel-body">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="entity-detail-table">
-                                <table class="table">
-                                    <tbody>
-                                        {{#each customAttibutes}}
-                                            <tr>
-                                                <td>
-                                                    <div class="scroll-y">{{key}}</div>                                              </div></td>
-                                                <td>
-                                                    <div class="scroll-y">{{value}}</div>
-                                                </td>
-                                            </tr>
-                                        {{/each}}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+        <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="userDefine">
+            {{#ifCond customAttibutes.length "===" 0}}
+                <div class="panel-heading collapsed" data-toggle="collapse" href="#collapse22" aria-expanded="false" style="width: 70%">
+                    <h4 class="panel-title">
+                        <a>User-defined properties </a>
+                    </h4>
+                    <div class="btn-group pull-left">
+                        <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
                     </div>
+                </div>
+            {{else}}
+                <div class="panel-heading" data-toggle="collapse" href="#collapse44" aria-expanded="true" style="width: 70%">
+                    <h4 class="panel-title">
+                        <a>User-defined properties </a>
+                    </h4>
+                    <div class="btn-group pull-left">
+                        <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+                    </div>
+                </div>
+
+            {{/ifCond}}
+
+            {{#ifCond readOnlyEntity "===" false}}
+                <div class="panel-actions">
+                        {{#ifCond  swapItem "!==" true}}
+                            <button class="btn btn-action btn-sm"  data-id="addAttr" {{#ifCond customAttibutes.length "===" 0}} data-original-title="Add User-defined properties" {{else}} data-original-title="Edit User-defined properties"  {{/ifCond}}>
+                                {{#ifCond customAttibutes.length "===" 0}} Add {{else}} Edit {{/ifCond}}
+                            </button>
+                        {{/ifCond}}
+                        {{#ifCond saveAttrItems "===" true}}
+                            <button class="btn btn-action btn-sm"  data-id="saveAttrItems"  data-original-title="Save User-defined properties">Save</button>
+                        {{/ifCond}}
+                </div>
+            {{/ifCond}}
+
+            <div id="collapse22" {{#ifCond swapItem "===" false}} class="panel-collapse collapse" {{else}} class="panel-collapse collapse in" {{/ifCond}}>
+                {{#ifCond customAttibutes.length "===" 0}}
+                    <div class="panel-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    {{#ifCond swapItem "===" true}}
+                                        <div id="r_entityUserDefinedItemView"></div>
+                                    {{else}}
+                                    <div class="entity-detail-table">
+                                        <table class="table">
+                                            <tbody>
+                                                {{#each customAttibutes}}
+                                                    <tr>
+                                                        <td>
+                                                            <div class="scroll-y">{{key}}</div>                                              </div></td>
+                                                        <td>
+                                                            <div class="scroll-y">{{value}}</div>
+                                                        </td>
+                                                    </tr>
+                                                {{/each}}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {{/ifCond}}
+                                </div>
+                            </div>
+                    </div>
+                {{/ifCond}}
             </div>
+
+            {{#ifCond customAttibutes.length ">" 0}}
+                <div id="collapse44" class="panel-collapse collapse in" >
+                    <div class="panel-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    {{#ifCond swapItem "===" true}}
+                                        <div id="r_entityUserDefinedItemView"></div>
+                                    {{else}}
+                                    <div class="entity-detail-table">
+                                        <table class="table">
+                                            <tbody>
+                                                {{#each customAttibutes}}
+                                                    <tr>
+                                                        <td>
+                                                            <div class="scroll-y">{{key}}</div>                                              </div></td>
+                                                        <td>
+                                                            <div class="scroll-y">{{value}}</div>
+                                                        </td>
+                                                    </tr>
+                                                {{/each}}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {{/ifCond}}
+                                </div>
+                            </div>
+                    </div>
+                </div>
+            {{/ifCond}}
+
         </div>
     </div>
-</div>
