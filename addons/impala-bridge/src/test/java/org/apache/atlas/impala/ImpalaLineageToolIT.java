@@ -102,6 +102,68 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
     }
 
     /**
+     * This tests is for create view query with extra comment and spaces added in between:
+     * 1) ImpalaLineageTool can parse one lineage file that contains " create   view" command lineage
+     * 2) Lineage is sent to Atlas
+     * 3) Atlas can get this lineage from Atlas
+     */
+    @Test
+    public void testCreateViewWithCommentSpacesFromFile() {
+        // this file contains a single lineage record for "create view".
+        // It has table vertex with createTime
+        String IMPALA = dir + "impalaCreateViewWithCommentSpaces.json";
+        String IMPALA_WAL = dir + "WALimpala.wal";
+
+        List<ImpalaQuery> lineageList = new ArrayList<>();
+        ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
+
+        try {
+            // create database and tables to simulate Impala behavior that Impala updates metadata
+            // to HMS and HMSHook sends the metadata to Atlas, which has to happen before
+            // Atlas can handle lineage notification
+            String dbName = "db_8";
+            createDatabase(dbName);
+
+            String sourceTableName = "table_1";
+            createTable(dbName, sourceTableName,"(id string, count int)", false);
+
+            String targetTableName = "view_1";
+            createTable(dbName, targetTableName,"(count int, id string)", false);
+
+            // process lineage record, and send corresponding notification to Atlas
+            String[] args = new String[]{"-d", "./", "-p", "impala"};
+            ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
+            toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+
+            // verify the process is saved in Atlas
+            // the value is from info in IMPALA_3
+            String createTime = new Long((long)(1554750072)*1000).toString();
+            String processQFName =
+                    "db_8.view_1" + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
+                            CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
+
+            processQFName = processQFName.toLowerCase();
+
+            String      queryString             = " create   /* comment1 */ view db_8.view_1 as   select /* comment2 */ count, id from db_8.table_1";
+            AtlasEntity processEntity1          = validateProcess(processQFName, queryString);
+            AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+            AtlasObjectId process1              = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
+                    BaseImpalaEvent.ATTRIBUTE_PROCESS));
+            Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
+            Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+
+            String      guid       = assertTableIsRegistered(dbName, targetTableName);
+            AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
+            List        ddlQueries = (List) entity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+            assertNotNull(ddlQueries);
+            assertEquals(ddlQueries.size(), 1);
+        } catch (Exception e) {
+            System.out.print("Appending file error");
+        }
+    }
+
+    /**
      * This tests
      * 1) ImpalaLineageTool can parse one lineage file that contains "create view" command lineage,
      *    but there is no table vertex with createTime.
@@ -232,6 +294,63 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
     }
 
     /**
+     * This tests is based on extra comment and spaces adding to create table as select query
+     * 1) ImpalaLineageTool can parse one lineage file that contains "create   table   as   select" command lineage,
+     *    there is table vertex with createTime.
+     * 2) Lineage is sent to Atlas
+     * 3) Atlas can get this lineage from Atlas
+     */
+    @Test
+    public void testCreateTableAsSelectWithCommentSpacesFromFile() throws Exception {
+        String IMPALA = dir + "impalaCreateTableAsSelectWithCommentSpaces.json";
+        String IMPALA_WAL = dir + "WALimpala.wal";
+
+        ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
+
+        // create database and tables to simulate Impala behavior that Impala updates metadata
+        // to HMS and HMSHook sends the metadata to Atlas, which has to happen before
+        // Atlas can handle lineage notification
+        String dbName = "db_9";
+        createDatabase(dbName);
+
+        String sourceTableName = "table_1";
+        createTable(dbName, sourceTableName,"(id string, count int)", false);
+
+        String targetTableName = "table_2";
+        createTable(dbName, targetTableName,"(count int, id string)", false);
+
+        // process lineage record, and send corresponding notification to Atlas
+        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
+        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+
+        // verify the process is saved in Atlas
+        // the value is from info in IMPALA_4.
+        String createTime = new Long(TABLE_CREATE_TIME*1000).toString();
+        String processQFName =
+                dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
+                        CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
+
+        processQFName = processQFName.toLowerCase();
+
+        String queryString = "create   /* Test */   table " + dbName + "."
+                + targetTableName + "   as /* Test */ select count, id from " + dbName + "." + sourceTableName;
+        AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
+        AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+        AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
+                BaseImpalaEvent.ATTRIBUTE_PROCESS));
+        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
+        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+
+        String      guid       = assertTableIsRegistered(dbName, targetTableName);
+        AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
+        List        ddlQueries = (List) entity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        assertNotNull(ddlQueries);
+        assertEquals(ddlQueries.size(), 1);
+    }
+
+    /**
      * This tests
      * 1) ImpalaLineageTool can parse one lineage file that contains "alter view as select" command lineage,
      *    there is table vertex with createTime.
@@ -276,6 +395,63 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
         AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
             BaseImpalaEvent.ATTRIBUTE_PROCESS));
+        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
+        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+
+        String      guid       = assertTableIsRegistered(dbName, targetTableName);
+        AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
+        List        ddlQueries = (List) entity.getRelationshipAttribute(ATTRIBUTE_DDL_QUERIES);
+
+        assertNotNull(ddlQueries);
+        assertEquals(ddlQueries.size(), 1);
+    }
+
+    /**
+     * This tests is for extra comment and spaces present in alter view as select query
+     * 1) ImpalaLineageTool can parse one lineage file that contains "alter view as select" command lineage,
+     *    there is table vertex with createTime.
+     * 2) Lineage is sent to Atlas
+     * 3) Atlas can get this lineage from Atlas
+     */
+    @Test
+    public void testAlterViewAsSelectWithCommentSpacesFromFile() throws Exception {
+        String IMPALA = dir + "impalaAlterViewAsSelectWithCommentSpaces.json";
+        String IMPALA_WAL = dir + "WALimpala.wal";
+
+        ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
+
+        // create database and tables to simulate Impala behavior that Impala updates metadata
+        // to HMS and HMSHook sends the metadata to Atlas, which has to happen before
+        // Atlas can handle lineage notification
+        String dbName = "db_10";
+        createDatabase(dbName);
+
+        String sourceTableName = "table_1";
+        createTable(dbName, sourceTableName,"(id string, count int)", false);
+
+        String targetTableName = "view_1";
+        createTable(dbName, targetTableName,"(count int, id string)", false);
+
+        // process lineage record, and send corresponding notification to Atlas
+        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
+        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+
+        // verify the process is saved in Atlas
+        // the value is from info in IMPALA_4.
+        String createTime = new Long(TABLE_CREATE_TIME*1000).toString();
+        String processQFName =
+                dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
+                        CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
+
+        processQFName = processQFName.toLowerCase();
+
+        String queryString = "alter   /* comment1 */ view " + dbName + "." + targetTableName
+                + " as   select /* comment1 */ count, id from " + dbName + "." + sourceTableName;
+        AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
+        AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
+        AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
+                BaseImpalaEvent.ATTRIBUTE_PROCESS));
         Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
         Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
 
