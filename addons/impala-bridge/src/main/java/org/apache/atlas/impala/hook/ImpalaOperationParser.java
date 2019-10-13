@@ -20,32 +20,40 @@ package org.apache.atlas.impala.hook;
 
 import org.apache.atlas.impala.model.ImpalaOperationType;
 import org.apache.commons.lang.StringUtils;
+import java.util.regex.Pattern;
 
 /**
  * Parse an Impala query text and output the impala operation type
  */
 public class ImpalaOperationParser {
 
+    private static final Pattern COMMENT_PATTERN = Pattern.compile("/\\*.*?\\*/", Pattern.DOTALL);
+
+    private static final Pattern CREATE_VIEW_PATTERN =
+            Pattern.compile("^[ ]*\\bcreate\\b.*\\bview\\b.*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern CREATE_TABLE_AS_SELECT_PATTERN =
+            Pattern.compile("^[ ]*\\bcreate\\b.*\\btable\\b.*\\bas\\b.*\\bselect\\b.*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern ALTER_VIEW_AS_SELECT_PATTERN =
+            Pattern.compile("^[ ]*\\balter\\b.*\\bview\\b.*\\bas.*\\bselect\\b.*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern INSERT_SELECT_FROM_PATTERN =
+            Pattern.compile("^[ ]*\\binsert\\b.*\\b(into|overwrite)\\b.*\\bselect\\b.*\\bfrom\\b.*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+
     public ImpalaOperationParser() {
     }
 
     public static ImpalaOperationType getImpalaOperationType(String queryText) {
-        // Impala does no generate lineage record for command "LOAD DATA INPATH"
-        if (StringUtils.startsWithIgnoreCase(queryText, "create view")) {
+        // Impala does no generate lineage record for command "LOAD DATA IN PATH"
+        String queryTextWithNoComments = COMMENT_PATTERN.matcher(queryText).replaceAll("");
+        if (doesMatch(queryTextWithNoComments, CREATE_VIEW_PATTERN)) {
             return ImpalaOperationType.CREATEVIEW;
-        } else if (StringUtils.startsWithIgnoreCase(queryText, "create table") &&
-        StringUtils.containsIgnoreCase(queryText, "as select")) {
+        } else if (doesMatch(queryTextWithNoComments, CREATE_TABLE_AS_SELECT_PATTERN)) {
             return ImpalaOperationType.CREATETABLE_AS_SELECT;
-        } else if (StringUtils.startsWithIgnoreCase(queryText, "alter view") &&
-            StringUtils.containsIgnoreCase(queryText, "as select")) {
+        } else if (doesMatch(queryTextWithNoComments, ALTER_VIEW_AS_SELECT_PATTERN)) {
             return ImpalaOperationType.ALTERVIEW_AS;
-        } else if (StringUtils.containsIgnoreCase(queryText, "insert into") &&
-            StringUtils.containsIgnoreCase(queryText, "select") &&
-            StringUtils.containsIgnoreCase(queryText, "from")) {
-            return ImpalaOperationType.QUERY;
-        } else if (StringUtils.containsIgnoreCase(queryText,"insert overwrite") &&
-            StringUtils.containsIgnoreCase(queryText, "select") &&
-            StringUtils.containsIgnoreCase(queryText, "from")) {
+        } else if (doesMatch(queryTextWithNoComments, INSERT_SELECT_FROM_PATTERN)) {
             return ImpalaOperationType.QUERY;
         }
 
@@ -64,5 +72,8 @@ public class ImpalaOperationParser {
         return ImpalaOperationType.UNKNOWN;
     }
 
+    private static boolean doesMatch(final String queryText, final Pattern pattern) {
+        return pattern.matcher(queryText).matches();
+    }
 
 }
