@@ -188,6 +188,20 @@ pre {
     }
 }
 
+.panel-body .memory-details{
+    pre {
+        &.code-block {
+            &.shrink {
+                height: 144px;
+
+                code {
+                    height: 130px;
+                }
+            }
+        }
+    }
+}
+
 #accordion {
     .panel-default>.panel-heading {
         cursor: pointer;
@@ -224,18 +238,18 @@ pre {
         }
 
 
-        .custom-col-0{
+        .custom-col-0 {
             text-align: center;
             vertical-align: middle;
             line-height: 31px;
             width: 3%;
         }
 
-        .custom-col-1{
-            width: 38%;
+        .custom-col-1 {
+            width: 39%;
         }
 
-        .custom-col-2{
+        .custom-col-2 {
             text-align: center;
             width: 17%;
             margin-left: 1%;

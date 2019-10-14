@@ -49,7 +49,13 @@ define(['require',
                 notificationCard: "[data-id='notification-card']",
                 statsNotificationTable: "[data-id='stats-notification-table']",
                 entityCard: "[data-id='entity-card']",
-                offsetCard: "[data-id='offset-card']"
+                offsetCard: "[data-id='offset-card']",
+                osCard: "[data-id='os-card']",
+                runtimeCard: "[data-id='runtime-card']",
+                memoryCard: "[data-id='memory-card']"
+
+
+
             },
             /** ui events hash */
             events: function() {},
@@ -92,6 +98,7 @@ define(['require',
                         var data = _.first(data.toJSON());
                         that.renderStats({ valueObject: data.general.stats, dataObject: data.general });
                         that.renderEntities({ data: data });
+                        that.renderSystemDeatils({ data: data });
                         that.$('.statsContainer,.statsNotificationContainer').removeClass('hide');
                         that.$('.statsLoader,.statsNotificationLoader').removeClass('show');
                         if (options && options.update) {
@@ -141,10 +148,10 @@ define(['require',
                             if (type === "active") {
                                 activeEntityCount += intVal;
                             }
-                            if(type === "deleted"){
+                            if (type === "deleted") {
                                 deletedEntityCount += intVal;
-                            } 
-                            if(type === "shell") {
+                            }
+                            if (type === "shell") {
                                 shellEntityCount += intVal
                             }
                             intVal = _.numberFormatWithComa(intVal)
@@ -275,6 +282,50 @@ define(['require',
                                 _.pick(generalData, 'collectionTime'))
                         })
                     );
+                }
+            },
+            renderSystemDeatils: function(options) {
+                var that = this,
+                    data = options.data,
+                    systemData = data.system,
+                    systemOS = systemData.os || {},
+                    systemRuntimeData = systemData.runtime || {},
+                    systemMemoryData = systemData.memory || {},
+                    createSystemTable = function(obj) {
+                        var tableBody = '',
+                            data = obj.data;
+                        _.each(data, function(value, key, list) {
+                            tableBody += '<tr><td>' + key + '</td><td class="">' + that.getValue({
+                                "value": value
+                            }) + '</td></tr>';
+                        });
+                        return tableBody;
+                    };
+
+                if (!_.isEmpty(systemOS)) {
+                    that.ui.osCard.html(
+                        createSystemTable({
+                            "data": systemOS
+                        })
+                    );
+                }
+                if (!_.isEmpty(systemRuntimeData)) {
+                    _.each(systemRuntimeData, function(val, key) {
+                        var space
+                    })
+                    that.ui.runtimeCard.html(
+                        createSystemTable({
+                            "data": systemRuntimeData
+                        })
+                    );
+                }
+                if (!_.isEmpty(systemMemoryData)) {
+                    var memoryTable = CommonViewFunction.propertyTable({
+                        scope: this,
+                        valueObject: systemMemoryData
+                    });
+                    that.ui.memoryCard.html(
+                        memoryTable);
                 }
             },
             getValue: function(options) {
