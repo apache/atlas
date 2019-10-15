@@ -30,8 +30,11 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Predicate;
+import org.apache.commons.collections.PredicateUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.slf4j.Logger;
@@ -153,13 +156,22 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             StringBuilder queryString = new StringBuilder();
 
             graphIndexQueryBuilder.addActiveStateQueryFilter(queryString);
-            graphIndexQueryBuilder.addTypeAndSubTypesQueryFilter(queryString, typeAndSubTypesQryStr);
+            graphIndexQueryBuilder.addTypeAndSubTypesQueryFilter(queryString, context.getSearchParameters().getClassification());
 
             constructFilterQuery(queryString, classificationType, filterCriteria, indexAttributes);
 
             String indexQueryString = STRAY_AND_PATTERN.matcher(queryString).replaceAll(")");
             indexQueryString = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
             indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
+
+            Predicate typeNamePredicate  = SearchPredicateUtil.getINPredicateGenerator().generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);
+            Predicate attributePredicate = constructInMemoryPredicate(classificationType, filterCriteria, indexAttributes);
+
+            if (attributePredicate != null) {
+                inMemoryPredicate = PredicateUtils.andPredicate(typeNamePredicate, attributePredicate);
+            } else {
+                inMemoryPredicate = typeNamePredicate;
+            }
 
             this.classificationIndexQuery = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
         } else {
@@ -262,6 +274,9 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                         Iterator<AtlasIndexQuery.Result> queryResult = classificationIndexQuery.vertices(qryOffset, limit);
 
                         getVerticesFromIndexQueryResult(queryResult, classificationVertices);
+
+                        // Do in-memory filtering before the graph query
+                        CollectionUtils.filter(classificationVertices, inMemoryPredicate);
 
                     } else if (context.getSearchParameters().getTagFilters() != null) {
                         Iterator<AtlasVertex> queryResult = tagGraphQueryWithAttributes.vertices(qryOffset, limit).iterator();
