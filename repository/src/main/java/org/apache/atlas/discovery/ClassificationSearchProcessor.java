@@ -188,15 +188,15 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             gremlinQueryBindings       = new HashMap<>();
             StringBuilder gremlinQuery = new StringBuilder();
 
-            gremlinQuery.append("g.V().has('__guid', T.in, guids)");
+            gremlinQuery.append("g.V().has('__guid', within(guids))");
             gremlinQuery.append(queryProvider.getQuery(AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_CLASSIFICATION_FILTER));
-            gremlinQuery.append(".as('e').out()");
+            gremlinQuery.append(".as('e').filter(out()");
             gremlinQuery.append(queryProvider.getQuery(AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_TYPE_FILTER));
 
             constructGremlinFilterQuery(gremlinQuery, gremlinQueryBindings, context.getClassificationType(), context.getSearchParameters().getTagFilters());
 
             // After filtering on tags go back to e and output the list of entity vertices
-            gremlinQuery.append(".back('e').toList()");
+            gremlinQuery.append(").toList()");
 
             gremlinQueryBindings.put("traitNames", typeAndSubTypes);
             gremlinQueryBindings.put("typeNames", typeAndSubTypes); // classification typeName

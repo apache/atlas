@@ -57,9 +57,9 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
                         "path().toList()";
 
             case BASIC_SEARCH_TYPE_FILTER:
-                return ".has('__typeName', T.in, typeNames)";
+                return ".has('__typeName', within(typeNames))";
             case BASIC_SEARCH_CLASSIFICATION_FILTER:
-                return ".or(has('__traitNames', T.in, traitNames), has('__propagatedTraitNames', T.in, traitNames))";
+                return ".or(has('__traitNames', within(traitNames)), has('__propagatedTraitNames', within(traitNames)))";
             case BASIC_SEARCH_STATE_FILTER:
                 return ".has('__state', state)";
             case TO_RANGE_LIST:
@@ -67,17 +67,17 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
             case GUID_PREFIX_FILTER:
                 return ".filter{it.'__guid'.matches(guid)}";
             case COMPARE_LT:
-                return ".has('%s', T.lt, %s)";
+                return ".has('%s', lt(%s))";
             case COMPARE_LTE:
-                return ".has('%s', T.lte, %s)";
+                return ".has('%s', lte(%s))";
             case COMPARE_GT:
-                return ".has('%s', T.gt, %s)";
+                return ".has('%s', gt(%s))";
             case COMPARE_GTE:
-                return ".has('%s', T.gte, %s)";
+                return ".has('%s', gte(%s))";
             case COMPARE_EQ:
-                return ".has('%s', T.eq, %s)";
+                return ".has('%s', eq(%s))";
             case COMPARE_NEQ:
-                return ".has('%s', T.neq, %s)";
+                return ".has('%s', neq(%s))";
             case COMPARE_MATCHES:
                 return ".filter({it.getProperty('%s').matches(%s)})";
             case COMPARE_STARTS_WITH:
@@ -91,7 +91,7 @@ public class AtlasGremlin2QueryProvider extends AtlasGremlinQueryProvider {
             case COMPARE_NOT_NULL:
                 return ".has('%s')";
             case RELATIONSHIP_SEARCH:
-                return "g.V('__guid', guid).both(relation).has('__state', T.in, states)";
+                return "g.V('__guid', guid).both(relation).has('__state', within(states))";
             case RELATIONSHIP_SEARCH_ASCENDING_SORT:
                 return ".order{it.a.getProperty(sortAttributeName) <=> it.b.getProperty(sortAttributeName)}";
             case RELATIONSHIP_SEARCH_DESCENDING_SORT:
