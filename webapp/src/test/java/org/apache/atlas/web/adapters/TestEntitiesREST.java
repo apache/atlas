@@ -19,6 +19,7 @@ package org.apache.atlas.web.adapters;
 
 import static org.apache.atlas.TestUtilsV2.COLUMN_TYPE;
 import static org.apache.atlas.TestUtilsV2.DATABASE_TYPE;
+import static org.apache.atlas.TestUtilsV2.PHI;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 
 import org.apache.atlas.AtlasClient;
@@ -56,6 +57,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -228,6 +230,42 @@ public class TestEntitiesREST {
         AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
         Assert.assertNotNull(res.getEntities());
         Assert.assertEquals(res.getEntities().size(), 1);
+    }
+
+    @Test(dependsOnMethods = "testBasicSearchAddCls")
+    public void testGraphQueryFilter() throws Exception {
+        searchParameters = new SearchParameters();
+        searchParameters.setQuery("sample_string");
+        searchParameters.setClassification(PHI);
+
+        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
+        fc.setOperator(SearchParameters.Operator.EQ);
+        fc.setAttributeName("booleanAttr");
+        fc.setAttributeValue("true");
+
+        searchParameters.setTagFilters(fc);
+        AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 1);
+        Assert.assertEquals(res.getEntities().get(0).getTypeName(), DATABASE_TYPE);
+
+        AtlasClassification cls = new AtlasClassification(TestUtilsV2.PHI, new HashMap<String, Object>() {{
+            put("stringAttr", "sample_string");
+            put("booleanAttr", false);
+            put("integerAttr", 100);
+        }});
+
+        ClassificationAssociateRequest clsAssRequest = new ClassificationAssociateRequest(Collections.singletonList(createdGuids.get(TABLE_TYPE).get(0)), cls);
+        entityREST.addClassification(clsAssRequest);
+
+        final AtlasClassification result_tag = entityREST.getClassification(createdGuids.get(TABLE_TYPE).get(0), TestUtilsV2.PHI);
+        Assert.assertNotNull(result_tag);
+
+        res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 1);
+        Assert.assertEquals(res.getEntities().get(0).getTypeName(), DATABASE_TYPE);
+
     }
 
     private void addPHICls() throws Exception {
