@@ -105,6 +105,8 @@ public class TestEntitiesREST {
 
         tableEntity.setAttribute("columns", getObjIdList(columns));
         tableEntity2.setAttribute("columns", getObjIdList(columns2));
+
+        createEntities();
     }
 
     @AfterMethod
@@ -112,8 +114,7 @@ public class TestEntitiesREST {
         RequestContext.clear();
     }
 
-    @Test
-    public void testCreateOrUpdateEntities() throws Exception {
+    private void createEntities() throws Exception {
         AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo();
 
         entities.addEntity(dbEntity);
@@ -142,7 +143,7 @@ public class TestEntitiesREST {
         }
     }
 
-    @Test(dependsOnMethods = "testCreateOrUpdateEntities")
+    @Test
     public void testTagToMultipleEntities() throws Exception{
         AtlasClassification tag = new AtlasClassification(TestUtilsV2.CLASSIFICATION, new HashMap<String, Object>() {{ put("tag", "tagName"); }});
 
@@ -153,7 +154,7 @@ public class TestEntitiesREST {
         for (int i = 0; i < createdGuids.get(TABLE_TYPE).size() - 1; i++) {
             final AtlasClassification result_tag = entityREST.getClassification(createdGuids.get(TABLE_TYPE).get(i), TestUtilsV2.CLASSIFICATION);
             Assert.assertNotNull(result_tag);
-            Assert.assertEquals(result_tag, tag);
+            Assert.assertEquals(result_tag.getTypeName(), tag.getTypeName());
         }
     }
 
@@ -280,6 +281,10 @@ public class TestEntitiesREST {
 
         Assert.assertNotNull(res.getEntities());
         Assert.assertEquals(res.getEntities().size(), 2);
+
+        filterCriteria.setAttributeValue("STRING");
+        res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNull(res.getEntities());
     }
 
     @Test(dependsOnMethods = "testWildCardBasicSearch")
@@ -303,6 +308,29 @@ public class TestEntitiesREST {
 
         Assert.assertNotNull(res.getEntities());
         Assert.assertEquals(res.getEntities().size(), 3);
+    }
+
+    @Test(dependsOnMethods = "testTagToMultipleEntities")
+    public void testBasicSearchWithFilter() throws Exception {
+        searchParameters = new SearchParameters();
+        searchParameters.setIncludeSubClassifications(true);
+        searchParameters.setClassification(TestUtilsV2.CLASSIFICATION);
+        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
+        fc.setOperator(SearchParameters.Operator.CONTAINS);
+        fc.setAttributeValue("new comments");
+        fc.setAttributeName("tag");
+        searchParameters.setTagFilters(fc);
+
+        AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNull(res.getEntities());
+
+        fc.setOperator(SearchParameters.Operator.ENDS_WITH);
+        res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNull(res.getEntities());
+
+        fc.setOperator(SearchParameters.Operator.STARTS_WITH);
+        res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNull(res.getEntities());
     }
 
     @Test(dependsOnMethods = "testBasicSearchWithSubTypes")
@@ -334,7 +362,7 @@ public class TestEntitiesREST {
         Assert.assertEquals(newGuids.size(), 3);
     }
 
-    @Test(dependsOnMethods = "testCreateOrUpdateEntities")
+    @Test
     public void testGetEntities() throws Exception {
 
         final AtlasEntitiesWithExtInfo response = entityREST.getByGuids(createdGuids.get(DATABASE_TYPE), false, false);
