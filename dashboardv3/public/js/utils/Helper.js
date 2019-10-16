@@ -262,10 +262,17 @@ define(['require',
     });
 
     // For adding tooltip globally
-    $('body').tooltip({
-        selector: '[title]',
-        placement: 'bottom',
-        container: 'body'
+    $("body").on('mouseenter', '.select2-selection__choice', function() {
+        $(this).attr("title", "");
     });
+    if ($('body').tooltip) {
+        $('body').tooltip({
+            selector: '[title]:not(".select2-selection__choice")',
+            placement: function() {
+                return this.$element.attr("data-placement") || "bottom";
+            },
+            container: 'body'
+        });
+    }
 
 })

@@ -26,6 +26,7 @@
         //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)
         transform: rotate(0deg);
     }
+
     100% {
         //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)
         transform: rotate(359deg);
@@ -37,6 +38,7 @@
         //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)
         transform: rotate(0deg);
     }
+
     100% {
         //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)
         transform: rotate(359deg);
@@ -116,19 +118,53 @@
         left: -200px;
         width: 30%;
     }
+
     50% {
         width: 30%;
     }
+
     70% {
         width: 70%;
     }
+
     80% {
         left: 50%;
     }
+
     95% {
         left: 120%;
     }
+
     to {
         left: 100%;
+    }
+}
+
+.searchTableLogoLoader {
+    width: 20px;
+    -webkit-animation-duration: 1.5s;
+    animation-duration: 1.5s;
+    -webkit-animation-fill-mode: forwards;
+    animation-fill-mode: forwards;
+    -webkit-animation-iteration-count: infinite;
+    animation-iteration-count: infinite;
+    -webkit-animation-timing-function: linear;
+    animation-timing-function: linear;
+    -webkit-animation-name: placeHolderLoader;
+    animation-name: placeHolderLoader;
+    background: #f6f7f8;
+    background: linear-gradient(to right, #eeeeee 8%, #dddddd 18%, #eeeeee 33%);
+    background-size: 700px 10px;
+    border-radius: 8px;
+
+}
+
+@keyframes placeHolderLoader {
+    0% {
+        background-position: -468px 0;
+    }
+
+    100% {
+        background-position: 468px 0;
     }
 }
