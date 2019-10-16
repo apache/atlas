@@ -462,7 +462,7 @@ hr[size="10"] {
     overflow-x: hidden;
 
     .ui-autocomplete-category {
-        padding: 10px;
+        padding: 5px 15px;
         color: #acacac;
         text-transform: capitalize;
     }
@@ -477,7 +477,7 @@ hr[size="10"] {
     }
 
     .ui-menu-item {
-        padding: 5px 2px;
+        padding: 2px 2px;
         color: $color_ironside_gray_approx;
 
         &.with-icon {
@@ -505,7 +505,7 @@ hr[size="10"] {
 
         a,
         span {
-            padding: 10px;
+            padding: 6px 10px;
             display: block;
             color: inherit !important;
         }
@@ -519,6 +519,17 @@ td.searchTableName:hover {
                 left: 7px;
             }
         }
+    }
+}
+
+.globalsearchImgItem.isIncomplete {
+    display: inline-block !important;
+    position: relative;
+
+    i.fa {
+        left: 10px;
+        top: 7px;
+        font-size: 12px;
     }
 }
 

@@ -683,8 +683,7 @@ define(['require',
                                     returnImgUrl = null;
                                 $.ajax({
                                         "url": imagePath,
-                                        "method": "get",
-                                        "async": false,
+                                        "method": "get"
                                     })
                                     .always(function(data, status, xhr) {
                                         if (data.status == 404) {
@@ -693,19 +692,17 @@ define(['require',
                                             });
                                         } else if (data) {
                                             returnImgUrl = imagePath;
+                                            that.$("img[data-imgGuid='" + obj.guid + "']").removeClass("searchTableLogoLoader").attr("src", imagePath);
                                         }
                                     });
-                                return returnImgUrl;
                             }
-                            var imgPath = getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) }),
-                                img = "",
+                            var img = "",
                                 isIncompleteClass = "isIncomplete search-result-page";
                             if (obj.isIncomplete === true) {
                                 isIncompleteClass += " show";
                             }
-                            if (imgPath) {
-                                img = "<div class='" + isIncompleteClass + "'><img src='" + imgPath + "'><i class='fa fa-hourglass-half'></i></div>";
-                            }
+                            img = "<div class='" + isIncompleteClass + "'><img data-imgGuid='" + obj.guid + "' class='searchTableLogoLoader'><i class='fa fa-hourglass-half'></i></div>";
+                            getImageData({ imagePath: Utils.getEntityIconPath({ entityData: obj }) });
                             return (img + nameHtml);
                         }
                     })

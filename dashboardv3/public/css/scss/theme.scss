@@ -703,6 +703,17 @@ td.searchTableName:hover {
     }
 }
 
+.globalsearchImgItem.isIncomplete {
+    display: inline-block !important;
+    position: relative;
+
+    i.fa {
+        left: 10px;
+        top: 7px;
+        font-size: 12px;
+    }
+}
+
 .isIncomplete {
     &.show {
         img {
