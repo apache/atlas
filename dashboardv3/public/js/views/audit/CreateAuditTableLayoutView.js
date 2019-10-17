@@ -38,11 +38,23 @@ define(['require',
             /** ui selector cache */
             ui: {
                 auditValue: "[data-id='auditValue']",
-                auditCreate: "[data-id='auditCreate']",
+                name: "[data-id='name']",
                 noData: "[data-id='noData']",
                 tableAudit: "[data-id='tableAudit']",
                 auditHeaderValue: "[data-id='auditHeaderValue']",
-                name: "[data-id='name']"
+                attributeDetails: "[data-id='attributeDetails']",
+                attributeCard: "[data-id='attribute-card']",
+                labelsDetailsTable: "[data-id='labelsDetails']",
+                labelCard: "[data-id='label-card']",
+                customAttributeDetails: "[data-id='customAttributeDetails']",
+                customAttrCard: "[data-id='custom-attr-card']",
+                relationShipAttributeDetails: "[data-id='relationShipAttributeDetails']",
+                relationshipAttrCard: "[data-id='relationship-attr-card']",
+                attributeDetailCard: "[data-id='attributeDetail-card']",
+                detailsAttribute: "[data-id='detailsAttribute']",
+                panelAttrHeading: "[data-id='panel-attr-heading']",
+                nameUpdate: "[data-id='name-update']"
+
             },
             /** ui events hash */
             events: function() {
@@ -61,6 +73,20 @@ define(['require',
             onRender: function() {
                 this.auditTableGenerate();
             },
+            createTableWithValues: function(tableDetails) {
+                var attrTable = CommonViewFunction.propertyTable({
+                    scope: this,
+                    valueObject: tableDetails
+                });
+                return attrTable;
+
+            },
+            updateName: function(name) {
+                this.ui.name.text(name);
+            },
+            noDetailsShow: function() {
+                this.ui.noData.removeClass('hide');
+            },
             auditTableGenerate: function() {
                 var that = this,
                     table = "";
@@ -78,32 +104,62 @@ define(['require',
                         if (name == "-") {
                             name = _.escape(parseDetailsObject.typeName);
                         }
+                        var name = ((name ? name : this.entityName));
+                        that.updateName(name);
+                        if (parseDetailsObject) {
+                            var attributesDetails = parseDetailsObject.attributes,
+                                customAttr = parseDetailsObject.customAttributes,
+                                labelsDetails = parseDetailsObject.labels,
+                                relationshipAttributes = parseDetailsObject.relationshipAttributes;
+                            if (attributesDetails) {
+                                that.ui.attributeDetails.removeClass('hide');
+                                that.action.indexOf("Classification") === -1 ? that.ui.panelAttrHeading.html("Technical properties ") : that.ui.panelAttrHeading.html("Properties ");
+                                var attrTable = that.createTableWithValues(attributesDetails);
+                                that.ui.attributeCard.html(
+                                    attrTable);
+                            }
+                            if (!_.isEmpty(customAttr)) {
+                                that.ui.customAttributeDetails.removeClass('hide');
+                                var customAttrTable = that.createTableWithValues(customAttr);
+                                that.ui.customAttrCard.html(
+                                    customAttrTable);
+                            }
+                            if (!_.isEmpty(labelsDetails)) {
+                                this.ui.labelsDetailsTable.removeClass('hide');
+                                var labelsTable = '';
+                                _.each(labelsDetails, function(value, key, list) {
+                                    labelsTable += "<label class='label badge-default'>" + value + "</label>";
+                                });
+                                that.ui.labelCard.html(
+                                    labelsTable);
+                            }
+                            if (!_.isEmpty(relationshipAttributes)) {
+                                that.ui.relationShipAttributeDetails.removeClass('hide');
+                                var relationshipAttrTable = that.createTableWithValues(relationshipAttributes);
+                                that.ui.relationshipAttrCard.html(
+                                    relationshipAttrTable);
+                            }
+                            if (!attributesDetails && !customAttr && !labelsDetails && !relationshipAttributes) {
+                                that.ui.detailsAttribute.removeClass('hide');
+                                var attrDetailTable = that.createTableWithValues(parseDetailsObject);
+                                that.ui.attributeDetailCard.html(
+                                    attrDetailTable);
+                            }
+                        } else {
+                            that.noDetailsShow();
+                        }
                     } catch (err) {
                         if (_.isArray(parseDetailsObject)) {
                             var name = _.escape(parseDetailsObject[0]);
                         }
+                        that.updateName(name);
+                        that.noDetailsShow();
                     }
-                    var name = ((name ? name : this.entityName));
-                    this.ui.name.text(name);
-                    if (parseDetailsObject) {
-                        this.ui.auditHeaderValue.html('<th>Key</th><th>New Value</th>');
-                        var value = parseDetailsObject.attributes || parseDetailsObject;
-                        table = CommonViewFunction.propertyTable({ scope: this, valueObject: value, attributeDefs: this.attributeDefs });
-                        if (table.length) {
-                            this.ui.noData.hide();
-                            this.ui.tableAudit.show();
-                            this.ui.auditValue.html(table);
-                        } else {
-                            this.ui.noData.show();
-                            this.ui.tableAudit.hide();
-                        }
-                    } else {
-                        this.ui.noData.show();
-                    }
+
                 } else if (detailObj == "Deleted entity") {
-                    this.ui.name.text(this.entityName);
+                    that.updateName(this.entityName);
                 }
-            },
+            }
         });
     return CreateAuditTableLayoutView;
 });
