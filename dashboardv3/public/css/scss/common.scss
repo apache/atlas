@@ -205,13 +205,14 @@ pre {
 #accordion {
     .panel-default>.panel-heading {
         cursor: pointer;
+        width: 100%;
     }
 }
 
 .footer-content {
     position: fixed;
     right: 0px;
-    padding: 10px;
+    padding: 2px;
     bottom: 0;
     background: white;
 }
