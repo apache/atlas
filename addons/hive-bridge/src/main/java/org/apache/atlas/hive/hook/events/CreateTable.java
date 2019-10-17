@@ -24,6 +24,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
 import org.apache.hadoop.hive.metastore.events.CreateTableEvent;
 import org.apache.hadoop.hive.metastore.events.ListenerEvent;
@@ -149,24 +150,22 @@ public class CreateTable extends BaseHiveEvent {
                     if (context.isMetastoreHook()) {
                         //it is running in the context of HiveMetastore
                         //not a hive metastore hook
-                        if (EXTERNAL_TABLE.equals(table.getTableType())) {
-                            AtlasEntity hdfsPathEntity = getPathEntity(table.getDataLocation(), ret);
-                            if(LOG.isDebugEnabled()) {
-                                LOG.debug("Creating a dummy process with lineage from hdfs path to table");
+                        if (isCreateExtTableOperation(table)) {
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("Creating a dummy process with lineage from hdfs path to hive table");
                             }
-                            AtlasEntity processEntity = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity),
-                                    Collections.singletonList(tblEntity));
+                            AtlasEntity hdfsPathEntity = getPathEntity(table.getDataLocation(), ret);
+                            AtlasEntity processEntity  = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity), Collections.singletonList(tblEntity));
 
                             ret.addEntity(processEntity);
                             ret.addReferredEntity(hdfsPathEntity);
-                            //hive process entity will be created by hiveserver hook.
                         }
                     } else {
                         //not a hive metastore hook
                         //it is running in the context of HiveServer2
                         if (EXTERNAL_TABLE.equals(table.getTableType())) {
                             AtlasEntity hdfsPathEntity = getPathEntity(table.getDataLocation(), ret);
-                            AtlasEntity processEntity = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity), Collections.singletonList(tblEntity));
+                            AtlasEntity processEntity  = getHiveProcessEntity(Collections.singletonList(hdfsPathEntity), Collections.singletonList(tblEntity));
 
                             ret.addEntity(processEntity);
                             ret.addReferredEntity(hdfsPathEntity);
@@ -175,7 +174,6 @@ public class CreateTable extends BaseHiveEvent {
                             ret.addEntity(processExecution);
                         }
                     }
-
                 }
 
                 if (!context.isMetastoreHook()) {
@@ -196,5 +194,12 @@ public class CreateTable extends BaseHiveEvent {
     private boolean skipTemporaryTable(Table table) {
         // If its an external table, even though the temp table skip flag is on, we create the table since we need the HDFS path to temp table lineage.
         return table != null && skipTempTables && table.isTemporary() && !EXTERNAL_TABLE.equals(table.getTableType());
+    }
+
+    private boolean isCreateExtTableOperation(Table table) {
+        HiveOperation oper      = context.getHiveOperation();
+        TableType     tableType = table.getTableType();
+
+        return EXTERNAL_TABLE.equals(tableType) && (oper == CREATETABLE || oper == CREATETABLE_AS_SELECT);
     }
 }
