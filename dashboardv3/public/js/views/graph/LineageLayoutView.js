@@ -599,8 +599,7 @@ define(['require',
                                     var imagePath = options.imagePath,
                                         ajaxOptions = {
                                             "url": imagePath,
-                                            "method": "get",
-                                            "async": false,
+                                            "method": "get"
                                         }
 
                                     if (platform.name !== "IE") {
@@ -619,28 +618,16 @@ define(['require',
                                                 } else {
                                                     imageObject[imageIconPath] = imagePath;
                                                 }
+                                                d3.select(that).attr("xlink:href", imageObject[imageIconPath]);
+                                                if (imageIconPath !== shapeSvg.attr("data-iconpath")) {
+                                                    shapeSvg.attr("data-iconpathorigin", imageIconPath);
+                                                }
                                             }
                                         });
                                 }
-                                if (_.keys(imageObject).indexOf(imageIconPath) === -1) {
-                                    getImageData({
-                                        "imagePath": imageIconPath
-                                    });
-                                }
-
-                                if (_.isUndefined(imageObject[imageIconPath])) {
-                                    // before img success
-                                    imageObject[imageIconPath] = [d3.select(that)];
-                                } else if (_.isArray(imageObject[imageIconPath])) {
-                                    // before img success
-                                    imageObject[imageIconPath].push(d3.select(that));
-                                } else {
-                                    d3.select(that).attr("xlink:href", imageObject[imageIconPath]);
-                                    if (imageIconPath !== shapeSvg.attr("data-iconpath")) {
-                                        shapeSvg.attr("data-iconpathorigin", imageIconPath);
-                                    }
-                                    return imageObject[imageIconPath];
-                                }
+                                getImageData({
+                                    "imagePath": imageIconPath
+                                });
                             }
                         })
                         .attr("x", "4")
