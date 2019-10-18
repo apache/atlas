@@ -231,7 +231,9 @@ define(['require'], function(require) {
                 zoomListener.translate([xa, ya]);
                 zoom.scale(scale);
                 afterCenterZoomed({ newScale: scale, newTranslate: [xa, ya] });
-                LinegaeUtils.refreshGraphForIE({ "edgeEl": edgePathEl })
+                if (platform.name === "IE") {
+                    LinegaeUtils.refreshGraphForIE({ "edgeEl": edgePathEl })
+                }
             }
         }
     }

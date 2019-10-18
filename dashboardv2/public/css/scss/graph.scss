@@ -32,7 +32,7 @@
         font-family: $font_1;
     }
 
-    transition: opacity 0.3s linear;
+    //transition: opacity 0.3s linear;
 
     rect {
         stroke: $color_mountain_mist_approx;
@@ -362,7 +362,7 @@ span#zoom_in {
     width: 100%;
     right: 0;
     padding: 0 !important;
-    z-index: 999;
+    z-index: 9999;
     overflow: hidden !important;
 
     .resizeGraph {

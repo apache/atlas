@@ -683,7 +683,8 @@ define(['require',
                                     returnImgUrl = null;
                                 $.ajax({
                                         "url": imagePath,
-                                        "method": "get"
+                                        "method": "get",
+                                        "cache": true
                                     })
                                     .always(function(data, status, xhr) {
                                         if (data.status == 404) {
