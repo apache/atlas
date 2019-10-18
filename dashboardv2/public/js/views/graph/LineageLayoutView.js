@@ -495,9 +495,11 @@ define(['require',
                     "translate(" + this.zoom.translate() + ")" +
                     "scale(" + this.zoom.scale() + ")"
                 );
-                LineageUtils.refreshGraphForIE({
-                    edgeEl: this.$('svg .edgePath')
-                });
+                if (platform.name === "IE") {
+                    LineageUtils.refreshGraphForIE({
+                        edgeEl: this.$('svg .edgePath')
+                    });
+                }
             },
             interpolateZoom: function(translate, scale, that, zoom) {
                 return d3.transition().duration(350).tween("zoom", function() {
@@ -584,7 +586,8 @@ define(['require',
                                     var imagePath = options.imagePath,
                                         ajaxOptions = {
                                             "url": imagePath,
-                                            "method": "get"
+                                            "method": "get",
+                                            "cache": true
                                         }
 
                                     if (platform.name !== "IE") {
