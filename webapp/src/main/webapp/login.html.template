@@ -15,12 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<% response.setHeader("X-Frame-Options", "DENY"); %>
 <!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
 <!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
 <!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
 <!--[if lt IE 9]>
-    <script type="text/javascript">
+<script type="text/javascript">
         function Redirect() {
             window.location.assign("ieerror.html");
         }
@@ -28,8 +27,8 @@
     </script>
 <![endif]-->
 <!--[if gt IE 7]>
-    <script src="js/external_lib/es5-shim.min.js"></script>
-    <script src="js/external_lib/respond.min.js"></script>
+<script src="js/external_lib/es5-shim.min.js"></script>
+<script src="js/external_lib/respond.min.js"></script>
 <![endif]-->
 <!--[if gt IE 8]><!-->
 <html class="no-js">
@@ -50,23 +49,23 @@
 </head>
 
 <body class="login-body">
-    <div class="login-form">
-        <div class="logo-container text-center">
-            <img src="img/atlas_logo.svg" />
-        </div>
-        <h4>Sign In to your account</h4>
-        <form action="" method="post" accept-charset="utf-8">
-            <div class="form-group icon-group user">
-                <input type="text" name="username" id="username" class="form-control" placeholder="Username" tabindex="1" required autofocus />
-            </div>
-            <div class="form-group icon-group password">
-                <input type="password" name="password" class="form-control" placeholder="Password" id="password" tabindex="2" autocomplete="off" required />
-                 <i class="fa fa-eye-slash show-password"></i>
-            </div>
-            <span id="errorBox" class="col-md-12 help-inline" style="color:#FF1A40;display:none;text-align:center;padding-bottom: 10px;"><span class="errorMsg"></span></span>
-            <button class="btn btn-default btn-block btn-login" id="signIn">Log in</button>
-        </form>
+<div class="login-form">
+    <div class="logo-container text-center">
+        <img src="img/atlas_logo.svg" />
     </div>
+    <h4>Sign In to your account</h4>
+    <form action="" method="post" accept-charset="utf-8">
+        <div class="form-group icon-group user">
+            <input type="text" name="username" id="username" class="form-control" placeholder="Username" tabindex="1" required autofocus />
+        </div>
+        <div class="form-group icon-group password">
+            <input type="password" name="password" class="form-control" placeholder="Password" id="password" tabindex="2" autocomplete="off" required />
+            <i class="fa fa-eye-slash show-password"></i>
+        </div>
+        <span id="errorBox" class="col-md-12 help-inline" style="color:#FF1A40;display:none;text-align:center;padding-bottom: 10px;"><span class="errorMsg"></span></span>
+        <button class="btn btn-default btn-block btn-login" id="signIn">Log in</button>
+    </form>
+</div>
 </body>
 
 </html>

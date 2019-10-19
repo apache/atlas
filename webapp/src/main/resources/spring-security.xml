@@ -20,6 +20,7 @@
     <!-- This XML is no longer being used, @see AtlasSecurityConfig for the equivalent java config -->
 
     <security:http pattern="/login.jsp" security="none" />
+    <security:http pattern="/error.jsp" security="none" />
     <security:http pattern="/css/**" security="none" />
     <security:http pattern="/img/**" security="none" />
     <security:http pattern="/libs/**" security="none" />
