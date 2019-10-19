@@ -36,6 +36,26 @@
         <load-on-startup>1</load-on-startup>
     </servlet>
 
+    <servlet>
+         <servlet-name>LoginServlet</servlet-name>
+         <servlet-class>org.apache.atlas.web.servlets.AtlasLoginServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+         <servlet-name>LoginServlet</servlet-name>
+         <url-pattern>/login.jsp</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+         <servlet-name>ErrorServlet</servlet-name>
+         <servlet-class>org.apache.atlas.web.servlets.AtlasErrorServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+         <servlet-name>ErrorServlet</servlet-name>
+         <url-pattern>/error.jsp</url-pattern>
+    </servlet-mapping>
+
     <servlet-mapping>
         <servlet-name>jersey-servlet</servlet-name>
         <url-pattern>/api/atlas/*</url-pattern>
