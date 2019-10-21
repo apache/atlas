@@ -21,4 +21,6 @@ import org.apache.atlas.listener.ChangedTypeDefs;
 
 public interface IndexChangeListener {
     void onChange(ChangedTypeDefs changedTypeDefs);
+    void onInitStart();
+    void onInitCompletion(ChangedTypeDefs changedTypeDefs);
 }
