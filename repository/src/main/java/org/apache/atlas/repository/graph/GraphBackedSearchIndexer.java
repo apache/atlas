@@ -126,6 +126,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         if (!HAConfiguration.isHAEnabled(configuration)) {
             initialize(provider.get());
         }
+        notifyInitializationStart();
     }
 
     public void addIndexListener(IndexChangeListener listener) {
@@ -221,7 +222,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             //Commit indexes
             commit(management);
 
-            notifyChangeListeners(changedTypeDefs);
+            notifyInitializationCompletion(changedTypeDefs);
         } catch (RepositoryException | IndexException e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
             attemptRollback(changedTypeDefs, management);
@@ -959,6 +960,30 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         for (IndexChangeListener indexChangeListener : indexChangeListeners) {
             try {
                 indexChangeListener.onChange(changedTypeDefs);
+            } catch (Throwable t) {
+                LOG.error("Error encountered in notifying the index change listener {}.", indexChangeListener.getClass().getName(), t);
+                //we need to throw exception if any of the listeners throw execption.
+                throw new RuntimeException("Error encountered in notifying the index change listener " + indexChangeListener.getClass().getName(), t);
+            }
+        }
+    }
+
+    private void notifyInitializationStart() {
+        for (IndexChangeListener indexChangeListener : indexChangeListeners) {
+            try {
+                indexChangeListener.onInitStart();
+            } catch (Throwable t) {
+                LOG.error("Error encountered in notifying the index change listener {}.", indexChangeListener.getClass().getName(), t);
+                //we need to throw exception if any of the listeners throw execption.
+                throw new RuntimeException("Error encountered in notifying the index change listener " + indexChangeListener.getClass().getName(), t);
+            }
+        }
+    }
+
+    private void notifyInitializationCompletion(ChangedTypeDefs changedTypeDefs) {
+        for (IndexChangeListener indexChangeListener : indexChangeListeners) {
+            try {
+                indexChangeListener.onInitCompletion(changedTypeDefs);
             } catch (Throwable t) {
                 LOG.error("Error encountered in notifying the index change listener {}.", indexChangeListener.getClass().getName(), t);
                 //we need to throw exception if any of the listeners throw execption.

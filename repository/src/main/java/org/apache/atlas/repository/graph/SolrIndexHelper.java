@@ -58,6 +58,7 @@ public class SolrIndexHelper implements IndexChangeListener {
     public SolrIndexHelper(AtlasTypeRegistry typeRegistry) {
         this.typeRegistry = typeRegistry;
     }
+    public boolean initializationCompleted = false;
 
     @Override
     public void onChange(ChangedTypeDefs changedTypeDefs) {
@@ -65,18 +66,32 @@ public class SolrIndexHelper implements IndexChangeListener {
             changedTypeDefs == null || !changedTypeDefs.hasEntityDef()) { // nothing to do if there are no changes to entity-defs
             return;
         }
+        if(initializationCompleted) {
+            try {
+                AtlasGraph            graph                          = AtlasGraphProvider.getGraphInstance();
+                AtlasGraphIndexClient graphIndexClient               = graph.getGraphIndexClient();
+                Map<String, Integer>  indexFieldName2SearchWeightMap = geIndexFieldNamesWithSearchWeights();
 
-        try {
-            AtlasGraph            graph                          = AtlasGraphProvider.getGraphInstance();
-            AtlasGraphIndexClient graphIndexClient               = graph.getGraphIndexClient();
-            Map<String, Integer>  indexFieldName2SearchWeightMap = geIndexFieldNamesWithSearchWeights();
-
-            graphIndexClient.applySearchWeight(Constants.VERTEX_INDEX, indexFieldName2SearchWeightMap);
-            graphIndexClient.applySuggestionFields(Constants.VERTEX_INDEX, getIndexFieldNamesForSuggestions(indexFieldName2SearchWeightMap));
-        } catch (AtlasException e) {
-            LOG.error("Error encountered in handling type system change notification.", e);
-            throw new RuntimeException("Error encountered in handling type system change notification.", e);
+                graphIndexClient.applySearchWeight(Constants.VERTEX_INDEX, indexFieldName2SearchWeightMap);
+                graphIndexClient.applySuggestionFields(Constants.VERTEX_INDEX, getIndexFieldNamesForSuggestions(indexFieldName2SearchWeightMap));
+            } catch (AtlasException e) {
+                LOG.error("Error encountered in handling type system change notification.", e);
+                throw new RuntimeException("Error encountered in handling type system change notification.", e);
+            }
         }
+    }
+
+    @Override
+    public void onInitStart() {
+        LOG.info("SolrIndexHelper Initialization started.");
+        initializationCompleted = false;
+    }
+
+    @Override
+    public void onInitCompletion(ChangedTypeDefs changedTypeDefs) {
+        LOG.info("SolrIndexHelper Initialization completed.");
+        initializationCompleted = true;
+        onChange(changedTypeDefs);
     }
 
     private List<String> getIndexFieldNamesForSuggestions(Map<String, Integer> indexFieldName2SearchWeightMap) {
