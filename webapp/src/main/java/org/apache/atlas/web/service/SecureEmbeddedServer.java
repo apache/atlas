@@ -21,6 +21,7 @@ package org.apache.atlas.web.service;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.security.SecurityUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.alias.CredentialProvider;
@@ -68,6 +69,7 @@ import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_PROTOCOLS;
 import static org.apache.atlas.security.SecurityProperties.DEFAULT_EXCLUDE_PROTOCOLS;
+import static org.apache.atlas.security.SecurityUtil.getPassword;
 
 
 /**
@@ -142,38 +144,7 @@ public class SecureEmbeddedServer extends EmbeddedServer {
         return sslConnector;
     }
 
-    /**
-     * Retrieves a password from a configured credential provider or prompts for the password and stores it in the
-     * configured credential provider.
-     * @param config application configuration
-     * @param key the key/alias for the password.
-     * @return the password.
-     * @throws IOException
-     */
-    private String getPassword(org.apache.commons.configuration.Configuration config, String key) throws IOException {
 
-        String password;
-
-        String provider = config.getString(CERT_STORES_CREDENTIAL_PROVIDER_PATH);
-        if (provider != null) {
-            LOG.info("Attempting to retrieve password from configured credential provider path");
-            Configuration c = new Configuration();
-            c.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, provider);
-            CredentialProvider credentialProvider = CredentialProviderFactory.getProviders(c).get(0);
-            CredentialProvider.CredentialEntry entry = credentialProvider.getCredentialEntry(key);
-            if (entry == null) {
-                throw new IOException(String.format("No credential entry found for %s. "
-                        + "Please create an entry in the configured credential provider", key));
-            } else {
-                password = String.valueOf(entry.getCredential());
-            }
-
-        } else {
-            throw new IOException("No credential provider path configured for storage of certificate store passwords");
-        }
-
-        return password;
-    }
 
     /**
      * Returns the application configuration.

@@ -28,6 +28,8 @@ import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.security.alias.CredentialProvider;
+import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -41,8 +43,13 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
+
+import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
+import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
+import static org.apache.atlas.security.SecurityUtil.getPassword;
 
 /**
  * Kafka specific access point to the Atlas notification framework.
@@ -115,6 +122,14 @@ public class KafkaNotification extends AbstractNotification implements Service {
         //set old autocommit value if new autoCommit property is not set.
         properties.put("enable.auto.commit", kafkaConf.getBoolean("enable.auto.commit", oldApiCommitEnableFlag));
         properties.put("session.timeout.ms", kafkaConf.getString("session.timeout.ms", "30000"));
+
+        if(applicationProperties.getBoolean(TLS_ENABLED, false)) {
+            try {
+                properties.put("ssl.truststore.password", getPassword(applicationProperties, TRUSTSTORE_PASSWORD_KEY));
+            } catch (Exception e) {
+                LOG.error("Exception while getpassword truststore.password ", e);
+            }
+        }
 
         // if no value is specified for max.poll.records, set to 1
         properties.put("max.poll.records", kafkaConf.getInt("max.poll.records", 1));
