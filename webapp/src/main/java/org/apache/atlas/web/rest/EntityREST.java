@@ -838,6 +838,132 @@ public class EntityREST {
         }
     }
 
+    /**
+     * delete given labels to a given entity
+     * @param guid - Unique entity identifier
+     * @throws AtlasBaseException
+     */
+    @DELETE
+    @Path("/guid/{guid}/labels")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void removeLabels(@PathParam("guid") final String guid, Set<String> labels) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteLabels()");
+            }
+
+            entitiesStore.removeLabels(guid, labels);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * add given labels to a given entity
+     * @param guid - Unique entity identifier
+     * @throws AtlasBaseException
+     */
+    @PUT
+    @Path("/guid/{guid}/labels")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void addLabels(@PathParam("guid") final String guid, Set<String> labels) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addLabels()");
+            }
+
+            entitiesStore.addLabels(guid, labels);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("/uniqueAttribute/type/{typeName}/labels")
+    public void setLabels(@PathParam("typeName") String typeName, Set<String> labels,
+                          @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+
+        Servlets.validateQueryParamLength("typeName", typeName);
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.setLabels(" + typeName + ")");
+            }
+
+            AtlasEntityType     entityType = ensureEntityType(typeName);
+            Map<String, Object> attributes = getAttributes(servletRequest);
+            String              guid       = entitiesStore.getGuidByUniqueAttributes(entityType, attributes);
+
+            if (guid == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, attributes.toString());
+            }
+
+            entitiesStore.setLabels(guid, labels);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @PUT
+    @Path("/uniqueAttribute/type/{typeName}/labels")
+    public void addLabels(@PathParam("typeName") String typeName, Set<String> labels,
+                          @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addLabels(" + typeName + ")");
+            }
+
+            AtlasEntityType     entityType = ensureEntityType(typeName);
+            Map<String, Object> attributes = getAttributes(servletRequest);
+            String              guid       = entitiesStore.getGuidByUniqueAttributes(entityType, attributes);
+
+            if (guid == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, attributes.toString());
+            }
+
+            entitiesStore.addLabels(guid, labels);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @DELETE
+    @Path("/uniqueAttribute/type/{typeName}/labels")
+    public void removeLabels(@PathParam("typeName") String typeName, Set<String> labels,
+                             @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+
+        Servlets.validateQueryParamLength("typeName", typeName);
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.removeLabels(" + typeName + ")");
+            }
+
+            AtlasEntityType     entityType = ensureEntityType(typeName);
+            Map<String, Object> attributes = getAttributes(servletRequest);
+            String              guid       = entitiesStore.getGuidByUniqueAttributes(entityType, attributes);
+
+            if (guid == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, attributes.toString());
+            }
+
+            entitiesStore.removeLabels(guid, labels);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
     private AtlasEntityType ensureEntityType(String typeName) throws AtlasBaseException {
         AtlasEntityType ret = typeRegistry.getEntityTypeByName(typeName);
 

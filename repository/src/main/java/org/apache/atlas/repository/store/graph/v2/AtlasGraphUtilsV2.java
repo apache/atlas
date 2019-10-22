@@ -62,6 +62,7 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
@@ -649,7 +650,7 @@ public class AtlasGraphUtilsV2 {
         List<String> classificationNames = null;
         String classificationNamesString =  entityVertex.getProperty(propertyKey, String.class);
         if (StringUtils.isNotEmpty(classificationNamesString)) {
-            classificationNames = Arrays.asList(classificationNamesString.split("\\|"));
+            classificationNames = Arrays.asList(StringUtils.split(classificationNamesString, "\\|"));
         }
         return classificationNames;
     }

@@ -1185,4 +1185,48 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
             assertEquals(ex.getAtlasErrorCode(), INVALID_LABEL_CHARACTERS);
         }
     }
+
+    @Test (dependsOnMethods = "invalidLabelCharactersToEntity")
+    public void addMoreLabelsToEntity() throws AtlasBaseException {
+        Set<String> labels = new HashSet<>();
+        labels.add("label_1_add");
+        labels.add("label_2_add");
+        labels.add("label_3_add");
+
+        entityStore.addLabels(tblEntityGuid, labels);
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+        Assert.assertTrue(tblEntity.getLabels().containsAll(labels));
+
+        tblEntity.setAttribute("description", "tbl for labels");
+        AtlasEntitiesWithExtInfo entitiesInfo = new AtlasEntitiesWithExtInfo(tblEntity);
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), true);
+        validateMutationResponse(response, EntityOperation.PARTIAL_UPDATE, 1);
+        tblEntity = getEntityFromStore(response.getFirstEntityPartialUpdated());
+        Assert.assertEquals(tblEntity.getLabels(), labels );
+    }
+
+    @Test (dependsOnMethods = "addMoreLabelsToEntity")
+    public void deleteLabelsToEntity() throws AtlasBaseException {
+        Set<String> labels = new HashSet<>();
+        labels.add("label_1_add");
+        labels.add("label_2_add");
+
+        entityStore.removeLabels(tblEntityGuid, labels);
+        AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
+        Assert.assertNotNull(tblEntity.getLabels());
+        Assert.assertEquals(tblEntity.getLabels().size(), 1);
+
+        labels.clear();
+        labels.add("label_4_add");
+        entityStore.removeLabels(tblEntityGuid, labels);
+        tblEntity = getEntityFromStore(tblEntityGuid);
+        Assert.assertNotNull(tblEntity.getLabels());
+        Assert.assertEquals(tblEntity.getLabels().size(), 1);
+
+        labels.clear();
+        labels.add("label_3_add");
+        entityStore.removeLabels(tblEntityGuid, labels);
+        tblEntity = getEntityFromStore(tblEntityGuid);
+        Assert.assertNull(tblEntity.getLabels());
+    }
 }

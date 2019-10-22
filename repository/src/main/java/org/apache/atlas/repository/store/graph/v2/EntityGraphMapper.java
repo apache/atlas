@@ -339,7 +339,37 @@ public class EntityGraphMapper {
         }
     }
 
-    private String getLabelString(Set<String> labels) {
+    public void addLabels(AtlasVertex vertex, Set<String> labels) {
+        if (CollectionUtils.isNotEmpty(labels)) {
+            final Set<String> existingLabels = GraphHelper.getLabels(vertex);
+            final Set<String> updatedLabels;
+
+            if (CollectionUtils.isEmpty(existingLabels)) {
+                updatedLabels = labels;
+            } else {
+                updatedLabels = existingLabels;
+                updatedLabels.addAll(labels);
+            }
+
+            setLabels(vertex, updatedLabels);
+        }
+    }
+
+    public void removeLabels(AtlasVertex vertex, Set<String> labels) {
+        if (CollectionUtils.isNotEmpty(labels)) {
+            final Set<String> existingLabels = GraphHelper.getLabels(vertex);
+            Set<String> updatedLabels = null;
+
+            if (CollectionUtils.isNotEmpty(existingLabels)) {
+                updatedLabels = existingLabels;
+                updatedLabels.removeAll(labels);
+            }
+
+            setLabels(vertex, updatedLabels);
+        }
+    }
+
+    private String getLabelString(Collection<String> labels) {
         String ret = null;
 
         if (!labels.isEmpty()) {

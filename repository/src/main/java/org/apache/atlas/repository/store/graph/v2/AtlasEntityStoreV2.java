@@ -767,6 +767,58 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+    @Override
+    @GraphTransaction
+    public void removeLabels(String guid, Set<String> labels) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> removeLabels()");
+        }
+
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        validateLabels(labels);
+
+        entityGraphMapper.removeLabels(entityVertex, labels);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== removeLabels()");
+        }
+    }
+
+    @Override
+    @GraphTransaction
+    public void addLabels(String guid, Set<String> labels) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> addLabels()");
+        }
+
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        validateLabels(labels);
+
+        entityGraphMapper.addLabels(entityVertex, labels);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== addLabels()");
+        }
+    }
+
     private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
