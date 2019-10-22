@@ -234,7 +234,18 @@ public interface AtlasEntityStore {
     String setClassifications(AtlasEntityHeaders entityHeaders);
 
     /**
-     * Set Labels
+     * Set labels to given entity, if labels is null/empty, existing labels will all be removed.
      */
     void setLabels(String guid, Set<String> labels) throws AtlasBaseException;
+
+    /**
+     * Remove given labels, if labels is null/empty, no labels will be removed. If any labels in
+     * labels set are non-existing labels, they will be ignored, only existing labels will be removed.
+     */
+    void removeLabels(String guid, Set<String> labels) throws AtlasBaseException;
+
+    /**
+     * Add given labels to the given entity, if labels is null/empty, no labels will be added.
+     */
+    void addLabels(String guid, Set<String> labels) throws AtlasBaseException;
 }
