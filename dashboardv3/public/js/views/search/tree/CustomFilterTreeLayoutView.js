@@ -208,6 +208,8 @@ define([
                         },
                         node_customize: {
                             default: function(el) {
+                                var aFilter = $(el).find(">a.jstree-anchor");
+                                aFilter.append("<span class='tree-tooltip'>" + _.escape(aFilter.text()) + "</span>");
                                 if ($(el).find(".fa-ellipsis-h").length === 0) {
                                     $(el).append('<div class="tools"><i class="fa fa-ellipsis-h customFilterPopover" rel="popover"></i></div>');
                                 }
@@ -239,7 +241,19 @@ define([
                 } else {
                     $el.parents(".panel").removeClass("hide");
                 }
-            })
+            }).on("hover_node.jstree", function(nodes, str, res) {
+                var aFilter = that.$("#" + str.node.a_attr.id),
+                    filterOffset = aFilter.find(">.jstree-icon").offset();
+                that.$(".tree-tooltip").removeClass("show");
+                if (filterOffset.top && filterOffset.left) {
+                    aFilter.find(">span.tree-tooltip").css({
+                        top: "calc(" + filterOffset.top + "px - 45px)",
+                        left: "24px"
+                    }).addClass("show");
+                }
+            }).on("dehover_node.jstree", function(nodes, str, res) {
+                that.$(".tree-tooltip").removeClass("show");
+            });
         },
         createCustomFilterAction: function() {
             var that = this;
@@ -262,7 +276,6 @@ define([
         customFilterSwitchBtnUpdate: function() {
             var that = this,
                 getTreeData, displayText;
-            // that.ui.showCustomFilter.attr("title", (that.isBasic ? "Show Advanced search" : "Show Basic search"));
             that.ui.showCustomFilter.attr("data-original-title", (that.isBasic ? "Show Advanced search" : "Show Basic search"));
             that.ui.showCustomFilter.tooltip('hide');
             that.ui.showCustomFilter.find("i").toggleClass("switch-button");
@@ -285,8 +298,8 @@ define([
                 generateNode = function(nodeOptions) {
                     var searchType = nodeOptions.get('searchType');
                     var nodeStructure = {
-                        text: nodeOptions.get('name'),
-                        name: nodeOptions.get('name'),
+                        text: _.escape(nodeOptions.get('name')),
+                        name: _.escape(nodeOptions.get('name')),
                         type: "customFilter",
                         id: nodeOptions.get('guid'),
                         icon: (searchType === 'BASIC' ? "fa fa-circle-thin basic-tree" : "fa fa-circle-thin advance-tree"),
@@ -306,7 +319,6 @@ define([
                 allCustomFilter.push(generateNode(filterNode));
             });
 
-            // var customFilterList = that.isBasic ? customFilterBasicList : customFilterAdvanceList;
             var treeView = [{
                 icon: "fa fa-folder-o",
                 gType: "customFilter",

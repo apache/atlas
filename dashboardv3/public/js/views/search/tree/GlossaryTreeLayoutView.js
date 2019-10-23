@@ -50,25 +50,19 @@ define([
             events["click " + this.ui.refreshTree] = function(e) {
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
-                // that.ui[type + "SearchTree"].jstree(true).destroy();
                 that.refresh({ type: type });
 
             };
 
             events["click " + this.ui.createGlossary] = function(e) {
                 var that = this;
-                if (e) {
-                    //$(e.currentTarget).attr("disabled", "true");
-                }
                 CommonViewFunction.createEditGlossaryCategoryTerm({
                     isGlossaryView: true,
                     collection: that.glossaryCollection,
                     callback: function(rModel) {
                         that.glossaryCollection.fullCollection.add(rModel);
                     },
-                    onModalClose: function() {
-                        //that.ui.createGlossary.removeAttr("disabled");
-                    }
+                    onModalClose: function() {}
                 })
             };
 
@@ -85,7 +79,6 @@ define([
             this.listenTo(
                 this.glossaryCollection.fullCollection, "reset add change",
                 function(skip) {
-                    // this.renderGlossaryTree()
                     if (this.ui.termSearchTree.jstree(true)) {
                         this.ui.termSearchTree.jstree(true).refresh();
                     } else {
@@ -106,21 +99,10 @@ define([
             });
         },
         glossarySwitchBtnUpdate: function() {
-            // this.ui.showGlossaryType.attr("title", (this.isTermView ? "Show Category" : "Show Term"));
             this.ui.showGlossaryType.attr("data-original-title", (this.isTermView ? "Show Category" : "Show Term"));
             this.ui.showGlossaryType.tooltip('hide');
             this.ui.showGlossaryType.find("i").toggleClass("switch-button");
-            // this.ui.showGlossaryType.find("span").html(this.isTermView ? "Show Category" : "Show Term");
             this.ui.termSearchTree.jstree(true).refresh();
-            //this.showDefaultPage();
-            // if(this.isTermView){
-            // $('.categoryPopover').popover('destroy');
-            // this.createTermAction();
-            // }
-            // else{
-            // $('.termPopover').popover('destroy');
-            // this.createCategoryAction();
-            // }
         },
         initialize: function(options) {
             this.options = options;
@@ -150,9 +132,7 @@ define([
             this.bindEvents();
         },
         onRender: function() {
-            // $('#r_glossaryDetailLayoutView')
             this.fetchGlossary();
-
         },
 
         onBeforeDestroy: function() {
@@ -210,15 +190,12 @@ define([
 
             });
             this.createTermAction();
-            //this.createCategoryAction();
         },
         onNodeSelect: function(options, showCategory) {
             var name, type, selectedNodeId, that = this,
                 glossaryType = options.node.original.gType;
             if (glossaryType == "category") {
                 selectedNodeId = options.node.id;
-                // that.onViewEdit();
-
                 if (that.glossaryTermId != selectedNodeId) {
                     that.glossaryTermId = selectedNodeId;
                     that.onViewEdit();
@@ -229,13 +206,12 @@ define([
 
             } else if (glossaryType == "term") {
                 if (options) {
-                    name = options.node.original.name;
+                    name = _.unescape(options.node.original.name);
                     selectedNodeId = options.node.id;
                 }
                 var termValue = null,
                     params = {
-                        searchType: "basic",
-                        // dslChecked: false
+                        searchType: "basic"
                     };
                 if (this.options.value) {
                     if (this.options.value.isCF) {
@@ -252,9 +228,7 @@ define([
 
                 } else {
                     that.glossaryTermId = params["term"] = null;
-                    // options.instance.deselect_node(options.node);
                     that.ui.termSearchTree.jstree(true).deselect_all(true);
-                    // $(options.event.currentTarget).siblings('.tools').hide();
                     if (!that.options.value.type && !that.options.value.tag && !that.options.value.query) {
                         that.showDefaultPage();
                         return;
@@ -371,10 +345,7 @@ define([
                             glossaryName: parentNode ? parentNode.name ? parentNode.name : parentNode.displayText : obj.name,
                             glossaryId: parentNode ? parentNode.guid ? parentNode.guid : parentNode.categoryGuid : obj.guid,
                             model: model,
-                            icon: "fa fa-file-o",
-                            // state: {
-                            //     selected: isSelected
-                            // }
+                            icon: "fa fa-file-o"
                         };
                         return nodeStructure;
 
@@ -393,9 +364,6 @@ define([
                     _.each(obj.categories, function(category) {
                         if (that.options.value) {
                             isSelected = that.options.value.guid ? that.options.value.guid == category.categoryGuid : false;
-                            if (!that.glossaryTermId) {
-                                // that.glossaryTermId = isSelected ? that.options.value.guid : null;
-                            }
                         }
                         if (category.parentCategoryGuid) {
                             return;
@@ -423,16 +391,12 @@ define([
                     _.each(obj.terms, function(term) {
                         if (that.options.value) {
                             isSelected = that.options.value.term ? that.options.value.term.split('@')[0] == term.displayText : false;
-                            if (!that.glossaryTermId) {
-                                //that.glossaryTermId = isSelected ? term.termGuid : null;
-                            }
                         }
                         var parentNodeDetails = {
                                 type: term.typeName || "GlossaryTerm",
                                 guid: term.termGuid
                             },
                             parentNodeProperties = {},
-                            // isTerm = true,
                             getParentNodeDetails = generateNode(parentNodeDetails, term, that.isTermView),
                             termParentNode = (_.extend(parentNodeProperties, getParentNodeDetails));
                         parent.children.push(termParentNode);
@@ -477,12 +441,8 @@ define([
                             liString = "";
                         if (type == "glossary") {
                             liString = "<li data-type=" + type + " class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='createSubNode'>Create Category</a></li>";
-                            // +"<li data-type=" + type + " class='listTerm'><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='deleteNode'>Delete Category</a></li>"
-
                         } else {
                             liString = "<li data-type=" + type + " class='listTerm'><i class='fa fa-list-alt'></i><a href='javascript:void(0)' data-fn='createSubNode'>Create Sub-Category</a></li>";
-                            // +"<li data-type=" + type + " class='listTerm'><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='deleteNode'>Delete Category</a></li>"
-
                         }
                         return "<ul>" + liString + "</ul>";
                     },
@@ -498,13 +458,7 @@ define([
                     "isCategoryView": true,
                     "collection": that.glossaryCollection,
                     "callback": function() {
-                        // if (selectednode[0].original.gType == "GLOSSARY") {
-                        //     that.fetchGlossary();
-                        // } else {
-                        //     that.ui.termSearchTree.jstree(true).refresh();
-                        // }
                         that.ui.termSearchTree.jstree(true).refresh();
-
                     },
                     "node": selectednode[0].original
                 })
@@ -543,39 +497,17 @@ define([
                         }
                         var glossary = that.glossaryCollection.fullCollection.get(gId);
                         if (type == "GlossaryTerm") {
-                            // var glossary = that.glossaryCollection.fullCollection.get(gId);
                             glossary.set('terms', _.reject(glossary.get('terms'), function(obj) {
                                 return obj.termGuid == guid;
                             }), { silent: true });
                         }
-                        // else if (type == "GlossaryCategory") {
-                        //     glossary.set('categories', _.reject(glossary.get('categories'), function(obj) {
-                        //         return obj.categoryGuid == guid;
-                        //     }), { silent: true });
-                        // } else {
-                        //     glossary = that.glossaryCollection.fullCollection.first();
-                        //     if (glossary) {
-                        //         gId = glossary.get('guid');
-                        //     } else {
-                        //         gId = null
-                        //     }
-                        // }
 
                         Utils.notifySuccess({
                             content: messageType + Messages.deleteSuccessMessage
                         });
                         that.ui.termSearchTree.jstree(true).refresh();
-                        // if (gId == null) {
-                        //     that.glossary.selectedItem = {};
-                        //     that.value = null;
-                        //     that.query = {
-                        //         term: {},
-                        //         category: {}
-                        //     };
-                        // }
                         var params = {
                             searchType: "basic",
-                            // dslChecked: false,
                             term: null
                         };
                         that.glossaryTermId = null;
@@ -663,14 +595,7 @@ define([
                 type = options && options.type,
                 that = this,
                 createAction = function(options) {
-                    // var $el = options.el,
-                    //     type = options.type;
                     that.isTermView ? that.createTermAction() : that.createCategoryAction();
-                    // if (type == "term") {
-                    //     that.createTermAction();
-                    // } else if (type == "category") {
-                    //     that.createCategoryAction();
-                    // }
                 },
                 getEntityTreeConfig = function(opt) {
                     return {
@@ -683,6 +608,8 @@ define([
                         },
                         node_customize: {
                             default: function(el, node) {
+                                var aTerm = $(el).find(">a.jstree-anchor");
+                                aTerm.append("<span class='tree-tooltip'>" + _.escape(aTerm.text()) + "</span>");
                                 var popoverClass = that.isTermView ? "fa fa-ellipsis-h termPopover " : "fa fa-ellipsis-h categoryPopover";
                                 $(el).append('<div class="tools" data-type=' + node.original.gType + '><i class="' + popoverClass + '"rel="popover" data-detail=' + node.original.gType + '></i></div>');
                             }
@@ -723,19 +650,28 @@ define([
                         $el.parents(".panel").removeClass("hide");
                     }
                 }).on('loaded.jstree', function() {
-                    // that.showDefaultCategorySelection();
                     if (that.options.value) {
                         if (that.options.value.term) {
                             that.selectDefaultNode();
                         }
                         if (!that.isTermView) {
-                            // that.categoryValues = that.options.value;
-                            // that.triggerSearch(that.categoryValues);
                             that.selectDefaultNode();
                             that.options.categoryEvent.trigger("Success:Category", true);
                         }
                     }
 
+                }).on("hover_node.jstree", function(nodes, str, res) {
+                    var aTerm = that.$("#" + str.node.a_attr.id),
+                        termOffset = aTerm.find(">.jstree-icon").offset();
+                    that.$(".tree-tooltip").removeClass("show");
+                    if (termOffset.top && termOffset.left) {
+                        aTerm.find(">span.tree-tooltip").css({
+                            top: "calc(" + termOffset.top + "px - 45px)",
+                            left: "24px"
+                        }).addClass("show");
+                    }
+                }).on("dehover_node.jstree", function(nodes, str, res) {
+                    that.$(".tree-tooltip").removeClass("show");
                 });
         },
         selectDefaultNode: function() {

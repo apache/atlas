@@ -496,7 +496,7 @@ define(['require',
             },
             getContainer: function(object) {
                 var value = object.value,
-                    entityLabel = this.capitalize(value.name);
+                    entityLabel = this.capitalize(_.escape(value.name));
 
                 return '<div class=" row ' + value.isOptional + '"><span class="col-sm-3">' +
                     '<label><span class="' + (value.isOptional ? 'true' : 'false required') + '">' + entityLabel + '</span><span class="center-block ellipsis-with-margin text-gray" title="Data Type : ' + value.typeName + '">' + '(' + Utils.escapeHtml(value.typeName) + ')' + '</span></label></span>' +

@@ -24,6 +24,7 @@
         &.panel-default>.panel-heading {
             border-color: $color_mystic_approx;
             border-width: 2px;
+            min-width: 222px;
 
             button {
                 height: inherit;
@@ -77,8 +78,6 @@
         overflow: auto;
         height: calc(100vh - 188px);
 
-
-
         .panel-collapse {
             padding-top: 7px;
         }
@@ -95,7 +94,7 @@
 
         .jstree-default .jstree-node {
             position: relative;
-            max-width: 300px;
+            max-width: 100%;
         }
 
         .tag-tree>li.parent-node>div:hover {
@@ -278,8 +277,6 @@
             color: $action_gray;
         }
     }
-
-
 }
 
 .sidebar-content {
@@ -333,17 +330,18 @@
 
     .slider-bar {
         position: absolute;
-        right: 6px;
+        right: 0px;
         height: 100%;
-        width: 9px;
+        width: 13px;
         cursor: col-resize;
         z-index: 999;
+        background: $white;
 
         .line {
             position: absolute;
             height: 100%;
             background: $color_mystic_approx;
-            left: 1px;
+            left: -2px;
             width: 2px;
         }
 
@@ -366,7 +364,7 @@
             background-color: $white;
             position: absolute;
             color: $color_havelock_blue_approx;
-            right: -6px;
+            right: 0px;
             border-radius: 16px;
             display: none;
             top: 9px;
@@ -377,5 +375,24 @@
             transition: 0.3s linear;
             border: 2px solid $color_havelock_blue_approx;
         }
+    }
+}
+
+span.tree-tooltip {
+    position: fixed;
+    display: none;
+    top: calc(346px - 39px);
+    left: 138px;
+    z-index: 1004;
+    background: #f9f9f9;
+    color: #2c2c2c;
+    padding: 5px;
+    height: 36px;
+    box-shadow: 0px 0px 3px 0px #8080806b;
+    border: 1px solid #80808057;
+    border-radius: 9px;
+
+    &.show {
+        display: block;
     }
 }

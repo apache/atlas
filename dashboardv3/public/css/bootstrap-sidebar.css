@@ -20,13 +20,13 @@
 }
 
 #sidebar-wrapper {
-    z-index: 1000;
+    z-index: 2;
     position: fixed;
     /*left: 350px;*/
     /*width: 0;*/
     height: 100%;
     /*margin-left: -350px;*/
-    overflow-y: auto;
+    /*overflow-y: auto;*/
     background: #fff;
     -moz-transition: left 0.3s;
     -o-transition: left 0.3s;

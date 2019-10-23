@@ -38,7 +38,7 @@ define(['require',
         },
         templateHelpers: function() {
             return {
-                selectedModel: this.selectedModel ? this.selectedModel : null
+                selectedModel: this.selectedModel ? this.selectedModel.toJSON() : null
             };
         },
         events: function() {
@@ -48,12 +48,6 @@ define(['require',
         initialize: function(options) {
             var that = this;
             _.extend(this, _.pick(options, 'selectedModel', 'collection', 'getValue', 'isBasic', 'saveObj'));
-            if (this.selectedModel) {
-                var modelDetail = this.selectedModel.toJSON();
-                modelDetail.name = _.unescape(modelDetail.name);
-                this.selectedModel = modelDetail;
-            }
-
             this.model = new VSearch();
             if (this.saveObj) {
                 this.onCreateButton();
@@ -87,10 +81,10 @@ define(['require',
         },
         onCreateButton: function(modal) {
             var that = this,
-                obj = { name: this.ui.saveAsName.val ? _.escape(this.ui.saveAsName.val()) : null };
+                obj = { name: this.ui.saveAsName.val ? this.ui.saveAsName.val() : null };
             if (this.selectedModel) {
                 // Update Name only.
-                var saveObj = this.selectedModel;
+                var saveObj = this.selectedModel.toJSON();
                 saveObj.name = obj.name;
             } else {
                 obj.value = this.getValue();
@@ -116,12 +110,12 @@ define(['require',
                                 collectionRef.set(data);
                             }
                             Utils.notifySuccess({
-                                content: _.unescape(obj.name) + Messages.editSuccessMessage
+                                content: obj.name + Messages.editSuccessMessage
                             });
                         } else {
                             that.collection.add(data);
                             Utils.notifySuccess({
-                                content: _.unescape(obj.name) + Messages.addSuccessMessage
+                                content: obj.name + Messages.addSuccessMessage
                             });
                         }
                     }

@@ -800,8 +800,9 @@ define(['require',
                                     return;
                                 }
                                 col[obj.name] = {
-                                    label: obj.name.capitalize(),
+                                    label: _.escape(obj.name).capitalize(),
                                     cell: "Html",
+                                    headerCell: Backgrid.HeaderHTMLDecodeCell,
                                     editable: false,
                                     resizeable: true,
                                     orderable: true,

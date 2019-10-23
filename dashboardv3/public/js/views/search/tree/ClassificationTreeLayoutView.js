@@ -83,9 +83,7 @@ define([
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 this.isGroupView = !this.isGroupView;
-                // this.ui.groupOrFlatTree.attr("data-original-title", (this.isGroupView ? "Show flat tree" : "Show group tree"));
                 this.ui.groupOrFlatTree.tooltip('hide');
-                // this.ui.groupOrFlatTree.find("i").toggleClass("group-tree-deactivate");
                 this.ui.groupOrFlatTree.find("i").toggleClass("fa-sitemap fa-list-ul");
                 this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
                 that.ui[type + "SearchTree"].jstree(true).destroy();
@@ -210,7 +208,6 @@ define([
             this.classificationSwitchBtnUpdate();
         },
         classificationSwitchBtnUpdate: function() {
-            // this.ui.showEmptyClassifications.attr("title", (this.isEmptyClassification ? "Show" : "Hide") + " unused classification");
             this.ui.showEmptyClassifications.attr("data-original-title", (this.isEmptyClassification ? "Show" : "Hide") + " unused classification");
             this.ui.showEmptyClassifications.tooltip('hide');
             this.ui.showEmptyClassifications.find("i").toggleClass("fa-toggle-on fa-toggle-off");
@@ -366,16 +363,14 @@ define([
                 flatViewList = [],
                 isSelectedChild = false,
                 openClassificationNodesState = function(treeDate) {
-                    // if (treeDate.length == 1) {
                     _.each(treeDate, function(model) {
                         model.state['opened'] = true;
                     })
-                    // }
                 },
                 generateNode = function(nodeOptions, options, isChild) {
                     var nodeStructure = {
-                        text: nodeOptions.name,
-                        name: nodeOptions.name,
+                        text: _.escape(nodeOptions.name),
+                        name: _.escape(nodeOptions.name),
                         children: that.isGroupView ? getChildren({
                             children: isChild ? nodeOptions.model.subTypes : nodeOptions.model.get("subTypes"),
                             parent: isChild ? options.parentName : nodeOptions.name
@@ -409,14 +404,14 @@ define([
                             var modelJSON = child.toJSON();
                             if (child) {
                                 var nodeDetails = {
-                                        name: name,
+                                        name: _.escape(name),
                                         model: modelJSON,
                                         children: child,
                                         isSelectedChild: isSelectedChild
                                     },
                                     nodeProperties = {
                                         parent: options.parentName,
-                                        text: tagname,
+                                        text: _.escape(tagname),
                                         guid: child.get("guid"),
                                         model: child,
                                         state: { selected: isSelectedChild, opened: true }
@@ -451,12 +446,12 @@ define([
                     }
                 }
                 var parentNodeDetails = {
-                        name: name,
+                        name: _.escape(name),
                         model: model,
                         isSelectedChild: isSelectedChild
                     },
                     parentNodeProperties = {
-                        text: tagname,
+                        text: _.escape(tagname),
                         state: {
                             disabled: tagEntityCount == 0 ? true : false,
                             selected: isSelected,
@@ -488,7 +483,6 @@ define([
             var classificationTreeData = that.isEmptyClassification ? listWithEmptyParents : listOfParents;
             var flatViewClassificaton = that.isEmptyClassification ? listWithEmptyParentsFlatView : flatViewList;
             var classificationData = that.isGroupView ? classificationTreeData : flatViewClassificaton;
-            // openClassificationNodesState(classificationData);
             return classificationData;
         },
         generateSearchTree: function(options) {
@@ -517,9 +511,9 @@ define([
                         },
                         node_customize: {
                             default: function(el) {
-                                // if ($(el).find(".fa-ellipsis-h").length === 0) {
+                                var aTag = $(el).find(">a.jstree-anchor");
+                                aTag.append("<span class='tree-tooltip'>" + aTag.text() + "</span>");
                                 $(el).append('<div class="tools"><i class="fa fa-ellipsis-h classificationPopover" rel="popover"></i></div>');
-                                // }
                             }
                         },
                         core: {
@@ -552,16 +546,23 @@ define([
                 } else {
                     $el.parents(".panel").removeClass("hide");
                 }
-            })
+            }).on("hover_node.jstree", function(nodes, str, res) {
+                var aTag = that.$("#" + str.node.a_attr.id),
+                    tagOffset = aTag.find(">.jstree-icon").offset();
+                that.$(".tree-tooltip").removeClass("show");
+                if (tagOffset.top && tagOffset.left) {
+                    aTag.find(">span.tree-tooltip").css({
+                        top: "calc(" + tagOffset.top + "px - 45px)",
+                        left: "24px"
+                    }).addClass("show");
+                }
+            }).on("dehover_node.jstree", function(nodes, str, res) {
+                that.$(".tree-tooltip").removeClass("show");
+            });
         },
         onClickCreateTag: function(e) {
             var that = this;
-            //nodeName = that.options.value && that.options.value.tag;
             require(["views/tag/CreateTagLayoutView", "modules/Modal"], function(CreateTagLayoutView, Modal) {
-
-                // var name = !(nodeName == "BUTTON") ? that.query[that.viewType].tagName : null;
-                //var name = nodeName;
-
                 var view = new CreateTagLayoutView({ tagCollection: that.options.classificationDefCollection, enumDefCollection: enumDefCollection }),
                     modal = new Modal({
                         title: "Create a new classification",
@@ -593,7 +594,6 @@ define([
                 });
                 modal.on("closeModal", function() {
                     modal.trigger("cancel");
-                    // that.ui.createTag.removeAttr("disabled");
                 });
             });
         },
@@ -691,7 +691,6 @@ define([
             new this.options.classificationDefCollection.model().set(this.json).save(null, {
                 success: function(model, response) {
                     var classificationDefs = model.get("classificationDefs");
-                    // that.ui.createTag.removeAttr("disabled");
                     that.createTag = true;
                     if (classificationDefs[0]) {
                         _.each(classificationDefs[0].superTypes, function(superType) {

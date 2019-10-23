@@ -70,9 +70,7 @@ define([
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 this.isGroupView = !this.isGroupView;
-                // this.ui.groupOrFlatTree.attr("data-original-title", (this.isGroupView ? "Show flat tree" : "Show group tree"));
                 this.ui.groupOrFlatTree.tooltip('hide');
-                // this.ui.groupOrFlatTree.find("i").toggleClass("group-tree-deactivate");
                 this.ui.groupOrFlatTree.find("i").toggleClass("fa-sitemap fa-list-ul");
                 this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
 
@@ -158,11 +156,9 @@ define([
             this.entitySwitchBtnUpdate();
         },
         entitySwitchBtnUpdate: function() {
-            // this.ui.showEmptyServiceType.attr("title", (this.isEmptyServicetype ? "Show" : "Hide") + " empty service types");
             this.ui.showEmptyServiceType.attr("data-original-title", (this.isEmptyServicetype ? "Show" : "Hide") + " empty service types");
             this.ui.showEmptyServiceType.tooltip('hide');
             this.ui.showEmptyServiceType.find("i").toggleClass("fa-toggle-on fa-toggle-off");
-            // this.ui.showEmptyServiceType.find("span").html((this.isEmptyServicetype ? "Show" : "Hide") + " empty service types");
             this.ui.entitySearchTree.jstree(true).refresh();
         },
         manualRender: function(options) {
@@ -219,7 +215,7 @@ define([
             } else {
                 that.typeId = params["type"] = null;
                 that.ui.entitySearchTree.jstree(true).deselect_all(true);
-                if (!that.options.value.type && !that.options.value.tag && !that.options.value.term && !that.options.value.query) {
+                if (!that.options.value.type && !that.options.value.tag && !that.options.value.term && !that.options.value.query && !this.options.value.udKeys && !this.options.value.ugLabels) {
                     that.showDefaultPage();
                     return;
                 }
@@ -297,24 +293,9 @@ define([
                                     that.typeId = isSelected ? model.get("guid") : null;
                                 }
                             }
-                            // var children = {
-                            //     text: modelname,
-                            //     name: model.get("name"),
-                            //     type: model.get("category"),
-                            //     gType: "serviceType",
-                            //     guid: model.get("guid"),
-                            //     id: model.get("guid"),
-                            //     parent: serviceType,
-                            //     model: model,
-                            //     icon: "fa fa-file-o",
-                            //     state: {
-                            //         disabled: entityCount == 0 ? true : false,
-                            //         selected: isSelected
-                            //     },
-                            // };
 
                             var children = {
-                                text: modelname,
+                                text: _.escape(modelname),
                                 name: model.get("name"),
                                 type: model.get("category"),
                                 gType: "serviceType",
@@ -378,7 +359,7 @@ define([
                                 type: type,
                                 gType: "serviceType",
                                 children: getParrent.children,
-                                text: textName,
+                                text: _.escape(textName),
                                 name: data[parents[i]].name,
                                 id: i,
                                 state: { opened: true }
@@ -432,7 +413,8 @@ define([
                         },
                         node_customize: {
                             default: function(el) {
-                                //$(el).find("a").append("<div><i class='fa fa-ellipsis-h'></i></div>");
+                                var aType = $(el).find(">a.jstree-anchor");
+                                aType.append("<span class='tree-tooltip'>" + aType.text() + "</span>");
                                 if ($(el).find(".fa-ellipsis-h").length === 0) {
                                     $(el).append('<div class="tools"><i class="fa fa-ellipsis-h entityPopover" rel="popover"></i></div>');
                                 }
@@ -443,14 +425,6 @@ define([
                             data: function(node, cb) {
                                 if (node.id === "#") {
                                     cb(
-                                        // {
-                                        //     text: "Service Types",
-                                        //     children: that.getEntityTree(),
-                                        //     icon: "fa fa-folder-o",
-                                        //     type: "ENTITY",
-                                        //     state: { opened: true },
-                                        //     parent: "#"
-                                        // }
                                         that.getEntityTree()
                                     );
                                 }
@@ -478,7 +452,19 @@ define([
                 } else {
                     $el.parents(".panel").removeClass("hide");
                 }
-            })
+            }).on("hover_node.jstree", function(nodes, str, res) {
+                var aType = that.$("#" + str.node.a_attr.id),
+                    typeOffset = aType.find(">.jstree-icon").offset();
+                that.$(".tree-tooltip").removeClass("show");
+                if (typeOffset.top && typeOffset.left) {
+                    aType.find(">span.tree-tooltip").css({
+                        top: "calc(" + typeOffset.top + "px - 45px)",
+                        left: "24px"
+                    }).addClass("show");
+                }
+            }).on("dehover_node.jstree", function(nodes, str, res) {
+                that.$(".tree-tooltip").removeClass("show");
+            });
         },
         refresh: function(options) {
             var that = this,
