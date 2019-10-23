@@ -2,7 +2,7 @@
 name: Advance Search
 route: /SearchAdvance
 menu: Documentation
-submenu: Search 
+submenu: Search
 ---
 
 import  themen  from 'theme/styles/styled-colors';
@@ -138,6 +138,7 @@ Example: To retreive entity of type Table with a property locationUri.
 {`Table has locationUri
 from Table where Table has locationUri`}
 </SyntaxHighlighter>
+
 ### Select Clause
 If you noticed the output displayed on the web page, it displays a tabular display, each row corresponding to an entity and columns are properties of that entity. The select clause allows for choosing the properties of entity that are of interest.
 
@@ -147,6 +148,7 @@ Example: To retrieve entity of type _Table_ with few properties:
 <SyntaxHighlighter wrapLines={true} language="sql" style={theme.dark}>
 {`from Table select owner, name, qualifiedName`}
 </SyntaxHighlighter>
+
 Example: To retrieve entity of type Table for a specific table with some properties.
 
 <SyntaxHighlighter wrapLines={true} language="sql" style={theme.dark}>
@@ -443,4 +445,4 @@ The following clauses are no longer supported:
 ## Resources
    * Antlr [Book](https://pragprog.com/book/tpantlr2/the-definitive-antlr-4-reference).
    * Antlr [Quick Start](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md).
-   * Atlas DSL Grammar on [Github](https://github.com/apache/atlas/blob/master/repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLParser.g4) (Antlr G4 format).    
+   * Atlas DSL Grammar on [Github](https://github.com/apache/atlas/blob/master/repository/src/main/java/org/apache/atlas/query/antlr4/AtlasDSLParser.g4) (Antlr G4 format).

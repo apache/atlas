@@ -49,16 +49,16 @@ For example. when _employees_ table is deleted, classifications associated with 
 **Case 2:**
 When an entity is deleted in the middle of a lineage path, the propagation link is broken and previously propagated classifications will be removed from all derived entities of the deleted entity.
 For example. when 'us_employees' table is deleted, classifications propagating through this table (**PII**) are removed from 'ca_employees' table, since the only path of propagation is broken by entity deletion.
-<Img src={`/images/twiki/classification-propagation-entity-delete-1.png"`}/>
+<Img src={`/images/twiki/classification-propagation-entity-delete-1.png`}/>
 
-<Img src={`/images/twiki/classification-propagation-entity-delete-2.png"`}/>
+<Img src={`/images/twiki/classification-propagation-entity-delete-2.png`}/>
 
 **Case 3:**
 When an entity is deleted in the middle of a lineage path and if there exists alternate path for propagation, previously propagated classifications will be retained.
 For example. when 'us_employees' table is deleted, classifications  propagating (**PII**) through this table are retained in 'ca_employees' table, since there are two propagation paths available and only one of them is broken by entity deletion.
-<Img src={`/images/twiki/classification-propagation-entity-delete-3.png"`}/>
+<Img src={`/images/twiki/classification-propagation-entity-delete-3.png`}/>
 
-<Img src={`/images/twiki/classification-propagation-entity-delete-4.png"`}/>
+<Img src={`/images/twiki/classification-propagation-entity-delete-4.png`}/>
 
 ## Control Propagation
 

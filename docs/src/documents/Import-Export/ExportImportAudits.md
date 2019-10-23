@@ -35,8 +35,16 @@ The new audits for Export and Import operations also have corresponding REST API
 |Error Response  | Errors Returned as AtlasBaseException                            |
 |Notes           | None                                                             |
 
-###### CURL
-curl -X GET -u admin:admin -H "Content-Type: application/json" -H "Cache-Control: no-cache" 'http://localhost:21000/api/atlas/admin/expimp/audit?sourceClusterName=cl2'
+##### CURL
+
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
+{`
+curl -X GET -u admin:admin -H "Content-Type: application/json" -H "Cache-Control: no-cache"
+http://localhost:port/api/atlas/admin/expimp/audit?sourceClusterName=cl2
+`}
+</SyntaxHighlighter>
+
+##### RESPONSE
 
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{

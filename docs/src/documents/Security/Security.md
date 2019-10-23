@@ -36,13 +36,13 @@ In order to prevent the use of clear-text passwords, the Atlas platofrm makes us
 
 To create the credential provdier for Atlas:
 
-   * cd to the `bin` directory
-   * type `./cputil.py`
-   * Enter the path for the generated credential provider.  The format for the path is:
-      * [jceks://file/local/file/path/file.jceks]() or [jceks://hdfs@namenodehost:port/path/in/hdfs/to/file.jceks]().  The files generally use the ".jceks" extension (e.g. test.jceks)
-   * Enter the passwords for the keystore, truststore, and server key (these passwords need to match the ones utilized for actually creating the associated certificate store files).
+* cd to the `bin` directory
+* type `./cputil.py`
+* Enter the path for the generated credential provider.  The format for the path is:
+   * jceks://file/local/file/path/file.jceks or jceks://hdfs@namenodehost:port/path/in/hdfs/to/file.jceks.  The files generally use the ".jceks" extension (e.g. test.jceks)
+* Enter the passwords for the keystore, truststore, and server key (these passwords need to match the ones utilized for actually creating the associated certificate store files).
 
-   The credential provider will be generated and saved to the path provided.
+The credential provider will be generated and saved to the path provided.
 
 ## Service Authentication
 

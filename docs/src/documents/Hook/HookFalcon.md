@@ -18,7 +18,7 @@ The default hive model includes the following types:
          * super-types: Infrastructure
          * attributes: timestamp, colo, owner, tags
       * falcon_feed
-         * super-types: !DataSet
+         * super-types: DataSet
          * attributes: timestamp, stored-in, owner, groups, tags
       * falcon_feed_creation
          * super-types: Process
@@ -48,7 +48,7 @@ Follow the instructions below to setup Atlas hook in Falcon:
    * Copy entire contents of folder apache-atlas-falcon-hook-${project.version}/hook/falcon to `<atlas-home>`/hook/falcon
    * Link Atlas hook jars in Falcon classpath - 'ln -s `<atlas-home>`/hook/falcon/* `<falcon-home>`/server/webapp/falcon/WEB-INF/lib/'
    * In `<falcon_conf>`/falcon-env.sh, set an environment variable as follows:
-     
+
 <SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
      {`export FALCON_SERVER_OPTS="<atlas_home>/hook/falcon/*:$FALCON_SERVER_OPTS"`}
      </SyntaxHighlighter>

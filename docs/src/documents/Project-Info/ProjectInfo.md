@@ -15,8 +15,8 @@ submenu: Project Information
  |Document|Description|
  |:----|:----|
  |[About](#/)|Apache Atlas Documentation|
- |[Project Team](#/TeamList)|This document provides information on the members of this project. These are the individuals who have contributed to the project in one form or another.|
+ |[Project Team](#/TeamList)|This document provides information on the members of this project.<br/> These are the individuals who have contributed to the project in one form or another.|
  |[Mailing Lists](#/MailingLists)|This document provides subscription and archive information for this project's mailing lists.|
- |[Issue Tracking](#/IssueTracking)|This is a link to the issue management system for this project. Issues (bugs, features, change requests) can be created and queried using this link.|
+ |[Issue Tracking](#/IssueTracking)|This is a link to the issue management system for this project.<br/> Issues (bugs, features, change requests) can be created and queried using this link.|
  |[Project License](#/ProjectLicense)|This is a link to the definitions of project licenses.|
  |[Source Repository](#/SourceRepository)|This is a link to the online source repository that can be viewed via a web browser.|
