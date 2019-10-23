@@ -16,7 +16,9 @@
  */
 package org.apache.atlas.web.security;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.dao.UserDao;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -28,6 +30,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.Collection;
  
@@ -38,10 +41,21 @@ public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthentication
     private static Logger logger = LoggerFactory.getLogger(AtlasFileAuthenticationProvider.class);
 
     private final UserDetailsService userDetailsService;
+    private boolean v1ValidationEnabled = true;
 
     @Inject
     public AtlasFileAuthenticationProvider(UserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
+    }
+
+    @PostConstruct
+    public void setup() {
+        try {
+            Configuration configuration = ApplicationProperties.get();
+            v1ValidationEnabled = configuration.getBoolean("atlas.authentication.method.file.v1-validation.enabled", true);
+        } catch (Exception e) {
+            logger.error("Exception while setup", e);
+        }
     }
 
     @Override
@@ -61,9 +75,15 @@ public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthentication
         }
 
         UserDetails user = userDetailsService.loadUserByUsername(username);
-        
-        String encodedPassword = UserDao.getSha256Hash(password);
-        
+        String encodedPassword = UserDao.encrypt(password, username);
+
+        boolean isValidPassword = encodedPassword.equals(user.getPassword());
+
+
+        if (!isValidPassword && v1ValidationEnabled) {
+            encodedPassword = UserDao.getSha256Hash(password);
+        }
+
         if (!encodedPassword.equals(user.getPassword())) {
             logger.error("Wrong password " + username);
             throw new BadCredentialsException("Wrong password");

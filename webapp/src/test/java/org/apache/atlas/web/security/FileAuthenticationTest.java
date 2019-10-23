@@ -88,15 +88,16 @@ public class FileAuthenticationTest {
         TestUtils.writeConfiguration(configuration, persistDir + File.separator
                 + ApplicationProperties.APPLICATION_PROPERTIES);
     }
-    
+
     private void setupUserCredential(String tmpDir) throws Exception {
 
         StringBuilder credentialFileStr = new StringBuilder(1024);
-        credentialFileStr.append("admin=ADMIN::8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918\n");
+        credentialFileStr.append("admin=ADMIN::a4a88c0872bf652bb9ed803ece5fd6e82354838a9bf59ab4babb1dab322154e1\n");
+        credentialFileStr.append("adminv1=ADMIN::8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918\n");
         credentialFileStr.append("michael=DATA_SCIENTIST::95bfb24de17d285d734b9eaa9109bfe922adc85f20d2e5e66a78bddb4a4ebddb\n");
         credentialFileStr.append("paul=DATA_STEWARD::e7c0dcf5f8a93e93791e9bac1ae454a691c1d2a902fc4256d489e96c1b9ac68c\n");
         credentialFileStr.append("user=  \n");
-        credentialFileStr.append("user12=  ::bd35283fe8fcfd77d7c05a8bf2adb85c773281927e12c9829c72a9462092f7c4\n");
+        credentialFileStr.append("user12=  ::43d864d8f9b53cd913fc6a665c8470595cefa4a360edeb78cf6c4eac00c0a3a0\n");
         File credentialFile = new File(tmpDir, "users-credentials");
         FileUtils.write(credentialFile, credentialFileStr.toString());
     }
@@ -114,6 +115,18 @@ public class FileAuthenticationTest {
     public void testValidUserLogin() {
 
         when(authentication.getName()).thenReturn("admin");
+        when(authentication.getCredentials()).thenReturn("admin");
+
+        Authentication auth = authProvider.authenticate(authentication);
+        LOG.debug(" {}", auth);
+
+        assertTrue(auth.isAuthenticated());
+    }
+
+    @Test
+    public void testValidUserLoginWithV1password() {
+
+        when(authentication.getName()).thenReturn("adminv1");
         when(authentication.getCredentials()).thenReturn("admin");
 
         Authentication auth = authProvider.authenticate(authentication);
