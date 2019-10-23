@@ -58,16 +58,23 @@ The following pre-requisites must be met for setting up the High Availability fe
    * Ensure that you install Apache Zookeeper on a cluster of machines (a minimum of 3 servers is recommended for production).
    * Select 2 or more physical machines to run the Atlas Web Service instances on. These machines define what we refer to as a 'server ensemble' for Atlas.
 
+
 To setup High Availability in Atlas, a few configuration options must be defined in the `atlas-application.properties`
 file. While the complete list of configuration items are defined in the [Configuration Page](#/Configuration), this
 section lists a few of the main options.
 
-   * High Availability is an optional feature in Atlas. Hence, it must be enabled by setting the configuration option `atlas.server.ha.enabled` to true.
-   * Next, define a list of identifiers, one for each physical machine you have selected for the Atlas Web Service instance. These identifiers can be simple strings like `id1`, `id2` etc. They should be unique and should not contain a comma.
-   * Define a comma separated list of these identifiers as the value of the option `atlas.server.ids`.
-   * For each physical machine, list the IP Address/hostname and port as the value of the configuration `atlas.server.address.id`, where `id` refers to the identifier string for this physical machine.
 
-      * For e.g., if you have selected 2 machines with hostnames `host1.company.com` and `host2.company.com`, you can define the configuration options as below:
+* High Availability is an optional feature in Atlas. Hence, it must be enabled by setting the configuration option `atlas.server.ha.enabled` to true.
+
+
+* Next, define a list of identifiers, one for each physical machine you have selected for the Atlas Web Service instance. These identifiers can be simple strings like `id1`, `id2` etc. They should be unique and should not contain a comma.
+
+
+* Define a comma separated list of these identifiers as the value of the option `atlas.server.ids`.
+
+
+* For each physical machine, list the IP Address/hostname and port as the value of the configuration `atlas.server.address.id`, where `id` refers to the identifier string for this physical machine.
+   * For e.g., if you have selected 2 machines with hostnames `host1.company.com` and `host2.company.com`, you can define the configuration options as below:
 
 <SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
 {`atlas.server.ids=id1,id2
@@ -109,7 +116,7 @@ the script, and the others would print *PASSIVE*.
 The Atlas Web Service can be accessed in two ways:
 
    * **Using the Atlas Web UI**: This is a browser based client that can be used to query the metadata stored in Atlas.
-   * **Using the Atlas REST API**: As Atlas exposes a RESTful API, one can use any standard REST client including libraries in other applications. In fact, Atlas ships with a client called !AtlasClient that can be used as an example to build REST client access.
+   * **Using the Atlas REST API**: As Atlas exposes a RESTful API, one can use any standard REST client including libraries in other applications. In fact, Atlas ships with a client called AtlasClient that can be used as an example to build REST client access.
 
 In order to take advantage of the High Availability feature in the clients, there are two options possible.
 
@@ -151,11 +158,11 @@ the active instance. The response from the Active instance would be of the form 
 client faces any exceptions in the course of an operation, it should again determine which of the remaining URLs
 is active and retry the operation.
 
-The !AtlasClient class that ships with Atlas can be used as an example client library that implements the logic
+The AtlasClient class that ships with Atlas can be used as an example client library that implements the logic
 for working with an ensemble and selecting the right Active server instance.
 
-Utilities in Atlas, like =quick_start.py= and =import-hive.sh= can be configured to run with multiple server
-URLs. When launched in this mode, the !AtlasClient automatically selects and works with the current active instance.
+Utilities in Atlas, like `quick_start.py` and `import-hive.sh` can be configured to run with multiple server
+URLs. When launched in this mode, the AtlasClient automatically selects and works with the current active instance.
 If a proxy is set up in between, then its address can be used when running quick_start.py or import-hive.sh.
 
 ### Implementation Details of Atlas High Availability
@@ -191,10 +198,10 @@ for the index store, we recommend that Atlas be configured to use Solr or Elasti
 ### Solr
 In order to configure Atlas to use Solr in HA mode, do the following:
 
-   * Choose an existing !SolrCloud cluster setup in HA mode to configure in Atlas (OR) Set up a new [SolrCloud cluster](https://cwiki.apache.org/confluence/display/solr/SolrCloud).
+   * Choose an existing SolrCloud cluster setup in HA mode to configure in Atlas (OR) Set up a new [SolrCloud cluster](https://cwiki.apache.org/confluence/display/solr/SolrCloud).
       * Ensure Solr is brought up on at least 2 physical hosts for redundancy, and each host runs a Solr node.
       * We recommend the number of replicas to be set to at least 2 for redundancy.
-   * Create the !SolrCloud collections required by Atlas, as described in [Installation Steps](#/Installation)
+   * Create the SolrCloud collections required by Atlas, as described in [Installation Steps](#/Installation)
    * Refer to the [Configuration page](#/Configuration) for the options to configure in atlas.properties to setup Atlas with Solr.
 
 ### Elasticsearch  (Tech Preview)
@@ -213,27 +220,31 @@ persists these messages, the events will not be lost even if the consumers are d
 addition, we recommend Kafka is also setup for fault tolerance so that it has higher availability guarantees. In order
 to configure Atlas to use Kafka in HA mode, do the following:
 
-   * Choose an existing Kafka cluster set up in HA mode to configure in Atlas (OR) Set up a new Kafka cluster.
-   * We recommend that there are more than one Kafka brokers in the cluster on different physical hosts that use Zookeeper for coordination to provide redundancy and high availability of Kafka.
-      * Setup at least 2 physical hosts for redundancy, each hosting a Kafka broker.
-   * Set up Kafka topics for Atlas usage:
-      * The number of partitions for the ATLAS topics should be set to 1 (numPartitions)
-      * Decide number of replicas for Kafka topic: Set this to at least 2 for redundancy.
-      * Run the following commands:
+* Choose an existing Kafka cluster set up in HA mode to configure in Atlas (OR) Set up a new Kafka cluster.
 
- <SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
-  {`$KAFKA_HOME/bin/kafka-topics.sh --create --zookeeper <list of zookeeper host:port entries> --topic ATLAS_HOOK --replication-factor <numReplicas> --partitions 1
-  $KAFKA_HOME/bin/kafka-topics.sh --create --zookeeper <list of zookeeper host:port entries> --topic ATLAS_ENTITIES --replication-factor <numReplicas> --partitions 1
-  Here KAFKA_HOME points to the Kafka installation directory.`}
-   </SyntaxHighlighter>
+
+* We recommend that there are more than one Kafka brokers in the cluster on different physical hosts that use Zookeeper for coordination to provide redundancy and high availability of Kafka.
+   * Setup at least 2 physical hosts for redundancy, each hosting a Kafka broker.
+
+
+* Set up Kafka topics for Atlas usage:
+   * The number of partitions for the ATLAS topics should be set to 1 (numPartitions)
+   * Decide number of replicas for Kafka topic: Set this to at least 2 for redundancy.
+   * Run the following commands:
+
+<SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
+   {`$KAFKA_HOME/bin/kafka-topics.sh --create --zookeeper <list of zookeeper host:port entries> --topic ATLAS_HOOK --replication-factor <numReplicas> --partitions 1
+   $KAFKA_HOME/bin/kafka-topics.sh --create --zookeeper <list of zookeeper host:port entries> --topic ATLAS_ENTITIES --replication-factor <numReplicas> --partitions 1
+   Here KAFKA_HOME points to the Kafka installation directory.`}
+</SyntaxHighlighter>
 
    * In atlas-application.properties, set the following configuration:
 
-   <SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
-     {`atlas.notification.embedded=false
-    atlas.kafka.zookeeper.connect=<comma separated list of servers forming Zookeeper quorum used by Kafka>
-    atlas.kafka.bootstrap.servers=<comma separated list of Kafka broker endpoints in host:port form> - Give at least 2 for redundancy.`}
-   </SyntaxHighlighter>
+<SyntaxHighlighter wrapLines={true} language="java" style={theme.dark}>
+   {`atlas.notification.embedded=false
+   atlas.kafka.zookeeper.connect=<comma separated list of servers forming Zookeeper quorum used by Kafka>
+   atlas.kafka.bootstrap.servers=<comma separated list of Kafka broker endpoints in host:port form> - Give at least 2 for redundancy.`}
+</SyntaxHighlighter>
 
 ## Known Issues
 

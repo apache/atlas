@@ -57,7 +57,8 @@ const TableStyled = styled.table`
 
   & thead th {
     font-weight: 400;
-    padding: 20px 20px;
+    padding: 10px;
+    text-align: left;
 
     &:nth-of-type(1) {
       ${mq({
@@ -91,9 +92,10 @@ const TableStyled = styled.table`
   }
 
   & tbody td {
-    padding: 12px 20px;
+    padding: 10px;
     line-height: 2;
     font-weight: 200;
+    text-align: left;
   }
 
   & tbody > tr {

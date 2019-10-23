@@ -47,7 +47,7 @@ ENTITY_ALL                | Any/every entity               |
 ENTITY_TOP_LEVEL          | Entity that is the top-level entity. This is also the entity present specified in _AtlasExportRequest_.|
 EQUALS                    | Entity attribute equals to the one specified in the condition. |
 EQUALS_IGNORE_CASE        | Entity attribute equals to the one specified in the condition ignoring case. |
-STARTS_WITH               | Entity attribute starts with. | 
+STARTS_WITH               | Entity attribute starts with. |
 STARTS_WITH_IGNORE_CASE   | Entity attribute starts with ignoring case. |
 HAS_VALUE                 | Entity attribute has value. |
 
@@ -64,7 +64,7 @@ CLEAR              | Clear value of an attribute                  |
 
 #### Built-in Transforms
 
-###### Add Classification
+##### Add Classification
 
 During import, hive_db entity whose _qualifiedName_ is _stocks@cl1_ will get the classification _clSrcImported_.
 
@@ -106,7 +106,7 @@ To add classification to only the top-level entity (entity that is used as start
 }`}
 </SyntaxHighlighter>
 
-###### Replace Prefix
+##### Replace Prefix
 
 This action works on string values. The first parameter is the prefix that is searched for a match, once matched, it is replaced with the provided replacement string.
 
@@ -123,11 +123,11 @@ The sample below searches for _/aa/bb/_, once found replaces it with _/xx/yy/_.
 }`}
 </SyntaxHighlighter>
 
-###### To Lower
+##### To Lower
 
 Entity whose hdfs_path.clusterName is CL1 will get its path attribute converted to lower case.
 
-<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}> 
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{
     "conditions": {
         "hdfs_path.clusterName": "EQUALS: CL1"
@@ -138,11 +138,11 @@ Entity whose hdfs_path.clusterName is CL1 will get its path attribute converted 
 }`}
 </SyntaxHighlighter>
 
-###### Clear
+##### Clear
 
 Entity whose hdfs_path.clusterName has value set, will get its _replicatedTo_ attribute value cleared.
 
-<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}> 
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{
     "conditions": {
         "hdfs_path.clusterName": "HAS_VALUE:"

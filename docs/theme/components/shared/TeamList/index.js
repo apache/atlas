@@ -22,13 +22,16 @@ import { parseString } from "xml2js";
 import styled from "styled-components";
 
 const TeamListStyle = styled.div`
+  width: 100%;
+  overflow: auto;
+
   > table {
     font-family: "Inconsolata", monospace;
     font-size: 14px;
-    display: table;
+    display: inline-table;
     table-layout: auto;
     color: #13161f;
-    width: 100%;
+    width: 98%;
     padding: 0;
     box-shadow: 0 0 0 1px #529d8b;
     background-color: transparent;
@@ -38,6 +41,7 @@ const TeamListStyle = styled.div`
     border-radius: 2px;
     overflow-y: hidden;
     overflow-x: initial;
+    margin: 5px 10px;
   }
   > table tr {
     display: table-row;
@@ -45,9 +49,10 @@ const TeamListStyle = styled.div`
     border-color: inherit;
   }
   > table tr > td {
-    padding: 15px;
+    padding: 10px;
     line-height: 2;
     font-weight: 200;
+    white-space: pre;
   }
   > table > thead {
     color: #7d899c;
@@ -59,7 +64,8 @@ const TeamListStyle = styled.div`
   }
   > table > thead > tr > th {
     font-weight: 400;
-    padding: 15px;
+    padding: 10px;
+    text-align: left;
   }
 `;
 

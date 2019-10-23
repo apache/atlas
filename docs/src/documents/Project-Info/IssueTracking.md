@@ -16,8 +16,6 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 
 
 # Issue Tracking
-* Issues, bugs, and feature requests should be submitted to the following issue tracking system for this project.
 
-<SyntaxHighlighter wrapLines={true} language="html" style={theme.dark}>
- {`https://issues.apache.org/jira/browse/ATLAS`}
-</SyntaxHighlighter>
+Issues, bugs, and feature requests should be submitted to the following issue tracking system for this project.
+[https://issues.apache.org/jira/browse/ATLAS](https://issues.apache.org/jira/browse/ATLAS)

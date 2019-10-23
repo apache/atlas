@@ -27,8 +27,8 @@ The general approach is:
 | _Method_ |_POST_ |
 | _URL Parameters_ |_None_ |
 | _Data Parameters_|_None_|
-| _Success Response_ | _!AtlasImporResult_ is returned as JSON. See details below.|
-|_Error Response_|Errors that are handled within the system will be returned as _!AtlasBaseException_. |
+| _Success Response_ | _AtlasImporResult_ is returned as JSON. See details below.|
+|_Error Response_|Errors that are handled within the system will be returned as _AtlasBaseException_. |
 
 ### Import ZIP File Available on Server
 
@@ -40,8 +40,8 @@ The general approach is:
 | _Method_ |_POST_ |
 | _URL Parameters_ |_None_ |
 | _Data Parameters_|_None_|
-| _Success Response_ | _!AtlasImporResult_ is returned as JSON. See details below.|
-|_Error Response_|Errors that are handled within the system will be returned as _!AtlasBaseException_. |
+| _Success Response_ | _AtlasImporResult_ is returned as JSON. See details below.|
+|_Error Response_|Errors that are handled within the system will be returned as _AtlasBaseException_. |
 |_Notes_| The file to be imported needs to be present on the server at the location specified by the _FILENAME_ parameter.|
 
 __Method Signature for Import__
@@ -73,7 +73,7 @@ The API will return the results of the import operation in the format defined by
    * _Operation Status_: Overall status of the operation. Values are _SUCCESS_, PARTIAL_SUCCESS, _FAIL_.
 
 ### Examples Using CURL Calls
-The call below performs Import of _!QuickStart_ database using POST.
+The call below performs Import of _QuickStart_ database using POST.
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`curl -g -X POST -u adminuser:password -H "Content-Type: multipart/form-data"
@@ -138,4 +138,3 @@ The _metrics_ contain a breakdown of the types and entities imported along with 
     "operationStatus": "SUCCESS"
 }`}
 </SyntaxHighlighter>
-

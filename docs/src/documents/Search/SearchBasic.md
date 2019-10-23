@@ -2,7 +2,7 @@
 name: Basic Search
 route: /SearchBasic
 menu: Documentation
-submenu: Search 
+submenu: Search
 ---
 
 import  themen  from 'theme/styles/styled-colors';
@@ -14,7 +14,7 @@ import Img from 'theme/components/shared/Img'
 
 The basic search allows you to query using typename of an entity, associated classification/tag and has support for filtering on the entity attribute(s) as well as the classification/tag attributes.
 
-The entire query structure can be represented using the following JSON structure (called !SearchParameters)
+The entire query structure can be represented using the following JSON structure (called SearchParameters)
 
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{
@@ -44,13 +44,13 @@ tagFilters:             classification attribute filter(s)
 attributes:             attributes to include in the search result`}
 </SyntaxHighlighter>
 
-<Img src={`/images/twiki/search-basic-hive_column-PII.png`} height="400" width="600"/>
+<Img src={`/images/twiki/search-basic-hive_column-PII.png`} height="500" width="840"/>
 
    Attribute based filtering can be done on multiple attributes with AND/OR conditions.
 
 **Examples of filtering (for hive_table attributes)**
    * Single attribute
-   
+
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`   {
      "typeName":               "hive_table",
@@ -66,7 +66,7 @@ attributes:             attributes to include in the search result`}
    }`}
 </SyntaxHighlighter>
 
-<Img src={`/images/twiki/search-basic-hive_table-customers.png`} height="400" width="600"/>
+<Img src={`/images/twiki/search-basic-hive_table-customers.png`} height="500" width="840"/>
 
    * Multi-attribute with OR
 
@@ -95,7 +95,7 @@ attributes:             attributes to include in the search result`}
    }`}
 </SyntaxHighlighter>
 
-<Img src={`/images/twiki/search-basic-hive_table-customers-or-provider.png`} height="400" width="600"/>
+<Img src={`/images/twiki/search-basic-hive_table-customers-or-provider.png`} height="500" width="840"/>
 
    * Multi-attribute with AND
 
@@ -124,7 +124,7 @@ attributes:             attributes to include in the search result`}
   }`}
 </SyntaxHighlighter>
 
-<Img src={`/images/twiki/search-basic-hive_table-customers-owner_is_hive.png`} height="400" width="600"/>
+<Img src={`/images/twiki/search-basic-hive_table-customers-owner_is_hive.png`} height="500" width="840"/>
 
 **Supported operators for filtering**
 

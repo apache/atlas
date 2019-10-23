@@ -15,13 +15,13 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 HBase model includes the following types:
    * Entity types:
       * hbase_namespace
-         * super-types: !Asset
+         * super-types: Asset
          * attributes: qualifiedName, name, description, owner, clusterName, parameters, createTime, modifiedTime
       * hbase_table
-         * super-types: !DataSet
+         * super-types: DataSet
          * attributes: qualifiedName, name, description, owner, namespace, column_families, uri, parameters, createtime, modifiedtime, maxfilesize, isReadOnly, isCompactionEnabled, isNormalizationEnabled, ReplicaPerRegion, Durability
       * hbase_column_family
-         * super-types: !DataSet
+         * super-types: DataSet
          * attributes:  qualifiedName, name, description, owner, columns, createTime, bloomFilterType, compressionType, compactionCompressionType, encryptionType, inMemoryCompactionPolicy, keepDeletedCells, maxversions, minVersions, datablockEncoding, storagePolicy, ttl, blockCachedEnabled, cacheBloomsOnWrite, cacheDataOnWrite, evictBlocksOnClose, prefetchBlocksOnOpen, newVersionsBehavior, isMobEnabled, mobCompactPartitionPolicy
 
 HBase entities are created and de-duped in Atlas using unique attribute qualifiedName, whose value should be formatted as detailed below. Note that namespaceName, tableName and columnFamilyName should be in lower case.
@@ -37,7 +37,7 @@ hbase_column_family.qualifiedName:  <namespaceName>:<tableName>.<columnFamilyNam
 Atlas HBase hook registers with HBase master as a co-processor. On detecting changes to HBase namespaces/tables/column-families, Atlas hook updates the metadata in Atlas via Kafka notifications.
 Follow the instructions below to setup Atlas hook in HBase:
    * Register Atlas hook in hbase-site.xml by adding the following:
-  
+
 <SyntaxHighlighter wrapLines={true} language="xml" style={theme.dark}>
 {`<property>
 <name>hbase.coprocessor.master.classes</name>

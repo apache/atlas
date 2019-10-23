@@ -17,7 +17,7 @@ import Img from 'theme/components/shared/Img'
 Kafka model includes the following types:
    * Entity types:
       * kafka_topic
-         * super-types: !DataSet
+         * super-types: DataSet
          * attributes: qualifiedName, name, description, owner, topic, uri, partitionCount
 
 Kafka entities are created and de-duped in Atlas using unique attribute qualifiedName, whose value should be formatted as detailed below.

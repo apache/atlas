@@ -17,13 +17,13 @@ import Img from 'theme/components/shared/Img'
 Hive model includes the following types:
    * Entity types:
     * hive_db
-      * super-types: !Asset
+      * super-types: Asset
       * attributes: qualifiedName, name, description, owner, clusterName, location, parameters, ownerName
     * hive_table
-         * super-types: !DataSet
+         * super-types: DataSet
          * attributes: qualifiedName, name, description, owner, db, createTime, lastAccessTime, comment, retention, sd, partitionKeys, columns, aliases, parameters, viewOriginalText, viewExpandedText, tableType, temporary
       * hive_column
-         * super-types: !DataSet
+         * super-types: DataSet
          * attributes: qualifiedName, name, description, owner, type, comment, table
       * hive_storagedesc
          * super-types: Referenceable
@@ -34,19 +34,19 @@ Hive model includes the following types:
       * hive_column_lineage
          * super-types: Process
          * attributes: qualifiedName, name, description, owner, inputs, outputs, query, depenendencyType, expression
-      
+
 
    * Enum types:
     * hive_principal_type
       * values: USER, ROLE, GROUP
-      
+
 
    * Struct types:
      * hive_order
          * attributes: col, order
       * hive_serde
          * attributes: name, serializationLib, parameters
-      
+
 
 Hive entities are created and de-duped in Atlas using unique attribute qualifiedName, whose value should be formatted as detailed below. Note that dbName, tableName and columnName should be in lower case.
 
@@ -62,7 +62,7 @@ hive_process.queryString:  trimmed query string in lower case`}
 Atlas Hive hook registers with Hive to listen for create/update/delete operations and updates the metadata in Atlas, via Kafka notifications, for the changes in Hive.
 Follow the instructions below to setup Atlas hook in Hive:
   * Set-up Atlas hook in hive-site.xml by adding the following:
-  
+
 <SyntaxHighlighter wrapLines={true} language="xml" style={theme.dark}>
 {`<property>
     <name>hive.exec.post.hooks</name>
@@ -75,7 +75,7 @@ Follow the instructions below to setup Atlas hook in Hive:
   * Copy entire contents of folder apache-atlas-hive-hook-${project.version}/hook/hive to `<atlas package>`/hook/hive
   * Add 'export HIVE_AUX_JARS_PATH=`<atlas package>`/hook/hive' in hive-env.sh of your hive configuration
   * Copy `<atlas-conf>`/atlas-application.properties to the hive conf directory.
-  
+
 
 The following properties in atlas-application.properties control the thread pool and notification details:
 
@@ -97,18 +97,15 @@ Other configurations for Kafka notification producer can be specified by prefixi
 Starting from 0.8-incubating version of Atlas, Column level lineage is captured in Atlas. Below are the details
 
 ### Model
-   * !ColumnLineageProcess type is a subtype of Process
 
-   * This relates an output Column to a set of input Columns or the Input Table
-
-   * The lineage also captures the kind of dependency, as listed below:
-      * SIMPLE:     output column has the same value as the input
-      * EXPRESSION: output column is transformed by some expression at runtime (for e.g. a Hive SQL expression) on the Input Columns.
-      * SCRIPT:     output column is transformed by a user provided script.
-
-   * In case of EXPRESSION dependency the expression attribute contains the expression in string form
-
-   * Since Process links input and output !DataSets, Column is a subtype of !DataSet
+* ColumnLineageProcess type is a subtype of Process
+* This relates an output Column to a set of input Columns or the Input Table
+* The lineage also captures the kind of dependency, as listed below:
+   * SIMPLE:     output column has the same value as the input
+   * EXPRESSION: output column is transformed by some expression at runtime (for e.g. a Hive SQL expression) on the Input Columns.
+   * SCRIPT:     output column is transformed by a user provided script.
+* In case of EXPRESSION dependency the expression attribute contains the expression in string form
+* Since Process links input and output DataSets, Column is a subtype of DataSet
 
 ### Examples
 For a simple CTAS below:
@@ -124,10 +121,12 @@ The lineage is captured as
 
 
 ### Extracting Lineage from Hive commands
-  * The !HiveHook maps the !LineageInfo in the !HookContext to Column lineage instances
-  * The !LineageInfo in Hive provides column-level lineage for the final !FileSinkOperator, linking them to the input columns in the Hive Query
+
+  * The HiveHook maps the LineageInfo in the HookContext to Column lineage instances
+  * The LineageInfo in Hive provides column-level lineage for the final FileSinkOperator, linking them to the input columns in the Hive Query
 
 ## NOTES
+
    * Column level lineage works with Hive version 1.2.1 after the patch for <a href="https://issues.apache.org/jira/browse/HIVE-13112">HIVE-13112</a> is applied to Hive source
    * Since database name, table name and column names are case insensitive in hive, the corresponding names in entities are lowercase. So, any search APIs should use lowercase while querying on the entity names
    * The following hive operations are captured by hive hook currently

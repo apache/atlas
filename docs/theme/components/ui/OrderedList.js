@@ -35,5 +35,9 @@ export const OrderedList = styled.ol`
     margin-right: 5px;
   }
 
+  ol li {
+    padding-left: 25px;
+  }
+
   ${get("styles.ol")};
 `;

@@ -11,9 +11,9 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 
 # Migrating data from Apache Atlas 0.8 to Apache Atlas 1.0
 
-Apache Atlas 1.0 uses !JanusGraph graph database to store its type and entity details. Prior versions of Apache Atlas
+Apache Atlas 1.0 uses JanusGraph graph database to store its type and entity details. Prior versions of Apache Atlas
 use Titan 0.5.4 graph database. The two databases use different formats for storage. For deployments upgrading from
-earlier version Apache Atlas, the data in Titan 0.5.4 graph database should be migrated to !JanusGraph graph database.
+earlier version Apache Atlas, the data in Titan 0.5.4 graph database should be migrated to JanusGraph graph database.
 
 In addition to the change to the graph database, Apache Atlas 1.0 introduces few optimizations that require different internal
 representation compared to previous versions. Migration steps detailed below will transform data to be compliant with
@@ -26,7 +26,7 @@ Migration of data is done in following steps:
    * Export Apache Atlas 0.8 data to a directory on the file system.
    * Import data from exported files into Apache Atlas 1.0.
 
-##### Planning the migration
+#### Planning the migration
 
 The duration of migration of data from Apache Atlas 0.8 to Apache Atlas 1.0 can be significant, depending upon the
 amount of data present in Apache Atlas. This section helps you to estimate the time to migrate, so that you can plan the
@@ -77,7 +77,7 @@ atlas-migration-export: exporting typesDef to file /home/atlas-0.8-data/atlas-mi
 atlas-migration-export: exported  typesDef to file /home/atlas-0.8-data/atlas-migration-typesdef.json
 atlas-migration-export: exporting data to file /home/atlas-0.8-data/atlas-migration-data.json
 atlas-migration-export: exported  data to file /home/atlas-0.8-data/atlas-migration-data.json
-atlas-migration-export: completed migration export!`}
+atlas-migration-export: completed migration export`}
 </SyntaxHighlighter>
 
 More details on the progress of export can be found in a log file named _atlas-migration-exporter.log_, in the log directory
@@ -98,18 +98,21 @@ curl 'http://<solrHost:port>/solr/admin/collections?action=DELETE&name=fulltext_
 Apache Atlas specific Solr collections can be created using CURL commands shown below:
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
-{`curl 'http://<solrHost:port>/solr/admin/collections?action=CREATE&name=vertex_index&numShards=1&replicationFactor=1&collection.configName=atlas_configs'
-curl 'http://<solrHost:port>/solr/admin/collections?action=CREATE&name=edge_index&numShards=1&replicationFactor=1&collection.configName=atlas_configs'
-curl 'http://<solrHost:port>/solr/admin/collections?action=CREATE&name=fulltext_index&numShards=1&replicationFactor=1&collection.configName=atlas_configs'`}
+   {`curl 'http://<solrHost:port>/solr/admin/collections?action=CREATE&name=vertex_index&numShards=1&replicationFactor=1&collection.configName=atlas_configs'
+   curl 'http://<solrHost:port>/solr/admin/collections?action=CREATE&name=edge_index&numShards=1&replicationFactor=1&collection.configName=atlas_configs'
+   curl 'http://<solrHost:port>/solr/admin/collections?action=CREATE&name=fulltext_index&numShards=1&replicationFactor=1&collection.configName=atlas_configs'`}
 </SyntaxHighlighter>
 
-   * For Apache Atlas deployments that use HBase as backend store, please note that HBase table used by earlier version can't be used by Apache Atlas 1.0. If you are constrained on disk storage space, the table used by earlier version can be removed after successful export of data.
-      * Apache Atlas 0.8 uses HBase table named 'atlas_titan' (by default)
-      * Apache Atlas 1.0 uses HBase table named 'atlas_janus' (by default)
 
-   * Install Apache Atlas 1.0. Do not start yet!
+* For Apache Atlas deployments that use HBase as backend store, please note that HBase table used by earlier version can't be used by Apache Atlas 1.0. If you are constrained on disk storage space, the table used by earlier version can be removed after successful export of data.
+   * Apache Atlas 0.8 uses HBase table named 'atlas_titan' (by default)
+   * Apache Atlas 1.0 uses HBase table named 'atlas_janus' (by default)
 
-   * Make sure the directory containing exported data is accessible to Apache Atlas 1.0 instance.
+
+* Install Apache Atlas 1.0. Do not start yet!
+
+
+* Make sure the directory containing exported data is accessible to Apache Atlas 1.0 instance.
 
 
 #### Importing Data into Apache Atlas 1.0
@@ -117,12 +120,14 @@ Please follow the steps below to import the data exported above into Apache Atla
    * Specify the location of the directory containing exported data in following property to _atlas-application.properties_:
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
-{`atlas.migration.data.filename=<location of the directory containing exported data>`}
+   {`atlas.migration.data.filename=<location of the directory containing exported data>`}
 </SyntaxHighlighter>
 
-   * Start Apache Atlas 1.0. Apache Atlas will start in migration mode. It will start importing data from the specified directory.
 
-   * Monitor the progress of import process with the following curl command:
+* Start Apache Atlas 1.0. Apache Atlas will start in migration mode. It will start importing data from the specified directory.
+
+
+* Monitor the progress of import process with the following curl command:
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`curl -X GET -u admin:<password> -H "Content-Type: application/json" -H "Cache-Control: no-cache" http://<atlasHost>:port/api/atlas/admin/status`}

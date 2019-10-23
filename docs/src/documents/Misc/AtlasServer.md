@@ -35,7 +35,7 @@ The _additionalInfo_ attribute property is discussed in detail below.
 
 <Img src={`/images/markdown/atlas-server-properties.png`}/>
 
-###### Export/Import Audits
+#### Export/Import Audits
 
 The table has following columns:
 
@@ -48,7 +48,7 @@ The table has following columns:
 
 <Img src={'/images/markdown/atlas-server-exp-imp-audits.png'}/>
 
-###### Example
+#### Example
 
 The following export request will end up creating _AtlasServer_ entity with _clMain_ as its name. The audit record of this operation will be displayed within the property page of this entity.
 
@@ -89,7 +89,7 @@ Data Parameters | None                                  |
 Success Response| _AtlasServer_                         |
 Error Response  | Errors Returned as AtlasBaseException |
 
-###### CURL
+#### CURL
 
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`curl -X GET -u admin:admin -H "Content-Type: application/json" -H "Cache-Control:no-cache" http://localhost:21000/api/atlas/admin/server/cl2`}

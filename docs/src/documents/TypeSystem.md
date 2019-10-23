@@ -2,7 +2,7 @@
 name: Type System
 route: /TypeSystem
 menu: Documentation
-submenu: Features 
+submenu: Features
 ---
 
 import  themen  from 'theme/styles/styled-colors';
@@ -74,24 +74,24 @@ typeName: "hive_table"
 status:   "ACTIVE"
 values:
     name:             “customers”
-    db:               { "guid": "b42c6cfc-c1e7-42fd-a9e6-890e0adf33bc", 
-                        "typeName": "hive_db" 
+    db:               { "guid": "b42c6cfc-c1e7-42fd-a9e6-890e0adf33bc",
+                        "typeName": "hive_db"
                       }
     owner:            “admin”
     createTime:       1490761686029
     updateTime:       1516298102877
     comment:          null
     retention:        0
-    sd:               { "guid": "ff58025f-6854-4195-9f75-3a3058dd8dcf", 
-                        "typeName": 
-                        "hive_storagedesc" 
+    sd:               { "guid": "ff58025f-6854-4195-9f75-3a3058dd8dcf",
+                        "typeName":
+                        "hive_storagedesc"
                       }
     partitionKeys:    null
     aliases:          null
-    columns:          [ { "guid": "65e2204f-6a23-4130-934a-9679af6a211f", 
-                          "typeName": "hive_column" }, 
-                        { "guid": "d726de70-faca-46fb-9c99-cf04f6b579a6", 
-                          "typeName": "hive_column" }, 
+    columns:          [ { "guid": "65e2204f-6a23-4130-934a-9679af6a211f",
+                          "typeName": "hive_column" },
+                        { "guid": "d726de70-faca-46fb-9c99-cf04f6b579a6",
+                          "typeName": "hive_column" },
                           ...
                       ]
     parameters:       { "transient_lastDdlTime": "1466403208"}
@@ -194,13 +194,13 @@ make convention based assumptions about what attributes they can expect of types
 metadata objects like clusters, hosts etc.
 
 **DataSet**: This type extends Referenceable. Conceptually, it can be used to represent an type that stores data. In Atlas,
-hive tables, hbase_tables etc are all types that extend from !DataSet. Types that extend !DataSet can be expected to have
+hive tables, hbase_tables etc are all types that extend from DataSet. Types that extend DataSet can be expected to have
 a Schema in the sense that they would have an attribute that defines attributes of that dataset. For e.g. the columns
-attribute in a hive_table. Also entities of types that extend !DataSet participate in data transformation and this
+attribute in a hive_table. Also entities of types that extend DataSet participate in data transformation and this
 transformation can be captured by Atlas via lineage (or provenance) graphs.
 
 **Process**: This type extends Asset. Conceptually, it can be used to represent any data transformation operation. For
 example, an ETL process that transforms a hive table with raw data to another hive table that stores some aggregate can
 be a specific type that extends the Process type. A Process type has two specific attributes, inputs and outputs. Both
-inputs and outputs are arrays of !DataSet entities. Thus an instance of a Process type can use these inputs and outputs
-to capture how the lineage of a !DataSet evolves.
+inputs and outputs are arrays of DataSet entities. Thus an instance of a Process type can use these inputs and outputs
+to capture how the lineage of a DataSet evolves.
