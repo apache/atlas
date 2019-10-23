@@ -16,6 +16,10 @@
  */
 package org.apache.atlas.util;
 
+import org.apache.atlas.web.dao.UserDao;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Options;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.alias.CredentialProvider;
@@ -71,6 +75,36 @@ public class CredentialProviderUtility {
     public static TextDevice textDevice = DEFAULT_TEXT_DEVICE;
 
     public static void main(String[] args) throws IOException {
+        Options options = new Options();
+
+        try {
+            createOptions(options);
+
+            CommandLine cmd = new BasicParser().parse(options, args);
+
+            boolean generatePasswordOption = cmd.hasOption("g");
+
+            if (generatePasswordOption) {
+                String userName = cmd.getOptionValue("u");
+                String password = cmd.getOptionValue("p");
+
+                if (userName != null && password != null) {
+                    String encryptedPassword = UserDao.encrypt(password, userName);
+                    textDevice.printf("Your encrypted password is  : " + encryptedPassword, null);
+                    textDevice.printf("\n", null);
+
+                } else {
+                    textDevice.printf("Please provide username and password as input. Usage:" +
+                            " cputil.py -g -u <username> -p <password>", null);
+                }
+                return;
+            }
+
+        } catch (Exception e) {
+            System.out.println("Exception while generatePassword  " + e.getMessage());
+            return;
+        }
+
         // prompt for the provider name
         CredentialProvider provider = getCredentialProvider(textDevice);
 
@@ -98,6 +132,12 @@ public class CredentialProviderUtility {
                 }
             }
         }
+    }
+
+    private static void createOptions(Options options) {
+        options.addOption("g", "generatePassword", false, "Generate Password");
+        options.addOption("u", "username", true, "UserName");
+        options.addOption("p", "password", true, "Password");
     }
 
     /**

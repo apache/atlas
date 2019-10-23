@@ -28,6 +28,7 @@ import javax.annotation.PostConstruct;
 import org.apache.atlas.web.security.AtlasAuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.encoding.ShaPasswordEncoder;
 import org.springframework.stereotype.Repository;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
@@ -49,6 +50,8 @@ public class UserDao {
     private static final Logger LOG = LoggerFactory.getLogger(UserDao.class);
 
     private Properties userLogins;
+
+    private static final ShaPasswordEncoder sha256Encoder = new ShaPasswordEncoder(256);
 
     @PostConstruct
     public void init() {
@@ -106,13 +109,11 @@ public class UserDao {
 
         return userDetails;
     }
-    
 
     @VisibleForTesting
     public void setUserLogins(Properties userLogins) {
         this.userLogins = userLogins;
     }
-
 
     public static String getSha256Hash(String base) throws AtlasAuthenticationException {
         try {
@@ -132,4 +133,7 @@ public class UserDao {
         }
     }
 
+    public static String encrypt(String password, String salt) {
+           return sha256Encoder.encodePassword(password, salt);
+    }
 }
