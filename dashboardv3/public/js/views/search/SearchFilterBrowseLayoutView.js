@@ -58,6 +58,7 @@ define([
                 e.stopPropagation();
                 $("#sidebar-wrapper,#page-wrapper").addClass("animate-me");
                 $(".container-fluid.view-container").toggleClass("slide-in");
+                $("#page-wrapper>div").css({ width: "auto" });
                 $("#sidebar-wrapper,.search-browse-box,#page-wrapper").removeAttr("style");
                 setTimeout(function() {
                     $("#sidebar-wrapper,#page-wrapper").removeClass("animate-me");
@@ -122,7 +123,6 @@ define([
             this.renderClassificationTree();
             this.renderGlossaryTree();
             this.renderCustomFilterTree();
-            //  this.renderSaveSearch();
             this.showHideGlobalFilter();
             this.showDefaultPage();
         },
@@ -143,16 +143,25 @@ define([
         onShow: function() {
             var that = this;
             this.$(".search-browse-box").resizable({
-                handles: { 'e': '.slider-bar' },
-                minWidth: 224,
-                maxWidth: 360,
+                handles: { "e": ".slider-bar" },
+                minWidth: 30,
+                minHeight: window.screen.height,
                 resize: function(event, ui) {
                     var width = ui.size.width,
                         calcWidth = "calc(100% - " + width + "px)";
                     $("#sidebar-wrapper").width(width);
-                    $("#page-wrapper").css({ "width": calcWidth, marginLeft: width + "px" });
+                    $("#page-wrapper").css({ width: calcWidth, marginLeft: width + "px" });
+                    var selectedEl = $("#page-wrapper>div");
+                    if (width > 700) {
+                        $("#page-wrapper").css({ overflowX: "auto" });
+                        selectedEl.css({ width: window.screen.width - 360 });
+                    } else {
+                        $("#page-wrapper").css({ overflow: "none" });
+                        selectedEl.css({ width: "100%" });
+                    }
                 },
                 start: function() {
+                    $(".searchLayoutView").removeClass("open");
                     this.expanding = $(".container-fluid.view-container").hasClass("slide-in");
                     $(".container-fluid.view-container").removeClass("slide-in");
                     if (this.expanding) {
@@ -160,7 +169,7 @@ define([
                     }
                 },
                 stop: function(event, ui) {
-                    if (!this.expanding && ui.size.width < 225) {
+                    if (!this.expanding && ui.size.width <= 30) {
                         $("#sidebar-wrapper,#page-wrapper").addClass("animate-me");
                         $("#sidebar-wrapper,#page-wrapper,.search-browse-box").removeAttr("style");
                         $(".container-fluid.view-container").addClass("slide-in");
@@ -169,7 +178,7 @@ define([
                         $("#sidebar-wrapper,#page-wrapper").removeClass("animate-me");
                     }, 301);
                 }
-            })
+            });
         },
         showHideGlobalFilter: function() {
             if (this.options.fromDefaultSearch) {
@@ -178,92 +187,6 @@ define([
                 this.$(".mainContainer").addClass("global-filter-browser");
             }
         },
-        // renderSaveSearch: function() {
-        //     var that = this;
-        //     require(["views/search/save/SaveSearchView"], function(SaveSearchView) {
-        //         var saveSearchBaiscCollection = new VSearchList(),
-        //             saveSearchAdvanceCollection = new VSearchList(),
-        //             saveSearchCollection = new VSearchList();
-        //         saveSearchCollection.url = UrlLinks.saveSearchApiUrl();
-        //         saveSearchBaiscCollection.fullCollection.comparator = function(model) {
-        //             return getModelName(model);
-        //         };
-        //         saveSearchAdvanceCollection.fullCollection.comparator = function(model) {
-        //             return getModelName(model);
-        //         };
-        //         var obj = {
-        //             value: that.options.value,
-        //             searchVent: that.searchVent,
-        //             typeHeaders: that.typeHeaders,
-        //             fetchCollection: fetchSaveSearchCollection,
-        //             classificationDefCollection: that.classificationDefCollection,
-        //             entityDefCollection: that.entityDefCollection,
-        //             getValue: function() {
-        //                 var queryObj = that.query[that.type],
-        //                     entityObj = that.searchTableFilters["entityFilters"],
-        //                     tagObj = that.searchTableFilters["tagFilters"],
-        //                     urlObj = Utils.getUrlState.getQueryParams();
-        //                 if (urlObj) {
-        //                     // includeDE value in because we need to send "true","false" to the server.
-        //                     urlObj.includeDE = urlObj.includeDE == "true" ? true : false;
-        //                     urlObj.excludeSC = urlObj.excludeSC == "true" ? true : false;
-        //                     urlObj.excludeST = urlObj.excludeST == "true" ? true : false;
-        //                 }
-        //                 return _.extend({}, queryObj, urlObj, {
-        //                     entityFilters: entityObj ? entityObj[queryObj.type] : null,
-        //                     tagFilters: tagObj ? tagObj[queryObj.tag] : null,
-        //                     type: queryObj.type,
-        //                     query: queryObj.query,
-        //                     term: queryObj.term,
-        //                     tag: queryObj.tag
-        //                 });
-        //             },
-        //             applyValue: function(model, searchType) {
-        //                 that.manualRender(
-        //                     _.extend(
-        //                         searchType,
-        //                         CommonViewFunction.generateUrlFromSaveSearchObject({
-        //                             value: { searchParameters: model.get("searchParameters"), uiParameters: model.get("uiParameters") },
-        //                             classificationDefCollection: that.classificationDefCollection,
-        //                             entityDefCollection: that.entityDefCollection
-        //                         })
-        //                     )
-        //                 );
-        //             }
-        //         };
-
-        //         //  will be shown as different tab on the screen.
-        //         that.RSaveSearchBasic.show(
-        //             new SaveSearchView(
-        //                 _.extend(obj, {
-        //                     isBasic: true,
-        //                     displayButtons: false,
-        //                     collection: saveSearchBaiscCollection.fullCollection
-        //                 })
-        //             )
-        //         );
-        //         // that.RSaveSearchAdvance.show(new SaveSearchView(_.extend(obj, {
-        //         //     isBasic: false,
-        //         //     collection: saveSearchAdvanceCollection.fullCollection
-        //         // })));
-        //         function getModelName(model) {
-        //             if (model.get('name')) {
-        //                 return model.get('name').toLowerCase();
-        //             }
-        //         }
-
-        //         function fetchSaveSearchCollection() {
-        //             saveSearchCollection.fetch({
-        //                 success: function(collection, data) {
-        //                     saveSearchAdvanceCollection.fullCollection.reset(_.where(data, { searchType: "ADVANCED" }));
-        //                     saveSearchBaiscCollection.fullCollection.reset(_.where(data, { searchType: "BASIC" }));
-        //                 },
-        //                 silent: true
-        //             });
-        //         }
-        //         fetchSaveSearchCollection();
-        //     });
-        // },
         manualRender: function(options) {
             var that = this;
             if (options) {

@@ -33,6 +33,8 @@ body {
     }
 
     #page-wrapper {
+        height: calc(100vh - 90px);
+        overflow: auto;
         padding-top: 15px !important;
         padding-bottom: 10px !important;
     }
@@ -72,7 +74,6 @@ body {
     &:hover {
         color: $gray;
     }
-
 }
 
 .atlas-page-header {
@@ -210,7 +211,6 @@ header.atlas-header {
                     }
                 }
 
-
                 td {
                     padding: 0px 15px;
 
@@ -227,7 +227,6 @@ header.atlas-header {
                     font-size: 18px;
                 }
             }
-
         }
     }
 }
@@ -688,11 +687,9 @@ hr[size="10"] {
     box-shadow: 0px 0px 3px 0px #8080806b;
 }
 
-
 .tooltip.bottom .tooltip-arrow {
     border-bottom-color: #000;
 }
-
 
 td.searchTableName:hover {
     .isIncomplete {
@@ -718,7 +715,7 @@ td.searchTableName:hover {
 .isIncomplete {
     &.show {
         img {
-            opacity: .2;
+            opacity: 0.2;
             //animation: blink 2.5s infinite;
         }
 
@@ -734,7 +731,6 @@ td.searchTableName:hover {
                 font-size: 18px;
             }
         }
-
 
         foreignObject {
             display: block;
@@ -759,9 +755,7 @@ td.searchTableName:hover {
                 font-size: 9px;
                 top: 5px;
             }
-
         }
-
     }
 
     foreignObject {

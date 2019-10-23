@@ -202,4 +202,22 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
             return this;
         }
     });
+
+    var HeaderDecodeCell = Backgrid.HeaderHTMLDecodeCell = Backgrid.HeaderCell.extend({
+        initialize: function(options) {
+            Backgrid.HeaderCell.prototype.initialize.apply(this, arguments);
+            this.name = _.unescape(this.column.get("name"))
+            // Add class
+            this.$el.addClass(this.name);
+        },
+        render: function() {
+            this.$el.empty();
+
+            // Add to header
+            this.$el.text(this.name);
+
+            this.delegateEvents();
+            return this;
+        }
+    });
 });

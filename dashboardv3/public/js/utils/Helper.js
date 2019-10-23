@@ -78,6 +78,7 @@ define(['require',
             } else if (isPopOverEl.$tip) {
                 $('.popover').not(isPopOverEl.$tip).popover('hide');
             }
+            $(".tree-tooltip").removeClass("show");
             $(".tooltip").tooltip("hide");
         }
     });

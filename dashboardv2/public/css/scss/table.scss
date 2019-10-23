@@ -222,11 +222,14 @@ td {
     }
 
     &.searchTableName {
+        min-width: 150px;
+
         &:hover {
             img {
                 transform: scale(1.5);
                 transform-origin: 100% 50%;
                 transition: transform 0.2s;
+                outline-color: #f5f5f5;
             }
         }
 
@@ -241,6 +244,8 @@ td {
             height: 20px;
             margin: 0px 5px;
             float: left;
+            outline: 1px #fff solid;
+            outline-offset: -1px;
         }
     }
 }
