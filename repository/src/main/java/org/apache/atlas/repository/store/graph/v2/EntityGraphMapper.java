@@ -597,6 +597,8 @@ public class EntityGraphMapper {
                                                       true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
                 }
 
+                setAssignedGuid(ctx.getValue(), context.getGuidAssignments());
+
                 return newEdge;
             }
 
@@ -625,6 +627,8 @@ public class EntityGraphMapper {
                 LOG.warn("mapSoftRefValue: Was expecting AtlasObjectId, but found: {}", ctx.getValue().getClass());
             }
         }
+
+        setAssignedGuid(ctx.getValue(), context.getGuidAssignments());
 
         return ret;
     }
@@ -886,10 +890,16 @@ public class EntityGraphMapper {
         AtlasVertex entityVertex = context.getDiscoveryContext().getResolvedEntityVertex(guid);
 
         if (entityVertex == null) {
-            AtlasObjectId objId = getObjectId(ctx.getValue());
+            if (AtlasTypeUtil.isAssignedGuid(guid)) {
+                entityVertex = context.getVertex(guid);
+            }
 
-            if (objId != null) {
-                entityVertex = context.getDiscoveryContext().getResolvedEntityVertex(objId);
+            if (entityVertex == null) {
+                AtlasObjectId objId = getObjectId(ctx.getValue());
+
+                if (objId != null) {
+                    entityVertex = context.getDiscoveryContext().getResolvedEntityVertex(objId);
+                }
             }
         }
 
@@ -921,14 +931,21 @@ public class EntityGraphMapper {
             LOG.debug("==> mapObjectIdValueUsingRelationship({})", ctx);
         }
 
-        AtlasVertex attributeVertex = context.getDiscoveryContext().getResolvedEntityVertex(getGuid(ctx.getValue()));
+        String      guid            = getGuid(ctx.getValue());
+        AtlasVertex attributeVertex = context.getDiscoveryContext().getResolvedEntityVertex(guid);
         AtlasVertex entityVertex    = ctx.getReferringVertex();
         AtlasEdge   ret;
 
         if (attributeVertex == null) {
-            AtlasObjectId objectId = getObjectId(ctx.getValue());
+            if (AtlasTypeUtil.isAssignedGuid(guid)) {
+                attributeVertex = context.getVertex(guid);
+            }
 
-            attributeVertex = (objectId != null) ? context.getDiscoveryContext().getResolvedEntityVertex(objectId) : null;
+            if (attributeVertex == null) {
+                AtlasObjectId objectId = getObjectId(ctx.getValue());
+
+                attributeVertex = (objectId != null) ? context.getDiscoveryContext().getResolvedEntityVertex(objectId) : null;
+            }
         }
 
         if (attributeVertex == null) {
@@ -1285,6 +1302,39 @@ public class EntityGraphMapper {
         }
 
         return null;
+    }
+
+    private static void setAssignedGuid(Object val, Map<String, String> guidAssignements) {
+        if (val != null && MapUtils.isNotEmpty(guidAssignements)) {
+            if (val instanceof AtlasObjectId) {
+                AtlasObjectId objId = (AtlasObjectId) val;
+                String        guid  = objId.getGuid();
+
+                if (StringUtils.isNotEmpty(guid) && !AtlasTypeUtil.isAssignedGuid(guid)) {
+                    String assignedGuid = guidAssignements.get(guid);
+
+                    if (StringUtils.isNotEmpty(assignedGuid)) {
+                        RequestContext.get().recordEntityGuidUpdate(objId, guid);
+
+                        objId.setGuid(assignedGuid);
+                    }
+                }
+            } else if (val instanceof Map) {
+                Map    objId   = (Map) val;
+                Object guidVal = objId.get(AtlasObjectId.KEY_GUID);
+                String guid    = objId != null ? guidVal.toString() : null;
+
+                if (StringUtils.isNotEmpty(guid) && !AtlasTypeUtil.isAssignedGuid(guid)) {
+                    String assignedGuid = guidAssignements.get(guid);
+
+                    if (StringUtils.isNotEmpty(assignedGuid)) {
+                        RequestContext.get().recordEntityGuidUpdate(objId, guid);
+
+                        objId.put(AtlasObjectId.KEY_GUID, assignedGuid);
+                    }
+                }
+            }
+        }
     }
 
     private static Map<String, Object> getRelationshipAttributes(Object val) throws AtlasBaseException {
