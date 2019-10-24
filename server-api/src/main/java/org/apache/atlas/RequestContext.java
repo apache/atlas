@@ -22,6 +22,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -36,6 +37,8 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.HashMap;
+
+import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 
 
 public class RequestContext {
@@ -337,11 +340,23 @@ public class RequestContext {
     }
 
     public void recordEntityGuidUpdate(AtlasEntity entity, String guidInRequest) {
+        recordEntityGuidUpdate(new EntityGuidPair(entity, guidInRequest));
+    }
+
+    public void recordEntityGuidUpdate(AtlasObjectId entity, String guidInRequest) {
+        recordEntityGuidUpdate(new EntityGuidPair(entity, guidInRequest));
+    }
+
+    public void recordEntityGuidUpdate(Map entity, String guidInRequest) {
+        recordEntityGuidUpdate(new EntityGuidPair(entity, guidInRequest));
+    }
+
+    public void recordEntityGuidUpdate(EntityGuidPair record) {
         if (entityGuidInRequest == null) {
             entityGuidInRequest = new ArrayList<>();
         }
 
-        entityGuidInRequest.add(new EntityGuidPair(entity, guidInRequest));
+        entityGuidInRequest.add(record);
     }
 
     public void resetEntityGuidUpdates() {
@@ -353,16 +368,32 @@ public class RequestContext {
     }
 
     public class EntityGuidPair {
-        private final AtlasEntity entity;
-        private final String      guid;
+        private final Object entity;
+        private final String guid;
 
         public EntityGuidPair(AtlasEntity entity, String guid) {
             this.entity = entity;
             this.guid   = guid;
         }
 
+        public EntityGuidPair(AtlasObjectId entity, String guid) {
+            this.entity = entity;
+            this.guid   = guid;
+        }
+
+        public EntityGuidPair(Map entity, String guid) {
+            this.entity = entity;
+            this.guid   = guid;
+        }
+
         public void resetEntityGuid() {
-            entity.setGuid(guid);
+            if (entity instanceof AtlasEntity) {
+                ((AtlasEntity) entity).setGuid(guid);
+            } else if (entity instanceof AtlasObjectId) {
+                ((AtlasObjectId) entity).setGuid(guid);
+            } else if (entity instanceof Map) {
+                ((Map) entity).put(KEY_GUID, guid);
+            }
         }
     }
 
