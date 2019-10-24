@@ -19,6 +19,7 @@ package org.apache.atlas.web.adapters;
 
 import static org.apache.atlas.TestUtilsV2.COLUMN_TYPE;
 import static org.apache.atlas.TestUtilsV2.DATABASE_TYPE;
+import static org.apache.atlas.TestUtilsV2.FETL_CLASSIFICATION;
 import static org.apache.atlas.TestUtilsV2.PHI;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 
@@ -334,18 +335,27 @@ public class TestEntitiesREST {
         ClassificationAssociateRequest clsAssRequest = new ClassificationAssociateRequest(createdGuids.get(DATABASE_TYPE), fetlCls);
         entityREST.addClassification(clsAssRequest);
 
-        final AtlasClassification result_tag = entityREST.getClassification(createdGuids.get(DATABASE_TYPE).get(0), TestUtilsV2.PHI);
+        final AtlasClassification result_tag = entityREST.getClassification(createdGuids.get(DATABASE_TYPE).get(0), TestUtilsV2.FETL_CLASSIFICATION);
         Assert.assertNotNull(result_tag);
+        Assert.assertEquals(result_tag.getTypeName(), FETL_CLASSIFICATION);
 
         // basic search with subtypes
         searchParameters = new SearchParameters();
         searchParameters.setClassification(TestUtilsV2.CLASSIFICATION);
-        searchParameters.setIncludeSubTypes(true);
+        searchParameters.setIncludeSubClassifications(true);
 
         AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
 
         Assert.assertNotNull(res.getEntities());
         Assert.assertEquals(res.getEntities().size(), 3);
+
+
+        // basic search without subtypes
+        searchParameters.setIncludeSubClassifications(false);
+        res = discoveryREST.searchWithParameters(searchParameters);
+
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 2);
     }
 
     @Test(dependsOnMethods = "testTagToMultipleEntities")

@@ -156,7 +156,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             StringBuilder queryString = new StringBuilder();
 
             graphIndexQueryBuilder.addActiveStateQueryFilter(queryString);
-            graphIndexQueryBuilder.addTypeAndSubTypesQueryFilter(queryString, context.getSearchParameters().getClassification());
+            graphIndexQueryBuilder.addTypeAndSubTypesQueryFilter(queryString, typeAndSubTypesQryStr);
 
             constructFilterQuery(queryString, classificationType, filterCriteria, indexAttributes);
 

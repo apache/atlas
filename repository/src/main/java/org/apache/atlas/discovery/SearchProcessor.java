@@ -242,27 +242,28 @@ public abstract class SearchProcessor {
 
     protected void filterWhiteSpaceClassification(List<AtlasVertex> entityVertices) {
         if (CollectionUtils.isNotEmpty(entityVertices)) {
-
-            boolean hasExactMatch = false;
-            Iterator<AtlasVertex> it = entityVertices.iterator();
+            final Iterator<AtlasVertex> it              = entityVertices.iterator();
+            final Set<String>           typeAndSubTypes = context.getClassificationTypes();
 
             while (it.hasNext()) {
-                AtlasVertex entityVertex = it.next();
+                AtlasVertex  entityVertex        = it.next();
                 List<String> classificationNames = AtlasGraphUtilsV2.getClassificationNames(entityVertex);
-                if (CollectionUtils.isNotEmpty(classificationNames) && classificationNames.contains(context.getClassificationType().getTypeName())) {
-                    hasExactMatch = true;
+
+                if (CollectionUtils.isNotEmpty(classificationNames)) {
+                    if (CollectionUtils.containsAny(classificationNames, typeAndSubTypes)) {
+                        continue;
+                    }
                 }
 
-                if (hasExactMatch) continue;
+                List<String> propagatedClassificationNames = AtlasGraphUtilsV2.getPropagatedClassificationNames(entityVertex);
 
-                classificationNames = AtlasGraphUtilsV2.getPropagatedClassificationNames(entityVertex);
-                if (CollectionUtils.isNotEmpty(classificationNames) && classificationNames.contains(context.getClassificationType().getTypeName())) {
-                    hasExactMatch = true;
+                if (CollectionUtils.isNotEmpty(propagatedClassificationNames)) {
+                    if (CollectionUtils.containsAny(propagatedClassificationNames, typeAndSubTypes)) {
+                        continue;
+                    }
                 }
 
-                if (!hasExactMatch) {
-                    it.remove();
-                }
+                it.remove();
             }
         }
     }
