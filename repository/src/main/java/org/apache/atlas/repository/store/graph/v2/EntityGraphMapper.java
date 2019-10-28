@@ -597,8 +597,6 @@ public class EntityGraphMapper {
                                                       true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
                 }
 
-                setAssignedGuid(ctx.getValue(), context.getGuidAssignments());
-
                 return newEdge;
             }
 
@@ -628,7 +626,7 @@ public class EntityGraphMapper {
             }
         }
 
-        setAssignedGuid(ctx.getValue(), context.getGuidAssignments());
+        setAssignedGuid(ctx.getValue(), context);
 
         return ret;
     }
@@ -1021,6 +1019,8 @@ public class EntityGraphMapper {
             ret = mapObjectIdValue(ctx, context);
         }
 
+        setAssignedGuid(ctx.getValue(), context);
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== mapObjectIdValueUsingRelationship({})", ctx);
         }
@@ -1304,34 +1304,54 @@ public class EntityGraphMapper {
         return null;
     }
 
-    private static void setAssignedGuid(Object val, Map<String, String> guidAssignements) {
-        if (val != null && MapUtils.isNotEmpty(guidAssignements)) {
+    private static void setAssignedGuid(Object val, EntityMutationContext context) {
+        if (val != null) {
+            Map<String, String> guidAssignements = context.getGuidAssignments();
+
             if (val instanceof AtlasObjectId) {
-                AtlasObjectId objId = (AtlasObjectId) val;
-                String        guid  = objId.getGuid();
+                AtlasObjectId objId        = (AtlasObjectId) val;
+                String        guid         = objId.getGuid();
+                String        assignedGuid = null;
 
-                if (StringUtils.isNotEmpty(guid) && !AtlasTypeUtil.isAssignedGuid(guid)) {
-                    String assignedGuid = guidAssignements.get(guid);
+                if (StringUtils.isNotEmpty(guid)) {
+                    if (!AtlasTypeUtil.isAssignedGuid(guid) && MapUtils.isNotEmpty(guidAssignements)) {
+                        assignedGuid = guidAssignements.get(guid);
+                    }
+                } else {
+                    AtlasVertex vertex = context.getDiscoveryContext().getResolvedEntityVertex(objId);
 
-                    if (StringUtils.isNotEmpty(assignedGuid)) {
-                        RequestContext.get().recordEntityGuidUpdate(objId, guid);
-
-                        objId.setGuid(assignedGuid);
+                    if (vertex != null) {
+                        assignedGuid = GraphHelper.getGuid(vertex);
                     }
                 }
+
+                if (StringUtils.isNotEmpty(assignedGuid)) {
+                    RequestContext.get().recordEntityGuidUpdate(objId, guid);
+
+                    objId.setGuid(assignedGuid);
+                }
             } else if (val instanceof Map) {
-                Map    objId   = (Map) val;
-                Object guidVal = objId.get(AtlasObjectId.KEY_GUID);
-                String guid    = objId != null ? guidVal.toString() : null;
+                Map    mapObjId     = (Map) val;
+                Object guidVal      = mapObjId.get(AtlasObjectId.KEY_GUID);
+                String guid         = guidVal != null ? guidVal.toString() : null;
+                String assignedGuid = null;
 
-                if (StringUtils.isNotEmpty(guid) && !AtlasTypeUtil.isAssignedGuid(guid)) {
-                    String assignedGuid = guidAssignements.get(guid);
-
-                    if (StringUtils.isNotEmpty(assignedGuid)) {
-                        RequestContext.get().recordEntityGuidUpdate(objId, guid);
-
-                        objId.put(AtlasObjectId.KEY_GUID, assignedGuid);
+                if (StringUtils.isNotEmpty(guid) ) {
+                    if (!AtlasTypeUtil.isAssignedGuid(guid) && MapUtils.isNotEmpty(guidAssignements)) {
+                        assignedGuid = guidAssignements.get(guid);
                     }
+                } else {
+                    AtlasVertex vertex = context.getDiscoveryContext().getResolvedEntityVertex(new AtlasObjectId(mapObjId));
+
+                    if (vertex != null) {
+                        assignedGuid = GraphHelper.getGuid(vertex);
+                    }
+                }
+
+                if (StringUtils.isNotEmpty(assignedGuid)) {
+                    RequestContext.get().recordEntityGuidUpdate(mapObjId, guid);
+
+                    mapObjId.put(AtlasObjectId.KEY_GUID, assignedGuid);
                 }
             }
         }
@@ -2148,12 +2168,14 @@ public class EntityGraphMapper {
     }
 
     private void recordEntityUpdate(AtlasVertex vertex) throws AtlasBaseException {
-        RequestContext req = RequestContext.get();
+        if (vertex != null) {
+            RequestContext req = RequestContext.get();
 
-        if (!req.isUpdatedEntity(GraphHelper.getGuid(vertex))) {
-            updateModificationMetadata(vertex);
+            if (!req.isUpdatedEntity(GraphHelper.getGuid(vertex))) {
+                updateModificationMetadata(vertex);
 
-            req.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex));
+                req.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex));
+            }
         }
     }
 
