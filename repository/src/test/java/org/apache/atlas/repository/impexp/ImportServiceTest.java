@@ -29,8 +29,8 @@ import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.AtlasTestBase;
@@ -519,6 +519,35 @@ public class ImportServiceTest extends AtlasTestBase {
         assertFalse(importService.checkHiveTableIncrementalSkipLineage(importRequest, exportRequest));
     }
 
+    @Test(dataProvider = "dup_col_data")
+    public void testImportDuplicateColumnsWithDifferentStatus(InputStream inputStream) throws IOException, AtlasBaseException {
+        loadBaseModel();
+        loadFsModel();
+        loadHiveModel();
+
+        runImportWithNoParameters(importService, inputStream);
+
+        AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = entityStore.getById("e18e15de-1810-4724-881a-5cb6b2160077");
+        assertNotNull(atlasEntityWithExtInfo);
+
+        AtlasEntity atlasEntity = atlasEntityWithExtInfo.getEntity();
+        assertNotNull(atlasEntity);
+
+        List<AtlasRelatedObjectId> columns = (List<AtlasRelatedObjectId>) atlasEntity.getRelationshipAttribute("columns");
+        assertEquals( columns.size(), 4);
+
+        for(AtlasRelatedObjectId id : columns){
+            if(id.getGuid().equals("a3de3e3b-4bcd-4e57-a988-1101a2360200")){
+                assertEquals(id.getEntityStatus(), AtlasEntity.Status.DELETED);
+                assertEquals(id.getRelationshipStatus(), AtlasRelationship.Status.DELETED);
+            }
+            if(id.getGuid().equals("f7fa3768-f3de-48a8-92a5-38ec4070152c")) {
+                assertEquals(id.getEntityStatus(), AtlasEntity.Status.ACTIVE);
+                assertEquals(id.getRelationshipStatus(), AtlasRelationship.Status.ACTIVE);
+            }
+        }
+    }
+
     private AtlasImportRequest getImportRequest(String replicatedFrom){
         AtlasImportRequest importRequest = getDefaultImportRequest();
 
@@ -557,34 +586,4 @@ public class ImportServiceTest extends AtlasTestBase {
 
         return options;
     }
-
-    @Test(dataProvider = "dup_col_data")
-    public void testImportDuplicateColumnsWithDifferentStatus(InputStream inputStream) throws IOException, AtlasBaseException {
-        loadBaseModel();
-        loadFsModel();
-        loadHiveModel();
-
-        runImportWithNoParameters(importService, inputStream);
-
-        AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = entityStore.getById("e18e15de-1810-4724-881a-5cb6b2160077");
-        assertNotNull(atlasEntityWithExtInfo);
-
-        AtlasEntity atlasEntity = atlasEntityWithExtInfo.getEntity();
-        assertNotNull(atlasEntity);
-
-        List<AtlasRelatedObjectId> columns = (List<AtlasRelatedObjectId>) atlasEntity.getRelationshipAttribute("columns");
-        assertEquals( columns.size(), 4);
-
-        for(AtlasRelatedObjectId id : columns){
-            if(id.getGuid().equals("a3de3e3b-4bcd-4e57-a988-1101a2360200")){
-                assertEquals(id.getEntityStatus(), AtlasEntity.Status.DELETED);
-                assertEquals(id.getRelationshipStatus(), AtlasRelationship.Status.DELETED);
-            }
-            if(id.getGuid().equals("f7fa3768-f3de-48a8-92a5-38ec4070152c")) {
-                assertEquals(id.getEntityStatus(), AtlasEntity.Status.ACTIVE);
-                assertEquals(id.getRelationshipStatus(), AtlasRelationship.Status.ACTIVE);
-            }
-        }
-    }
-
 }
