@@ -1047,7 +1047,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private AtlasObjectId getAtlasObjectId(AtlasEntity entity) {
         AtlasObjectId ret = entityRetriever.toAtlasObjectId(entity);
 
-        if (ret != null && MapUtils.isNotEmpty(ret.getUniqueAttributes())) {
+        if (ret != null && !RequestContext.get().isImportInProgress() && MapUtils.isNotEmpty(ret.getUniqueAttributes())) {
             // if uniqueAttributes is not empty, reset guid to null.
             ret.setGuid(null);
         }
