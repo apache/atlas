@@ -128,6 +128,16 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         // do nothing -> notification not sent out for term removal from entities
     }
 
+    @Override
+    public void onLabelsDeleted(AtlasEntity entity, Set<String> labels) throws AtlasBaseException {
+        // do nothing -> notification not sent out for label removal to entities
+    }
+
+    @Override
+    public void onLabelsAdded(AtlasEntity entity, Set<String> labels) throws AtlasBaseException {
+        // do nothing -> notification not sent out for label assignment to entities
+    }
+
     private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
         List<EntityNotificationV2> messages = new ArrayList<>();

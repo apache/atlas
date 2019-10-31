@@ -92,6 +92,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdg
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getDefaultRemovePropagations;
 import static org.apache.atlas.repository.graph.GraphHelper.getDelimitedClassificationNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getLabels;
 import static org.apache.atlas.repository.graph.GraphHelper.getMapElementsProperty;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
@@ -331,15 +332,28 @@ public class EntityGraphMapper {
         }
     }
 
-    public void setLabels(AtlasVertex vertex, Set<String> labels) {
-        if (CollectionUtils.isNotEmpty(labels)) {
-            AtlasGraphUtilsV2.setEncodedProperty(vertex, LABELS_PROPERTY_KEY, getLabelString(labels));
+    public void setLabels(AtlasVertex vertex, Set<String> labels) throws AtlasBaseException {
+        final Set<String> currentLabels = getLabels(vertex);
+        final Set<String> addedLabels;
+        final Set<String> removedLabels;
+
+        if (CollectionUtils.isEmpty(currentLabels)) {
+            addedLabels   = labels;
+            removedLabels = null;
+        } else if (CollectionUtils.isEmpty(labels)) {
+            addedLabels   = null;
+            removedLabels = labels;
         } else {
-            vertex.removeProperty(LABELS_PROPERTY_KEY);
+            addedLabels   = new HashSet<String>(CollectionUtils.subtract(labels, currentLabels));
+            removedLabels = new HashSet<String>(CollectionUtils.subtract(currentLabels, labels));
         }
+
+        updateLabels(vertex, labels);
+
+        entityChangeNotifier.onLabelsUpdatedFromEntity(GraphHelper.getGuid(vertex), addedLabels, removedLabels);
     }
 
-    public void addLabels(AtlasVertex vertex, Set<String> labels) {
+    public void addLabels(AtlasVertex vertex, Set<String> labels) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(labels)) {
             final Set<String> existingLabels = GraphHelper.getLabels(vertex);
             final Set<String> updatedLabels;
@@ -347,25 +361,40 @@ public class EntityGraphMapper {
             if (CollectionUtils.isEmpty(existingLabels)) {
                 updatedLabels = labels;
             } else {
-                updatedLabels = existingLabels;
+                updatedLabels = new HashSet<>(existingLabels);
                 updatedLabels.addAll(labels);
             }
-
-            setLabels(vertex, updatedLabels);
+            if (!updatedLabels.equals(existingLabels)) {
+                updateLabels(vertex, updatedLabels);
+                updatedLabels.removeAll(existingLabels);
+                entityChangeNotifier.onLabelsUpdatedFromEntity(GraphHelper.getGuid(vertex), updatedLabels, null);
+            }
         }
     }
 
-    public void removeLabels(AtlasVertex vertex, Set<String> labels) {
+    public void removeLabels(AtlasVertex vertex, Set<String> labels) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(labels)) {
             final Set<String> existingLabels = GraphHelper.getLabels(vertex);
-            Set<String> updatedLabels = null;
+            Set<String> updatedLabels;
 
             if (CollectionUtils.isNotEmpty(existingLabels)) {
-                updatedLabels = existingLabels;
+                updatedLabels = new HashSet<>(existingLabels);
                 updatedLabels.removeAll(labels);
-            }
 
-            setLabels(vertex, updatedLabels);
+                if (!updatedLabels.equals(existingLabels)) {
+                    updateLabels(vertex, updatedLabels);
+                    existingLabels.removeAll(updatedLabels);
+                    entityChangeNotifier.onLabelsUpdatedFromEntity(GraphHelper.getGuid(vertex), null, existingLabels);
+                }
+            }
+        }
+    }
+
+    private void updateLabels(AtlasVertex vertex, Set<String> labels) {
+        if (CollectionUtils.isNotEmpty(labels)) {
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, LABELS_PROPERTY_KEY, getLabelString(labels));
+        } else {
+            vertex.removeProperty(LABELS_PROPERTY_KEY);
         }
     }
 

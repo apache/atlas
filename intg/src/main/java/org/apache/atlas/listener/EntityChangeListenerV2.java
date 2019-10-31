@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Entity change notification listener V2.
@@ -121,4 +122,22 @@ public interface EntityChangeListenerV2 {
      * @param isImport
      */
     void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException;
+
+    /**
+     * This is upon add new labels to an entity.
+     *
+     * @param entity the entity
+     * @param labels labels that needs to be added to an entity
+     * @throws AtlasBaseException if the listener notification fails
+     */
+    void onLabelsAdded(AtlasEntity entity, Set<String> labels) throws AtlasBaseException;
+
+    /**
+     * This is upon deleting labels from an entity.
+     *
+     * @param entity the entity
+     * @param labels labels that needs to be deleted for an entity
+     * @throws AtlasBaseException if the listener notification fails
+     */
+    void onLabelsDeleted(AtlasEntity entity, Set<String> labels) throws AtlasBaseException;
 }
