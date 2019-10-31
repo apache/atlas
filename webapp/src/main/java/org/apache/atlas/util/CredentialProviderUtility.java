@@ -90,12 +90,15 @@ public class CredentialProviderUtility {
 
                 if (userName != null && password != null) {
                     String encryptedPassword = UserDao.encrypt(password, userName);
-                    textDevice.printf("Your encrypted password is  : " + encryptedPassword, null);
-                    textDevice.printf("\n", null);
-
+                    boolean silentOption = cmd.hasOption("s");
+                    if (silentOption) {
+                        System.out.println(encryptedPassword);
+                    } else {
+                        System.out.println("Your encrypted password is  : " + encryptedPassword);
+                    }
                 } else {
-                    textDevice.printf("Please provide username and password as input. Usage:" +
-                            " cputil.py -g -u <username> -p <password>", null);
+                    System.out.println("Please provide username and password as input. Usage:" +
+                            " cputil.py -g -u <username> -p <password>");
                 }
                 return;
             }
@@ -136,6 +139,7 @@ public class CredentialProviderUtility {
 
     private static void createOptions(Options options) {
         options.addOption("g", "generatePassword", false, "Generate Password");
+        options.addOption("s", "silent", false, "Silent");
         options.addOption("u", "username", true, "UserName");
         options.addOption("p", "password", true, "Password");
     }
