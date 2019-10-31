@@ -308,6 +308,25 @@ define([
                 'views/search/SearchDetailLayoutView'
             ], function(Header, SideNavLayoutView, SearchDetailLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
+                if (paramObj.tag) {
+                    var tagValidate = paramObj.tag,
+                        isTagPresent = false;
+                    if ((tagValidate.indexOf('*') == -1)) {
+                        classificationDefCollection.fullCollection.each(function(model) {
+                            var name = Utils.getName(model.toJSON(), 'name');
+                            if (model.get('category') == 'CLASSIFICATION') {
+                                if (tagValidate) {
+                                    if (name === tagValidate) {
+                                        isTagPresent = true;
+                                    }
+                                }
+                            }
+                        });
+                        if (!isTagPresent) {
+                            paramObj.tag = null;
+                        }
+                    }
+                }
                 var isinitialView = true,
                     isTypeTagNotExists = false,
                     tempParam = _.extend({}, paramObj);

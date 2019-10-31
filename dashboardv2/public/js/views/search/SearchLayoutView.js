@@ -521,7 +521,16 @@ define(['require',
                     this.ui.tagLov.select2({
                         placeholder: "Select Classification",
                         allowClear: true,
-                        tags: true
+                        tags: true,
+                        createTag: function(tag) {
+                            if (tag.term.indexOf('*') != -1) {
+                                return {
+                                    id: tag.term,
+                                    text: tag.term,
+                                    isNew: true
+                                };
+                            }
+                        }
                     });
                 }
                 that.ui.typeLov.html(typeStr);

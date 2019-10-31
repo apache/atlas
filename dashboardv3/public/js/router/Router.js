@@ -286,6 +286,24 @@ define([
                         if (paramObj.tagFilters) {
                             paramObj.tagFilters = null;
                         }
+                    } else {
+                        var tagValidate = paramObj.tag,
+                            isTagPresent = false;
+                        if ((tagValidate.indexOf('*') == -1)) {
+                            classificationDefCollection.fullCollection.each(function(model) {
+                                var name = Utils.getName(model.toJSON(), 'name');
+                                if (model.get('category') == 'CLASSIFICATION') {
+                                    if (tagValidate) {
+                                        if (name === tagValidate) {
+                                            isTagPresent = true;
+                                        }
+                                    }
+                                }
+                            });
+                            if (!isTagPresent) {
+                                paramObj.tag = null;
+                            }
+                        }
                     }
 
                 }
@@ -447,7 +465,7 @@ define([
                 //                 'value': paramObj
                 //             }, that.preFetchedCollectionLists, that.sharedObj)
                 //         );
-                //     }    
+                //     }
                 // });
 
                 that.renderViewIfNotExists({
