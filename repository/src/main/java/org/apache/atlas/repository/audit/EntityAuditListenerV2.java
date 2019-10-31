@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_DELETE;
@@ -57,6 +58,8 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.LABEL_ADD;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.LABEL_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_UPDATE;
@@ -234,6 +237,40 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                     events.add(createEvent(entity, TERM_DELETE, "Deleted term: " + term.toAuditString()));
                 }
             }
+
+            auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    public void onLabelsAdded(AtlasEntity entity, Set<String> labels) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(labels)) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
+            List<EntityAuditEventV2> events = new ArrayList<>();
+
+            String addedLabels = StringUtils.join(labels, " ");
+
+            events.add(createEvent(entity, LABEL_ADD, "Added labels: " + addedLabels));
+
+            auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    public void onLabelsDeleted(AtlasEntity entity, Set<String> labels) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(labels)) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
+            List<EntityAuditEventV2> events = new ArrayList<>();
+
+            String deletedLabels = StringUtils.join(labels, " ");
+
+            events.add(createEvent(entity, LABEL_DELETE, "Deleted labels: " + deletedLabels));
 
             auditRepository.putEventsV2(events);
 

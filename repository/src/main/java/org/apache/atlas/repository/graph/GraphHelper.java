@@ -1851,16 +1851,10 @@ public final class GraphHelper {
     }
 
     private static Set<String> parseLabelsString(String labels) {
-        Set<String> ret = null;
+        Set<String> ret = new HashSet<>();
 
         if (StringUtils.isNotEmpty(labels)) {
-            ret = new HashSet<>();
-
-            for (String label : labels.split("\\" + LABEL_NAME_DELIMITER)) {
-                if (StringUtils.isNotEmpty(label)) {
-                    ret.add(label);
-                }
-            }
+            ret.addAll(Arrays.asList(StringUtils.split(labels, "\\" + LABEL_NAME_DELIMITER)));
         }
 
         return ret;

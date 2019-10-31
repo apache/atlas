@@ -1147,19 +1147,19 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
         AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
 
-        Assert.assertNull(tblEntity.getLabels());
+        Assert.assertTrue(tblEntity.getLabels().isEmpty());
     }
 
     @Test (dependsOnMethods = "clearLabelsToEntity")
-    public void nullLabelsToEntity() throws AtlasBaseException {
+    public void emptyLabelsToEntity() throws AtlasBaseException {
         entityStore.setLabels(tblEntityGuid, null);
 
         AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
 
-        Assert.assertNull(tblEntity.getLabels());
+        Assert.assertTrue(tblEntity.getLabels().isEmpty());
     }
 
-    @Test (dependsOnMethods = "nullLabelsToEntity")
+    @Test (dependsOnMethods = "emptyLabelsToEntity")
     public void invalidLabelLengthToEntity() throws AtlasBaseException {
         Set<String> labels = new HashSet<>();
         labels.add(randomAlphanumeric(50));
@@ -1173,7 +1173,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
     }
 
     @Test (dependsOnMethods = "invalidLabelLengthToEntity")
-    public void invalidLabelCharactersToEntity() throws AtlasBaseException {
+    public void invalidLabelCharactersToEntity() {
         Set<String> labels = new HashSet<>();
         labels.add("label-1_100_45");
         labels.add("LABEL-1_200-55");
@@ -1227,6 +1227,6 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         labels.add("label_3_add");
         entityStore.removeLabels(tblEntityGuid, labels);
         tblEntity = getEntityFromStore(tblEntityGuid);
-        Assert.assertNull(tblEntity.getLabels());
+        Assert.assertTrue(tblEntity.getLabels().isEmpty());
     }
 }

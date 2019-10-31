@@ -256,6 +256,19 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    public void onLabelsUpdatedFromEntity(String entityGuid, Set<String> addedLabels, Set<String> deletedLabels) throws AtlasBaseException {
+        doFullTextMapping(entityGuid);
+
+        if (isV2EntityNotificationEnabled) {
+            AtlasEntity entity = instanceConverter.getAndCacheEntity(entityGuid);
+
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                listener.onLabelsDeleted(entity, deletedLabels);
+                listener.onLabelsAdded(entity, addedLabels);
+            }
+        }
+    }
+
     public void notifyPropagatedEntities() throws AtlasBaseException {
         RequestContext                         context             = RequestContext.get();
         Map<String, List<AtlasClassification>> addedPropagations   = context.getAddedPropagations();

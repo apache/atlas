@@ -394,6 +394,10 @@ public class AtlasInstanceConverter {
                 return EntityAuditEvent.EntityAuditAction.PROPAGATED_TAG_DELETE;
             case PROPAGATED_CLASSIFICATION_UPDATE:
                 return EntityAuditEvent.EntityAuditAction.PROPAGATED_TAG_UPDATE;
+            case LABEL_ADD:
+                return EntityAuditEvent.EntityAuditAction.LABEL_ADD;
+            case LABEL_DELETE:
+                return EntityAuditEvent.EntityAuditAction.LABEL_DELETE;
         }
 
         return null;
