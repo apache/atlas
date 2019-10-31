@@ -114,7 +114,10 @@ define([
                 }
                 if (code == 13) {
                     var tagValue = this.ui.wildCardValue.val();
-                    that.findSearchResult(tagValue);
+                    if(tagValue.indexOf("*")!= -1 ){
+                        that.findSearchResult(tagValue);
+                    }
+                    
                 }
             };
 
