@@ -44,11 +44,13 @@ define(['require',
             /** ui selector cache */
             ui: {
                 entityHeader: "[data-id='entity'] .count",
+                classificationHeader: "[data-id='classification'] .count",
                 serverCard: "[data-id='server-card']",
                 connectionCard: "[data-id='connection-card']",
                 notificationCard: "[data-id='notification-card']",
                 statsNotificationTable: "[data-id='stats-notification-table']",
                 entityCard: "[data-id='entity-card']",
+                classificationCard: "[data-id='classification-card']",
                 offsetCard: "[data-id='offset-card']",
                 osCard: "[data-id='os-card']",
                 runtimeCard: "[data-id='runtime-card']",
@@ -99,6 +101,7 @@ define(['require',
                         that.renderStats({ valueObject: data.general.stats, dataObject: data.general });
                         that.renderEntities({ data: data });
                         that.renderSystemDeatils({ data: data });
+                        that.renderClassifications({ data: data });
                         that.$('.statsContainer,.statsNotificationContainer').removeClass('hide');
                         that.$('.statsLoader,.statsNotificationLoader').removeClass('show');
                         if (options && options.update) {
@@ -128,6 +131,43 @@ define(['require',
                     }
                 });
                 return stats;
+            },
+            createTable: function(obj) {
+                var that = this,
+                    tableBody = '',
+                    data = obj.data;
+                _.each(data, function(value, key, list) {
+                    tableBody += '<tr><td>' + key + '</td><td class="">' + that.getValue({
+                        "value": value
+                    }) + '</td></tr>';
+                });
+                return tableBody;
+
+            },
+            renderClassifications: function(options) {
+                var that = this,
+                    data = options.data,
+                    classificationData = data.tag || {},
+                    tagEntitiesData = classificationData ? classificationData.tagEntities || {} : {},
+                    tagsCount = 0,
+                    newTagEntitiesData = {};
+                _.each(_.sortBy(_.keys(tagEntitiesData), function(o) {
+                    return o.toLocaleLowerCase();
+                }), function(key) {
+                    var val = tagEntitiesData[key];
+                    newTagEntitiesData[key] = val;
+                    tagsCount += val;
+                });
+                tagEntitiesData = newTagEntitiesData;
+
+                if (!_.isEmpty(tagEntitiesData)) {
+                    this.ui.classificationCard.html(
+                        that.createTable({
+                            "data": tagEntitiesData
+                        })
+                    );
+                    this.ui.classificationHeader.html("&nbsp;(" + _.numberFormatWithComa(tagsCount) + ")");
+                }
             },
             renderEntities: function(options) {
                 var that = this,
@@ -163,6 +203,7 @@ define(['require',
                             }
                         })
                     };
+
                 createEntityData({
                     "entityData": activeEntities,
                     "type": "active"
@@ -178,7 +219,9 @@ define(['require',
                 if (!_.isEmpty(stats)) {
                     that.ui.entityCard.html(
                         EntityTable({
-                            "data": _.pick(stats, (_.keys(stats).sort())),
+                            "data": _.pick(stats, _.sortBy(_.keys(stats), function(o) {
+                                return o.toLocaleLowerCase();
+                            })),
                         })
                     );
                     that.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComa(activeEntityCount) + ")");
@@ -290,21 +333,10 @@ define(['require',
                     systemData = data.system,
                     systemOS = systemData.os || {},
                     systemRuntimeData = systemData.runtime || {},
-                    systemMemoryData = systemData.memory || {},
-                    createSystemTable = function(obj) {
-                        var tableBody = '',
-                            data = obj.data;
-                        _.each(data, function(value, key, list) {
-                            tableBody += '<tr><td>' + key + '</td><td class="">' + that.getValue({
-                                "value": value
-                            }) + '</td></tr>';
-                        });
-                        return tableBody;
-                    };
-
+                    systemMemoryData = systemData.memory || {};
                 if (!_.isEmpty(systemOS)) {
                     that.ui.osCard.html(
-                        createSystemTable({
+                        that.createTable({
                             "data": systemOS
                         })
                     );
@@ -314,7 +346,7 @@ define(['require',
                         var space
                     })
                     that.ui.runtimeCard.html(
-                        createSystemTable({
+                        that.createTable({
                             "data": systemRuntimeData
                         })
                     );
