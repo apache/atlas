@@ -153,7 +153,8 @@
     background: linear-gradient(to right, #eeeeee 8%, #dddddd 18%, #eeeeee 33%);
     background-size: 700px 10px;
     border-radius: 8px;
-
+    outline: 1px #fff solid;
+    outline-offset: -1px;
 }
 
 @keyframes placeHolderLoader {
