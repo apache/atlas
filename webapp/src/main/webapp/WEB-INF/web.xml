@@ -81,6 +81,21 @@
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 
+    <filter>
+        <filter-name>HeaderFilter</filter-name>
+        <filter-class>org.apache.atlas.web.filters.AtlasHeaderFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>HeaderFilter</filter-name>
+        <url-pattern>/api/atlas/admin/metrics</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>HeaderFilter</filter-name>
+        <url-pattern>/api/atlas/admin/status</url-pattern>
+    </filter-mapping>
+
     <listener>
         <listener-class>org.springframework.web.util.Log4jConfigListener</listener-class>
     </listener>
