@@ -527,7 +527,7 @@ define([
                         that.collection.fullCollection.add(classificationDefs);
                         that.setUrl("#!/tag/tagAttribute/" + ref.ui.tagName.val(), true);
                         Utils.notifySuccess({
-                            content: "Classification " + that.name + Messages.addSuccessMessage
+                            content: "Classification " + that.name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
                         });
                         modal.trigger("cancel");
                         that.typeHeaders.fetch({ reset: true });
@@ -616,7 +616,7 @@ define([
                     typeName: that.tag,
                     success: function() {
                         Utils.notifySuccess({
-                            content: "Classification " + that.tag + Messages.deleteSuccessMessage
+                            content: "Classification " + that.tag + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                         });
                         // if deleted tag is prviously searched then remove that tag url from save state of tab.
                         var searchUrl = Globals.saveApplicationState.tabState.searchUrl;

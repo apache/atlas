@@ -117,7 +117,7 @@ define([
                     if(tagValue.indexOf("*")!= -1 ){
                         that.findSearchResult(tagValue);
                     }
-                    
+
                 }
             };
 
@@ -708,7 +708,7 @@ define([
                     }
                     that.options.classificationDefCollection.fullCollection.add(classificationDefs);
                     Utils.notifySuccess({
-                        content: "Classification " + name + Messages.addSuccessMessage
+                        content: "Classification " + name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
                     });
                     modal.trigger("cancel");
                     that.typeHeaders.fetch({ reset: true });
@@ -755,7 +755,7 @@ define([
                         typeName: tagName,
                         success: function() {
                             Utils.notifySuccess({
-                                content: "Classification " + tagName + Messages.deleteSuccessMessage
+                                content: "Classification " + tagName + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                             });
                             // if deleted tag is prviously searched then remove that tag url from save state of tab.
                             var searchUrl = Globals.saveApplicationState.tabState.searchUrl;

@@ -110,12 +110,12 @@ define(['require',
                                 collectionRef.set(data);
                             }
                             Utils.notifySuccess({
-                                content: obj.name + Messages.editSuccessMessage
+                                content: obj.name + Messages.getAbbreviationMsg(false, 'editSuccessMessage')
                             });
                         } else {
                             that.collection.add(data);
                             Utils.notifySuccess({
-                                content: obj.name + Messages.addSuccessMessage
+                                content: obj.name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
                             });
                         }
                     }

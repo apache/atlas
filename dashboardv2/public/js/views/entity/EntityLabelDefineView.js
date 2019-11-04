@@ -92,14 +92,17 @@ define(['require',
                     data: JSON.stringify(payload),
                     type: 'POST',
                     success: function() {
-                        var msg = entityJson.labels === undefined ? 'addSuccessMessage' : 'editSuccessMessage';
+                        var msg = entityJson.labels === undefined ? 'addSuccessMessage' : 'editSuccessMessage',
+                        caption = "One or more label";
                         if (payload.length === 0) {
+                            msg = 'removeSuccessMessage';
+                            caption = "One or more existing label";
                             that.entityModel.unset('labels');
                         } else {
                             that.entityModel.set('labels', payload);
                         }
                         Utils.notifySuccess({
-                            content: "Labels " + Messages[msg]
+                            content: caption + Messages.getAbbreviationMsg(true, msg)
                         });
                         that.swapItem = false;
                         that.saveLabels = false;

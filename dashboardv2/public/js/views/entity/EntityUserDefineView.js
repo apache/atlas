@@ -95,7 +95,7 @@ define(['require',
             });
         },
         onEditAttrClick: function () {
-            this.initialCall = false;
+            this.initialCall = this.customAttibutes.length > 0 ? false : true;
             this.setAttributeModal(this.itemView);
         },
         structureAttributes: function (list) {
@@ -115,10 +115,15 @@ define(['require',
                 data: JSON.stringify(payload),
                 type: 'POST',
                 success: function() {
-                    var msg = that.initialCall ? 'addSuccessMessage' : 'editSuccessMessage';
+                    var msg = that.initialCall ? 'addSuccessMessage' : 'editSuccessMessage',
+                    caption = "One or more user-defined propertie"; // 's' will be added in abbreviation function
                     that.customAttibutes = list;
+                    if (list.length === 0) {
+                        msg = 'removeSuccessMessage';
+                        caption = "One or more existing user-defined propertie";
+                    }
                     Utils.notifySuccess({
-                        content: "User-defined properties " + Messages[msg]
+                        content: caption + Messages.getAbbreviationMsg(true, msg)
                     });
                     that.swapItem = false;
                     that.saveAttrItems = false;

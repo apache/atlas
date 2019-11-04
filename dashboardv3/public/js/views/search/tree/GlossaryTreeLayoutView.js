@@ -503,7 +503,7 @@ define([
                         }
 
                         Utils.notifySuccess({
-                            content: messageType + Messages.deleteSuccessMessage
+                            content: messageType + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                         });
                         that.ui.termSearchTree.jstree(true).refresh();
                         var params = {

@@ -652,7 +652,7 @@ define(['require',
                                 }
                             }
                             Utils.notifySuccess({
-                                content: messageType + Messages.deleteSuccessMessage
+                                content: messageType + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                             });
                             var url = gId ? '#!/glossary/' + gId : '#!/glossary';
                             if (gId == null) {

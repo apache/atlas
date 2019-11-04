@@ -37,7 +37,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 skipDefaultError: true,
                                 success: function(data) {
                                     Utils.notifySuccess({
-                                        content: "Classification " + options.tagName + Messages.removeSuccessMessage
+                                        content: "Classification " + options.tagName + Messages.getAbbreviationMsg(false, 'removeSuccessMessage')
                                     });
                                     if (options.callback) {
                                         options.callback();
@@ -736,8 +736,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         var ajaxOptions = {
             silent: true,
             success: function(rModel, response) {
+                var msgType = model ? "editSuccessMessage" : "addSuccessMessage";
                 Utils.notifySuccess({
-                    content: messageType + ref.ui.name.val() + Messages[model ? "editSuccessMessage" : "addSuccessMessage"]
+                    content: messageType + ref.ui.name.val() + Messages.getAbbreviationMsg(false, msgType)
                 });
                 if (options.callback) {
                     options.callback(rModel);

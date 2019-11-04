@@ -462,7 +462,7 @@ define(['require',
             },
             initializeValidation: function() {
                 // IE9 allow input type number
-                var regex = /^[0-9]*((?=[^.]|$))?$/, // allow only numbers [0-9] 
+                var regex = /^[0-9]*((?=[^.]|$))?$/, // allow only numbers [0-9]
                     removeText = function(e, value) {
                         if (!regex.test(value)) {
                             var txtfld = e.currentTarget;
@@ -471,7 +471,7 @@ define(['require',
                         }
                     }
                 this.$('input[data-type="int"],input[data-type="long"]').on('keydown', function(e) {
-                    // allow only numbers [0-9] 
+                    // allow only numbers [0-9]
                     if (!regex.test(e.currentTarget.value)) {
                         return false;
                     }
@@ -764,8 +764,9 @@ define(['require',
                         type: "POST",
                         success: function(model, response) {
                             that.modal.close();
+                            var msgType = that.guid ? 'editSuccessMessage' : 'addSuccessMessage';
                             Utils.notifySuccess({
-                                content: "Entity " + Messages[that.guid ? 'editSuccessMessage' : 'addSuccessMessage']
+                                content: "Entity " + Messages.getAbbreviationMsg(false, msgType)
                             });
                             if (that.guid && that.callback) {
                                 that.callback();
