@@ -195,7 +195,7 @@ define(['require',
                         that.collection.remove(model);
                     }
                     Utils.notifySuccess({
-                        content: options.model.get('name') + Messages.deleteSuccessMessage
+                        content: options.model.get('name') + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                     });
                 }
             });

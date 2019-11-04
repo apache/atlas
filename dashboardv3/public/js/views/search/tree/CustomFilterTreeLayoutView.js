@@ -433,7 +433,7 @@ define([
                     success: function(model, data) {
                         that.showDefaultPage();
                         Utils.notifySuccess({
-                            content: options.model.attributes.name + Messages.deleteSuccessMessage
+                            content: options.model.attributes.name + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                         });
                     }
                 });

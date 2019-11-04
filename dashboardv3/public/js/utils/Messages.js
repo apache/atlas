@@ -21,14 +21,14 @@ define(['require'], function(require) {
 
     var Messages = {
         defaultErrorMessage: "Something went wrong",
-        addSuccessMessage: " has been created successfully",
+        addSuccessMessage: " created successfully",
         addErrorMessage: " could not be Created",
         removeTag: "Remove Classification Assignment",
-        deleteSuccessMessage: " has been deleted successfully",
+        deleteSuccessMessage: " deleted successfully",
         deleteErrorMessage: " could not be deleted",
-        removeSuccessMessage: " has been removed successfully",
+        removeSuccessMessage: " removed successfully",
         removeErrorMessage: " could not be removed",
-        editSuccessMessage: " has been updated successfully",
+        editSuccessMessage: " updated successfully",
         assignDeletedEntity: " is deleted, Classification cannot be assigned",
         assignTermDeletedEntity: " is deleted, Term cannot be assigned",
         conformation: {
@@ -52,8 +52,11 @@ define(['require'], function(require) {
             removeTermfromCategory: "Remove Term Assignment",
             removeTermfromEntity: "Remove Term Assignment",
             removeCategoryfromTerm: "Remove Category Assignment"
+        },
+        getAbbreviationMsg: function(abbrev, type) {
+            var msg = abbrev ? "s were" : " was";
+            return  msg + this[type];
         }
-
     };
     return Messages;
 });
