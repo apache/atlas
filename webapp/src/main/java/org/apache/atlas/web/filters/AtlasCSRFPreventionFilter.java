@@ -184,7 +184,7 @@ public class AtlasCSRFPreventionFilter implements Filter {
         final HttpServletRequest httpRequest = (HttpServletRequest) request;
         final HttpServletResponse httpResponse = (HttpServletResponse) response;
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
-        responseWrapper.setHeader("X-Frame-Options", "DENY");
+		HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_FRAME_OPTIONS_KEY);
 
         if (isCSRF_ENABLED){
             handleHttpInteraction(new ServletFilterHttpInteraction(httpRequest, httpResponse, chain));

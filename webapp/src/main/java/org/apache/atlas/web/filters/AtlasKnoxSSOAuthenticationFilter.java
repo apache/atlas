@@ -28,7 +28,6 @@ import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.security.AtlasAuthenticationProvider;
-import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -50,7 +49,6 @@ import javax.servlet.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.UriBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -67,7 +65,6 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Enumeration;
-import org.apache.commons.lang.StringUtils;
 
 
 @Component("ssoAuthenticationFilter")
@@ -136,11 +133,10 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) servletResponse;
 
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
-        responseWrapper.setHeader("X-Frame-Options", "DENY");
-        responseWrapper.setHeader("X-Content-Type-Options", "nosniff");
-        responseWrapper.setHeader("X-XSS-Protection", "1; mode=block");
-        responseWrapper.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-
+        HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_FRAME_OPTIONS_KEY);
+        HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_CONTENT_TYPE_OPTIONS_KEY);
+        HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_XSS_PROTECTION_KEY);
+        HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.STRICT_TRANSPORT_SEC_KEY);
 
         if (!ssoEnabled) {
             filterChain.doFilter(servletRequest, servletResponse);

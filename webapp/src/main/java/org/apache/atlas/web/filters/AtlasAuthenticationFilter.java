@@ -333,10 +333,10 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             HttpServletResponse         httpResponse    = (HttpServletResponse) response;
             AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
 
-            responseWrapper.setHeader("X-Frame-Options", "DENY");
-            responseWrapper.setHeader("X-Content-Type-Options", "nosniff");
-            responseWrapper.setHeader("X-XSS-Protection", "1; mode=block");
-            responseWrapper.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+            HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_FRAME_OPTIONS_KEY);
+            HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_CONTENT_TYPE_OPTIONS_KEY);
+            HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_XSS_PROTECTION_KEY);
+            HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.STRICT_TRANSPORT_SEC_KEY);
 
             if (headerProperties != null) {
                 for (String headerKey : headerProperties.stringPropertyNames()) {
