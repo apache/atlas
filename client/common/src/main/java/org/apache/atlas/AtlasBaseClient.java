@@ -367,7 +367,8 @@ public abstract class AtlasBaseClient {
             // Set content headers
             requestBuilder
                     .accept(api.getProduces())
-                    .type(api.getConsumes());
+                    .type(api.getConsumes())
+                    .header("Expect", "100-continue");
 
             // Set cookie if present
             if (cookie != null) {
