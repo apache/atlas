@@ -134,6 +134,14 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "comparisonQueriesProvider")
     private Object[][] comparisonQueriesProvider() {
         return new Object[][] {
+                {"Person where (name = \"Julius\" )", 1},
+                {"Person where (name like \"Jul*\" )", 1},
+                {"Person where (name like \"J*\" )", 3},
+                {"Person where (name like \"*us\" )", 1},
+                {"Person where (name like \"*uli*\" )", 1},
+                {"Person where (name like \"Julius\" )", 1},
+                {"Person where (name like \"Jul\" )", 0},
+
                 {"Person where (birthday < \"1950-01-01T02:35:58.440Z\" )", 0},
                 {"Person where (birthday > \"1975-01-01T02:35:58.440Z\" )", 2},
                 {"Person where (birthday >= \"1975-01-01T02:35:58.440Z\" )", 2},
