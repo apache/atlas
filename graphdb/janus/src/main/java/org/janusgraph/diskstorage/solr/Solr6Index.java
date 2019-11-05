@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -1077,6 +1079,10 @@ public class Solr6Index implements IndexProvider {
         } else if (AttributeUtil.isDecimal(dataType)) {
             if (dataType.equals(Float.class)) postfix = "_f";
             else postfix = "_d";
+        } else if (dataType.equals(BigInteger.class)) {
+            postfix = "_bi";
+        } else if (dataType.equals(BigDecimal.class)) {
+            postfix = "_bd";
         } else if (dataType.equals(Geoshape.class)) {
             postfix = "_g";
         } else if (dataType.equals(Date.class) || dataType.equals(Instant.class)) {
@@ -1086,6 +1092,7 @@ public class Solr6Index implements IndexProvider {
         } else if (dataType.equals(UUID.class)) {
             postfix = "_uuid";
         } else throw new IllegalArgumentException("Unsupported data type ["+dataType+"] for field: " + key);
+
         if (keyInfo.getCardinality() == Cardinality.SET || keyInfo.getCardinality() == Cardinality.LIST) {
             postfix += "s";
         }
