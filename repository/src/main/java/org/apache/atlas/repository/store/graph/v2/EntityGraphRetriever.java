@@ -501,6 +501,7 @@ public class EntityGraphRetriever {
         ret.setStatus(GraphHelper.getStatus(entityVertex));
         ret.setClassificationNames(getAllTraitNames(entityVertex));
         ret.setIsIncomplete(isIncomplete);
+        ret.setLabels(getLabels(entityVertex));
 
         List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
         ret.setMeanings(termAssignmentHeaders);
