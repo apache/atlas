@@ -440,7 +440,7 @@ define(['require',
                                     }
                                 },
                                 "themes": {
-                                    "name": that.isAssignView ? "default" : "proton",
+                                    "name": that.isAssignView ? "default" : "default-dark",
                                     "dots": true
                                 },
                             }
@@ -556,10 +556,9 @@ define(['require',
             createTermAction: function() {
                 var that = this;
                 Utils.generatePopover({
-                    el: this.$el,
+                    el: this.$('.termPopover'),
                     contentClass: 'termPopoverOptions',
                     popoverOptions: {
-                        selector: '[rel="popover"].termPopover',
                         content: function() {
                             var node = that.query[that.viewType],
                                 liString = "";

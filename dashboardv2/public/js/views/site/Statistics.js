@@ -43,8 +43,8 @@ define(['require',
             regions: {},
             /** ui selector cache */
             ui: {
-                entityHeader: "[data-id='entity'] .count",
-                classificationHeader: "[data-id='classification'] .count",
+                entity: "[data-id='entity']",
+                classification: "[data-id='classification']",
                 serverCard: "[data-id='server-card']",
                 connectionCard: "[data-id='connection-card']",
                 notificationCard: "[data-id='notification-card']",
@@ -54,10 +54,8 @@ define(['require',
                 offsetCard: "[data-id='offset-card']",
                 osCard: "[data-id='os-card']",
                 runtimeCard: "[data-id='runtime-card']",
-                memoryCard: "[data-id='memory-card']"
-
-
-
+                memoryCard: "[data-id='memory-card']",
+                memoryPoolUsage: "[data-id='memory-pool-usage-card']"
             },
             /** ui events hash */
             events: function() {},
@@ -68,6 +66,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, options);
                 var that = this;
+                this.DATA_MAX_LENGTH = 25;
                 var modal = new Modal({
                     title: 'Statistics',
                     content: this,
@@ -91,7 +90,12 @@ define(['require',
                 });
                 this.modal = modal;
             },
-            bindEvents: function() {},
+            bindEvents: function() {
+                var that = this;
+                this.$el.on('click', '.linkClicked', function() {
+                    that.modal.close();
+                })
+            },
             fetchMetricData: function(options) {
                 var that = this;
                 this.metricCollection.fetch({
@@ -114,7 +118,13 @@ define(['require',
                 });
             },
             onRender: function() {
+                this.bindEvents();
                 this.fetchMetricData();
+            },
+            closePanel: function(options) {
+                var el = options.el;
+                el.find(">.panel-heading").attr("aria-expanded", "false");
+                el.find(">.panel-collapse.collapse").removeClass("in");
             },
             genrateStatusData: function(stateObject) {
                 var that = this,
@@ -135,11 +145,16 @@ define(['require',
             createTable: function(obj) {
                 var that = this,
                     tableBody = '',
+                    type = obj.type,
                     data = obj.data;
                 _.each(data, function(value, key, list) {
-                    tableBody += '<tr><td>' + key + '</td><td class="">' + that.getValue({
+                    var newValue = that.getValue({
                         "value": value
-                    }) + '</td></tr>';
+                    });
+                    if (type === "classification") {
+                        newValue = '<a title="Search for entities associated with \'' + key + '\'" class="linkClicked" href="#!/search/searchResult?searchType=basic&tag=' + key + '">' + newValue + '<a>';
+                    }
+                    tableBody += '<tr><td>' + key + '</td><td class="">' + newValue + '</td></tr>';
                 });
                 return tableBody;
 
@@ -150,8 +165,9 @@ define(['require',
                     classificationData = data.tag || {},
                     tagEntitiesData = classificationData ? classificationData.tagEntities || {} : {},
                     tagsCount = 0,
-                    newTagEntitiesData = {};
-                _.each(_.sortBy(_.keys(tagEntitiesData), function(o) {
+                    newTagEntitiesData = {},
+                    tagEntitiesKeys = _.keys(tagEntitiesData);
+                _.each(_.sortBy(tagEntitiesKeys, function(o) {
                     return o.toLocaleLowerCase();
                 }), function(key) {
                     var val = tagEntitiesData[key];
@@ -163,10 +179,16 @@ define(['require',
                 if (!_.isEmpty(tagEntitiesData)) {
                     this.ui.classificationCard.html(
                         that.createTable({
-                            "data": tagEntitiesData
+                            "data": tagEntitiesData,
+                            "type": "classification"
                         })
                     );
-                    this.ui.classificationHeader.html("&nbsp;(" + _.numberFormatWithComa(tagsCount) + ")");
+                    this.ui.classification.find(".count").html("&nbsp;(" + _.numberFormatWithComa(tagsCount) + ")");
+                    if (tagEntitiesKeys.length > this.DATA_MAX_LENGTH) {
+                        this.closePanel({
+                            el: this.ui.classification
+                        })
+                    }
                 }
             },
             renderEntities: function(options) {
@@ -185,13 +207,13 @@ define(['require',
                             type = opt.type;
                         _.each(entityData, function(val, key) {
                             var intVal = _.isUndefined(val) ? 0 : val;
-                            if (type === "active") {
+                            if (type == "active") {
                                 activeEntityCount += intVal;
                             }
-                            if (type === "deleted") {
+                            if (type == "deleted") {
                                 deletedEntityCount += intVal;
                             }
-                            if (type === "shell") {
+                            if (type == "shell") {
                                 shellEntityCount += intVal
                             }
                             intVal = _.numberFormatWithComa(intVal)
@@ -217,17 +239,23 @@ define(['require',
                     "type": "shell"
                 });
                 if (!_.isEmpty(stats)) {
-                    that.ui.entityCard.html(
+                    var statsKeys = _.keys(stats);
+                    this.ui.entityCard.html(
                         EntityTable({
-                            "data": _.pick(stats, _.sortBy(_.keys(stats), function(o) {
+                            "data": _.pick(stats, _.sortBy(statsKeys, function(o) {
                                 return o.toLocaleLowerCase();
                             })),
                         })
                     );
-                    that.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComa(activeEntityCount) + ")");
-                    that.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComa(deletedEntityCount) + ")");
-                    that.$('[data-id="shellEntity"]').html("&nbsp;(" + _.numberFormatWithComa(shellEntityCount) + ")");
-                    that.ui.entityHeader.html("&nbsp;(" + _.numberFormatWithComa(data.general.entityCount) + ")");
+                    this.$('[data-id="activeEntity"]').html("&nbsp;(" + _.numberFormatWithComa(activeEntityCount) + ")");
+                    this.$('[data-id="deletedEntity"]').html("&nbsp;(" + _.numberFormatWithComa(deletedEntityCount) + ")");
+                    this.$('[data-id="shellEntity"]').html("&nbsp;(" + _.numberFormatWithComa(shellEntityCount) + ")");
+                    this.ui.entity.find(".count").html("&nbsp;(" + _.numberFormatWithComa(data.general.entityCount) + ")");
+                    if (statsKeys.length > this.DATA_MAX_LENGTH) {
+                        this.closePanel({
+                            el: this.ui.entity
+                        })
+                    }
                 }
             },
             renderStats: function(options) {

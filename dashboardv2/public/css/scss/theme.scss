@@ -340,6 +340,10 @@ hr[size="10"] {
     border: none !important;
 }
 
+.no-pointer {
+    pointer-events: none;
+}
+
 .position-relative {
     position: relative;
 }

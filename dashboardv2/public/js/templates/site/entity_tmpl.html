@@ -26,19 +26,25 @@
 <tbody>
     {{#each data}}
     <tr>
-        <td>{{@key}}</td>
+        <td><a class="linkClicked" href="#!/search/searchResult?searchType=basic&type={{@key}}&includeDE=true">{{@key}}&nbsp;({{arithmetic this.active '+' this.deleted}})</a></td>
         {{#if this.active}}
-        <td>{{this.active}}</td>
+        <td>
+            <a title="Search for active entities of type '{{@key}}'" class="linkClicked" href="#!/search/searchResult?searchType=basic&type={{@key}}">{{this.active}}</a>
+        </td>
         {{else}}
         <td>0</td>
         {{/if}}
         {{#if this.deleted}}
-        <td>{{this.deleted}}</td>
+        <td class="readOnlyLink">
+            <a title="Search for deleted entities of type '{{@key}}'" class="linkClicked" href="#!/search/searchResult?searchType=basic&type={{@key}}&includeDE=true">{{this.deleted}}</a>
+        </td>
         {{else}}
         <td>0</td>
         {{/if}}
         {{#if this.shell}}
-        <td>{{this.shell}}</td>
+        <td>
+            {{this.shell}}
+        </td>
         {{else}}
         <td>0</td>
         {{/if}}

@@ -38,7 +38,12 @@
             </td >
         </tr>
     {{/each}}
+    <tr>
+        <td colspan="4">
+            <p class="errorMsg" data-id="charSupportMsg"></p>
+        </td>
+    </tr>
     {{#ifCond items.length "===" 0}}
-        All properties have been removed. To add a new property, click <a href="javascript:void(0)" data-id="addItem">here</a>
+        No properties have been created yet. To add a property, click <a href="javascript:void(0)" data-id="addItem">here</a>
     {{/ifCond}}
 </table>

@@ -41,7 +41,8 @@ define(['require',
             itemKey: "[data-type='key']",
             itemValue: "[data-type='value']",
             addItem: "[data-id='addItem']",
-            deleteItem: "[data-id='deleteItem']"
+            deleteItem: "[data-id='deleteItem']",
+            charSupportMsg: "[data-id='charSupportMsg']"
         },
         /** ui events hash */
         events: function() {
@@ -58,24 +59,17 @@ define(['require',
          * @constructs
          */
         initialize: function(options) {
-            var that = this;
-            this.editMode = options.mode;
             if (options.items.length === 0) {
-                this.items = [{ key: "", value: "", mode: this.editMode}];
-
+                this.items = [{ key: "", value: ""}];
             } else {
-                this.items = options.items.map(function(m) {
-                    m.mode = that.editMode;
-                    return m;
-                });
+                this.items = options.items;
             }
         },
         onRender: function() {
-
         },
         onAddItemClick: function(e) {
             var el = e.currentTarget;
-            this.items.splice(parseInt(el.dataset.index) + 1, 0, { key: "", value: "", mode: this.editMode});
+            this.items.splice(parseInt(el.dataset.index) + 1, 0, { key: "", value: ""});
             this.render();
         },
         onDeleteItemClick: function(e) {
@@ -85,13 +79,26 @@ define(['require',
         },
         onItemKeyChange: function (e) {
             var el = e.currentTarget;
-            var val = el.value;
-            this.items[ el.dataset.index].key = val;
+            this.handleCharSupport(el);
+            if (!el.value.trim().includes(':')) {
+                this.items[ el.dataset.index].key =  _.escape(el.value.trim());
+            }
         },
         onItemValueChange: function (e) {
             var el = e.currentTarget;
-            var val = el.value;
-            this.items[ el.dataset.index].value = el.value;
+            this.handleCharSupport(el);
+            if (!el.value.trim().includes(':')) {
+                this.items[ el.dataset.index].value =  _.escape(el.value.trim());
+            }
+        },
+        handleCharSupport: function(el) {
+            if (el.value.trim().includes(':')) {
+                el.setAttribute('class', 'form-control errorClass');
+                this.ui.charSupportMsg.html("These special character '(:)' are not supported.");
+            } else {
+                el.setAttribute('class', 'form-control');
+                this.ui.charSupportMsg.html("");
+            }
         }
     });
 
