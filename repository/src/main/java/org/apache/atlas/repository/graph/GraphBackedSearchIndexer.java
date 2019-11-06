@@ -721,7 +721,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 }
             }
 
-            if(indexFieldName == null) {
+            if(indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
                 indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField);
             }
 
