@@ -36,6 +36,8 @@ import java.util.*;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.DEFAULT_SEARCHWEIGHT;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
+import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 
 /**
@@ -48,6 +50,8 @@ public class SolrIndexHelper implements IndexChangeListener {
 
     public static final int DEFAULT_SEARCHWEIGHT_FOR_STRINGS = 3;
     public static final int SEARCHWEIGHT_FOR_CLASSIFICATIONS = 10;
+    public static final int SEARCHWEIGHT_FOR_LABELS          = 10;
+    public static final int SEARCHWEIGHT_FOR_CUSTOM_ATTRS    = 3;
     public static final int SEARCHWEIGHT_FOR_TYPENAME        = 1;
 
     private static final int MIN_SEARCH_WEIGHT_FOR_SUGGESTIONS = 8;
@@ -116,10 +120,12 @@ public class SolrIndexHelper implements IndexChangeListener {
         Map<String, Integer>        ret         = new HashMap<>();
         Collection<AtlasEntityType> entityTypes = typeRegistry.getAllEntityTypes();
 
-        //the following two properties are specially added manually.
+        //the following properties are specially added manually.
         //as, they don't come in the entity definitions as attributes.
 
         ret.put(typeRegistry.getIndexFieldName(CLASSIFICATION_TEXT_KEY), SEARCHWEIGHT_FOR_CLASSIFICATIONS);
+        ret.put(typeRegistry.getIndexFieldName(LABELS_PROPERTY_KEY), SEARCHWEIGHT_FOR_LABELS);
+        ret.put(typeRegistry.getIndexFieldName(CUSTOM_ATTRIBUTES_PROPERTY_KEY), SEARCHWEIGHT_FOR_CUSTOM_ATTRS);
         ret.put(typeRegistry.getIndexFieldName(TYPE_NAME_PROPERTY_KEY), SEARCHWEIGHT_FOR_TYPENAME);
 
         if (!CollectionUtils.isNotEmpty(entityTypes)) {
