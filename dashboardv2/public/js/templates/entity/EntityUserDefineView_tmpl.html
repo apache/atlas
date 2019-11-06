@@ -18,7 +18,7 @@
 
         <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="userDefine">
             {{#ifCond customAttibutes.length "===" 0}}
-                <div class="panel-heading collapsed" data-toggle="collapse" href="#collapse22" aria-expanded="false" style="width: 70%">
+                <div class="panel-heading collapsed" data-toggle="collapse" href={{divId_1.anchor}} aria-expanded="false" style="width: 70%">
                     <h4 class="panel-title">
                         <a>User-defined properties </a>
                     </h4>
@@ -27,7 +27,7 @@
                     </div>
                 </div>
             {{else}}
-                <div class="panel-heading" data-toggle="collapse" href="#collapse44" aria-expanded="true" style="width: 70%">
+                <div class="panel-heading" data-toggle="collapse" href={{divId_2.anchor}} aria-expanded="true" style="width: 70%">
                     <h4 class="panel-title">
                         <a>User-defined properties </a>
                     </h4>
@@ -51,7 +51,7 @@
                 </div>
             {{/ifCond}}
 
-            <div id="collapse22" {{#ifCond swapItem "===" false}} class="panel-collapse collapse" {{else}} class="panel-collapse collapse in" {{/ifCond}}>
+            <div id={{divId_1.id}} {{#ifCond swapItem "===" false}} class="panel-collapse collapse" {{else}} class="panel-collapse collapse in" {{/ifCond}}>
                 {{#ifCond customAttibutes.length "===" 0}}
                     <div class="panel-body">
                             <div class="row">
@@ -82,7 +82,7 @@
             </div>
 
             {{#ifCond customAttibutes.length ">" 0}}
-                <div id="collapse44" class="panel-collapse collapse in" >
+                <div id={{divId_2.id}} class="panel-collapse collapse in" >
                     <div class="panel-body">
                             <div class="row">
                                 <div class="col-md-12">

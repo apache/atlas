@@ -882,5 +882,63 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             });
         }
     }
+    CommonViewFunction.CheckDuplicateAndEmptyInput = function(elements, datalist) {
+        var keyMap = new Map(),
+            validation = true,
+            hasDup = [];
+        for (var i = 0; i < elements.length; i++) {
+            var input = elements[i],
+                pEl = input.nextElementSibling,
+                classes = 'form-control',
+                val = input.value.trim();
+            pEl.innerText = "";
+
+            if (val === '') {
+                classes = 'form-control errorClass';
+                validation = false;
+                pEl.innerText = 'Required!';
+            } else {
+                if (input.tagName === 'INPUT') {
+                    var duplicates = datalist.filter(function(c) {
+                        return c.key === val;
+                    });
+                    if (keyMap.has(val) || duplicates.length > 1) {
+                        classes = 'form-control errorClass';
+                        hasDup.push('duplicate');
+                        pEl.innerText = 'Duplicate key';
+                    } else {
+                        keyMap.set(val, val);
+                    }
+                }
+            }
+            input.setAttribute('class', classes);
+        }
+        return {
+            validation: validation,
+            hasDuplicate: (hasDup.length === 0 ? false : true)
+        };
+    }
+    CommonViewFunction.getRandomIdAndAnchor = function() {
+        var randomId = "collapse_" + parseInt((Math.random() * 100)) + "_" + new Date().getUTCMilliseconds();
+        return {
+            id: randomId,
+            anchor: "#" + randomId
+        };
+    }
+    CommonViewFunction.udKeysStringParser = function(udKeys) {
+        var o = {};
+        _.each(udKeys.split(','), function(udKey) {
+            var ud = udKey.split(':');
+            o[ud[0]] = ud[1];
+        })
+        return o;
+    }
+    CommonViewFunction.udKeysObjectToStringParser = function(udKeys) {
+        var list = _.map(udKeys, function(udKey) {
+            var t = udKey.key + ':' + udKey.value;
+            return t;
+        });
+        return list.join(',');
+    }
     return CommonViewFunction;
 });

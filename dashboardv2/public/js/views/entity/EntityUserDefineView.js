@@ -22,8 +22,9 @@ define(['require',
 'models/VEntity',
 'utils/Utils',
 'utils/Enums',
-'utils/Messages'
-], function(require, Backbone, EntityUserDefineView_tmpl, VEntity, Utils, Enums, Messages) {
+'utils/Messages',
+'utils/CommonViewFunction',
+], function(require, Backbone, EntityUserDefineView_tmpl, VEntity, Utils, Enums, Messages, CommonViewFunction) {
 'use strict';
 
     return Backbone.Marionette.LayoutView.extend({
@@ -34,7 +35,9 @@ define(['require',
                 customAttibutes: this.customAttibutes,
                 readOnlyEntity : this.readOnlyEntity,
                 swapItem: this.swapItem,
-                saveAttrItems: this.saveAttrItems
+                saveAttrItems: this.saveAttrItems,
+                divId_1: this.dynamicId_1,
+                divId_2: this.dynamicId_2
             };
         },
         ui: {
@@ -50,12 +53,14 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'entity'));
+            _.extend(this, _.pick(options, 'entity', 'customFilter'));
             this.userDefineAttr = this.entity.customAttributes || [];
             this.initialCall = false;
             this.swapItem = false, this.saveAttrItems = false;
-            this.readOnlyEntity = Enums.entityStateReadOnly[this.entity.status];
+            this.readOnlyEntity = this.customFilter === undefined ? Enums.entityStateReadOnly[this.entity.status] : this.customFilter ;
             this.entityModel = new VEntity(this.entity);
+            this.dynamicId_1 = CommonViewFunction.getRandomIdAndAnchor();
+            this.dynamicId_2 = CommonViewFunction.getRandomIdAndAnchor();
             this.generateTableFields();
         },
         onRender: function() {
@@ -77,7 +82,11 @@ define(['require',
         },
         onAddAttrClick: function() {
             this.swapItem = !this.swapItem;
-            this.saveAttrItems = this.swapItem === true ? true : false;
+            if (this.customFilter === undefined) {
+                this.saveAttrItems = this.swapItem === true ? true : false;
+            } else {
+                this.saveAttrItems = false;
+            }
             this.initialCall = true;
             this.render();
             if (this.swapItem === true) {
@@ -115,7 +124,7 @@ define(['require',
                 data: JSON.stringify(payload),
                 type: 'POST',
                 success: function() {
-                    var msg = that.initialCall ? 'addSuccessMessage' : 'editSuccessMessage',
+                    var msg = _.isEmpty(that.customAttibutes) ? 'addSuccessMessage' : 'editSuccessMessage',
                     caption = "One or more user-defined propertie"; // 's' will be added in abbreviation function
                     that.customAttibutes = list;
                     if (list.length === 0) {
@@ -146,41 +155,10 @@ define(['require',
             var self = this;
             this.ui.saveAttrItems.attr("disabled", true);
             var list = itemView.$el.find("[data-type]"),
-                keyMap = new Map(),
-                validation = true,
-                hasDup = [],
                 dataList = [];
             Array.prototype.push.apply(dataList, itemView.items);
-            for(var i = 0; i < list.length ; i++) {
-                var input = list[i],
-                    type = input.dataset.type,
-                    pEl = itemView.$el.find(input.parentElement).find('p'),
-                    classes = 'form-control',
-                    val = input.value.trim();
-                    pEl[0].innerText = "";
-
-                if (val === '') {
-                    classes = 'form-control errorClass';
-                    validation = false;
-                    pEl[0].innerText = 'Required!';
-                } else {
-                    if (input.tagName === 'INPUT') {
-                        var duplicates = dataList.filter(function(c) {
-                            return c.key === val;
-                        });
-                        if (keyMap.has(val) || duplicates.length > 1 ) {
-                            classes = 'form-control errorClass';
-                            hasDup.push('duplicate');
-                            pEl[0].innerText = 'Duplicate key';
-                        } else {
-                            keyMap.set(val, val);
-                        }
-                    }
-                }
-                input.setAttribute('class', classes);
-            }
-
-            if (validation && hasDup.length === 0) {
+            var field = CommonViewFunction.CheckDuplicateAndEmptyInput(list, dataList);
+            if (field.validation && !field.hasDuplicate) {
                 self.saveAttributes(itemView.items);
             } else {
                 this.ui.saveAttrItems.attr("disabled", false);

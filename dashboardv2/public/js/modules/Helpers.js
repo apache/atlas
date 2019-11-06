@@ -96,6 +96,31 @@ define(['require',
         //return options.inverse(this);
     });
 
+    Handlebars.registerHelper('arithmetic', function(val1, operator, val2, options) {
+        var v1 = parseInt(val1) || 0,
+            v2 = parseInt(val2) || 0;
+        switch (operator) {
+            case '+':
+                return (v1 + v2);
+                break;
+            case '-':
+                return (v1 - v2);
+                break;
+            case '/':
+                return (v1 / v2);
+                break;
+            case '*':
+                return (v1 * v2);
+                break;
+            case '%':
+                return (v1 % v2);
+                break;
+            default:
+                return 0;
+                break;
+        }
+    });
+
     Handlebars.registerHelper('lookup', function(obj, field, defaulValue) {
         return (obj[field] ? obj[field] : (defaulValue ? defaulValue : ""));
     });

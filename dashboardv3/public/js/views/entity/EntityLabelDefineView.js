@@ -17,14 +17,15 @@
  */
 
 define(['require',
-'backbone',
-'hbs!tmpl/entity/EntityLabelDefineView_tmpl',
-'models/VEntity',
-'utils/Utils',
-'utils/Messages',
-'utils/Enums'
-], function(require, Backbone, EntityLabelDefineView_tmpl, VEntity, Utils, Messages, Enums) {
-'use strict';
+    'backbone',
+    'hbs!tmpl/entity/EntityLabelDefineView_tmpl',
+    'models/VEntity',
+    'utils/Utils',
+    'utils/Messages',
+    'utils/Enums',
+    'utils/CommonViewFunction',
+], function(require, Backbone, EntityLabelDefineView_tmpl, VEntity, Utils, Messages, Enums, CommonViewFunction) {
+    'use strict';
 
     return Backbone.Marionette.LayoutView.extend({
         _viewName: 'REntityLabelDefineView',
@@ -34,7 +35,9 @@ define(['require',
                 swapItem: this.swapItem,
                 labels: this.labels,
                 saveLabels: this.saveLabels,
-                readOnlyEntity: this.readOnlyEntity
+                readOnlyEntity: this.readOnlyEntity,
+                div_1: this.dynamicId_1,
+                div_2: this.dynamicId_2
             };
         },
         ui: {
@@ -51,36 +54,56 @@ define(['require',
         },
         initialize: function(options) {
             var self = this;
-            _.extend(this, _.pick(options, 'entity'));
+            _.extend(this, _.pick(options, 'entity', 'customFilter'));
             this.swapItem = false, this.saveLabels = false;
-            this.readOnlyEntity = Enums.entityStateReadOnly[this.entity.status]
+            this.readOnlyEntity = this.customFilter === undefined ? Enums.entityStateReadOnly[this.entity.status] : this.customFilter;
             this.entityModel = new VEntity(this.entity);
             this.labels = this.entity.labels || [];
+            this.dynamicId_1 = CommonViewFunction.getRandomIdAndAnchor();
+            this.dynamicId_2 = CommonViewFunction.getRandomIdAndAnchor();
         },
         onRender: function() {
             this.populateLabelOptions();
         },
-        bindEvents: function () {
-        },
+        bindEvents: function() {},
         populateLabelOptions: function() {
             var that = this,
-            str = this.labels.map(function (label) {
-                return "<option selected > "+ label +" </option>";
-            });
+                str = this.labels.map(function(label) {
+                    return "<option selected > " + label + " </option>";
+                });
             this.ui.addLabelOptions.html(str);
             this.ui.addLabelOptions.select2({
                 placeholder: "Select Label",
-                allowClear: true,
+                allowClear: false,
                 tags: true,
-                multiple: true
+                multiple: true,
+                matcher: function(params, data) {
+                    if (params.term === data.text) {
+                        return data;
+                    }
+                    return null;
+                },
+                templateResult: this.formatResultSearch
             });
         },
-        onChangeLabelChange: function () {
-            this.labels = this.ui.addLabelOptions.val();
+        formatResultSearch: function(state) {
+            if (!state.id) {
+                return state.text;
+            }
+            if (!state.element) {
+                return $("<span>Add<strong> '" + state.text + "'</strong></span>");
+            }
         },
-        handleBtnClick: function () {
+        onChangeLabelChange: function() {
+            this.labels = this.ui.addLabelOptions.val().map(function(v) { return _.escape(v) });
+        },
+        handleBtnClick: function() {
             this.swapItem = !this.swapItem;
-            this.saveLabels = this.swapItem === true ? true : false;
+            if (this.customFilter === undefined) {
+                this.saveLabels = this.swapItem === true ? true : false;
+            } else {
+                this.saveLabels = false;
+            }
             this.render();
         },
         saveUserDefinedLabels: function() {
@@ -88,12 +111,12 @@ define(['require',
             var entityJson = that.entityModel.toJSON();
             if (entityJson.labels !== undefined || this.labels.length !== 0) {
                 var payload = this.labels;
-                that.entityModel.saveEntityLabels(entityJson.guid ,{
+                that.entityModel.saveEntityLabels(entityJson.guid, {
                     data: JSON.stringify(payload),
                     type: 'POST',
                     success: function() {
                         var msg = entityJson.labels === undefined ? 'addSuccessMessage' : 'editSuccessMessage',
-                        caption = "One or more label";
+                            caption = "One or more label";
                         if (payload.length === 0) {
                             msg = 'removeSuccessMessage';
                             caption = "One or more existing label";
@@ -102,19 +125,19 @@ define(['require',
                             that.entityModel.set('labels', payload);
                         }
                         Utils.notifySuccess({
-                            content:  caption + Messages.getAbbreviationMsg(true, msg)
+                            content: caption + Messages.getAbbreviationMsg(true, msg)
                         });
                         that.swapItem = false;
                         that.saveLabels = false;
                         that.render();
                     },
-                    error: function (e) {
+                    error: function(e) {
                         that.ui.saveLabels.attr("disabled", false);
                         Utils.notifySuccess({
                             content: e.message
                         });
                     },
-                    complete: function () {
+                    complete: function() {
                         that.ui.saveLabels.attr("disabled", false);
                         that.render();
                     }
