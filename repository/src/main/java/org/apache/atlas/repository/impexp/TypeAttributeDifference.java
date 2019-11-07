@@ -49,16 +49,15 @@ public class TypeAttributeDifference {
     }
 
     public void updateTypes(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
-
-        updateEntityDef(typeDefinitionMap, result);
-        updateClassificationDef(typeDefinitionMap, result);
-        updateEnumDef(typeDefinitionMap, result);
-        updateStructDef(typeDefinitionMap, result);
-        updateRelationshipDefs(typeDefinitionMap, result);
+        updateEnumDef(typeDefinitionMap.getEnumDefs(), result);
+        updateStructDef(typeDefinitionMap.getStructDefs(), result);
+        updateClassificationDef(typeDefinitionMap.getClassificationDefs(), result);
+        updateEntityDef(typeDefinitionMap.getEntityDefs(), result);
+        updateRelationshipDefs(typeDefinitionMap.getRelationshipDefs(), result);
     }
 
-    private void updateEntityDef(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
-        for (AtlasEntityDef def : typeDefinitionMap.getEntityDefs()) {
+    private void updateEntityDef(List<AtlasEntityDef> entityDefs, AtlasImportResult result) throws AtlasBaseException {
+        for (AtlasEntityDef def : entityDefs) {
             AtlasEntityDef existing = typeRegistry.getEntityDefByName(def.getName());
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateEntityDefByName(existing.getName(), existing);
@@ -67,8 +66,8 @@ public class TypeAttributeDifference {
         }
     }
 
-    private void updateClassificationDef(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
-        for (AtlasClassificationDef def : typeDefinitionMap.getClassificationDefs()) {
+    private void updateClassificationDef(List<AtlasClassificationDef> classificationDefs, AtlasImportResult result) throws AtlasBaseException {
+        for (AtlasClassificationDef def : classificationDefs) {
             AtlasClassificationDef existing = typeRegistry.getClassificationDefByName(def.getName());
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateClassificationDefByName(existing.getName(), existing);
@@ -77,18 +76,20 @@ public class TypeAttributeDifference {
         }
     }
 
-    private void updateEnumDef(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
-        for (AtlasEnumDef def : typeDefinitionMap.getEnumDefs()) {
+    private void updateEnumDef(List<AtlasEnumDef> enumDefs, AtlasImportResult result) throws AtlasBaseException {
+        for (AtlasEnumDef def : enumDefs) {
             AtlasEnumDef existing = typeRegistry.getEnumDefByName(def.getName());
             if (existing != null && addElements(existing, def)) {
                 typeDefStore.updateEnumDefByName(existing.getName(), existing);
                 result.incrementMeticsCounter("typedef:enum:update");
+            } else {
+
             }
         }
     }
 
-    private void updateStructDef(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
-        for (AtlasStructDef def : typeDefinitionMap.getStructDefs()) {
+    private void updateStructDef(List<AtlasStructDef> structDefs, AtlasImportResult result) throws AtlasBaseException {
+        for (AtlasStructDef def : structDefs) {
             AtlasStructDef existing = typeRegistry.getStructDefByName(def.getName());
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateStructDefByName(existing.getName(), existing);
@@ -97,8 +98,8 @@ public class TypeAttributeDifference {
         }
     }
 
-    private void updateRelationshipDefs(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
-        for (AtlasRelationshipDef def : typeDefinitionMap.getRelationshipDefs()) {
+    private void updateRelationshipDefs(List<AtlasRelationshipDef> relationshipDefs, AtlasImportResult result) throws AtlasBaseException {
+        for (AtlasRelationshipDef def : relationshipDefs) {
             AtlasRelationshipDef existing = typeRegistry.getRelationshipDefByName(def.getName());
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateRelationshipDefByName(existing.getName(), existing);
