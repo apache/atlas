@@ -61,6 +61,7 @@ public class SearchParameters implements Serializable {
     public static final String WILDCARD_CLASSIFICATIONS = "*";
     public static final String ALL_CLASSIFICATIONS      = "_CLASSIFIED";
     public static final String NO_CLASSIFICATIONS       = "_NOT_CLASSIFIED";
+    public static final String ALL_ENTITY_TYPES         = "_ALL_ENTITY_TYPES";
 
     /**
      * @return The type of query

@@ -786,7 +786,7 @@ public final class TestUtilsV2 {
                         createUniqueRequiredAttrDef("name", "string"),
                         createOptionalAttrDef("description", "string"),
                         createRequiredAttrDef("type", "string"),
-                        createOptionalAttrDef("created", "date"),
+                        createOptionalAttrDef("created", "string"),
                         // enum
                         new AtlasAttributeDef("tableType", "tableType", false,
                                 SINGLE, 1, 1,

@@ -17,6 +17,9 @@
  */
 package org.apache.atlas.type;
 
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
+import static org.apache.atlas.type.Constants.*;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -42,30 +45,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
-
 /**
  * class that implements behaviour of an entity-type.
  */
 public class AtlasEntityType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityType.class);
 
+    public  static final AtlasEntityType ENTITY_ROOT         = initRootEntityType();
     private static final String NAME                         = "name";
     private static final String DESCRIPTION                  = "description";
     private static final String OWNER                        = "owner";
     private static final String CREATE_TIME                  = "createTime";
     private static final String DYN_ATTRIBUTE_PREFIX         = "dynAttribute:";
-    private static final char   DYN_ATTRIBUTE_NAME_SEPARATOR = '.';
-    private static final char   DYN_ATTRIBUTE_OPEN_DELIM     = '{';
-    private static final char   DYN_ATTRIBUTE_CLOSE_DELIM    = '}';
+    private static final String OPTION_SCHEMA_ATTRIBUTES     = "schemaAttributes";
+    private static final String INTERNAL_TYPENAME            = "__internal";
+
+    private static final char DYN_ATTRIBUTE_NAME_SEPARATOR   = '.';
+    private static final char DYN_ATTRIBUTE_OPEN_DELIM       = '{';
+    private static final char DYN_ATTRIBUTE_CLOSE_DELIM      = '}';
 
     private static final String[] ENTITY_HEADER_ATTRIBUTES = new String[]{NAME, DESCRIPTION, OWNER, CREATE_TIME};
-    private static final String   OPTION_SCHEMA_ATTRIBUTES = "schemaAttributes";
+    private static final String   ENTITY_ROOT_NAME         = "__ENTITY_ROOT";
 
     private final AtlasEntityDef entityDef;
     private final String         typeQryStr;
-
-    private static final String INTERNAL_TYPENAME = "__internal";
 
     private List<AtlasEntityType>                    superTypes                 = Collections.emptyList();
     private Set<String>                              allSuperTypes              = Collections.emptySet();
@@ -82,7 +85,6 @@ public class AtlasEntityType extends AtlasStructType {
     private List<AtlasAttribute>                     dynAttributes              = Collections.emptyList();
     private List<AtlasAttribute>                     dynEvalTriggerAttributes   = Collections.emptyList();
     private Map<String,List<TemplateToken>>          parsedTemplates            = Collections.emptyMap();
-
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -103,6 +105,8 @@ public class AtlasEntityType extends AtlasStructType {
     public AtlasEntityDef getEntityDef() {
         return entityDef;
     }
+
+    public static AtlasEntityType getEntityRoot() {return ENTITY_ROOT; }
 
     @Override
     void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
@@ -400,10 +404,14 @@ public class AtlasEntityType extends AtlasStructType {
     }
 
     public String getQualifiedAttributeName(String attrName) throws AtlasBaseException {
-        if (allAttributes.containsKey(attrName)) {
-            return allAttributes.get(attrName).getQualifiedName();
-        } else if (relationshipAttributes.containsKey(attrName)) {
-            return relationshipAttributes.get(attrName).values().iterator().next().getQualifiedName();
+        AtlasAttribute ret = getAttribute(attrName);
+
+        if (ret == null) {
+            ret = relationshipAttributes.get(attrName).values().iterator().next();
+        }
+
+        if (ret != null) {
+            return ret.getQualifiedName();
         }
 
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, entityDef.getName());
@@ -503,11 +511,6 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         return ret;
-    }
-
-    @Override
-    public AtlasAttribute getAttribute(String attributeName) {
-        return allAttributes.get(attributeName);
     }
 
     @Override
@@ -619,6 +622,30 @@ public class AtlasEntityType extends AtlasStructType {
 
             super.populateDefaultValues(ent);
         }
+    }
+
+    private static AtlasEntityType initRootEntityType() {
+        List<AtlasAttributeDef> attributeDefs = new ArrayList<AtlasAttributeDef>() {{
+            add(new AtlasAttributeDef(TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_LONG, false, true));
+            add(new AtlasAttributeDef(MODIFICATION_TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_LONG, false, true));
+            add(new AtlasAttributeDef(MODIFIED_BY_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(CREATED_BY_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(STATE_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+
+            add(new AtlasAttributeDef(GUID_PROPERTY_KEY, ATLAS_TYPE_STRING, true, true));
+            add(new AtlasAttributeDef(HISTORICAL_GUID_PROPERTY_KEY, ATLAS_TYPE_STRING, true, true));
+            add(new AtlasAttributeDef(TYPE_NAME_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(CLASSIFICATION_TEXT_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(CLASSIFICATION_NAMES_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(PROPAGATED_CLASSIFICATION_NAMES_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(IS_INCOMPLETE_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(LABELS_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(CUSTOM_ATTRIBUTES_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+        }};
+
+        AtlasEntityDef entityDef = new AtlasEntityDef(ENTITY_ROOT_NAME, "", "", attributeDefs);
+
+        return new AtlasEntityType(entityDef);
     }
 
     private void addSubType(AtlasEntityType subType) {

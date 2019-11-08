@@ -216,7 +216,23 @@ public class AtlasStructType extends AtlasType {
     }
 
     public AtlasAttribute getAttribute(String attributeName) {
-        return allAttributes.get(attributeName);
+        AtlasAttribute ret = allAttributes.get(attributeName);
+
+        if (ret == null) {
+            ret = getSystemAttribute(attributeName);
+        }
+
+        return ret;
+    }
+
+    public AtlasAttribute getSystemAttribute(String attributeName) {
+        AtlasAttribute ret = null;
+        if (this instanceof AtlasEntityType) {
+            ret = AtlasEntityType.ENTITY_ROOT.allAttributes.get(attributeName);
+        } else if (this instanceof AtlasClassificationType) {
+            ret = AtlasClassificationType.CLASSIFICATION_ROOT.allAttributes.get(attributeName);
+        }
+        return ret;
     }
 
     @Override
@@ -631,8 +647,10 @@ public class AtlasStructType extends AtlasType {
     }
 
     public String getQualifiedAttributeName(String attrName) throws AtlasBaseException {
-        if ( allAttributes.containsKey(attrName)) {
-            return allAttributes.get(attrName).getQualifiedName();
+        AtlasAttribute attribute = getAttribute(attrName);
+
+        if (attribute != null) {
+            return attribute.getQualifiedName();
         }
 
         throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_ATTRIBUTE, attrName, structDef.getName());
@@ -916,18 +934,31 @@ public class AtlasStructType extends AtlasType {
         }
 
         public static String getQualifiedAttributeName(AtlasStructDef structDef, String attrName) {
-            return attrName.contains(".") ? attrName : String.format("%s.%s", structDef.getName(), attrName);
+            if (isRootType(structDef)) {
+                return attrName;
+            } else {
+                return attrName.contains(".") ? attrName : String.format("%s.%s", structDef.getName(), attrName);
+            }
         }
 
         public static String generateVertexPropertyName(AtlasStructDef structDef, AtlasAttributeDef attrDef, String qualifiedName) {
             String vertexPropertyName = qualifiedName;
-
-            if(!attrDef.getName().contains(".") &&
-                AtlasAttributeDef.IndexType.STRING.equals(attrDef.getIndexType()) &&
-                ATLAS_TYPE_STRING.equalsIgnoreCase(attrDef.getTypeName())) {
-                vertexPropertyName = String.format("%s.%s%s", structDef.getName(), VERTEX_PROPERTY_PREFIX_STRING_INDEX_TYPE, attrDef.getName());
+            String attrName           = attrDef.getName();
+            if (isRootType(structDef)) {
+                return attrName;
+            } else {
+                if(!attrDef.getName().contains(".") &&
+                    AtlasAttributeDef.IndexType.STRING.equals(attrDef.getIndexType()) &&
+                    ATLAS_TYPE_STRING.equalsIgnoreCase(attrDef.getTypeName())) {
+                    vertexPropertyName = String.format("%s.%s%s", structDef.getName(), VERTEX_PROPERTY_PREFIX_STRING_INDEX_TYPE, attrDef.getName());
+                }
             }
             return encodePropertyKey(vertexPropertyName);
+        }
+
+        private static boolean isRootType(AtlasStructDef structDef) {
+            return StringUtils.equals(structDef.getName(), AtlasEntityType.ENTITY_ROOT.getTypeName()) ||
+                   StringUtils.equals(structDef.getName(), AtlasClassificationType.CLASSIFICATION_ROOT.getTypeName());
         }
 
         // Keys copied from org.janusgraph.graphdb.types.system.SystemTypeManager.RESERVED_CHARS
