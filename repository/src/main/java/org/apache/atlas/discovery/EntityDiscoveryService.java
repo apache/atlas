@@ -109,7 +109,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.maxTagsLengthInIdxQuery  = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH, 512);
         this.indexSearchPrefix        = AtlasGraphUtilsV2.getIndexSearchPrefix();
         this.userProfileService       = userProfileService;
-        this.suggestionsProvider      = new SuggestionsProviderImpl(graph);
+        this.suggestionsProvider      = new SuggestionsProviderImpl(graph, typeRegistry);
     }
 
     @Override
@@ -448,8 +448,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     @GraphTransaction
-    public AtlasSuggestionsResult getSuggestions(String prefixString) {
-        return suggestionsProvider.getSuggestions(prefixString);
+    public AtlasSuggestionsResult getSuggestions(String prefixString, String fieldName) {
+        return suggestionsProvider.getSuggestions(prefixString, fieldName);
     }
 
     @Override
