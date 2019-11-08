@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_ENTITY_TYPES;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
 
@@ -52,7 +53,7 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
         // if search includes entity-type criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent EntitySearchProcessor
-        if (context.getEntityType() != null) {
+        if (context.getEntityType() != null && context.getEntityType() != MATCH_ALL_ENTITY_TYPES) {
             String typeAndSubTypeNamesQryStr = context.getEntityType().getTypeAndAllSubTypesQryStr();
 
             if (typeAndSubTypeNamesQryStr.length() <= MAX_QUERY_STR_LENGTH_TYPES) {

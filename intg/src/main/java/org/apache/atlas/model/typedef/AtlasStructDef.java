@@ -300,6 +300,16 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this(name, typeName, DEFAULT_SEARCHWEIGHT);
         }
 
+        public AtlasAttributeDef(String name, String typeName, boolean isUnique, boolean isIndexable) {
+            this(name, typeName, false, Cardinality.SINGLE, COUNT_NOT_SET, COUNT_NOT_SET, isUnique, isIndexable,
+                false, null,null, null, null, DEFAULT_SEARCHWEIGHT, null);
+        }
+
+        public AtlasAttributeDef(String name, String typeName, Cardinality cardinality, boolean isUnique, boolean isIndexable) {
+            this(name, typeName, false, cardinality, COUNT_NOT_SET, COUNT_NOT_SET, isUnique, isIndexable,
+                false, null,null, null, null, DEFAULT_SEARCHWEIGHT, null);
+        }
+
         public AtlasAttributeDef(String name, String typeName, int searchWeight) {
             this(name, typeName, false, Cardinality.SINGLE, searchWeight, null);
         }

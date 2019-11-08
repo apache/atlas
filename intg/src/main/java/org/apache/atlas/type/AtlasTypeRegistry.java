@@ -54,12 +54,13 @@ public class AtlasTypeRegistry {
     private   final Set<String>                    missingRelationshipDefs;
     private   final Map<String, String>            commonIndexFieldNameCache;
 
-
     public AtlasTypeRegistry() {
         registryData              = new RegistryData();
         updateSynchronizer        = new TypeRegistryUpdateSynchronizer(this);
         missingRelationshipDefs   = new HashSet<>();
         commonIndexFieldNameCache = new HashMap<>();
+
+        resolveReferencesForRootTypes();
     }
 
     // used only by AtlasTransientTypeRegistry
@@ -68,6 +69,8 @@ public class AtlasTypeRegistry {
         updateSynchronizer        = other.updateSynchronizer;
         missingRelationshipDefs   = other.missingRelationshipDefs;
         commonIndexFieldNameCache = other.commonIndexFieldNameCache;
+
+        resolveReferencesForRootTypes();
     }
 
     public Collection<String> getAllTypeNames() { return registryData.allTypes.getAllTypeNames(); }
@@ -240,6 +243,16 @@ public class AtlasTypeRegistry {
 
     public void addIndexFieldName(String propertyName, String indexFieldName) {
         commonIndexFieldNameCache.put(propertyName, indexFieldName);
+    }
+
+    private void resolveReferencesForRootTypes() {
+        try {
+            AtlasEntityType.ENTITY_ROOT.resolveReferences(this);
+            AtlasClassificationType.CLASSIFICATION_ROOT.resolveReferences(this);
+        } catch (AtlasBaseException e) {
+            LOG.error("Failed to initialize root types", e);
+            throw new RuntimeException(e);
+        }
     }
 
     /**

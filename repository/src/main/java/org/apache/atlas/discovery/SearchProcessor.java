@@ -62,6 +62,7 @@ public abstract class SearchProcessor {
     public static final String  SPACE_STRING               = " ";
     public static final String  BRACE_OPEN_STR             = "(";
     public static final String  BRACE_CLOSE_STR            = ")";
+    public static final String  ALL_ENTITY_TYPE_QUERY      = "[* TO *]";
 
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
     private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
@@ -130,6 +131,10 @@ public abstract class SearchProcessor {
 
     public abstract List<AtlasVertex> execute();
     public abstract long getResultCount();
+
+    protected boolean isEntityRootType() {
+        return context.getEntityType() == SearchContext.MATCH_ALL_ENTITY_TYPES;
+    }
 
     protected int collectResultVertices(final List<AtlasVertex> ret, final int startIdx, final int limit, int resultIdx, final List<AtlasVertex> entityVertices) {
         for (AtlasVertex entityVertex : entityVertices) {
@@ -204,7 +209,7 @@ public abstract class SearchProcessor {
     //      (AND (OR idx-att1=x idx-attr1=y) non-idx-attr=z (AND idx-attr2=xyz idx-attr2=abc))
     //
     protected boolean canApplyIndexFilter(AtlasStructType structType, FilterCriteria filterCriteria, boolean insideOrCondition) {
-        if (filterCriteria == null) {
+        if (!context.hasAttributeFilter(filterCriteria)) {
             return true;
         }
 

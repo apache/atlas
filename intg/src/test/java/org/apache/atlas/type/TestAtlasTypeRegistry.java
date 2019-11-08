@@ -47,7 +47,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testClassificationDefValidHierarchy() {
+    public void testClassificationDefValidHierarchy() throws AtlasBaseException {
         AtlasClassificationDef classifiL0   = new AtlasClassificationDef("L0");
         AtlasClassificationDef classifiL1_1 = new AtlasClassificationDef("L1-1");
         AtlasClassificationDef classifiL1_2 = new AtlasClassificationDef("L1-2");
@@ -135,7 +135,7 @@ public class TestAtlasTypeRegistry {
     }
 
     @Test
-    public void testClassificationDefInvalidHierarchy_Self() {
+    public void testClassificationDefInvalidHierarchy_Self() throws AtlasBaseException {
         AtlasClassificationDef classifiDef1 = new AtlasClassificationDef("classifiDef-1");
 
         classifiDef1.addSuperType(classifiDef1.getName());
@@ -171,7 +171,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testClassificationDefInvalidHierarchy_CircularRef() {
+    public void testClassificationDefInvalidHierarchy_CircularRef() throws AtlasBaseException {
         AtlasClassificationDef classifiL0   = new AtlasClassificationDef("L0");
         AtlasClassificationDef classifiL1_1 = new AtlasClassificationDef("L1-1");
         AtlasClassificationDef classifiL1_2 = new AtlasClassificationDef("L1-2");
@@ -228,7 +228,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testEntityDefValidHierarchy() {
+    public void testEntityDefValidHierarchy() throws AtlasBaseException {
         AtlasEntityDef entL0   = new AtlasEntityDef("L0");
         AtlasEntityDef entL1_1 = new AtlasEntityDef("L1-1");
         AtlasEntityDef entL1_2 = new AtlasEntityDef("L1-2");
@@ -315,7 +315,7 @@ public class TestAtlasTypeRegistry {
     }
 
     @Test
-    public void testEntityDefInvalidHierarchy_Self() {
+    public void testEntityDefInvalidHierarchy_Self() throws AtlasBaseException {
         AtlasEntityDef entDef1 = new AtlasEntityDef("entDef-1");
 
         entDef1.addSuperType(entDef1.getName());
@@ -351,7 +351,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testEntityDefInvalidHierarchy_CircularRef() {
+    public void testEntityDefInvalidHierarchy_CircularRef() throws AtlasBaseException {
         AtlasEntityDef entL0   = new AtlasEntityDef("L0");
         AtlasEntityDef entL1_1 = new AtlasEntityDef("L1-1");
         AtlasEntityDef entL1_2 = new AtlasEntityDef("L1-2");
@@ -399,7 +399,7 @@ public class TestAtlasTypeRegistry {
     }
 
     @Test
-    public void testNestedUpdates() {
+    public void testNestedUpdates() throws AtlasBaseException {
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
@@ -436,7 +436,7 @@ public class TestAtlasTypeRegistry {
     }
 
     @Test
-    public void testParallelUpdates() {
+    public void testParallelUpdates() throws AtlasBaseException {
         final int    numOfThreads         =  3;
         final int    numOfTypesPerKind    = 30;
         final String enumTypePrefix       = "testEnum-";
@@ -503,7 +503,7 @@ public class TestAtlasTypeRegistry {
      * verify that after the update failure, the registry still has correct super-type/sub-type information for L0 and L1
      */
     @Test
-    public void testRegistryValidityOnInvalidUpdate() {
+    public void testRegistryValidityOnInvalidUpdate() throws AtlasBaseException {
         AtlasEntityDef entL0 = new AtlasEntityDef("L0");
         AtlasEntityDef entL1 = new AtlasEntityDef("L1");
 

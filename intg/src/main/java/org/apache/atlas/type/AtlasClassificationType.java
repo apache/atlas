@@ -17,27 +17,35 @@
  */
 package org.apache.atlas.type;
 
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
+import static org.apache.atlas.type.Constants.CREATED_BY_KEY;
+import static org.apache.atlas.type.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MODIFIED_BY_KEY;
+import static org.apache.atlas.type.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.TYPE_NAME_PROPERTY_KEY;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.DateValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
-
 
 /**
  * class that implements behaviour of a classification-type.
  */
 public class AtlasClassificationType extends AtlasStructType {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasClassificationType.class);
+
+    public  static final AtlasClassificationType CLASSIFICATION_ROOT      = initRootClassificationType();
+    private static final String                  CLASSIFICATION_ROOT_NAME = "__CLASSIFICATION_ROOT";
 
     private final AtlasClassificationDef classificationDef;
     private final String                 typeQryStr;
@@ -486,6 +494,21 @@ public class AtlasClassificationType extends AtlasStructType {
      */
     public boolean canApplyToEntityType(AtlasEntityType entityType) {
         return CollectionUtils.isEmpty(this.entityTypes) || this.entityTypes.contains(entityType.getTypeName());
+    }
+
+    private static AtlasClassificationType initRootClassificationType() {
+        List<AtlasAttributeDef> attributeDefs = new ArrayList<AtlasAttributeDef>() {{
+            add(new AtlasAttributeDef(TYPE_NAME_PROPERTY_KEY, AtlasBaseTypeDef.ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_LONG, false, true));
+            add(new AtlasAttributeDef(MODIFICATION_TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_LONG, false, true));
+            add(new AtlasAttributeDef(MODIFIED_BY_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(CREATED_BY_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(STATE_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+        }};
+
+        AtlasClassificationDef classificationDef = new AtlasClassificationDef(CLASSIFICATION_ROOT_NAME, "", "", attributeDefs);
+
+        return new AtlasClassificationType(classificationDef);
     }
 
     private void getTypeHierarchyInfo(AtlasTypeRegistry              typeRegistry,

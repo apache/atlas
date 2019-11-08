@@ -101,7 +101,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
            each of above cases with either has empty/or not tagFilters
          */
         final boolean useIndexSearchForEntity = (classificationType != null || isWildcardSearch) &&
-                                                filterCriteria == null &&
+                                                !context.hasAttributeFilter(filterCriteria)  &&
                                                 (typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TAGS);
 
         /* If classification's attributes can be applied index filter, we can use direct index
