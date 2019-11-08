@@ -51,7 +51,6 @@ import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -84,6 +83,14 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
     private final Set<String>                 multiProperties                   = new HashSet<>();
     private final StandardJanusGraph          janusGraph;
+    private final ThreadLocal<GremlinGroovyScriptEngine> scriptEngine = ThreadLocal.withInitial(() -> {
+        DefaultImportCustomizer.Builder builder = DefaultImportCustomizer.build()
+                                                                         .addClassImports(java.util.function.Function.class)
+                                                                         .addMethodImports(__.class.getMethods())
+                                                                         .addMethodImports(P.class.getMethods());
+        return new GremlinGroovyScriptEngine(builder.create());
+    });
+
 
     public AtlasJanusGraph() {
         this(getGraphInstance());
@@ -330,13 +337,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public GremlinGroovyScriptEngine getGremlinScriptEngine() {
-        DefaultImportCustomizer.Builder importBuilder = DefaultImportCustomizer.build()
-                                                                               .addClassImports(java.util.function.Function.class)
-                                                                               .addMethodImports(__.class.getMethods())
-                                                                               .addMethodImports(P.class.getMethods());
-        GremlinGroovyScriptEngine scriptEngine = new GremlinGroovyScriptEngine(importBuilder.create());
-
-        return scriptEngine;
+        return scriptEngine.get();
     }
 
     @Override
