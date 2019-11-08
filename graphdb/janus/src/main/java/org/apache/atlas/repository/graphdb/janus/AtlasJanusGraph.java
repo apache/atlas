@@ -84,6 +84,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     private final ConvertGremlinValueFunction GREMLIN_VALUE_CONVERSION_FUNCTION = new ConvertGremlinValueFunction();
     private final Set<String>                 multiProperties                   = new HashSet<>();
     private final StandardJanusGraph          janusGraph;
+    private GremlinGroovyScriptEngine         scriptEngine;
 
     public AtlasJanusGraph() {
         this(getGraphInstance());
@@ -110,6 +111,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
 
         janusGraph = (StandardJanusGraph) AtlasJanusGraphDatabase.getGraphInstance();
+        initGremlinScriptEngine();
     }
 
     @Override
@@ -330,13 +332,16 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public GremlinGroovyScriptEngine getGremlinScriptEngine() {
-        DefaultImportCustomizer.Builder importBuilder = DefaultImportCustomizer.build()
-                                                                               .addClassImports(java.util.function.Function.class)
-                                                                               .addMethodImports(__.class.getMethods())
-                                                                               .addMethodImports(P.class.getMethods());
-        GremlinGroovyScriptEngine scriptEngine = new GremlinGroovyScriptEngine(importBuilder.create());
-
         return scriptEngine;
+    }
+
+    private void initGremlinScriptEngine() {
+        DefaultImportCustomizer.Builder importBuilder = DefaultImportCustomizer.build()
+                .addClassImports(java.util.function.Function.class)
+                .addMethodImports(__.class.getMethods())
+                .addMethodImports(P.class.getMethods());
+        scriptEngine = new GremlinGroovyScriptEngine(importBuilder.create());
+
     }
 
     @Override
