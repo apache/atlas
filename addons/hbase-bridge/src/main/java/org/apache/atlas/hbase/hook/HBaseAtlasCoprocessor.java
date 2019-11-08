@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver, RegionObserver, RegionServerObserver  {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseAtlasCoprocessor.class);
@@ -44,6 +45,11 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
 
     public HBaseAtlasCoprocessor() {
         hbaseAtlasHook = HBaseAtlasHook.getInstance();
+    }
+
+    @Override
+    public Optional<MasterObserver> getMasterObserver() {
+                return Optional.of(this);
     }
 
     @Override
