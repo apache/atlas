@@ -650,15 +650,15 @@ public class DiscoveryREST {
 
     @Path("suggestions")
     @GET
-    public AtlasSuggestionsResult getSuggestions(@QueryParam("prefixString") String prefixString) throws AtlasBaseException {
+    public AtlasSuggestionsResult getSuggestions(@QueryParam("prefixString") String prefixString, @QueryParam("fieldName") String fieldName) {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.getSuggestions(" + prefixString + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.getSuggestions(" + prefixString + "," + fieldName + ")");
             }
 
-            return discoveryService.getSuggestions(prefixString);
+            return discoveryService.getSuggestions(prefixString, fieldName);
         } finally {
             AtlasPerfTracer.log(perf);
         }

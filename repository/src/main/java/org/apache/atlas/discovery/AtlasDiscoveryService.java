@@ -151,7 +151,8 @@ public interface AtlasDiscoveryService {
     /**
      * Should return top 5 suggestion strings for the given prefix.
      * @param prefixString the prefix string
+     * @param fieldName field from which to retrieve suggestions
      * @return top 5 suggestion strings for the given prefix.
      */
-    AtlasSuggestionsResult getSuggestions(String prefixString);
+    AtlasSuggestionsResult getSuggestions(String prefixString, String fieldName);
 }

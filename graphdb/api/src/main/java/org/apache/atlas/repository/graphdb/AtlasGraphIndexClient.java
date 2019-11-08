@@ -18,12 +18,9 @@
 package org.apache.atlas.repository.graphdb;
 
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
-import org.apache.atlas.model.discovery.SearchParameters;
-import org.apache.atlas.type.AtlasEntityType;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Represents a graph client work with indices used by Jansgraph.
@@ -39,9 +36,10 @@ public interface AtlasGraphIndexClient {
     /**
      * Returns top 5 suggestions for the given prefix string.
      * @param prefixString the prefix string whose value needs to be retrieved.
+     * @param indexFieldName the indexed field name from which to retrieve suggestions
      * @return top 5 suggestion strings with prefix String
      */
-    List<String> getSuggestions(String prefixString);
+    List<String> getSuggestions(String prefixString, String indexFieldName);
 
     /**
      *  The implementers should apply the search weights for the passed in properties.
