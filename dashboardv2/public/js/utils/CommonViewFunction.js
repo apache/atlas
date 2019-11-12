@@ -37,7 +37,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 skipDefaultError: true,
                                 success: function(data) {
                                     Utils.notifySuccess({
-                                        content: "Classification " + options.tagName + Messages.getAbbreviationMsg(abbrev, 'removeSuccessMessage')
+                                        content: "Classification " + options.tagName + Messages.getAbbreviationMsg(false, 'removeSuccessMessage')
                                     });
                                     if (options.callback) {
                                         options.callback();
