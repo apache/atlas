@@ -295,8 +295,9 @@ define([
                         }, that.preFetchedCollectionLists, that.sharedObj)
                     ));
                 } else {
-                    App.rNContent.$el.html("");
-                    App.rNContent.destroy();
+                    if (App.rNContent.currentView) {
+                        App.rNContent.currentView.destroy();
+                    }
                 }
             });
         },

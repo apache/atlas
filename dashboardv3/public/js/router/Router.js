@@ -268,7 +268,7 @@ define([
             var that = this;
             require(["views/site/Header", "views/search/SearchDefaultLayoutView", "views/site/SideNavLayoutView"], function(Header, SearchDefaultLayoutView, SideNavLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
-                if (paramObj && (paramObj.type || paramObj.tag || paramObj.term || paramObj.query) === undefined) {
+                if (paramObj && (paramObj.type || paramObj.tag || paramObj.term || paramObj.query || paramObj.udKeys || paramObj.udLabels) === undefined) {
                     Utils.setUrl({
                         url: "#!/search",
                         mergeBrowserUrl: false,
@@ -581,8 +581,9 @@ define([
                         )
                     );
                 } else {
-                    App.rContent.$el.html("");
-                    App.rContent.destroy();
+                    if (App.rNContent.currentView) {
+                        App.rNContent.currentView.destroy();
+                    }
                 }
             });
         },
