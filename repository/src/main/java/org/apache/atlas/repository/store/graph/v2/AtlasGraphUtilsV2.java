@@ -353,6 +353,26 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
+    public static AtlasVertex findDeletedByGuid(String guid) {
+        AtlasVertex ret = GraphTransactionInterceptor.getVertexFromCache(guid);
+
+        if (ret == null) {
+            AtlasGraphQuery query = getGraphInstance().query()
+                    .has(Constants.GUID_PROPERTY_KEY, guid)
+                    .has(STATE_PROPERTY_KEY, Status.DELETED.name());
+
+            Iterator<AtlasVertex> results = query.vertices().iterator();
+
+            ret = results.hasNext() ? results.next() : null;
+
+            if (ret != null) {
+                GraphTransactionInterceptor.addToVertexCache(guid, ret);
+            }
+        }
+
+        return ret;
+    }
+
     public static String getTypeNameFromGuid(String guid) {
         String ret = null;
 

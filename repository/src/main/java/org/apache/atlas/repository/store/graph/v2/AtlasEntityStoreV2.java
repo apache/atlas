@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
@@ -43,6 +44,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -69,8 +71,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import static java.lang.Boolean.FALSE;
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
+import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
 import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getCustomAttributes;
 import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
@@ -466,6 +467,42 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
+
+        // Notify the change listeners
+        entityChangeNotifier.onEntitiesMutated(ret, false);
+
+        return ret;
+    }
+
+    @Override
+    @GraphTransaction
+    public EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(guids)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
+        }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "purge entity: guids=", guids);
+        Collection<AtlasVertex> purgeCandidates = new ArrayList<>();
+
+        for (String guid : guids) {
+            AtlasVertex vertex = AtlasGraphUtilsV2.findDeletedByGuid(guid);
+
+            if (vertex == null) {
+                // Entity does not exist - treat as non-error, since the caller
+                // wanted to delete the entity and it's already gone.
+                LOG.warn("Purge request ignored for non-existent/active entity with guid " + guid);
+
+                continue;
+            }
+
+            purgeCandidates.add(vertex);
+        }
+
+        if (purgeCandidates.isEmpty()) {
+            LOG.info("No purge candidate entities were found for guids: " + guids + " which is already deleted");
+        }
+
+        EntityMutationResponse ret = purgeVertices(purgeCandidates);
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
@@ -1119,6 +1156,21 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
             response.addEntity(UPDATE, entity);
+        }
+
+        return response;
+    }
+
+    private EntityMutationResponse purgeVertices(Collection<AtlasVertex> purgeCandidates) throws AtlasBaseException {
+        EntityMutationResponse response = new EntityMutationResponse();
+        RequestContext         req      = RequestContext.get();
+
+        req.setDeleteType(DeleteType.HARD);
+        req.setPurgeRequested(true);
+        deleteDelegate.getHandler().deleteEntities(purgeCandidates); // this will update req with list of purged entities
+
+        for (AtlasEntityHeader entity : req.getDeletedEntities()) {
+            response.addEntity(PURGE, entity);
         }
 
         return response;

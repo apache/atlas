@@ -54,6 +54,7 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_CREATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_UPDATE;
@@ -123,6 +124,23 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
         for (AtlasEntity entity : entities) {
             EntityAuditEventV2 event = createEvent(entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE, "Deleted entity");
+
+            events.add(event);
+        }
+
+        auditRepository.putEventsV2(events);
+
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+    @Override
+    public void onEntitiesPurged(List<AtlasEntity> entities) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
+        List<EntityAuditEventV2> events = new ArrayList<>();
+
+        for (AtlasEntity entity : entities) {
+            EntityAuditEventV2 event = createEvent(entity, ENTITY_PURGE, "Purged entity");
 
             events.add(event);
         }
@@ -470,6 +488,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             case ENTITY_DELETE:
                 ret = "Deleted: ";
                 break;
+            case ENTITY_PURGE:
+                ret = "Purged: ";
+                break;
             case CLASSIFICATION_ADD:
                 ret = "Added classification: ";
                 break;
@@ -519,6 +540,13 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Relationship(s) deleted from repository(" + relationships.size() + ")");
+        }
+    }
+
+    @Override
+    public void onRelationshipsPurged(List<AtlasRelationship> relationships) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Relationship(s) purged from repository(" + relationships.size() + ")");
         }
     }
 }

@@ -37,6 +37,7 @@ import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.repository.impexp.AtlasServerService;
@@ -56,6 +57,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -429,6 +431,30 @@ public class AdminResource {
         }
 
         return result;
+    }
+
+    @DELETE
+    @Path("/purge")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(guids)) {
+            for (String guid : guids) {
+                Servlets.validateQueryParamLength("guid", guid);
+            }
+        }
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.purgeByGuids(" + guids  + ")");
+            }
+
+            return entityStore.purgeByIds(guids);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @POST

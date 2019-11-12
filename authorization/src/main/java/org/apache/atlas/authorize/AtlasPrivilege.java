@@ -36,7 +36,8 @@ public enum AtlasPrivilege {
 
      RELATIONSHIP_ADD("add-relationship"),
      RELATIONSHIP_UPDATE("update-relationship"),
-     RELATIONSHIP_REMOVE("remove-relationship");
+     RELATIONSHIP_REMOVE("remove-relationship"),
+     ADMIN_PURGE("admin-purge");
 
      private final String type;
 

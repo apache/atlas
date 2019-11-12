@@ -51,6 +51,7 @@ public class RequestContext {
     private final long                                   requestTime          = System.currentTimeMillis();
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
+    private final Map<String, AtlasEntityHeader>         purgedEntities      = new HashMap<>();
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
@@ -64,6 +65,7 @@ public class RequestContext {
     private String       clientIPAddress;
     private List<String> forwardedAddresses;
     private DeleteType   deleteType   = DeleteType.DEFAULT;
+    private boolean     isPurgeRequested = false;
     private int         maxAttempts  = 1;
     private int         attemptCount = 1;
     private boolean     isImportInProgress = false;
@@ -108,6 +110,7 @@ public class RequestContext {
     public void clearCache() {
         this.updatedEntities.clear();
         this.deletedEntities.clear();
+        this.purgedEntities.clear();
         this.entityCache.clear();
         this.entityExtInfoCache.clear();
         this.addedPropagations.clear();
@@ -179,6 +182,10 @@ public class RequestContext {
         isImportInProgress = importInProgress;
     }
 
+    public boolean isPurgeRequested() { return isPurgeRequested; }
+
+    public void setPurgeRequested(boolean isPurgeRequested) { this.isPurgeRequested = isPurgeRequested; }
+
     public boolean isInNotificationProcessing() {
         return isInNotificationProcessing;
     }
@@ -215,10 +222,15 @@ public class RequestContext {
         }
     }
 
-
     public void recordEntityDelete(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null) {
             deletedEntities.put(entity.getGuid(), entity);
+        }
+    }
+
+    public void recordEntityPurge(AtlasEntityHeader entity) {
+        if (entity != null && entity.getGuid() != null) {
+            purgedEntities.put(entity.getGuid(), entity);
         }
     }
 
@@ -302,6 +314,10 @@ public class RequestContext {
         return deletedEntities.values();
     }
 
+    public Collection<AtlasEntityHeader> getPurgedEntities() {
+        return purgedEntities.values();
+    }
+
     /**
      * Checks if an instance with the given guid is in the cache for this request.  Either returns the instance
      * or null if it is not in the cache.
@@ -329,7 +345,9 @@ public class RequestContext {
         return deletedEntities.containsKey(guid);
     }
 
-
+    public boolean isPurgedEntity(String guid) {
+        return purgedEntities.containsKey(guid);
+    }
 
     public MetricRecorder startMetricRecord(String name) { return metrics != null ? metrics.getMetricRecorder(name) : null; }
 

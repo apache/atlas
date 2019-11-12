@@ -203,10 +203,16 @@ public interface AtlasEntityStore {
      */
 
     String getGuidByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException;
+
     /*
      * Return list of deleted entity guids
      */
     EntityMutationResponse deleteByIds(List<String> guid) throws AtlasBaseException;
+
+    /*
+     * Return list of purged entity guids
+     */
+    EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException;
 
     /**
      * Add classification(s)
