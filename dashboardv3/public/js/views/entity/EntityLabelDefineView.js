@@ -23,8 +23,9 @@ define(['require',
     'utils/Utils',
     'utils/Messages',
     'utils/Enums',
+    'utils/UrlLinks',
     'utils/CommonViewFunction',
-], function(require, Backbone, EntityLabelDefineView_tmpl, VEntity, Utils, Messages, Enums, CommonViewFunction) {
+], function(require, Backbone, EntityLabelDefineView_tmpl, VEntity, Utils, Messages, Enums, UrlLinks, CommonViewFunction) {
     'use strict';
 
     return Backbone.Marionette.LayoutView.extend({
@@ -72,16 +73,42 @@ define(['require',
                     return "<option selected > " + label + " </option>";
                 });
             this.ui.addLabelOptions.html(str);
+            var getLabelData = function(data, selectedData) {
+                if (data.suggestions) {
+                    return _.map(data.suggestions, function(name, index) {
+                        var findValue = _.find(selectedData, { id: name })
+                        if (findValue) {
+                            return findValue;
+                        } else {
+                            return {
+                                id: name,
+                                text: name
+                            }
+                        }
+                    });
+                } else {
+                    return []
+                }
+            };
             this.ui.addLabelOptions.select2({
                 placeholder: "Select Label",
                 allowClear: false,
                 tags: true,
                 multiple: true,
-                matcher: function(params, data) {
-                    if (params.term === data.text) {
-                        return data;
-                    }
-                    return null;
+                ajax: {
+                    url: UrlLinks.searchApiUrl('suggestions'),
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            prefixString: _.escape(params.term), // search term
+                            fieldName: '__labels'
+                        };
+                    },
+                    processResults: function(data, params) {
+                        return { results: getLabelData(data, this.$element.select2("data")) };
+                    },
+                    cache: true
                 },
                 templateResult: this.formatResultSearch
             });
@@ -91,7 +118,7 @@ define(['require',
                 return state.text;
             }
             if (!state.element) {
-                return $("<span>Add<strong> '" + state.text + "'</strong></span>");
+                return $("<span>Add<strong> '" +  _.escape(state.text) + "'</strong></span>");
             }
         },
         onChangeLabelChange: function() {
