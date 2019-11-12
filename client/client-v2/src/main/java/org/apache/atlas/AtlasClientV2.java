@@ -49,6 +49,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class AtlasClientV2 extends AtlasBaseClient {
     // Type APIs
@@ -63,6 +64,11 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final String GET_BY_NAME_TEMPLATE = TYPES_API + "%s/name/%s";
     private static final String GET_BY_GUID_TEMPLATE = TYPES_API + "%s/guid/%s";
     private static final String ENTITY_BULK_API      = ENTITY_API + "bulk/";
+
+    //Admin Entity Purge
+    private static final String ADMIN_API            = BASE_URI + "admin/";
+    private static final String ENTITY_PURGE_API     = ADMIN_API + "purge/";
+
     // Lineage APIs
     private static final String LINEAGE_URI  = BASE_URI + "v2/lineage/";
 
@@ -362,6 +368,10 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.DELETE_ENTITIES_BY_GUIDS, EntityMutationResponse.class, "guid", guids);
     }
 
+    public EntityMutationResponse purgeEntitiesByGuids(Set<String> guids) throws AtlasServiceException {
+        return callAPI(API_V2.PURGE_ENTITIES_BY_GUIDS, EntityMutationResponse.class, guids);
+    }
+
     public AtlasClassifications getClassifications(String guid) throws AtlasServiceException {
         return callAPI(formatPathParameters(API_V2.GET_CLASSIFICATIONS, guid), AtlasClassifications.class, null);
     }
@@ -555,6 +565,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 CREATE_ENTITIES             = new API_V2(ENTITY_BULK_API, HttpMethod.POST, Response.Status.OK);
         public static final API_V2 UPDATE_ENTITIES             = new API_V2(ENTITY_BULK_API, HttpMethod.POST, Response.Status.OK);
         public static final API_V2 DELETE_ENTITIES_BY_GUIDS    = new API_V2(ENTITY_BULK_API, HttpMethod.DELETE, Response.Status.OK);
+        public static final API_V2 PURGE_ENTITIES_BY_GUIDS     = new API_V2(ENTITY_PURGE_API, HttpMethod.DELETE, Response.Status.OK);
         public static final API_V2 GET_CLASSIFICATIONS         = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.GET, Response.Status.OK);
         public static final API_V2 ADD_CLASSIFICATIONS         = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.POST, Response.Status.NO_CONTENT);
         public static final API_V2 UPDATE_CLASSIFICATIONS      = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.PUT, Response.Status.NO_CONTENT);

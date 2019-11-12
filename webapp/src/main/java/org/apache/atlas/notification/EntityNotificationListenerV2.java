@@ -97,6 +97,11 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
+    public void onEntitiesPurged(List<AtlasEntity> entities) throws AtlasBaseException {
+        // do nothing -> notification not sent out for term purged from entities as its been sent in case of delete
+    }
+
+    @Override
     public void onClassificationsAdded(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_ADD);
     }
@@ -295,5 +300,10 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
         notifyRelationshipEvents(relationships, RELATIONSHIP_DELETE);
+    }
+
+    @Override
+    public void onRelationshipsPurged(List<AtlasRelationship> relationships) throws AtlasBaseException {
+        // do nothing -> notification not sent out for term purged from entities as its been sent in case of delete
     }
 }

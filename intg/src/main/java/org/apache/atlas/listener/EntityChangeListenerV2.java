@@ -56,6 +56,14 @@ public interface EntityChangeListenerV2 {
      */
     void onEntitiesDeleted(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException;
 
+
+    /**
+     * This is upon purging entities from the repository.
+     *
+     * @param entities the purged entities
+     */
+    void onEntitiesPurged(List<AtlasEntity> entities) throws AtlasBaseException;
+
     /**
      * This is upon adding new classifications to an entity.
      *
@@ -122,6 +130,13 @@ public interface EntityChangeListenerV2 {
      * @param isImport
      */
     void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException;
+
+    /**
+     * This is upon purging relationships from the repository.
+     *
+     * @param relationships the purged relationships
+     */
+    void onRelationshipsPurged(List<AtlasRelationship> relationships) throws AtlasBaseException;
 
     /**
      * This is upon add new labels to an entity.
