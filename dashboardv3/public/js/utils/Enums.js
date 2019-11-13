@@ -36,8 +36,8 @@ define(['require'], function(require) {
         ENTITY_IMPORT_DELETE: "Entity Deleted by import",
         TERM_ADD: "Term Added",
         TERM_DELETE: "Term Deleted",
-        LABEL_ADD: "Label Added",
-        LABEL_DELETE: "Label Deleted"
+        LABEL_ADD: "Label(s) Added",
+        LABEL_DELETE:"Label(s) Deleted"
     }
 
     Enums.entityStateReadOnly = {

@@ -24,8 +24,9 @@ define([
     "utils/Globals",
     "utils/Utils",
     "utils/UrlLinks",
+    'utils/Enums',
     "collection/VGlossaryList"
-], function($, _, Backbone, App, Globals, Utils, UrlLinks, VGlossaryList) {
+], function($, _, Backbone, App, Globals, Utils, UrlLinks, Enums, VGlossaryList) {
     var AppRouter = Backbone.Router.extend({
         routes: {
             // Define some URL routes
@@ -298,6 +299,11 @@ define([
                                             isTagPresent = true;
                                         }
                                     }
+                                }
+                            });
+                            _.each(Enums.addOnClassification, function(classificationName) {
+                                if (classificationName === tagValidate) {
+                                    isTagPresent = true;
                                 }
                             });
                             if (!isTagPresent) {
