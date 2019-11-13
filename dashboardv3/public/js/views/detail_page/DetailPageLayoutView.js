@@ -414,10 +414,10 @@ define(['require',
                     val.entityGuid === that.id ? tag['self'].push(val) : tag['propagated'].push(val);
                 });
                 _.each(tag.self, function(val) {
-                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span title=' + val.typeName + ' >' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Tag"></i></span>';
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span title=' + val.typeName + ' >' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Classification"></i></span>';
                 });
                 _.each(tag.propagated, function(val) {
-                    var crossButton = '<i class="fa fa-close" data-id="deleteTag" data-entityguid="' + val.entityGuid + '" data-type="tag" title="Remove Tag"></i>';
+                    var crossButton = '<i class="fa fa-close" data-id="deleteTag" data-entityguid="' + val.entityGuid + '" data-type="tag" title="Remove Classification"></i>';
                     propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span>' + ((that.id !== val.entityGuid && val.entityStatus === "DELETED") ? crossButton : "") + '</span>';
                 });
                 propagatedTagListData !== "" ? this.ui.propagatedTagDiv.show() : this.ui.propagatedTagDiv.hide();
