@@ -282,10 +282,8 @@ define([
                         }
                         if (categoryType == "ENTITY") {
                             var entityCount =
-                                that.entityCountObj.entity.entityActive[model.get("name")] +
-                                (that.entityCountObj.entity.entityDeleted[model.get("name")] ?
-                                    that.entityCountObj.entity.entityDeleted[model.get("name")] :
-                                    0),
+                                (that.entityCountObj.entity.entityActive[model.get("name")] || 0) +
+                                (that.entityCountObj.entity.entityDeleted[model.get("name")] || 0),
                                 modelname = entityCount ? model.get("name") + " (" + _.numberFormatWithComa(entityCount) + ")" : model.get("name");
                             if (that.options.value) {
                                 isSelected = that.options.value.type ? that.options.value.type == model.get("name") : false;
