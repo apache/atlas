@@ -462,6 +462,7 @@ define(['require',
             },
             manualRender: function(paramObj) {
                 this.updateQueryObject(paramObj);
+                this.renderTypeTagList(paramObj);
                 this.setValues(paramObj);
             },
             getFilterBox: function() {
@@ -489,10 +490,13 @@ define(['require',
                     tagStr = typeStr,
                     foundNewClassification = false,
                     optionsValue = this.options.value;
+                if (options && options.tag) {
+                    optionsValue = options;
+                }
                 this.typeHeaders.fullCollection.each(function(model) {
                     var name = Utils.getName(model.toJSON(), 'name');
                     if (model.get('category') == 'ENTITY' && (serviceTypeToBefiltered && serviceTypeToBefiltered.length ? _.contains(serviceTypeToBefiltered, model.get('serviceType')) : true)) {
-                        var entityCount = (that.entityCountObj.entity.entityActive[name] + (that.entityCountObj.entity.entityDeleted[name] ? that.entityCountObj.entity.entityDeleted[name] : 0));
+                        var entityCount = (that.entityCountObj.entity.entityActive[name] || 0) + (that.entityCountObj.entity.entityDeleted[name] || 0);
                         typeStr += '<option value="' + (name) + '" data-name="' + (name) + '">' + (name) + ' ' + (entityCount ? "(" + _.numberFormatWithComa(entityCount) + ")" : '') + '</option>';
                     }
                     if (isTypeOnly == undefined && model.get('category') == 'CLASSIFICATION') {

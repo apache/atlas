@@ -114,7 +114,7 @@ define([
                 }
                 if (code == 13) {
                     var tagValue = this.ui.wildCardValue.val();
-                    if(tagValue.indexOf("*")!= -1 ){
+                    if (tagValue.indexOf("*") != -1) {
                         that.findSearchResult(tagValue);
                     }
 
@@ -247,6 +247,10 @@ define([
                 this.ui.classificationSearchTree.jstree(true).deselect_all();
                 this.tagId = null;
             } else {
+                if ((that.options.value.tag.indexOf('*') != -1)) {
+                    that.ui.classificationSearchTree.jstree(true).deselect_all();
+                    that.ui.wildCardValue.val(that.options.value.tag);
+                }
                 var dataFound = this.classificationDefCollection.fullCollection.find(function(obj) {
                     return obj.get("name") === that.options.value.tag
                 });
