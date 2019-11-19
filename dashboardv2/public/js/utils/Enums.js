@@ -37,7 +37,8 @@ define(['require'], function(require) {
         TERM_ADD: "Term Added",
         TERM_DELETE: "Term Deleted",
         LABEL_ADD: "Label(s) Added",
-        LABEL_DELETE: "Label(s) Deleted"
+        LABEL_DELETE: "Label(s) Deleted",
+        ENTITY_PURGE: "Entity Purged"
     }
 
     Enums.entityStateReadOnly = {

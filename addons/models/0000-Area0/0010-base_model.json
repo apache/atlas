@@ -1,5 +1,34 @@
 {
-  "enumDefs": [],
+  "enumDefs": [
+    {
+      "name": "atlas_operation",
+      "description": "Defines audit operations in Atlas",
+      "typeVersion": "1.0",
+      "serviceType": "atlas_core",
+      "elementDefs": [
+        {
+          "ordinal": 0,
+          "value": "OTHERS"
+        },
+        {
+          "ordinal": 1,
+          "value": "PURGE"
+        },
+        {
+          "ordinal": 2,
+          "value": "EXPORT"
+        },
+        {
+          "ordinal": 3,
+          "value": "IMPORT"
+        },
+        {
+          "ordinal": 4,
+          "value": "IMPORT_DELETE_REPL"
+        }
+      ]
+    }
+  ],
   "structDefs": [],
   "classificationDefs": [],
   "entityDefs": [
@@ -379,6 +408,72 @@
         },
         {
           "name": "resultSummary",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
+      "name": "__AtlasAuditEntry",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "superTypes": [
+        "__internal"
+      ],
+      "attributeDefs": [
+        {
+          "name": "userName",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "operation",
+          "typeName": "atlas_operation",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "startTime",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": false
+        },
+        {
+          "name": "endTime",
+          "typeName": "date",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "clientId",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "params",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "result",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": false,

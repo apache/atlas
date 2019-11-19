@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.testng.Assert.fail;
 
 public abstract class BasicTestSetup {

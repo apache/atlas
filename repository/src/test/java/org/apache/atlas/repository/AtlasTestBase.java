@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository.impexp;
+package org.apache.atlas.repository;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -30,15 +31,15 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.createAtlasEntity;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadEntity;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadHiveModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.createAtlasEntity;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadBaseModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadEntity;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadHiveModel;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-public class ExportImportTestBase {
+public class AtlasTestBase {
     protected static final String ENTITIES_SUB_DIR = "stocksDB-Entities";
     protected static final String DB_GUID = "1637a33e-6512-447b-ade7-249c8cb5344b";
     protected static final String TABLE_GUID = "df122fc3-5555-40f8-a30f-3090b8a622f8";
@@ -69,7 +70,7 @@ public class ExportImportTestBase {
         }
     }
 
-    protected void assertAuditEntry(ExportImportAuditService auditService) throws InterruptedException {
+    protected void assertExportImportAuditEntry(ExportImportAuditService auditService) throws InterruptedException {
         pauseForIndexCreation();
         List<ExportImportAuditEntry> result = null;
         try {

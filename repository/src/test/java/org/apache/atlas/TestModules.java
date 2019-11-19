@@ -41,16 +41,17 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.graphdb.janus.migration.GraphDBGraphSONMigrator;
 import org.apache.atlas.repository.impexp.ExportService;
+import org.apache.atlas.repository.ogm.AtlasAuditEntryDTO;
 import org.apache.atlas.repository.ogm.AtlasServerDTO;
-import org.apache.atlas.repository.ogm.ExportImportAuditEntryDTO;
-import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
-import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
 import org.apache.atlas.repository.ogm.DTORegistry;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.ogm.DataTransferObject;
+import org.apache.atlas.repository.ogm.ExportImportAuditEntryDTO;
 import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryCategoryDTO;
 import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryDTO;
 import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryTermDTO;
+import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
+import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.BulkImporter;
@@ -169,6 +170,7 @@ public class TestModules {
             availableDTOs.addBinding().to(AtlasGlossaryCategoryDTO.class);
             availableDTOs.addBinding().to(AtlasServerDTO.class);
             availableDTOs.addBinding().to(ExportImportAuditEntryDTO.class);
+            availableDTOs.addBinding().to(AtlasAuditEntryDTO.class);
 
             bind(DTORegistry.class).asEagerSingleton();
             bind(DataAccess.class).asEagerSingleton();

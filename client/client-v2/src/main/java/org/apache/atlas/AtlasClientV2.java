@@ -17,19 +17,23 @@
  */
 package org.apache.atlas;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.model.SearchFilter;
+import org.apache.atlas.model.audit.AtlasAuditEntry;
+import org.apache.atlas.model.audit.AuditSearchParameters;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
@@ -47,6 +51,7 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,9 +70,10 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final String GET_BY_GUID_TEMPLATE = TYPES_API + "%s/guid/%s";
     private static final String ENTITY_BULK_API      = ENTITY_API + "bulk/";
 
-    //Admin Entity Purge
+    //Admin Entity
     private static final String ADMIN_API            = BASE_URI + "admin/";
     private static final String ENTITY_PURGE_API     = ADMIN_API + "purge/";
+    private static final String ATLAS_AUDIT_API      = ADMIN_API + "audits/";
 
     // Lineage APIs
     private static final String LINEAGE_URI  = BASE_URI + "v2/lineage/";
@@ -479,9 +485,35 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.UPDATE_RELATIONSHIP, AtlasRelationship.class, relationship);
     }
 
+    public List<AtlasAuditEntry> getAtlasAuditByOperation(final AuditSearchParameters auditSearchParameters) throws AtlasServiceException {
+        ArrayNode response = callAPI(API_V2.GET_ATLAS_AUDITS, ArrayNode.class, auditSearchParameters);
+
+        return extractResults(response, new ExtractOperation<AtlasAuditEntry, ObjectNode>() {
+            @Override
+            AtlasAuditEntry extractElement(ObjectNode element) {
+                return AtlasType.fromV1Json(element.toString(), AtlasAuditEntry.class);
+            }
+        });
+    }
+
     @Override
     protected API formatPathParameters(final API api, final String... params) {
         return new API(String.format(api.getPath(), params), api.getMethod(), api.getExpectedStatus());
+    }
+
+    private class ExtractOperation<T, U> {
+        T extractElement(U element) {
+            return (T) element;
+        }
+    }
+
+    private <T, U> List<T> extractResults(ArrayNode jsonResponse, ExtractOperation<T, U> extractInterafce) {
+        ArrayList<T> resultsList = new ArrayList<>();
+        for (int index = 0; index < jsonResponse.size(); index++) {
+            Object element = jsonResponse.get(index);
+            resultsList.add(extractInterafce.extractElement((U) element));
+        }
+        return resultsList;
     }
 
     private MultivaluedMap<String, String> attributesToQueryParams(Map<String, String> attributes) {
@@ -580,8 +612,9 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 DELETE_RELATIONSHIP_BY_GUID = new API_V2(RELATIONSHIPS_URI + "guid/", HttpMethod.DELETE, Response.Status.NO_CONTENT);
         public static final API_V2 CREATE_RELATIONSHIP         = new API_V2(RELATIONSHIPS_URI , HttpMethod.POST, Response.Status.OK);
         public static final API_V2 UPDATE_RELATIONSHIP         = new API_V2(RELATIONSHIPS_URI , HttpMethod.PUT, Response.Status.OK);
-        public static final API_V2 GET_BULK_HEADERS = new API_V2(ENTITY_API + BULK_HEADERS, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 GET_BULK_HEADERS            = new API_V2(ENTITY_API + BULK_HEADERS, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 UPDATE_BULK_SET_CLASSIFICATIONS = new API_V2(ENTITY_API + AtlasClientV2.BULK_SET_CLASSIFICATIONS, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 GET_ATLAS_AUDITS            = new API_V2(ATLAS_AUDIT_API, HttpMethod.POST, Response.Status.OK);
 
         private API_V2(String path, String method, Response.Status status) {
             super(path, method, status);

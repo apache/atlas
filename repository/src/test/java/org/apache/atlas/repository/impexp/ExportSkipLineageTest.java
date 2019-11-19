@@ -25,6 +25,7 @@ import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
@@ -43,8 +44,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadHiveModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadBaseModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadHiveModel;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runExportWithParameters;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
@@ -52,7 +53,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.AssertJUnit.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ExportSkipLineageTest extends ExportImportTestBase {
+public class ExportSkipLineageTest extends AtlasTestBase {
     @Inject
     AtlasTypeRegistry typeRegistry;
 

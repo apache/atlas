@@ -33,6 +33,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -63,8 +64,8 @@ import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getDefaultImportRequest;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getInputStreamFrom;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromResourcesJson;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromResourcesJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runAndVerifyQuickStart_v1_Import;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithParameters;
@@ -82,7 +83,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ImportServiceTest extends ExportImportTestBase {
+public class ImportServiceTest extends AtlasTestBase {
     private static final int DEFAULT_LIMIT = 25;
     private final ImportService importService;
 
@@ -123,7 +124,7 @@ public class ImportServiceTest extends ExportImportTestBase {
 
     @AfterTest
     public void postTest() throws InterruptedException {
-        assertAuditEntry(auditService);
+        assertExportImportAuditEntry(auditService);
     }
 
     @DataProvider(name = "sales")

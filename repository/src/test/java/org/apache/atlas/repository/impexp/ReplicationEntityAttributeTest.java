@@ -31,9 +31,8 @@ import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
-import org.apache.atlas.repository.store.graph.v2.BulkImporterImpl;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
@@ -63,7 +62,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ReplicationEntityAttributeTest extends ExportImportTestBase {
+public class ReplicationEntityAttributeTest extends AtlasTestBase {
     private final String ENTITIES_SUB_DIR = "stocksDB-Entities";
     private final String EXPORT_REQUEST_FILE = "export-replicatedTo";
     private final String IMPORT_REQUEST_FILE = "import-replicatedFrom";

@@ -31,7 +31,7 @@ import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPE
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.createTypesAsNeeded;
+import static org.apache.atlas.utils.TestLoadModelUtils.createTypesAsNeeded;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.RequestContext;
