@@ -37,7 +37,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;

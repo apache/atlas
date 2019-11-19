@@ -26,18 +26,16 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.model.TimeBoundary;
-import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.audit.AtlasAuditEntry;
+import org.apache.atlas.model.audit.AuditSearchParameters;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.util.StringUtils;
@@ -54,7 +52,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.testng.Assert.*;
-
 
 /**
  * Integration tests for Entity Jersey Resource.
@@ -790,7 +787,8 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         assertNotNull(deleteResponse.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE));
         assertEquals(deleteResponse.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE).size(), 2);
 
-        Thread.sleep(1000);
+        //Wait for delete operation
+        Thread.sleep(5000);
 
         // Purge the database entities
         Set<String> guids = Stream.of(entity1Header.getGuid(), entity2Header.getGuid()).collect(Collectors.toSet());
@@ -800,6 +798,12 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         assertNotNull(purgeResponse);
         assertNotNull(purgeResponse.getEntitiesByOperation(EntityMutations.EntityOperation.PURGE));
         assertEquals(purgeResponse.getEntitiesByOperation(EntityMutations.EntityOperation.PURGE).size(), 2);
+
+        AuditSearchParameters auditSearchParameters = TestResourceFileUtils.readObjectFromJson("audit-search-parameter-purge",
+                AuditSearchParameters.class);
+        List<AtlasAuditEntry> res = atlasClientV2.getAtlasAuditByOperation(auditSearchParameters);
+        // Verify that the audit entry is set
+        assertNotNull(res);
     }
 
     @Test

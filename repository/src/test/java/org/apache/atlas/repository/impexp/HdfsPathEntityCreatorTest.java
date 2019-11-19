@@ -20,6 +20,7 @@ package org.apache.atlas.repository.impexp;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.annotations.BeforeClass;
@@ -33,12 +34,12 @@ import static org.apache.atlas.repository.impexp.HdfsPathEntityCreator.HDFS_PATH
 import static org.apache.atlas.repository.impexp.HdfsPathEntityCreator.HDFS_PATH_ATTRIBUTE_NAME_NAME;
 import static org.apache.atlas.repository.impexp.HdfsPathEntityCreator.HDFS_PATH_ATTRIBUTE_QUALIFIED_NAME;
 import static org.apache.atlas.repository.impexp.HdfsPathEntityCreator.getQualifiedName;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadFsModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadFsModel;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class HdfsPathEntityCreatorTest extends ExportImportTestBase {
+public class HdfsPathEntityCreatorTest extends AtlasTestBase {
 
     @Inject
     AtlasTypeRegistry typeRegistry;

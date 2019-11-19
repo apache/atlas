@@ -22,6 +22,7 @@ package org.apache.atlas.repository.impexp;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.util.UniqueList;
@@ -40,7 +41,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class IncrementalExportEntityProviderTest extends ExportImportTestBase {
+public class IncrementalExportEntityProviderTest extends AtlasTestBase {
     @Inject
     AtlasTypeRegistry typeRegistry;
 

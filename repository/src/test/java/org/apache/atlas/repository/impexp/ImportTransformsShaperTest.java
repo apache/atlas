@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -35,13 +36,13 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.List;
 
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadFsModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadFsModel;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertNotNull;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ImportTransformsShaperTest extends ExportImportTestBase {
+public class ImportTransformsShaperTest extends AtlasTestBase {
     @Inject
     AtlasTypeRegistry typeRegistry;
 

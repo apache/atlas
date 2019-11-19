@@ -28,6 +28,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
@@ -61,7 +62,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ExportServiceTest extends ExportImportTestBase {
+public class ExportServiceTest extends AtlasTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(ExportServiceTest.class);
 
     @Inject
@@ -106,7 +107,7 @@ public class ExportServiceTest extends ExportImportTestBase {
     @AfterClass
     public void clear() throws Exception {
         Thread.sleep(1000);
-        assertAuditEntry(auditService);
+        assertExportImportAuditEntry(auditService);
         AtlasGraphProvider.cleanup();
 
         if (useLocalSolr()) {

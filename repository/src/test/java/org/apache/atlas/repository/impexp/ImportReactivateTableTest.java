@@ -27,6 +27,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -48,15 +49,15 @@ import static org.apache.atlas.AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME;
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getInputStreamFrom;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getDefaultImportRequest;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadFsModel;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadHiveModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadFsModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadHiveModel;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithParameters;
 import static org.apache.atlas.type.AtlasTypeUtil.toAtlasRelatedObjectId;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ImportReactivateTableTest extends ExportImportTestBase {
+public class ImportReactivateTableTest extends AtlasTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(ImportReactivateTableTest.class);
 
     private static final String ENTITY_TYPE_COL = "hive_column";

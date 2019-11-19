@@ -25,6 +25,7 @@ import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.runner.LocalSolrRunner;
@@ -50,7 +51,7 @@ import java.util.HashMap;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -58,7 +59,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class RelationshipAttributesExtractorTest extends ExportImportTestBase {
+public class RelationshipAttributesExtractorTest extends AtlasTestBase {
 
     private static final String EXPORT_FULL      = "full";
     private static final String EXPORT_CONNECTED = "connected";

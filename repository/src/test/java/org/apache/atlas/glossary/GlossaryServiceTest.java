@@ -36,7 +36,7 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.impexp.ZipFileResourceTestUtils;
+import org.apache.atlas.utils.TestLoadModelUtils;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -93,7 +93,7 @@ public class GlossaryServiceTest {
     @BeforeClass
     public void setupSampleGlossary() {
         try {
-            ZipFileResourceTestUtils.loadAllModels("0000-Area0", typeDefStore, typeRegistry);
+            TestLoadModelUtils.loadAllModels("0000-Area0", typeDefStore, typeRegistry);
         } catch (AtlasBaseException | IOException e) {
             throw new SkipException("SubjectArea model loading failed");
         }

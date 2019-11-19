@@ -51,7 +51,6 @@ public class RequestContext {
     private final long                                   requestTime          = System.currentTimeMillis();
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
-    private final Map<String, AtlasEntityHeader>         purgedEntities      = new HashMap<>();
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
@@ -110,7 +109,6 @@ public class RequestContext {
     public void clearCache() {
         this.updatedEntities.clear();
         this.deletedEntities.clear();
-        this.purgedEntities.clear();
         this.entityCache.clear();
         this.entityExtInfoCache.clear();
         this.addedPropagations.clear();
@@ -228,12 +226,6 @@ public class RequestContext {
         }
     }
 
-    public void recordEntityPurge(AtlasEntityHeader entity) {
-        if (entity != null && entity.getGuid() != null) {
-            purgedEntities.put(entity.getGuid(), entity);
-        }
-    }
-
     public void recordAddedPropagation(String guid, AtlasClassification classification) {
         if (StringUtils.isNotEmpty(guid) && classification != null) {
             List<AtlasClassification> classifications = addedPropagations.get(guid);
@@ -314,10 +306,6 @@ public class RequestContext {
         return deletedEntities.values();
     }
 
-    public Collection<AtlasEntityHeader> getPurgedEntities() {
-        return purgedEntities.values();
-    }
-
     /**
      * Checks if an instance with the given guid is in the cache for this request.  Either returns the instance
      * or null if it is not in the cache.
@@ -343,10 +331,6 @@ public class RequestContext {
 
     public boolean isDeletedEntity(String guid) {
         return deletedEntities.containsKey(guid);
-    }
-
-    public boolean isPurgedEntity(String guid) {
-        return purgedEntities.containsKey(guid);
     }
 
     public MetricRecorder startMetricRecord(String name) { return metrics != null ? metrics.getMetricRecorder(name) : null; }

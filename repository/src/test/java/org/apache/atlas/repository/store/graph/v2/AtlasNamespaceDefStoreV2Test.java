@@ -38,7 +38,10 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.apache.atlas.model.typedef.AtlasNamespaceDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.*;
+
+import static org.apache.atlas.utils.TestLoadModelUtils.loadBaseModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadFsModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadHiveModel;
 
 /* Please note that for these tests, since the typeRegistry can be injected only once,
  * any new tests should make sure that they flush the type registry at the end of the test.

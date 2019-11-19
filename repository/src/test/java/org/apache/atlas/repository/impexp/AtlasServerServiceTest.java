@@ -35,7 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.ATTR_NAME_REFERENCEABLE;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadBaseModel;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
