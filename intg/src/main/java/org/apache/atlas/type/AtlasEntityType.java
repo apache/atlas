@@ -643,7 +643,7 @@ public class AtlasEntityType extends AtlasStructType {
             add(new AtlasAttributeDef(CUSTOM_ATTRIBUTES_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
         }};
 
-        AtlasEntityDef entityDef = new AtlasEntityDef(ENTITY_ROOT_NAME, "", "", attributeDefs);
+        AtlasEntityDef entityDef = new AtlasEntityDef(ENTITY_ROOT_NAME, "Root entity for system attributes", "1.0", attributeDefs);
 
         return new AtlasEntityType(entityDef);
     }
