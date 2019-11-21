@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES;
 import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.getTypesToCreate;
 import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.getTypesToUpdate;
 
@@ -260,7 +261,11 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasEntityDef ret = typeRegistry.getEntityDefByName(name);
 
         if (ret == null) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+            ret = StringUtils.equals(name, ALL_ENTITY_TYPES) ? AtlasEntityType.getEntityRoot().getEntityDef() : null;
+
+            if (ret == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+            }
         }
 
         return ret;
