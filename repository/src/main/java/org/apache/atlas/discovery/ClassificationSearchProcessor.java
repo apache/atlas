@@ -164,11 +164,11 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             indexQueryString = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
             indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
 
-            Predicate typeNamePredicate  = SearchPredicateUtil.getINPredicateGenerator().generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);
+            Predicate typeNamePredicate  = isClassificationRootType() ? null : SearchPredicateUtil.getINPredicateGenerator().generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);
             Predicate attributePredicate = constructInMemoryPredicate(classificationType, filterCriteria, indexAttributes);
 
             if (attributePredicate != null) {
-                inMemoryPredicate = PredicateUtils.andPredicate(typeNamePredicate, attributePredicate);
+                inMemoryPredicate = typeNamePredicate == null ? attributePredicate : PredicateUtils.andPredicate(typeNamePredicate, attributePredicate);
             } else {
                 inMemoryPredicate = typeNamePredicate;
             }

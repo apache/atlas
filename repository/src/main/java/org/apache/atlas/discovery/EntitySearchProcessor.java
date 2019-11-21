@@ -54,7 +54,6 @@ import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOpe
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
-import static org.apache.atlas.type.AtlasEntityType.ENTITY_ROOT;
 
 public class EntitySearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(EntitySearchProcessor.class);

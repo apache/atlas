@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.type;
 
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_INT;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.type.Constants.*;
@@ -638,7 +639,7 @@ public class AtlasEntityType extends AtlasStructType {
             add(new AtlasAttributeDef(CLASSIFICATION_TEXT_KEY, ATLAS_TYPE_STRING, false, true));
             add(new AtlasAttributeDef(CLASSIFICATION_NAMES_KEY, ATLAS_TYPE_STRING, false, true));
             add(new AtlasAttributeDef(PROPAGATED_CLASSIFICATION_NAMES_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(IS_INCOMPLETE_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+            add(new AtlasAttributeDef(IS_INCOMPLETE_PROPERTY_KEY, ATLAS_TYPE_INT, false, true));
             add(new AtlasAttributeDef(LABELS_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
             add(new AtlasAttributeDef(CUSTOM_ATTRIBUTES_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
         }};

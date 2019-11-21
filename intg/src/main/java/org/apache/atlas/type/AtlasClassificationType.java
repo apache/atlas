@@ -93,6 +93,8 @@ public class AtlasClassificationType extends AtlasStructType {
 
     public AtlasClassificationDef getClassificationDef() { return classificationDef; }
 
+    public static AtlasClassificationType getClassificationRoot() {return CLASSIFICATION_ROOT; }
+
     @Override
     void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferences(typeRegistry);
@@ -282,6 +284,10 @@ public class AtlasClassificationType extends AtlasStructType {
 
     public boolean isSubTypeOf(String classificationName) {
         return StringUtils.isNotEmpty(classificationName) && allSuperTypes.contains(classificationName);
+    }
+
+    public boolean hasAttribute(String attrName) {
+        return allAttributes.containsKey(attrName);
     }
 
     /**
@@ -506,7 +512,7 @@ public class AtlasClassificationType extends AtlasStructType {
             add(new AtlasAttributeDef(STATE_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
         }};
 
-        AtlasClassificationDef classificationDef = new AtlasClassificationDef(CLASSIFICATION_ROOT_NAME, "", "", attributeDefs);
+        AtlasClassificationDef classificationDef = new AtlasClassificationDef(CLASSIFICATION_ROOT_NAME, "Root classification for system attributes", "1.0", attributeDefs);
 
         return new AtlasClassificationType(classificationDef);
     }
