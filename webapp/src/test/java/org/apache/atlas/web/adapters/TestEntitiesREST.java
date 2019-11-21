@@ -25,6 +25,7 @@ import static org.apache.atlas.TestUtilsV2.PHI;
 import static org.apache.atlas.TestUtilsV2.PII;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 import static org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition.AND;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
@@ -122,6 +123,17 @@ public class TestEntitiesREST {
     }
 
     @Test
+    public void testGetEntities() throws Exception {
+
+        final AtlasEntitiesWithExtInfo response = entityREST.getByGuids(createdGuids.get(DATABASE_TYPE), false, false);
+        final List<AtlasEntity> entities = response.getEntities();
+
+        Assert.assertNotNull(entities);
+        Assert.assertEquals(entities.size(), 1);
+        verifyAttributes(entities);
+    }
+
+    @Test
     public void testBasicSearch() throws Exception {
         // search entities with classification named classification
         searchParameters = new SearchParameters();
@@ -133,7 +145,33 @@ public class TestEntitiesREST {
         Assert.assertEquals(res.getEntities().size(), 2);
     }
 
-    @Test(dependsOnMethods = "testBasicSearch")
+    @Test
+    public void testSearchByMultiSystemAttributes() throws Exception {
+
+        searchParameters = new SearchParameters();
+        searchParameters.setTypeName("_ALL_ENTITY_TYPES");
+        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
+        SearchParameters.FilterCriteria subFc1 = new SearchParameters.FilterCriteria();
+        SearchParameters.FilterCriteria subFc2 = new SearchParameters.FilterCriteria();
+
+        subFc1.setAttributeName(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        subFc1.setOperator(SearchParameters.Operator.LT);
+        subFc1.setAttributeValue(String.valueOf(System.currentTimeMillis()));
+
+        subFc2.setAttributeName(TIMESTAMP_PROPERTY_KEY);
+        subFc2.setOperator(SearchParameters.Operator.LT);
+        subFc2.setAttributeValue(String.valueOf(System.currentTimeMillis()));
+
+        fc.setCriterion(Arrays.asList(subFc1, subFc2));
+        fc.setCondition(AND);
+        searchParameters.setEntityFilters(fc);
+
+        AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertTrue(res.getEntities().size() > 5);
+    }
+
+    @Test
     public void testWildCardBasicSearch() throws Exception {
 
         //table - classification
@@ -214,10 +252,11 @@ public class TestEntitiesREST {
         Assert.assertNull(res.getEntities());
     }
 
-    @Test(dependsOnMethods = "testWildCardBasicSearch")
+    @Test(dependsOnMethods = "testBasicSearchWithAttr")
     public void testBasicSearchWithSubTypes() throws Exception{
 
-        // basic search with subtypes
+        // table - classification
+        // column - phi
         searchParameters = new SearchParameters();
         searchParameters.setClassification(TestUtilsV2.CLASSIFICATION);
         searchParameters.setIncludeSubClassifications(true);
@@ -229,6 +268,7 @@ public class TestEntitiesREST {
 
         // table - classification
         // database - fetl_classification
+        // column - phi
         addTagTo(FETL_CLASSIFICATION, DATABASE_TYPE);
 
         final AtlasClassification result_tag = entityREST.getClassification(createdGuids.get(DATABASE_TYPE).get(0), TestUtilsV2.FETL_CLASSIFICATION);
@@ -248,12 +288,12 @@ public class TestEntitiesREST {
         Assert.assertEquals(res.getEntities().size(), 2);
     }
 
-    @Test(dependsOnMethods = "testWildCardBasicSearch")
+    @Test(dependsOnMethods = "testBasicSearchWithSubTypes")
     public void testGraphQueryFilter() throws Exception {
 
-        // database - pii, felt_classification
-        // table - pii, classification,
-        // col - phi
+        // table - classification
+        // database - fetl_classification
+        // column - phi
         searchParameters = new SearchParameters();
         searchParameters.setQuery("sample_string");
         searchParameters.setClassification(PHI);
@@ -282,6 +322,9 @@ public class TestEntitiesREST {
         Assert.assertNotNull(result_tag);
         Assert.assertEquals(result_tag.getTypeName(), PHI);
 
+        // table - phi, classification
+        // database - fetl_classification
+        // column - phi
         fc.setAttributeValue("false");
         res = discoveryREST.searchWithParameters(searchParameters);
 
@@ -290,10 +333,85 @@ public class TestEntitiesREST {
         Assert.assertEquals(res.getEntities().get(0).getTypeName(), TABLE_TYPE);
     }
 
-    @Test(dependsOnMethods = "testBasicSearch")
+    @Test(dependsOnMethods = "testGraphQueryFilter")
+    public void testSearchByMultiTags() throws Exception {
+
+        addTagTo(PHI, DATABASE_TYPE);
+
+        // database - phi, felt_classification
+        // table1 - phi, classification, table2 - classification,
+        // column - phi
+        searchParameters = new SearchParameters();
+        searchParameters.setIncludeSubClassifications(false);
+        searchParameters.setTypeName("_ALL_ENTITY_TYPES");
+        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
+        SearchParameters.FilterCriteria subFc1 = new SearchParameters.FilterCriteria();
+        SearchParameters.FilterCriteria subFc2 = new SearchParameters.FilterCriteria();
+
+        subFc1.setAttributeName(CLASSIFICATION_NAMES_KEY);
+        subFc1.setOperator(SearchParameters.Operator.CONTAINS);
+        subFc1.setAttributeValue(PHI);
+
+        subFc2.setAttributeName(CLASSIFICATION_NAMES_KEY);
+        subFc2.setOperator(SearchParameters.Operator.CONTAINS);
+        subFc2.setAttributeValue(CLASSIFICATION);
+
+        fc.setCriterion(Arrays.asList(subFc1, subFc2));
+        fc.setCondition(AND);
+        searchParameters.setEntityFilters(fc);
+
+        AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 2);
+
+        subFc2.setAttributeValue(FETL_CLASSIFICATION);
+
+        res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 1);
+    }
+
+    @Test(dependsOnMethods = "testSearchByMultiTags")
+    public void testSearchByOtherSystemAttributes() throws Exception {
+
+        // database - phi, felt_classification
+        // table1 - phi, classification, table2 - classification,
+        // col1 - phi,  col2 - phi
+        searchParameters = new SearchParameters();
+        searchParameters.setTypeName("_ALL_ENTITY_TYPES");
+        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
+
+        fc.setAttributeName(CLASSIFICATION_NAMES_KEY);
+        fc.setOperator(SearchParameters.Operator.EQ);
+        fc.setAttributeValue(CLASSIFICATION);
+
+        searchParameters.setEntityFilters(fc);
+
+        AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 2);
+
+        fc.setOperator(SearchParameters.Operator.CONTAINS);
+        fc.setAttributeValue("cla");
+
+        res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 3);
+
+        fc.setOperator(SearchParameters.Operator.CONTAINS);
+        fc.setAttributeValue(PHI);
+
+        res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 4);
+    }
+
+    @Test(dependsOnMethods = "testSearchByOtherSystemAttributes")
     public void testBasicSearchWithFilter() throws Exception {
 
-        //table - classification
+        // database - phi, felt_classification
+        // table1 - phi, classification, table2 - classification,
+        // col - phi
         searchParameters = new SearchParameters();
         searchParameters.setIncludeSubClassifications(false);
         searchParameters.setClassification(TestUtilsV2.CLASSIFICATION);
@@ -317,34 +435,12 @@ public class TestEntitiesREST {
         Assert.assertNull(res.getEntities());
     }
 
-    @Test
-    public void testSearchByMultiSystemAttributes() throws Exception {
-
-        searchParameters = new SearchParameters();
-        searchParameters.setTypeName("_ALL_ENTITY_TYPES");
-        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
-        SearchParameters.FilterCriteria subFc1 = new SearchParameters.FilterCriteria();
-        SearchParameters.FilterCriteria subFc2 = new SearchParameters.FilterCriteria();
-
-        subFc1.setAttributeName(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
-        subFc1.setOperator(SearchParameters.Operator.LT);
-        subFc1.setAttributeValue(String.valueOf(System.currentTimeMillis()));
-
-        subFc2.setAttributeName(TIMESTAMP_PROPERTY_KEY);
-        subFc2.setOperator(SearchParameters.Operator.LT);
-        subFc2.setAttributeValue(String.valueOf(System.currentTimeMillis()));
-
-        fc.setCriterion(Arrays.asList(subFc1, subFc2));
-        fc.setCondition(AND);
-        searchParameters.setEntityFilters(fc);
-
-        AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
-        Assert.assertNotNull(res.getEntities());
-        Assert.assertTrue(res.getEntities().size() > 5);
-    }
-
-    @Test
+    @Test(dependsOnMethods = "testBasicSearchWithFilter")
     public void testSearchBySingleSystemAttribute() throws Exception {
+
+        // database - phi, felt_classification
+        // table1 - phi, classification, table2 - classification,
+        // col - phi
         searchParameters = new SearchParameters();
         searchParameters.setTypeName("_ALL_ENTITY_TYPES");
 
@@ -381,8 +477,12 @@ public class TestEntitiesREST {
         Assert.assertNull(res.getEntities());
     }
 
-    @Test
+    @Test(dependsOnMethods = "testSearchBySingleSystemAttribute")
     public void testSearchBySystemAttributesWithQuery() throws Exception {
+
+        // database - phi, felt_classification
+        // table1 - phi, classification, table2 - classification,
+        // col - phi
         searchParameters = new SearchParameters();
         searchParameters.setTypeName("_ALL_ENTITY_TYPES");
         SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
@@ -404,10 +504,42 @@ public class TestEntitiesREST {
         searchParameters.setQuery("sample_string");
 
         AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
-        Assert.assertNull(res.getEntities());
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 1);
     }
 
-    @Test(dependsOnMethods = "testBasicSearchWithSubTypes")
+    @Test(dependsOnMethods = "testSearchBySystemAttributesWithQuery")
+    public void testTagSearchBySystemAttributes() throws Exception {
+
+        // database - phi, felt_classification
+        // table1 - phi, classification, table2 - classification,
+        // col - phi
+        searchParameters = new SearchParameters();
+        searchParameters.setClassification("_ALL_CLASSIFICATION_TYPES");
+        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
+        SearchParameters.FilterCriteria subFc1 = new SearchParameters.FilterCriteria();
+        SearchParameters.FilterCriteria subFc2 = new SearchParameters.FilterCriteria();
+
+        subFc1.setAttributeName(TIMESTAMP_PROPERTY_KEY);
+        subFc1.setOperator(SearchParameters.Operator.LT);
+        subFc1.setAttributeValue(String.valueOf(System.currentTimeMillis()));
+
+        subFc2.setAttributeName(STATE_PROPERTY_KEY);
+        subFc2.setOperator(SearchParameters.Operator.EQ);
+        subFc2.setAttributeValue("ACTIVE");
+
+        fc.setCriterion(Arrays.asList(subFc1, subFc2));
+        fc.setCondition(AND);
+
+        searchParameters.setTagFilters(fc);
+
+        AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
+
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 5);
+    }
+
+    @Test(dependsOnMethods = "testTagSearchBySystemAttributes")
     public void testUpdateWithSerializedEntities() throws  Exception {
 
         //Check with serialization and deserialization of entity attributes for the case
@@ -434,17 +566,6 @@ public class TestEntitiesREST {
         List<AtlasEntityHeader> newGuids = response2.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
         Assert.assertNotNull(newGuids);
         Assert.assertEquals(newGuids.size(), 3);
-    }
-
-    @Test
-    public void testGetEntities() throws Exception {
-
-        final AtlasEntitiesWithExtInfo response = entityREST.getByGuids(createdGuids.get(DATABASE_TYPE), false, false);
-        final List<AtlasEntity> entities = response.getEntities();
-
-        Assert.assertNotNull(entities);
-        Assert.assertEquals(entities.size(), 1);
-        verifyAttributes(entities);
     }
 
 	/* Disabled until EntityREST.deleteByIds() is implemented

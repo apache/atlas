@@ -45,6 +45,10 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.util.SearchPredicateUtil.*;
 
 public abstract class SearchProcessor {
@@ -62,7 +66,7 @@ public abstract class SearchProcessor {
     public static final String  SPACE_STRING               = " ";
     public static final String  BRACE_OPEN_STR             = "(";
     public static final String  BRACE_CLOSE_STR            = ")";
-    public static final String  ALL_ENTITY_TYPE_QUERY      = "[* TO *]";
+    public static final String  ALL_TYPE_QUERY             = "[* TO *]";
 
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
     private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
@@ -136,6 +140,21 @@ public abstract class SearchProcessor {
         return context.getEntityType() == SearchContext.MATCH_ALL_ENTITY_TYPES;
     }
 
+    protected boolean isClassificationRootType() {
+        return context.getClassificationType() == SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
+    }
+
+    protected boolean isSystemAttribute(String attrName) {
+        return AtlasEntityType.getEntityRoot().hasAttribute(attrName) || AtlasClassificationType.getClassificationRoot().hasAttribute(attrName);
+    }
+
+    protected boolean isPipeSeparatedSystemAttribute(String attrName) {
+        return StringUtils.equals(attrName, CLASSIFICATION_NAMES_KEY) ||
+               StringUtils.equals(attrName, PROPAGATED_CLASSIFICATION_NAMES_KEY) ||
+               StringUtils.equals(attrName, LABELS_PROPERTY_KEY) ||
+               StringUtils.equals(attrName, CUSTOM_ATTRIBUTES_PROPERTY_KEY);
+    }
+
     protected int collectResultVertices(final List<AtlasVertex> ret, final int startIdx, final int limit, int resultIdx, final List<AtlasVertex> entityVertices) {
         for (AtlasVertex entityVertex : entityVertices) {
             resultIdx++;
@@ -185,7 +204,7 @@ public abstract class SearchProcessor {
                     graphFiltered.add(attributeName);
                 }
 
-                if (structType instanceof AtlasEntityType) {
+                if (structType instanceof AtlasEntityType && !isSystemAttribute(attributeName)) {
                     // Capture the entity attributes
                     context.getEntityAttributes().add(attributeName);
                 }
@@ -438,7 +457,7 @@ public abstract class SearchProcessor {
                     return PredicateUtils.anyPredicate(predicates);
                 }
             }
-        } else if (indexAttributes.contains(criteria.getAttributeName())){
+        } else if (indexAttributes.contains(criteria.getAttributeName()) && !isPipeSeparatedSystemAttribute(criteria.getAttributeName())){
             return toInMemoryPredicate(type, criteria.getAttributeName(), criteria.getOperator(), criteria.getAttributeValue());
         }
 

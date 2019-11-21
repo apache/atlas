@@ -32,6 +32,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.slf4j.Logger;
@@ -700,5 +701,13 @@ public class AtlasTypeDefGraphStoreTest {
 
         assertNotNull(entityDefByName);
         assertEquals(entityDefByName, AtlasEntityType.getEntityRoot().getEntityDef());
+    }
+
+    @Test
+    public void testGetOnAllClassificationTypes() throws AtlasBaseException {
+        AtlasClassificationDef classificationTypeDef = typeDefStore.getClassificationDefByName("_ALL_CLASSIFICATION_TYPES");
+
+        assertNotNull(classificationTypeDef);
+        assertEquals(classificationTypeDef, AtlasClassificationType.getClassificationRoot().getClassificationDef());
     }
 }
