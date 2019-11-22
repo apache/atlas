@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLayoutView_tmpl", 'utils/Utils', 'utils/CommonViewFunction'], function(require, Backbone, Globals, SearchDefaultLayoutViewTmpl, Utils, CommonViewFunction) {
+define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLayoutView_tmpl", 'utils/Utils', 'utils/CommonViewFunction', 'utils/Enums'], function(require, Backbone, Globals, SearchDefaultLayoutViewTmpl, Utils, CommonViewFunction, Enums) {
     "use strict";
 
     var SearchDefaultlLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -252,6 +252,10 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                         });
                         this.tagAttributeLength = attrTagObj.length;
                     }
+                    if (Globals[that.options.value.tag] || Globals[Enums.addOnClassification[0]]) {
+                        obj.systemAttrArr = (Globals[that.options.value.tag] || Globals[Enums.addOnClassification[0]]).attributeDefs;
+                        this.tagAttributeLength = obj.systemAttrArr.length;
+                    }
                     this.renderQueryBuilder(_.extend({}, obj, {
                         tag: true,
                         type: false,
@@ -269,6 +273,10 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                             attrMerge: true
                         });
                         this.entityAttributeLength = attrTypeObj.length;
+                    }
+                    if (Globals[that.options.value.type] || Globals[Enums.addOnEntities[0]]) {
+                        obj.systemAttrArr = (Globals[that.options.value.type] || Globals[Enums.addOnEntities[0]]).attributeDefs;
+                        this.entityAttributeLength = obj.systemAttrArr.length;
                     }
                     this.renderQueryBuilder(_.extend({}, obj, {
                         tag: false,

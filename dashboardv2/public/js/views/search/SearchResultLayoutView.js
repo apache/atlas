@@ -573,6 +573,9 @@ define(['require',
                 if (!that.REntityTableLayoutView) {
                     return;
                 }
+                if (!that.value) {
+                    that.value = that.options.value;
+                }
                 that.REntityTableLayoutView.show(table);
                 if (that.value.searchType !== "dsl") {
                     that.ui.containerCheckBox.show();
@@ -637,6 +640,7 @@ define(['require',
                     nameCheck = 0,
                     columnToShow = null,
                     col = {};
+                this.value = Utils.getUrlState.getQueryParams();
                 if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
                     columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
                 }
@@ -786,9 +790,21 @@ define(['require',
                     }
 
                     if (this.value && this.value.searchType === "basic") {
-                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
-                        if (def) {
-                            var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
+                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type }), systemAttr = [];
+                        if (def || Globals[this.value.type] || (
+                            this.value.tag
+                            ? Globals[this.value.tag]
+                                ? Globals[this.value.tag]
+                                : Globals[Enums.addOnClassification[0]]
+                            : undefined)) {
+                            var attrObj = def ? Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true }) : [];
+                            if (this.value.type && ( Globals[this.value.type] || Globals[Enums.addOnEntities[0]])) {
+                                systemAttr = (Globals[this.value.type] || Globals[Enums.addOnEntities[0]]).attributeDefs;
+                            }
+                            if (this.value.tag && ( Globals[this.value.tag] || Globals[Enums.addOnClassification[0]])) {
+                                systemAttr = (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]]).attributeDefs;
+                            }
+                            attrObj = attrObj.concat(systemAttr);
                             _.each(attrObj, function(obj, key) {
                                 var key = obj.name,
                                     isRenderable = _.contains(columnToShow, key),

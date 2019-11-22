@@ -195,13 +195,14 @@ require(['App',
     'utils/UrlLinks',
     'collection/VEntityList',
     'collection/VTagList',
+    'utils/Enums',
     'utils/Overrides',
     'bootstrap',
     'd3',
     'select2'
-], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList) {
+], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList, Enums) {
     var that = this;
-    this.asyncFetchCounter = 6;
+    this.asyncFetchCounter = 6 + (Enums.addOnEntities.length + 1);
     this.entityDefCollection = new VEntityList();
     this.entityDefCollection.url = UrlLinks.entitiesDefApiUrl();
     this.typeHeaders = new VTagList();
@@ -304,6 +305,26 @@ require(['App',
     this.metricCollection.fetch({
         skipDefaultError: true,
         complete: function() {
+            --that.asyncFetchCounter;
+            startApp();
+        }
+    });
+
+    Enums.addOnEntities.forEach(function(addOnEntity) {
+        CommonViewFunction.fetchRootEntityAttributes({
+            url:  UrlLinks.rootEntityDefUrl(addOnEntity),
+            entity: addOnEntity,
+            callback: function() {
+                --that.asyncFetchCounter;
+                startApp();
+            }
+        });
+    });
+
+    CommonViewFunction.fetchRootClassificationAttributes({
+        url:  UrlLinks.rootClassificationDefUrl(Enums.addOnClassification[0]),
+        classification: Enums.addOnClassification[0],
+        callback: function() {
             --that.asyncFetchCounter;
             startApp();
         }

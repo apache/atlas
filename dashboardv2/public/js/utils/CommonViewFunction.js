@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment'], function(require, Utils, Modal, Messages, Enums, moment) {
+define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment', 'utils/Globals'], function(require, Utils, Modal, Messages, Enums, moment, Globals) {
     'use strict';
 
     var CommonViewFunction = {};
@@ -362,6 +362,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         return '<div class="tagList btn-inline btn-fixed-width">' + termHtml + addTerm + '</div>';
     }
     CommonViewFunction.generateQueryOfFilter = function(value) {
+        value = Utils.getUrlState.getQueryParams();
         var entityFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.entityFilters, "formatDate": true }),
             tagFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.tagFilters, "formatDate": true }),
             queryArray = [];
@@ -456,22 +457,32 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 val = val.join(',');
                             } else if (k == "tagFilters") {
                                 if (classificationDefCollection) {
-                                    var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification })
-                                    attributeDefs = Utils.getNestedSuperTypeObj({
-                                        collection: classificationDefCollection,
-                                        attrMerge: true,
-                                        data: classificationDef.toJSON()
-                                    });
+                                    var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification }), attributeDefs = [];
+                                    if (classificationDef) {
+                                        Utils.getNestedSuperTypeObj({
+                                            collection: classificationDefCollection,
+                                            attrMerge: true,
+                                            data: classificationDef.toJSON()
+                                        });
+                                    }
+                                    if (Globals[value[skey].typeName]) {
+                                        attributeDefs = Globals[value[skey].typeName].attributeDefs;
+                                    }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
                             } else if (k == "entityFilters") {
                                 if (entityDefCollection) {
-                                    var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value[skey].typeName }),
-                                        attributeDefs = Utils.getNestedSuperTypeObj({
-                                            collection: entityDefCollection,
-                                            attrMerge: true,
-                                            data: entityDef.toJSON()
-                                        });
+                                    var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value[skey].typeName }), attributeDefs = [];
+                                        if (entityDef) {
+                                            Utils.getNestedSuperTypeObj({
+                                                collection: entityDefCollection,
+                                                attrMerge: true,
+                                                data: entityDef.toJSON()
+                                            });
+                                        }
+                                        if (Globals[value[skey].typeName]) {
+                                            attributeDefs = Globals[value[skey].typeName].attributeDefs;
+                                        }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
                             } else if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
@@ -939,6 +950,46 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             return t;
         });
         return list.join(',');
+    }
+    CommonViewFunction.fetchRootEntityAttributes = function (options) {
+        $.ajax({
+            url: options.url,
+            methods: 'GET',
+            dataType: 'json',
+            delay: 250,
+            cache: true,
+            success: function(response) {
+                if (response) {
+                    var entity = Object.assign(response, { name: options.entity });
+                    Globals[options.entity] = entity;
+                }
+            },
+            complete: function(response) {
+                if (options.callback) {
+                    options.callback(response);
+                }
+            }
+        });
+    },
+    CommonViewFunction.fetchRootClassificationAttributes = function (options) {
+        $.ajax({
+            url: options.url,
+            methods: 'GET',
+            dataType: 'json',
+            delay: 250,
+            cache: true,
+            success: function(response) {
+                if (response) {
+                    var classification = Object.assign(response, { name: options.classification });
+                    Globals[options.classification] = classification;
+                }
+            },
+            complete: function(response) {
+                if (options.callback) {
+                    options.callback(response);
+                }
+            }
+        });
     }
     return CommonViewFunction;
 });
