@@ -24,8 +24,9 @@ define([
     "utils/CommonViewFunction",
     "collection/VSearchList",
     "collection/VGlossaryList",
+    'utils/Enums',
     "jstree"
-], function(require, EntityLayoutViewTmpl, Utils, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList) {
+], function(require, EntityLayoutViewTmpl, Utils, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList, Enums) {
     "use strict";
 
     var EntityTreeLayoutview = Marionette.LayoutView.extend({
@@ -184,6 +185,11 @@ define([
                         this.ui.entitySearchTree.jstree(true).select_node(dataFound.get("guid"));
                     }
                 }
+                if (!dataFound && Globals[that.options.value.type]) {
+                    this.fromManualRender = true;
+                    this.typeId = Globals[that.options.value.type].guid;
+                    this.ui.entitySearchTree.jstree(true).select_node(this.typeId);
+                }
             }
         },
         onNodeSelect: function(options) {
@@ -318,10 +324,39 @@ define([
 
                     var serviceTypeData = that.isEmptyServicetype ? serviceTypeWithEmptyEntity : serviceTypeArr;
                     if (that.isGroupView) {
-                        return getParentsData.call(that, serviceTypeData);
+                        var serviceDataWithRootEntity = pushRootEntityToJstree.call(that,'group',serviceTypeData);
+                        return getParentsData.call(that, serviceDataWithRootEntity);
                     } else {
-                        return serviceTypeData;
+                        return pushRootEntityToJstree.call(that, null,serviceTypeData);
                     }
+                },
+                pushRootEntityToJstree = function(type, data) {
+                    var rootEntity = Globals[Enums.addOnEntities[0]];
+                    var isSelected = this.options.value && this.options.value.type  ? this.options.value.type == rootEntity.name : false;
+                    var rootEntityNode = {
+                        text: _.escape(rootEntity.name),
+                        name: rootEntity.name,
+                        type: rootEntity.category,
+                        gType: "serviceType",
+                        guid: rootEntity.guid,
+                        id: rootEntity.guid,
+                        model: rootEntity,
+                        parent: "#",
+                        icon: "fa fa-file-o",
+                        state: {
+                            // disabled: entityCount == 0 ? true : false,
+                            selected: isSelected
+                        },
+                    };
+                    if (type === 'group') {
+                        if (data.other_types === undefined) {
+                            data.other_types = { name : "other_types", children: []};
+                        }
+                        data.other_types.children.push(rootEntityNode);
+                    } else {
+                        data.push(rootEntityNode);
+                    }
+                    return data;
                 },
                 getParentsData = function(data) {
                     var parents = Object.keys(data),
@@ -438,7 +473,7 @@ define([
             ).on("open_node.jstree", function(e, data) {
                 that.isTreeOpen = true;
             }).on("select_node.jstree", function(e, data) {
-                if (that.fromManualRender !== true) {
+                if (!that.fromManualRender) {
                     that.onNodeSelect(data);
                 } else {
                     that.fromManualRender = false;

@@ -53,8 +53,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'tag', 'searchTableFilters'));
+                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'tag', 'searchTableFilters', 'systemAttrArr'));
                 this.attrObj = _.sortBy(this.attrObj, 'name');
+                this.systemAttrArr = _.sortBy(this.systemAttrArr, 'name');
                 this.filterType = this.tag ? 'tagFilters' : 'entityFilters';
             },
             bindEvents: function() {},
@@ -82,12 +83,15 @@ define(['require',
                 }
                 return false;
             },
-            getObjDef: function(attrObj, rules) {
+            getObjDef: function(attrObj, rules, isGroup, groupType) {
                 var obj = {
                     id: attrObj.name,
                     label: _.escape(attrObj.name.capitalize() + " (" + attrObj.typeName + ")"),
                     type: _.escape(attrObj.typeName)
                 };
+                if (isGroup) {
+                    obj.optgroup = groupType;
+                }
                 if (obj.type === "date") {
                     obj['plugin'] = 'daterangepicker';
                     obj['plugin_config'] = {
@@ -141,12 +145,28 @@ define(['require',
             },
             onRender: function() {
                 var that = this,
-                    filters = [];
-                if (this.value) {
+                    filters = [],
+                    isGroupView = false,
+                    placeHolder = '--Select Attribute--';
+                    if (this.attrObj.length > 0 && this.systemAttrArr.length > 0) {
+                        isGroupView = true;
+                    } else if (this.attrObj.length === 0 || this.systemAttrArr.length === 0) {
+                        isGroupView = false;
+                    }
+                    if (this.attrObj.length === 0) {
+                        placeHolder = '--Select System Attribute--';
+                    }                if (this.value) {
                     var rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
                 }
                 _.each(this.attrObj, function(obj) {
-                    var returnObj = that.getObjDef(obj, rules_widgets);
+                    var type = that.tag ? 'Classification' : 'Entity';
+                    var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'Select '+ type + ' Attribute');
+                    if (returnObj) {
+                        filters.push(returnObj);
+                    }
+                });
+                _.each(this.systemAttrArr, function(obj) {
+                    var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'Select System Attribute');
                     if (returnObj) {
                         filters.push(returnObj);
                     }
@@ -156,7 +176,7 @@ define(['require',
                     this.ui.builder.queryBuilder({
                         plugins: ['bt-tooltip-errors'],
                         filters: filters,
-                        select_placeholder: '--Select Attribute--',
+                        select_placeholder: placeHolder,
                         allow_empty: true,
                         conditions: ['AND', 'OR'],
                         allow_groups: true,

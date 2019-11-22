@@ -36,14 +36,13 @@ define([
             RClassificationTreeRender: '[data-id="r_classificationTreeRender"]',
             REntityTreeRender: '[data-id="r_entityTreeRender"]',
             RCustomFilterTreeRender: '[data-id="r_customFilterTreeRender"]',
-
         },
         ui: {
             //search
             searchNode: '[data-id="searchNode"]',
 
             sliderBar: '[data-id="sliderBar"]',
-            menuItems: '.menu-items'
+            menuItems: ".menu-items"
         },
         templateHelpers: function() {
             return {
@@ -95,7 +94,7 @@ define([
             events["click " + this.ui.menuItems] = function(e) {
                 e.stopPropagation();
                 //this.$('.menu-items').removeClass('open');
-            }
+            };
             return events;
         },
         bindEvents: function() {},
@@ -119,26 +118,30 @@ define([
             this.bindEvents();
         },
         onRender: function() {
-            this.renderEntityTree();
-            this.renderClassificationTree();
-            this.renderGlossaryTree();
+            var opt = opt = Utils.getUrlState.getQueryParams();
+            this.renderEntityTree(opt);
+            this.renderClassificationTree(opt);
+            this.renderGlossaryTree(opt);
             this.renderCustomFilterTree();
             this.showHideGlobalFilter();
             this.showDefaultPage();
         },
-
         showDefaultPage: function() {
             if (this.options.value) {
-                if (!this.options.value.type && !this.options.value.tag && !this.options.value.term && !this.options.value.gType) {
+                if (
+                    !this.options.value.type &&
+                    !this.options.value.tag &&
+                    !this.options.value.term &&
+                    !this.options.value.gType
+                ) {
                     Utils.setUrl({
-                        url: '!/search',
+                        url: "!/search",
                         mergeBrowserUrl: false,
                         trigger: true,
                         updateTabState: true
                     });
                 }
             }
-
         },
         onShow: function() {
             var that = this;
@@ -206,28 +209,28 @@ define([
                 }
             }
         },
-        renderEntityTree: function() {
+        renderEntityTree: function(opt) {
             var that = this;
             require(["views/search/tree/EntityTreeLayoutView"], function(ClassificationTreeLayoutView) {
-                that.REntityTreeRender.show(new ClassificationTreeLayoutView(_.extend({ query: that.query }, that.options)))
+                that.REntityTreeRender.show(new ClassificationTreeLayoutView(_.extend({ query: that.query }, that.options, {value: opt})));
             });
         },
-        renderClassificationTree: function() {
+        renderClassificationTree: function(opt) {
             var that = this;
             require(["views/search/tree/ClassificationTreeLayoutView"], function(ClassificationTreeLayoutView) {
-                that.RClassificationTreeRender.show(new ClassificationTreeLayoutView(_.extend({ query: that.query }, that.options)))
+                that.RClassificationTreeRender.show(new ClassificationTreeLayoutView(_.extend({ query: that.query }, that.options, {value: opt})));
             });
         },
-        renderGlossaryTree: function() {
+        renderGlossaryTree: function(opt) {
             var that = this;
             require(["views/search/tree/GlossaryTreeLayoutView"], function(GlossaryTreeLayoutView) {
-                that.RGlossaryTreeRender.show(new GlossaryTreeLayoutView(_.extend({ query: that.query }, that.options)))
+                that.RGlossaryTreeRender.show(new GlossaryTreeLayoutView(_.extend({ query: that.query }, that.options, {value: opt})));
             });
         },
         renderCustomFilterTree: function() {
             var that = this;
             require(["views/search/tree/CustomFilterTreeLayoutView"], function(CustomFilterTreeLayoutView) {
-                that.RCustomFilterTreeRender.show(new CustomFilterTreeLayoutView(_.extend({ query: that.query }, that.options)))
+                that.RCustomFilterTreeRender.show(new CustomFilterTreeLayoutView(_.extend({ query: that.query }, that.options)));
             });
         }
     });

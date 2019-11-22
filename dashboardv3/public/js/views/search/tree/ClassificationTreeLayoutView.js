@@ -25,8 +25,9 @@ define([
     "utils/CommonViewFunction",
     "collection/VSearchList",
     "collection/VGlossaryList",
+    "utils/Enums",
     "jstree"
-], function(require, ClassificationTreeLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList) {
+], function(require, ClassificationTreeLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList, Enums) {
     "use strict";
 
     var ClassificationTreeLayoutView = Marionette.LayoutView.extend({
@@ -264,6 +265,11 @@ define([
                         this.ui.classificationSearchTree.jstree(true).select_node(dataFound.get("guid"));
                     }
                 }
+                if (!dataFound && Globals[that.options.value.tag]) {
+                    this.fromManualRender = true;
+                    this.typeId = Globals[that.options.value.tag].guid;
+                    this.ui.classificationSearchTree.jstree(true).select_node(this.typeId);
+                }
             }
         },
         onNodeSelect: function(options) {
@@ -489,8 +495,30 @@ define([
             });
             var classificationTreeData = that.isEmptyClassification ? listWithEmptyParents : listOfParents;
             var flatViewClassificaton = that.isEmptyClassification ? listWithEmptyParentsFlatView : flatViewList;
-            var classificationData = that.isGroupView ? classificationTreeData : flatViewClassificaton;
+            var classificationData = that.isGroupView
+                ? that.pushRootClassificationToJstree.call(that, classificationTreeData)
+                : that.pushRootClassificationToJstree.call(that, flatViewClassificaton);
             return classificationData;
+        },
+        pushRootClassificationToJstree: function(data) {
+            var rootClassification = Globals[Enums.addOnClassification[0]];
+            var isSelected = this.options.value && this.options.value.tag  ? this.options.value.tag == rootClassification.name : false;
+            var rootClassificationNode = {
+                text: _.escape(rootClassification.name),
+                name: rootClassification.name,
+                type: rootClassification.category,
+                gType: "Classification",
+                guid: "root-classification",
+                id: "root-classification",
+                model: rootClassification,
+                children: [],
+                icon: "fa fa-tag",
+                state: {
+                    selected: isSelected
+                }
+            }
+            data.push(rootClassificationNode);
+            return data;
         },
         generateSearchTree: function(options) {
             var $el = options && options.$el,

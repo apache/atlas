@@ -124,6 +124,11 @@ define(['require',
                     this.type = param.searchType;
                     this.updateQueryObject(param);
                 }
+                if ((this.value && this.value.type) || (this.value && this.value.tag &&  this.value.searchType === "basic")) {
+                    this.setInitialEntityVal = false;
+                } else {
+                    this.setInitialEntityVal = true;
+                }
                 this.bindEvents();
             },
             renderSaveSearch: function() {
@@ -206,6 +211,9 @@ define(['require',
                 this.setValues();
                 this.checkForButtonVisiblity();
                 this.renderSaveSearch();
+                if (this.setInitialEntityVal) {
+                    this.setInitialEntityVal = false;
+                }
             },
             makeFilterButtonActive: function(filtertypeParam) {
                 var filtertype = ['entityFilters', 'tagFilters'],
@@ -231,7 +239,8 @@ define(['require',
                     }
                 }
                 var tagCheck = function(filterObj, type) {
-                    if (that.value.tag && !_.contains(Enums.addOnClassification, that.value.tag)) {
+                    var filterAddOn = Enums.addOnClassification.filter(function(a) { a !== Enums.addOnClassification[0]});
+                    if (that.value.tag && !_.contains(filterAddOn, that.value.tag)) {
                         that.ui.tagAttrFilter.prop('disabled', false);
                         if (filterObj && filterObj.length) {
                             that.ui.tagAttrFilter.addClass('active');
@@ -461,8 +470,11 @@ define(['require',
                 }
             },
             manualRender: function(paramObj) {
+                if (paramObj) {
+                    this.value = paramObj;
+                }
                 this.updateQueryObject(paramObj);
-                this.renderTypeTagList(paramObj);
+                this.renderTypeTagList();
                 this.setValues(paramObj);
             },
             getFilterBox: function() {
@@ -488,11 +500,7 @@ define(['require',
                 this.ui.typeLov.empty();
                 var typeStr = '<option></option>',
                     tagStr = typeStr,
-                    foundNewClassification = false,
-                    optionsValue = this.options.value;
-                if (options && options.tag) {
-                    optionsValue = options;
-                }
+                    foundNewClassification = false;
                 this.typeHeaders.fullCollection.each(function(model) {
                     var name = Utils.getName(model.toJSON(), 'name');
                     if (model.get('category') == 'ENTITY' && (serviceTypeToBefiltered && serviceTypeToBefiltered.length ? _.contains(serviceTypeToBefiltered, model.get('serviceType')) : true)) {
@@ -501,8 +509,8 @@ define(['require',
                     }
                     if (isTypeOnly == undefined && model.get('category') == 'CLASSIFICATION') {
                         var tagEntityCount = that.entityCountObj.tag.tagEntities[name];
-                        if (optionsValue) { // to check if wildcard classification is present in our data
-                            if (name === optionsValue.tag) {
+                        if (that.value && that.value.tag) { // to check if wildcard classification is present in our data
+                            if (name === that.value.tag) {
                                 foundNewClassification = true;
                             }
                         }
@@ -510,17 +518,26 @@ define(['require',
                     }
                 });
 
-                if (!foundNewClassification && optionsValue) {
-                    if (optionsValue.tag) {
-                        var classificationValue = decodeURIComponent(optionsValue.tag);
+                if (this.type !== "dsl") {
+                    _.each(Enums.addOnEntities, function(entity) {
+                        typeStr += '<option  value="' + (entity) + '" data-name="' + (entity) + '">' + entity + '</option>';
+                    });
+                }
+                if (!foundNewClassification && that.value) {
+                    if (that.value.tag) {
+                        var classificationValue = decodeURIComponent(that.value.tag);
                         tagStr += '<option  value="' + (classificationValue) + '" data-name="' + (classificationValue) + '">' + classificationValue + '</option>';
                     }
                 }
                 if (_.isUndefined(isTypeOnly)) {
                     //to insert extra classification list
-                    _.each(Enums.addOnClassification, function(classificationName) {
-                        tagStr += '<option  value="' + (classificationName) + '" data-name="' + (classificationName) + '">' + classificationName + '</option>';
-                    });
+                    if (that.value) {
+                        _.each(Enums.addOnClassification, function(classificationName) {
+                            if (classificationName !== that.value.tag) {
+                                tagStr += '<option  value="' + (classificationName) + '" data-name="' + (classificationName) + '">' + classificationName + '</option>';
+                            }
+                        });
+                    }
                     that.ui.tagLov.html(tagStr);
                     this.ui.tagLov.select2({
                         placeholder: "Select Classification",
@@ -553,6 +570,11 @@ define(['require',
                 });
                 if (typeLovSelect2 && serviceTypeToBefiltered) {
                     typeLovSelect2.select2('open').trigger("change", { 'manual': true });
+                }
+                if (that.setInitialEntityVal) {
+                    var defaultEntity = Enums.addOnEntities[0];
+                    that.value.type = defaultEntity;
+                    that.ui.typeLov.val(defaultEntity, null);
                 }
             },
             renderTermList: function() {
