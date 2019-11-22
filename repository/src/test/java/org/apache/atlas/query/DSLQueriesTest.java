@@ -465,6 +465,11 @@ public class DSLQueriesTest extends BasicTestSetup {
     @DataProvider(name = "likeQueriesProvider")
     private Object[][] likeQueries() {
         return new Object[][]{
+                {"hive_table qualifiedName like \"*time_dim*\"", 1},
+                {"hive_db where qualifiedName like \"qualified:R*\"", 1},
+                {"hive_table db.name=\"Sales\"", 4},
+                {"hive_table qualifiedName =\"Sales.time_dim\" AND db.name=\"Sales\"", 1},
+                {"hive_table qualifiedName like \"*time_dim*\" AND db.name=\"Sales\"", 1},
                 {"hive_table where name like \"sa?es*\"", 3},
                 {"hive_db where name like \"R*\"", 1},
                 {"hive_db where hive_db.name like \"R???rt?*\" or hive_db.name like \"S?l?s\" or hive_db.name like\"Log*\"", 3},

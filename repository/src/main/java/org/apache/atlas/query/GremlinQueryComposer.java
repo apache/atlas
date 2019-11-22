@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,6 +56,7 @@ public class GremlinQueryComposer {
     private static final Logger LOG                 = LoggerFactory.getLogger(GremlinQueryComposer.class);
     private static final String ISO8601_FORMAT      = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private static final String ISO8601_DATE_FORMAT = "yyyy-MM-dd";
+    private static final String REGEX_ALPHA_NUMERIC_PATTERN = "[a-zA-Z0-9]+";
 
     private static final ThreadLocal<DateFormat[]> DSL_DATE_FORMAT = ThreadLocal.withInitial(() -> {
         final String formats[] = {ISO8601_FORMAT, ISO8601_DATE_FORMAT};
@@ -199,7 +201,7 @@ public class GremlinQueryComposer {
             final AtlasStructType.AtlasAttribute attribute = context.getActiveEntityType().getAttribute(lhsI.getAttributeName());
             final AtlasStructDef.AtlasAttributeDef.IndexType indexType = attribute.getAttributeDef().getIndexType();
 
-            if (indexType == AtlasStructDef.AtlasAttributeDef.IndexType.STRING) {
+            if (indexType == AtlasStructDef.AtlasAttributeDef.IndexType.STRING || !containsNumberAndLettersOnly(rhs)) {
                 add(GremlinClause.STRING_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
             } else {
                 add(GremlinClause.TEXT_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
@@ -222,6 +224,10 @@ public class GremlinQueryComposer {
             }
             context.registerActive(currentType);
         }
+    }
+
+    private boolean containsNumberAndLettersOnly(String rhs) {
+        return Pattern.matches(REGEX_ALPHA_NUMERIC_PATTERN, rhs);
     }
 
     private String parseNumber(String rhs, Context context) {
