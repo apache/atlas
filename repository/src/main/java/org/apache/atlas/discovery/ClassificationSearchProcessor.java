@@ -69,13 +69,14 @@ public class ClassificationSearchProcessor extends SearchProcessor {
     private final AtlasGraphQuery        tagGraphQueryWithAttributes;
     private final Map<String, Object>    gremlinQueryBindings;
     private final String                 gremlinTagFilterQuery;
+    private final Predicate              traitPredicate;
 
     // Some index engines may take space as a delimiter, when basic search is
     // executed, unsatisfying results may be returned.
     // eg, an entity A has classification "cls" and B has "cls 1"
     // when user execute a exact search for "cls", only A should be returned
     // but both A and B are returned. To avoid this, we should filter the res.
-    private boolean whiteSpaceFilter = false;
+    private boolean   whiteSpaceFilter = false;
 
     public ClassificationSearchProcessor(SearchContext context) {
         super(context);
@@ -146,8 +147,13 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             indexQuery              = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
 
             LOG.debug("Using query string  '{}'.", indexQuery);
+
+            traitPredicate    = buildTraitPredict(classificationType);
+            inMemoryPredicate = inMemoryPredicate == null ? traitPredicate : PredicateUtils.andPredicate(inMemoryPredicate, traitPredicate);
+
         } else {
-            indexQuery = null;
+            indexQuery     = null;
+            traitPredicate = null;
         }
 
         // index query directly on classification
@@ -165,12 +171,15 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
 
             Predicate typeNamePredicate  = isClassificationRootType() ? null : SearchPredicateUtil.getINPredicateGenerator().generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);
+
+            if (typeNamePredicate != null) {
+                inMemoryPredicate = inMemoryPredicate == null ? typeNamePredicate : PredicateUtils.andPredicate(inMemoryPredicate, typeNamePredicate);
+            }
+
             Predicate attributePredicate = constructInMemoryPredicate(classificationType, filterCriteria, indexAttributes);
 
             if (attributePredicate != null) {
-                inMemoryPredicate = typeNamePredicate == null ? attributePredicate : PredicateUtils.andPredicate(typeNamePredicate, attributePredicate);
-            } else {
-                inMemoryPredicate = typeNamePredicate;
+                inMemoryPredicate = inMemoryPredicate == null ? attributePredicate : PredicateUtils.andPredicate(inMemoryPredicate, attributePredicate);
             }
 
             this.classificationIndexQuery = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
@@ -360,6 +369,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                     LOG.warn(e.getMessage(), e);
                 }
             }
+        } else if (traitPredicate != null) {
+            CollectionUtils.filter(entityVertices, traitPredicate);
         }
 
         super.filter(entityVertices);

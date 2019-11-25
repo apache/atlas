@@ -30,19 +30,26 @@ import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPE
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.createTypesAsNeeded;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import org.apache.atlas.model.glossary.AtlasGlossary;
+import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
+import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -55,6 +62,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.web.rest.DiscoveryREST;
 import org.apache.atlas.web.rest.EntityREST;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -64,6 +72,8 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,12 +91,16 @@ public class TestEntitiesREST {
     @Inject
     private AtlasTypeRegistry typeRegistry;
     @Inject
+    private GlossaryService   glossaryService;
+    @Inject
     private AtlasTypeDefStore typeStore;
     @Inject
     private DiscoveryREST     discoveryREST;
     @Inject
     private EntityREST        entityREST;
 
+    private AtlasGlossary                     glossary;
+    private AtlasGlossaryTerm                 term1;
     private AtlasEntity                       dbEntity;
     private AtlasEntity                       tableEntity;
     private AtlasEntity                       tableEntity2;
@@ -108,7 +122,13 @@ public class TestEntitiesREST {
             }
         }
 
+        loadGlossaryType();
+
         createEntities();
+
+        createGlossary();
+
+        createTerms();
 
         initTagMap();
 
@@ -372,6 +392,33 @@ public class TestEntitiesREST {
     }
 
     @Test(dependsOnMethods = "testSearchByMultiTags")
+    public void testSearchByTerms() throws Exception {
+
+        // database - phi, felt_classification
+        // table1 - phi, classification, term: term1 | table2 - classification, term:term2
+        // column - phi
+        assignTermTo(term1, tableEntity);
+        assignTermTo(term1, tableEntity2);
+
+        searchParameters = new SearchParameters();
+        searchParameters.setTermName(term1.getName() + "@testSearchGlossary");
+        searchParameters.setClassification(CLASSIFICATION);
+
+        AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 2);
+
+        searchParameters.setClassification(PII);
+        res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNull(res.getEntities());
+
+        searchParameters.setClassification(PHI);
+        res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 1);
+    }
+
+    @Test(dependsOnMethods = "testSearchByMultiTags")
     public void testSearchByOtherSystemAttributes() throws Exception {
 
         // database - phi, felt_classification
@@ -506,6 +553,14 @@ public class TestEntitiesREST {
         AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
         Assert.assertNotNull(res.getEntities());
         Assert.assertEquals(res.getEntities().size(), 1);
+
+        searchParameters = new SearchParameters();
+        searchParameters.setQuery("classification");
+        searchParameters.setClassification(PHI);
+
+        res = discoveryREST.searchWithParameters(searchParameters);
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 1);
     }
 
     @Test(dependsOnMethods = "testSearchBySystemAttributesWithQuery")
@@ -536,7 +591,7 @@ public class TestEntitiesREST {
         AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
 
         Assert.assertNotNull(res.getEntities());
-        Assert.assertEquals(res.getEntities().size(), 5);
+        Assert.assertEquals(res.getEntities().size(), 7);
     }
 
     @Test(dependsOnMethods = "testTagSearchBySystemAttributes")
@@ -581,6 +636,59 @@ public class TestEntitiesREST {
     }
 	*
 	*/
+
+    private void loadGlossaryType() throws IOException, AtlasBaseException {
+
+        registerAtlasTypesDef("/addons/models/0000-Area0/0010-base_model.json");
+        registerAtlasTypesDef("/addons/models/0000-Area0/0011-glossary_model.json");
+    }
+
+    private void registerAtlasTypesDef (String path) throws IOException, AtlasBaseException {
+        String projectBaseDirectory = System.getProperty("projectBaseDir");
+
+        String baseModel = projectBaseDirectory + path;
+        File f = new File(baseModel);
+        String s = FileUtils.readFileToString(f);
+        createTypesAsNeeded(AtlasType.fromJson(s, AtlasTypesDef.class), typeStore, typeRegistry);
+    }
+
+	   private void createGlossary() throws AtlasBaseException {
+        glossary = new AtlasGlossary();
+        glossary.setQualifiedName("testSearchGlossary");
+        glossary.setName("Search glossary");
+        glossary.setShortDescription("Short description");
+        glossary.setLongDescription("Long description");
+        glossary.setUsage("N/A");
+        glossary.setLanguage("en-US");
+
+        AtlasGlossary created = glossaryService.createGlossary(glossary);
+        glossary.setGuid(created.getGuid());
+    }
+
+	   private void assignTermTo(AtlasGlossaryTerm term, AtlasEntity entity) throws AtlasBaseException {
+        AtlasRelatedObjectId relatedObjectId = new AtlasRelatedObjectId();
+        relatedObjectId.setGuid(entity.getGuid());
+        relatedObjectId.setTypeName(entity.getTypeName());
+
+        glossaryService.assignTermToEntities(term.getGuid(), Arrays.asList(relatedObjectId));
+    }
+
+    private void createTerms() throws AtlasBaseException {
+        term1 = new AtlasGlossaryTerm();
+        // Glossary anchor
+        AtlasGlossaryHeader glossaryId = new AtlasGlossaryHeader();
+        glossaryId.setGlossaryGuid(glossary.getGuid());
+
+        term1.setName("term1");
+        term1.setShortDescription("Short description");
+        term1.setLongDescription("Long description");
+        term1.setAbbreviation("CHK");
+        term1.setExamples(Arrays.asList("Personal", "Joint"));
+        term1.setUsage("N/A");
+        term1.setAnchor(glossaryId);
+	       AtlasGlossaryTerm created1 = glossaryService.createTerm(term1);
+	       term1.setGuid(created1.getGuid());
+    }
 
     private void createEntities() {
         dbEntity     = TestUtilsV2.createDBEntity();
