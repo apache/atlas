@@ -294,7 +294,7 @@ public class ZipFileResourceTestUtils {
         createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
     }
 
-    private static void createTypesAsNeeded(AtlasTypesDef typesFromJson, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    public static void createTypesAsNeeded(AtlasTypesDef typesFromJson, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         if(typesFromJson == null) {
             return;
         }

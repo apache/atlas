@@ -548,7 +548,7 @@ public final class TestUtilsV2 {
 
     public static final String PII = "PII";
     public static final String PHI = "PHI";
-    public static final String SUPER_TYPE_NAME = "Base";
+    public static final String SUPER_TYPE_NAME = "Referenceable";
     public static final String STORAGE_DESC_TYPE = "hive_storagedesc";
     public static final String PARTITION_STRUCT_TYPE = "partition_struct_type";
     public static final String PARTITION_CLASS_TYPE = "partition_class_type";

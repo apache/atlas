@@ -243,7 +243,7 @@ public class SearchContext {
     }
 
     boolean needClassificationProcessor() {
-        return (classificationType != null || isWildCardSearch());
+        return (classificationType != null && (entityType == null || hasAttributeFilter(searchParameters.getTagFilters()))) || isWildCardSearch() ;
     }
 
     boolean isBuiltInClassificationType() {

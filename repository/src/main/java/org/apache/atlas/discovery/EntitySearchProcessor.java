@@ -88,20 +88,10 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         final Predicate typeNamePredicate;
-        final Predicate traitPredicate;
+        final Predicate traitPredicate    = buildTraitPredict(classificationType);
         final Predicate activePredicate   = SearchPredicateUtil.getEQPredicateGenerator()
                                                                .generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
 
-        if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED) {
-            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
-                                                        SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
-        } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
-            traitPredicate = PredicateUtils.andPredicate(SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
-                                                         SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
-        } else {
-            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class),
-                                                        SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationTypeAndSubTypes, List.class));
-        }
 
         if (!isEntityRootType()) {
             typeNamePredicate = SearchPredicateUtil.getINPredicateGenerator().generatePredicate(TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);

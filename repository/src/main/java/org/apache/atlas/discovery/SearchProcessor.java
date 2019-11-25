@@ -32,6 +32,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.util.SearchPredicateUtil.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
@@ -45,10 +46,15 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.util.SearchPredicateUtil.*;
 
 public abstract class SearchProcessor {
@@ -177,6 +183,21 @@ public abstract class SearchProcessor {
         if (nextProcessor != null && CollectionUtils.isNotEmpty(entityVertices)) {
             nextProcessor.filter(entityVertices);
         }
+    }
+
+    protected Predicate buildTraitPredict(AtlasClassificationType classificationType) {
+        Predicate traitPredicate;
+        if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED || context.isWildCardSearch()) {
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
+                SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
+        } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
+            traitPredicate = PredicateUtils.andPredicate(SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
+                SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
+        } else {
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypes(), List.class),
+                SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypes(), List.class));
+        }
+        return traitPredicate;
     }
 
 
