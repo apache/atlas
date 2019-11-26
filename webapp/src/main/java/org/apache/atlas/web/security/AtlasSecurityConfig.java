@@ -70,6 +70,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 import javax.inject.Inject;
+import javax.ws.rs.HttpMethod;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -189,10 +190,8 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
 
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         //@formatter:off
-        httpSecurity
+        httpSecurity.cors().and()
                 .authorizeRequests().anyRequest().authenticated()
-                .and()
-                .cors()
                 .and()
                     .headers()
                 .addHeaderWriter(new StaticHeadersWriter(HeadersUtil.CONTENT_SEC_POLICY_KEY, HeadersUtil.headerMap.get(HeadersUtil.CONTENT_SEC_POLICY_KEY)))
