@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.type;
 
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DATE;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.type.Constants.CREATED_BY_KEY;
@@ -505,8 +506,8 @@ public class AtlasClassificationType extends AtlasStructType {
     private static AtlasClassificationType initRootClassificationType() {
         List<AtlasAttributeDef> attributeDefs = new ArrayList<AtlasAttributeDef>() {{
             add(new AtlasAttributeDef(TYPE_NAME_PROPERTY_KEY, AtlasBaseTypeDef.ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_LONG, false, true));
-            add(new AtlasAttributeDef(MODIFICATION_TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_LONG, false, true));
+            add(new AtlasAttributeDef(TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
+            add(new AtlasAttributeDef(MODIFICATION_TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
             add(new AtlasAttributeDef(MODIFIED_BY_KEY, ATLAS_TYPE_STRING, false, true));
             add(new AtlasAttributeDef(CREATED_BY_KEY, ATLAS_TYPE_STRING, false, true));
             add(new AtlasAttributeDef(STATE_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
