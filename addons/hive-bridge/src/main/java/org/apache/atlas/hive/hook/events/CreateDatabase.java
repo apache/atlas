@@ -61,6 +61,10 @@ public class CreateDatabase extends BaseHiveEvent {
         Database                 db      = dbEvent.getDatabase();
 
         if (db != null) {
+            db = context.getMetastoreHandler().get_database(db.getName());
+        }
+
+        if (db != null) {
             AtlasEntity dbEntity = toDbEntity(db);
 
             ret.addEntity(dbEntity);

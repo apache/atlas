@@ -317,7 +317,11 @@ public abstract class BaseHiveEvent {
 
             ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, dbQualifiedName);
             ret.setAttribute(ATTRIBUTE_NAME, dbName);
-            ret.setAttribute(ATTRIBUTE_DESCRIPTION, db.getDescription());
+
+            if (StringUtils.isNotEmpty(db.getDescription())) {
+                ret.setAttribute(ATTRIBUTE_DESCRIPTION, db.getDescription());
+            }
+
             ret.setAttribute(ATTRIBUTE_OWNER, db.getOwnerName());
 
             ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, getMetadataNamespace());
