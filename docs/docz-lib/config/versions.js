@@ -1,8 +1,9 @@
 export default  [
-	{ id: 1, href: "/Doc-test/", title: "Latest", label: "Latest" },
 	{ id: 2, href: "/2.0.0/index.html", title: "2.0.0", label: "2.0.0" },
+        { id: 3, href: "/1.2.0/index.html", title: "1.2.0", label: "1.2.0" },
 	{ id: 4, href: "/1.1.0/index.html", title: "1.1.0", label: "1.1.0" },
 	{ id: 5, href: "/1.0.0/index.html", title: "1.0.0", label: "1.0.0" },
+        { id: 6, href: "/0.8.4/index.html", title: "0.8.4", label: "0.8.4" },
 	{ id: 7, href: "/0.8.3/index.html", title: "0.8.3", label: "0.8.3" },
 	{ id: 8, href: "/0.8.2/index.html", title: "0.8.2", label: "0.8.2" },
 	{ id: 9, href: "/0.8.1/index.html", title: "0.8.1", label: "0.8.1" },
