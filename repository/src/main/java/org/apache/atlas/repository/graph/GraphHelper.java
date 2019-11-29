@@ -262,13 +262,13 @@ public final class GraphHelper {
 
         //TODO get edge id is expensive. Use this logic. But doesn't work for now
         /**
-        Iterable<AtlasEdge> edges = outVertex.getEdges(Direction.OUT, edgeLabel);
-        for (AtlasEdge edge : edges) {
-            if (edge.getObjectId().toString().equals(edgeId)) {
-                return edge;
-            }
-        }
-        return null;
+         Iterable<AtlasEdge> edges = outVertex.getEdges(Direction.OUT, edgeLabel);
+         for (AtlasEdge edge : edges) {
+         if (edge.getObjectId().toString().equals(edgeId)) {
+         return edge;
+         }
+         }
+         return null;
          **/
     }
 
@@ -384,8 +384,8 @@ public final class GraphHelper {
     public static AtlasVertex getClassificationVertex(AtlasVertex entityVertex, String classificationName) {
         AtlasVertex ret   = null;
         Iterable    edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
-                                                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
-                                                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
         if (edges != null) {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
@@ -402,8 +402,8 @@ public final class GraphHelper {
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;
         Iterable  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
-                                              .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
-                                              .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
         if (edges != null) {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
@@ -420,8 +420,8 @@ public final class GraphHelper {
     public static AtlasEdge getPropagatedClassificationEdge(AtlasVertex entityVertex, String classificationName, String associatedEntityGuid) {
         AtlasEdge ret   = null;
         Iterable  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
-                                              .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
-                                              .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
         if (edges != null) {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
@@ -446,8 +446,8 @@ public final class GraphHelper {
     public static AtlasEdge getPropagatedClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;
         Iterable  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
-                                              .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
-                                              .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
 
         if (edges != null && classificationVertex != null) {
             Iterator<AtlasEdge> iterator = edges.iterator();
@@ -468,8 +468,8 @@ public final class GraphHelper {
     public static List<AtlasEdge> getPropagatedEdges(AtlasVertex classificationVertex) {
         List<AtlasEdge> ret   = new ArrayList<>();
         Iterable        edges = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
-                                                    .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
-                                                    .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
         if (edges != null) {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
@@ -487,7 +487,7 @@ public final class GraphHelper {
         List<AtlasEdge> ret                = new ArrayList<>();
         String          classificationName = getTypeName(classificationVertex);
         Iterable        edges              = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
-                                                                 .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
         if (edges != null) {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
@@ -530,12 +530,12 @@ public final class GraphHelper {
 
         switch (edgeDirection) {
             case IN:
-            ret = getEdgeForLabel(vertex, edgeLabel, AtlasEdgeDirection.IN);
-            break;
+                ret = getEdgeForLabel(vertex, edgeLabel, AtlasEdgeDirection.IN);
+                break;
 
             case OUT:
-            ret = getEdgeForLabel(vertex, edgeLabel, AtlasEdgeDirection.OUT);
-            break;
+                ret = getEdgeForLabel(vertex, edgeLabel, AtlasEdgeDirection.OUT);
+                break;
 
             case BOTH:
             default:
@@ -555,8 +555,8 @@ public final class GraphHelper {
                 break;
 
             case OUT:
-            ret = getOutGoingEdgesByLabel(vertex, edgeLabel);
-            break;
+                ret = getOutGoingEdgesByLabel(vertex, edgeLabel);
+                break;
 
             case BOTH:
                 ret = getAdjacentEdgesByLabel(vertex, AtlasEdgeDirection.BOTH, edgeLabel);
@@ -1055,7 +1055,7 @@ public final class GraphHelper {
      * @throws AtlasException
      */
     public AtlasVertex getVertexForInstanceByUniqueAttribute(AtlasEntityType classType, Referenceable instance)
-        throws AtlasException {
+            throws AtlasException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Checking if there is an instance with the same unique attributes for instance {}", instance.toShortString());
         }
@@ -1202,8 +1202,8 @@ public final class GraphHelper {
     public static AtlasVertex getAssociatedEntityVertex(AtlasVertex classificationVertex) {
         AtlasVertex ret   = null;
         Iterable    edges = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
-                                                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
-                                                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
         if (edges != null) {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
@@ -1567,14 +1567,14 @@ public final class GraphHelper {
     }
 
     public static void setListPropertyFromElementIds(AtlasVertex<?, ?> instanceVertex, String propertyName,
-            List<AtlasElement> elements) {
+                                                     List<AtlasElement> elements) {
         String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
         instanceVertex.setPropertyFromElementsIds(actualPropertyName, elements);
 
     }
 
     public static void setPropertyFromElementId(AtlasVertex<?, ?> instanceVertex, String propertyName,
-            AtlasElement value) {
+                                                AtlasElement value) {
         String actualPropertyName = AtlasGraphUtilsV2.encodePropertyKey(propertyName);
         instanceVertex.setPropertyFromElementId(actualPropertyName, value);
 
@@ -1694,7 +1694,7 @@ public final class GraphHelper {
 
         if (CollectionUtils.isNotEmpty(classificationNames)) {
             ret = CLASSIFICATION_NAME_DELIMITER + StringUtils.join(classificationNames, CLASSIFICATION_NAME_DELIMITER)
-                + CLASSIFICATION_NAME_DELIMITER;
+                    + CLASSIFICATION_NAME_DELIMITER;
         }
         return ret;
     }
