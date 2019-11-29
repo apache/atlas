@@ -753,7 +753,7 @@ public final class GraphHelper {
         bindings.put("guid", guid);
 
         try {
-            startTime = System.currentTimeMillis()
+            startTime = System.currentTimeMillis();
             Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
             LOG.info("getImpactedVertices query took {} for guid {}", System.currentTimeMillis() - startTime, guid);
 
