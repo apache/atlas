@@ -66,6 +66,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     private   static final String[] ATLAS_HOOK_CONSUMER_TOPICS     = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC);
     private   static final String[] ATLAS_ENTITIES_CONSUMER_TOPICS = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
+    protected static final Integer NUMBER_CONSUMERS_PER_TOPIC = AtlasConfiguration.NOTIFICATION_NUMBER_CONSUMERS_PER_TOPIC.getInt();
 
     private static final String DEFAULT_CONSUMER_CLOSED_ERROR_MESSAGE = "This consumer has already been closed.";
 
@@ -207,19 +208,22 @@ public class KafkaNotification extends AbstractNotification implements Service {
         consumerProperties.put("enable.auto.commit", autoCommitEnabled);
 
         for (int i = 0; i < numConsumers; i++) {
-            KafkaConsumer existingConsumer = notificationConsumers.size() > i ? notificationConsumers.get(i) : null;
-            KafkaConsumer kafkaConsumer    = getOrCreateKafkaConsumer(existingConsumer, consumerProperties, notificationType, i);
+            for (int c = 0; c < NUMBER_CONSUMERS_PER_TOPIC; c++) {
+                KafkaConsumer existingConsumer = notificationConsumers.size() > i ? notificationConsumers.get(i) : null;
+                KafkaConsumer kafkaConsumer = getOrCreateKafkaConsumer(existingConsumer, consumerProperties, notificationType, i);
 
-            if (notificationConsumers.size() > i) {
-                notificationConsumers.set(i, kafkaConsumer);
-            } else {
-                notificationConsumers.add(kafkaConsumer);
+                if (notificationConsumers.size() > i) {
+                    notificationConsumers.set(i, kafkaConsumer);
+                } else {
+                    notificationConsumers.add(kafkaConsumer);
+                }
+
+                consumers.add(new AtlasKafkaConsumer(notificationType, kafkaConsumer, autoCommitEnabled, pollTimeOutMs));
             }
-
-            consumers.add(new AtlasKafkaConsumer(notificationType, kafkaConsumer, autoCommitEnabled, pollTimeOutMs));
         }
 
-        LOG.info("<== KafkaNotification.createConsumers(notificationType={}, numConsumers={}, autoCommitEnabled={})", notificationType, numConsumers, autoCommitEnabled);
+        LOG.info("<== KafkaNotification.createConsumers(notificationType={}, numConsumers={}, consumersPerTopic={}, autoCommitEnabled={})",
+                notificationType, numConsumers, NUMBER_CONSUMERS_PER_TOPIC, autoCommitEnabled);
 
         return consumers;
     }
