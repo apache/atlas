@@ -197,7 +197,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
         List<KafkaConsumer> notificationConsumers = this.consumers.get(notificationType);
 
         if (notificationConsumers == null) {
-            notificationConsumers = new ArrayList<>(numConsumers);
+            notificationConsumers = new ArrayList<>(NUMBER_CONSUMERS_PER_TOPIC);
 
             this.consumers.put(notificationType, notificationConsumers);
         }
@@ -209,11 +209,11 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
         for (int i = 0; i < numConsumers; i++) {
             for (int c = 0; c < NUMBER_CONSUMERS_PER_TOPIC; c++) {
-                KafkaConsumer existingConsumer = notificationConsumers.size() > i ? notificationConsumers.get(i) : null;
-                KafkaConsumer kafkaConsumer = getOrCreateKafkaConsumer(existingConsumer, consumerProperties, notificationType, i);
+                KafkaConsumer existingConsumer = notificationConsumers.size() > c ? notificationConsumers.get(c) : null;
+                KafkaConsumer kafkaConsumer = getOrCreateKafkaConsumer(existingConsumer, consumerProperties, notificationType, c);
 
-                if (notificationConsumers.size() > i) {
-                    notificationConsumers.set(i, kafkaConsumer);
+                if (notificationConsumers.size() > c) {
+                    notificationConsumers.set(c, kafkaConsumer);
                 } else {
                     notificationConsumers.add(kafkaConsumer);
                 }
@@ -322,7 +322,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
                 String[] topics = CONSUMER_TOPICS_MAP.get(notificationType);
                 String   topic  = topics[idxConsumer % topics.length];
 
-                LOG.debug("Creating new KafkaConsumer for topic : {}, index : {}", topic, idxConsumer);
+                LOG.info("Creating new " +
+                        "r for topic : {}, index : {}", topic, idxConsumer);
 
                 ret = new KafkaConsumer(consumerProperties);
 
