@@ -747,11 +747,15 @@ public final class GraphHelper {
         String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES);
         List<AtlasVertex> ret          = new ArrayList<>();
 
+        long              startTime;
+
         bindings.put("g", graph);
         bindings.put("guid", guid);
 
         try {
+            startTime = System.currentTimeMillis()
             Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
+            LOG.info("getImpactedVertices query took {} for guid {}", System.currentTimeMillis() - startTime, guid);
 
             if (resultObj instanceof List && CollectionUtils.isNotEmpty((List) resultObj)) {
                 List<?> results = (List) resultObj;
@@ -759,6 +763,7 @@ public final class GraphHelper {
 
                 if (firstElement instanceof AtlasVertex) {
                     ret = (List<AtlasVertex>) results;
+                    LOG.info("getImpactedVertices guid {} len {}", guid, ret.size());
                 }
             }
         } catch (ScriptException e) {
@@ -797,6 +802,8 @@ public final class GraphHelper {
         List<AtlasVertex> ret          = new ArrayList<>();
         String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS);
 
+        long              startTime;
+
         bindings.put("g", graph);
         bindings.put("guid", guid);
         bindings.put("classificationId", classificationId);
@@ -807,7 +814,10 @@ public final class GraphHelper {
         }
 
         try {
+            startTime = System.currentTimeMillis();
             Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
+            LOG.info("getImpactedVerticesWithRestrictions query took {} for guid {} and classificationId {}",
+              System.currentTimeMillis() - startTime, guid, classificationId);
 
             if (resultObj instanceof List && CollectionUtils.isNotEmpty((List) resultObj)) {
                 List<?> results      = (List) resultObj;
@@ -815,6 +825,7 @@ public final class GraphHelper {
 
                 if (firstElement instanceof AtlasVertex) {
                     ret = (List<AtlasVertex>) results;
+                    LOG.info("getImpactedVerticesWithRestrictions guid {} len {}", guid, ret.size());
                 }
             }
         } catch (ScriptException e) {
@@ -829,13 +840,18 @@ public final class GraphHelper {
         Bindings          bindings     = scriptEngine.createBindings();
         String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL);
         List<AtlasVertex> ret          = new ArrayList<>();
+        long              startTime;
 
         bindings.put("g", graph);
         bindings.put("guid", guid);
         bindings.put("relationshipGuid", relationshipGuid);
 
+
         try {
+            startTime = System.currentTimeMillis();
             Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
+            LOG.info("getImpactedVerticesWithReferences query took {} for guid {} and relationshipGuid {}",
+              System.currentTimeMillis() - startTime, guid, relationshipGuid);
 
             if (resultObj instanceof List && CollectionUtils.isNotEmpty((List) resultObj)) {
                 List<?> results = (List) resultObj;
@@ -843,6 +859,7 @@ public final class GraphHelper {
 
                 if (firstElement instanceof AtlasVertex) {
                     ret = (List<AtlasVertex>) results;
+                    LOG.info("getImpactedVerticesWithReferences guid {} len {}", guid, ret.size());
                 }
             }
         } catch (ScriptException e) {
