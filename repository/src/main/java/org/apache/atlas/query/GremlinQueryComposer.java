@@ -227,7 +227,7 @@ public class GremlinQueryComposer {
     }
 
     private boolean containsNumberAndLettersOnly(String rhs) {
-        return Pattern.matches(REGEX_ALPHA_NUMERIC_PATTERN, rhs);
+        return Pattern.matches(REGEX_ALPHA_NUMERIC_PATTERN, IdentifierHelper.removeWildcards(rhs));
     }
 
     private String parseNumber(String rhs, Context context) {

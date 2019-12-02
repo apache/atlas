@@ -116,6 +116,9 @@ public class IdentifierHelper {
         return s.replace("*", ".*").replace('?', '.');
     }
 
+    public static String removeWildcards(String s) {
+        return removeQuotes(s).replace("*", "").replace("?", "");
+    }
 
     public static class Info {
         private String   raw;
