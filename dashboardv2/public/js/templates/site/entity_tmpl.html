@@ -26,7 +26,7 @@
 <tbody>
     {{#each data}}
     <tr>
-        <td><a class="linkClicked" href="#!/search/searchResult?searchType=basic&type={{@key}}&includeDE=true">{{@key}}&nbsp;({{arithmetic this.active '+' this.deleted}})</a></td>
+        <td><span>{{@key}}&nbsp;({{arithmetic this.active '+' this.deleted}})</span></td>
         {{#if this.active}}
         <td>
             <a title="Search for active entities of type '{{@key}}'" class="linkClicked" href="#!/search/searchResult?searchType=basic&type={{@key}}">{{this.active}}</a>
@@ -36,14 +36,14 @@
         {{/if}}
         {{#if this.deleted}}
         <td class="readOnlyLink">
-            <a title="Search for deleted entities of type '{{@key}}'" class="linkClicked" href="#!/search/searchResult?searchType=basic&type={{@key}}&includeDE=true">{{this.deleted}}</a>
+            <a title="Search for deleted entities of type '{{@key}}'" class="linkClicked" href="#!/search/searchResult?type={{@key}}&attributes=__state%2Cdescription%2Cname%2Cowner%2Cselected%2Ctag%2CtypeName&entityFilters=AND(__state%3A%3A%3D%3A%3ADELETED%3A%3Astring)&includeDE=true&searchType=basic">{{this.deleted}}</a>
         </td>
         {{else}}
         <td>0</td>
         {{/if}}
         {{#if this.shell}}
-        <td>
-            {{this.shell}}
+        <td class="readOnlyLink">
+            <a title="Search for shell entities of type '{{@key}}'" class="linkClicked" href="#!/search/searchResult?type={{@key}}&attributes=__isIncomplete%2Cdescription%2Cname%2Cowner%2Cselected%2Ctag%2CtypeName&entityFilters=AND(__isIncomplete%3A%3A%3D%3A%3A1%3A%3Ainteger)&searchType=basic">{{this.shell}}</a>
         </td>
         {{else}}
         <td>0</td>
