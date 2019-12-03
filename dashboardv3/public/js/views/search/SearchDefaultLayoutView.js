@@ -215,6 +215,17 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     that.RSearchResultLayoutView.show(new SearchResultLayoutView(that.options));
                 });
             },
+            checkEntityFilter: function(options) {
+                if (options && options.value) {
+                    if (options.value.type && options.value.entityFilters) {
+                        options.searchTableFilters.entityFilters[options.value.type] = options.value.entityFilters;
+                    }
+                    if (options.value.tag && options.value.tagFilters) {
+                        options.searchTableFilters.tagFilters[options.value.tag] = options.value.tagFilters;
+                    }
+                }
+                return options.searchTableFilters;
+            },
             onClickAttrFilter: function(filterType) {
                 var that = this,
                     obj = {
@@ -223,7 +234,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                         entityDefCollection: that.options.entityDefCollection,
                         enumDefCollection: that.options.enumDefCollection,
                         classificationDefCollection: that.options.classificationDefCollection,
-                        searchTableFilters: that.options.searchTableFilters
+                        searchTableFilters: that.checkEntityFilter(that.options)
                     };
                 this.ui.checkDeletedEntity.prop('checked', this.options.value.includeDE ? this.options.value.includeDE : false);
                 this.ui.checkSubClassification.prop('checked', this.options.value.excludeSC ? this.options.value.excludeSC : false);
