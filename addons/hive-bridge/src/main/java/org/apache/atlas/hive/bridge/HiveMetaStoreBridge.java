@@ -579,8 +579,8 @@ public class HiveMetaStoreBridge {
         if (StringUtils.isNotEmpty(catalogName) && !StringUtils.equals(catalogName, DEFAULT_METASTORE_CATALOG)) {
             dbName = catalogName + SEP + dbName;
         }
-
-        return dbName;*/
+*/
+        return dbName;
     }
 
     /**
