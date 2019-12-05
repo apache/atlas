@@ -22,7 +22,7 @@ import Basic from "./Basic";
 import { doczState } from "../../../../../docz-lib/docz/dist";
 
 const DropDownDivContainer = styled.div`
-	width: 220px;
+        width: 160px;
 	padding: 0;
 	margin-right: 5px;
 	float: right;

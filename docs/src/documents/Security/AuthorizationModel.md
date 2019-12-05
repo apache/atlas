@@ -10,7 +10,7 @@ import  * as theme  from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 
 
-### Atlas Authorization Model
+# Atlas Authorization Model
 
 
 ##  Introduction
