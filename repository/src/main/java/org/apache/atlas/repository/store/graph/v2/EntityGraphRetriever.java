@@ -277,20 +277,27 @@ public class EntityGraphRetriever {
     }
 
     public AtlasClassification toAtlasClassification(AtlasVertex classificationVertex) throws AtlasBaseException {
-        AtlasClassification ret = new AtlasClassification(getTypeName(classificationVertex));
+        AtlasClassification ret                = null;
+        String              classificationName = getTypeName(classificationVertex);
 
-        ret.setEntityGuid(AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
-        ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
-        ret.setPropagate(isPropagationEnabled(classificationVertex));
-        ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
+        if (StringUtils.isEmpty(classificationName)) {
+            LOG.warn("Ignoring invalid classification vertex: {}", AtlasGraphUtilsV2.toString(classificationVertex));
+        } else {
+            ret = new AtlasClassification(classificationName);
 
-        String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
+            ret.setEntityGuid(AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
+            ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
+            ret.setPropagate(isPropagationEnabled(classificationVertex));
+            ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
 
-        if (strValidityPeriods != null) {
-            ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
+            String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
+
+            if (strValidityPeriods != null) {
+                ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
+            }
+
+            mapAttributes(classificationVertex, ret, null);
         }
-
-        mapAttributes(classificationVertex, ret, null);
 
         return ret;
     }
@@ -621,10 +628,12 @@ public class EntityGraphRetriever {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
             while (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
+                AtlasEdge           classificationEdge   = iterator.next();
+                AtlasVertex         classificationVertex = classificationEdge != null ? classificationEdge.getInVertex() : null;
+                AtlasClassification classification       = toAtlasClassification(classificationVertex);
 
-                if (edge != null) {
-                    ret.add(toAtlasClassification(edge.getInVertex()));
+                if (classification != null) {
+                    ret.add(classification);
                 }
             }
         }
@@ -711,12 +720,15 @@ public class EntityGraphRetriever {
         List<AtlasEdge> edges = getAllClassificationEdges(entityVertex);
 
         if (CollectionUtils.isNotEmpty(edges)) {
-            List<AtlasClassification> allClassifications                 = new ArrayList<>();
+            List<AtlasClassification> allClassifications = new ArrayList<>();
 
             for (AtlasEdge edge : edges) {
-                AtlasVertex classificationVertex = edge.getInVertex();
+                AtlasVertex         classificationVertex = edge.getInVertex();
+                AtlasClassification classification       = toAtlasClassification(classificationVertex);
 
-                allClassifications.add(toAtlasClassification(classificationVertex));
+                if (classification != null) {
+                    allClassifications.add(classification);
+                }
             }
 
             entity.setClassifications(allClassifications);
@@ -1387,7 +1399,10 @@ public class EntityGraphRetriever {
         for (AtlasVertex classificationVertex : classificationVertices) {
             String              classificationId = classificationVertex.getIdForDisplay();
             AtlasClassification classification   = toAtlasClassification(classificationVertex);
-            String              entityGuid       = classification.getEntityGuid();
+
+            if (classification == null) {
+                continue;
+            }
 
             if (blockedClassificationIds.contains(classificationId)) {
                 blockedClassifications.add(classification);
@@ -1397,7 +1412,7 @@ public class EntityGraphRetriever {
 
             // add entity headers to referred entities
             if (extendedInfo) {
-                addToReferredEntities(relationshipWithExtInfo, entityGuid);
+                addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
             }
         }
 
