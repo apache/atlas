@@ -110,6 +110,55 @@ public class TestEntityREST {
         TestEntitiesREST.verifyAttributes(response.getEntity().getAttributes(), dbEntity.getAttributes());
     }
 
+    @Test
+    public void testGetEntityHeaderByUniqueAttributes() throws Exception {
+        createTestEntity();
+
+        String[] attrVal = {String.valueOf(dbEntity.getAttribute("name"))};
+
+        Map<String, String[]> paramMap = new HashMap<>();
+        paramMap.put("attr:name", attrVal);
+
+        HttpServletRequest mockRequest = Mockito.mock(HttpServletRequest.class);
+        Mockito.when(mockRequest.getParameterMap()).thenReturn(paramMap);
+
+        AtlasEntityHeader response = entityREST.getEntityHeaderByUniqueAttributes(dbEntity.getTypeName(), mockRequest);
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(dbEntity.getAttribute("name"), response.getAttribute("name"));
+        Assert.assertEquals(dbEntity.getAttribute("description"), response.getAttribute("description"));
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testGetEntityHeaderByUniqueAttributes_2() throws Exception {
+        createTestEntity();
+
+        String[] attrVal = {String.valueOf(dbEntity.getAttribute("name") + "_2")};
+
+        Map<String, String[]> paramMap = new HashMap<>();
+        paramMap.put("attr:name", attrVal);
+
+        HttpServletRequest mockRequest = Mockito.mock(HttpServletRequest.class);
+        Mockito.when(mockRequest.getParameterMap()).thenReturn(paramMap);
+
+        entityREST.getEntityHeaderByUniqueAttributes(dbEntity.getTypeName(), mockRequest);
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testGetEntityHeaderByUniqueAttributes_3() throws Exception {
+        createTestEntity();
+
+        String[] attrVal = {String.valueOf(dbEntity.getAttribute("description"))};
+
+        Map<String, String[]> paramMap = new HashMap<>();
+        paramMap.put("attr:description", attrVal);
+
+        HttpServletRequest mockRequest = Mockito.mock(HttpServletRequest.class);
+        Mockito.when(mockRequest.getParameterMap()).thenReturn(paramMap);
+
+        entityREST.getEntityHeaderByUniqueAttributes(dbEntity.getTypeName(), mockRequest);
+    }
+
     @Test(dependsOnMethods = "testGetEntityById")
     public void testAddAndGetClassification() throws Exception {
 
