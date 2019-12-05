@@ -216,7 +216,6 @@ public class HiveMetaStoreBridge {
         this.hiveClient                 = Hive.get(hiveConf);
         this.atlasClientV2              = atlasClientV2;
         this.convertHdfsPathToLowerCase = atlasProperties.getBoolean(HDFS_PATH_CONVERT_TO_LOWER_CASE, false);
-        hiveConf.g
     }
 
     /**
