@@ -1862,6 +1862,10 @@ public class EntityGraphMapper {
         AtlasVertex         classificationVertex = getClassificationVertex(entityVertex, classificationName);
         AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
 
+        if (classification == null) {
+            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);
+        }
+
         // remove classification from propagated entities if propagation is turned on
         if (isPropagationEnabled(classificationVertex)) {
             List<AtlasVertex> propagatedEntityVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
@@ -2027,6 +2031,10 @@ public class EntityGraphMapper {
             }
 
             AtlasClassification currentClassification = entityRetriever.toAtlasClassification(classificationVertex);
+
+            if (currentClassification == null) {
+                continue;
+            }
 
             validateAndNormalizeForUpdate(classification);
 
