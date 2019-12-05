@@ -216,6 +216,7 @@ public class HiveMetaStoreBridge {
         this.hiveClient                 = Hive.get(hiveConf);
         this.atlasClientV2              = atlasClientV2;
         this.convertHdfsPathToLowerCase = atlasProperties.getBoolean(HDFS_PATH_CONVERT_TO_LOWER_CASE, false);
+        hiveConf.g
     }
 
     /**
@@ -574,13 +575,13 @@ public class HiveMetaStoreBridge {
 
     public static String getDatabaseName(Database hiveDB) {
         String dbName      = hiveDB.getName().toLowerCase();
-        String catalogName = hiveDB.getCatalogName() != null ? hiveDB.getCatalogName().toLowerCase() : null;
+      /*  String catalogName = hiveDB.getCatalogName() != null ? hiveDB.getCatalogName().toLowerCase() : null;
 
         if (StringUtils.isNotEmpty(catalogName) && !StringUtils.equals(catalogName, DEFAULT_METASTORE_CATALOG)) {
             dbName = catalogName + SEP + dbName;
         }
 
-        return dbName;
+        return dbName;*/
     }
 
     /**
