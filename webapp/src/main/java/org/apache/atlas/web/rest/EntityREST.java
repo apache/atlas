@@ -149,6 +149,47 @@ public class EntityREST {
     }
 
     /**
+     * Fetch AtlasEntityHeader given its type and unique attribute.
+     *
+     * In addition to the typeName path parameter, attribute key-value pair(s) can be provided in the following format
+     *
+     * attr:<attrName>=<attrValue>
+     *
+     * NOTE: The attrName and attrValue should be unique across entities, eg. qualifiedName
+     *
+     * The REST request would look something like this
+     *
+     * GET /v2/entity/uniqueAttribute/type/aType/header?attr:aTypeAttribute=someValue
+     *
+     * @param typeName
+     * @return AtlasEntityHeader
+     * @throws AtlasBaseException
+     */
+    @GET
+    @Path("/uniqueAttribute/type/{typeName}/header")
+    public AtlasEntityHeader getEntityHeaderByUniqueAttributes(@PathParam("typeName") String typeName,
+                                                               @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            Map<String, Object> attributes = getAttributes(servletRequest);
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getEntityHeaderByUniqueAttributes(" + typeName + "," + attributes + ")");
+            }
+
+            AtlasEntityType entityType = ensureEntityType(typeName);
+
+            validateUniqueAttribute(entityType, attributes);
+
+            return entitiesStore.getEntityHeaderByUniqueAttributes(entityType, attributes);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Fetch complete definition of an entity given its type and unique attribute.
      *
      * In addition to the typeName path parameter, attribute key-value pair(s) can be provided in the following format

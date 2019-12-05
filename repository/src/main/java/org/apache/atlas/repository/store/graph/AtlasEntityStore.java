@@ -72,6 +72,9 @@ public interface AtlasEntityStore {
      */
     AtlasEntityHeader getHeaderById(String guid) throws AtlasBaseException;
 
+
+    public AtlasEntityHeader getEntityHeaderByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException;
+
     /**
      * Batch GET to retrieve entities by their ID
      * @param guid
