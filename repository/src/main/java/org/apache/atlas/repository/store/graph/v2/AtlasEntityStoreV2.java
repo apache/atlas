@@ -376,6 +376,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         entity.setGuid(guid);
 
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity)), "update entity ByUniqueAttributes");
+
         return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true, false);
     }
 
@@ -390,6 +392,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasEntityHeader entity     = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
         AtlasEntityType   entityType = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
         AtlasAttribute    attr       = entityType.getAttribute(attrName);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entity), "update entity ByUniqueAttributes : guid=", guid );
 
         if (attr == null) {
             attr = entityType.getRelationshipAttribute(attrName, AtlasEntityUtil.getRelationshipType(attrValue));
