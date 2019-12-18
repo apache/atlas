@@ -147,14 +147,14 @@ public final class Constants {
     /**
      * search backing index name for vertex keys.
      */
-    public static final String VERTEX_INDEX = "vertex_index";
+    public static final String VERTEX_INDEX = ApplicationProperties.SOLR_INDEX_SEARCH_VERTEX_NAME;
 
     /**
      * search backing index name for edge labels.
      */
-    public static final String EDGE_INDEX = "edge_index";
+    public static final String EDGE_INDEX = ApplicationProperties.SOLR_INDEX_SEARCH_EDGE_NAME;
 
-    public static final String FULLTEXT_INDEX = "fulltext_index";
+    public static final String FULLTEXT_INDEX = ApplicationProperties.SOLR_INDEX_SEARCH_FULLTEXT_NAME;
 
     public static final String QUALIFIED_NAME                          = "Referenceable.qualifiedName";
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
@@ -163,6 +163,8 @@ public final class Constants {
     public static final String INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH  = "atlas.graph.index.search.tags.max-query-str-length";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_PROPERTY     = "atlas.graph.index.search.vertex.prefix";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_DEFAULT      = "$v$";
+
+
 
     public static final String MAX_FULLTEXT_QUERY_STR_LENGTH = "atlas.graph.fulltext-max-query-str-length";
     public static final String MAX_DSL_QUERY_STR_LENGTH      = "atlas.graph.dsl-max-query-str-length";

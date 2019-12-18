@@ -61,6 +61,11 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final boolean DEFAULT_INDEX_MAP_NAME          = false;
     public static final AtlasRunMode DEFAULT_ATLAS_RUN_MODE     = AtlasRunMode.PROD;
 
+
+    public static final String SOLR_INDEX_SEARCH_VERTEX_NAME = "atlas.graph.index.search.vertex.name" ;
+    public static final String SOLR_INDEX_SEARCH_EDGE_NAME = "atlas.graph.index.search.edge.name" ;
+    public static final String SOLR_INDEX_SEARCH_FULLTEXT_NAME = "atlas.graph.index.search.fulltext.name" ;
+
     public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
     public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");
     public static final SimpleEntry<String, String> DB_CACHE_SIZE_CONF          = new SimpleEntry<>("atlas.graph.cache.db-cache-size", "0.5");
@@ -299,6 +304,19 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
         if (StringUtils.isEmpty(indexBackend)) {
             indexBackend = INDEX_BACKEND_SOLR;
+        }
+
+        //set index names for vertex/edge/fulltext
+        if(indexBackend.equalsIgnoreCase(INDEX_BACKEND_SOLR)) {
+
+            clearPropertyDirect(SOLR_INDEX_SEARCH_EDGE_NAME);
+            addPropertyDirect(SOLR_INDEX_SEARCH_EDGE_NAME, getString(SOLR_INDEX_SEARCH_EDGE_NAME) );
+
+            clearPropertyDirect(SOLR_INDEX_SEARCH_FULLTEXT_NAME);
+            addPropertyDirect(SOLR_INDEX_SEARCH_FULLTEXT_NAME, getString(SOLR_INDEX_SEARCH_FULLTEXT_NAME) );
+
+            clearPropertyDirect(SOLR_INDEX_SEARCH_VERTEX_NAME);
+            addPropertyDirect(SOLR_INDEX_SEARCH_VERTEX_NAME, getString(SOLR_INDEX_SEARCH_VERTEX_NAME) );
         }
 
         clearPropertyDirect(INDEX_BACKEND_CONF);
