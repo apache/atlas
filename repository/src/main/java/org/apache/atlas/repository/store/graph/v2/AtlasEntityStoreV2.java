@@ -594,6 +594,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications(s) not specified");
         }
 
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
+
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
 
         if (entityVertex == null) {
@@ -611,7 +613,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         context.cacheEntity(guid, entityVertex, typeRegistry.getEntityTypeByName(entityHeader.getTypeName()));
 
-        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
 
         for (AtlasClassification classification : classifications) {
             validateAndNormalize(classification);
@@ -638,6 +639,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications(s) not specified");
         }
 
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
+
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
 
         if (entityVertex == null) {
@@ -654,7 +657,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         context.cacheEntity(guid, entityVertex, typeRegistry.getEntityTypeByName(entityHeader.getTypeName()));
 
-        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
 
         for (AtlasClassification classification : classifications) {
             validateAndNormalize(classification);
@@ -679,6 +681,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         EntityMutationContext context = new EntityMutationContext();
 
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guids);
+
         for (String guid : guids) {
             AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
 
@@ -694,7 +698,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             context.cacheEntity(guid, entityVertex, typeRegistry.getEntityTypeByName(entityHeader.getTypeName()));
         }
 
-        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guids);
 
         validateAndNormalize(classification);
 
@@ -723,6 +726,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications not specified");
         }
 
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
+
         AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
         // verify authorization only for removal of directly associated classification and not propagated one.
@@ -736,7 +741,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.debug("Deleting classification={} from entity={}", classificationName, guid);
         }
 
-        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
 
         entityGraphMapper.deleteClassification(guid, classificationName, associatedEntityGuid);
     }
