@@ -402,7 +402,7 @@ public abstract class DeleteHandlerV1 {
 
     private void addTagPropagation(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasEdge edge) throws AtlasBaseException {
         final List<AtlasVertex> classificationVertices   = getPropagationEnabledClassificationVertices(fromVertex);
-        final List<AtlasVertex> propagatedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? graphHelper.getIncludedImpactedVerticesWithReferences(toVertex, getRelationshipGuid(edge)) : null;
+        final List<AtlasVertex> propagatedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? entityRetriever.getIncludedImpactedVerticesV2(toVertex, getRelationshipGuid(edge)) : null;
 
         if (CollectionUtils.isNotEmpty(propagatedEntityVertices)) {
             if (LOG.isDebugEnabled()) {
@@ -490,9 +490,9 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
-        List<AtlasVertex>                   currentClassificationVertices = getClassificationVertices(edge);
-        Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
-        Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
+        List<AtlasVertex>                   currentClassificationVertices = getPropagatableClassifications(edge);
+        Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
+        Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
         Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
 
         if (MapUtils.isNotEmpty(currentClassificationsMap) && MapUtils.isEmpty(updatedClassificationsMap)) {
@@ -598,7 +598,7 @@ public abstract class DeleteHandlerV1 {
 
     private void removeTagPropagation(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasEdge edge) throws AtlasBaseException {
         final List<AtlasVertex> classificationVertices = getPropagationEnabledClassificationVertices(fromVertex);
-        final List<AtlasVertex> impactedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? graphHelper.getIncludedImpactedVerticesWithReferences(toVertex, getRelationshipGuid(edge)) : null;
+        final List<AtlasVertex> impactedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? entityRetriever.getIncludedImpactedVerticesV2(toVertex, getRelationshipGuid(edge)) : null;
 
         if (CollectionUtils.isNotEmpty(impactedEntityVertices)) {
             if (LOG.isDebugEnabled()) {
@@ -608,7 +608,7 @@ public abstract class DeleteHandlerV1 {
             for (AtlasVertex classificationVertex : classificationVertices) {
                 String            classificationName     = getTypeName(classificationVertex);
                 AtlasVertex       associatedEntityVertex = getAssociatedEntityVertex(classificationVertex);
-                List<AtlasVertex> referrals              = graphHelper.getIncludedImpactedVerticesWithReferences(associatedEntityVertex, getRelationshipGuid(edge));
+                List<AtlasVertex> referrals              = entityRetriever.getIncludedImpactedVerticesV2(associatedEntityVertex, getRelationshipGuid(edge));
 
                 for (AtlasVertex impactedEntityVertex : impactedEntityVertices) {
                     if (referrals.contains(impactedEntityVertex)) {

@@ -160,6 +160,7 @@ public enum AtlasErrorCode {
     INVALID_CUSTOM_ATTRIBUTE_VALUE(400, "ATLAS-400-00-9A", "Invalid value: {0} in custom attribute, value length is greater than {1}"),
     INVALID_LABEL_LENGTH(400, "ATLAS-400-00-9B", "Invalid label: {0}, label size should not be greater than {1}"),
     INVALID_LABEL_CHARACTERS(400, "ATLAS-400-00-9C", "Invalid label: {0}, label should contain alphanumeric characters, '_' or '-'"),
+    INVALID_PROPAGATION_TYPE(400, "ATLAS-400-00-9D", "Invalid propagation {0} for relationship-type={1}. Default value is {2}"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
