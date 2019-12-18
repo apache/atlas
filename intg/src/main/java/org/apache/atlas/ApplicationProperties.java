@@ -339,13 +339,13 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         if(indexBackend.equalsIgnoreCase(INDEX_BACKEND_SOLR)) {
 
             clearPropertyDirect(SOLR_INDEX_SEARCH_EDGE_NAME);
-            addPropertyDirect(SOLR_INDEX_SEARCH_EDGE_NAME, getString(SOLR_INDEX_SEARCH_EDGE_NAME) );
+            addPropertyDirect(SOLR_INDEX_SEARCH_EDGE_NAME, getString(SOLR_INDEX_SEARCH_EDGE_NAME, "edge_index") );
 
             clearPropertyDirect(SOLR_INDEX_SEARCH_FULLTEXT_NAME);
-            addPropertyDirect(SOLR_INDEX_SEARCH_FULLTEXT_NAME, getString(SOLR_INDEX_SEARCH_FULLTEXT_NAME) );
+            addPropertyDirect(SOLR_INDEX_SEARCH_FULLTEXT_NAME, getString(SOLR_INDEX_SEARCH_FULLTEXT_NAME, "fulltext_index") );
 
             clearPropertyDirect(SOLR_INDEX_SEARCH_VERTEX_NAME);
-            addPropertyDirect(SOLR_INDEX_SEARCH_VERTEX_NAME, getString(SOLR_INDEX_SEARCH_VERTEX_NAME) );
+            addPropertyDirect(SOLR_INDEX_SEARCH_VERTEX_NAME, getString(SOLR_INDEX_SEARCH_VERTEX_NAME, "vertex_index") );
         }
 
         clearPropertyDirect(INDEX_BACKEND_CONF);
