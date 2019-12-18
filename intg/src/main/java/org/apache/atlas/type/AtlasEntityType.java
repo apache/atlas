@@ -19,7 +19,6 @@ package org.apache.atlas.type;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DATE;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_INT;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.type.Constants.*;
 
@@ -29,6 +28,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasRelationshipAttributeDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.utils.AtlasEntityUtil;
@@ -87,6 +87,7 @@ public class AtlasEntityType extends AtlasStructType {
     private List<AtlasAttribute>                     dynAttributes              = Collections.emptyList();
     private List<AtlasAttribute>                     dynEvalTriggerAttributes   = Collections.emptyList();
     private Map<String,List<TemplateToken>>          parsedTemplates            = Collections.emptyMap();
+    private Set<String>                              tagPropagationEdges        = Collections.emptySet();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -138,6 +139,7 @@ public class AtlasEntityType extends AtlasStructType {
         this.allSubTypes            = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.typeAndAllSubTypes     = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.relationshipAttributes = new HashMap<>(); // this will be populated in resolveReferencesPhase3()
+        this.tagPropagationEdges    = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
 
         this.typeAndAllSubTypes.add(this.getTypeName());
 
@@ -230,6 +232,8 @@ public class AtlasEntityType extends AtlasStructType {
                     }
                 }
             }
+
+            tagPropagationEdges.addAll(superType.tagPropagationEdges);
         }
 
         ownedRefAttributes = new ArrayList<>();
@@ -254,6 +258,7 @@ public class AtlasEntityType extends AtlasStructType {
         typeAndAllSubTypesQryStr   = ""; // will be computed on next access
         relationshipAttributes     = Collections.unmodifiableMap(relationshipAttributes);
         ownedRefAttributes         = Collections.unmodifiableList(ownedRefAttributes);
+        tagPropagationEdges        = Collections.unmodifiableSet(tagPropagationEdges);
 
         entityDef.setSubTypes(subTypes);
 
@@ -275,6 +280,8 @@ public class AtlasEntityType extends AtlasStructType {
         this.parsedTemplates = parseDynAttributeTemplates();
 
         populateDynFlagsInfo();
+
+        LOG.info("resolveReferencesPhase3({}): tagPropagationEdges={}", getTypeName(), tagPropagationEdges);
     }
 
     public Set<String> getSuperTypes() {
@@ -347,6 +354,14 @@ public class AtlasEntityType extends AtlasStructType {
     @VisibleForTesting
     public void setDynEvalTriggerAttributes(List<AtlasAttribute> dynEvalTriggerAttributes) { this.dynEvalTriggerAttributes = dynEvalTriggerAttributes; }
 
+    public Set<String> getTagPropagationEdges() {
+        return this.tagPropagationEdges;
+    }
+
+    public String[] getTagPropagationEdgesArray() {
+        return CollectionUtils.isNotEmpty(tagPropagationEdges) ? tagPropagationEdges.toArray(new String[tagPropagationEdges.size()]) : null;
+    }
+
     public Map<String,List<TemplateToken>> getParsedTemplates() { return parsedTemplates; }
 
     public AtlasAttribute getRelationshipAttribute(String attributeName, String relationshipType) {
@@ -377,6 +392,38 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         attributes.put(relationshipType.getTypeName(), attribute);
+
+        // determine if tags from this entity-type propagate via this relationship
+        PropagateTags propagation = relationshipType.getRelationshipDef().getPropagateTags();
+
+        if (propagation == null) {
+            propagation = PropagateTags.NONE;
+        }
+
+        final boolean propagatesTags;
+
+        switch (propagation) {
+            case BOTH:
+                propagatesTags = true;
+            break;
+
+            case ONE_TO_TWO:
+                propagatesTags = StringUtils.equals(relationshipType.getEnd1Type().getTypeName(), getTypeName());
+            break;
+
+            case TWO_TO_ONE:
+                propagatesTags = StringUtils.equals(relationshipType.getEnd2Type().getTypeName(), getTypeName());
+            break;
+
+            case NONE:
+            default:
+                propagatesTags = false;
+            break;
+        }
+
+        if (propagatesTags) {
+            tagPropagationEdges.add(relationshipType.getRelationshipLabel());
+        }
     }
 
     public Set<String> getAttributeRelationshipTypes(String attributeName) {

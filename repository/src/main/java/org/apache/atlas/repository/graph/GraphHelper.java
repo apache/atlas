@@ -60,9 +60,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
-import javax.script.ScriptException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -84,10 +81,6 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isRef
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
-import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES;
-import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES_EXCLUDE_RELATIONSHIP;
-import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL;
-import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS;
 
 /**
  * Utility class for graph operations.
@@ -728,130 +721,6 @@ public final class GraphHelper {
         return result;
     }
 
-    public List<AtlasVertex> getIncludedImpactedVerticesWithReferences(AtlasVertex entityVertex, String relationshipGuid) throws AtlasBaseException {
-        List<AtlasVertex> ret              = new ArrayList<>();
-        List<AtlasVertex> impactedVertices = getImpactedVerticesWithReferences(getGuid(entityVertex), relationshipGuid);
-
-        ret.add(entityVertex);
-
-        if (CollectionUtils.isNotEmpty(impactedVertices)) {
-            ret.addAll(impactedVertices);
-        }
-
-        return ret;
-    }
-
-    public List<AtlasVertex> getImpactedVertices(String guid) throws AtlasBaseException {
-        ScriptEngine      scriptEngine = graph.getGremlinScriptEngine();
-        Bindings          bindings     = scriptEngine.createBindings();
-        String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES);
-        List<AtlasVertex> ret          = new ArrayList<>();
-
-        bindings.put("g", graph);
-        bindings.put("guid", guid);
-
-        try {
-            Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
-
-            if (resultObj instanceof List && CollectionUtils.isNotEmpty((List) resultObj)) {
-                List<?> results = (List) resultObj;
-                Object firstElement = results.get(0);
-
-                if (firstElement instanceof AtlasVertex) {
-                    ret = (List<AtlasVertex>) results;
-                }
-            }
-        } catch (ScriptException e) {
-            throw new AtlasBaseException(AtlasErrorCode.GREMLIN_SCRIPT_EXECUTION_FAILED, e);
-        }
-
-        return ret;
-    }
-
-    public List<AtlasVertex> getPropagatedEntityVertices(AtlasVertex classificationVertex) throws AtlasBaseException {
-        List<AtlasVertex> ret = new ArrayList<>();
-
-        if (classificationVertex != null) {
-            String            entityGuid                             = getClassificationEntityGuid(classificationVertex);
-            String            classificationId                       = classificationVertex.getIdForDisplay();
-            List<AtlasVertex> impactedEntityVertices                 = getAllPropagatedEntityVertices(classificationVertex);
-            List<AtlasVertex> impactedEntityVerticesWithRestrictions = getImpactedVerticesWithRestrictions(entityGuid, classificationId);
-
-            if (impactedEntityVertices.size() > impactedEntityVerticesWithRestrictions.size()) {
-                ret = (List<AtlasVertex>) CollectionUtils.subtract(impactedEntityVertices, impactedEntityVerticesWithRestrictions);
-            } else {
-                ret = (List<AtlasVertex>) CollectionUtils.subtract(impactedEntityVerticesWithRestrictions, impactedEntityVertices);
-            }
-        }
-
-        return ret;
-    }
-
-    public List<AtlasVertex> getImpactedVerticesWithRestrictions(String guid, String classificationId) throws AtlasBaseException {
-        return getImpactedVerticesWithRestrictions(guid, classificationId, null);
-    }
-
-    public List<AtlasVertex> getImpactedVerticesWithRestrictions(String guid, String classificationId, String guidRelationshipToExclude) throws AtlasBaseException {
-        ScriptEngine      scriptEngine = graph.getGremlinScriptEngine();
-        Bindings          bindings     = scriptEngine.createBindings();
-        List<AtlasVertex> ret          = new ArrayList<>();
-        String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES_WITH_RESTRICTIONS);
-
-        bindings.put("g", graph);
-        bindings.put("guid", guid);
-        bindings.put("classificationId", classificationId);
-
-        if (guidRelationshipToExclude != null) {
-            query = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES_EXCLUDE_RELATIONSHIP);
-            bindings.put("guidRelationshipToExclude", guidRelationshipToExclude);
-        }
-
-        try {
-            Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
-
-            if (resultObj instanceof List && CollectionUtils.isNotEmpty((List) resultObj)) {
-                List<?> results      = (List) resultObj;
-                Object  firstElement = results.get(0);
-
-                if (firstElement instanceof AtlasVertex) {
-                    ret = (List<AtlasVertex>) results;
-                }
-            }
-        } catch (ScriptException e) {
-            throw new AtlasBaseException(AtlasErrorCode.GREMLIN_SCRIPT_EXECUTION_FAILED, e);
-        }
-
-        return ret;
-    }
-
-    public List<AtlasVertex> getImpactedVerticesWithReferences(String guid, String relationshipGuid) throws AtlasBaseException {
-        ScriptEngine      scriptEngine = graph.getGremlinScriptEngine();
-        Bindings          bindings     = scriptEngine.createBindings();
-        String            query        = queryProvider.getQuery(TAG_PROPAGATION_IMPACTED_INSTANCES_FOR_REMOVAL);
-        List<AtlasVertex> ret          = new ArrayList<>();
-
-        bindings.put("g", graph);
-        bindings.put("guid", guid);
-        bindings.put("relationshipGuid", relationshipGuid);
-
-        try {
-            Object resultObj = graph.executeGremlinScript(scriptEngine, bindings, query, false);
-
-            if (resultObj instanceof List && CollectionUtils.isNotEmpty((List) resultObj)) {
-                List<?> results = (List) resultObj;
-                Object firstElement = results.get(0);
-
-                if (firstElement instanceof AtlasVertex) {
-                    ret = (List<AtlasVertex>) results;
-                }
-            }
-        } catch (ScriptException e) {
-            throw new AtlasBaseException(AtlasErrorCode.GREMLIN_SCRIPT_EXECUTION_FAILED, e);
-        }
-
-        return ret;
-    }
-
     /**
      * Finds the Vertices that correspond to the given GUIDs.  GUIDs
      * that are not found in the graph will not be in the map.
@@ -915,7 +784,7 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static List<AtlasVertex> getClassificationVertices(AtlasEdge edge) {
+    public static List<AtlasVertex> getPropagatableClassifications(AtlasEdge edge) {
         List<AtlasVertex> ret = new ArrayList<>();
 
         if (edge != null && getStatus(edge) != DELETED) {
@@ -929,26 +798,6 @@ public final class GraphHelper {
 
             if (propagateTags == PropagateTags.TWO_TO_ONE || propagateTags == PropagateTags.BOTH) {
                 ret.addAll(getPropagationEnabledClassificationVertices(inVertex));
-            }
-        }
-
-        return ret;
-    }
-
-    public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices) throws AtlasBaseException {
-        return getClassificationPropagatedEntitiesMapping(classificationVertices, null);
-    }
-
-    public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices, String guidRelationshipToExclude) throws AtlasBaseException {
-        Map<AtlasVertex, List<AtlasVertex>> ret = new HashMap<>();
-
-        if (CollectionUtils.isNotEmpty(classificationVertices)) {
-            for (AtlasVertex classificationVertex : classificationVertices) {
-                String            classificationId      = classificationVertex.getIdForDisplay();
-                String            sourceEntityId        = getClassificationEntityGuid(classificationVertex);
-                List<AtlasVertex> entitiesPropagatingTo = getImpactedVerticesWithRestrictions(sourceEntityId, classificationId, guidRelationshipToExclude);
-
-                ret.put(classificationVertex, entitiesPropagatingTo);
             }
         }
 

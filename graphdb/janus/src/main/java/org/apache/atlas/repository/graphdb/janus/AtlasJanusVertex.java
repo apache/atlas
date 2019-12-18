@@ -70,6 +70,14 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
         return graph.wrapEdges(edges);
     }
 
+    @Override
+    public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> getEdges(AtlasEdgeDirection dir, String[] edgeLabels) {
+        Direction      direction = AtlasJanusObjectFactory.createDirection(dir);
+        Iterator<Edge> edges     = getWrappedElement().edges(direction, edgeLabels);
+
+        return graph.wrapEdges(edges);
+    }
+
     private JanusGraphVertex getAsJanusVertex() {
         return (JanusGraphVertex)getWrappedElement();
     }
