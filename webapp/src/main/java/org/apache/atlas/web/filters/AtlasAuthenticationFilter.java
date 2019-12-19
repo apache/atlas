@@ -343,7 +343,13 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                     responseWrapper.setHeader(headerKey, headerProperties.getProperty(headerKey));
                 }
             }
+            if (((HttpServletRequest) request).getMethod().equals("OPTIONS")){
 
+
+                ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_ACCEPTED);
+
+                return;
+            }
             if (existingAuth == null) {
                 String authHeader = httpRequest.getHeader("Authorization");
 

@@ -64,8 +64,13 @@ import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 import javax.inject.Inject;
+import javax.ws.rs.HttpMethod;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -127,6 +132,10 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
 
         this.keycloakEnabled = configuration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false);
     }
+    @Bean(name = "mvcHandlerMappingIntrospector")
+    public HandlerMappingIntrospector mvcHandlerMappingIntrospector() {
+        return new HandlerMappingIntrospector();
+    }
 
     public AuthenticationEntryPoint getAuthenticationEntryPoint() throws Exception {
         AuthenticationEntryPoint authenticationEntryPoint;
@@ -181,10 +190,8 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
 
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         //@formatter:off
-        httpSecurity
+        httpSecurity.cors().and()
                 .authorizeRequests().anyRequest().authenticated()
-                .and()
-                .cors()
                 .and()
                     .headers()
                 .addHeaderWriter(new StaticHeadersWriter(HeadersUtil.CONTENT_SEC_POLICY_KEY, HeadersUtil.headerMap.get(HeadersUtil.CONTENT_SEC_POLICY_KEY)))
@@ -308,5 +315,15 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         KeycloakAuthenticationProcessingFilter filter = new KeycloakAuthenticationProcessingFilter(authenticationManagerBean(), KEYCLOAK_REQUEST_MATCHER);
         filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy());
         return filter;
+    }
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer(){
+        return new WebMvcConfigurerAdapter() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**");
+            }
+        };
     }
 }
