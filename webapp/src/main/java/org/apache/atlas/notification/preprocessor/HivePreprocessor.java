@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.notification.preprocessor;
 
+import com.google.common.base.Strings;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.commons.lang.StringUtils;
@@ -166,8 +167,19 @@ public class HivePreprocessor {
             } else {
                 Object inputs       = entity.getAttribute(ATTRIBUTE_INPUTS);
                 Object outputs      = entity.getAttribute(ATTRIBUTE_OUTPUTS);
-                int    inputsCount  = getCollectionSize(inputs);
-                int    outputsCount = getCollectionSize(outputs);
+                String startTime    = String.valueOf(entity.getAttribute(ATTRIBUTE_START_TIME));
+                String endTime      = String.valueOf(entity.getAttribute(ATTRIBUTE_END_TIME));
+
+                if (Strings.isNullOrEmpty(startTime) || "null".equals(startTime)) {
+                    entity.setAttribute(ATTRIBUTE_START_TIME, System.currentTimeMillis());
+                }
+
+                if (Strings.isNullOrEmpty(endTime) || "null".equals(endTime)) {
+                    entity.setAttribute(ATTRIBUTE_END_TIME, System.currentTimeMillis());
+                }
+
+                int inputsCount  = getCollectionSize(inputs);
+                int outputsCount = getCollectionSize(outputs);
 
                 removeIgnoredObjectIds(inputs, context);
                 removeIgnoredObjectIds(outputs, context);
