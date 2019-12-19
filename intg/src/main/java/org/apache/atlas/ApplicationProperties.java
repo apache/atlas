@@ -311,12 +311,15 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
             clearPropertyDirect(SOLR_INDEX_SEARCH_EDGE_NAME);
             addPropertyDirect(SOLR_INDEX_SEARCH_EDGE_NAME, getString(SOLR_INDEX_SEARCH_EDGE_NAME, "edge_index") );
+            LOG.info("Using Solr edge index name " + getString(SOLR_INDEX_SEARCH_EDGE_NAME, "edge_index") );
 
             clearPropertyDirect(SOLR_INDEX_SEARCH_FULLTEXT_NAME);
             addPropertyDirect(SOLR_INDEX_SEARCH_FULLTEXT_NAME, getString(SOLR_INDEX_SEARCH_FULLTEXT_NAME, "fulltext_index") );
+            LOG.info("Using Solr fulltext index name " + getString(SOLR_INDEX_SEARCH_FULLTEXT_NAME, "edge_index") );
 
             clearPropertyDirect(SOLR_INDEX_SEARCH_VERTEX_NAME);
             addPropertyDirect(SOLR_INDEX_SEARCH_VERTEX_NAME, getString(SOLR_INDEX_SEARCH_VERTEX_NAME, "vertex_index") );
+            LOG.info("Using Solr vertex index name " + getString(SOLR_INDEX_SEARCH_VERTEX_NAME, "edge_index") );
         }
 
         clearPropertyDirect(INDEX_BACKEND_CONF);

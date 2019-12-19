@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.apache.atlas.ApplicationProperties;
 
 public class RepairIndex {
     private static final Logger LOG = LoggerFactory.getLogger(RepairIndex.class);
@@ -59,9 +60,9 @@ public class RepairIndex {
     private static final int EXIT_CODE_FAILED = 1;
     private static final int  MAX_TRIES_ON_FAILURE = 3;
 
-    private static final String INDEX_NAME_VERTEX_INDEX = "vertex_index";
-    private static final String INDEX_NAME_FULLTEXT_INDEX = "fulltext_index";
-    private static final String INDEX_NAME_EDGE_INDEX = "edge_index";
+    private static final String INDEX_NAME_VERTEX_INDEX =  ApplicationProperties.SOLR_INDEX_SEARCH_VERTEX_NAME;
+    private static final String INDEX_NAME_FULLTEXT_INDEX = ApplicationProperties.SOLR_INDEX_SEARCH_FULLTEXT_NAME;
+    private static final String INDEX_NAME_EDGE_INDEX = ApplicationProperties.SOLR_INDEX_SEARCH_EDGE_NAME;
     private static final String DEFAULT_ATLAS_URL = "http://localhost:21000/";
     private static final String APPLICATION_PROPERTY_ATLAS_ENDPOINT = "atlas.rest.address";
 
