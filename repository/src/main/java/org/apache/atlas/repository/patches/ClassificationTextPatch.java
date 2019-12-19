@@ -18,10 +18,21 @@
 package org.apache.atlas.repository.patches;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.pc.WorkItemManager;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 
@@ -57,16 +68,54 @@ public class ClassificationTextPatch extends AtlasPatchHandler {
         }
 
         @Override
-        protected void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) throws AtlasBaseException {
-            processItem(vertexId, vertex, typeName, entityType);
-        }
-
-        @Override
         protected void prepareForExecution() {
             //do nothing
         }
 
-        protected void processItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) throws AtlasBaseException {
+        @Override
+        public void submitVerticesToUpdate(WorkItemManager manager) {
+            AtlasTypeRegistry typeRegistry = getTypeRegistry();
+            AtlasGraph        graph        = getGraph();
+            Set<Long>         vertexIds    = new HashSet<>();
+
+            for (AtlasClassificationType classificationType : typeRegistry.getAllClassificationTypes()) {
+                LOG.info("finding classification of type {}", classificationType.getTypeName());
+
+                Iterable<AtlasVertex> iterable = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, classificationType.getTypeName()).vertices();
+                int                   count    = 0;
+
+                for (Iterator<AtlasVertex> iter = iterable.iterator(); iter.hasNext(); ) {
+                    AtlasVertex         classificationVertex = iter.next();
+                    Iterable<AtlasEdge> edges                = classificationVertex.getEdges(AtlasEdgeDirection.IN);
+
+                    for (AtlasEdge edge : edges) {
+                        AtlasVertex entityVertex = edge.getOutVertex();
+                        Long        vertexId     = (Long) entityVertex.getId();
+
+                        if (vertexIds.contains(vertexId)) {
+                            continue;
+                        }
+
+                        vertexIds.add(vertexId);
+
+                        manager.checkProduce(vertexId);
+                    }
+
+                    count++;
+                }
+
+                LOG.info("found {} classification of type {}", count, classificationType.getTypeName());
+            }
+
+            LOG.info("found {} entities with classifications", vertexIds.size());
+        }
+
+        @Override
+        protected void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) throws AtlasBaseException {
+            processItem(vertexId, vertex, typeName, entityType);
+        }
+
+        private void processItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) throws AtlasBaseException {
             if(LOG.isDebugEnabled()) {
                 LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
             }

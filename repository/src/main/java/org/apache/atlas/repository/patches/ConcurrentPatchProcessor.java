@@ -18,7 +18,6 @@
 package org.apache.atlas.repository.patches;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.pc.WorkItemBuilder;
@@ -30,23 +29,57 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class ConcurrentPatchProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ConcurrentPatchProcessor.class);
 
-    private static final String     NUM_WORKERS_PROPERTY = "atlas.patch.numWorkers";
-    private static final String     BATCH_SIZE_PROPERTY  = "atlas.patch.batchSize";
-    private static final String     ATLAS_SOLR_SHARDS    = "ATLAS_SOLR_SHARDS";
-    private static final String     WORKER_NAME_PREFIX   = "patchWorkItem";
-    private static final int        NUM_WORKERS;
-    private static final int        BATCH_SIZE;
-    private final EntityGraphMapper entityGraphMapper;
+    private static final String NUM_WORKERS_PROPERTY = "atlas.patch.numWorkers";
+    private static final String BATCH_SIZE_PROPERTY  = "atlas.patch.batchSize";
+    private static final String ATLAS_SOLR_SHARDS    = "ATLAS_SOLR_SHARDS";
+    private static final String WORKER_NAME_PREFIX   = "patchWorkItem";
+    private static final int    NUM_WORKERS;
+    private static final int    BATCH_SIZE;
+
+    private final EntityGraphMapper        entityGraphMapper;
+    private final AtlasGraph               graph;
+    private final GraphBackedSearchIndexer indexer;
+    private final AtlasTypeRegistry        typeRegistry;
+
+    static {
+        int numWorkers = 3;
+        int batchSize  = 300;
+
+        try {
+            Configuration config = ApplicationProperties.get();
+
+            numWorkers = config.getInt(NUM_WORKERS_PROPERTY, config.getInt(ATLAS_SOLR_SHARDS, 1) * 3);
+            batchSize  = config.getInt(BATCH_SIZE_PROPERTY, 300);
+
+            LOG.info("UniqueAttributePatch: {}={}, {}={}", NUM_WORKERS_PROPERTY, numWorkers, BATCH_SIZE_PROPERTY, batchSize);
+        } catch (Exception e) {
+            LOG.error("Error retrieving configuration.", e);
+        }
+
+        NUM_WORKERS = numWorkers;
+        BATCH_SIZE  = batchSize;
+    }
+
+    public ConcurrentPatchProcessor(PatchContext context) {
+        this.graph             = context.getGraph();
+        this.indexer           = context.getIndexer();
+        this.typeRegistry      = context.getTypeRegistry();
+        this.entityGraphMapper = context.getEntityGraphMapper();
+    }
+
+    public EntityGraphMapper getEntityGraphMapper() {
+        return entityGraphMapper;
+    }
 
     public AtlasGraph getGraph() {
         return graph;
@@ -60,56 +93,21 @@ public abstract class ConcurrentPatchProcessor {
         return typeRegistry;
     }
 
-    private final AtlasGraph graph;
-    private final GraphBackedSearchIndexer indexer;
-    private final AtlasTypeRegistry typeRegistry;
-
-    static {
-        int numWorkers = 3;
-        int batchSize  = 300;
-
-        try {
-            numWorkers = ApplicationProperties.get().getInt(NUM_WORKERS_PROPERTY, getDefaultNumWorkers());
-            batchSize  = ApplicationProperties.get().getInt(BATCH_SIZE_PROPERTY, 300);
-
-            LOG.info("UniqueAttributePatch: {}={}, {}={}", NUM_WORKERS_PROPERTY, numWorkers, BATCH_SIZE_PROPERTY, batchSize);
-        } catch (Exception e) {
-            LOG.error("Error retrieving configuration.", e);
-        }
-
-        NUM_WORKERS = numWorkers;
-        BATCH_SIZE  = batchSize;
-    }
-
-    private static int getDefaultNumWorkers() throws AtlasException {
-        return ApplicationProperties.get().getInt(ATLAS_SOLR_SHARDS, 1) * 3;
-    }
-
-    public ConcurrentPatchProcessor(PatchContext context) {
-        this.graph             = context.getGraph();
-        this.indexer           = context.getIndexer();
-        this.typeRegistry      = context.getTypeRegistry();
-        this.entityGraphMapper = context.getEntityGraphMapper();
-    }
-
-    public EntityGraphMapper getEntityGraphMapper() {
-        return entityGraphMapper;
-    }
     public void apply() throws AtlasBaseException {
         prepareForExecution();
         execute();
     }
 
+    protected abstract void prepareForExecution() throws AtlasBaseException;
+    protected abstract void submitVerticesToUpdate(WorkItemManager manager);
+    protected abstract void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) throws AtlasBaseException;
+
     private void execute() {
-        Iterable<Object> iterable = graph.query().vertexIds();
-        WorkItemManager manager = new WorkItemManager(
-                new ConsumerBuilder(graph, typeRegistry, this), WORKER_NAME_PREFIX,
-                BATCH_SIZE, NUM_WORKERS, false);
+        WorkItemManager manager = new WorkItemManager(new ConsumerBuilder(graph, typeRegistry, this),
+                                                      WORKER_NAME_PREFIX, BATCH_SIZE, NUM_WORKERS, false);
+
         try {
-            for (Iterator<Object> iter = iterable.iterator(); iter.hasNext(); ) {
-                Object vertexId = iter.next();
-                submitForProcessing((Long) vertexId, manager);
-            }
+            submitVerticesToUpdate(manager);
 
             manager.drain();
         } finally {
@@ -119,10 +117,6 @@ public abstract class ConcurrentPatchProcessor {
                 LOG.error("ConcurrentPatchProcessor.execute(): interrupted during WorkItemManager shutdown.", e);
             }
         }
-    }
-
-    private void submitForProcessing(Long vertexId, WorkItemManager manager) {
-        manager.checkProduce(vertexId);
     }
 
     private static class ConsumerBuilder implements WorkItemBuilder<Consumer, Long> {
@@ -228,7 +222,4 @@ public abstract class ConcurrentPatchProcessor {
             }
         }
     }
-
-    protected abstract void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) throws AtlasBaseException;
-    protected abstract void prepareForExecution() throws AtlasBaseException;
 }
