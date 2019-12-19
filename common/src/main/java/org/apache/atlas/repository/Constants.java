@@ -146,14 +146,39 @@ public final class Constants {
     /**
      * search backing index name for vertex keys.
      */
-    public static final String VERTEX_INDEX = ApplicationProperties.SOLR_INDEX_SEARCH_VERTEX_NAME;
+
+    public static String VERTEX_INDEX = null;
+
+    static {
+        try {
+            VERTEX_INDEX = getStringProperty(ApplicationProperties.SOLR_INDEX_SEARCH_VERTEX_NAME);
+        } catch (AtlasException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * search backing index name for edge labels.
      */
-    public static final String EDGE_INDEX = ApplicationProperties.SOLR_INDEX_SEARCH_EDGE_NAME;
+    public static String EDGE_INDEX = null;
 
-    public static final String FULLTEXT_INDEX = ApplicationProperties.SOLR_INDEX_SEARCH_FULLTEXT_NAME;
+    static {
+        try {
+            EDGE_INDEX = getStringProperty(ApplicationProperties.SOLR_INDEX_SEARCH_EDGE_NAME);
+        } catch (AtlasException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static String FULLTEXT_INDEX = null;
+
+    static {
+        try {
+            FULLTEXT_INDEX = getStringProperty(ApplicationProperties.SOLR_INDEX_SEARCH_FULLTEXT_NAME);
+        } catch (AtlasException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static final String QUALIFIED_NAME                          = "Referenceable.qualifiedName";
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
@@ -211,6 +236,10 @@ public final class Constants {
     private Constants() {
     }
 
+    private static String getStringProperty(String key) throws AtlasException {
+        Configuration atlasProperties = ApplicationProperties.get();
+        return atlasProperties.getString(key);
+    }
     private static String getEncodedTypePropertyKey(String defaultKey) {
         try {
             Configuration configuration = ApplicationProperties.get();
