@@ -338,16 +338,18 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         //set index names for vertex/edge/fulltext
         if(indexBackend.equalsIgnoreCase(INDEX_BACKEND_SOLR)) {
 
+            Configuration conf = ApplicationProperties.get();
+
             clearPropertyDirect(SOLR_INDEX_SEARCH_EDGE_NAME);
-            addPropertyDirect(SOLR_INDEX_SEARCH_EDGE_NAME, getString(SOLR_INDEX_SEARCH_EDGE_NAME, "edge_index") );
-            LOG.info("Using Solr edge index name " + getString(SOLR_INDEX_SEARCH_EDGE_NAME, "edge_index") );
+            addPropertyDirect(SOLR_INDEX_SEARCH_EDGE_NAME, conf.getString(SOLR_INDEX_SEARCH_EDGE_NAME, "edge_index") );
+            LOG.info("Using Solr edge index name " + conf.getString(SOLR_INDEX_SEARCH_EDGE_NAME, "edge_index") );
 
             clearPropertyDirect(SOLR_INDEX_SEARCH_FULLTEXT_NAME);
-            addPropertyDirect(SOLR_INDEX_SEARCH_FULLTEXT_NAME, getString(SOLR_INDEX_SEARCH_FULLTEXT_NAME, "fulltext_index") );
-            LOG.info("Using Solr fulltext index name " + getString(SOLR_INDEX_SEARCH_FULLTEXT_NAME, "edge_index") );
+            addPropertyDirect(SOLR_INDEX_SEARCH_FULLTEXT_NAME, conf.getString(SOLR_INDEX_SEARCH_FULLTEXT_NAME, "fulltext_index") );
+            LOG.info("Using Solr fulltext index name " + conf.getString(SOLR_INDEX_SEARCH_FULLTEXT_NAME, "edge_index") );
 
             clearPropertyDirect(SOLR_INDEX_SEARCH_VERTEX_NAME);
-            addPropertyDirect(SOLR_INDEX_SEARCH_VERTEX_NAME, getString(SOLR_INDEX_SEARCH_VERTEX_NAME, "vertex_index") );
+            addPropertyDirect(SOLR_INDEX_SEARCH_VERTEX_NAME, conf.getString(SOLR_INDEX_SEARCH_VERTEX_NAME, "vertex_index") );
             LOG.info("Using Solr vertex index name " + getString(SOLR_INDEX_SEARCH_VERTEX_NAME, "edge_index") );
         }
 
