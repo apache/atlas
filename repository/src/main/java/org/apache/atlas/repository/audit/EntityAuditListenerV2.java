@@ -44,6 +44,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -172,6 +173,28 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
+    public void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(classifications)) {
+            MetricRecorder           metric = RequestContext.get().startMetricRecord("entityAudit");
+            List<EntityAuditEventV2> events = Collections.synchronizedList(new ArrayList<>());
+
+            for (AtlasClassification classification : classifications) {
+                for (AtlasEntity entity : entities) {
+                    if (entity.getGuid().equals(classification.getEntityGuid())) {
+                        events.add(createEvent(entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification)));
+                    } else {
+                        events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification)));
+                    }
+                }
+            }
+
+            auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
     public void onClassificationsUpdated(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
@@ -211,6 +234,28 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                     events.add(createEvent(entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName()));
                 } else {
                     events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName()));
+                }
+            }
+
+            auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(classifications) && CollectionUtils.isNotEmpty(entities)) {
+            MetricRecorder           metric = RequestContext.get().startMetricRecord("entityAudit");
+            List<EntityAuditEventV2> events = Collections.synchronizedList(new ArrayList<>());
+
+            for (AtlasClassification classification : classifications) {
+                for (AtlasEntity entity : entities) {
+                    if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
+                        events.add(createEvent(entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName()));
+                    } else {
+                        events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName()));
+                    }
                 }
             }
 

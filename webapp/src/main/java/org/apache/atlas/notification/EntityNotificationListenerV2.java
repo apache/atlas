@@ -107,6 +107,11 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
+    public void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
+        notifyEntityEvents(entities, CLASSIFICATION_ADD);
+    }
+
+    @Override
     public void onClassificationsUpdated(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         Map<String, List<AtlasClassification>> addedPropagations   = RequestContext.get().getAddedPropagations();
         Map<String, List<AtlasClassification>> removedPropagations = RequestContext.get().getRemovedPropagations();
@@ -121,6 +126,11 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_DELETE);
+    }
+
+    @Override
+    public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
+        notifyEntityEvents(entities, CLASSIFICATION_DELETE);
     }
 
     @Override
