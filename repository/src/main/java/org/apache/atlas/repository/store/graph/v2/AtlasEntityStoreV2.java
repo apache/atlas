@@ -631,6 +631,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.debug("Updating classifications={} for entity={}", classifications, guid);
         }
 
+        AtlasPerfTracer perf = null;
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            AtlasPerfTracer.getPerfTracer(PERF_LOG, "AtlasEntityStoreV2.updateClassification()");
+        }
+
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid not specified");
         }
@@ -663,6 +669,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         entityGraphMapper.updateClassifications(context, guid, classifications);
+
+        AtlasPerfTracer.log(perf);
     }
 
     @Override

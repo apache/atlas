@@ -74,6 +74,15 @@ public interface EntityChangeListenerV2 {
     void onClassificationsAdded(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException;
 
     /**
+     * This is upon adding new classifications to entities.
+     *
+     * @param entities              list of entities
+     * @param classifications classifications that are to be added to entities
+     * @throws AtlasBaseException if the listener notification fails
+     */
+    void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException;
+
+    /**
      * This is upon updating classifications to an entity.
      *
      * @param entity          the entity
@@ -90,6 +99,15 @@ public interface EntityChangeListenerV2 {
      * @throws AtlasBaseException if the listener notification fails
      */
     void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException;
+
+    /**
+     * This is upon deleting classifications from entities.
+     *
+     * @param entities              list of entities
+     * @param classifications classifications that needs to be deleted from entities
+     * @throws AtlasBaseException if the listener notification fails
+     */
+    void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException;
 
     /**
      * This is upon adding a new term to an entity.
