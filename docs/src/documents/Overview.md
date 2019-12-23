@@ -1,14 +1,10 @@
 ---
-name: Introduction
+name: Overview
 route: /
-menu: Introduction 
+menu: Overview
 ---
 
-# Introduction
-
-Atlas is Data Governance and Metadata framework for Hadoop
-
-## Overview
+# Overview
 
 Atlas is a scalable and extensible set of core foundational governance services – enabling
 enterprises to effectively and efficiently meet their compliance requirements within Hadoop and
