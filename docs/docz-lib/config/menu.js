@@ -1,5 +1,5 @@
 export default [
-    "Introduction",
+    "Overview",
     {
         name: "Documentation",
         menu: [
