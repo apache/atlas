@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,7 +28,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.SecurityUtil;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.client.KerberosAuthenticator;
@@ -39,7 +38,6 @@ import org.apache.hadoop.security.authentication.server.KerberosAuthenticationHa
 import org.apache.hadoop.security.authentication.util.Signer;
 import org.apache.hadoop.security.authentication.util.SignerException;
 import org.apache.hadoop.security.authentication.util.SignerSecretProvider;
-import org.apache.hadoop.security.authorize.AuthorizationException;
 import org.apache.hadoop.security.authorize.ProxyUsers;
 import org.apache.log4j.NDC;
 import org.slf4j.Logger;
@@ -53,9 +51,18 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.stereotype.Component;
-
-import javax.servlet.*;
-import javax.servlet.http.*;
+import org.apache.hadoop.security.UserGroupInformation;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -66,6 +73,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.hadoop.security.authorize.AuthorizationException;
 
 
 /**
@@ -77,24 +85,25 @@ import java.util.regex.Pattern;
 public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
 
-    private static final String CONFIG_KERBEROS_TOKEN_VALIDITY = "atlas.authentication.method.kerberos.token.validity";
-    private static final String CONFIG_PROXY_USERS = "atlas.proxyusers";
-    private static final String PREFIX = "atlas.authentication.method";
-    private static final String[] DEFAULT_PROXY_USERS = new String[]{"knox"};
-    private static final String CONF_PROXYUSER_PREFIX = "atlas.proxyuser";
-    protected static final ServletContext nullContext = new NullServletContext();
+    private   static final String         CONFIG_KERBEROS_TOKEN_VALIDITY = "atlas.authentication.method.kerberos.token.validity";
+    private   static final String         CONFIG_PROXY_USERS    = "atlas.proxyusers";
+    private   static final String         PREFIX                = "atlas.authentication.method";
+    private   static final String[]       DEFAULT_PROXY_USERS   = new String[] { "knox" };
+    private   static final String         CONF_PROXYUSER_PREFIX = "atlas.proxyuser";
+    protected static final ServletContext nullContext           = new NullServletContext();
 
-    private Signer signer;
+    private Signer               signer;
     private SignerSecretProvider secretProvider;
-    private final boolean isKerberos = AuthenticationUtil.isKerberosAuthenticationEnabled();
-    private boolean isInitializedByTomcat;
-    private Set<Pattern> browserUserAgents;
-    private boolean supportKeyTabBrowserLogin = false;
-    private Configuration configuration;
-    private Properties headerProperties;
-    private Set<String> atlasProxyUsers = new HashSet<>();
-    private HttpServlet optionsServlet;
-    private boolean supportTrustedProxy = false;
+    private final boolean        isKerberos = AuthenticationUtil.isKerberosAuthenticationEnabled();
+    private boolean              isInitializedByTomcat;
+    private Set<Pattern>         browserUserAgents;
+    private boolean              supportKeyTabBrowserLogin = false;
+    private Configuration        configuration;
+    private Properties           headerProperties;
+    private Set<String>          atlasProxyUsers = new HashSet<>();
+    private HttpServlet          optionsServlet;
+    private boolean              supportTrustedProxy = false;
+
 
 
     public AtlasAuthenticationFilter() {
@@ -119,8 +128,8 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     public void init(FilterConfig filterConfig) throws ServletException {
         LOG.info("==> AtlasAuthenticationFilter.init");
 
-        final FilterConfig globalConf = filterConfig;
-        final Map<String, String> params = new HashMap<>();
+        final FilterConfig        globalConf = filterConfig;
+        final Map<String, String> params     = new HashMap<>();
         try {
             configuration = ApplicationProperties.get();
         } catch (Exception e) {
@@ -133,7 +142,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
         String tokenValidityStr = null;
 
-        if (configuration != null) {
+        if(configuration != null) {
             tokenValidityStr = configuration.getString(CONFIG_KERBEROS_TOKEN_VALIDITY);
         }
 
@@ -321,8 +330,8 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         final HttpServletRequest httpRequest = (HttpServletRequest) request;
 
         try {
-            Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
-            HttpServletResponse httpResponse = (HttpServletResponse) response;
+            Authentication              existingAuth    = SecurityContextHolder.getContext().getAuthentication();
+            HttpServletResponse         httpResponse    = (HttpServletResponse) response;
             AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
 
             HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_FRAME_OPTIONS_KEY);
@@ -336,11 +345,10 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                 }
             }
 
-            if (((HttpServletRequest) request).getMethod().equals(HttpMethod.OPTIONS)) {
+            if (((HttpServletRequest) request).getMethod().equals(HttpMethod.OPTIONS)){
                 ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_ACCEPTED);
                 return;
             }
-
             if (existingAuth == null) {
                 String authHeader = httpRequest.getHeader("Authorization");
 
@@ -363,6 +371,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     }
 
 
+
     /**
      * This method is copied from hadoop auth lib, code added for error handling and fallback to other auth methods
      *
@@ -377,18 +386,18 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
      * @throws ServletException thrown if a processing error occurred.
      */
     private void doKerberosAuth(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
-        KerberosFilterChainWrapper filterChainWrapper = new KerberosFilterChainWrapper(request, response, filterChain);
-        boolean unauthorizedResponse = true;
-        int errCode = HttpServletResponse.SC_UNAUTHORIZED;
-        AuthenticationException authenticationEx = null;
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
-        HttpServletResponse httpResponse = (HttpServletResponse) response;
-        boolean isHttps = "https".equals(httpRequest.getScheme());
-        AuthenticationHandler authHandler = getAuthenticationHandler();
+        KerberosFilterChainWrapper filterChainWrapper   = new KerberosFilterChainWrapper(request, response, filterChain);
+        boolean                    unauthorizedResponse = true;
+        int                        errCode              = HttpServletResponse.SC_UNAUTHORIZED;
+        AuthenticationException    authenticationEx     = null;
+        HttpServletRequest         httpRequest          = (HttpServletRequest) request;
+        HttpServletResponse        httpResponse         = (HttpServletResponse) response;
+        boolean                    isHttps              = "https".equals(httpRequest.getScheme());
+        AuthenticationHandler      authHandler          = getAuthenticationHandler();
         String doAsUser = supportTrustedProxy ? Servlets.getDoAsUser(httpRequest) : null;
 
         try {
-            boolean newToken = false;
+            boolean             newToken = false;
             AuthenticationToken token;
 
             try {
@@ -397,7 +406,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                 LOG.warn("AuthenticationToken ignored: {}", ex);
                 // will be sent back in a 401 unless filter authenticates
                 authenticationEx = ex;
-                token = null;
+                token            = null;
             }
 
             if (authHandler.managementOperation(token, httpRequest, httpResponse)) {
@@ -464,8 +473,8 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
                             }
                         }
-                    } else if (StringUtils.isNotBlank(httpRequest.getRemoteUser()) && atlasProxyUsers.contains(httpRequest.getRemoteUser())) {
-                        LOG.info("Ignoring kerberos login from proxy user " + httpRequest.getRemoteUser());
+                    } else if(StringUtils.isNotBlank(httpRequest.getRemoteUser()) && atlasProxyUsers.contains(httpRequest.getRemoteUser())){
+                        LOG.info("Ignoring kerberos login from proxy user "+ httpRequest.getRemoteUser());
 
                         httpResponse.setHeader(KerberosAuthenticator.WWW_AUTHENTICATE, "");
                         httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -489,7 +498,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             LOG.warn("Authentication exception: {}", ex.getMessage(), ex);
 
             // exception from the filter itself is fatal
-            errCode = HttpServletResponse.SC_FORBIDDEN;
+            errCode          = HttpServletResponse.SC_FORBIDDEN;
             authenticationEx = ex;
         }
 
@@ -509,7 +518,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                     if (!isKerberosOnBrowser && isBrowser(httpRequest.getHeader("User-Agent"))) {
                         filterChain.doFilter(request, response);
                     } else {
-                        boolean chk = true;
+                        boolean            chk         = true;
                         Collection<String> headerNames = httpResponse.getHeaderNames();
 
                         for (String headerName : headerNames) {
@@ -550,7 +559,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
 
     private static String readUserFromCookie(HttpServletResponse response1) {
-        String userName = null;
+        String  userName    = null;
         boolean isCookieSet = response1.containsHeader("Set-Cookie");
 
         if (isCookieSet) {
@@ -680,23 +689,23 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
 
     private class KerberosFilterChainWrapper implements FilterChain {
-        private final ServletRequest request;
+        private final ServletRequest  request;
         private final ServletResponse response;
-        private final FilterChain filterChain;
+        private final FilterChain     filterChain;
 
         KerberosFilterChainWrapper(ServletRequest request, ServletResponse response, FilterChain filterChain) {
-            this.request = request;
-            this.response = response;
+            this.request     = request;
+            this.response    = response;
             this.filterChain = filterChain;
         }
 
         @Override
         public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse) throws IOException, ServletException {
-            final HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
+            final HttpServletRequest  httpRequest  = (HttpServletRequest) servletRequest;
             final HttpServletResponse httpResponse = (HttpServletResponse) servletResponse;
-            final Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
-            String loggedInUser = readUserFromCookie(httpResponse);
-            String userName = loggedInUser;
+            final Authentication      existingAuth = SecurityContextHolder.getContext().getAuthentication();
+            String                    loggedInUser = readUserFromCookie(httpResponse);
+            String                    userName     = loggedInUser;
 
             if (!StringUtils.isEmpty((String) httpRequest.getAttribute("proxyUser"))) {
                 userName = (String) httpRequest.getAttribute("proxyUser");
@@ -705,10 +714,10 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             }
 
             if ((existingAuth == null || !existingAuth.isAuthenticated()) && !StringUtils.isEmpty(userName)) {
-                final List<GrantedAuthority> grantedAuths = AtlasAuthenticationProvider.getAuthoritiesFromUGI(userName);
-                final UserDetails principal = new User(userName, "", grantedAuths);
-                final Authentication finalAuthentication = new UsernamePasswordAuthenticationToken(principal, "", grantedAuths);
-                final WebAuthenticationDetails webDetails = new WebAuthenticationDetails(httpRequest);
+                final List<GrantedAuthority>   grantedAuths        = AtlasAuthenticationProvider.getAuthoritiesFromUGI(userName);
+                final UserDetails              principal           = new User(userName, "", grantedAuths);
+                final Authentication           finalAuthentication = new UsernamePasswordAuthenticationToken(principal, "", grantedAuths);
+                final WebAuthenticationDetails webDetails          = new WebAuthenticationDetails(httpRequest);
 
                 ((AbstractAuthenticationToken) finalAuthentication).setDetails(webDetails);
 
@@ -743,9 +752,9 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     }
 
     private org.apache.hadoop.conf.Configuration getProxyuserConfiguration() {
-        org.apache.hadoop.conf.Configuration ret = new org.apache.hadoop.conf.Configuration(false);
+        org.apache.hadoop.conf.Configuration ret  = new org.apache.hadoop.conf.Configuration(false);
 
-        if (configuration != null) {
+        if(configuration!=null) {
             Properties props = ConfigurationConverter.getProperties(configuration.subset(CONF_PROXYUSER_PREFIX));
 
             for (String key : props.stringPropertyNames()) {
