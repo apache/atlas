@@ -63,6 +63,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -343,11 +344,9 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                     responseWrapper.setHeader(headerKey, headerProperties.getProperty(headerKey));
                 }
             }
-            if (((HttpServletRequest) request).getMethod().equals("OPTIONS")){
 
-
+            if (((HttpServletRequest) request).getMethod().equals(HttpMethod.OPTIONS)){
                 ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_ACCEPTED);
-
                 return;
             }
             if (existingAuth == null) {
