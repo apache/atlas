@@ -190,7 +190,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
 
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         //@formatter:off
-        httpSecurity.cors().and()
+        httpSecurity
                 .authorizeRequests().anyRequest().authenticated()
                 .and()
                     .headers()
@@ -315,15 +315,5 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         KeycloakAuthenticationProcessingFilter filter = new KeycloakAuthenticationProcessingFilter(authenticationManagerBean(), KEYCLOAK_REQUEST_MATCHER);
         filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy());
         return filter;
-    }
-
-    @Bean
-    public WebMvcConfigurer corsConfigurer(){
-        return new WebMvcConfigurerAdapter() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**");
-            }
-        };
     }
 }
