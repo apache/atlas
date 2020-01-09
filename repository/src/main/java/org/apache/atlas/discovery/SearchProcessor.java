@@ -404,7 +404,7 @@ public abstract class SearchProcessor {
                     }
 
                     ret = false;
-                } else if (hasIndexQuerySpecialChar(filterCriteria.getAttributeValue())) {
+                } else if (hasIndexQuerySpecialChar(filterCriteria.getAttributeValue()) && !isPipeSeparatedSystemAttribute(filterCriteria.getAttributeName())) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("special characters found in filter value {}, deferring to in-memory or graph query (might cause poor performance)", filterCriteria.getAttributeValue());
                     }
