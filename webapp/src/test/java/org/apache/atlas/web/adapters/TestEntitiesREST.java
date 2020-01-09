@@ -26,6 +26,7 @@ import static org.apache.atlas.TestUtilsV2.PII;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
 import static org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition.AND;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
@@ -151,6 +152,35 @@ public class TestEntitiesREST {
         Assert.assertNotNull(entities);
         Assert.assertEquals(entities.size(), 1);
         verifyAttributes(entities);
+    }
+
+    @Test
+    public void testCustomAttributesSearch() throws Exception {
+
+        AtlasEntity dbWithCustomAttr = new AtlasEntity(dbEntity);
+        HashMap customAttr = new HashMap<String, String>() {{
+            put("key1", "value1");
+        }};
+        dbWithCustomAttr.setCustomAttributes(customAttr);
+        AtlasEntitiesWithExtInfo atlasEntitiesWithExtInfo = new AtlasEntitiesWithExtInfo(dbWithCustomAttr);
+        EntityMutationResponse response = entityREST.createOrUpdate(atlasEntitiesWithExtInfo);
+
+        Assert.assertNotNull(response.getUpdatedEntitiesByTypeName(DATABASE_TYPE));
+
+        searchParameters = new SearchParameters();
+        searchParameters.setTypeName("_ALL_ENTITY_TYPES");
+        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
+
+        fc.setAttributeName(CUSTOM_ATTRIBUTES_PROPERTY_KEY);
+        fc.setOperator(SearchParameters.Operator.EQ);
+        fc.setAttributeValue("\"key1:value1\"");
+
+        searchParameters.setEntityFilters(fc);
+
+        AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
+
+        Assert.assertNotNull(res.getEntities());
+        Assert.assertEquals(res.getEntities().size(), 1);
     }
 
     @Test
