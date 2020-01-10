@@ -23,6 +23,7 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasNamespaceDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -192,6 +193,15 @@ public class AtlasTypeRegistry {
         return registryData.classificationDefs.getTypeByName(name);
     }
 
+    public Collection<AtlasNamespaceType> getAllNamespaceTypes() {
+        return registryData.namespaceDefs.getAllTypes();
+    }
+
+    public Collection<AtlasNamespaceDef> getAllNamespaceDefs() {
+        return registryData.namespaceDefs.getAll();
+    }
+
+
     public Collection<AtlasRelationshipDef> getAllRelationshipDefs() { return registryData.relationshipDefs.getAll(); }
 
     public Collection<AtlasEntityDef> getAllEntityDefs() { return registryData.entityDefs.getAll(); }
@@ -217,6 +227,15 @@ public class AtlasTypeRegistry {
     public AtlasRelationshipDef getRelationshipDefByName(String name) {
         return registryData.relationshipDefs.getTypeDefByName(name);
     }
+
+    public AtlasNamespaceDef getNamespaceDefByGuid(String guid) {
+        return registryData.namespaceDefs.getTypeDefByGuid(guid);
+    }
+
+    public AtlasNamespaceDef getNamespaceDefByName(String name) {
+        return registryData.namespaceDefs.getTypeDefByName(name);
+    }
+
     public AtlasRelationshipType getRelationshipTypeByName(String name) { return registryData.relationshipDefs.getTypeByName(name); }
 
     public AtlasTransientTypeRegistry lockTypeRegistryForUpdate() throws AtlasBaseException {
@@ -271,6 +290,7 @@ public class AtlasTypeRegistry {
         final TypeDefCache<AtlasClassificationDef, AtlasClassificationType>   classificationDefs;
         final TypeDefCache<AtlasEntityDef, AtlasEntityType>                   entityDefs;
         final TypeDefCache<AtlasRelationshipDef, AtlasRelationshipType>       relationshipDefs;
+        final TypeDefCache<AtlasNamespaceDef, AtlasNamespaceType>             namespaceDefs;
         final TypeDefCache<? extends AtlasBaseTypeDef, ? extends AtlasType>[] allDefCaches;
 
         RegistryData() {
@@ -280,7 +300,9 @@ public class AtlasTypeRegistry {
             classificationDefs = new TypeDefCache<>(allTypes);
             entityDefs         = new TypeDefCache<>(allTypes);
             relationshipDefs   = new TypeDefCache<>(allTypes);
-            allDefCaches       = new TypeDefCache[] { enumDefs, structDefs, classificationDefs, entityDefs, relationshipDefs };
+            namespaceDefs      = new TypeDefCache<>(allTypes);
+            allDefCaches       = new TypeDefCache[] { enumDefs, structDefs, classificationDefs, entityDefs,
+                    relationshipDefs, namespaceDefs };
 
             init();
         }
@@ -339,6 +361,7 @@ public class AtlasTypeRegistry {
                 classificationDefs.updateGuid(typeName, guid);
                 entityDefs.updateGuid(typeName, guid);
                 relationshipDefs.updateGuid(typeName, guid);
+                namespaceDefs.updateGuid(typeName, guid);
             }
         }
 
@@ -349,6 +372,7 @@ public class AtlasTypeRegistry {
                 classificationDefs.removeTypeDefByGuid(guid);
                 entityDefs.removeTypeDefByGuid(guid);
                 relationshipDefs.removeTypeDefByGuid(guid);
+                namespaceDefs.removeTypeDefByGuid(guid);
             }
         }
 
@@ -359,6 +383,7 @@ public class AtlasTypeRegistry {
                 classificationDefs.removeTypeDefByName(typeName);
                 entityDefs.removeTypeDefByName(typeName);
                 relationshipDefs.removeTypeDefByName(typeName);
+                namespaceDefs.removeTypeDefByName(typeName);
             }
         }
 
@@ -369,7 +394,7 @@ public class AtlasTypeRegistry {
             classificationDefs.clear();
             entityDefs.clear();
             relationshipDefs.clear();
-
+            namespaceDefs.clear();
             init();
         }
     }
@@ -388,6 +413,7 @@ public class AtlasTypeRegistry {
             addTypesWithNoRefResolve(parent.getAllClassificationDefs());
             addTypesWithNoRefResolve(parent.getAllEntityDefs());
             addTypesWithNoRefResolve(parent.getAllRelationshipDefs());
+            addTypesWithNoRefResolve(parent.getAllNamespaceDefs());
 
             addedTypes.clear();
             updatedTypes.clear();
@@ -467,6 +493,7 @@ public class AtlasTypeRegistry {
                 addTypesWithNoRefResolve(typesDef.getClassificationDefs());
                 addTypesWithNoRefResolve(typesDef.getEntityDefs());
                 addTypesWithNoRefResolve(typesDef.getRelationshipDefs());
+                addTypesWithNoRefResolve(typesDef.getNamespaceDefs());
             }
 
             resolveReferences();
@@ -567,6 +594,7 @@ public class AtlasTypeRegistry {
                 updateTypesWithNoRefResolve(typesDef.getClassificationDefs());
                 updateTypesWithNoRefResolve(typesDef.getEntityDefs());
                 updateTypesWithNoRefResolve(typesDef.getRelationshipDefs());
+                updateTypesWithNoRefResolve(typesDef.getNamespaceDefs());
             }
 
             if (LOG.isDebugEnabled()) {
@@ -581,6 +609,7 @@ public class AtlasTypeRegistry {
                 removeTypesWithNoRefResolve(typesDef.getClassificationDefs());
                 removeTypesWithNoRefResolve(typesDef.getEntityDefs());
                 removeTypesWithNoRefResolve(typesDef.getRelationshipDefs());
+                removeTypesWithNoRefResolve(typesDef.getNamespaceDefs());
             }
 
             resolveReferences();
@@ -615,6 +644,9 @@ public class AtlasTypeRegistry {
                 case RELATIONSHIP:
                     registryData.relationshipDefs.removeTypeDefByName(typeDef.getName());
                     break;
+                case NAMESPACE:
+                    registryData.namespaceDefs.removeTypeDefByName(typeDef.getName());
+                    break;
             }
             deletedTypes.add(typeDef);
         }
@@ -635,6 +667,9 @@ public class AtlasTypeRegistry {
                     break;
                 case RELATIONSHIP:
                     registryData.relationshipDefs.removeTypeDefByGuid(typeDef.getGuid());
+                    break;
+                case NAMESPACE:
+                    registryData.namespaceDefs.removeTypeDefByGuid(typeDef.getGuid());
                     break;
             }
             deletedTypes.add(typeDef);
@@ -722,6 +757,9 @@ public class AtlasTypeRegistry {
                     AtlasRelationshipDef relationshipDef = (AtlasRelationshipDef) typeDef;
 
                     registryData.relationshipDefs.addType(relationshipDef, new AtlasRelationshipType(relationshipDef));
+                } else if (typeDef.getClass().equals(AtlasNamespaceDef.class)) {
+                    AtlasNamespaceDef namespaceDef = (AtlasNamespaceDef) typeDef;
+                    registryData.namespaceDefs.addType(namespaceDef, new AtlasNamespaceType(namespaceDef));
                 }
 
                 addedTypes.add(typeDef);
@@ -801,6 +839,11 @@ public class AtlasTypeRegistry {
 
                     registryData.relationshipDefs.removeTypeDefByGuid(guid);
                     registryData.relationshipDefs.addType(relationshipDef, new AtlasRelationshipType(relationshipDef));
+                } else if (typeDef.getClass().equals(AtlasNamespaceDef.class)) {
+                    AtlasNamespaceDef namespaceDef = (AtlasNamespaceDef) typeDef;
+
+                    registryData.namespaceDefs.removeTypeDefByGuid(guid);
+                    registryData.namespaceDefs.addType(namespaceDef, new AtlasNamespaceType(namespaceDef));
                 }
 
                 updatedTypes.add(typeDef);
@@ -843,6 +886,11 @@ public class AtlasTypeRegistry {
 
                     registryData.relationshipDefs.removeTypeDefByName(name);
                     registryData.relationshipDefs.addType(relationshipDef, new AtlasRelationshipType(relationshipDef));
+                } else if (typeDef.getClass().equals(AtlasNamespaceDef.class)) {
+                    AtlasNamespaceDef namespaceDef = (AtlasNamespaceDef) typeDef;
+
+                    registryData.namespaceDefs.removeTypeDefByName(name);
+                    registryData.namespaceDefs.addType(namespaceDef, new AtlasNamespaceType(namespaceDef));
                 }
 
                 updatedTypes.add(typeDef);

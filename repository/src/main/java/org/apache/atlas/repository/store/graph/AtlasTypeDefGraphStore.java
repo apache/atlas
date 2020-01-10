@@ -79,6 +79,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     protected abstract AtlasDefStore<AtlasRelationshipDef> getRelationshipDefStore(AtlasTypeRegistry typeRegistry);
 
+    protected abstract AtlasDefStore<AtlasNamespaceDef> getNamespaceDefStore(AtlasTypeRegistry typeRegistry);
+
     public AtlasTypeRegistry getTypeRegistry() { return typeRegistry; }
 
     @Override
@@ -97,7 +99,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                     getStructDefStore(ttr).getAll(),
                     getClassificationDefStore(ttr).getAll(),
                     getEntityDefStore(ttr).getAll(),
-                    getRelationshipDefStore(ttr).getAll());
+                    getRelationshipDefStore(ttr).getAll(),
+                    getNamespaceDefStore(ttr).getAll());
 
             rectifyTypeErrorsIfAny(typesDef);
 
@@ -185,6 +188,28 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @Override
     public AtlasRelationshipDef getRelationshipDefByGuid(String guid) throws AtlasBaseException {
         AtlasRelationshipDef ret = typeRegistry.getRelationshipDefByGuid(guid);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
+        }
+
+        return ret;
+    }
+
+    @Override
+    public AtlasNamespaceDef getNamespaceDefByName(String name) throws AtlasBaseException {
+        AtlasNamespaceDef ret = typeRegistry.getNamespaceDefByName(name);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+        }
+
+        return ret;
+    }
+
+    @Override
+    public AtlasNamespaceDef getNamespaceDefByGuid(String guid) throws AtlasBaseException {
+        AtlasNamespaceDef ret = typeRegistry.getNamespaceDefByGuid(guid);
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
@@ -325,12 +350,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @GraphTransaction
     public AtlasTypesDef createTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasTypeDefGraphStore.createTypesDef(enums={}, structs={}, classifications={}, entities={}, relationships={})",
+            LOG.debug("==> AtlasTypeDefGraphStore.createTypesDef(enums={}, structs={}, classifications={}, entities={}, relationships={}, namespaces={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
                     CollectionUtils.size(typesDef.getEntityDefs()),
-                    CollectionUtils.size(typesDef.getRelationshipDefs()));
+                    CollectionUtils.size(typesDef.getRelationshipDefs()),
+                    CollectionUtils.size(typesDef.getNamespaceDefs()));
         }
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
@@ -346,12 +372,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasTypeDefGraphStore.createTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={})",
+            LOG.debug("<== AtlasTypeDefGraphStore.createTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={}, namespaces={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
                     CollectionUtils.size(typesDef.getEntityDefs()),
-                    CollectionUtils.size(typesDef.getRelationshipDefs()));
+                    CollectionUtils.size(typesDef.getRelationshipDefs()),
+                    CollectionUtils.size(typesDef.getNamespaceDefs()));
         }
 
         return ret;
@@ -429,12 +456,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @GraphTransaction
     public AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships{})",
+            LOG.debug("==> AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships{}, namespaceDefs={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
                     CollectionUtils.size(typesDef.getEntityDefs()),
-                    CollectionUtils.size(typesDef.getRelationshipDefs()));
+                    CollectionUtils.size(typesDef.getRelationshipDefs()),
+                    CollectionUtils.size(typesDef.getNamespaceDefs()));
         }
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
@@ -459,12 +487,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={})",
+            LOG.debug("<== AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={}, namespaceDefs={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
                     CollectionUtils.size(typesDef.getEntityDefs()),
-                    CollectionUtils.size(typesDef.getRelationshipDefs()));
+                    CollectionUtils.size(typesDef.getRelationshipDefs()),
+                    CollectionUtils.size(typesDef.getNamespaceDefs()));
         }
 
         return ret;
@@ -475,12 +504,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @GraphTransaction
     public void deleteTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasTypeDefGraphStore.deleteTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={})",
+            LOG.debug("==> AtlasTypeDefGraphStore.deleteTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships={}, namespaceDefs={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
                     CollectionUtils.size(typesDef.getStructDefs()),
                     CollectionUtils.size(typesDef.getClassificationDefs()),
                     CollectionUtils.size(typesDef.getEntityDefs()),
-                    CollectionUtils.size(typesDef.getRelationshipDefs()));
+                    CollectionUtils.size(typesDef.getRelationshipDefs()),
+                    CollectionUtils.size(typesDef.getNamespaceDefs()));
         }
 
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
@@ -490,6 +520,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasDefStore<AtlasClassificationDef> classifiDefStore      = getClassificationDefStore(ttr);
         AtlasDefStore<AtlasEntityDef>         entityDefStore        = getEntityDefStore(ttr);
         AtlasDefStore<AtlasRelationshipDef>   relationshipDefStore  = getRelationshipDefStore(ttr);
+        AtlasDefStore<AtlasNamespaceDef>      namespaceDefStore     = getNamespaceDefStore(ttr);
 
         List<AtlasVertex> preDeleteStructDefs   = new ArrayList<>();
         List<AtlasVertex> preDeleteClassifiDefs = new ArrayList<>();
@@ -599,6 +630,16 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             }
         }
 
+        if (CollectionUtils.isNotEmpty(typesDef.getNamespaceDefs())) {
+            for (AtlasNamespaceDef namespaceDef : typesDef.getNamespaceDefs()) {
+                if (StringUtils.isNotBlank(namespaceDef.getGuid())) {
+                    namespaceDefStore.deleteByGuid(namespaceDef.getGuid(), null);
+                } else {
+                    namespaceDefStore.deleteByName(namespaceDef.getName(), null);
+                }
+            }
+        }
+
         // Remove all from
         ttr.removeTypesDef(typesDef);
 
@@ -631,6 +672,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             typesDef.setEnumDefs(Collections.singletonList((AtlasEnumDef) baseTypeDef));
         } else if (baseTypeDef instanceof AtlasRelationshipDef) {
             typesDef.setRelationshipDefs(Collections.singletonList((AtlasRelationshipDef) baseTypeDef));
+        } else if (baseTypeDef instanceof AtlasNamespaceDef) {
+            typesDef.setNamespaceDefs(Collections.singletonList((AtlasNamespaceDef) baseTypeDef));
         } else if (baseTypeDef instanceof AtlasStructDef) {
             typesDef.setStructDefs(Collections.singletonList((AtlasStructDef) baseTypeDef));
         }
@@ -673,6 +716,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             }
         }
 
+        for(AtlasNamespaceType namespaceType : typeRegistry.getAllNamespaceTypes()) {
+            if (searchPredicates.evaluate(namespaceType)) {
+                typesDef.getNamespaceDefs().add(namespaceType.getNamespaceDef());
+            }
+        }
+
         return typesDef;
     }
 
@@ -711,6 +760,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                 break;
             case RELATIONSHIP:
                 ret = ((AtlasRelationshipType) type).getRelationshipDef();
+                break;
+            case NAMESPACE:
+                ret = ((AtlasNamespaceType) type).getNamespaceDef();
                 break;
             case PRIMITIVE:
             case OBJECT_ID_TYPE:
@@ -838,11 +890,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasDefStore<AtlasClassificationDef> classifiDefStore      = getClassificationDefStore(ttr);
         AtlasDefStore<AtlasEntityDef>         entityDefStore        = getEntityDefStore(ttr);
         AtlasDefStore<AtlasRelationshipDef>   relationshipDefStore  = getRelationshipDefStore(ttr);
+        AtlasDefStore<AtlasNamespaceDef>      nameSpaceDefStore     = getNamespaceDefStore(ttr);
 
-        List<AtlasVertex> preCreateStructDefs   = new ArrayList<>();
-        List<AtlasVertex> preCreateClassifiDefs = new ArrayList<>();
-        List<AtlasVertex> preCreateEntityDefs   = new ArrayList<>();
+        List<AtlasVertex> preCreateStructDefs         = new ArrayList<>();
+        List<AtlasVertex> preCreateClassifiDefs       = new ArrayList<>();
+        List<AtlasVertex> preCreateEntityDefs         = new ArrayList<>();
         List<AtlasVertex> preCreateRelationshipDefs   = new ArrayList<>();
+        List<AtlasVertex> preCreateNamespaceDefs      = new ArrayList<>();
 
         // for enumerations run the create
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
@@ -877,6 +931,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
             for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
                 preCreateRelationshipDefs.add(relationshipDefStore.preCreate(relationshipDef));
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getNamespaceDefs())) {
+            for (AtlasNamespaceDef namespaceDef : typesDef.getNamespaceDefs()) {
+                preCreateNamespaceDefs.add(nameSpaceDefStore.preCreate(namespaceDef));
             }
         }
 
@@ -927,17 +987,30 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             }
         }
 
+        if (CollectionUtils.isNotEmpty(typesDef.getNamespaceDefs())) {
+            int i = 0;
+            for (AtlasNamespaceDef namespaceDef : typesDef.getNamespaceDefs()) {
+                AtlasNamespaceDef createdDef = nameSpaceDefStore.create(namespaceDef, preCreateNamespaceDefs.get(i));
+
+                ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
+
+                ret.getNamespaceDefs().add(createdDef);
+                i++;
+            }
+        }
+
         return ret;
     }
 
     private AtlasTypesDef updateGraphStore(AtlasTypesDef typesDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
         AtlasTypesDef ret = new AtlasTypesDef();
 
-        AtlasDefStore<AtlasEnumDef>           enumDefStore     = getEnumDefStore(ttr);
-        AtlasDefStore<AtlasStructDef>         structDefStore   = getStructDefStore(ttr);
-        AtlasDefStore<AtlasClassificationDef> classifiDefStore = getClassificationDefStore(ttr);
-        AtlasDefStore<AtlasEntityDef>         entityDefStore   = getEntityDefStore(ttr);
-        AtlasDefStore<AtlasRelationshipDef>   relationDefStore = getRelationshipDefStore(ttr);
+        AtlasDefStore<AtlasEnumDef>           enumDefStore      = getEnumDefStore(ttr);
+        AtlasDefStore<AtlasStructDef>         structDefStore    = getStructDefStore(ttr);
+        AtlasDefStore<AtlasClassificationDef> classifiDefStore  = getClassificationDefStore(ttr);
+        AtlasDefStore<AtlasEntityDef>         entityDefStore    = getEntityDefStore(ttr);
+        AtlasDefStore<AtlasRelationshipDef>   relationDefStore  = getRelationshipDefStore(ttr);
+        AtlasDefStore<AtlasNamespaceDef>      nameSpaceDefStore = getNamespaceDefStore(ttr);
 
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
@@ -966,6 +1039,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
             for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
                 ret.getRelationshipDefs().add(relationDefStore.update(relationshipDef));
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getNamespaceDefs())) {
+            for (AtlasNamespaceDef namespaceDef : typesDef.getNamespaceDefs()) {
+                ret.getNamespaceDefs().add(nameSpaceDefStore.update(namespaceDef));
             }
         }
 

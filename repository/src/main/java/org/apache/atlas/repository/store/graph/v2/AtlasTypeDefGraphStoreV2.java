@@ -19,17 +19,6 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-
-import static org.apache.atlas.repository.Constants.TYPE_CATEGORY_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.VERTEX_TYPE;
-
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
@@ -37,8 +26,12 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.*;
-import org.apache.atlas.repository.store.graph.*;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.AtlasDefStore;
+import org.apache.atlas.repository.store.graph.AtlasTypeDefGraphStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
@@ -50,6 +43,16 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.apache.atlas.repository.Constants.TYPE_CATEGORY_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.VERTEX_TYPE;
 
 
 /**
@@ -97,6 +100,10 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         return new AtlasRelationshipDefStoreV2(this, typeRegistry);
     }
 
+    @Override
+    protected AtlasDefStore<AtlasNamespaceDef> getNamespaceDefStore(AtlasTypeRegistry typeRegistry) {
+        return new AtlasNamespaceDefStoreV2(this, typeRegistry);
+    }
 
     @Override
     @GraphTransaction
@@ -490,6 +497,9 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
             case RELATIONSHIP:
                 return TypeCategory.RELATIONSHIP;
+
+            case NAMESPACE:
+                return TypeCategory.NAMESPACE;
         }
 
         return null;

@@ -47,6 +47,7 @@ public class AtlasTypesDef {
     private List<AtlasClassificationDef> classificationDefs;
     private List<AtlasEntityDef>         entityDefs;
     private List<AtlasRelationshipDef>   relationshipDefs;
+    private List<AtlasNamespaceDef>      namespaceDefs;
 
     public AtlasTypesDef() {
         enumDefs           = new ArrayList<>();
@@ -54,6 +55,7 @@ public class AtlasTypesDef {
         classificationDefs = new ArrayList<>();
         entityDefs         = new ArrayList<>();
         relationshipDefs   = new ArrayList<>();
+        namespaceDefs      = new ArrayList<>();
     }
 
     /**
@@ -66,7 +68,7 @@ public class AtlasTypesDef {
      */
     public AtlasTypesDef(List<AtlasEnumDef> enumDefs, List<AtlasStructDef> structDefs,
                          List<AtlasClassificationDef> classificationDefs, List<AtlasEntityDef> entityDefs) {
-       this(enumDefs, structDefs, classificationDefs, entityDefs,new ArrayList<AtlasRelationshipDef>());
+       this(enumDefs, structDefs, classificationDefs, entityDefs, new ArrayList<>(), new ArrayList<>());
     }
     /**
      * Create the TypesDef. This created definitions for each of the types.
@@ -81,12 +83,23 @@ public class AtlasTypesDef {
                          List<AtlasClassificationDef> classificationDefs,
                          List<AtlasEntityDef>         entityDefs,
                          List<AtlasRelationshipDef>   relationshipDefs) {
+        this(enumDefs, structDefs, classificationDefs, entityDefs, relationshipDefs, new ArrayList<>());
+    }
+
+    public AtlasTypesDef(List<AtlasEnumDef>           enumDefs,
+                         List<AtlasStructDef>         structDefs,
+                         List<AtlasClassificationDef> classificationDefs,
+                         List<AtlasEntityDef>         entityDefs,
+                         List<AtlasRelationshipDef>   relationshipDefs,
+                         List<AtlasNamespaceDef>      namespaceDefs) {
         this.enumDefs           = enumDefs;
         this.structDefs         = structDefs;
         this.classificationDefs = classificationDefs;
         this.entityDefs         = entityDefs;
         this.relationshipDefs   = relationshipDefs;
+        this.namespaceDefs      = namespaceDefs;
     }
+
     public List<AtlasEnumDef> getEnumDefs() {
         return enumDefs;
     }
@@ -125,6 +138,14 @@ public class AtlasTypesDef {
         this.relationshipDefs = relationshipDefs;
     }
 
+    public void setNamespaceDefs(List<AtlasNamespaceDef> namespaceDefs) {
+        this.namespaceDefs = namespaceDefs;
+    }
+
+    public List<AtlasNamespaceDef> getNamespaceDefs() {
+        return namespaceDefs;
+    }
+
     public boolean hasClassificationDef(String name) {
         return hasTypeDef(classificationDefs, name);
     }
@@ -144,6 +165,9 @@ public class AtlasTypesDef {
         return hasTypeDef(relationshipDefs, name);
     }
 
+    public boolean hasNamespaceDef(String name) {
+        return hasTypeDef(namespaceDefs, name);
+    }
 
     private <T extends AtlasBaseTypeDef> boolean hasTypeDef(Collection<T> typeDefs, String name) {
         if (CollectionUtils.isNotEmpty(typeDefs)) {
@@ -163,7 +187,8 @@ public class AtlasTypesDef {
                 CollectionUtils.isEmpty(structDefs) &&
                 CollectionUtils.isEmpty(classificationDefs) &&
                 CollectionUtils.isEmpty(entityDefs) &&
-                CollectionUtils.isEmpty(relationshipDefs);
+                CollectionUtils.isEmpty(relationshipDefs) &&
+                CollectionUtils.isEmpty(namespaceDefs);
     }
 
     public void clear() {
@@ -184,6 +209,10 @@ public class AtlasTypesDef {
         }
         if (relationshipDefs != null) {
             relationshipDefs.clear();
+        }
+
+        if (namespaceDefs != null) {
+            namespaceDefs.clear();
         }
     }
     public StringBuilder toString(StringBuilder sb) {
@@ -206,6 +235,8 @@ public class AtlasTypesDef {
         sb.append("}");
         sb.append("relationshipDefs={");
         AtlasBaseTypeDef.dumpObjects(relationshipDefs, sb);
+        sb.append("namespaceDefs={");
+        AtlasBaseTypeDef.dumpObjects(namespaceDefs, sb);
         sb.append("}");
 
         return sb;

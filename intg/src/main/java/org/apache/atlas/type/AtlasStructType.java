@@ -112,6 +112,10 @@ public class AtlasStructType extends AtlasType {
                 throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_TYPE_INVALID, getTypeName(), attributeDef.getName());
             }
 
+            if (attrType instanceof AtlasNamespaceType) {
+                throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_TYPE_INVALID, getTypeName(), attributeDef.getName());
+            }
+
             a.put(attributeDef.getName(), attribute);
         }
 
@@ -794,6 +798,26 @@ public class AtlasStructType extends AtlasType {
             this(definedInType, attrDef, attributeType, null, null);
         }
 
+        public AtlasAttribute(AtlasAttribute other) {
+            this.definedInType             = other.definedInType;
+            this.attributeType             = other.attributeType;
+            this.attributeDef              = other.attributeDef;
+            this.qualifiedName             = other.qualifiedName;
+            this.vertexPropertyName        = other.vertexPropertyName;
+            this.vertexUniquePropertyName  = other.vertexUniquePropertyName;
+            this.isOwnedRef                = other.isOwnedRef;
+            this.isObjectRef               = other.isObjectRef;
+            this.inverseRefAttributeName   = other.inverseRefAttributeName;
+            this.inverseRefAttribute       = other.inverseRefAttribute;
+            this.relationshipName          = other.relationshipName;
+            this.relationshipEdgeLabel     = other.relationshipEdgeLabel;
+            this.relationshipEdgeDirection = other.relationshipEdgeDirection;
+            this.isLegacyAttribute         = other.isLegacyAttribute;
+            this.indexFieldName            = other.indexFieldName;
+            this.isDynAttribute            = false;
+            this.isDynAttributeEvalTrigger = false;
+        }
+
         public AtlasStructType getDefinedInType() { return definedInType; }
 
         public AtlasStructDef getDefinedInDef() { return definedInType.getStructDef(); }
@@ -859,6 +883,27 @@ public class AtlasStructType extends AtlasType {
         public boolean getIsDynAttributeEvalTrigger() { return isDynAttributeEvalTrigger; }
 
         public void setIsDynAttributeEvalTrigger(boolean isDynAttributeEvalTrigger) { this.isDynAttributeEvalTrigger = isDynAttributeEvalTrigger; }
+
+        public Set<String> getOptionSet(String optionName) {
+            String      strValue = attributeDef.getOption(optionName);
+            Set<String> ret      = StringUtils.isBlank(strValue) ? null : AtlasType.fromJson(strValue, Set.class);
+
+            return ret;
+        }
+
+        public Integer getOptionInt(String optionName) {
+            String  strValue = attributeDef.getOption(optionName);
+            Integer ret      = StringUtils.isBlank(strValue) ? null : Integer.parseInt(strValue);
+
+            return ret;
+        }
+
+        public String getOptionString(String optionName) {
+            String  strValue = attributeDef.getOption(optionName);
+            String ret      = StringUtils.isBlank(strValue) ? null : strValue;
+
+            return ret;
+        }
 
         public static String getEdgeLabel(String property) {
             return "__" + property;

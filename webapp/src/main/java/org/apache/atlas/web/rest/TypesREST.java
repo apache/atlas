@@ -23,6 +23,7 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasNamespaceDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
@@ -317,6 +318,43 @@ public class TypesREST {
 
         return ret;
     }
+
+    /**
+     * Get the namespace definition for the given guid
+     * @param guid namespace guid
+     * @return namespace definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the namespace definition by it's guid
+     * @HTTP 404 On Failed lookup for the given guid
+     */
+    @GET
+    @Path("/namespacedef/guid/{guid}")
+    public AtlasNamespaceDef getNamespaceDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
+        AtlasNamespaceDef ret = typeDefStore.getNamespaceDefByGuid(guid);
+
+        return ret;
+    }
+
+    /**
+     * Get the namespace definition by it's name (unique)
+     * @param name namespace name
+     * @return namespace definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the namespace definition by it's name
+     * @HTTP 404 On Failed lookup for the given name
+     */
+    @GET
+    @Path("/namespacedef/name/{name}")
+    public AtlasNamespaceDef getNamespaceDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("name", name);
+
+        AtlasNamespaceDef ret = typeDefStore.getNamespaceDefByName(name);
+
+        return ret;
+    }
+
     /* Bulk API operation */
 
     /**

@@ -161,6 +161,11 @@ public enum AtlasErrorCode {
     INVALID_LABEL_LENGTH(400, "ATLAS-400-00-9B", "Invalid label: {0}, label size should not be greater than {1}"),
     INVALID_LABEL_CHARACTERS(400, "ATLAS-400-00-9C", "Invalid label: {0}, label should contain alphanumeric characters, '_' or '-'"),
     INVALID_PROPAGATION_TYPE(400, "ATLAS-400-00-9D", "Invalid propagation {0} for relationship-type={1}. Default value is {2}"),
+    DUPLICATE_NAMESPACE_ATTRIBUTE(400, "ATLAS-400-00-094", "Duplicate Namespace Attributes: {0} not allowed within the same namespace: {1}"),
+    APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED(400, "ATLAS-400-00-095", "Cannot remove applicableEntityTypes in Attribute Def: {1}, defined in namespace: {2}"),
+    NAMESPACE_DEF_MANDATORY_ATTRIBUTE_NOT_ALLOWED(400, "ATLAS-400-00-096", "{0}.{1} : namespaces can not have mandatory attribute"),
+    NAMESPACE_DEF_UNIQUE_ATTRIBUTE_NOT_ALLOWED(400, "ATLAS-400-00-097", "{0}.{1} : namespaces can not have unique attribute"),
+    NAMESPACE_DEF_ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-098", "{0}.{1}: invalid attribute type. Namespace attribute cannot be of type entity/classification/struct/namespace"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
