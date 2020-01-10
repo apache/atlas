@@ -652,8 +652,8 @@ public class HBaseBridge {
      * @return Unique qualified name to identify the Table instance in Atlas.
      */
     private static String getColumnFamilyQualifiedName(String metadataNamespace, String nameSpace, String tableName, String columnFamily) {
-        tableName = stripNameSpace(tableName.toLowerCase());
-        return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), tableName, columnFamily.toLowerCase(), metadataNamespace);
+        tableName = stripNameSpace(tableName);
+        return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace, tableName, columnFamily, metadataNamespace);
     }
 
     /**
@@ -664,8 +664,8 @@ public class HBaseBridge {
      * @return Unique qualified name to identify the Table instance in Atlas.
      */
     private static String getTableQualifiedName(String metadataNamespace, String nameSpace, String tableName) {
-        tableName = stripNameSpace(tableName.toLowerCase());
-        return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), tableName, metadataNamespace);
+        tableName = stripNameSpace(tableName);
+        return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace, tableName, metadataNamespace);
     }
 
     /**
@@ -675,7 +675,7 @@ public class HBaseBridge {
      * @return Unique qualified name to identify the HBase NameSpace instance in Atlas.
      */
     private static String getNameSpaceQualifiedName(String metadataNamespace, String nameSpace) {
-        return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace.toLowerCase(), metadataNamespace);
+        return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace, metadataNamespace);
     }
 
     private static String stripNameSpace(String tableName){
