@@ -37,7 +37,7 @@ define(['require'], function(require) {
         TERM_ADD: "Term Added",
         TERM_DELETE: "Term Deleted",
         LABEL_ADD: "Label(s) Added",
-        LABEL_DELETE:"Label(s) Deleted"
+        LABEL_DELETE: "Label(s) Deleted"
     }
 
     Enums.entityStateReadOnly = {
@@ -191,6 +191,24 @@ define(['require'], function(require) {
             "processedMessageCount": "number",
             "failedMessageCount": "number"
         }
+    };
+    Enums.systemAttributes = {
+        "__classificationNames": "Classification(s)",
+        "__createdBy": "Created By",
+        "__customAttributes": "User-defined attributes",
+        "__guid": "Guid",
+        "__isIncomplete": "IsIncomplete",
+        "__labels": "Label(s)",
+        "__modificationTimestamp": "Last Modified Timestamp",
+        "__modifiedBy": "Last Modified User",
+        "__propagatedClassificationNames": "Propagated Classification(s)",
+        "__state": "Status",
+        "__timestamp": "Created Timestamp",
+        "__typeName": "Type Name"
+    };
+    Enums.__isIncomplete = {
+        0: "false",
+        1: "true"
     };
     return Enums;
 });

@@ -565,7 +565,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             updateTabState: true
         });
     }
-    
+
     Utils.showTitleLoader = function(loaderEl, titleBoxEl) {
         loaderEl.css ? loaderEl.css({
             'display': 'block',

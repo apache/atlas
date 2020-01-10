@@ -495,14 +495,14 @@ define([
             });
             var classificationTreeData = that.isEmptyClassification ? listWithEmptyParents : listOfParents;
             var flatViewClassificaton = that.isEmptyClassification ? listWithEmptyParentsFlatView : flatViewList;
-            var classificationData = that.isGroupView
-                ? that.pushRootClassificationToJstree.call(that, classificationTreeData)
-                : that.pushRootClassificationToJstree.call(that, flatViewClassificaton);
+            var classificationData = that.isGroupView ?
+                that.pushRootClassificationToJstree.call(that, classificationTreeData) :
+                that.pushRootClassificationToJstree.call(that, flatViewClassificaton);
             return classificationData;
         },
         pushRootClassificationToJstree: function(data) {
             var rootClassification = Globals[Enums.addOnClassification[0]];
-            var isSelected = this.options.value && this.options.value.tag  ? this.options.value.tag == rootClassification.name : false;
+            var isSelected = this.options.value && this.options.value.tag ? this.options.value.tag == rootClassification.name : false;
             var rootClassificationNode = {
                 text: _.escape(rootClassification.name),
                 name: rootClassification.name,

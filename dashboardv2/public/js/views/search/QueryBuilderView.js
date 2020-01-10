@@ -83,15 +83,34 @@ define(['require',
                 }
                 return false;
             },
-            getObjDef: function(attrObj, rules, isGroup, groupType) {
+            getObjDef: function(attrObj, rules, isGroup, groupType, isSystemAttr) {
+                if (attrObj.name === "__classificationsText" || attrObj.name === "__historicalGuids") {
+                    return;
+                }
                 var obj = {
                     id: attrObj.name,
-                    label: _.escape(attrObj.name.capitalize() + " (" + attrObj.typeName + ")"),
+                    label: (Enums.systemAttributes[attrObj.name] ? Enums.systemAttributes[attrObj.name] : _.escape(attrObj.name.capitalize())) + " (" + attrObj.typeName + ")",
                     type: _.escape(attrObj.typeName)
                 };
                 if (isGroup) {
                     obj.optgroup = groupType;
                 }
+                if (isSystemAttr && attrObj.name === "__isIncomplete" || isSystemAttr && attrObj.name === "IsIncomplete") {
+                    obj.type = "boolean";
+                    obj.label = (Enums.systemAttributes[attrObj.name] ? Enums.systemAttributes[attrObj.name] : _.escape(attrObj.name.capitalize())) + " (boolean)";
+                    obj['input'] = 'select';
+                    obj['values'] = [{ 1: 'true' }, { 0: 'false' }];
+                    obj.operators = ['=', '!=', 'is_null', 'not_null'];
+                    return obj;
+                }
+                if (isSystemAttr && attrObj.name === "Status" || isSystemAttr && attrObj.name === "__state") {
+                    obj.label = (Enums.systemAttributes[attrObj.name] ? Enums.systemAttributes[attrObj.name] : _.escape(attrObj.name.capitalize())) + " (enum)";
+                    obj['input'] = 'select';
+                    obj['values'] = ['ACTIVE', 'DELETED'];
+                    obj.operators = ['=', '!='];
+                    return obj;
+                }
+
                 if (obj.type === "date") {
                     obj['plugin'] = 'daterangepicker';
                     obj['plugin_config'] = {
@@ -148,14 +167,14 @@ define(['require',
                     filters = [],
                     isGroupView = false,
                     placeHolder = '--Select Attribute--';
-                    if (this.attrObj.length > 0 && this.systemAttrArr.length > 0) {
-                        isGroupView = true;
-                    } else if (this.attrObj.length === 0 || this.systemAttrArr.length === 0) {
-                        isGroupView = false;
-                    }
-                    if (this.attrObj.length === 0) {
-                        placeHolder = '--Select System Attribute--';
-                    }
+                if (this.attrObj.length > 0 && this.systemAttrArr.length > 0) {
+                    isGroupView = true;
+                } else if (this.attrObj.length === 0 || this.systemAttrArr.length === 0) {
+                    isGroupView = false;
+                }
+                if (this.attrObj.length === 0) {
+                    placeHolder = '--Select System Attribute--';
+                }
                 if (this.value) {
                     var rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
                 }
@@ -167,7 +186,7 @@ define(['require',
                     }
                 });
                 _.each(this.systemAttrArr, function(obj) {
-                    var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'Select System Attribute');
+                    var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'Select System Attribute', true);
                     if (returnObj) {
                         filters.push(returnObj);
                     }

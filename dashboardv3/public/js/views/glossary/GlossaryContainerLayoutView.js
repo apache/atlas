@@ -61,7 +61,7 @@ define(['require',
             },
             manualRender: function(options) {
                 _.extend(this.options, options);
-                 this.renderGlossaryDetailLayoutView(this.options);
+                this.renderGlossaryDetailLayoutView(this.options);
             },
             onBeforeDestroy: function() {
                 this.options.categoryEvent.off("Success:Category")

@@ -103,11 +103,11 @@ define(['require',
                 return this.hasPreviousPage();
             },
             hasNext: function(options) {
-                    return this.hasNextPage();
-                }
-                /////////////////////////////
-                // End overriding methods //
-                /////////////////////////////
+                return this.hasNextPage();
+            }
+            /////////////////////////////
+            // End overriding methods //
+            /////////////////////////////
 
         },
         /** BaseCollection's Static Attributes */

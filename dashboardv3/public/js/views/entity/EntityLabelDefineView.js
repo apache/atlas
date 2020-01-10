@@ -87,7 +87,7 @@ define(['require',
                         }
                     });
                 } else {
-                    return []
+                    return [];
                 }
             };
             this.ui.addLabelOptions.select2({
@@ -118,7 +118,7 @@ define(['require',
                 return state.text;
             }
             if (!state.element) {
-                return $("<span>Add<strong> '" +  _.escape(state.text) + "'</strong></span>");
+                return $("<span>Add<strong> '" + _.escape(state.text) + "'</strong></span>");
             }
         },
         onChangeLabelChange: function() {

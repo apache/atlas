@@ -55,7 +55,7 @@ define(['require'], function(require) {
         },
         getAbbreviationMsg: function(abbrev, type) {
             var msg = abbrev ? "s were" : " was";
-            return  msg + this[type];
+            return msg + this[type];
         }
     };
     return Messages;

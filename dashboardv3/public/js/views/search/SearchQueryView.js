@@ -58,7 +58,7 @@ define(['require',
                     title: 'Attribute Filter',
                     content: this,
                     allowCancel: true,
-                    mainClass : 'modal-lg',
+                    mainClass: 'modal-lg',
                     okCloses: false,
                     buttons: [{
                             text: 'Cancel',

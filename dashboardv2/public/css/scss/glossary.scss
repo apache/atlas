@@ -20,33 +20,41 @@
 
 .jstree-default-dark {
     background: transparent !important;
+
     .jstree-anchor {
         width: calc(100% - 50px);
         overflow: hidden;
         text-overflow: ellipsis;
     }
+
     .jstree-children.jstree-children>li>a {
         max-width: 500px;
     }
+
     .jstree-clicked,
     .jstree-wholerow-clicked {
         background: $color_jungle_green_approx !important;
     }
+
     .jstree-hovered {
         background: $color_star_dust_approx;
     }
+
     .jstree-anchor {
         color: #dbdbdb;
     }
+
     .jstree-search {
         color: #fbfece !important
     }
+
     li[role="treeitem"] {
         .jstree-wholerow-clicked {
             .tools {
                 display: inline-block;
             }
         }
+
         .tools {
             display: none;
             position: absolute;

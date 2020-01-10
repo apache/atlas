@@ -51,8 +51,8 @@ define(['require',
                 zoomControl: "[data-id='zoomControl']",
                 boxClose: '[data-id="box-close"]',
                 noValueToggle: "[data-id='noValueToggle']",
-                relationshipDetails:".relationship-details",
-                noData:".no-data"
+                relationshipDetails: ".relationship-details",
+                noData: ".no-data"
             },
 
             /** ui events hash */

@@ -23,8 +23,9 @@ define([
     "utils/UrlLinks",
     "utils/CommonViewFunction",
     "collection/VSearchList",
+    'modules/Modal',
     "jstree"
-], function(require, SearchFilterBrowseLayoutViewTmpl, Utils, Globals, UrlLinks, CommonViewFunction, VSearchList) {
+], function(require, SearchFilterBrowseLayoutViewTmpl, Utils, Globals, UrlLinks, CommonViewFunction, VSearchList, Modal) {
     "use strict";
 
     var SearchFilterBrowseLayoutViewNew = Marionette.LayoutView.extend({
@@ -35,12 +36,11 @@ define([
             RGlossaryTreeRender: '[data-id="r_glossaryTreeRender"]',
             RClassificationTreeRender: '[data-id="r_classificationTreeRender"]',
             REntityTreeRender: '[data-id="r_entityTreeRender"]',
-            RCustomFilterTreeRender: '[data-id="r_customFilterTreeRender"]',
+            RCustomFilterTreeRender: '[data-id="r_customFilterTreeRender"]'
         },
         ui: {
             //search
             searchNode: '[data-id="searchNode"]',
-
             sliderBar: '[data-id="sliderBar"]',
             menuItems: ".menu-items"
         },
@@ -212,19 +212,19 @@ define([
         renderEntityTree: function(opt) {
             var that = this;
             require(["views/search/tree/EntityTreeLayoutView"], function(ClassificationTreeLayoutView) {
-                that.REntityTreeRender.show(new ClassificationTreeLayoutView(_.extend({ query: that.query }, that.options, {value: opt})));
+                that.REntityTreeRender.show(new ClassificationTreeLayoutView(_.extend({ query: that.query }, that.options, { value: opt })));
             });
         },
         renderClassificationTree: function(opt) {
             var that = this;
             require(["views/search/tree/ClassificationTreeLayoutView"], function(ClassificationTreeLayoutView) {
-                that.RClassificationTreeRender.show(new ClassificationTreeLayoutView(_.extend({ query: that.query }, that.options, {value: opt})));
+                that.RClassificationTreeRender.show(new ClassificationTreeLayoutView(_.extend({ query: that.query }, that.options, { value: opt })));
             });
         },
         renderGlossaryTree: function(opt) {
             var that = this;
             require(["views/search/tree/GlossaryTreeLayoutView"], function(GlossaryTreeLayoutView) {
-                that.RGlossaryTreeRender.show(new GlossaryTreeLayoutView(_.extend({ query: that.query }, that.options, {value: opt})));
+                that.RGlossaryTreeRender.show(new GlossaryTreeLayoutView(_.extend({ query: that.query }, that.options, { value: opt })));
             });
         },
         renderCustomFilterTree: function() {

@@ -23,8 +23,9 @@ define(['require',
     'utils/Globals',
     'utils/Enums',
     'collection/VSearchList',
-    'utils/CommonViewFunction'
-], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals, Enums, VSearchList, CommonViewFunction) {
+    'utils/CommonViewFunction',
+    'modules/Modal'
+], function(require, Backbone, SearchLayoutViewTmpl, Utils, UrlLinks, Globals, Enums, VSearchList, CommonViewFunction, Modal) {
     'use strict';
 
     var SearchLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -124,7 +125,7 @@ define(['require',
                     this.type = param.searchType;
                     this.updateQueryObject(param);
                 }
-                if ((this.value && this.value.type) || (this.value && this.value.tag &&  this.value.searchType === "basic")) {
+                if ((this.value && this.value.type) || (this.value && this.value.tag && this.value.searchType === "basic")) {
                     this.setInitialEntityVal = false;
                 } else {
                     this.setInitialEntityVal = true;
@@ -239,7 +240,7 @@ define(['require',
                     }
                 }
                 var tagCheck = function(filterObj, type) {
-                    var filterAddOn = Enums.addOnClassification.filter(function(a) { a !== Enums.addOnClassification[0]});
+                    var filterAddOn = Enums.addOnClassification.filter(function(a) { a !== Enums.addOnClassification[0] });
                     if (that.value.tag && !_.contains(filterAddOn, that.value.tag)) {
                         that.ui.tagAttrFilter.prop('disabled', false);
                         if (filterObj && filterObj.length) {
@@ -435,13 +436,17 @@ define(['require',
                 });
             },
             okAttrFilterButton: function(e) {
-                var isTag = this.attrModal.tag ? true : false,
+                var that = this,
+                    isTag = this.attrModal.tag ? true : false,
                     filtertype = isTag ? 'tagFilters' : 'entityFilters',
                     queryBuilderRef = this.attrModal.RQueryBuilder.currentView.ui.builder,
                     col = [];
 
                 function getIdFromRuleObject(rule) {
                     _.map(rule.rules, function(obj, key) {
+                        if (obj.id === "__state") {
+                            that.value.includeDE = (obj.value === "ACTIVE" && obj.operator === "=") || (obj.value === "DELETED" && obj.operator === "!=") ? false : true;
+                        }
                         if (_.has(obj, 'condition')) {
                             return getIdFromRuleObject(obj);
                         } else {

@@ -342,8 +342,12 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 }
             },
             getIdFromRuleObj: function(rule) {
-                var col = []
+                var that = this,
+                    col = [];
                 _.map(rule.rules, function(obj, key) {
+                    if (obj.id === "__state") {
+                        that.options.value.includeDE = (obj.value === "ACTIVE" && obj.operator === "=") || (obj.value === "DELETED" && obj.operator === "!=") ? false : true;
+                    }
                     if (_.has(obj, "condition")) {
                         return this.getIdFromRuleObj(obj);
                     } else {
