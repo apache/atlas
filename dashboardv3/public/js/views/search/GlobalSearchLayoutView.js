@@ -304,7 +304,7 @@ define(["require",
                                             var span = $("<span>" + getHighlightedTerm(item.itemText) + "</span>").prepend(img);
                                             li = $("<li class='with-icon'>").append(span);
                                         } else {
-                                            li = $("<li>").append("<span>" + getHighlightedTerm(item) + "</span>");
+                                            li = $("<li>").append("<span>" + _.escape(getHighlightedTerm(item)) + "</span>");
                                         }
                                         li.data("ui-autocomplete-item", item);
                                         if (searchItem.category) {

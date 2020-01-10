@@ -312,7 +312,7 @@ require(['App',
 
     Enums.addOnEntities.forEach(function(addOnEntity) {
         CommonViewFunction.fetchRootEntityAttributes({
-            url:  UrlLinks.rootEntityDefUrl(addOnEntity),
+            url: UrlLinks.rootEntityDefUrl(addOnEntity),
             entity: addOnEntity,
             callback: function() {
                 --that.asyncFetchCounter;
@@ -322,7 +322,7 @@ require(['App',
     });
 
     CommonViewFunction.fetchRootClassificationAttributes({
-        url:  UrlLinks.rootClassificationDefUrl(Enums.addOnClassification[0]),
+        url: UrlLinks.rootClassificationDefUrl(Enums.addOnClassification[0]),
         classification: Enums.addOnClassification[0],
         callback: function() {
             --that.asyncFetchCounter;

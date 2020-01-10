@@ -326,8 +326,8 @@ define([
                         });
                         _.each(Enums.addOnClassification, function(classificationName) {
                             if (classificationName === tagValidate) {
-                                        isTagPresent = true;
-                                    }
+                                isTagPresent = true;
+                            }
                         });
                         if (!isTagPresent) {
                             paramObj.tag = null;

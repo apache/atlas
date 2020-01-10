@@ -40,7 +40,7 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         enumDefApiUrl: function(name) {
             return this.getDefApiUrl('enum', name);
         },
-        metricsApiUrl: function(){
+        metricsApiUrl: function() {
             return this.baseUrl + '/admin/metrics'
         },
         rootEntityDefUrl: function(name) {
@@ -50,7 +50,8 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             return this.baseUrlV2 + '/types/classificationdef/name/' + name;
         },
         getDefApiUrl: function(type, name) {
-            var defApiUrl = this.typedefsUrl(), defUrl;
+            var defApiUrl = this.typedefsUrl(),
+                defUrl;
             if (name) {
                 defUrl = defApiUrl.def + '/name/' + name;
             } else {

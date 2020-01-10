@@ -99,8 +99,8 @@ define([
                     that.$(".tagPopover").popover("hide");
                     that[
                         $(this)
-                            .find("a")
-                            .data("fn")
+                        .find("a")
+                        .data("fn")
                     ](e);
                 });
             },
@@ -171,11 +171,11 @@ define([
                             .addClass("active");
                         if ($firstEl && $firstEl.length) {
                             url: $firstEl.attr("href"),
-                                Utils.setUrl({
-                                    url: $firstEl.attr("href"),
-                                    mergeBrowserUrl: false,
-                                    updateTabState: true
-                                });
+                            Utils.setUrl({
+                                url: $firstEl.attr("href"),
+                                mergeBrowserUrl: false,
+                                updateTabState: true
+                            });
                         }
                     } else {
                         var presentTag = this.collection.fullCollection.findWhere({ name: this.tag }),
@@ -203,9 +203,9 @@ define([
                             var target = $(this);
                             if (
                                 target
-                                    .children("div")
-                                    .find("a")
-                                    .text() === tag
+                                .children("div")
+                                .find("a")
+                                .text() === tag
                             ) {
                                 target.addClass("active");
                                 target
@@ -214,8 +214,7 @@ define([
                                     .removeClass("hide"); // Don't use toggle
                                 if (this.createTag || !manual) {
                                     if (target.offset()) {
-                                        $("#sidebar-wrapper").animate(
-                                            {
+                                        $("#sidebar-wrapper").animate({
                                                 scrollTop: target.offset().top - 100
                                             },
                                             500
@@ -308,9 +307,9 @@ define([
                             '">' +
                             name +
                             "</a></div>" +
-                            (isTree && hasChild
-                                ? '<ul class="child hide">' + that.generateTree({ data: options.children, isTree: isTree }) + "</ul>"
-                                : "") +
+                            (isTree && hasChild ?
+                                '<ul class="child hide">' + that.generateTree({ data: options.children, isTree: isTree }) + "</ul>" :
+                                "") +
                             "</li>"
                         );
                     };
@@ -468,8 +467,7 @@ define([
                         modal: true,
                         confirm: {
                             confirm: true,
-                            buttons: [
-                                {
+                            buttons: [{
                                     text: "Ok",
                                     addClass: "btn-atlas btn-md",
                                     click: function(notice) {
@@ -496,14 +494,12 @@ define([
                     }
                 }
                 this.json = {
-                    classificationDefs: [
-                        {
-                            name: this.name.trim(),
-                            description: this.description.trim(),
-                            superTypes: superTypes.length ? superTypes : [],
-                            attributeDefs: attributeObj
-                        }
-                    ],
+                    classificationDefs: [{
+                        name: this.name.trim(),
+                        description: this.description.trim(),
+                        superTypes: superTypes.length ? superTypes : [],
+                        attributeDefs: attributeObj
+                    }],
                     entityDefs: [],
                     enumDefs: [],
                     structDefs: []

@@ -59,7 +59,7 @@ define(['require',
                     title: 'Attribute Filter',
                     content: this,
                     allowCancel: true,
-                    mainClass : 'modal-lg',
+                    mainClass: 'modal-lg',
                     okCloses: false,
                     buttons: [{
                             text: 'Cancel',
@@ -115,7 +115,7 @@ define(['require',
                             attrMerge: true
                         });
                     }
-                    if (Globals[this.value.type] ||Globals[Enums.addOnEntities[0]]) {
+                    if (Globals[this.value.type] || Globals[Enums.addOnEntities[0]]) {
                         obj['systemAttrArr'] = (Globals[this.value.type] || Globals[Enums.addOnEntities[0]]).attributeDefs;
                     }
                 }

@@ -324,15 +324,15 @@ define([
 
                     var serviceTypeData = that.isEmptyServicetype ? serviceTypeWithEmptyEntity : serviceTypeArr;
                     if (that.isGroupView) {
-                        var serviceDataWithRootEntity = pushRootEntityToJstree.call(that,'group',serviceTypeData);
+                        var serviceDataWithRootEntity = pushRootEntityToJstree.call(that, 'group', serviceTypeData);
                         return getParentsData.call(that, serviceDataWithRootEntity);
                     } else {
-                        return pushRootEntityToJstree.call(that, null,serviceTypeData);
+                        return pushRootEntityToJstree.call(that, null, serviceTypeData);
                     }
                 },
                 pushRootEntityToJstree = function(type, data) {
                     var rootEntity = Globals[Enums.addOnEntities[0]];
-                    var isSelected = this.options.value && this.options.value.type  ? this.options.value.type == rootEntity.name : false;
+                    var isSelected = this.options.value && this.options.value.type ? this.options.value.type == rootEntity.name : false;
                     var rootEntityNode = {
                         text: _.escape(rootEntity.name),
                         name: rootEntity.name,
@@ -350,7 +350,7 @@ define([
                     };
                     if (type === 'group') {
                         if (data.other_types === undefined) {
-                            data.other_types = { name : "other_types", children: []};
+                            data.other_types = { name: "other_types", children: [] };
                         }
                         data.other_types.children.push(rootEntityNode);
                     } else {

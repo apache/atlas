@@ -383,9 +383,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     return '<span class="operator">' + obj.condition + '</span>' + '(' + objToString(obj).join("") + ')';
                 } else {
                     if (isCapsuleView) {
-                        return '<div class="capsuleView"><span class="key">' + _.escape(obj.id) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + _.escape(obj.value) + "</span><div class='fa fa-close clear-attr' data-type=" + type + " data-id=" + _.escape(obj.id) + "></div></div>";
+                        return '<div class="capsuleView"><span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + "</span><div class='fa fa-close clear-attr' data-type=" + type + " data-id=" + _.escape(obj.id) + "></div></div>";
                     }
-                    return '<span class="key">' + _.escape(obj.id) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + _.escape(obj.value) + "</span>";
+                    return '<span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span><span class="operator">' + _.escape(obj.operator) + '</span><span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + "</span>";
                 }
             });
             return generatedQuery;
@@ -487,7 +487,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 val = val.join(',');
                             } else if (k == "tagFilters") {
                                 if (classificationDefCollection) {
-                                    var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification }), attributeDefs = []
+                                    var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification }),
+                                        attributeDefs = []
                                     if (classificationDef) {
                                         Utils.getNestedSuperTypeObj({
                                             collection: classificationDefCollection,
@@ -502,7 +503,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
                             } else if (k == "entityFilters") {
                                 if (entityDefCollection) {
-                                    var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value[skey].typeName }), attributeDefs = [];
+                                    var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value[skey].typeName }),
+                                        attributeDefs = [];
                                     if (entityDef) {
                                         attributeDefs = Utils.getNestedSuperTypeObj({
                                             collection: entityDefCollection,
@@ -981,45 +983,43 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         });
         return list.join(',');
     }
-    CommonViewFunction.fetchRootEntityAttributes = function (options) {
-        $.ajax({
-            url: options.url,
-            methods: 'GET',
-            dataType: 'json',
-            delay: 250,
-            cache: true,
-            success: function(response) {
-                if (response) {
-                    var entity = Object.assign(response, { name: options.entity , guid: options.entity });
-                    Globals[options.entity] = entity;
+    CommonViewFunction.fetchRootEntityAttributes = function(options) {
+            $.ajax({
+                url: options.url,
+                methods: 'GET',
+                dataType: 'json',
+                delay: 250,
+                cache: true,
+                success: function(response) {
+                    if (response) {
+                        Globals[options.entity] = Object.assign(response, { name: options.entity, guid: options.entity });;
+                    }
+                },
+                complete: function(response) {
+                    if (options.callback) {
+                        options.callback(response);
+                    }
                 }
-            },
-            complete: function(response) {
-                if (options.callback) {
-                    options.callback(response);
+            });
+        },
+        CommonViewFunction.fetchRootClassificationAttributes = function(options) {
+            $.ajax({
+                url: options.url,
+                methods: 'GET',
+                dataType: 'json',
+                delay: 250,
+                cache: true,
+                success: function(response) {
+                    if (response) {
+                        Globals[options.classification] = Object.assign(response, { name: options.classification, guid: options.classification });
+                    }
+                },
+                complete: function(response) {
+                    if (options.callback) {
+                        options.callback(response);
+                    }
                 }
-            }
-        });
-    },
-    CommonViewFunction.fetchRootClassificationAttributes = function (options) {
-        $.ajax({
-            url: options.url,
-            methods: 'GET',
-            dataType: 'json',
-            delay: 250,
-            cache: true,
-            success: function(response) {
-                if (response) {
-                    var classification = Object.assign(response, { name: options.classification, guid: options.classification });
-                    Globals[options.classification] = classification;
-                }
-            },
-            complete: function(response) {
-                if (options.callback) {
-                    options.callback(response);
-                }
-            }
-        });
-    }
+            });
+        }
     return CommonViewFunction;
 });

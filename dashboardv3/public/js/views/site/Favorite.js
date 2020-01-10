@@ -41,10 +41,10 @@ define(['require',
             /** Layout sub regions */
             regions: {
                 RSaveSearchBasic: "[data-id='r_saveSearchBasic']",
-                RSaveSearchAdvance: "[data-id='r_saveSearchAdvance']"},
-            /** ui selector cache */
-            ui: {
+                RSaveSearchAdvance: "[data-id='r_saveSearchAdvance']"
             },
+            /** ui selector cache */
+            ui: {},
             /** ui events hash */
             events: function() {},
             /**
@@ -79,14 +79,14 @@ define(['require',
             },
             bindEvents: function() {},
             fetchMetricData: function(options) {
-               that.RSaveSearchBasic.show(new SaveSearchView(_.extend(obj, {
-                        isBasic: true,
-                        collection: saveSearchBaiscCollection.fullCollection
-                    })));
-                    that.RSaveSearchAdvance.show(new SaveSearchView(_.extend(obj, {
-                        isBasic: false,
-                        collection: saveSearchAdvanceCollection.fullCollection
-                    })));
+                that.RSaveSearchBasic.show(new SaveSearchView(_.extend(obj, {
+                    isBasic: true,
+                    collection: saveSearchBaiscCollection.fullCollection
+                })));
+                that.RSaveSearchAdvance.show(new SaveSearchView(_.extend(obj, {
+                    isBasic: false,
+                    collection: saveSearchAdvanceCollection.fullCollection
+                })));
             },
             onRender: function() {
                 this.fetchMetricData();

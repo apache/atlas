@@ -17,15 +17,15 @@
  */
 
 define(['require',
-'backbone',
-'hbs!tmpl/entity/EntityUserDefineView_tmpl',
-'models/VEntity',
-'utils/Utils',
-'utils/Enums',
-'utils/Messages',
-'utils/CommonViewFunction',
+    'backbone',
+    'hbs!tmpl/entity/EntityUserDefineView_tmpl',
+    'models/VEntity',
+    'utils/Utils',
+    'utils/Enums',
+    'utils/Messages',
+    'utils/CommonViewFunction',
 ], function(require, Backbone, EntityUserDefineView_tmpl, VEntity, Utils, Enums, Messages, CommonViewFunction) {
-'use strict';
+    'use strict';
 
     return Backbone.Marionette.LayoutView.extend({
         _viewName: 'EntityUserDefineView',
@@ -33,7 +33,7 @@ define(['require',
         templateHelpers: function() {
             return {
                 customAttibutes: this.customAttibutes,
-                readOnlyEntity : this.readOnlyEntity,
+                readOnlyEntity: this.readOnlyEntity,
                 swapItem: this.swapItem,
                 saveAttrItems: this.saveAttrItems,
                 divId_1: this.dynamicId_1,
@@ -57,19 +57,18 @@ define(['require',
             this.userDefineAttr = this.entity.customAttributes || [];
             this.initialCall = false;
             this.swapItem = false, this.saveAttrItems = false;
-            this.readOnlyEntity = this.customFilter === undefined ? Enums.entityStateReadOnly[this.entity.status] : this.customFilter ;
+            this.readOnlyEntity = this.customFilter === undefined ? Enums.entityStateReadOnly[this.entity.status] : this.customFilter;
             this.entityModel = new VEntity(this.entity);
             this.dynamicId_1 = CommonViewFunction.getRandomIdAndAnchor();
             this.dynamicId_2 = CommonViewFunction.getRandomIdAndAnchor();
             this.generateTableFields();
         },
-        onRender: function() {
-        },
+        onRender: function() {},
         renderEntityUserDefinedItems: function() {
             var that = this;
 
             require(['views/entity/EntityUserDefineItemView'], function(EntityUserDefineItemView) {
-                that.itemView = new EntityUserDefineItemView({items: that.customAttibutes});
+                that.itemView = new EntityUserDefineItemView({ items: that.customAttibutes });
                 that.REntityUserDefinedItemView.show(that.itemView);
             });
         },
@@ -103,29 +102,29 @@ define(['require',
                 });
             });
         },
-        onEditAttrClick: function () {
+        onEditAttrClick: function() {
             this.initialCall = this.customAttibutes.length > 0 ? false : true;
             this.setAttributeModal(this.itemView);
         },
-        structureAttributes: function (list) {
-            var obj={}
-            list.map(function (o) {
+        structureAttributes: function(list) {
+            var obj = {}
+            list.map(function(o) {
                 obj[o.key] = o.value;
             });
             return obj;
         },
-        saveAttributes: function (list) {
+        saveAttributes: function(list) {
             var that = this;
             var entityJson = that.entityModel.toJSON();
             var properties = that.structureAttributes(list);
             entityJson.customAttributes = properties;
-            var payload = {entity: entityJson};
+            var payload = { entity: entityJson };
             that.entityModel.createOreditEntity({
                 data: JSON.stringify(payload),
                 type: 'POST',
                 success: function() {
                     var msg = that.initialCall ? 'addSuccessMessage' : 'editSuccessMessage',
-                    caption = "One or more user-defined propertie"; // 's' will be added in abbreviation function
+                        caption = "One or more user-defined propertie"; // 's' will be added in abbreviation function
                     that.customAttibutes = list;
                     if (list.length === 0) {
                         msg = 'removeSuccessMessage';
@@ -138,14 +137,14 @@ define(['require',
                     that.saveAttrItems = false;
                     that.render();
                 },
-                error: function (e) {
+                error: function(e) {
                     that.initialCall = false;
                     Utils.notifySuccess({
                         content: e.message
                     });
                     that.ui.saveAttrItems.attr("disabled", false);
                 },
-                complete: function () {
+                complete: function() {
                     that.ui.saveAttrItems.attr("disabled", false);
                     that.initialCall = false;
                 }

@@ -228,10 +228,18 @@ hr.hr-filter {
 
 
 
-.searchTable{
-    &.noData{
-        .labelShowRecord,.inline[data-id="colManager"],.row.searach-result-pagination,table thead{
+.searchTable {
+    &.noData {
+
+        .labelShowRecord,
+        .inline[data-id="colManager"],
+        .row.searach-result-pagination,
+        table thead {
             display: none !important;
         }
     }
+}
+
+.filter-btn-wrapper {
+    padding-left: 0;
 }

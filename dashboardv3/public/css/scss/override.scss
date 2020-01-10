@@ -333,6 +333,7 @@ div.columnmanager-visibilitycontrol {
 div.columnmanager-dropdown-container {
     &.open {
         overflow: auto;
+        width: auto;
     }
 
     >li>span.column-label {

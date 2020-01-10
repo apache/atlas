@@ -60,16 +60,15 @@ define(['require',
          */
         initialize: function(options) {
             if (options.items.length === 0) {
-                this.items = [{ key: "", value: ""}];
+                this.items = [{ key: "", value: "" }];
             } else {
                 this.items = options.items;
             }
         },
-        onRender: function() {
-        },
+        onRender: function() {},
         onAddItemClick: function(e) {
             var el = e.currentTarget;
-            this.items.splice(parseInt(el.dataset.index) + 1, 0, { key: "", value: ""});
+            this.items.splice(parseInt(el.dataset.index) + 1, 0, { key: "", value: "" });
             this.render();
         },
         onDeleteItemClick: function(e) {
@@ -77,18 +76,18 @@ define(['require',
             this.items.splice(el.dataset.index, 1);
             this.render();
         },
-        onItemKeyChange: function (e) {
+        onItemKeyChange: function(e) {
             var el = e.currentTarget;
             this.handleCharSupport(el);
             if (!el.value.trim().includes(':')) {
-                this.items[ el.dataset.index].key =  _.escape(el.value.trim());
+                this.items[el.dataset.index].key = _.escape(el.value.trim());
             }
         },
-        onItemValueChange: function (e) {
+        onItemValueChange: function(e) {
             var el = e.currentTarget;
             this.handleCharSupport(el);
             if (!el.value.trim().includes(':')) {
-                this.items[ el.dataset.index].value =  _.escape(el.value.trim());
+                this.items[el.dataset.index].value = _.escape(el.value.trim());
             }
         },
         handleCharSupport: function(el) {

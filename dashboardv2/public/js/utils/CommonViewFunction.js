@@ -382,7 +382,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (_.has(obj, 'condition')) {
                     return '&nbsp<span class="operator">' + obj.condition + '</span>&nbsp' + '(' + objToString(obj) + ')';
                 } else {
-                    return '<span class="key">' + _.escape(obj.id) + '</span>&nbsp<span class="operator">' + _.escape(obj.operator) + '</span>&nbsp<span class="value">' + _.escape(obj.value) + "</span>";
+                    return '<span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span>&nbsp<span class="operator">' + _.escape(obj.operator) + '</span>&nbsp<span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + "</span>";
                 }
             });
             return generatedQuery;
@@ -467,7 +467,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 val = val.join(',');
                             } else if (k == "tagFilters") {
                                 if (classificationDefCollection) {
-                                    var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification }), attributeDefs = [];
+                                    var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification }),
+                                        attributeDefs = [];
                                     if (classificationDef) {
                                         Utils.getNestedSuperTypeObj({
                                             collection: classificationDefCollection,
@@ -482,17 +483,18 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
                             } else if (k == "entityFilters") {
                                 if (entityDefCollection) {
-                                    var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value[skey].typeName }), attributeDefs = [];
-                                        if (entityDef) {
-                                            Utils.getNestedSuperTypeObj({
-                                                collection: entityDefCollection,
-                                                attrMerge: true,
-                                                data: entityDef.toJSON()
-                                            });
-                                        }
-                                        if (Globals[value[skey].typeName]) {
-                                            attributeDefs = Globals[value[skey].typeName].attributeDefs;
-                                        }
+                                    var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value[skey].typeName }),
+                                        attributeDefs = [];
+                                    if (entityDef) {
+                                        Utils.getNestedSuperTypeObj({
+                                            collection: entityDefCollection,
+                                            attrMerge: true,
+                                            data: entityDef.toJSON()
+                                        });
+                                    }
+                                    if (Globals[value[skey].typeName]) {
+                                        attributeDefs = Globals[value[skey].typeName].attributeDefs;
+                                    }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
                             } else if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
@@ -961,45 +963,45 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         });
         return list.join(',');
     }
-    CommonViewFunction.fetchRootEntityAttributes = function (options) {
-        $.ajax({
-            url: options.url,
-            methods: 'GET',
-            dataType: 'json',
-            delay: 250,
-            cache: true,
-            success: function(response) {
-                if (response) {
-                    var entity = Object.assign(response, { name: options.entity });
-                    Globals[options.entity] = entity;
+    CommonViewFunction.fetchRootEntityAttributes = function(options) {
+            $.ajax({
+                url: options.url,
+                methods: 'GET',
+                dataType: 'json',
+                delay: 250,
+                cache: true,
+                success: function(response) {
+                    if (response) {
+                        var entity = Object.assign(response, { name: options.entity });
+                        Globals[options.entity] = entity;
+                    }
+                },
+                complete: function(response) {
+                    if (options.callback) {
+                        options.callback(response);
+                    }
                 }
-            },
-            complete: function(response) {
-                if (options.callback) {
-                    options.callback(response);
+            });
+        },
+        CommonViewFunction.fetchRootClassificationAttributes = function(options) {
+            $.ajax({
+                url: options.url,
+                methods: 'GET',
+                dataType: 'json',
+                delay: 250,
+                cache: true,
+                success: function(response) {
+                    if (response) {
+                        var classification = Object.assign(response, { name: options.classification });
+                        Globals[options.classification] = classification;
+                    }
+                },
+                complete: function(response) {
+                    if (options.callback) {
+                        options.callback(response);
+                    }
                 }
-            }
-        });
-    },
-    CommonViewFunction.fetchRootClassificationAttributes = function (options) {
-        $.ajax({
-            url: options.url,
-            methods: 'GET',
-            dataType: 'json',
-            delay: 250,
-            cache: true,
-            success: function(response) {
-                if (response) {
-                    var classification = Object.assign(response, { name: options.classification });
-                    Globals[options.classification] = classification;
-                }
-            },
-            complete: function(response) {
-                if (options.callback) {
-                    options.callback(response);
-                }
-            }
-        });
-    }
+            });
+        }
     return CommonViewFunction;
 });

@@ -547,15 +547,6 @@ define(['require',
                     }
                 }
             },
-            renderSearchQueryView: function() {
-                var that = this;
-                require(['views/search/SearchQueryView'], function(SearchQueryView) {
-                    that.RSearchQuery.show(new SearchQueryView({
-                        value: that.value,
-                        searchVent: that.searchVent
-                    }));
-                });
-            },
             tableRender: function(options) {
                 var that = this,
                     savedColumnOrder = options.order,
@@ -802,21 +793,22 @@ define(['require',
                     }
 
                     if (this.value && this.value.searchType === "basic") {
-                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type }), systemAttr = [];
+                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type }),
+                            systemAttr = [];
                         if (def || Globals[this.value.type] || (
-                             this.value.tag
-                             ? Globals[this.value.tag]
-                                 ? Globals[this.value.tag]
-                                 : Globals[Enums.addOnClassification[0]]
-                             : undefined)) {
-                             var attrObj = def ? Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true }) : [];
-                             if (this.value.type && ( Globals[this.value.type] || Globals[Enums.addOnEntities[0]])) {
-                                 systemAttr = (Globals[this.value.type] || Globals[Enums.addOnEntities[0]]).attributeDefs;
-                             }
-                             if (this.value.tag && ( Globals[this.value.tag] || Globals[Enums.addOnClassification[0]])) {
-                                 systemAttr = (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]]).attributeDefs;
-                                                     }
-                             attrObj = attrObj.concat(systemAttr);
+                                this.value.tag ?
+                                Globals[this.value.tag] ?
+                                Globals[this.value.tag] :
+                                Globals[Enums.addOnClassification[0]] :
+                                undefined)) {
+                            var attrObj = def ? Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true }) : [];
+                            if (this.value.type && (Globals[this.value.type] || Globals[Enums.addOnEntities[0]])) {
+                                systemAttr = (Globals[this.value.type] || Globals[Enums.addOnEntities[0]]).attributeDefs;
+                            }
+                            if (this.value.tag && (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]])) {
+                                systemAttr = (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]]).attributeDefs;
+                            }
+                            attrObj = attrObj.concat(systemAttr);
                             _.each(attrObj, function(obj, key) {
                                 var key = obj.name,
                                     isRenderable = _.contains(columnToShow, key),
@@ -828,7 +820,7 @@ define(['require',
                                     return;
                                 }
                                 col[obj.name] = {
-                                    label: _.escape(obj.name).capitalize(),
+                                    label: Enums.systemAttributes[obj.name] ? Enums.systemAttributes[obj.name] : _.escape(obj.name).capitalize(),
                                     cell: "Html",
                                     headerCell: Backgrid.HeaderHTMLDecodeCell,
                                     editable: false,

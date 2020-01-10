@@ -25,7 +25,7 @@ $color_falu_red_approx: #8a1f11;
 }
 
 %extend_2 {
-    list-style: none!important;
+    list-style: none !important;
     padding: 0;
     margin: 0;
 }
@@ -67,28 +67,35 @@ $color_falu_red_approx: #8a1f11;
 
 .wizard {
     @extend %wizard_tabcontrol;
+
     a {
         outline: 0;
     }
+
     ul {
         @extend %extend_2;
+
         >li {
             display: block;
             padding: 0;
         }
     }
+
     > {
         .steps {
             position: relative;
             display: block;
             width: 100%;
+
             .current-info {
                 position: absolute;
                 left: -999em;
             }
+
             .number {
                 font-size: 1.429em;
             }
+
             &>ul {
                 position: relative;
                 border: 0;
@@ -98,52 +105,66 @@ $color_falu_red_approx: #8a1f11;
                 list-style: none;
                 overflow: hidden;
                 margin-bottom: 10px;
+
                 >li {
                     width: 25%;
                     float: left;
+
                     &:first-child>a {
                         padding-left: 15px;
                     }
+
                     a {
                         @extend %extend_3;
+
                         &:hover {
                             cursor: pointer;
                         }
+
                         margin: 0;
                         border: none;
                         border-radius: 0;
                         padding: 10px 0 10px 45px;
+
                         &:before {
                             @extend %extend_befor_after;
                             border-left: 30px solid #ddd;
                             margin-left: 1px;
                             z-index: 1;
                         }
+
                         &:after {
                             @extend %extend_befor_after;
                             border-left: 30px solid #f5f5f5;
                             z-index: 2;
                         }
                     }
+
                     &.disabled a {
                         @extend %extend_4;
                     }
+
                     &.current a {
                         @extend %extend_5;
+
                         &:after {
                             border-left: 30px solid $color_keppel_approx;
                         }
                     }
+
                     &.done a {
                         background: #b4e5d9;
                         color: $white;
+
                         &:after {
                             border-left: 30px solid #b4e5d9;
                         }
                     }
+
                     &.error a {
                         background: $color_scarlet_approx;
                         color: $white;
+
                         &:after {
                             border-left: 30px solid $color_scarlet_approx;
                         }
@@ -151,6 +172,7 @@ $color_falu_red_approx: #8a1f11;
                 }
             }
         }
+
         .content {
             background: #f5f5f5;
             display: block;
@@ -158,17 +180,21 @@ $color_falu_red_approx: #8a1f11;
             position: relative;
             width: 100%; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
             border-radius: 5px;
+
             > {
                 .title {
                     display: none;
                 }
+
                 .body {
                     float: left;
                     width: 100%;
                     height: 95%;
                     padding: 2.5%;
+
                     >ul {
-                        list-style: disc!important;
+                        list-style: disc !important;
+
                         >li {
                             display: list-item;
                         }
@@ -176,20 +202,24 @@ $color_falu_red_approx: #8a1f11;
                 }
             }
         }
+
         .actions {
             position: relative;
             display: block;
             text-align: right;
             width: 100%;
+
             ul[role="menu"] {
                 li+li {
                     margin-left: 5px;
                 }
+
                 li.disabled {
                     a {
                         opacity: .65;
                     }
                 }
+
                 a {
                     padding: 10px 20px;
                     background-color: $color_keppel_approx;
@@ -200,6 +230,7 @@ $color_falu_red_approx: #8a1f11;
                     transition: all .3s ease;
                     margin: 2px;
                 }
+
                 a[href="#cancel"] {
                     padding: 10px 20px;
                     background-color: transparent;
@@ -211,38 +242,46 @@ $color_falu_red_approx: #8a1f11;
                     margin: 2px;
                 }
             }
+
             >ul {
                 display: inline-block;
                 text-align: right;
+
                 >li {
                     float: left;
                     margin: 0 .5em;
                 }
             }
         }
+
         .loading .spinner {}
     }
+
     &.vertical> {
         .steps {
             display: inline;
             float: left;
             width: 30%;
+
             >ul>li {
                 float: none;
                 width: 100%;
             }
         }
+
         .content {
             display: inline;
             float: left;
             margin: 0 2.5% .5em 2.5%;
             width: 65%;
         }
+
         .actions {
             display: inline;
             float: right;
             margin: 0 2.5%;
             width: 95%;
+
             >ul>li {
                 margin: 0 0 0 1em;
             }
@@ -252,21 +291,26 @@ $color_falu_red_approx: #8a1f11;
 
 .tabcontrol {
     @extend %wizard_tabcontrol;
+
     a {
         outline: 0;
     }
+
     ul {
         @extend %extend_2;
+
         >li {
             display: block;
             padding: 0;
         }
     }
+
     > {
         .steps .current-info {
             position: absolute;
             left: -999em;
         }
+
         .content>.title {
             display: none;
         }
@@ -278,28 +322,34 @@ $color_falu_red_approx: #8a1f11;
         >.steps {
             a {
                 margin-top: .5em;
+
                 &:hover {
                     margin-top: .5em;
                 }
+
                 &:active {
                     margin-top: .5em;
                 }
             }
+
             >ul>li {
                 width: 50%;
             }
         }
+
         &.vertical> {
             .steps {
                 display: block;
                 float: none;
                 width: 100%;
             }
+
             .actions {
                 display: block;
                 float: none;
                 width: 100%;
             }
+
             .content {
                 display: block;
                 float: none;
@@ -321,15 +371,18 @@ $color_falu_red_approx: #8a1f11;
         overflow: hidden;
         max-height: none;
     }
+
     .wizard {
         position: relative;
         width: 100%;
         height: 100%;
+
         .content {
             max-height: 400px;
             overflow: auto;
             margin: 0px 0px 15px 0px;
         }
+
         .actions {
             >ul>li {
                 margin: 0px;

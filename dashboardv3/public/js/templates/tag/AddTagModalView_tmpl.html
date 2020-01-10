@@ -19,7 +19,8 @@
         <div class="row modalHeight">
             <div class="form-group col-md-12">
                 {{#if tagModel}}
-                <h4>{{tagModel.typeName}}</h4> </div>{{else}}
+                <h4>{{tagModel.typeName}}</h4>
+            </div>{{else}}
             <select class="form-control row-margin-bottom" data-id="addTagOptions" required>
             </select>
         </div>
@@ -32,7 +33,7 @@
                 </div>
                 <div class="inline" data-id="removePropagationOnEntityDeleteBox">
                     <label class="checkbox-inline btn">
-                        <input type="checkbox" data-id="removePropagationOnEntityDelete" class="input" title="Propagated classification are removed during entity delete"/> Remove propagation on entity delete</label>
+                        <input type="checkbox" data-id="removePropagationOnEntityDelete" class="input" title="Propagated classification are removed during entity delete" /> Remove propagation on entity delete</label>
                 </div>
             </div>
         </div>

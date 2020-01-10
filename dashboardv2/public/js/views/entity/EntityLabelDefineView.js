@@ -87,7 +87,7 @@ define(['require',
                         }
                     });
                 } else {
-                    return []
+                    return [];
                 }
             };
             this.ui.addLabelOptions.select2({
