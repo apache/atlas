@@ -23,6 +23,7 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasNamespaceDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -84,6 +85,11 @@ public interface AtlasTypeDefStore {
     AtlasRelationshipDef updateRelationshipDefByName(String name, AtlasRelationshipDef structDef) throws AtlasBaseException;
 
     AtlasRelationshipDef updateRelationshipDefByGuid(String guid, AtlasRelationshipDef structDef) throws AtlasBaseException;
+
+    /* Namespace Def operations */
+    AtlasNamespaceDef getNamespaceDefByName(String name) throws AtlasBaseException;
+
+    AtlasNamespaceDef getNamespaceDefByGuid(String guid) throws AtlasBaseException;
 
     /* Bulk Operations */
 

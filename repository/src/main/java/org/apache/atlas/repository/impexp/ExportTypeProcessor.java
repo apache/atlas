@@ -28,6 +28,7 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.type.AtlasNamespaceType;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
@@ -103,12 +104,14 @@ class ExportTypeProcessor {
             addEntityType((AtlasEntityType)type, context);
         } else if (type instanceof AtlasClassificationType) {
             addClassificationType((AtlasClassificationType)type, context);
+        } else if (type instanceof AtlasRelationshipType) {
+            addRelationshipType(type.getTypeName(), context);
+        } else if (type instanceof AtlasNamespaceType) {
+            addNamespaceType((AtlasNamespaceType) type, context);
         } else if (type instanceof AtlasStructType) {
             addStructType((AtlasStructType)type, context);
         } else if (type instanceof AtlasEnumType) {
             addEnumType((AtlasEnumType)type, context);
-        } else if (type instanceof AtlasRelationshipType) {
-            addRelationshipType(type.getTypeName(), context);
         }
     }
 
@@ -166,6 +169,14 @@ class ExportTypeProcessor {
                 addEntityType(relationshipType.getEnd1Type(), context);
                 addEntityType(relationshipType.getEnd2Type(), context);
             }
+        }
+    }
+
+    private void addNamespaceType(AtlasNamespaceType namespaceType, ExportService.ExportContext context) {
+        if (!context.namespaceTypes.contains(namespaceType.getTypeName())) {
+            context.namespaceTypes.add(namespaceType.getTypeName());
+
+            addAttributeTypes(namespaceType, context);
         }
     }
 

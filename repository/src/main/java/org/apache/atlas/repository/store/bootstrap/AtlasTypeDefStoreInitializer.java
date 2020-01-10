@@ -34,13 +34,13 @@ import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
+import org.apache.atlas.model.typedef.AtlasNamespaceDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
@@ -55,7 +55,6 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.jute.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -253,6 +252,14 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             }
         }
 
+        if (CollectionUtils.isNotEmpty(typesDef.getNamespaceDefs())) {
+            for (AtlasNamespaceDef namespaceDef : typesDef.getNamespaceDefs()) {
+                if (!typeRegistry.isRegisteredType(namespaceDef.getName())) {
+                    typesToCreate.getNamespaceDefs().add(namespaceDef);
+                }
+            }
+        }
+
         return typesToCreate;
     }
 
@@ -333,6 +340,20 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
                 if (updateTypeAttributes(oldRelationshipDef, relationshipDef, checkTypeVersion)) {
                     typesToUpdate.getRelationshipDefs().add(relationshipDef);
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getNamespaceDefs())) {
+            for (AtlasNamespaceDef namespaceDef : typesDef.getNamespaceDefs()) {
+                AtlasNamespaceDef oldNamespaceDef = typeRegistry.getNamespaceDefByName(namespaceDef.getName());
+
+                if (oldNamespaceDef == null) {
+                    continue;
+                }
+
+                if (updateTypeAttributes(oldNamespaceDef, namespaceDef, checkTypeVersion)) {
+                    typesToUpdate.getNamespaceDefs().add(namespaceDef);
                 }
             }
         }

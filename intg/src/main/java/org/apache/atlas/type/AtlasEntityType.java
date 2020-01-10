@@ -31,6 +31,7 @@ import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasRelationshipAttributeD
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
+import org.apache.atlas.type.AtlasNamespaceType.AtlasNamespaceAttribute;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -46,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 
 /**
  * class that implements behaviour of an entity-type.
@@ -72,22 +74,23 @@ public class AtlasEntityType extends AtlasStructType {
     private final AtlasEntityDef entityDef;
     private final String         typeQryStr;
 
-    private List<AtlasEntityType>                    superTypes                 = Collections.emptyList();
-    private Set<String>                              allSuperTypes              = Collections.emptySet();
-    private Set<String>                              subTypes                   = Collections.emptySet();
-    private Set<String>                              allSubTypes                = Collections.emptySet();
-    private Set<String>                              typeAndAllSubTypes         = Collections.emptySet();
-    private Set<String>                              typeAndAllSuperTypes       = Collections.emptySet();
-    private Map<String, Map<String, AtlasAttribute>> relationshipAttributes     = Collections.emptyMap();
-    private List<AtlasAttribute>                     ownedRefAttributes         = Collections.emptyList();
-    private String                                   typeAndAllSubTypesQryStr   = "";
-    private boolean                                  isInternalType             = false;
-    private Map<String, AtlasAttribute>              headerAttributes           = Collections.emptyMap();
-    private Map<String, AtlasAttribute>              minInfoAttributes          = Collections.emptyMap();
-    private List<AtlasAttribute>                     dynAttributes              = Collections.emptyList();
-    private List<AtlasAttribute>                     dynEvalTriggerAttributes   = Collections.emptyList();
-    private Map<String,List<TemplateToken>>          parsedTemplates            = Collections.emptyMap();
-    private Set<String>                              tagPropagationEdges        = Collections.emptySet();
+    private List<AtlasEntityType>                      superTypes                 = Collections.emptyList();
+    private Set<String>                                allSuperTypes              = Collections.emptySet();
+    private Set<String>                                subTypes                   = Collections.emptySet();
+    private Set<String>                                allSubTypes                = Collections.emptySet();
+    private Set<String>                                typeAndAllSubTypes         = Collections.emptySet();
+    private Set<String>                                typeAndAllSuperTypes       = Collections.emptySet();
+    private Map<String, Map<String, AtlasAttribute>>   relationshipAttributes     = Collections.emptyMap();
+    private List<AtlasAttribute>                       ownedRefAttributes         = Collections.emptyList();
+    private String                                     typeAndAllSubTypesQryStr   = "";
+    private boolean                                    isInternalType             = false;
+    private Map<String, AtlasAttribute>                headerAttributes           = Collections.emptyMap();
+    private Map<String, AtlasAttribute>                minInfoAttributes          = Collections.emptyMap();
+    private List<AtlasAttribute>                       dynAttributes              = Collections.emptyList();
+    private List<AtlasAttribute>                       dynEvalTriggerAttributes   = Collections.emptyList();
+    private Map<String,List<TemplateToken>>            parsedTemplates            = Collections.emptyMap();
+    private Set<String>                                tagPropagationEdges        = Collections.emptySet();
+    private Map<String, List<AtlasNamespaceAttribute>> namespaceAttributes      = Collections.emptyMap();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -140,6 +143,7 @@ public class AtlasEntityType extends AtlasStructType {
         this.typeAndAllSubTypes     = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
         this.relationshipAttributes = new HashMap<>(); // this will be populated in resolveReferencesPhase3()
         this.tagPropagationEdges    = new HashSet<>(); // this will be populated in resolveReferencesPhase2()
+        this.namespaceAttributes    = new HashMap<>(); // this will be populated in resolveReferences(), from AtlasNamespaceType
 
         this.typeAndAllSubTypes.add(this.getTypeName());
 
@@ -259,6 +263,7 @@ public class AtlasEntityType extends AtlasStructType {
         relationshipAttributes     = Collections.unmodifiableMap(relationshipAttributes);
         ownedRefAttributes         = Collections.unmodifiableList(ownedRefAttributes);
         tagPropagationEdges        = Collections.unmodifiableSet(tagPropagationEdges);
+        namespaceAttributes        = Collections.unmodifiableMap(namespaceAttributes);
 
         entityDef.setSubTypes(subTypes);
 
@@ -361,6 +366,14 @@ public class AtlasEntityType extends AtlasStructType {
     public String[] getTagPropagationEdgesArray() {
         return CollectionUtils.isNotEmpty(tagPropagationEdges) ? tagPropagationEdges.toArray(new String[tagPropagationEdges.size()]) : null;
     }
+ 
+    public Map<String, List<AtlasNamespaceAttribute>> getNamespaceAttributes() {
+        return namespaceAttributes;
+    }
+
+    public List<AtlasNamespaceAttribute> getNamespaceAttributes(String nsName) {
+        return namespaceAttributes.get(nsName);
+    }
 
     public Map<String,List<TemplateToken>> getParsedTemplates() { return parsedTemplates; }
 
@@ -450,6 +463,19 @@ public class AtlasEntityType extends AtlasStructType {
 
     public boolean hasRelationshipAttribute(String attributeName) {
         return relationshipAttributes.containsKey(attributeName);
+    }
+
+    public void addNamespaceAttribute(AtlasNamespaceAttribute attribute) {
+        String                        nsName     = attribute.getDefinedInType().getTypeName();
+        List<AtlasNamespaceAttribute> attributes = namespaceAttributes.get(nsName);
+
+        if (attributes == null) {
+            attributes = new ArrayList<>();
+
+            namespaceAttributes.put(nsName, attributes);
+        }
+
+        attributes.add(attribute);
     }
 
     public String getQualifiedAttributeName(String attrName) throws AtlasBaseException {
