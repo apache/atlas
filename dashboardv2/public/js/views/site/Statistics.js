@@ -382,6 +382,7 @@ define(['require',
                 if (!_.isEmpty(systemMemoryData)) {
                     var memoryTable = CommonViewFunction.propertyTable({
                         scope: this,
+                        formatStringVal: true,
                         valueObject: systemMemoryData
                     });
                     that.ui.memoryCard.html(
