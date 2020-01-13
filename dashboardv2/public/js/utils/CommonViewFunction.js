@@ -81,6 +81,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             formatIntVal = options.formatIntVal,
             showListCount = options.showListCount || true,
             highlightString = options.highlightString,
+            formatStringVal = options.formatStringVal,
             numberFormat = options.numberFormat || _.numberFormatWithComa;
 
         var table = "",
@@ -102,7 +103,16 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if ((_.isNumber(val) || !_.isNaN(parseInt(val))) && formatIntVal) {
                         return numberFormat(val);
                     } else {
-                        return getHighlightedString(val);
+                        var newVal = val;
+                        if (formatStringVal) {
+                            newVal = parseInt(val);
+                            if (newVal === NaN) {
+                                newVal = val;
+                            } else {
+                                newVal = numberFormat(newVal);
+                            }
+                        }
+                        return getHighlightedString(newVal);
                     }
                 } else {
                     return "N/A";
