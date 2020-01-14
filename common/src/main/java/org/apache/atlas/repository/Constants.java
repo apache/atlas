@@ -22,6 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 
+import static org.apache.atlas.service.Services.LOG;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
 /**
@@ -155,6 +156,7 @@ public final class Constants {
     static {
         try {
             VERTEX_INDEX = getStringProperty(ApplicationProperties.SOLR_INDEX_SEARCH_VERTEX_NAME);
+            LOG.info("Using VERTEX_INDEX: " + VERTEX_INDEX);
         } catch (AtlasException e) {
             e.printStackTrace();
         }
@@ -168,6 +170,7 @@ public final class Constants {
     static {
         try {
             EDGE_INDEX = getStringProperty(ApplicationProperties.SOLR_INDEX_SEARCH_EDGE_NAME);
+            LOG.info("Using EDGE_INDEX: " + EDGE_INDEX);
         } catch (AtlasException e) {
             e.printStackTrace();
         }
@@ -178,6 +181,7 @@ public final class Constants {
     static {
         try {
             FULLTEXT_INDEX = getStringProperty(ApplicationProperties.SOLR_INDEX_SEARCH_FULLTEXT_NAME);
+            LOG.info("Using FULLTEXT_INDEX: " + FULLTEXT_INDEX);
         } catch (AtlasException e) {
             e.printStackTrace();
         }

@@ -68,6 +68,9 @@ HBASE_STORAGE_LOCAL_CONF_ENTRY="atlas.graph.storage.hostname\s*=\s*localhost"
 SOLR_INDEX_CONF_ENTRY="atlas.graph.index.search.backend\s*=\s*solr"
 SOLR_INDEX_LOCAL_CONF_ENTRY="atlas.graph.index.search.solr.zookeeper-url\s*=\s*localhost"
 SOLR_INDEX_ZK_URL="atlas.graph.index.search.solr.zookeeper-url"
+SOLR_INDEX_SEARCH_VERTEX_NAME="atlas.graph.index.search.vertex.name"
+SOLR_INDEX_SEARCH_EDGE_NAME="atlas.graph.index.search.edge.name"
+SOLR_INDEX_SEARCH_FULLTEXT_NAME="atlas.graph.index.search.fulltext.name"
 TOPICS_TO_CREATE="atlas.notification.topics"
 ATLAS_HTTP_PORT="atlas.server.http.port"
 ATLAS_HTTPS_PORT="atlas.server.https.port"
@@ -76,6 +79,8 @@ DEFAULT_ATLAS_HTTPS_PORT="21443"
 ATLAS_ENABLE_TLS="atlas.enableTLS"
 ATLAS_SERVER_BIND_ADDRESS="atlas.server.bind.address"
 DEFAULT_ATLAS_SERVER_HOST="localhost"
+
+
 
 DEBUG = False
 
@@ -464,6 +469,18 @@ def is_elasticsearch_local():
 def get_solr_zk_url(confdir):
     confdir = os.path.join(confdir, CONF_FILE)
     return getConfig(confdir, SOLR_INDEX_ZK_URL)
+
+def get_solr_vertex_name(confdir):
+    confdir = os.path.join(confdir, CONF_FILE)
+    return getConfig(confdir, SOLR_INDEX_SEARCH_VERTEX_NAME)
+
+def get_solr_edge_name(confdir):
+    confdir = os.path.join(confdir, CONF_FILE)
+    return getConfig(confdir, SOLR_INDEX_SEARCH_EDGE_NAME)
+
+def get_solr_fulltext_name(confdir):
+    confdir = os.path.join(confdir, CONF_FILE)
+    return getConfig(confdir, SOLR_INDEX_SEARCH_FULLTEXT_NAME)
 
 def get_topics_to_create(confdir):
     confdir = os.path.join(confdir, CONF_FILE)

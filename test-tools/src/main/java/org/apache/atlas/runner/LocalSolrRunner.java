@@ -14,7 +14,10 @@
 
 package org.apache.atlas.runner;
 
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.type.Constants;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -35,17 +38,24 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class LocalSolrRunner {
+import org.apache.atlas.ApplicationProperties;
 
+import static org.apache.atlas.ApplicationProperties.*;
+
+public class LocalSolrRunner {
+    private Configuration configProperties = ApplicationProperties.get();
     private   static final String   TARGET_DIRECTORY   = System.getProperty("embedded.solr.directory");
     private   static final String   COLLECTIONS_FILE   = "collections.txt";
     private   static final String   SOLR_XML           = "solr.xml";
     private   static final String   TEMPLATE_DIRECTORY = "core-template";
-    protected static final String[] COLLECTIONS        = readCollections();
+    protected static final String[] COLLECTIONS        = collectionsToCreate();
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalSolrRunner.class);
 
     private static MiniSolrCloudCluster miniSolrCloudCluster;
+
+    public LocalSolrRunner() throws AtlasException {
+    }
 
     public static void start() throws Exception {
         if (isLocalSolrRunning()) {
@@ -105,6 +115,14 @@ public class LocalSolrRunner {
         return ret;
     }
 
+    private static String[] collectionsToCreate(){
+
+        String [] collections = {SOLR_INDEX_SEARCH_VERTEX_NAME,
+                                 SOLR_INDEX_SEARCH_EDGE_NAME,
+                                 SOLR_INDEX_SEARCH_FULLTEXT_NAME,
+                                 "backing"};
+        return collections;
+    }
     private static String[] readCollections() {
         // For the classloader you need the following path: "/solr/collections.txt";
         // Use explicit '/' separators (not File.separator) because even on Windows you want '/'
