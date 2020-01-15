@@ -666,8 +666,8 @@ public abstract class BaseHiveEvent {
         // We are setting an empty value to these attributes, since now we have a new entity type called hive process
         // execution which captures these values. We have to set empty values here because these attributes are
         // mandatory attributes for hive process entity type.
-        ret.setAttribute(ATTRIBUTE_START_TIME, EMPTY_ATTRIBUTE_VALUE);
-        ret.setAttribute(ATTRIBUTE_END_TIME, EMPTY_ATTRIBUTE_VALUE);
+        ret.setAttribute(ATTRIBUTE_START_TIME, System.currentTimeMillis());
+        ret.setAttribute(ATTRIBUTE_END_TIME, System.currentTimeMillis());
         ret.setAttribute(ATTRIBUTE_USER_NAME, EMPTY_ATTRIBUTE_VALUE);
         ret.setAttribute(ATTRIBUTE_QUERY_TEXT, EMPTY_ATTRIBUTE_VALUE);
         ret.setAttribute(ATTRIBUTE_QUERY_ID, EMPTY_ATTRIBUTE_VALUE);
