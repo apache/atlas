@@ -95,11 +95,24 @@ The _AtlasExportRequest_ below specifies the _fetchType_ as _FULL_. The _matchTy
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{
     "itemsToExport": [
-       { "typeName": "hive_db", "uniqueAttributes": { "qualifiedName": "accounts@" } },
+       { "typeName": "hive_db", "uniqueAttributes": { "qualifiedName": "accounts@" } }
     ],
-    "options" {
+    "options": {
         "fetchType": "FULL",
         "matchType": "startsWith"
+    }
+}`}
+</SyntaxHighlighter>
+
+The _AtlasExportRequest_ below specifies the _guid_ instead of _uniqueAttribues_ to fetch _accounts@cl1_.
+
+<SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
+{`{
+    "itemsToExport": [
+       { "typeName": "hive_db", "guid": "846c5e9c-3ac6-40ju-8289-fb0cebm64783" }
+    ],
+    "options": {
+        "fetchType": "FULL",
     }
 }`}
 </SyntaxHighlighter>
@@ -109,9 +122,9 @@ The _AtlasExportRequest_ below specifies the _fetchType_ as _connected_. The _ma
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{
     "itemsToExport": [
-       { "typeName": "hive_db", "uniqueAttributes": { "name": "accounts" } },
+       { "typeName": "hive_db", "uniqueAttributes": { "qualifiedName": "accounts" } }
     ],
-    "options" {
+    "options": {
         "fetchType": "CONNECTED",
         "matchType": "startsWith"
     }
@@ -165,11 +178,10 @@ Below are sample CURL calls that demonstrate Export of _QuickStart_ database.
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`curl -X POST -u adminuser:password -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
     "itemsToExport": [
-            { "typeName": "DB", "uniqueAttributes": { "name": "Sales" }
-            { "typeName": "DB", "uniqueAttributes": { "name": "Reporting" }
-            { "typeName": "DB", "uniqueAttributes": { "name": "Logging" }
-        }
+            { "typeName": "DB", "uniqueAttributes": { "name": "Sales" }},
+            { "typeName": "DB", "uniqueAttributes": { "name": "Reporting" }},
+            { "typeName": "DB", "uniqueAttributes": { "name": "Logging" }}
     ],
-        "options": { "full" }
+        "options": { "fetchType": "full" }
     }' "http://localhost:21000/api/atlas/admin/export" > quickStartDB.zip`}
 </SyntaxHighlighter>

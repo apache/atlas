@@ -38,8 +38,7 @@ Below are sample CURL calls that performs export operation on the _Sample HDFS S
 <SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
 {`curl -X POST -u adminuser:password -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d '{
     "itemsToExport": [
-            { "typeName": "hdfs_path", "uniqueAttributes": { "name": "FinanceAll" }
-        }
+            { "typeName": "hdfs_path", "uniqueAttributes": { "qualifiedName": "FinanceAll" } }
     ],
     "options": {
      "fetchType": "full",
