@@ -201,7 +201,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 case EXPORT:
                 case IMPORT:
                 case QUERY:
-                    event = new CreateHiveProcess(context);
+                    event = new CreateHiveProcess(context, true);
                 break;
 
                 case ALTERTABLE_FILEFORMAT:
