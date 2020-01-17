@@ -44,12 +44,30 @@
           "indexType": "STRING"
         },
         {
+          "name": "displayName",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false,
+          "indexType": "STRING"
+        },
+        {
           "name": "description",
           "typeName": "string",
           "cardinality": "SINGLE",
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false
+        },
+        {
+          "name": "userDescription",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false,
+          "indexType": "STRING"
         },
         {
           "name": "owner",
