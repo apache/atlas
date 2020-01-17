@@ -230,14 +230,14 @@ public abstract class BaseHiveEvent {
         }
     }
 
-    protected AtlasEntity getInputOutputEntity(Entity entity, AtlasEntityExtInfo entityExtInfo) throws Exception {
+    protected AtlasEntity getInputOutputEntity(Entity entity, AtlasEntityExtInfo entityExtInfo, boolean skipTempTables) throws Exception {
         AtlasEntity ret = null;
 
         switch(entity.getType()) {
             case TABLE:
             case PARTITION:
             case DFS_DIR: {
-                ret = toAtlasEntity(entity, entityExtInfo);
+                ret = toAtlasEntity(entity, entityExtInfo, skipTempTables);
             }
             break;
         }
@@ -245,7 +245,7 @@ public abstract class BaseHiveEvent {
         return ret;
     }
 
-    protected AtlasEntity toAtlasEntity(Entity entity, AtlasEntityExtInfo entityExtInfo) throws Exception {
+    protected AtlasEntity toAtlasEntity(Entity entity, AtlasEntityExtInfo entityExtInfo, boolean skipTempTables) throws Exception {
         AtlasEntity ret = null;
 
         switch (entity.getType()) {
@@ -268,6 +268,10 @@ public abstract class BaseHiveEvent {
 
                 if (!skipTable) {
                     skipTable = context.getIgnoreDummyTableName().contains(tableName) && context.getIgnoreDummyDatabaseName().contains(dbName);
+                }
+
+                if (!skipTable) {
+                    skipTable = skipTempTables && entity.getTable().isTemporary();
                 }
 
                 if (!skipTable) {

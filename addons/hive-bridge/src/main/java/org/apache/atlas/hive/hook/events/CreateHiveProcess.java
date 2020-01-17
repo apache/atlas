@@ -49,9 +49,12 @@ import java.util.Set;
 
 public class CreateHiveProcess extends BaseHiveEvent {
     private static final Logger LOG = LoggerFactory.getLogger(CreateHiveProcess.class);
+    private final boolean skipTempTables;
 
-    public CreateHiveProcess(AtlasHiveHookContext context) {
+    public CreateHiveProcess(AtlasHiveHookContext context, boolean skipTempTables) {
         super(context);
+
+        this.skipTempTables = skipTempTables;
     }
 
     @Override
@@ -84,7 +87,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
                         continue;
                     }
 
-                    AtlasEntity entity = getInputOutputEntity(input, ret);
+                    AtlasEntity entity = getInputOutputEntity(input, ret, skipTempTables);
 
                     if (!input.isDirect()) {
                         continue;
@@ -104,7 +107,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
                         continue;
                     }
 
-                    AtlasEntity entity = getInputOutputEntity(output, ret);
+                    AtlasEntity entity = getInputOutputEntity(output, ret, skipTempTables);
 
                     if (entity != null) {
                         outputs.add(entity);
