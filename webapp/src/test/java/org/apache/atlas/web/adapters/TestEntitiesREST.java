@@ -156,26 +156,26 @@ public class TestEntitiesREST {
 
     @Test
     public void testCustomAttributesSearch() throws Exception {
-
         AtlasEntity dbWithCustomAttr = new AtlasEntity(dbEntity);
-        HashMap customAttr = new HashMap<String, String>() {{
-            put("key1", "value1");
-        }};
+        Map         customAttr       = new HashMap<String, String>() {{ put("key1", "value1"); }};
+
         dbWithCustomAttr.setCustomAttributes(customAttr);
+
         AtlasEntitiesWithExtInfo atlasEntitiesWithExtInfo = new AtlasEntitiesWithExtInfo(dbWithCustomAttr);
-        EntityMutationResponse response = entityREST.createOrUpdate(atlasEntitiesWithExtInfo);
+        EntityMutationResponse   response                 = entityREST.createOrUpdate(atlasEntitiesWithExtInfo);
 
         Assert.assertNotNull(response.getUpdatedEntitiesByTypeName(DATABASE_TYPE));
 
         searchParameters = new SearchParameters();
         searchParameters.setTypeName("_ALL_ENTITY_TYPES");
-        SearchParameters.FilterCriteria fc = new SearchParameters.FilterCriteria();
 
-        fc.setAttributeName(CUSTOM_ATTRIBUTES_PROPERTY_KEY);
-        fc.setOperator(SearchParameters.Operator.EQ);
-        fc.setAttributeValue("\"key1:value1\"");
+        SearchParameters.FilterCriteria filter = new SearchParameters.FilterCriteria();
 
-        searchParameters.setEntityFilters(fc);
+        filter.setAttributeName(CUSTOM_ATTRIBUTES_PROPERTY_KEY);
+        filter.setOperator(SearchParameters.Operator.CONTAINS);
+        filter.setAttributeValue("key1=value1");
+
+        searchParameters.setEntityFilters(filter);
 
         AtlasSearchResult res = discoveryREST.searchWithParameters(searchParameters);
 
