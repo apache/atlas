@@ -73,6 +73,8 @@ public abstract class SearchProcessor {
     public static final String  BRACE_OPEN_STR             = "(";
     public static final String  BRACE_CLOSE_STR            = ")";
     public static final String  ALL_TYPE_QUERY             = "[* TO *]";
+    public static final char    CUSTOM_ATTR_SEPARATOR      = '=';
+    public static final String  CUSTOM_ATTR_SEARCH_FORMAT  = "\"\\\"%s\\\":\\\"%s\\\"\"";
 
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
     private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
@@ -493,10 +495,34 @@ public abstract class SearchProcessor {
                 String qualifiedName         = type.getQualifiedAttributeName(attrName);
                 String escapeIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(attrVal);
 
-                ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue);
+                // map '__customAttributes' 'CONTAINS' operator to 'EQ' operator (solr limitation for json serialized string search)
+                // map '__customAttributes' value from 'key1=value1' to '\"key1\":\"value1\"' (escape special characters and surround with quotes)
+                if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY) && op == SearchParameters.Operator.CONTAINS) {
+                    ret = String.format(OPERATOR_MAP.get(SearchParameters.Operator.EQ), qualifiedName, getCustomAttributeIndexQueryValue(escapeIndexQueryValue));
+                } else {
+                    ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue);
+                }
             }
         } catch (AtlasBaseException ex) {
             LOG.warn(ex.getMessage());
+        }
+
+        return ret;
+    }
+
+    private String getCustomAttributeIndexQueryValue(String attrValue) {
+        String ret = null;
+
+        if (StringUtils.isNotEmpty(attrValue)) {
+            int    separatorIdx = attrValue.indexOf(CUSTOM_ATTR_SEPARATOR);
+            String key          = separatorIdx != -1 ? attrValue.substring(0, separatorIdx) : null;
+            String value        = key != null ? attrValue.substring(separatorIdx + 1) : null;
+
+            if (key != null && value != null) {
+                ret = String.format(CUSTOM_ATTR_SEARCH_FORMAT, key, value);
+            } else {
+                ret = attrValue;
+            }
         }
 
         return ret;
