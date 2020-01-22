@@ -258,7 +258,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();
                 if (defEntityType === 'date') {
-                    keyValue = new Date(keyValue);
+                    keyValue = keyValue > 0 ? new Date(keyValue) : "";
                 } else if (_.isObject(keyValue)) {
                     keyValue = extractObject({ "keyValue": keyValue, "key": key, 'defEntity': defEntity });
                 }
