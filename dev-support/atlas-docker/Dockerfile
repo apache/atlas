@@ -16,6 +16,13 @@
 
 FROM ubuntu:18.04
 
+# --build-arg MVN_JOB=8 to built with option -T 8 default to 1
+ARG MVN_JOB=1
+# --build-arg BRANCH=master to build specific branc default to master
+ARG BRANCH=master
+# creating user because solr doesn't like to be started as root
+RUN useradd -rm -d /home/ubuntu -s /bin/bash -g root -u 1000 ubuntu
+
 # Install Git, which is missing from the Ubuntu base images.
 RUN apt-get update && apt-get install -y git python
 
@@ -31,30 +38,32 @@ ENV MAVEN_HOME /usr/share/maven
 # Add Java and Maven to the path.
 ENV PATH /usr/java/bin:/usr/local/apache-maven/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+# switch to user ubuntu
+USER ubuntu
 # Working directory
-WORKDIR /root
+WORKDIR /home/ubuntu
 
 # Pull down Atlas and build it into /root/atlas-bin.
-RUN git clone https://github.com/apache/atlas.git -b master
+RUN git clone https://github.com/apache/atlas.git -b $BRANCH
 
 RUN echo 'package-lock=false' >> ./atlas/.npmrc
 
 RUN echo 'package-lock.json' >> ./atlas/.gitignore
 
-# Memory requirements
-ENV MAVEN_OPTS "-Xms2g -Xmx2g"
+# Memory requirements & -Drat.skip=true to disable license check
+ENV MAVEN_OPTS "-Xms2g -Xmx2g -Drat.skip=true"
 # RUN export MAVEN_OPTS="-Xms2g -Xmx2g"
 
 # Remove -DskipTests if unit tests are to be included
-RUN mvn clean install -DskipTests -Pdist,embedded-hbase-solr -f ./atlas/pom.xml
+RUN mvn clean -T $MVN_JOB install -DskipTests -Pdist,embedded-hbase-solr -f ./atlas/pom.xml
 RUN mkdir -p atlas-bin
-RUN tar xzf /root/atlas/distro/target/*bin.tar.gz --strip-components 1 -C /root/atlas-bin
+RUN tar xzf /home/ubuntu/atlas/distro/target/*bin.tar.gz --strip-components 1 -C /home/ubuntu/atlas-bin
 
 # Set env variables, add it to the path, and start Atlas.
 ENV MANAGE_LOCAL_SOLR true
 ENV MANAGE_LOCAL_HBASE true
-ENV PATH /root/atlas-bin/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV PATH /home/ubuntu/atlas-bin/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 EXPOSE 21000
 
-CMD ["/bin/bash", "-c", "/root/atlas-bin/bin/atlas_start.py; tail -fF /root/atlas-bin/logs/application.log"]
+CMD ["/bin/bash", "-c", "/home/ubuntu/atlas-bin/bin/atlas_start.py; tail -fF /home/ubuntu/atlas-bin/logs/application.log"]

@@ -37,7 +37,9 @@ on port 21000.
    This may take 20 minutes or more the first time you run the command since it will
    create a Maven repository inside the image as well as checkout the master branch
    of Atlas. Note that by default unit tests are skipped, to run unit tests within
-   the image remove the '-DskipTests' in the Dockerfile
+   the image remove the '-DskipTests' in the Dockerfile.  
+   Option `--build-arg MVN_JOB=8` to setup -T option when running mvn. Default is 1  
+   Option `--build-arg BRANCH=master` to setup branch to clone. Default is master
 4. When this completes successfully, you can run `docker run -it -p 21000:21000 atlas_docker`
    to access an Atlas server running inside of a container created from the
    **atlas_docker** image. Alternatively, you can type `docker run -it atlas_docker
