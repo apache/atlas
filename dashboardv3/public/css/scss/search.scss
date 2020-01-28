@@ -425,10 +425,10 @@ hr.hr-filter {
                 padding: 0px 15px;
             }
 
-            .attribute-result-footer,
-            .attribute-edit-footer {
-                display: inline-block;
-            }
+            // .attribute-result-footer,
+            // .attribute-edit-footer {
+            //     display: inline-block;
+            // }
         }
 
         .filter-box {
@@ -476,5 +476,50 @@ hr.hr-filter {
 
     .attributePopOver {
         min-height: 190px;
+    }
+}
+
+.query-builder {
+    .rule-container {
+        &.user-define {
+            .values-box {
+                display: flex;
+                flex-wrap: wrap;
+
+                .rule-filter-container {
+                    width: 200px;
+                }
+
+                .rule-value-container {
+                    width: 100%;
+                    padding: 7px 0px 0px 0px;
+                }
+            }
+        }
+
+        .rule-value-container {
+            &>table.custom-table {
+                tr {
+                    display: none;
+
+                    &.custom-tr {
+                        display: table-row;
+
+                        td.custom-col-1 {
+                            width: 48%;
+
+                            .errorMsg {
+                                display: none;
+                            }
+                        }
+                    }
+                }
+
+                input,
+                textarea {
+                    width: 100% !important;
+                }
+            }
+        }
     }
 }
