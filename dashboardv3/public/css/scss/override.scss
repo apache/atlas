@@ -246,6 +246,21 @@
 .query-builder {
     .rule-container {
         margin: 6px 0;
+        display: flex;
+        flex-wrap: wrap;
+
+        .values-box {
+            display: flex;
+            flex-grow: 1;
+            width: 100%;
+            padding-right: 26px;
+        }
+
+        .action-box {
+            position: absolute;
+            right: 4px;
+            top: calc(50% - 18px);
+        }
 
         .rule-header {
             .rule-actions {
@@ -253,24 +268,34 @@
             }
         }
 
+        .error-container {
+            color: $color_trinidad_approx;
+        }
+
         .rule-value-container {
             display: inline-block !important;
+            border-left: none;
+            width: calc(65% - 105px);
 
             .form-control {
-                width: 220px !important;
+                width: 100% !important;
                 padding: 6px 12px !important;
             }
         }
 
         .rule-filter-container {
+            width: 35%;
+
             .form-control {
-                width: 200px !important;
+                width: 100% !important;
             }
         }
 
         .rule-operator-container {
+            width: 105px;
+
             .form-control {
-                width: auto !important;
+                width: 100% !important;
             }
         }
     }

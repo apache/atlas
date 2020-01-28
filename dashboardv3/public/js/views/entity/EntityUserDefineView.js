@@ -54,7 +54,7 @@ define(['require',
         },
         initialize: function(options) {
             _.extend(this, _.pick(options, 'entity', 'customFilter'));
-            this.userDefineAttr = this.entity.customAttributes || [];
+            this.userDefineAttr = this.entity && this.entity.customAttributes || [];
             this.initialCall = false;
             this.swapItem = false, this.saveAttrItems = false;
             this.readOnlyEntity = this.customFilter === undefined ? Enums.entityStateReadOnly[this.entity.status] : this.customFilter;

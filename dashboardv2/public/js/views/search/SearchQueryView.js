@@ -89,7 +89,8 @@ define(['require',
                     entityDefCollection: this.entityDefCollection,
                     enumDefCollection: this.enumDefCollection,
                     classificationDefCollection: this.classificationDefCollection,
-                    searchTableFilters: this.searchTableFilters
+                    searchTableFilters: this.searchTableFilters,
+                    typeHeaders: this.typeHeaders
                 }
 
                 if (this.tag) {

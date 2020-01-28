@@ -194,8 +194,8 @@ define(['require'], function(require) {
     };
     Enums.systemAttributes = {
         "__classificationNames": "Classification(s)",
-        "__createdBy": "Created By",
-        "__customAttributes": "User-defined attributes",
+        "__createdBy": "Created By User",
+        "__customAttributes": "User-defined Properties",
         "__guid": "Guid",
         "__isIncomplete": "IsIncomplete",
         "__labels": "Label(s)",

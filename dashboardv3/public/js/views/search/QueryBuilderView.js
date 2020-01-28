@@ -19,19 +19,20 @@
 define(['require',
     'backbone',
     'hbs!tmpl/search/QueryBuilder_tmpl',
+    'hbs!tmpl/search/UserDefine_tmpl',
     'utils/Utils',
     'utils/CommonViewFunction',
     'utils/Enums',
     'query-builder',
     'daterangepicker'
-], function(require, Backbone, QueryBuilder_Tmpl, Utils, CommonViewFunction, Enums) {
+], function(require, Backbone, QueryBuilderTmpl, UserDefineTmpl, Utils, CommonViewFunction, Enums) {
 
     var QueryBuilderView = Backbone.Marionette.LayoutView.extend(
         /** @lends QueryBuilderView */
         {
             _viewName: 'QueryBuilderView',
 
-            template: QueryBuilder_Tmpl,
+            template: QueryBuilderTmpl,
 
 
 
@@ -53,13 +54,22 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'tag', 'searchTableFilters', 'systemAttrArr'));
+                _.extend(this, _.pick(options,
+                    'attrObj',
+                    'value',
+                    'typeHeaders',
+                    'entityDefCollection',
+                    'enumDefCollection',
+                    'classificationDefCollection',
+                    'tag',
+                    'searchTableFilters',
+                    'systemAttrArr'));
                 this.attrObj = _.sortBy(this.attrObj, 'name');
-                this.systemAttrArr = _.sortBy(this.systemAttrArr, 'name');
+                //this.systemAttrArr = _.sortBy(this.systemAttrArr, 'name');
                 this.filterType = this.tag ? 'tagFilters' : 'entityFilters';
             },
             bindEvents: function() {},
-            getOperator: function(type) {
+            getOperator: function(type, skipDefault) {
                 var obj = {
                     operators: null
                 }
@@ -72,7 +82,7 @@ define(['require',
                 if (type === "enum" || type === "boolean") {
                     obj.operators = ['=', '!='];
                 }
-                if (obj.operators) {
+                if (_.isEmpty(skipDefault) && obj.operators) {
                     obj.operators = obj.operators.concat(['is_null', 'not_null']);
                 }
                 return obj;
@@ -83,31 +93,178 @@ define(['require',
                 }
                 return false;
             },
+            getUserDefineInput: function() {
+                return UserDefineTmpl();
+            },
             getObjDef: function(attrObj, rules, isGroup, groupType, isSystemAttr) {
+                var that = this;
                 if (attrObj.name === "__classificationsText" || attrObj.name === "__historicalGuids") {
                     return;
                 }
+                var getLableWithType = function(label, name) {
+                    if (name === "__classificationNames" || name === "__customAttributes" || name === "__labels" || name === "__propagatedClassificationNames") {
+                        return label;
+                    } else {
+                        return label + " (" + attrObj.typeName + ")";
+                    }
+
+                }
+                var label = (Enums.systemAttributes[attrObj.name] ? Enums.systemAttributes[attrObj.name] : _.escape(attrObj.name.capitalize()));
                 var obj = {
                     id: attrObj.name,
-                    label: (Enums.systemAttributes[attrObj.name] ? Enums.systemAttributes[attrObj.name] : _.escape(attrObj.name.capitalize())) + " (" + attrObj.typeName + ")",
-                    type: _.escape(attrObj.typeName)
+                    label: getLableWithType(label, attrObj.name),
+                    plainLabel: label,
+                    type: _.escape(attrObj.typeName),
+                    validation: {
+                        callback: function(value, rule) {
+                            if (rule.operator.nb_inputs === false || !_.isEmpty(value) || !value instanceof Error) {
+                                return true;
+                            } else {
+                                if (value instanceof Error) {
+                                    return value.message; // with params
+                                } else {
+                                    return rule.filter.plainLabel + ' is required'; // with params
+                                }
+                            }
+                        }
+                    }
                 };
                 if (isGroup) {
                     obj.optgroup = groupType;
                 }
+                /* __isIncomplete / IsIncomplete */
                 if (isSystemAttr && attrObj.name === "__isIncomplete" || isSystemAttr && attrObj.name === "IsIncomplete") {
                     obj.type = "boolean";
                     obj.label = (Enums.systemAttributes[attrObj.name] ? Enums.systemAttributes[attrObj.name] : _.escape(attrObj.name.capitalize())) + " (boolean)";
                     obj['input'] = 'select';
                     obj['values'] = [{ 1: 'true' }, { 0: 'false' }];
-                    obj.operators = ['=', '!=', 'is_null', 'not_null'];
+                    _.extend(obj, this.getOperator("boolean"));
                     return obj;
                 }
+                /* Status / __state */
                 if (isSystemAttr && attrObj.name === "Status" || isSystemAttr && attrObj.name === "__state") {
                     obj.label = (Enums.systemAttributes[attrObj.name] ? Enums.systemAttributes[attrObj.name] : _.escape(attrObj.name.capitalize())) + " (enum)";
                     obj['input'] = 'select';
                     obj['values'] = ['ACTIVE', 'DELETED'];
-                    obj.operators = ['=', '!='];
+                    _.extend(obj, this.getOperator("boolean", true));
+                    return obj;
+                }
+                /* __classificationNames / __propagatedClassificationNames */
+                if (isSystemAttr && attrObj.name === "__classificationNames" || attrObj.name === "__propagatedClassificationNames") {
+                    obj["plugin"] = "select2";
+                    obj["input"] = 'select';
+                    obj["plugin_config"] = {
+                        placeholder: "Select classfication",
+                        tags: true,
+                        multiple: false,
+                        data: this.classificationDefCollection.fullCollection.models.map(function(o) { return { "id": o.get("name"), "text": o.get("name") } })
+                    };
+                    obj["valueSetter"] = function(rule) {
+                        if (rule && !_.isEmpty(rule.value)) {
+                            var selectEl = rule.$el.find('.rule-value-container select')
+                            var valFound = that.classificationDefCollection.fullCollection.find(function(o) {
+                                return o.get("name") === rule.value
+                            })
+                            if (valFound) {
+                                selectEl.val(rule.value).trigger("change");
+                            } else {
+                                var newOption = new Option(rule.value, rule.value, false, false);
+                                selectEl.append(newOption).val(rule.value);
+                            }
+                        }
+                    };
+                    _.extend(obj, this.getOperator("string"));
+                    return obj;
+                }
+                /* __customAttributes */
+                if (isSystemAttr && attrObj.name === "__customAttributes") {
+                    obj["input"] = function(rule) {
+                        return rule.operator.nb_inputs ? that.getUserDefineInput() : null
+                    }
+                    obj["valueGetter"] = function(rule) {
+                        if (rule.operator.type === "contains") {
+                            var $el = rule.$el.find('.rule-value-container'),
+                                key = $el.find("[data-type='key']").val(),
+                                val = $el.find("[data-type='value']").val();
+                            if (!_.isEmpty(key) && !_.isEmpty(val)) {
+                                return key + "=" + val;
+                            } else {
+                                return new Error("Key & Value is Required");
+                            }
+                        }
+                    }
+                    obj["valueSetter"] = function(rule) {
+                        if (!rule.$el.hasClass("user-define")) {
+                            rule.$el.addClass("user-define");
+                        }
+                        if (rule.value && !(rule.value instanceof Error)) {
+                            var $el = rule.$el.find('.rule-value-container'),
+                                value = rule.value.split("=");
+                            if (value) {
+                                $el.find("[data-type='key']").val(value[0]),
+                                    $el.find("[data-type='value']").val(value[1]);
+                            }
+                        }
+                    }
+
+                    obj.operators = ['contains', 'is_null', 'not_null'];
+                    return obj;
+                }
+                /* __labels */
+                if (isSystemAttr && attrObj.name === "__labels") {
+                    obj["plugin"] = "select2";
+                    obj["input"] = 'select';
+                    obj["plugin_config"] = {
+                        placeholder: "Enter Label(s)",
+                        tags: true,
+                        "language": {
+                            "noResults": function() { return ''; }
+                        },
+                        multiple: false
+                    };
+                    obj["valueSetter"] = function(rule) {
+                        if (rule && !_.isEmpty(rule.value)) {
+                            var newOption = new Option(rule.value, rule.value, true, false);
+                            return rule.$el.find('.rule-value-container select').append(newOption);
+                        }
+                    }
+                    _.extend(obj, this.getOperator("string"));
+                    return obj;
+                }
+                /* __typeName */
+                if (isSystemAttr && attrObj.name === "__typeName") {
+                    var entityType = [];
+                    that.typeHeaders.fullCollection.each(function(model) {
+                        if (model.get('category') == 'ENTITY') {
+                            entityType.push({
+                                "id": model.get("name"),
+                                "text": model.get("name")
+                            })
+                        }
+                    });
+                    obj["plugin"] = "select2";
+                    obj["input"] = 'select';
+                    obj["plugin_config"] = {
+                        placeholder: "Select type",
+                        tags: true,
+                        multiple: false,
+                        data: entityType
+                    };
+                    obj["valueSetter"] = function(rule) {
+                        if (rule && !_.isEmpty(rule.value)) {
+                            var selectEl = rule.$el.find('.rule-value-container select')
+                            var valFound = that.typeHeaders.fullCollection.find(function(o) {
+                                return o.get("name") === rule.value
+                            })
+                            if (valFound) {
+                                selectEl.val(rule.value).trigger("change");
+                            } else {
+                                var newOption = new Option(rule.value, rule.value, false, false);
+                                selectEl.append(newOption).val(rule.value);
+                            }
+                        }
+                    };
+                    _.extend(obj, this.getOperator("string"));
                     return obj;
                 }
                 if (obj.type === "date") {
@@ -184,6 +341,23 @@ define(['require',
                         filters.push(returnObj);
                     }
                 });
+                var sortMap = {
+                    "__guid": 1,
+                    "__typeName": 2,
+                    "__timestamp": 3,
+                    "__modificationTimestamp": 4,
+                    "__createdBy": 5,
+                    "__modifiedBy": 6,
+                    "__isIncomplete": 7,
+                    "__state": 8,
+                    "__classificationNames": 9,
+                    "__propagatedClassificationNames": 10,
+                    "__labels": 11,
+                    "__customAttributes": 12,
+                }
+                this.systemAttrArr = _.sortBy(this.systemAttrArr, function(obj) {
+                    return sortMap[obj.name]
+                })
                 _.each(this.systemAttrArr, function(obj) {
                     var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'Select System Attribute', true);
                     if (returnObj) {
@@ -200,6 +374,23 @@ define(['require',
                         conditions: ['AND', 'OR'],
                         allow_groups: true,
                         allow_empty: true,
+                        templates: {
+                            rule: '<div id="{{= it.rule_id }}" class="rule-container"> \
+                                      <div class="values-box"><div class="rule-filter-container"></div> \
+                                      <div class="rule-operator-container"></div> \
+                                      <div class="rule-value-container"></div></div> \
+                                      <div class="action-box"><div class="rule-header"> \
+                                        <div class="btn-group rule-actions"> \
+                                          <button type="button" class="btn btn-xs btn-danger" data-delete="rule"> \
+                                            <i class="{{= it.icons.remove_rule }}"></i> \
+                                          </button> \
+                                        </div> \
+                                      </div> </div>\
+                                      {{? it.settings.display_errors }} \
+                                        <div class="error-container"><i class="{{= it.icons.error }}"></i>&nbsp;<span></span></div> \
+                                      {{?}} \
+                                </div>'
+                        },
                         operators: [
                             { type: '=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
                             { type: '!=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },
@@ -226,7 +417,25 @@ define(['require',
                             error: 'fa fa-exclamation-triangle'
                         },
                         rules: rules_widgets
+                    }).on("afterCreateRuleInput.queryBuilder", function(e, rule) {
+                        rule.error = null;
+                        if (rule.operator.nb_inputs && rule.filter.id === "__customAttributes") {
+                            rule.$el.addClass("user-define");
+                        } else if (rule.$el.hasClass("user-define")) {
+                            rule.$el.removeClass("user-define");
+                        }
+                    }).on('validationError.queryBuilder', function(e, rule, error, value) {
+                        // never display error for my custom filter
+                        var errorMsg = error[0];
+                        if (that.queryBuilderLang && that.queryBuilderLang.errors && that.queryBuilderLang.errors[errorMsg]) {
+                            errorMsg = that.queryBuilderLang.errors[errorMsg];
+                        }
+                        rule.$el.find(".error-container span").html(errorMsg);
                     });
+                    var queryBuilderEl = that.ui.builder.data("queryBuilder");
+                    if (queryBuilderEl && queryBuilderEl.lang) {
+                        this.queryBuilderLang = queryBuilderEl.lang;
+                    }
                     this.$('.rules-group-header .btn-group.pull-right.group-actions').toggleClass('pull-left');
                 } else {
                     this.ui.builder.html('<h4>No Attributes are available !</h4>')

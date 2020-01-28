@@ -807,6 +807,9 @@ define(['require',
                                     }
                                     return;
                                 }
+                                if (key == "__historicalGuids" || key == "__classificationsText" || key == "__classificationNames" || key == "__propagatedClassificationNames") {
+                                    return;
+                                }
                                 col[obj.name] = {
                                     label: Enums.systemAttributes[obj.name] ? Enums.systemAttributes[obj.name] : _.escape(obj.name).capitalize(),
                                     cell: "Html",
@@ -826,6 +829,28 @@ define(['require',
                                                     'valueObject': {},
                                                     'isTable': false
                                                 };
+                                                if (key == "__labels") {
+                                                    var values = modelObj.attributes[key] ? modelObj.attributes[key].split("|") : null,
+                                                        valueOfArray = [];
+                                                    if (values) {
+                                                        if (values[values.length - 1] === "") { values.pop(); }
+                                                        if (values[0] === "") { values.shift(); }
+                                                        _.each(values, function(names) {
+                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span title="" data-original-title="' + names + '" >' + names + '</span></a></span>');
+                                                        });
+                                                        return valueOfArray.join(' ');
+                                                    }
+                                                }
+                                                if (key == "__customAttributes") {
+                                                    var customAttributes = modelObj.attributes[key] ? JSON.parse(modelObj.attributes[key]) : null,
+                                                        valueOfArray = [];
+                                                    if (customAttributes) {
+                                                        _.each(Object.keys(customAttributes), function(value, index) {
+                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span title="" data-original-title="' + value + ' : ' + Object.values(customAttributes)[index] + '" ><span>' + value + '</span> : <span>' + Object.values(customAttributes)[index] + '</span></span></a></span>');
+                                                        });
+                                                        return valueOfArray.join(' ');
+                                                    }
+                                                }
                                                 tempObj.valueObject[key] = modelObj.attributes[key];
                                                 var tablecolumn = CommonViewFunction.propertyTable(tempObj);
                                                 if (_.isArray(modelObj.attributes[key])) {

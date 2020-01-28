@@ -54,7 +54,7 @@ define(['require',
         },
         initialize: function(options) {
             _.extend(this, _.pick(options, 'entity', 'customFilter'));
-            this.userDefineAttr = this.entity.customAttributes || [];
+            this.userDefineAttr = this.entity && this.entity.customAttributes || [];
             this.initialCall = false;
             this.swapItem = false, this.saveAttrItems = false;
             this.readOnlyEntity = this.customFilter === undefined ? Enums.entityStateReadOnly[this.entity.status] : this.customFilter;
@@ -123,7 +123,7 @@ define(['require',
                 data: JSON.stringify(payload),
                 type: 'POST',
                 success: function() {
-                    var msg = _.isEmpty(that.customAttibutes) ? 'addSuccessMessage' : 'editSuccessMessage',
+                    var msg = that.initialCall ? 'addSuccessMessage' : 'editSuccessMessage',
                         caption = "One or more user-defined propertie"; // 's' will be added in abbreviation function
                     that.customAttibutes = list;
                     if (list.length === 0) {
