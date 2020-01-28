@@ -354,15 +354,18 @@ define([
                             entityDefCollection: that.entityDefCollection
                         });
                     searchType === 'ADVANCED' ? that.isBasic = false : that.isBasic = true;
-                    _.extend({}, this.options.value, params),
+                    _.extend({}, this.options.value, params);
+                    // Utils.notifyInfo({
+                    //     content: "Saved values are selected."
+                    // })
 
-                        Utils.setUrl({
-                            url: '#!/search/searchResult',
-                            urlParams: _.extend({}, { 'searchType': that.isBasic ? 'basic' : 'dsl', 'isCF': true }, params),
-                            mergeBrowserUrl: false,
-                            trigger: true,
-                            updateTabState: true
-                        });
+                    Utils.setUrl({
+                        url: '#!/search/searchResult',
+                        urlParams: _.extend({}, { 'searchType': that.isBasic ? 'basic' : 'dsl', 'isCF': true }, params),
+                        mergeBrowserUrl: false,
+                        trigger: true,
+                        updateTabState: true
+                    });
                 }
 
             } else {
@@ -447,11 +450,18 @@ define([
             var value = this.getValue();
             if (value && (value.type || value.tag || value.query || value.term)) {
                 value.searchType == "basic" ? this.isBasic = true : this.isBasic = false;
+                var urlObj = Utils.getUrlState.getQueryParams();
+                if (urlObj) {
+                    // includeDE value in because we need to send "true","false" to the server.
+                    urlObj.includeDE = urlObj.includeDE == "true" ? true : false;
+                    urlObj.excludeSC = urlObj.excludeSC == "true" ? true : false;
+                    urlObj.excludeST = urlObj.excludeST == "true" ? true : false;
+                }
                 this.customFilterSwitchBtnUpdate();
                 this.callSaveModalLayoutView({
                     'collection': this.isBasic ? this.saveSearchBaiscCollection.fullCollection : this.saveSearchAdvanceCollection.fullCollection,
                     getValue: function() {
-                        return value
+                        return _.extend({}, value, urlObj);
                     },
                     'isBasic': this.isBasic
                 });
