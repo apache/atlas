@@ -382,6 +382,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 matchString: "search"
             });
         },
+        isAdministratorTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "administrator"
+            });
+        },
         isCustomFilterTab: function(url) {
             return this.checkTabUrl({
                 url: url,

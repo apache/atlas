@@ -202,25 +202,35 @@ require(['App',
     'select2'
 ], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList, Enums) {
     var that = this;
-    this.asyncFetchCounter = 6 + (Enums.addOnEntities.length + 1);
+    this.asyncFetchCounter = 7 + (Enums.addOnEntities.length + 1);
+    // entity
     this.entityDefCollection = new VEntityList();
     this.entityDefCollection.url = UrlLinks.entitiesDefApiUrl();
+    // typeHeaders
     this.typeHeaders = new VTagList();
     this.typeHeaders.url = UrlLinks.typesApiUrl();
+    // enum
     this.enumDefCollection = new VTagList();
     this.enumDefCollection.url = UrlLinks.enumDefApiUrl();
     this.enumDefCollection.modelAttrName = "enumDefs";
+    // classfication
     this.classificationDefCollection = new VTagList();
+    // metric
     this.metricCollection = new VTagList();
     this.metricCollection.url = UrlLinks.metricsApiUrl();
     this.metricCollection.modelAttrName = "data";
+    // nameSpace
+    this.nameSpaceCollection = new VEntityList();
+    this.nameSpaceCollection.url = UrlLinks.nameSpaceApiUrl();
+    this.nameSpaceCollection.modelAttrName = "namespaceDefs";
 
     App.appRouter = new Router({
         entityDefCollection: this.entityDefCollection,
         typeHeaders: this.typeHeaders,
         enumDefCollection: this.enumDefCollection,
         classificationDefCollection: this.classificationDefCollection,
-        metricCollection: this.metricCollection
+        metricCollection: this.metricCollection,
+        nameSpaceCollection: this.nameSpaceCollection
     });
 
     var startApp = function() {
@@ -305,6 +315,18 @@ require(['App',
     this.metricCollection.fetch({
         skipDefaultError: true,
         complete: function() {
+            --that.asyncFetchCounter;
+            startApp();
+        }
+    });
+
+    this.nameSpaceCollection.fetch({
+        skipDefaultError: true,
+        complete: function() {
+            that.nameSpaceCollection.fullCollection.comparator = function(model) {
+                return model.get('name').toLowerCase();
+            };
+            that.nameSpaceCollection.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
         }

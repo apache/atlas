@@ -226,8 +226,28 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         },
         sessionApiUrl: function() {
             return this.baseUrl + '/admin/session';
+        },
+        purgeApiUrl: function() {
+            return this.baseUrl + '/admin/audit';
+        },
+        nameSpaceApiUrl: function() {
+            return this.typedefsUrl().defs + '?type=namespace';
+        },
+        nameSpaceGuidApiUrl: function(guid) {
+            var lineageUrl = this.baseUrlV2 + '/types/namespacedef/guid';
+            if (guid) {
+                return lineageUrl + '/' + guid;
+            } else {
+                return lineageUrl
+            }
+        },
+        nameSpaceUpdateUrl: function(name) {
+            if (name) {
+                return this.typedefsUrl().def + '/name/' + name;
+            } else {
+                return this.typedefsUrl().defs + '?type=namespace';
+            }
         }
-
     });
 
     return UrlLinks;

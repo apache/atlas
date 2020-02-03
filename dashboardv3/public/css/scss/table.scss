@@ -55,7 +55,7 @@ tr.empty {
     .entity-detail-table-toggle {
         position: absolute;
         right: 0;
-        top: 18px;
+        top: 7px;
     }
 
     table {
@@ -183,26 +183,36 @@ tr.empty {
         }
     }
 
-    >thead>tr>th {
-        border-width: thin;
-        border-color: $color_jungle_green_approx;
-        border-bottom-style: solid;
-        box-shadow: none;
-        padding: 12px 15px !important;
-        background-color: transparent;
-        text-align: left;
-        font-weight: 800;
-        border-top: 0;
-        font-size: 14px;
-        letter-spacing: 0.25px;
-        color: rgba(52, 52, 52, 1);
+    >thead>tr {
+        background: #eeeeee;
+
+        &>th {
+            border-width: thin;
+            // border-color: $color_jungle_green_approx;
+            border-bottom-style: solid;
+            box-shadow: none;
+            padding: 6px 15px !important;
+            background-color: transparent;
+            text-align: left;
+            font-weight: 800;
+            border-top: 0;
+            font-size: 14px;
+            letter-spacing: 0.25px;
+            color: #6a6a6a;
+        }
+
+        >td {
+            border-color: $color_gallery_approx;
+            color: #333333;
+            font-weight: 100;
+            padding: 9px 15px;
+        }
     }
 
     >tbody>tr>td {
-        border-color: $color_gallery_approx;
-        color: #333333;
-        font-weight: 100;
-        padding: 9px 15px;
+        &.select-row-cell {
+            text-align: center;
+        }
     }
 }
 
@@ -240,4 +250,13 @@ td {
             float: left;
         }
     }
+}
+
+.auditStatusContainer {
+    display: flex;
+    justify-content: center;
+}
+
+.auditStatusContainer>div {
+    flex-grow: 1;
 }

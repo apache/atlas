@@ -15,29 +15,31 @@
  * limitations under the License.
 -->
 <div class="panel panel-default expand_collapse_panel-icon right-icons">
-    <div class="panel-heading dash-button-icon clearfix" data-toggle="collapse" aria-expanded="true" href="#c_term">
+    <div class="panel-heading dash-button-icon clearfix" data-toggle="collapse" aria-expanded="true" href="#c_namespace">
         <i class="ec-icon fa"></i>
-        <h4 class="panel-title">Glossaries</h4>
+        <h4 class="panel-title">Namespaces</h4>
         <div class="btn-group pull-right">
-            <button type="button" class="typeRefresh" data-id="refreshTree" data-type="term" title="Refresh"><i class="fa fa-refresh"></i></button>
-            <button type="button" class="typeRefresh" data-id="showGlossaryType" title="Show Category">
-                <i class="fa fa-toggle-on switch-button"></i>
+            <button type="button" class="typeRefresh drop-down-menu-view" data-id="refreshTree" data-type="classification" title="Refresh">
+                <i class="fa fa-refresh"></i>
             </button>
-            <button title="Create Glossary" type="button" data-id="createGlossary">
-                <i class="fa fa-plus"></i>
+            <button type="button" class="typeRefresh drop-down-menu-view" data-id="createNameSpace" data-type="classification" title="Open Namespaces">
+                <i class="fa fa-external-link"></i>
             </button>
-            <!--  <button type="button" class="typeRefresh dropdown">
+            <!--    <button type="button" class="typeRefresh dropdown">
                 <div class=" btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i class="fa fa-ellipsis-v"></i>
                 </div>
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                    <li data-id="createGlossary" data-type="term"> <i class="fa fa-plus"></i><span>Create Glossary</span>
+                    <li data-id="groupOrFlatTreeView" data-type="classification"> <i class="fa fa-list-ul"></i><span>Show flat tree</span>
                     </li>
-                </ul>
+                    <li data-id="createNameSpace" data-type="classification"> <i class="fa fa-plus"></i><span>Create Namespace</span>
+                    </li>
             </button> -->
+            </ul>
+            </button>
         </div>
     </div>
-    <div id="c_term" class="panel-collapse collapse jstree-with-action in">
-        <div data-id="termSearchTree"></div>
+    <div id="c_namespace" class="panel-collapse collapse jstree-with-action in">
+        <div data-id="nameSpaceSearchTree"></div>
     </div>
 </div>

@@ -309,7 +309,7 @@ define([
                                 parent: "#",
                                 icon: "fa fa-file-o",
                                 state: {
-                                    disabled: entityCount == 0 ? true : false,
+                                    disabled: false,
                                     selected: isSelected
                                 },
                             };
@@ -489,12 +489,14 @@ define([
                 var aType = that.$("#" + str.node.a_attr.id),
                     typeOffset = aType.find(">.jstree-icon").offset();
                 that.$(".tree-tooltip").removeClass("show");
-                if (typeOffset.top && typeOffset.left) {
-                    aType.find(">span.tree-tooltip").css({
-                        top: "calc(" + typeOffset.top + "px - 45px)",
-                        left: "24px"
-                    }).addClass("show");
-                }
+                setTimeout(function() {
+                    if (aType.hasClass("jstree-hovered") && typeOffset.top && typeOffset.left) {
+                        aType.find(">span.tree-tooltip").css({
+                            top: "calc(" + typeOffset.top + "px - 45px)",
+                            left: "24px"
+                        }).addClass("show");
+                    }
+                }, 1200);
             }).on("dehover_node.jstree", function(nodes, str, res) {
                 that.$(".tree-tooltip").removeClass("show");
             });
