@@ -65,12 +65,14 @@ public class AtlasInstanceConverter {
     private final AtlasTypeRegistry     typeRegistry;
     private final AtlasFormatConverters instanceFormatters;
     private final EntityGraphRetriever  entityGraphRetriever;
+    private final EntityGraphRetriever  entityGraphRetrieverIgnoreRelationshipAttrs;
 
     @Inject
     public AtlasInstanceConverter(AtlasTypeRegistry typeRegistry, AtlasFormatConverters instanceFormatters) {
-        this.typeRegistry         = typeRegistry;
-        this.instanceFormatters   = instanceFormatters;
-        this.entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
+        this.typeRegistry                                = typeRegistry;
+        this.instanceFormatters                          = instanceFormatters;
+        this.entityGraphRetriever                        = new EntityGraphRetriever(typeRegistry);
+        this.entityGraphRetrieverIgnoreRelationshipAttrs = new EntityGraphRetriever(typeRegistry, true);
     }
 
     public Referenceable[] getReferenceables(Collection<AtlasEntity> entities) throws AtlasBaseException {
@@ -293,11 +295,19 @@ public class AtlasInstanceConverter {
     }
 
     public AtlasEntity getAndCacheEntity(String guid) throws AtlasBaseException {
+        return getAndCacheEntity(guid, false);
+    }
+
+    public AtlasEntity getAndCacheEntity(String guid, boolean ignoreRelationshipAttributes) throws AtlasBaseException {
         RequestContext context = RequestContext.get();
         AtlasEntity    entity  = context.getEntity(guid);
 
         if (entity == null) {
-            entity = entityGraphRetriever.toAtlasEntity(guid);
+            if (ignoreRelationshipAttributes) {
+                entity = entityGraphRetrieverIgnoreRelationshipAttrs.toAtlasEntity(guid);
+            } else {
+                entity = entityGraphRetriever.toAtlasEntity(guid);
+            }
 
             if (entity != null) {
                 context.cache(entity);
