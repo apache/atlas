@@ -245,12 +245,14 @@ define([
                 var aFilter = that.$("#" + str.node.a_attr.id),
                     filterOffset = aFilter.find(">.jstree-icon").offset();
                 that.$(".tree-tooltip").removeClass("show");
-                if (filterOffset.top && filterOffset.left) {
-                    aFilter.find(">span.tree-tooltip").css({
-                        top: "calc(" + filterOffset.top + "px - 45px)",
-                        left: "24px"
-                    }).addClass("show");
-                }
+                setTimeout(function() {
+                    if (aFilter.hasClass("jstree-hovered") && filterOffset.top && filterOffset.left) {
+                        aFilter.find(">span.tree-tooltip").css({
+                            top: "calc(" + filterOffset.top + "px - 45px)",
+                            left: "24px"
+                        }).addClass("show");
+                    }
+                }, 1200);
             }).on("dehover_node.jstree", function(nodes, str, res) {
                 that.$(".tree-tooltip").removeClass("show");
             });

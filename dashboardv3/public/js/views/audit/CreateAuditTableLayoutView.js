@@ -157,7 +157,7 @@ define(['require',
                     }
 
                 } else if (detailObj == "Deleted entity") {
-                    that.updateName(this.entityName);
+                    that.updateName(this.entityName ? this.entityName : "Entity");
                 }
             }
         });

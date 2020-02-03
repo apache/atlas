@@ -47,13 +47,16 @@ define([
             "!/glossary/:id": "renderGlossaryLayoutView",
             // Details
             "!/detailPage/:id": "detailPage",
+            //Audit table
+            '!/administrator': 'administrator',
+            '!/administrator/namespace/:id': 'nameSpaceDetailPage',
             // Default
             "*actions": "defaultAction"
         },
         initialize: function(options) {
             _.extend(
                 this,
-                _.pick(options, "entityDefCollection", "typeHeaders", "enumDefCollection", "classificationDefCollection", "metricCollection")
+                _.pick(options, "entityDefCollection", "typeHeaders", "enumDefCollection", "classificationDefCollection", "metricCollection", "nameSpaceCollection")
             );
             this.showRegions();
             this.bindFooterEvent();
@@ -72,7 +75,8 @@ define([
                 enumDefCollection: this.enumDefCollection,
                 classificationDefCollection: this.classificationDefCollection,
                 glossaryCollection: this.glossaryCollection,
-                metricCollection: this.metricCollection
+                metricCollection: this.metricCollection,
+                nameSpaceCollection: this.nameSpaceCollection
             };
             this.sharedObj = {
                 searchTableColumns: {},
@@ -277,6 +281,16 @@ define([
                         updateTabState: true
                     });
                 }
+                if (Utils.getUrlState.getQueryUrl().lastValue !== "search" && Utils.getUrlState.isAdministratorTab() === false) {
+                    paramObj = _.omit(paramObj, ["tabActive", "ns", "nsa"]);
+                    Utils.setUrl({
+                        url: "#!/search/searchResult",
+                        urlParams: paramObj,
+                        mergeBrowserUrl: false,
+                        trigger: false,
+                        updateTabState: true
+                    });
+                }
                 if (paramObj) {
                     if (!paramObj.type) {
                         if (paramObj.entityFilters) {
@@ -365,38 +379,6 @@ define([
                 });
             });
         },
-        renderSearchResult: function() {
-            var that = this;
-            require(["views/site/Header", "views/search/SearchDetailLayoutView"], function(Header, SearchDetailLayoutView) {
-                var paramObj = Utils.getUrlState.getQueryParams();
-                var isinitialView = true,
-                    isTypeTagNotExists = false,
-                    tempParam = _.extend({}, paramObj);
-                that.renderViewIfNotExists(that.getHeaderOptions(Header));
-                if (paramObj) {
-                    isinitialView =
-                        (
-                            paramObj.type ||
-                            (paramObj.dslChecked == "true" ? "" : paramObj.tag || paramObj.term) ||
-                            (paramObj.query ? paramObj.query.trim() : "")
-                        ).length === 0;
-                }
-                App.rContent.show(
-                    new SearchDetailLayoutView(
-                        _.extend({
-                                value: paramObj,
-                                searchVent: that.searchVent,
-                                categoryEvent: that.categoryEvent,
-                                initialView: isinitialView,
-                                isTypeTagNotExists: paramObj.type != tempParam.type || tempParam.tag != paramObj.tag
-                            },
-                            that.preFetchedCollectionLists,
-                            that.sharedObj
-                        )
-                    )
-                );
-            });
-        },
         detailPage: function(id) {
             var that = this;
             if (id) {
@@ -416,7 +398,10 @@ define([
                         },
                         render: function() {
                             return new SideNavLayoutView(
-                                _.extend({ searchVent: that.searchVent, categoryEvent: that.categoryEvent }, that.preFetchedCollectionLists, that.sharedObj)
+                                _.extend({
+                                    searchVent: that.searchVent,
+                                    categoryEvent: that.categoryEvent
+                                }, that.preFetchedCollectionLists, that.sharedObj)
                             );
                         }
                     });
@@ -437,73 +422,6 @@ define([
                     this.entityCollection.fetch({ reset: true });
                 });
             }
-        },
-        tagAttributePageLoad: function(tagName) {
-            var that = this;
-            require(["views/site/Header", "views/tag/TagDetailLayoutView", "views/site/SideNavLayoutView"], function(Header, TagDetailLayoutView, SideNavLayoutView) {
-                var paramObj = Utils.getUrlState.getQueryParams(),
-                    url = Utils.getUrlState.getQueryUrl().queyParams[0];
-                that.renderViewIfNotExists(that.getHeaderOptions(Header));
-                // that.renderViewIfNotExists({
-                //     view: App.rSideNav,
-                //     manualRender: function() {
-                //         if (paramObj && paramObj.dlttag) {
-                //             Utils.setUrl({
-                //                 url: url,
-                //                 trigger: false,
-                //                 updateTabState: true
-                //             });
-                //         }
-                //         this.view.currentView.RTagLayoutView.currentView.manualRender(_.extend({}, paramObj, { 'tagName': tagName }));
-                //         this.view.currentView.selectTab();
-                //     },
-                //     render: function() {
-                //         if (paramObj && paramObj.dlttag) {
-                //             Utils.setUrl({
-                //                 url: url,
-                //                 trigger: false,
-                //                 updateTabState: true
-                //             });
-                //         }
-                //         return new SideNavLayoutView(
-                //             _.extend({
-                //                 'tag': tagName,
-                //                 'value': paramObj
-                //             }, that.preFetchedCollectionLists, that.sharedObj)
-                //         );
-                //     }
-                // });
-
-                that.renderViewIfNotExists({
-                    view: App.rSideNav,
-                    manualRender: function() {
-                        this.view.currentView.selectTab();
-                    },
-                    render: function() {
-                        return new SideNavLayoutView(
-                            _.extend({ searchVent: that.searchVent, categoryEvent: that.categoryEvent }, that.preFetchedCollectionLists, that.sharedObj)
-                        );
-                    }
-                });
-                if (tagName) {
-                    // updating paramObj to check for new queryparam.
-                    paramObj = Utils.getUrlState.getQueryParams();
-                    if (paramObj && paramObj.dlttag) {
-                        return false;
-                    }
-                    App.rContent.show(
-                        new TagDetailLayoutView(
-                            _.extend({
-                                    tag: tagName,
-                                    value: paramObj
-                                },
-                                that.preFetchedCollectionLists,
-                                that.sharedObj
-                            )
-                        )
-                    );
-                }
-            });
         },
         glossaryDetailPage: function(id) {
             var that = this;
@@ -542,25 +460,6 @@ define([
             require(["views/site/Header", "views/search/SearchDetailLayoutView", "views/site/SideNavLayoutView"], function(Header, SearchDetailLayoutView, SideNavLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
                 that.renderViewIfNotExists(that.getHeaderOptions(Header));
-                // that.renderViewIfNotExists({
-                //     view: App.rSideNav,
-                //     manualRender: function() {
-                //         this.view.currentView.selectTab();
-                //         if (Utils.getUrlState.isTagTab()) {
-                //             this.view.currentView.RTagLayoutView.currentView.manualRender();
-                //         } else if (Utils.getUrlState.isGlossaryTab()) {
-                //             this.view.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({ "isTrigger": true }, { "value": paramObj }));
-                //         }
-                //     },
-                //     render: function() {
-                //         return new SideNavLayoutView(
-                //             _.extend({
-                //                 'searchVent': that.searchVent
-                //             }, that.preFetchedCollectionLists, that.sharedObj)
-                //         )
-                //     }
-                // });
-
                 that.renderViewIfNotExists({
                     view: App.rSideNav,
                     manualRender: function() {
@@ -591,6 +490,52 @@ define([
                         App.rNContent.currentView.destroy();
                     }
                 }
+            });
+        },
+        administrator: function() {
+            var that = this;
+            require(["views/site/Header", "views/site/SideNavLayoutView", 'views/administrator/AdministratorLayoutView'], function(Header, SideNavLayoutView, AdministratorLayoutView) {
+                var value = Utils.getUrlState.getQueryParams(),
+                    paramObj = _.extend({ value: value, namespaceID: null }, that.preFetchedCollectionLists);
+                that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                that.renderViewIfNotExists({
+                    view: App.rSideNav,
+                    manualRender: function() {
+                        this.view.currentView.manualRender(paramObj);
+                    },
+                    render: function() {
+                        return new SideNavLayoutView(
+                            _.extend({ searchVent: that.searchVent, categoryEvent: that.categoryEvent }, that.preFetchedCollectionLists, that.sharedObj)
+                        );
+                    }
+                });
+                App.rContent.show(new AdministratorLayoutView(paramObj));
+            });
+        },
+        nameSpaceDetailPage: function(namespaceGuid) {
+            var that = this;
+            require(["views/site/Header", "views/site/SideNavLayoutView", "views/name_space/NameSpaceContainerLayoutView", ], function(Header, SideNavLayoutView, NameSpaceContainerLayoutView) {
+                var paramObj = Utils.getUrlState.getQueryParams();
+                that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                var options = _.extend({
+                        namespaceID: namespaceGuid,
+                        value: paramObj,
+                        searchVent: that.searchVent,
+                        categoryEvent: that.categoryEvent
+                    },
+                    that.preFetchedCollectionLists,
+                    that.sharedObj
+                )
+                that.renderViewIfNotExists({
+                    view: App.rSideNav,
+                    manualRender: function() {
+                        this.view.currentView.manualRender(options);
+                    },
+                    render: function() {
+                        return new SideNavLayoutView(options);
+                    }
+                });
+                App.rContent.show(new NameSpaceContainerLayoutView(options));
             });
         },
         defaultAction: function(actions) {

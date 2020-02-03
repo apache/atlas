@@ -29,8 +29,6 @@
                 <div class="btn-group pull-right header-menu">
                     <table class="header-menu">
                         <tr>
-                            <!-- <td><a class="show-classification" href="javascript:void(0);" title="Clasification"><i class="fa fa-tag"></i></a></td>
-                            <td><a class="show-glossary" href="javascript:void(0);" title="Glossary"><i class="fa fa-folder"></i></a></td> -->
                             <td><a class="show-stat" href="javascript:void(0);" title="Statistics"><i class="fa fa-bar-chart"></i></a></td>
                             <td class="user-dropdown">
                                 <table data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -43,13 +41,17 @@
                                         </td>
                                     </tr>
                                 </table>
-                                <ul class="dropdown-menu right-align">
-                                    <li class="aboutAtlas"><a href="javascript:void(0)">About</a></li>
-                                    <li class="aboutAtlas"><a target="_blank" href="http://atlas.apache.org/">Help</a></li>
-                                    <li role="separator" class="divider"></li>
-                                    <li>
-                                        <a data-id="signOut" href="javascript:void(0)"><i class="fa fa-sign-out"></i>Logout</a>
+                                <ul class="dropdown-menu pull-right multi-level" role="menu" aria-labelledby="dropdownMenu">
+                                    <li><a href="#!/administrator" data-id="purgeSearch">Administration</a></li>
+                                    <li class="dropdown-submenu">
+                                        <a tabindex="-1" href="javascript:void(0)"> Help </span></a>
+                                        <ul class="dropdown-menu">
+                                            <li><a target="_blank" href="http://atlas.apache.org/">Documentation</a></li>
+                                            <li class="aboutAtlas"><a href="javascript:void(0)">About</a></li>
+                                        </ul>
                                     </li>
+                                    <li class="divider"></li>
+                                    <li><a data-id="signOut" href="javascript:void(0)"><i class="fa fa-sign-out"></i>Logout</a></li>
                                 </ul>
                             </td>
                         </tr>

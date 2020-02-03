@@ -62,6 +62,7 @@
     .panel {
         &.panel-default {
             padding: 5px;
+            margin: 5px;
         }
 
         .panel-body {
@@ -81,6 +82,12 @@
 
     .table {
         &.stat-table {
+            width: 100%;
+
+            td {
+                display: table-cell;
+            }
+
             &.notification-table {
                 &.table-striped>tbody>tr:nth-of-type(odd) {
                     background-color: $color_white_lilac_approx;

@@ -95,6 +95,18 @@ define(['require',
                 dataType: 'json'
             }, options);
             return this.constructor.nonCrudOperation.call(this, url, "POST", options);
+        },
+        saveNameSpaceAttribute: function(options) {
+            var url = UrlLinks.nameSpaceUpdateUrl();
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+            return this.constructor.nonCrudOperation.call(this, url, 'PUT', options);
+        },
+        deleteNameSpace: function(options) {
+            var url = UrlLinks.nameSpaceUpdateUrl(options.typeName);
+            return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
         }
     }, {});
     return VEntity;

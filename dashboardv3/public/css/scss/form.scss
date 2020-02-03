@@ -30,6 +30,7 @@
         @extend .control-label-sm;
         padding-right: 10px;
     }
+
 }
 
 .form-group {
@@ -245,6 +246,10 @@ button:focus {
         padding: 2px 6px;
     }
 
+    &.btn-xs {
+        padding: 0px 5px;
+    }
+
     &.btn-md {
         padding: 6px 10px;
     }
@@ -303,6 +308,10 @@ button:focus {
 
     &.btn-sm {
         padding: 2px 6px;
+    }
+
+    &.btn-xs {
+        padding: 0px 5px;
     }
 
     &.btn-md {

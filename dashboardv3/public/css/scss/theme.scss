@@ -158,6 +158,14 @@ header.atlas-header {
             position: relative;
             transition: width 0.3s !important;
 
+            .admin-icon {
+                background-color: $color_ironside_gray_approx;
+                width: 24px;
+                height: 20px;
+                -webkit-mask: url(../img/support.svg) no-repeat center;
+                mask: url(../img/support.svg) no-repeat center;
+            }
+
             .search-box {
                 width: 50%;
                 margin: 0 auto;
@@ -172,7 +180,8 @@ header.atlas-header {
                 left: auto;
             }
 
-            &>li>a {
+            &>li>a,
+                {
                 color: $color_ironside_gray_approx;
 
                 &:hover {
@@ -188,19 +197,23 @@ header.atlas-header {
         td {
             >a {
                 display: inline-block;
-                color: $color_ironside_gray_approx;
+                color: $color_ironside_gray_approx !important;
                 padding: 13px 14px;
                 border-bottom: 2px solid transparent;
             }
 
             >a,
             >table {
-                padding: 15px 14px;
+                padding: 14px 14px;
 
                 &:hover {
                     border-bottom: 2px solid $color_jungle_green_approx;
                     padding: 14px 14px;
-                    color: $color_jungle_green_approx;
+                    color: $color_jungle_green_approx !important;
+
+                    .admin-icon {
+                        background-color: $color_jungle_green_approx;
+                    }
 
                     a {
                         color: $color_jungle_green_approx;
@@ -775,5 +788,45 @@ td.searchTableName:hover {
         position: absolute;
         z-index: 1;
         left: calc(50% - 8px);
+    }
+}
+
+.dropdown-menu.multi-level {
+    .dropdown-submenu {
+        position: relative;
+
+        &>a:after {
+            display: none;
+            content: " ";
+            width: 0;
+            height: 0;
+            border-color: transparent;
+            border-style: solid;
+            border-width: 5px 5px 5px 0px;
+            border-right-color: #ccc;
+            position: absolute;
+            left: 8px;
+            top: calc(50% - 5px);
+        }
+
+        &>a:hover:after {
+            display: block;
+        }
+
+        &>.dropdown-menu {
+            top: 0;
+            left: -100%;
+            width: 100%;
+            margin-top: -6px;
+            margin-left: -1px;
+            -webkit-border-radius: 0 6px 6px 6px;
+            -moz-border-radius: 0 6px 6px;
+            border-radius: 0 6px 6px 6px;
+        }
+
+        &:hover>.dropdown-menu {
+            display: block;
+        }
+
     }
 }

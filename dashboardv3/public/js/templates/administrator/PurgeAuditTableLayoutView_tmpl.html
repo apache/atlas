@@ -1,0 +1,120 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<div class="page-title clearfix">
+    <!--  <div class="fontLoader">
+        <i class="fa fa-refresh fa-spin-custom"></i>
+    </div> -->
+    <div class="row">
+        <div class="col-sm-12 default-tab">
+            <ul class="nav nav-tabs" data-id="tab-list">
+                <li role="purgeaudit" class="tab active"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
+                <li role="namespace"><a href="#tab-namespace" aria-controls="tab-namespace" role="tab" data-toggle="tab">Namespace</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div>
+    <div class="tab-content purge-details">
+        <div id="tab-audit" role="purgeaudit" class="tab-pane active animated fadeIn">
+            <div id="r_auditTableLayoutView">
+                <div class="fontLoader-relative">
+                    <i class="fa fa-refresh fa-spin-custom"></i>
+                </div>
+                <div class="position-relative">
+                    <div class="tableOverlay"></div>
+                    <!-- Not for table Loader its only for initial loading -->
+                    <div class="fontLoader">
+                        <i class="fa fa-refresh fa-spin-custom"></i>
+                    </div>
+                    <div class="attributeResultContainer form-group ">
+                        <button class="btn-action btn-sm  attribute-filter-text" data-id='purgeAttrFilter'> <i class="fa fa-angle-right"></i> Filters</button>
+                        <div class="attribute-filter-container hide">
+                            <div class="panel panel-default expand_collapse_panel-icon" data-id="purgeRegion">
+                                <div class="panel-heading" data-toggle="collapse" href="#collapsePurge" aria-expanded="true">
+                                    <h4 class="panel-title">
+                                        <a>Purge</a>
+                                    </h4>
+                                    <div class="btn-group pull-right">
+                                        <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+                                    </div>
+                                </div>
+                                <div id="collapsePurge" class="panel-collapse collapse in">
+                                    <div class="panel-body">
+                                        <div id='r_attributeQueryBuilderPurge' class='attribute-querybuilder'>
+                                            <div class='fontLoader'><i class='fa fa-refresh fa-spin-custom'></i></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class='attribute-result-footer'>
+                                <div type="ok" class="btn btn-atlas ok search" data-id='attrApply'>Apply</div>
+                                <div type="ok" class="btn btn-atlas ok" data-id='attrClose'>Close</div>
+                            </div>
+                        </div>
+                        <div class="pull-right">
+                            <select class="pull-right form-controlrow-margin-bottom" data-id="purgeType"></select>
+                        </div>
+                    </div>
+                    <div class='attr-filter-overlay hide'></div>
+                    <div class="auditTable" style="display: none">
+                        <div id="r_purgeAuditTableLayoutView"></div>
+                        <div>
+                            <span class="labelShowRecord pull-left" data-id="pageRecordText"></span>
+                        </div>
+                        <div class="pagination-box">
+                            <div class="backgrid-paginator pull-right">
+                                <ul>
+                                    <li>
+                                        <button type="button" data-id="previousAuditData" title="Previous" disabled=true>
+                                            <i class="fa fa-angle-left" aria-hidden="true"></i>
+                                        </button>
+                                    </li>
+                                    <li class="active">
+                                        <a href="javascript:void(0)" data-id="activePage"></a>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-id="nextAuditData" title="Next">
+                                            <i class="fa fa-angle-right" aria-hidden="true"></i>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="no-data" data-id="showDefault">
+                <div class="position-relative thick-border">
+                    <div style="padding-top: 20px; " class="table-responsive tableBorder">
+                        <table class="table table-hover backgrid table-quickMenu">
+                            <tbody>
+                                <tr class="empty">
+                                    <td colspan="16"><span>No Records found!</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tab-namespace" role="namespace" class="tab-pane animated fadeIn">
+            <div id="r_namespaceTableLayoutView">
+            </div>
+        </div>
+    </div>
+</div>
+</div>

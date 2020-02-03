@@ -36,7 +36,8 @@ define([
             RGlossaryTreeRender: '[data-id="r_glossaryTreeRender"]',
             RClassificationTreeRender: '[data-id="r_classificationTreeRender"]',
             REntityTreeRender: '[data-id="r_entityTreeRender"]',
-            RCustomFilterTreeRender: '[data-id="r_customFilterTreeRender"]'
+            RCustomFilterTreeRender: '[data-id="r_customFilterTreeRender"]',
+            RNameSpaceTreeRender: '[data-id="r_nameSpaceTreeRender"]'
         },
         ui: {
             //search
@@ -81,6 +82,7 @@ define([
                 this.classificationSearchTree = this.$('[data-id="classificationSearchTree"]');
                 this.termSearchTree = this.$('[data-id="termSearchTree"]');
                 this.customFilterSearchTree = this.$('[data-id="customFilterSearchTree"]');
+                this.nameSpaceSearchTree = this.$('[data-id="nameSpaceSearchTree"]');
                 this.entitySearchTree.jstree(true).show_all();
                 this.entitySearchTree.jstree("search", searchString);
                 this.classificationSearchTree.jstree(true).show_all();
@@ -89,6 +91,9 @@ define([
                 this.termSearchTree.jstree("search", searchString);
                 this.customFilterSearchTree.jstree(true).show_all();
                 this.customFilterSearchTree.jstree("search", searchString);
+                this.nameSpaceSearchTree.jstree(true).show_all();
+                this.nameSpaceSearchTree.jstree("search", searchString);
+
             };
 
             events["click " + this.ui.menuItems] = function(e) {
@@ -118,11 +123,12 @@ define([
             this.bindEvents();
         },
         onRender: function() {
-            var opt = opt = Utils.getUrlState.getQueryParams();
+            var opt = Utils.getUrlState.getQueryParams();
             this.renderEntityTree(opt);
             this.renderClassificationTree(opt);
             this.renderGlossaryTree(opt);
             this.renderCustomFilterTree();
+            this.renderNameSpaceTree();
             this.showHideGlobalFilter();
             this.showDefaultPage();
         },
@@ -195,6 +201,9 @@ define([
             if (options) {
                 _.extend(this.options, options);
                 this.showHideGlobalFilter();
+                if (this.RNameSpaceTreeRender.currentView) {
+                    this.RNameSpaceTreeRender.currentView.manualRender(this.options);
+                }
                 if (this.RCustomFilterTreeRender.currentView) {
                     this.RCustomFilterTreeRender.currentView.manualRender(this.options);
                 }
@@ -231,6 +240,12 @@ define([
             var that = this;
             require(["views/search/tree/CustomFilterTreeLayoutView"], function(CustomFilterTreeLayoutView) {
                 that.RCustomFilterTreeRender.show(new CustomFilterTreeLayoutView(_.extend({ query: that.query }, that.options)));
+            });
+        },
+        renderNameSpaceTree: function() {
+            var that = this;
+            require(["views/search/tree/NameSpaceTreeLayoutView"], function(NameSpaceTreeLayoutView) {
+                that.RNameSpaceTreeRender.show(new NameSpaceTreeLayoutView(_.extend({ query: that.query }, that.options)));
             });
         }
     });

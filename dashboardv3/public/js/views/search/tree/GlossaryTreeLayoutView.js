@@ -56,6 +56,7 @@ define([
 
             events["click " + this.ui.createGlossary] = function(e) {
                 var that = this;
+                e.stopPropagation();
                 CommonViewFunction.createEditGlossaryCategoryTerm({
                     isGlossaryView: true,
                     collection: that.glossaryCollection,
@@ -664,12 +665,14 @@ define([
                     var aTerm = that.$("#" + str.node.a_attr.id),
                         termOffset = aTerm.find(">.jstree-icon").offset();
                     that.$(".tree-tooltip").removeClass("show");
-                    if (termOffset.top && termOffset.left) {
-                        aTerm.find(">span.tree-tooltip").css({
-                            top: "calc(" + termOffset.top + "px - 45px)",
-                            left: "24px"
-                        }).addClass("show");
-                    }
+                    setTimeout(function() {
+                        if (aTerm.hasClass("jstree-hovered") && termOffset.top && termOffset.left) {
+                            aTerm.find(">span.tree-tooltip").css({
+                                top: "calc(" + termOffset.top + "px - 45px)",
+                                left: "24px"
+                            }).addClass("show");
+                        }
+                    }, 1200);
                 }).on("dehover_node.jstree", function(nodes, str, res) {
                     that.$(".tree-tooltip").removeClass("show");
                 });
