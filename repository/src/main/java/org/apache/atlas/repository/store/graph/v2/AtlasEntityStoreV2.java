@@ -47,6 +47,7 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasNamespaceType.AtlasNamespaceAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -74,6 +75,7 @@ import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
 import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getCustomAttributes;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
 
@@ -318,13 +320,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException {
-        return createOrUpdate(entityStream, isPartialUpdate, false);
+        return createOrUpdate(entityStream, isPartialUpdate, false, false);
     }
 
     @Override
     @GraphTransaction(logRollback = false)
     public EntityMutationResponse createOrUpdateForImport(EntityStream entityStream) throws AtlasBaseException {
-        return createOrUpdate(entityStream, false, true);
+        return createOrUpdate(entityStream, false, true, true);
     }
 
     @Override
@@ -356,7 +358,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         entity.setGuid(guid);
 
-        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), isPartialUpdate, false);
+        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), isPartialUpdate, false, false);
     }
 
     @Override
@@ -378,7 +380,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity)), "update entity ByUniqueAttributes");
 
-        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true, false);
+        return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true, false, false);
     }
 
     @Override
@@ -429,7 +431,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED, attrName, attrType.getTypeName());
         }
 
-        return createOrUpdate(new AtlasEntityStream(updateEntity), true, false);
+        return createOrUpdate(new AtlasEntityStream(updateEntity), true, false, false);
     }
 
     @Override
@@ -823,6 +825,66 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public void addOrUpdateNamespaceAttributes(String guid, Map<String, Map<String, Object>> entityNamespaces, boolean isOverwrite) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> addOrUpdateNamespaceAttributes(guid={}, entityNamespaces={}, isOverwrite={})", guid, entityNamespaces, isOverwrite);
+        }
+
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        String          typeName   = getTypeName(entityVertex);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        validateNamespaceAttributes(entityVertex, entityType, entityNamespaces, isOverwrite);
+
+        if (isOverwrite) {
+            entityGraphMapper.setNamespaceAttributes(entityVertex, entityType, entityNamespaces);
+        } else {
+            entityGraphMapper.addOrUpdateNamespaceAttributes(entityVertex, entityType, entityNamespaces);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== addOrUpdateNamespaceAttributes(guid={}, entityNamespaces={}, isOverwrite={})", guid, entityNamespaces, isOverwrite);
+        }
+    }
+
+    @Override
+    @GraphTransaction
+    public void removeNamespaceAttributes(String guid, Map<String, Map<String, Object>> entityNamespaces) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> removeNamespaceAttributes(guid={}, entityNamespaces={})", guid, entityNamespaces);
+        }
+
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        String          typeName   = getTypeName(entityVertex);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        entityGraphMapper.removeNamespaceAttributes(entityVertex, entityType, entityNamespaces);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== removeNamespaceAttributes(guid={}, entityNamespaces={})", guid, entityNamespaces);
+        }
+    }
+
+    @Override
+    @GraphTransaction
     public void setLabels(String guid, Set<String> labels) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> setLabels()");
@@ -899,7 +961,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-    private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications) throws AtlasBaseException {
+    private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceNamespaceAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
         }
@@ -1040,7 +1102,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 RequestContext.get().endMetricRecord(checkForUnchangedEntities);
             }
 
-            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications);
+            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications, replaceNamespaceAttributes);
 
             ret.setGuidAssignments(context.getGuidAssignments());
 
@@ -1309,6 +1371,52 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
                 }
             }
+        }
+    }
+
+    private void validateNamespaceAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> entityNamespaces, boolean isOverwrite) throws AtlasBaseException {
+        List<String> messages = new ArrayList<>();
+
+        Map<String, List<AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+
+        for (String nsName : entityNamespaces.keySet()) {
+            if (!entityNamespaces.containsKey(nsName)) {
+                messages.add(nsName + ": invalid namespace for entity type " + entityType.getTypeName());
+
+                continue;
+            }
+
+            List<AtlasNamespaceAttribute> entityTypeNsAttributes = entityTypeNamespaces.get(nsName);
+            Map<String, Object>           entityNsAttributes     = entityNamespaces.get(nsName);
+
+            for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes) {
+                AtlasType attrType  = nsAttribute.getAttributeType();
+                String    attrName  = nsAttribute.getName();
+                Object    attrValue = entityNsAttributes.get(attrName);
+                String    fieldName = entityType.getTypeName() + "." + nsName + "." + attrName;
+
+                if (attrValue != null) {
+                    attrType.validateValue(attrValue, fieldName, messages);
+                } else if (!nsAttribute.getAttributeDef().getIsOptional()) {
+                    final boolean isAttrValuePresent;
+
+                    if (isOverwrite) {
+                        isAttrValuePresent = false;
+                    } else {
+                        Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, nsAttribute.getVertexPropertyName(), Object.class);
+
+                        isAttrValuePresent = existingValue != null;
+                    }
+
+                    if (!isAttrValuePresent) {
+                        messages.add(fieldName + ": mandatory namespace attribute value missing in type " + entityType.getTypeName());
+                    }
+                }
+            }
+        }
+
+        if (!messages.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
         }
     }
 }
