@@ -64,6 +64,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -850,6 +851,78 @@ public class EntityREST {
 
             ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore);
             return associator.setClassifications(entityHeaders.getGuidHeaderMap());
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("/guid/{guid}/namespaces")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void addOrUpdateNamespaceAttributes(@PathParam("guid") final String guid, @QueryParam("isOverwrite") @DefaultValue("false") boolean isOverwrite, Map<String, Map<String, Object>> entityNamespaces) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addOrUpdateNamespaceAttributes(" + guid + ", isOverwrite=" + isOverwrite + ")");
+            }
+
+            entitiesStore.addOrUpdateNamespaceAttributes(guid, entityNamespaces, isOverwrite);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @DELETE
+    @Path("/guid/{guid}/namespaces")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void removeNamespaceAttributes(@PathParam("guid") final String guid, Map<String, Map<String, Object>> entityNamespaces) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.removeNamespaceAttributes(" + guid + ")");
+            }
+
+            entitiesStore.removeNamespaceAttributes(guid, entityNamespaces);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("/guid/{guid}/namespace/{namespace}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void addOrUpdateNamespaceAttributes(@PathParam("guid") final String guid, @PathParam("namespace") final String namespace, Map<String, Object> entityNsAttributes) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addOrUpdateNamespaceAttributes(" + guid + ", " + namespace + ")");
+            }
+
+            entitiesStore.addOrUpdateNamespaceAttributes(guid, Collections.singletonMap(namespace, entityNsAttributes), false);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @DELETE
+    @Path("/guid/{guid}/namespace/{namespace}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void removeNamespaceAttributes(@PathParam("guid") final String guid, @PathParam("namespace") final String namespace, Map<String, Object> entityNsAttributes) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.removeNamespaceAttributes(" + guid + ", " + namespace + ")");
+            }
+
+            entitiesStore.removeNamespaceAttributes(guid, Collections.singletonMap(namespace, entityNsAttributes));
         } finally {
             AtlasPerfTracer.log(perf);
         }

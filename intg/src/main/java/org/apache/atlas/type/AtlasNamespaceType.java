@@ -146,21 +146,22 @@ public class AtlasNamespaceType extends AtlasStructType {
 
     public static class AtlasNamespaceAttribute extends AtlasAttribute {
         private final Set<AtlasEntityType> applicableEntityTypes;
-        private final int maxStringLength;
-        private final String validPattern;
+        private final int                  maxStringLength;
+        private final String               validPattern;
 
         public AtlasNamespaceAttribute(AtlasAttribute attribute, Set<AtlasEntityType> applicableEntityTypes) {
             super(attribute);
-            this.maxStringLength = 0;
-            this.validPattern = null;
+
+            this.maxStringLength       = 0;
+            this.validPattern          = null;
             this.applicableEntityTypes = applicableEntityTypes;
         }
 
-        public AtlasNamespaceAttribute(AtlasAttribute attribute, Set<AtlasEntityType> applicableEntityTypes,
-                                       int maxStringLength, String validPattern) {
+        public AtlasNamespaceAttribute(AtlasAttribute attribute, Set<AtlasEntityType> applicableEntityTypes, int maxStringLength, String validPattern) {
             super(attribute);
-            this.maxStringLength = maxStringLength;
-            this.validPattern = validPattern;
+
+            this.maxStringLength       = maxStringLength;
+            this.validPattern          = validPattern;
             this.applicableEntityTypes = applicableEntityTypes;
         }
 

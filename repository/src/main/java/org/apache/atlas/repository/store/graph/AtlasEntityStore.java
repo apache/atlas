@@ -248,6 +248,23 @@ public interface AtlasEntityStore {
     void setLabels(String guid, Set<String> labels) throws AtlasBaseException;
 
     /**
+     *
+     * @param guid
+     * @param namespaceAttributes
+     * @param isOverwrite
+     * @throws AtlasBaseException
+     */
+    void addOrUpdateNamespaceAttributes(String guid, Map<String, Map<String, Object>> namespaceAttributes, boolean isOverwrite) throws AtlasBaseException;
+
+    /**
+     *
+     * @param guid
+     * @param namespaceAttributes
+     * @throws AtlasBaseException
+     */
+    void removeNamespaceAttributes(String guid, Map<String, Map<String, Object>> namespaceAttributes) throws AtlasBaseException;
+
+    /**
      * Remove given labels, if labels is null/empty, no labels will be removed. If any labels in
      * labels set are non-existing labels, they will be ignored, only existing labels will be removed.
      */

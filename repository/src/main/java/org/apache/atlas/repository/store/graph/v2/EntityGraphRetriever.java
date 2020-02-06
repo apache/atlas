@@ -48,6 +48,7 @@ import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.type.AtlasNamespaceType.AtlasNamespaceAttribute;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -586,6 +587,8 @@ public class EntityGraphRetriever {
 
             mapSystemAttributes(entityVertex, entity);
 
+            mapNamespaceAttributes(entityVertex, entity);
+
             mapAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo, includeReferences);
 
             if (!ignoreRelationshipAttr) { // only map when really needed
@@ -758,6 +761,26 @@ public class EntityGraphRetriever {
             Object attrValue = mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo, includeReferences);
 
             struct.setAttribute(attribute.getName(), attrValue);
+        }
+    }
+
+    private void mapNamespaceAttributes(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
+        AtlasEntityType                            entityType           = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        Map<String, List<AtlasNamespaceAttribute>> entityTypeNamespaces = entityType != null ? entityType.getNamespaceAttributes() : null;
+
+        if (MapUtils.isNotEmpty(entityTypeNamespaces)) {
+            for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
+                String                        nsName       = entry.getKey();
+                List<AtlasNamespaceAttribute> nsAttributes = entry.getValue();
+
+                for (AtlasNamespaceAttribute nsAttribute : nsAttributes) {
+                    Object nsAttrValue = mapVertexToAttribute(entityVertex, nsAttribute, null, false, false);
+
+                    if (nsAttrValue != null) {
+                        entity.setNamespaceAttribute(nsName, nsAttribute.getName(), nsAttrValue);
+                    }
+                }
+            }
         }
     }
 

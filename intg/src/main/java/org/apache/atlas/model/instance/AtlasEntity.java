@@ -89,11 +89,12 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Date    updateTime     = null;
     private Long    version        = 0L;
 
-    private Map<String, Object>             relationshipAttributes;
-    private List<AtlasClassification>       classifications;
-    private List<AtlasTermAssignmentHeader> meanings;
-    private Map<String, String>             customAttributes;
-    private Set<String>                     labels;
+    private Map<String, Object>              relationshipAttributes;
+    private List<AtlasClassification>        classifications;
+    private List<AtlasTermAssignmentHeader>  meanings;
+    private Map<String, String>              customAttributes;
+    private Map<String, Map<String, Object>> namespaceAttributes;
+    private Set<String>                      labels;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -217,6 +218,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setRelationshipAttributes(other.getRelationshipAttributes());
             setMeanings(other.getMeanings());
             setCustomAttributes(other.getCustomAttributes());
+            setNamespaceAttributes(other.getNamespaceAttributes());
             setLabels(other.getLabels());
         }
     }
@@ -348,6 +350,41 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.customAttributes = customAttributes;
     }
 
+    public Map<String, Map<String, Object>> getNamespaceAttributes() {
+        return namespaceAttributes;
+    }
+
+    public void setNamespaceAttributes(Map<String, Map<String, Object>> namespaceAttributes) {
+        this.namespaceAttributes = namespaceAttributes;
+    }
+
+    public void setNamespaceAttribute(String nsName, String nsAttrName, Object nsValue) {
+        Map<String, Map<String, Object>> namespaceAttributes = this.namespaceAttributes;
+
+        if (namespaceAttributes == null) {
+            namespaceAttributes = new HashMap<>();
+
+            this.namespaceAttributes = namespaceAttributes;
+        }
+
+        Map<String, Object> namespaceAttributeMap = namespaceAttributes.get(nsName);
+
+        if (namespaceAttributeMap == null) {
+            namespaceAttributeMap = new HashMap<>();
+
+            namespaceAttributes.put(nsName, namespaceAttributeMap);
+        }
+
+        namespaceAttributeMap.put(nsAttrName, nsValue);
+    }
+
+    public Object getNamespaceAttribute(String nsName, String nsAttrName) {
+        Map<String, Map<String, Object>> namespaceAttributes   = this.namespaceAttributes;
+        Map<String, Object>              namespaceAttributeMap = namespaceAttributes == null ? null : namespaceAttributes.get(nsName);
+
+        return namespaceAttributeMap == null ? null : namespaceAttributeMap.get(nsAttrName);
+    }
+
     public Set<String> getLabels() {
         return labels;
     }
@@ -404,6 +441,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setClassifications(null);
         setMeanings(null);
         setCustomAttributes(null);
+        setNamespaceAttributes(null);
         setLabels(null);
     }
 
@@ -442,6 +480,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append(", customAttributes=[");
         dumpObjects(customAttributes, sb);
         sb.append("]");
+        sb.append(", namespaceAttributes=[");
+        dumpObjects(namespaceAttributes, sb);
+        sb.append("]");
         sb.append(", labels=[");
         dumpObjects(labels, sb);
         sb.append("]");
@@ -470,14 +511,15 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                 Objects.equals(version, that.version) &&
                 Objects.equals(relationshipAttributes, that.relationshipAttributes) &&
                 Objects.equals(customAttributes, that.customAttributes) &&
+                Objects.equals(namespaceAttributes, that.namespaceAttributes) &&
                 Objects.equals(labels, that.labels) &&
                 Objects.equals(classifications, that.classifications);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, homeId, isProxy, isIncomplete, provenanceType, status, createdBy,
-                updatedBy, createTime, updateTime, version, relationshipAttributes, classifications, customAttributes, labels);
+        return Objects.hash(super.hashCode(), guid, homeId, isProxy, isIncomplete, provenanceType, status, createdBy, updatedBy,
+                createTime, updateTime, version, relationshipAttributes, classifications, customAttributes, namespaceAttributes, labels);
     }
 
     @Override

@@ -201,6 +201,7 @@ public class AtlasTypeRegistry {
         return registryData.namespaceDefs.getAll();
     }
 
+    public AtlasNamespaceType getNamespaceTypeByName(String name) { return registryData.namespaceDefs.getTypeByName(name); }
 
     public Collection<AtlasRelationshipDef> getAllRelationshipDefs() { return registryData.relationshipDefs.getAll(); }
 

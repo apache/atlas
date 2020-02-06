@@ -53,6 +53,7 @@ import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.type.AtlasNamespaceType.AtlasNamespaceAttribute;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
@@ -253,7 +254,7 @@ public class EntityGraphMapper {
         }
     }
 
-    public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications) throws AtlasBaseException {
+    public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications, boolean replaceNamespaceAttributes) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
         EntityMutationResponse resp       = new EntityMutationResponse();
@@ -274,6 +275,8 @@ public class EntityGraphMapper {
 
                 resp.addEntity(CREATE, constructHeader(createdEntity, entityType, vertex));
                 addClassifications(context, guid, createdEntity.getClassifications());
+
+                addOrUpdateNamespaceAttributes(vertex, entityType, createdEntity.getNamespaceAttributes());
 
                 reqContext.cache(createdEntity);
             }
@@ -298,6 +301,10 @@ public class EntityGraphMapper {
                 if (replaceClassifications) {
                     deleteClassifications(guid);
                     addClassifications(context, guid, updatedEntity.getClassifications());
+                }
+
+                if (replaceNamespaceAttributes) {
+                    setNamespaceAttributes(vertex, entityType, updatedEntity.getNamespaceAttributes());
                 }
 
                 reqContext.cache(updatedEntity);
@@ -410,6 +417,143 @@ public class EntityGraphMapper {
         }
 
         return ret;
+    }
+
+    /*
+     * reset/overwrite namespace attributes of the entity with given values
+     */
+    public void setNamespaceAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> entityNamespaces) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> setNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+        }
+
+        Map<String, List<AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+
+        for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
+            String                        nsName                 = entry.getKey();
+            List<AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
+            Map<String, Object>           entityNsAttributes     = MapUtils.isEmpty(entityNamespaces) ? null : entityNamespaces.get(nsName);
+
+            for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes) {
+                String nsAttrName          = nsAttribute.getName();
+                Object nsAttrExistingValue = entityVertex.getProperty(nsAttribute.getVertexPropertyName(), Object.class);
+                Object nsAttrNewValue      = MapUtils.isEmpty(entityNsAttributes) ? null : entityNsAttributes.get(nsAttrName);
+
+                if (nsAttrExistingValue == null) {
+                    if (nsAttrNewValue != null) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("setNamespaceAttributes(): adding {}.{}={}", nsName, nsAttribute.getName(), nsAttrNewValue);
+                        }
+
+                        mapAttribute(nsAttribute, nsAttrNewValue, entityVertex, CREATE, new EntityMutationContext());
+                    }
+                } else {
+                    if (nsAttrNewValue != null) {
+                        if (!Objects.equals(nsAttrExistingValue, nsAttrNewValue)) {
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("setNamespaceAttributes(): updating {}.{}={}", nsName, nsAttribute.getName(), nsAttrNewValue);
+                            }
+
+                            mapAttribute(nsAttribute, nsAttrNewValue, entityVertex, UPDATE, new EntityMutationContext());
+                        }
+                    } else {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("setNamespaceAttributes(): removing {}.{}", nsName, nsAttribute.getName());
+                        }
+
+                        entityVertex.removeProperty(nsAttribute.getVertexPropertyName());
+                    }
+                }
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== setNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+        }
+    }
+
+    /*
+     * add or update the given namespace attributes on the entity
+     */
+    public void addOrUpdateNamespaceAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> entityNamespaces) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> addOrUpdateNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+        }
+
+        Map<String, List<AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+
+        if (MapUtils.isNotEmpty(entityTypeNamespaces) && MapUtils.isNotEmpty(entityNamespaces)) {
+            for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
+                String                        nsName                 = entry.getKey();
+                List<AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
+                Map<String, Object>           entityNsAttributes     = entityNamespaces.get(nsName);
+
+                if (MapUtils.isEmpty(entityNsAttributes)) {
+                    continue;
+                }
+
+                for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes) {
+                    String nsAttrName = nsAttribute.getName();
+
+                    if (!entityNsAttributes.containsKey(nsAttrName)) {
+                        continue;
+                    }
+
+                    Object nsAttrValue   = entityNsAttributes.get(nsAttrName);
+                    Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, nsAttribute.getVertexPropertyName(), Object.class);
+
+                    if (existingValue == null) {
+                        if (nsAttrValue != null) {
+                            mapAttribute(nsAttribute, nsAttrValue, entityVertex, CREATE, new EntityMutationContext());
+                        }
+                    } else {
+                        if (!Objects.equals(existingValue, nsAttrValue)) {
+                            mapAttribute(nsAttribute, nsAttrValue, entityVertex, UPDATE, new EntityMutationContext());
+                        }
+                    }
+                }
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== addOrUpdateNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+        }
+    }
+
+    /*
+     * remove the given namespace attributes from the entity
+     */
+    public void removeNamespaceAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> entityNamespaces) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> removeNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+        }
+
+        Map<String, List<AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+
+        if (MapUtils.isNotEmpty(entityTypeNamespaces) && MapUtils.isNotEmpty(entityNamespaces)) {
+            for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
+                String                        nsName                 = entry.getKey();
+                List<AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
+
+                if (!entityNamespaces.containsKey(nsName)) { // nothing to remove for this namespace
+                    continue;
+                }
+
+                Map<String, Object> entityNsAttributes = entityNamespaces.get(nsName);
+
+                for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes) {
+                    // if (entityNsAttributes is empty) remove all attributes in this namespace
+                    // else remove the attribute only if its given in entityNsAttributes
+                    if (MapUtils.isEmpty(entityNsAttributes) || entityNsAttributes.containsKey(nsAttribute.getName())) {
+                        entityVertex.removeProperty(nsAttribute.getVertexPropertyName());
+                    }
+                }
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== removeNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+        }
     }
 
     private AtlasVertex createStructVertex(AtlasStruct struct) {
