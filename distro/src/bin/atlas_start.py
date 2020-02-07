@@ -19,6 +19,8 @@ import os
 import sys
 import traceback
 
+from distutils.util import strtobool
+
 import atlas_config as mc
 
 ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=%s.log"
@@ -26,6 +28,7 @@ ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_HEAP_OPTS="-Xmx1024m"
 DEFAULT_JVM_OPTS="-Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true -server"
+RELY_ON_LOG4J_ONLY=bool(strtobool(os.getenv("RELY_ON_LOG4J_ONLY", "false")))
 
 def main():
 
@@ -112,7 +115,12 @@ def main():
     if is_hbase and mc.is_hbase_local(confdir):
         print "configured for local hbase."
         mc.configure_hbase(atlas_home)
-        mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)
+
+        if RELY_ON_LOG4J_ONLY:
+            mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, None)
+        else:
+            mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)
+
         print "hbase started."
 
     #solr setup
@@ -123,10 +131,19 @@ def main():
             print "Cassandra embedded configured."
             mc.configure_cassandra(atlas_home)
             mc.configure_zookeeper(atlas_home)
-            mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "start", logdir)
+
+            if RELY_ON_LOG4J_ONLY:
+                mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "start", None)
+            else:
+                mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "start", logdir)
+
             print "zookeeper started."
 
-        mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir)
+        if RELY_ON_LOG4J_ONLY:
+            mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), None)
+        else:
+            mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir)
+
         print "solr started."
 
         print "setting up solr collections..."
@@ -137,14 +154,23 @@ def main():
     #elasticsearch setup
     if mc.is_elasticsearch_local():
         print "configured for local elasticsearch."
-        mc.start_elasticsearch(mc.elasticsearchBinDir(atlas_home), logdir)
+
+        if RELY_ON_LOG4J_ONLY:
+            mc.start_elasticsearch(mc.elasticsearchBinDir(atlas_home), None)
+        else:
+            mc.start_elasticsearch(mc.elasticsearchBinDir(atlas_home), logdir)
+
         print "elasticsearch started."
 
     web_app_path = os.path.join(web_app_dir, "atlas")
     if (mc.isCygwin()):
         web_app_path = mc.convertCygwinPath(web_app_path)
     if not is_setup:
-        start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
+        if RELY_ON_LOG4J_ONLY:
+            start_atlas_server(atlas_classpath, atlas_pid_file, None, jvm_opts_list, web_app_path)
+        else:
+            start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
+
         mc.wait_for_startup(confdir, 300)
         print "Apache Atlas Server started!!!\n"
     else:
