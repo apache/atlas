@@ -242,11 +242,14 @@ def runProcess(commandline, logdir=None, shell=False, wait=False):
     timestr = time.strftime("atlas.%Y%m%d-%H%M%S")
     stdoutFile = None
     stderrFile = None
+
     if logdir:
         stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
         stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
 
-    p = subprocess.Popen(commandline, stdout=stdoutFile, stderr=stderrFile, shell=shell)
+        p = subprocess.Popen(commandline, stdout=stdoutFile, stderr=stderrFile, shell=shell)
+    else:
+        p = subprocess.Popen(commandline, shell=shell)
 
     if wait:
         p.communicate()
