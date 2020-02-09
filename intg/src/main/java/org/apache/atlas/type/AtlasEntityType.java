@@ -90,7 +90,7 @@ public class AtlasEntityType extends AtlasStructType {
     private List<AtlasAttribute>                       dynEvalTriggerAttributes   = Collections.emptyList();
     private Map<String,List<TemplateToken>>            parsedTemplates            = Collections.emptyMap();
     private Set<String>                                tagPropagationEdges        = Collections.emptySet();
-    private Map<String, List<AtlasNamespaceAttribute>> namespaceAttributes      = Collections.emptyMap();
+    private Map<String, List<AtlasNamespaceAttribute>> namespaceAttributes        = Collections.emptyMap();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -237,6 +237,28 @@ public class AtlasEntityType extends AtlasStructType {
                 }
             }
 
+            Map<String, List<AtlasNamespaceAttribute>> superTypeNamespaces = superType.getNamespaceAttributes();
+
+            if (MapUtils.isNotEmpty(superTypeNamespaces)) {
+                for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : superTypeNamespaces.entrySet()) {
+                    String                        nsName           = entry.getKey();
+                    List<AtlasNamespaceAttribute> superTypeNsAttrs = entry.getValue();
+                    List<AtlasNamespaceAttribute> nsAttrs          = namespaceAttributes.get(nsName);
+
+                    if (nsAttrs == null) {
+                        nsAttrs = new ArrayList<>();
+
+                        namespaceAttributes.put(nsName, nsAttrs);
+                    }
+
+                    for (AtlasNamespaceAttribute superTypeNsAttr : superTypeNsAttrs) {
+                        if (!nsAttrs.contains(superTypeNsAttr)) {
+                            nsAttrs.add(superTypeNsAttr);
+                        }
+                    }
+                }
+            }
+
             tagPropagationEdges.addAll(superType.tagPropagationEdges);
         }
 
@@ -282,11 +304,29 @@ public class AtlasEntityType extends AtlasStructType {
 
         entityDef.setRelationshipAttributeDefs(Collections.unmodifiableList(relationshipAttrDefs));
 
+        Map<String, List<AtlasAttributeDef>> namespaceAttributeDefs = new HashMap<>();
+
+        for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : namespaceAttributes.entrySet()) {
+            String                        nsName     = entry.getKey();
+            List<AtlasNamespaceAttribute> nsAttrs    = entry.getValue();
+            List<AtlasAttributeDef>       nsAttrDefs = new ArrayList<>();
+
+            for (AtlasNamespaceAttribute nsAttr : nsAttrs) {
+                nsAttrDefs.add(nsAttr.getAttributeDef());
+            }
+
+            namespaceAttributeDefs.put(nsName, nsAttrDefs);
+        }
+
+        entityDef.setNamespaceAttributeDefs(namespaceAttributeDefs);
+
         this.parsedTemplates = parseDynAttributeTemplates();
 
         populateDynFlagsInfo();
 
-        LOG.info("resolveReferencesPhase3({}): tagPropagationEdges={}", getTypeName(), tagPropagationEdges);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("resolveReferencesPhase3({}): tagPropagationEdges={}", getTypeName(), tagPropagationEdges);
+        }
     }
 
     public Set<String> getSuperTypes() {

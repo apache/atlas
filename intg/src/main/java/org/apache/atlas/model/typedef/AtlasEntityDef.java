@@ -27,6 +27,7 @@ import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -63,6 +64,11 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
     // this is a read-only field, any value provided during create & update operation is ignored
     // the value of this field is derived from all the relationshipDefs this entityType is referenced in
     private List<AtlasRelationshipAttributeDef> relationshipAttributeDefs;
+
+    // this is a read-only field, any value provided during create & update operation is ignored
+    // the value of this field is derived from all the namespaceDefs this entityType is referenced in
+    private Map<String, List<AtlasAttributeDef>> namespaceAttributeDefs;
+
 
     public AtlasEntityDef() {
         this(null, null, null, null, null, null, null);
@@ -122,9 +128,13 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
     public AtlasEntityDef(AtlasEntityDef other) {
         super(other);
 
-        setSuperTypes(other != null ? other.getSuperTypes() : null);
+        if (other != null) {
+            setSuperTypes(other.getSuperTypes());
+            setSubTypes(other.getSubTypes());
+            setRelationshipAttributeDefs(other.getRelationshipAttributeDefs());
+            setNamespaceAttributeDefs(other.getNamespaceAttributeDefs());
+        }
     }
-
 
 
 
@@ -158,6 +168,14 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
     public void setRelationshipAttributeDefs(List<AtlasRelationshipAttributeDef> relationshipAttributeDefs) {
         this.relationshipAttributeDefs = relationshipAttributeDefs;
+    }
+
+    public Map<String, List<AtlasAttributeDef>> getNamespaceAttributeDefs() {
+        return namespaceAttributeDefs;
+    }
+
+    public void setNamespaceAttributeDefs(Map<String, List<AtlasAttributeDef>> namespaceAttributeDefs) {
+        this.namespaceAttributeDefs = namespaceAttributeDefs;
     }
 
     public boolean hasSuperType(String typeName) {
@@ -207,14 +225,46 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         if (CollectionUtils.isNotEmpty(relationshipAttributeDefs)) {
             int i = 0;
             for (AtlasRelationshipAttributeDef attributeDef : relationshipAttributeDefs) {
-                attributeDef.toString(sb);
                 if (i > 0) {
                     sb.append(", ");
                 }
+
+                attributeDef.toString(sb);
+
                 i++;
             }
         }
         sb.append(']');
+        sb.append(", namespaceAttributeDefs={");
+        if (MapUtils.isNotEmpty(namespaceAttributeDefs)) {
+            int nsIdx = 0;
+
+            for (Map.Entry<String, List<AtlasAttributeDef>> entry : namespaceAttributeDefs.entrySet()) {
+                String                  nsName  = entry.getKey();
+                List<AtlasAttributeDef> nsAttrs = entry.getValue();
+
+                if (nsIdx > 0) {
+                    sb.append(", ");
+                }
+
+                sb.append(nsName).append("=[");
+
+                int attrIdx = 0;
+                for (AtlasAttributeDef attributeDef : nsAttrs) {
+                    if (attrIdx > 0) {
+                        sb.append(", ");
+                    }
+
+                    attributeDef.toString(sb);
+
+                    attrIdx++;
+                }
+                sb.append(']');
+
+                nsIdx++;
+            }
+        }
+        sb.append('}');
         sb.append('}');
 
         return sb;
