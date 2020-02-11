@@ -669,11 +669,19 @@ public abstract class BaseHiveEvent {
         // mandatory attributes for hive process entity type.
         ret.setAttribute(ATTRIBUTE_START_TIME, System.currentTimeMillis());
         ret.setAttribute(ATTRIBUTE_END_TIME, System.currentTimeMillis());
-        ret.setAttribute(ATTRIBUTE_USER_NAME, EMPTY_ATTRIBUTE_VALUE);
-        ret.setAttribute(ATTRIBUTE_QUERY_TEXT, EMPTY_ATTRIBUTE_VALUE);
-        ret.setAttribute(ATTRIBUTE_QUERY_ID, EMPTY_ATTRIBUTE_VALUE);
+        if (context.isHiveProcessPopulateDeprecatedAttributes()) {
+            ret.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
+            ret.setAttribute(ATTRIBUTE_QUERY_TEXT, queryStr);
+            ret.setAttribute(ATTRIBUTE_QUERY_ID, getQueryId());
+        } else {
+            ret.setAttribute(ATTRIBUTE_USER_NAME, EMPTY_ATTRIBUTE_VALUE);
+            ret.setAttribute(ATTRIBUTE_QUERY_TEXT, EMPTY_ATTRIBUTE_VALUE);
+            ret.setAttribute(ATTRIBUTE_QUERY_ID, EMPTY_ATTRIBUTE_VALUE);
+        }
         ret.setAttribute(ATTRIBUTE_QUERY_PLAN, "Not Supported");
         ret.setAttribute(ATTRIBUTE_RECENT_QUERIES, Collections.singletonList(queryStr));
+        ret.setAttribute(ATTRIBUTE_CLUSTER_NAME, getMetadataNamespace());
+
         return ret;
     }
 

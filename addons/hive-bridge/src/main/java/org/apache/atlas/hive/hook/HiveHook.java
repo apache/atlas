@@ -60,6 +60,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String HOOK_NAME_CACHE_DATABASE_COUNT      = CONF_PREFIX + "name.cache.database.count";
     public static final String HOOK_NAME_CACHE_TABLE_COUNT         = CONF_PREFIX + "name.cache.table.count";
     public static final String HOOK_NAME_CACHE_REBUID_INTERVAL_SEC = CONF_PREFIX + "name.cache.rebuild.interval.seconds";
+    public static final String HOOK_HIVE_PROCESS_POPULATE_DEPRECATED_ATTRIBUTES          = CONF_PREFIX + "hive_process.populate.deprecated.attributes";
     public static final String HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633                  = CONF_PREFIX + "skip.hive_column_lineage.hive-20633";
     public static final String HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD = CONF_PREFIX + "skip.hive_column_lineage.hive-20633.inputs.threshold";
     public static final String HOOK_HIVE_TABLE_IGNORE_PATTERN                            = CONF_PREFIX + "hive_table.ignore.pattern";
@@ -83,7 +84,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final List                          ignoreDummyDatabaseName;
     private static final List                          ignoreDummyTableName;
     private static final String                        ignoreValuesTmpTableNamePrefix;
-
+    private static final boolean                       hiveProcessPopulateDeprecatedAttributes;
     private static HiveHookObjectNamesCache knownObjects = null;
     private static String hostName;
 
@@ -99,7 +100,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         nameCacheRebuildIntervalSeconds = atlasProperties.getInt(HOOK_NAME_CACHE_REBUID_INTERVAL_SEC, 60 * 60); // 60 minutes default
         skipHiveColumnLineageHive20633                = atlasProperties.getBoolean(HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false);
         skipHiveColumnLineageHive20633InputsThreshold = atlasProperties.getInt(HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
-
+        hiveProcessPopulateDeprecatedAttributes       = atlasProperties.getBoolean(HOOK_HIVE_PROCESS_POPULATE_DEPRECATED_ATTRIBUTES, false);
         String[] patternHiveTablesToIgnore = atlasProperties.getStringArray(HOOK_HIVE_TABLE_IGNORE_PATTERN);
         String[] patternHiveTablesToPrune  = atlasProperties.getStringArray(HOOK_HIVE_TABLE_PRUNE_PATTERN);
 
@@ -270,6 +271,10 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     public  String getIgnoreValuesTmpTableNamePrefix() {
         return ignoreValuesTmpTableNamePrefix;
+    }
+
+    public boolean isHiveProcessPopulateDeprecatedAttributes() {
+        return hiveProcessPopulateDeprecatedAttributes;
     }
 
     public PreprocessAction getPreprocessActionForHiveTable(String qualifiedName) {
