@@ -55,7 +55,8 @@ import java.util.Set;
 public class AtlasEntityType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityType.class);
 
-    public  static final AtlasEntityType ENTITY_ROOT         = initRootEntityType();
+    public  static final AtlasEntityType ENTITY_ROOT         = new AtlasRootEntityType();
+
     private static final String NAME                         = "name";
     private static final String DESCRIPTION                  = "description";
     private static final String OWNER                        = "owner";
@@ -63,6 +64,8 @@ public class AtlasEntityType extends AtlasStructType {
     private static final String DYN_ATTRIBUTE_PREFIX         = "dynAttribute:";
     private static final String OPTION_SCHEMA_ATTRIBUTES     = "schemaAttributes";
     private static final String INTERNAL_TYPENAME            = "__internal";
+
+    private static final char   NS_ATTRIBUTE_NAME_SEPARATOR  = '.';
 
     private static final char DYN_ATTRIBUTE_NAME_SEPARATOR   = '.';
     private static final char DYN_ATTRIBUTE_OPEN_DELIM       = '{';
@@ -90,7 +93,7 @@ public class AtlasEntityType extends AtlasStructType {
     private List<AtlasAttribute>                       dynEvalTriggerAttributes   = Collections.emptyList();
     private Map<String,List<TemplateToken>>            parsedTemplates            = Collections.emptyMap();
     private Set<String>                                tagPropagationEdges        = Collections.emptySet();
-    private Map<String, List<AtlasNamespaceAttribute>> namespaceAttributes        = Collections.emptyMap();
+    private Map<String, Map<String, AtlasNamespaceAttribute>> namespaceAttributes = Collections.emptyMap();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
@@ -237,24 +240,22 @@ public class AtlasEntityType extends AtlasStructType {
                 }
             }
 
-            Map<String, List<AtlasNamespaceAttribute>> superTypeNamespaces = superType.getNamespaceAttributes();
+            Map<String, Map<String, AtlasNamespaceAttribute>> superTypeNamespaces = superType.getNamespaceAttributes();
 
             if (MapUtils.isNotEmpty(superTypeNamespaces)) {
-                for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : superTypeNamespaces.entrySet()) {
-                    String                        nsName           = entry.getKey();
-                    List<AtlasNamespaceAttribute> superTypeNsAttrs = entry.getValue();
-                    List<AtlasNamespaceAttribute> nsAttrs          = namespaceAttributes.get(nsName);
+                for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : superTypeNamespaces.entrySet()) {
+                    String                               nsName           = entry.getKey();
+                    Map<String, AtlasNamespaceAttribute> superTypeNsAttrs = entry.getValue();
+                    Map<String, AtlasNamespaceAttribute> nsAttrs          = namespaceAttributes.get(nsName);
 
                     if (nsAttrs == null) {
-                        nsAttrs = new ArrayList<>();
+                        nsAttrs = new HashMap<>();
 
                         namespaceAttributes.put(nsName, nsAttrs);
                     }
 
-                    for (AtlasNamespaceAttribute superTypeNsAttr : superTypeNsAttrs) {
-                        if (!nsAttrs.contains(superTypeNsAttr)) {
-                            nsAttrs.add(superTypeNsAttr);
-                        }
+                    for (Map.Entry<String, AtlasNamespaceAttribute> nsAttrEntry : superTypeNsAttrs.entrySet()) {
+                        nsAttrs.put(nsAttrEntry.getKey(), nsAttrEntry.getValue());
                     }
                 }
             }
@@ -306,12 +307,12 @@ public class AtlasEntityType extends AtlasStructType {
 
         Map<String, List<AtlasAttributeDef>> namespaceAttributeDefs = new HashMap<>();
 
-        for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : namespaceAttributes.entrySet()) {
-            String                        nsName     = entry.getKey();
-            List<AtlasNamespaceAttribute> nsAttrs    = entry.getValue();
-            List<AtlasAttributeDef>       nsAttrDefs = new ArrayList<>();
+        for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : namespaceAttributes.entrySet()) {
+            String                               nsName     = entry.getKey();
+            Map<String, AtlasNamespaceAttribute> nsAttrs    = entry.getValue();
+            List<AtlasAttributeDef>              nsAttrDefs = new ArrayList<>();
 
-            for (AtlasNamespaceAttribute nsAttr : nsAttrs) {
+            for (AtlasNamespaceAttribute nsAttr : nsAttrs.values()) {
                 nsAttrDefs.add(nsAttr.getAttributeDef());
             }
 
@@ -327,6 +328,29 @@ public class AtlasEntityType extends AtlasStructType {
         if (LOG.isDebugEnabled()) {
             LOG.debug("resolveReferencesPhase3({}): tagPropagationEdges={}", getTypeName(), tagPropagationEdges);
         }
+    }
+
+    @Override
+    public AtlasAttribute getSystemAttribute(String attributeName) {
+        return AtlasEntityType.ENTITY_ROOT.allAttributes.get(attributeName);
+    }
+
+    @Override
+    public AtlasNamespaceAttribute getNamespaceAttribute(String nsAttrQualifiedName) {
+        AtlasNamespaceAttribute ret = null;
+
+        if (nsAttrQualifiedName != null) {
+            int idxSep = nsAttrQualifiedName.indexOf(AtlasEntityType.NS_ATTRIBUTE_NAME_SEPARATOR);
+
+            if (idxSep != -1) {
+                String nsName     = nsAttrQualifiedName.substring(0, idxSep);
+                String nsAttrName = nsAttrQualifiedName.substring(idxSep + 1);
+
+                ret = getNamespaceAttribute(nsName, nsAttrName);
+            }
+        }
+
+        return ret;
     }
 
     public Set<String> getSuperTypes() {
@@ -407,12 +431,19 @@ public class AtlasEntityType extends AtlasStructType {
         return CollectionUtils.isNotEmpty(tagPropagationEdges) ? tagPropagationEdges.toArray(new String[tagPropagationEdges.size()]) : null;
     }
  
-    public Map<String, List<AtlasNamespaceAttribute>> getNamespaceAttributes() {
+    public Map<String, Map<String, AtlasNamespaceAttribute>> getNamespaceAttributes() {
         return namespaceAttributes;
     }
 
-    public List<AtlasNamespaceAttribute> getNamespaceAttributes(String nsName) {
+    public Map<String, AtlasNamespaceAttribute> getNamespaceAttributes(String nsName) {
         return namespaceAttributes.get(nsName);
+    }
+
+    public AtlasNamespaceAttribute getNamespaceAttribute(String nsName, String nsAttrName) {
+        Map<String, AtlasNamespaceAttribute> nsAttrs = namespaceAttributes.get(nsName);
+        AtlasNamespaceAttribute              ret    = nsAttrs != null ? nsAttrs.get(nsAttrName) : null;
+
+        return ret;
     }
 
     public Map<String,List<TemplateToken>> getParsedTemplates() { return parsedTemplates; }
@@ -506,16 +537,16 @@ public class AtlasEntityType extends AtlasStructType {
     }
 
     public void addNamespaceAttribute(AtlasNamespaceAttribute attribute) {
-        String                        nsName     = attribute.getDefinedInType().getTypeName();
-        List<AtlasNamespaceAttribute> attributes = namespaceAttributes.get(nsName);
+        String                               nsName  = attribute.getDefinedInType().getTypeName();
+        Map<String, AtlasNamespaceAttribute> nsAttrs = namespaceAttributes.get(nsName);
 
-        if (attributes == null) {
-            attributes = new ArrayList<>();
+        if (nsAttrs == null) {
+            nsAttrs = new HashMap<>();
 
-            namespaceAttributes.put(nsName, attributes);
+            namespaceAttributes.put(nsName, nsAttrs);
         }
 
-        attributes.add(attribute);
+        nsAttrs.put(attribute.getName(), attribute);
     }
 
     public String getQualifiedAttributeName(String attrName) throws AtlasBaseException {
@@ -737,30 +768,6 @@ public class AtlasEntityType extends AtlasStructType {
 
             super.populateDefaultValues(ent);
         }
-    }
-
-    private static AtlasEntityType initRootEntityType() {
-        List<AtlasAttributeDef> attributeDefs = new ArrayList<AtlasAttributeDef>() {{
-            add(new AtlasAttributeDef(TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
-            add(new AtlasAttributeDef(MODIFICATION_TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
-            add(new AtlasAttributeDef(MODIFIED_BY_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(CREATED_BY_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(STATE_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
-
-            add(new AtlasAttributeDef(GUID_PROPERTY_KEY, ATLAS_TYPE_STRING, true, true));
-            add(new AtlasAttributeDef(HISTORICAL_GUID_PROPERTY_KEY, ATLAS_TYPE_STRING, true, true));
-            add(new AtlasAttributeDef(TYPE_NAME_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(CLASSIFICATION_TEXT_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(CLASSIFICATION_NAMES_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(PROPAGATED_CLASSIFICATION_NAMES_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(IS_INCOMPLETE_PROPERTY_KEY, ATLAS_TYPE_INT, false, true));
-            add(new AtlasAttributeDef(LABELS_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(CUSTOM_ATTRIBUTES_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
-        }};
-
-        AtlasEntityDef entityDef = new AtlasEntityDef(ENTITY_ROOT_NAME, "Root entity for system attributes", "1.0", attributeDefs);
-
-        return new AtlasEntityType(entityDef);
     }
 
     private void addSubType(AtlasEntityType subType) {
@@ -1197,5 +1204,54 @@ public class AtlasEntityType extends AtlasStructType {
         }
 
         return adj;
+    }
+
+    /* this class provides abstractions that help basic-search and dsl-search to deal with
+     * system-attributes and namespace-attributes
+     */
+    private static class AtlasRootEntityType extends AtlasEntityType {
+        private AtlasTypeRegistry typeRegistry = null;
+
+        public AtlasRootEntityType() {
+            super(getRootEntityDef());
+        }
+
+        @Override
+        void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+            super.resolveReferences(typeRegistry);
+
+            // save typeRegistry for use in getNamespaceAttribute()
+            this.typeRegistry = typeRegistry;
+        }
+
+        @Override
+        public AtlasNamespaceAttribute getNamespaceAttribute(String nsName, String nsAttrName) {
+            AtlasNamespaceType nsType = typeRegistry != null ? typeRegistry.getNamespaceTypeByName(nsName) : null;
+            AtlasAttribute     nsAttr = nsType != null ? nsType.getAttribute(nsAttrName) : null;
+
+            return (nsAttr instanceof AtlasNamespaceAttribute) ? (AtlasNamespaceAttribute) nsAttr : null;
+        }
+
+        private static AtlasEntityDef getRootEntityDef() {
+            List<AtlasAttributeDef> attributeDefs = new ArrayList<AtlasAttributeDef>() {{
+                add(new AtlasAttributeDef(TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
+                add(new AtlasAttributeDef(MODIFICATION_TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
+                add(new AtlasAttributeDef(MODIFIED_BY_KEY, ATLAS_TYPE_STRING, false, true));
+                add(new AtlasAttributeDef(CREATED_BY_KEY, ATLAS_TYPE_STRING, false, true));
+                add(new AtlasAttributeDef(STATE_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+
+                add(new AtlasAttributeDef(GUID_PROPERTY_KEY, ATLAS_TYPE_STRING, true, true));
+                add(new AtlasAttributeDef(HISTORICAL_GUID_PROPERTY_KEY, ATLAS_TYPE_STRING, true, true));
+                add(new AtlasAttributeDef(TYPE_NAME_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+                add(new AtlasAttributeDef(CLASSIFICATION_TEXT_KEY, ATLAS_TYPE_STRING, false, true));
+                add(new AtlasAttributeDef(CLASSIFICATION_NAMES_KEY, ATLAS_TYPE_STRING, false, true));
+                add(new AtlasAttributeDef(PROPAGATED_CLASSIFICATION_NAMES_KEY, ATLAS_TYPE_STRING, false, true));
+                add(new AtlasAttributeDef(IS_INCOMPLETE_PROPERTY_KEY, ATLAS_TYPE_INT, false, true));
+                add(new AtlasAttributeDef(LABELS_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+                add(new AtlasAttributeDef(CUSTOM_ATTRIBUTES_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+            }};
+
+            return new AtlasEntityDef(ENTITY_ROOT_NAME, "Root entity for system attributes", "1.0", attributeDefs);
+        }
     }
 }

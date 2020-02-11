@@ -21,7 +21,6 @@ package org.apache.atlas.query;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.*;
 import org.apache.commons.lang.StringUtils;
 
@@ -29,20 +28,12 @@ import java.util.*;
 
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_ENTITY_TYPES;
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATIONS;
 import static org.apache.atlas.model.discovery.SearchParameters.NO_CLASSIFICATIONS;
+import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES;
 
 class RegistryBasedLookup implements Lookup {
-    private static final Set<String> SYSTEM_ATTRIBUTES = new HashSet<>(
-            Arrays.asList(Constants.GUID_PROPERTY_KEY,
-                    Constants.MODIFIED_BY_KEY,
-                    Constants.CREATED_BY_KEY,
-                    Constants.STATE_PROPERTY_KEY,
-                    Constants.TIMESTAMP_PROPERTY_KEY,
-                    Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
-                    Constants.HOME_ID_KEY
-            ));
-
     private static final Map<String, String> NUMERIC_ATTRIBUTES = new HashMap<String, String>() {{
             put(AtlasBaseTypeDef.ATLAS_TYPE_SHORT, "");
             put(AtlasBaseTypeDef.ATLAS_TYPE_INT, "");
@@ -63,10 +54,12 @@ class RegistryBasedLookup implements Lookup {
     public AtlasType getType(String typeName) throws AtlasBaseException {
         AtlasType ret;
 
-        if (typeName.equalsIgnoreCase(ALL_CLASSIFICATIONS)) {
+        if (typeName.equals(ALL_CLASSIFICATIONS)) {
             ret = MATCH_ALL_CLASSIFIED;
-        } else if (typeName.equalsIgnoreCase(NO_CLASSIFICATIONS)) {
+        } else if (typeName.equals(NO_CLASSIFICATIONS)) {
             ret = MATCH_ALL_NOT_CLASSIFIED;
+        } else if (typeName.equals(ALL_ENTITY_TYPES)) {
+            ret = MATCH_ALL_ENTITY_TYPES;
         } else {
             ret = typeRegistry.getType(typeName);
         }
@@ -81,15 +74,7 @@ class RegistryBasedLookup implements Lookup {
             return "";
         }
 
-        if(isSystemAttribute(name)) {
-            return name;
-        } else {
-            return et.getQualifiedAttributeName(name);
-        }
-    }
-
-    private boolean isSystemAttribute(String s) {
-        return SYSTEM_ATTRIBUTES.contains(s);
+        return et.getQualifiedAttributeName(name);
     }
 
     @Override
@@ -97,10 +82,6 @@ class RegistryBasedLookup implements Lookup {
         AtlasEntityType et = context.getActiveEntityType();
         if(et == null) {
             return false;
-        }
-
-        if(isSystemAttribute(attributeName)) {
-            return true;
         }
 
         AtlasType at = getAttributeType(et, attributeName);
@@ -144,8 +125,7 @@ class RegistryBasedLookup implements Lookup {
     public boolean hasAttribute(GremlinQueryComposer.Context context, String typeName) {
         AtlasEntityType entityType = context.getActiveEntityType();
 
-        return (entityType != null) &&
-                (isSystemAttribute(typeName) || entityType.hasAttribute(typeName) || entityType.hasRelationshipAttribute(typeName));
+        return getAttribute(entityType, typeName) != null;
     }
 
     @Override
@@ -178,6 +158,8 @@ class RegistryBasedLookup implements Lookup {
                 t = MATCH_ALL_CLASSIFIED;
             } else if (typeName.equalsIgnoreCase(NO_CLASSIFICATIONS)) {
                 t = MATCH_ALL_NOT_CLASSIFIED;
+            } else if (typeName.equalsIgnoreCase(ALL_ENTITY_TYPES)) {
+                t = MATCH_ALL_ENTITY_TYPES;
             } else {
                 t = typeRegistry.getType(typeName);
             }
@@ -257,6 +239,11 @@ class RegistryBasedLookup implements Lookup {
     @Override
     public String getVertexPropertyName(String typeName, String attrName) {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        if (entityType == null && StringUtils.equals(typeName, ALL_ENTITY_TYPES)) {
+            entityType = MATCH_ALL_ENTITY_TYPES;
+        }
+
         AtlasStructType.AtlasAttribute attribute = getAttribute(entityType, attrName);
         if (attribute == null) {
             return null;

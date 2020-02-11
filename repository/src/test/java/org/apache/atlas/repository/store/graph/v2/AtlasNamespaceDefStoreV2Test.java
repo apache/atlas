@@ -25,7 +25,7 @@ import org.apache.atlas.model.typedef.AtlasNamespaceDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasNamespaceType;
+import org.apache.atlas.type.AtlasNamespaceType.AtlasNamespaceAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.Assert;
@@ -84,7 +84,7 @@ public class AtlasNamespaceDefStoreV2Test {
         createNamespaceTypes(namespaceName);
         Assert.assertEquals(typeRegistry.getAllNamespaceDefs().size(), 1);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName("hive_table");
-        Map<String, List<AtlasNamespaceType.AtlasNamespaceAttribute>> m1 = entityType.getNamespaceAttributes();
+        Map<String, Map<String, AtlasNamespaceAttribute>> m1 = entityType.getNamespaceAttributes();
         Assert.assertEquals(m1.get(namespaceName).size(), 2);
     }
 
@@ -117,7 +117,7 @@ public class AtlasNamespaceDefStoreV2Test {
         updateNamespaceTypeDefs(namespaceDef);
         typeDefStore.updateTypesDef(typesDefs);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName("hive_table");
-        Map<String, List<AtlasNamespaceType.AtlasNamespaceAttribute>> m1 = entityType.getNamespaceAttributes();
+        Map<String, Map<String, AtlasNamespaceAttribute>> m1 = entityType.getNamespaceAttributes();
         Assert.assertEquals(m1.get(namespaceName).size(), 3);
     }
 

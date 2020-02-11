@@ -1377,19 +1377,19 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private void validateNamespaceAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> entityNamespaces, boolean isOverwrite) throws AtlasBaseException {
         List<String> messages = new ArrayList<>();
 
-        Map<String, List<AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
 
         for (String nsName : entityNamespaces.keySet()) {
-            if (!entityNamespaces.containsKey(nsName)) {
+            if (!entityTypeNamespaces.containsKey(nsName)) {
                 messages.add(nsName + ": invalid namespace for entity type " + entityType.getTypeName());
 
                 continue;
             }
 
-            List<AtlasNamespaceAttribute> entityTypeNsAttributes = entityTypeNamespaces.get(nsName);
-            Map<String, Object>           entityNsAttributes     = entityNamespaces.get(nsName);
+            Map<String, AtlasNamespaceAttribute> entityTypeNsAttributes = entityTypeNamespaces.get(nsName);
+            Map<String, Object>                  entityNsAttributes     = entityNamespaces.get(nsName);
 
-            for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes) {
+            for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes.values()) {
                 AtlasType attrType  = nsAttribute.getAttributeType();
                 String    attrName  = nsAttribute.getName();
                 Object    attrValue = entityNsAttributes.get(attrName);

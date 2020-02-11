@@ -20,6 +20,8 @@ package org.apache.atlas.query;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.type.AtlasNamespaceType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.regex.Matcher;
@@ -145,7 +147,6 @@ public class IdentifierHelper {
                         raw = context.getTypeNameFromAlias(this.raw);
                     }
 
-                    updateParts();
                     updateTypeInfo(lookup, context);
                     setIsTrait(context, lookup, attributeName);
                     updateEdgeInfo(lookup, context);
@@ -180,15 +181,29 @@ public class IdentifierHelper {
         }
 
         private void updateTypeInfo(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
+            parts = StringUtils.split(raw, ".");
+
+            // check if this is a namespace attribute
+            if (parts.length == 2) {
+                try {
+                    AtlasType type = lookup.getType(parts[0]);
+
+                    if (type instanceof AtlasNamespaceType) {
+                        parts = new String[1];
+                        parts[0] = raw;
+                    }
+                } catch (AtlasBaseException excp) {
+                    // ignore
+                }
+            }
+
             if (parts.length == 1) {
                 typeName = context.hasAlias(parts[0]) ?
                                    context.getTypeNameFromAlias(parts[0]) :
                                    context.getActiveTypeName();
                 qualifiedName = getDefaultQualifiedNameForSinglePartName(context, parts[0]);
                 attributeName = parts[0];
-            }
-
-            if (parts.length == 2) {
+            } else if (parts.length == 2) {
                 boolean isAttrOfActiveType = lookup.hasAttribute(context, parts[0]);
                 if (isAttrOfActiveType) {
                     attributeName = parts[0];
@@ -237,10 +252,6 @@ public class IdentifierHelper {
             if (isPrimitive) {
                 isNumeric = lookup.isNumeric(context, attrName);
             }
-        }
-
-        private void updateParts() {
-            parts = StringUtils.split(raw, ".");
         }
 
         public String getQualifiedName() {

@@ -427,14 +427,14 @@ public class EntityGraphMapper {
             LOG.debug("==> setNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
         }
 
-        Map<String, List<AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
 
-        for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
-            String                        nsName                 = entry.getKey();
-            List<AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
-            Map<String, Object>           entityNsAttributes     = MapUtils.isEmpty(entityNamespaces) ? null : entityNamespaces.get(nsName);
+        for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
+            String                               nsName                 = entry.getKey();
+            Map<String, AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
+            Map<String, Object>                  entityNsAttributes     = MapUtils.isEmpty(entityNamespaces) ? null : entityNamespaces.get(nsName);
 
-            for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes) {
+            for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes.values()) {
                 String nsAttrName          = nsAttribute.getName();
                 Object nsAttrExistingValue = entityVertex.getProperty(nsAttribute.getVertexPropertyName(), Object.class);
                 Object nsAttrNewValue      = MapUtils.isEmpty(entityNsAttributes) ? null : entityNsAttributes.get(nsAttrName);
@@ -480,19 +480,19 @@ public class EntityGraphMapper {
             LOG.debug("==> addOrUpdateNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
         }
 
-        Map<String, List<AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
 
         if (MapUtils.isNotEmpty(entityTypeNamespaces) && MapUtils.isNotEmpty(entityNamespaces)) {
-            for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
-                String                        nsName                 = entry.getKey();
-                List<AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
-                Map<String, Object>           entityNsAttributes     = entityNamespaces.get(nsName);
+            for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
+                String                               nsName                 = entry.getKey();
+                Map<String, AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
+                Map<String, Object>                  entityNsAttributes     = entityNamespaces.get(nsName);
 
                 if (MapUtils.isEmpty(entityNsAttributes)) {
                     continue;
                 }
 
-                for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes) {
+                for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes.values()) {
                     String nsAttrName = nsAttribute.getName();
 
                     if (!entityNsAttributes.containsKey(nsAttrName)) {
@@ -528,12 +528,12 @@ public class EntityGraphMapper {
             LOG.debug("==> removeNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
         }
 
-        Map<String, List<AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
 
         if (MapUtils.isNotEmpty(entityTypeNamespaces) && MapUtils.isNotEmpty(entityNamespaces)) {
-            for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
-                String                        nsName                 = entry.getKey();
-                List<AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
+            for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
+                String                               nsName                 = entry.getKey();
+                Map<String, AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
 
                 if (!entityNamespaces.containsKey(nsName)) { // nothing to remove for this namespace
                     continue;
@@ -541,7 +541,7 @@ public class EntityGraphMapper {
 
                 Map<String, Object> entityNsAttributes = entityNamespaces.get(nsName);
 
-                for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes) {
+                for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes.values()) {
                     // if (entityNsAttributes is empty) remove all attributes in this namespace
                     // else remove the attribute only if its given in entityNsAttributes
                     if (MapUtils.isEmpty(entityNsAttributes) || entityNsAttributes.containsKey(nsAttribute.getName())) {
