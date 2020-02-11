@@ -236,6 +236,10 @@ public class AtlasHiveHookContext {
         }
     }
 
+    public boolean isHiveProcessPopulateDeprecatedAttributes() {
+        return hook.isHiveProcessPopulateDeprecatedAttributes();
+    }
+
     private void init() {
         String operation = hiveOperation.getOperationName();
 
