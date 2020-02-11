@@ -678,21 +678,26 @@ public class EntityGraphRetriever {
 
             if (CollectionUtils.isNotEmpty(attributes)) {
                 for (String attrName : attributes) {
-                    String nonQualifiedAttrName = toNonQualifiedName(attrName);
-                    if (ret.hasAttribute(attrName)) {
-                        continue;
-                    }
-
-                    AtlasAttribute attribute = entityType.getAttribute(nonQualifiedAttrName);
+                    AtlasAttribute attribute = entityType.getAttribute(attrName);
 
                     if (attribute == null) {
-                        attribute = entityType.getRelationshipAttribute(nonQualifiedAttrName, null);
+                        attrName = toNonQualifiedName(attrName);
+
+                        if (ret.hasAttribute(attrName)) {
+                            continue;
+                        }
+
+                        attribute = entityType.getAttribute(attrName);
+
+                        if (attribute == null) {
+                            attribute = entityType.getRelationshipAttribute(attrName, null);
+                        }
                     }
 
                     Object attrValue = getVertexAttribute(entityVertex, attribute);
 
                     if (attrValue != null) {
-                        ret.setAttribute(nonQualifiedAttrName, attrValue);
+                        ret.setAttribute(attrName, attrValue);
                     }
                 }
             }
@@ -765,15 +770,15 @@ public class EntityGraphRetriever {
     }
 
     private void mapNamespaceAttributes(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
-        AtlasEntityType                            entityType           = typeRegistry.getEntityTypeByName(entity.getTypeName());
-        Map<String, List<AtlasNamespaceAttribute>> entityTypeNamespaces = entityType != null ? entityType.getNamespaceAttributes() : null;
+        AtlasEntityType                                   entityType           = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType != null ? entityType.getNamespaceAttributes() : null;
 
         if (MapUtils.isNotEmpty(entityTypeNamespaces)) {
-            for (Map.Entry<String, List<AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
-                String                        nsName       = entry.getKey();
-                List<AtlasNamespaceAttribute> nsAttributes = entry.getValue();
+            for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
+                String                               nsName       = entry.getKey();
+                Map<String, AtlasNamespaceAttribute> nsAttributes = entry.getValue();
 
-                for (AtlasNamespaceAttribute nsAttribute : nsAttributes) {
+                for (AtlasNamespaceAttribute nsAttribute : nsAttributes.values()) {
                     Object nsAttrValue = mapVertexToAttribute(entityVertex, nsAttribute, null, false, false);
 
                     if (nsAttrValue != null) {

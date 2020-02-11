@@ -119,9 +119,9 @@ public class GremlinQueryComposer {
             if (ia.isTrait()) {
                 String traitName = ia.get();
 
-                if (traitName.equalsIgnoreCase(ALL_CLASSIFICATIONS)) {
+                if (traitName.equals(ALL_CLASSIFICATIONS)) {
                     addTrait(GremlinClause.ANY_TRAIT, ia);
-                } else if (traitName.equalsIgnoreCase(NO_CLASSIFICATIONS)) {
+                } else if (traitName.equals(NO_CLASSIFICATIONS)) {
                     addTrait(GremlinClause.NO_TRAIT, ia);
                 } else {
                     addTrait(GremlinClause.TRAIT, ia);

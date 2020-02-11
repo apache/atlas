@@ -238,6 +238,11 @@ public class AtlasClassificationType extends AtlasStructType {
         classificationDef.setSubTypes(subTypes);
     }
 
+    @Override
+    public AtlasAttribute getSystemAttribute(String attributeName) {
+        return AtlasClassificationType.CLASSIFICATION_ROOT.allAttributes.get(attributeName);
+    }
+
     private void addSubType(AtlasClassificationType subType) {
         subTypes.add(subType.getTypeName());
     }
