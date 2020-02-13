@@ -114,94 +114,97 @@ define(['require',
         $(this).blur();
     });
 
-    $.fn.select2.amd.define("ServiceTypeFilterDropdownAdapter", [
-            "select2/utils",
-            "select2/dropdown",
-            "select2/dropdown/attachBody",
-            "select2/dropdown/attachContainer",
-            "select2/dropdown/search",
-            "select2/dropdown/minimumResultsForSearch",
-            "select2/dropdown/closeOnSelect",
-        ],
-        function(Utils, Dropdown, AttachBody, AttachContainer, Search, MinimumResultsForSearch, CloseOnSelect) {
+    if ($.fn.select2) {
+        $.fn.select2.amd.define("ServiceTypeFilterDropdownAdapter", [
+                "select2/utils",
+                "select2/dropdown",
+                "select2/dropdown/attachBody",
+                "select2/dropdown/attachContainer",
+                "select2/dropdown/search",
+                "select2/dropdown/minimumResultsForSearch",
+                "select2/dropdown/closeOnSelect",
+            ],
+            function(Utils, Dropdown, AttachBody, AttachContainer, Search, MinimumResultsForSearch, CloseOnSelect) {
 
-            // Decorate Dropdown with Search functionalities
-            var dropdownWithSearch = Utils.Decorate(Utils.Decorate(Dropdown, CloseOnSelect), Search);
+                // Decorate Dropdown with Search functionalities
+                var dropdownWithSearch = Utils.Decorate(Utils.Decorate(Dropdown, CloseOnSelect), Search);
 
-            dropdownWithSearch.prototype.render = function() {
-                // Copy and modify default search render method
-                var $rendered = Dropdown.prototype.render.call(this);
+                dropdownWithSearch.prototype.render = function() {
+                    // Copy and modify default search render method
+                    var $rendered = Dropdown.prototype.render.call(this);
 
-                // Add ability for a placeholder in the search box
-                var placeholder = this.options.get("placeholderForSearch") || "";
-                var $search = $(
-                    '<span class="select2-search select2-search--dropdown"><div class="row">' +
-                    '<div class="col-md-10"><input class="select2-search__field" placeholder="' + placeholder + '" type="search"' +
-                    ' tabindex="-1" autocomplete="off" autocorrect="off" autocapitalize="off"' +
-                    ' spellcheck="false" role="textbox" /></div>' +
-                    '<div class="col-md-2"><button type="button" style="margin-left: -20px" class="btn btn-action btn-sm filter " title="Type Filter"><i class="fa fa-filter"></i></button></div>' +
-                    '</div></span>'
-                );
-                if (!this.options.options.getFilterBox) {
-                    throw "In order to render the filter options adapter needed getFilterBox function"
-                }
-                var $Filter = $('<ul class="type-filter-ul"></ul>');
-                this.$Filter = $Filter;
-                this.$Filter.append(this.options.options.getFilterBox());
-                this.$Filter.hide();
+                    // Add ability for a placeholder in the search box
+                    var placeholder = this.options.get("placeholderForSearch") || "";
+                    var $search = $(
+                        '<span class="select2-search select2-search--dropdown"><div class="row">' +
+                        '<div class="col-md-10"><input class="select2-search__field" placeholder="' + placeholder + '" type="search"' +
+                        ' tabindex="-1" autocomplete="off" autocorrect="off" autocapitalize="off"' +
+                        ' spellcheck="false" role="textbox" /></div>' +
+                        '<div class="col-md-2"><button type="button" style="margin-left: -20px" class="btn btn-action btn-sm filter " title="Type Filter"><i class="fa fa-filter"></i></button></div>' +
+                        '</div></span>'
+                    );
+                    if (!this.options.options.getFilterBox) {
+                        throw "In order to render the filter options adapter needed getFilterBox function"
+                    }
+                    var $Filter = $('<ul class="type-filter-ul"></ul>');
+                    this.$Filter = $Filter;
+                    this.$Filter.append(this.options.options.getFilterBox());
+                    this.$Filter.hide();
 
-                this.$searchContainer = $search;
-                if ($Filter.find('input[type="checkbox"]:checked').length) {
-                    $search.find('button.filter').addClass('active');
-                } else {
-                    $search.find('button.filter').removeClass('active');
-                }
-                this.$search = $search.find('input');
+                    this.$searchContainer = $search;
+                    if ($Filter.find('input[type="checkbox"]:checked').length) {
+                        $search.find('button.filter').addClass('active');
+                    } else {
+                        $search.find('button.filter').removeClass('active');
+                    }
+                    this.$search = $search.find('input');
 
-                $rendered.prepend($search);
-                $rendered.append($Filter);
-                return $rendered;
-            };
-            var oldDropdownWithSearchBindRef = dropdownWithSearch.prototype.bind;
-            dropdownWithSearch.prototype.bind = function(container, $container) {
-                var self = this;
-                oldDropdownWithSearchBindRef.call(this, container, $container);
-                var self = this;
-                this.$Filter.on('click', 'li', function() {
-                    var itemCallback = self.options.options.onFilterItemSelect;
-                    itemCallback && itemCallback(this);
-                })
+                    $rendered.prepend($search);
+                    $rendered.append($Filter);
+                    return $rendered;
+                };
+                var oldDropdownWithSearchBindRef = dropdownWithSearch.prototype.bind;
+                dropdownWithSearch.prototype.bind = function(container, $container) {
+                    var self = this;
+                    oldDropdownWithSearchBindRef.call(this, container, $container);
+                    var self = this;
+                    this.$Filter.on('click', 'li', function() {
+                        var itemCallback = self.options.options.onFilterItemSelect;
+                        itemCallback && itemCallback(this);
+                    })
 
-                this.$searchContainer.find('button.filter').click(function() {
-                    container.$dropdown.find('.select2-search').hide(150);
-                    container.$dropdown.find('.select2-results').hide(150);
-                    self.$Filter.html(self.options.options.getFilterBox());
-                    self.$Filter.show();
-                });
-                this.$Filter.on('click', 'button.filterDone', function() {
-                    container.$dropdown.find('.select2-search').show(150);
-                    container.$dropdown.find('.select2-results').show(150);
-                    self.$Filter.hide();
-                    var filterSubmitCallback = self.options.options.onFilterSubmit;
-                    filterSubmitCallback && filterSubmitCallback({
-                        filterVal: _.map(self.$Filter.find('input[type="checkbox"]:checked'), function(item) {
-                            return $(item).data('value')
-                        })
+                    this.$searchContainer.find('button.filter').click(function() {
+                        container.$dropdown.find('.select2-search').hide(150);
+                        container.$dropdown.find('.select2-results').hide(150);
+                        self.$Filter.html(self.options.options.getFilterBox());
+                        self.$Filter.show();
                     });
-                });
-                container.$element.on('hideFilter', function() {
-                    container.$dropdown.find('.select2-search').show();
-                    container.$dropdown.find('.select2-results').show();
-                    self.$Filter.hide();
-                });
+                    this.$Filter.on('click', 'button.filterDone', function() {
+                        container.$dropdown.find('.select2-search').show(150);
+                        container.$dropdown.find('.select2-results').show(150);
+                        self.$Filter.hide();
+                        var filterSubmitCallback = self.options.options.onFilterSubmit;
+                        filterSubmitCallback && filterSubmitCallback({
+                            filterVal: _.map(self.$Filter.find('input[type="checkbox"]:checked'), function(item) {
+                                return $(item).data('value')
+                            })
+                        });
+                    });
+                    container.$element.on('hideFilter', function() {
+                        container.$dropdown.find('.select2-search').show();
+                        container.$dropdown.find('.select2-results').show();
+                        self.$Filter.hide();
+                    });
 
-            }
-            // Decorate the dropdown+search with necessary containers
-            var adapter = Utils.Decorate(dropdownWithSearch, AttachContainer);
-            adapter = Utils.Decorate(adapter, AttachBody);
+                }
+                // Decorate the dropdown+search with necessary containers
+                var adapter = Utils.Decorate(dropdownWithSearch, AttachContainer);
+                adapter = Utils.Decorate(adapter, AttachBody);
 
-            return adapter;
-        });
+                return adapter;
+            });
+    }
+
 
     $.widget("custom.atlasAutoComplete", $.ui.autocomplete, {
         _create: function() {

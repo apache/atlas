@@ -67,34 +67,39 @@ define(['require',
                 _.extend(this, options);
                 var that = this;
                 this.DATA_MAX_LENGTH = 25;
-                var modal = new Modal({
-                    title: 'Statistics',
-                    content: this,
-                    okCloses: true,
-                    okText: "Close",
-                    showFooter: true,
-                    allowCancel: false,
-                    width: "60%",
-                    headerButtons: [{
-                        title: "Refresh Data",
-                        btnClass: "fa fa-refresh",
-                        onClick: function() {
-                            modal.$el.find('.header-button .fa-refresh').tooltip('hide').prop('disabled', true).addClass('fa-spin');
-                            that.fetchMetricData({ update: true });
-                        }
-                    }]
-                }).open();
+                if (this.hideModal !== false) {
+                    var modal = new Modal({
+                        title: 'Statistics',
+                        content: this,
+                        okCloses: true,
+                        okText: "Close",
+                        showFooter: true,
+                        allowCancel: false,
+                        width: "60%",
+                        headerButtons: [{
+                            title: "Refresh Data",
+                            btnClass: "fa fa-refresh",
+                            onClick: function() {
+                                modal.$el.find('.header-button .fa-refresh').tooltip('hide').prop('disabled', true).addClass('fa-spin');
+                                that.fetchMetricData({ update: true });
+                            }
+                        }]
+                    }).open();
 
-                modal.on('closeModal', function() {
-                    modal.trigger('cancel');
-                });
-                this.modal = modal;
+                    modal.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
+                    this.modal = modal;
+                }
+
             },
             bindEvents: function() {
                 var that = this;
-                this.$el.on('click', '.linkClicked', function() {
-                    that.modal.close();
-                })
+                if (this.modal) {
+                    this.$el.on('click', '.linkClicked', function() {
+                        that.modal.close();
+                    })
+                }
             },
             fetchMetricData: function(options) {
                 var that = this;
@@ -109,7 +114,9 @@ define(['require',
                         that.$('.statsContainer,.statsNotificationContainer').removeClass('hide');
                         that.$('.statsLoader,.statsNotificationLoader').removeClass('show');
                         if (options && options.update) {
-                            that.modal.$el.find('.header-button .fa-refresh').prop('disabled', false).removeClass('fa-spin');
+                            if (that.modal) {
+                                that.modal.$el.find('.header-button .fa-refresh').prop('disabled', false).removeClass('fa-spin');
+                            }
                             Utils.notifySuccess({
                                 content: "Metric data is refreshed"
                             })
