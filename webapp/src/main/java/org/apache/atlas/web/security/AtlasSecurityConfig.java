@@ -170,6 +170,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             "/js/**",
             "/n/js/**",
             "/ieerror.html",
+            "/migration-status.html",
             "/api/atlas/admin/status",
             "/api/atlas/admin/metrics"));
 

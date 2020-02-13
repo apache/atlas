@@ -287,7 +287,8 @@ module.exports = function(grunt) {
                     }
                 },
                 files: {
-                    [distPath + '/index.html']: [modulesPath + 'index.html.tpl']
+                    [distPath + '/index.html']: [modulesPath + 'index.html.tpl'],
+                    [distPath + '/migration-status.html']: [modulesPath + 'migration-status.html.tpl']
                 }
             }
         }
