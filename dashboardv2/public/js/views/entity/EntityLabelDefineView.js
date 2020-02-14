@@ -74,7 +74,7 @@ define(['require',
                 });
             this.ui.addLabelOptions.html(str);
             var getLabelData = function(data, selectedData) {
-                if (data.suggestions) {
+                if (data.suggestions.length) {
                     return _.map(data.suggestions, function(name, index) {
                         var findValue = _.find(selectedData, { id: name })
                         if (findValue) {
@@ -87,7 +87,8 @@ define(['require',
                         }
                     });
                 } else {
-                    return [];
+                    var findValue = _.find(selectedData, { id: data.prefixString })
+                    return findValue ? [findValue] : [];
                 }
             };
             this.ui.addLabelOptions.select2({
@@ -109,6 +110,12 @@ define(['require',
                         return { results: getLabelData(data, this.$element.select2("data")) };
                     },
                     cache: true
+                },
+                createTag: function(data) {
+                    var found = _.find(this.$element.select2("data"), { id: data.term });
+                    if (!found) {
+                        return { id: data.term, text: data.term };
+                    }
                 },
                 templateResult: this.formatResultSearch
             });
