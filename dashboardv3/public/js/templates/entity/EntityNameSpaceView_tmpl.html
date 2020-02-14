@@ -1,0 +1,44 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="namespace">
+    <div class="panel-heading" data-toggle="collapse" href="#namespaceCollapse" aria-expanded="false" style="width: 70%;">
+        <h4 class="panel-title">
+            <a>Namespaces</a>
+        </h4>
+        <div class="btn-group pull-left">
+            <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
+        </div>
+    </div>
+    <div class="panel-actions">
+        <button class="btn btn-action btn-sm" title="" data-id="addNameSpace">Add</button>
+        <button class="btn btn-action btn-sm" style="display: none;" data-id="saveNameSpace">Save</button>
+        <button class="btn btn-action btn-sm" style="display: none;" data-id="cancel">Cancel</button>
+    </div>
+    <div id="namespaceCollapse" class="panel-collapse collapse">
+        <div class="panel-body">
+            <div data-id="namespaceTree"></div>
+            <div class="editBox" style="display: none;">
+                <div class="form-group">
+                    <a href="javascript:void(0)" class="btn btn-action btn-sm" data-id="addItem" data-type="addAttrButton">Add New Attribute</a>
+                </div>
+                <table class="custom-table">
+                    <tbody data-id="itemView"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

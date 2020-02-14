@@ -46,7 +46,8 @@ define(['require',
                 RProfileLayoutView: "#r_profileLayoutView",
                 RRelationshipLayoutView: "#r_relationshipLayoutView",
                 REntityUserDefineView: "#r_entityUserDefineView",
-                REntityLabelDefineView: "#r_entityLabelDefineView"
+                REntityLabelDefineView: "#r_entityLabelDefineView",
+                REntityNameSpaceView: "#r_entityNameSpaceView"
             },
             /** ui selector cache */
             ui: {
@@ -120,7 +121,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection', 'searchVent'));
+                _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection', 'nameSpaceCollection', 'searchVent'));
                 $('body').addClass("detail-page");
             },
             bindEvents: function() {
@@ -244,6 +245,7 @@ define(['require',
                         enumDefCollection: this.enumDefCollection,
                         classificationDefCollection: this.classificationDefCollection,
                         glossaryCollection: this.glossaryCollection,
+                        nameSpaceCollection: this.nameSpaceCollection,
                         searchVent: this.searchVent,
                         attributeDefs: (function() {
                             return that.getEntityDef(collectionJSON);
@@ -253,6 +255,7 @@ define(['require',
                     this.renderEntityDetailTableLayoutView(obj);
                     this.renderEntityUserDefineView(obj);
                     this.renderEntityLabelDefineView(obj);
+                    this.renderEntityNameSpaceView(obj);
                     this.renderRelationshipLayoutView(obj);
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
@@ -510,6 +513,12 @@ define(['require',
                 var that = this;
                 require(['views/entity/EntityLabelDefineView'], function(EntityLabelDefineView) {
                     that.REntityLabelDefineView.show(new EntityLabelDefineView(obj));
+                });
+            },
+            renderEntityNameSpaceView: function(obj) {
+                var that = this;
+                require(['views/entity/EntityNameSpaceView'], function(EntityNameSpaceView) {
+                    that.REntityNameSpaceView.show(new EntityNameSpaceView(obj));
                 });
             },
             renderTagTableLayoutView: function(obj) {

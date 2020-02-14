@@ -99,6 +99,11 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                 return this.baseUrlV2 + '/entity/bulk/classification';
             }
         },
+        entitiesNamespaceApiUrl: function(guid) {
+            if (guid) {
+                return this.baseUrlV2 + '/entity/guid/' + guid + '/namespaces?isOverwrite=true';
+            }
+        },
         entityCollectionaudit: function(guid) {
             return this.baseUrlV2 + '/entity/' + guid + '/audit';
         },
