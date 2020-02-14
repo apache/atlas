@@ -631,7 +631,7 @@ define(['require',
                     nameCheck = 0,
                     columnToShow = null,
                     col = {};
-                this.value = Utils.getUrlState.getQueryParams();
+                this.value = Utils.getUrlState.getQueryParams() || this.value;
                 if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
                     columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
                 }
