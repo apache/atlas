@@ -107,7 +107,15 @@ define(['require',
         deleteNameSpace: function(options) {
             var url = UrlLinks.nameSpaceUpdateUrl(options.typeName);
             return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
-        }
+        },
+        saveNamespaceEntity: function(guid, options) {
+            var url = UrlLinks.entitiesNamespaceApiUrl(guid);
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+            return this.constructor.nonCrudOperation.call(this, url, 'POST', options);
+        },
     }, {});
     return VEntity;
 });
