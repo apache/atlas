@@ -227,7 +227,7 @@ define([
                     selector: '.classificationPopover',
                     content: function() {
                         var type = $(this).data('detail'),
-                            liString = "<li><i class='fa fa-list-alt'></i><a href='javascript:void(0)' data-fn='onViewEdit'>View/Edit</a></li><li><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='onDelete'>Delete</a></li><li><i class='fa fa-search'></i><a href='javascript:void(0)' data-fn='onSelectedSearch'>Search</a></li>"
+                            liString = " <li><i class='fa fa-plus'></i><a href='javascript:void(0)' data-fn='onClickCreateTag'>Create Sub-classification</a></li><li><i class='fa fa-list-alt'></i><a href='javascript:void(0)' data-fn='onViewEdit'>View/Edit</a></li><li><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='onDelete'>Delete</a></li><li><i class='fa fa-search'></i><a href='javascript:void(0)' data-fn='onSelectedSearch'>Search</a></li>"
                         return "<ul>" + liString + "</ul>";
                     }
                 }
@@ -585,20 +585,23 @@ define([
                 var aTag = that.$("#" + str.node.a_attr.id),
                     tagOffset = aTag.find(">.jstree-icon").offset();
                 that.$(".tree-tooltip").removeClass("show");
-                if (tagOffset.top && tagOffset.left) {
-                    aTag.find(">span.tree-tooltip").css({
-                        top: "calc(" + tagOffset.top + "px - 45px)",
-                        left: "24px"
-                    }).addClass("show");
-                }
+                setTimeout(function() {
+                    if (aTag.hasClass("jstree-hovered") && tagOffset.top && tagOffset.left) {
+                        aTag.find(">span.tree-tooltip").css({
+                            top: "calc(" + tagOffset.top + "px - 45px)",
+                            left: "24px"
+                        }).addClass("show");
+                    }
+                }, 1200);
             }).on("dehover_node.jstree", function(nodes, str, res) {
                 that.$(".tree-tooltip").removeClass("show");
             });
         },
-        onClickCreateTag: function(e) {
+
+        onClickCreateTag: function(tagName) {
             var that = this;
             require(["views/tag/CreateTagLayoutView", "modules/Modal"], function(CreateTagLayoutView, Modal) {
-                var view = new CreateTagLayoutView({ tagCollection: that.options.classificationDefCollection, enumDefCollection: enumDefCollection }),
+                var view = new CreateTagLayoutView({ tagCollection: that.options.classificationDefCollection, enumDefCollection: enumDefCollection, selectedTag: tagName }),
                     modal = new Modal({
                         title: "Create a new classification",
                         content: view,
@@ -748,6 +751,12 @@ define([
                     this.onClassificationUpdate(url);
                 }
             });
+        },
+        onClickCreateTagClassification: function(e) {
+            var selectedNode = this.ui.classificationSearchTree.jstree("get_selected", true);
+            if (selectedNode && selectedNode[0]) {
+                this.onClickCreateTag(selectedNode[0].original.name);
+            }
         },
         onViewEditClassification: function() {
             var selectedNode = this.ui.classificationSearchTree.jstree("get_selected", true);
