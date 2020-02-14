@@ -40,10 +40,12 @@ import static org.apache.atlas.AtlasConstants.ATLAS_SERVICES_ENABLED;
 public class Services {
     public static final Logger LOG = LoggerFactory.getLogger(Services.class);
     private static final String DATA_MIGRATION_CLASS_NAME_DEFAULT = "DataMigrationService";
+    private static final String FILE_EXTENSION_ZIP = ".zip";
 
     private final List<Service> services;
     private final String        dataMigrationClassName;
     private final boolean       servicesEnabled;
+    private final String        migrationDirName;
     private final boolean       migrationEnabled;
 
     @Inject
@@ -51,7 +53,8 @@ public class Services {
         this.services               = services;
         this.dataMigrationClassName = configuration.getString("atlas.migration.class.name", DATA_MIGRATION_CLASS_NAME_DEFAULT);
         this.servicesEnabled        = configuration.getBoolean(ATLAS_SERVICES_ENABLED, true);
-        this.migrationEnabled       = StringUtils.isNotEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME));
+        this.migrationDirName       = configuration.getString(ATLAS_MIGRATION_MODE_FILENAME);
+        this.migrationEnabled       = StringUtils.isNotEmpty(migrationDirName);
     }
 
     @PostConstruct
@@ -92,9 +95,20 @@ public class Services {
     private boolean isServiceUsed(Service service) {
         if (isDataMigrationService(service)) {
             return migrationEnabled;
+        } else if (isZipFileMigration()) {
+            return isNeededForZipFileMigration(service);
         } else {
             return !migrationEnabled && servicesEnabled;
         }
+    }
+
+    private boolean isZipFileMigration() {
+        return migrationEnabled && StringUtils.endsWithIgnoreCase(migrationDirName, FILE_EXTENSION_ZIP);
+    }
+
+    private boolean isNeededForZipFileMigration(Service svc) {
+        return svc.getClass().getSuperclass().getSimpleName().equals("AbstractStorageBasedAuditRepository") ||
+                svc.getClass().getSuperclass().getSimpleName().equals("AbstractNotification");
     }
 
     private boolean isDataMigrationService(Service svc) {

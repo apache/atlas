@@ -18,20 +18,21 @@
 
 package org.apache.atlas.repository.migration;
 
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
+import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.ImportTypeDefProcessor;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
+import org.apache.atlas.service.Service;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.service.Service;
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.common.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -48,6 +49,8 @@ import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 public class DataMigrationService implements Service {
     private static final Logger LOG = LoggerFactory.getLogger(DataMigrationService.class);
 
+    private static final String FILE_EXTENSION_ZIP = ".zip";
+
     private static String ATLAS_MIGRATION_DATA_NAME     = "atlas-migration-data.json";
     private static String ATLAS_MIGRATION_TYPESDEF_NAME = "atlas-migration-typesdef.json";
 
@@ -57,9 +60,15 @@ public class DataMigrationService implements Service {
     @Inject
     public DataMigrationService(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, Configuration configuration,
                                 GraphBackedSearchIndexer indexer, AtlasTypeDefStoreInitializer storeInitializer,
-                                AtlasTypeRegistry typeRegistry) {
+                                AtlasTypeRegistry typeRegistry, ImportService importService) {
         this.configuration = configuration;
-        this.thread        = new Thread(new FileImporter(migrator, typeDefStore, typeRegistry, storeInitializer, getFileName(), indexer));
+
+
+        String fileName = getFileName();
+        boolean zipFileBasedMigrationImport = StringUtils.endsWithIgnoreCase(fileName, FILE_EXTENSION_ZIP);
+        this.thread        = (zipFileBasedMigrationImport)
+            ?  new Thread(new ZipFileMigrationImporter(importService, fileName), "zipFileBasedMigrationImporter")
+            :  new Thread(new FileImporter(migrator, typeDefStore, typeRegistry, storeInitializer, fileName, indexer));
     }
 
     @Override
