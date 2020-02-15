@@ -84,14 +84,6 @@ public class AtlasNamespaceType extends AtlasStructType {
                 throw new AtlasBaseException(AtlasErrorCode.NAMESPACE_DEF_ATTRIBUTE_TYPE_INVALID, getTypeName(), attrName);
             }
 
-            if (!attributeDef.getIsOptional()) {
-                throw new AtlasBaseException(AtlasErrorCode.NAMESPACE_DEF_MANDATORY_ATTRIBUTE_NOT_ALLOWED, getTypeName(), attrName);
-            }
-
-            if (attributeDef.getIsUnique()) {
-                throw new AtlasBaseException(AtlasErrorCode.NAMESPACE_DEF_UNIQUE_ATTRIBUTE_NOT_ALLOWED, getTypeName(), attrName);
-            }
-
             Set<String>          entityTypeNames = attribute.getOptionSet(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
             Set<AtlasEntityType> entityTypes     = new HashSet<>();
 
@@ -105,8 +97,6 @@ public class AtlasNamespaceType extends AtlasStructType {
 
                     entityTypes.add(entityType);
                 }
-            } else {
-                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, attributeDef.getName(), "options." + ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
             }
 
             AtlasNamespaceAttribute nsAttribute;
