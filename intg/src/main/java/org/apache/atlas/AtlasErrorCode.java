@@ -163,12 +163,10 @@ public enum AtlasErrorCode {
     INVALID_PROPAGATION_TYPE(400, "ATLAS-400-00-091", "Invalid propagation {0} for relationship-type={1}. Default value is {2}"),
     DUPLICATE_NAMESPACE_ATTRIBUTE(400, "ATLAS-400-00-092", "Duplicate Namespace Attributes: {0} not allowed within the same namespace: {1}"),
     APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED(400, "ATLAS-400-00-093", "Cannot remove applicableEntityTypes in Attribute Def: {0}, defined in namespace: {1}"),
-    NAMESPACE_DEF_MANDATORY_ATTRIBUTE_NOT_ALLOWED(400, "ATLAS-400-00-094", "{0}.{1} : namespaces can not have mandatory attribute"),
-    NAMESPACE_DEF_UNIQUE_ATTRIBUTE_NOT_ALLOWED(400, "ATLAS-400-00-095", "{0}.{1} : namespaces can not have unique attribute"),
-    NAMESPACE_DEF_ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-096", "{0}.{1}: invalid attribute type. Namespace attribute cannot be of type entity/classification/struct/namespace"),
-    INVALID_NAMESPACE_NAME_FOR_ENTITY_TYPE(400, "ATLAS-400-00-097", "Invalid Namespace: {0} specified for entity, applicable namespaces: {1}"),
-    NAMESPACE_ATTRIBUTE_DOES_NOT_EXIST(400, "ATLAS-400-00-098", "Namespace attribute does not exist  in entity: {0}"),
-    NAMESPACE_ATTRIBUTE_ALREADY_EXISTS(400, "ATLAS-400-00-099", "Namespace attribute already exists in entity: {0}"),
+    NAMESPACE_DEF_ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-094", "{0}.{1}: invalid attribute type. Namespace attribute cannot be of type entity/classification/struct/namespace"),
+    INVALID_NAMESPACE_NAME_FOR_ENTITY_TYPE(400, "ATLAS-400-00-095", "Invalid Namespace: {0} specified for entity, applicable namespaces: {1}"),
+    NAMESPACE_ATTRIBUTE_DOES_NOT_EXIST(400, "ATLAS-400-00-096", "Namespace attribute does not exist  in entity: {0}"),
+    NAMESPACE_ATTRIBUTE_ALREADY_EXISTS(400, "ATLAS-400-00-097", "Namespace attribute already exists in entity: {0}"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 

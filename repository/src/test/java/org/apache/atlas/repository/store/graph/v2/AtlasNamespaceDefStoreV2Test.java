@@ -166,25 +166,7 @@ public class AtlasNamespaceDefStoreV2Test {
             typesDefs.setNamespaceDefs(Arrays.asList(namespaceDef));
             typeDefStore.updateTypesDef(typesDefs);
         } catch (AtlasBaseException e) {
-            Assert.assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE);
-        } finally {
-            typesDefs = existingTypeDefs;
-        }
-    }
-
-    /**
-     * Test to verify that we cannot have an empty applicable entity types in an attribute definition
-     * @throws AtlasBaseException
-     */
-    @Test
-    public void createNsAttrDefWithoutApplicableEntityTypes() {
-        AtlasTypesDef existingTypeDefs = typesDefs;
-
-        try {
-            typesDefs.setNamespaceDefs(Arrays.asList(createNamespaceDef2(namespaceName)));
-            typeDefStore.updateTypesDef(typesDefs);
-        } catch (AtlasBaseException e) {
-            Assert.assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE);
+            Assert.assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED);
         } finally {
             typesDefs = existingTypeDefs;
         }
