@@ -649,7 +649,6 @@ public abstract class BaseHiveEvent {
         if (queryStr != null) {
             queryStr = queryStr.toLowerCase().trim();
         }
-        ret.setAttribute(ATTRIBUTE_NAME, queryStr);
 
         ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, getOperationName());
         String qualifiedName = getQualifiedName(inputs, outputs);
@@ -664,6 +663,7 @@ public abstract class BaseHiveEvent {
             }
         }
         ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, qualifiedName);
+        ret.setAttribute(ATTRIBUTE_NAME, qualifiedName);
         ret.setRelationshipAttribute(ATTRIBUTE_INPUTS, AtlasTypeUtil.getAtlasRelatedObjectIds(inputs, RELATIONSHIP_DATASET_PROCESS_INPUTS));
         ret.setRelationshipAttribute(ATTRIBUTE_OUTPUTS, AtlasTypeUtil.getAtlasRelatedObjectIds(outputs, RELATIONSHIP_PROCESS_DATASET_OUTPUTS));
 
@@ -700,7 +700,7 @@ public abstract class BaseHiveEvent {
         ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, hiveProcess.getAttribute(ATTRIBUTE_QUALIFIED_NAME).toString() +
                 QNAME_SEP_PROCESS + getQueryStartTime().toString() +
                 QNAME_SEP_PROCESS + endTime.toString());
-        ret.setAttribute(ATTRIBUTE_NAME, queryStr + QNAME_SEP_PROCESS + getQueryStartTime().toString());
+        ret.setAttribute(ATTRIBUTE_NAME, ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
         ret.setAttribute(ATTRIBUTE_START_TIME, getQueryStartTime());
         ret.setAttribute(ATTRIBUTE_END_TIME, endTime);
         ret.setAttribute(ATTRIBUTE_USER_NAME, getUserName());
