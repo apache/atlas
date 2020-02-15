@@ -551,7 +551,7 @@ public abstract class BaseHiveEvent {
         ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(inputs, outputs));
         ret.setAttribute(ATTRIBUTE_INPUTS, getObjectIds(inputs));
         ret.setAttribute(ATTRIBUTE_OUTPUTS,  getObjectIds(outputs));
-        ret.setAttribute(ATTRIBUTE_NAME, queryStr);
+        ret.setAttribute(ATTRIBUTE_NAME, ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
         ret.setAttribute(ATTRIBUTE_OPERATION_TYPE, hookContext.getOperationName());
         ret.setAttribute(ATTRIBUTE_START_TIME, hookContext.getQueryPlan().getQueryStartTime());
         ret.setAttribute(ATTRIBUTE_END_TIME, System.currentTimeMillis());

@@ -155,6 +155,14 @@ public class HivePreprocessor {
 
         @Override
         public void preprocess(AtlasEntity entity, PreprocessorContext context) {
+            if (context.updateHiveProcessNameWithQualifiedName()) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("setting {}.name={}. topic-offset={}, partition={}", entity.getTypeName(), entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), context.getKafkaMessageOffset(), context.getKafkaPartition());
+                }
+
+                entity.setAttribute(ATTRIBUTE_NAME, entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+            }
+
             if (context.isIgnoredEntity(entity.getGuid())) {
                 context.addToIgnoredEntities(entity); // so that this will be logged with typeName and qualifiedName
             } else {

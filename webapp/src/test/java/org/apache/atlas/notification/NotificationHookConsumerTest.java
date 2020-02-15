@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -78,7 +79,7 @@ public class NotificationHookConsumerTest {
         MockitoAnnotations.initMocks(this);
         AtlasType mockType = mock(AtlasType.class);
         when(typeRegistry.getType(anyString())).thenReturn(mockType);
-        AtlasEntity.AtlasEntitiesWithExtInfo mockEntity = mock(AtlasEntity.AtlasEntitiesWithExtInfo.class);
+        AtlasEntitiesWithExtInfo mockEntity = new AtlasEntitiesWithExtInfo(mock(AtlasEntity.class));
         when(instanceConverter.toAtlasEntities(anyList())).thenReturn(mockEntity);
         EntityMutationResponse mutationResponse = mock(EntityMutationResponse.class);
         when(atlasEntityStore.createOrUpdate(any(EntityStream.class), anyBoolean())).thenReturn(mutationResponse);

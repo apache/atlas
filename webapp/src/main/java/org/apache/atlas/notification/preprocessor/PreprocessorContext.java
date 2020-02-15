@@ -52,19 +52,21 @@ public class PreprocessorContext {
     private final List<String>                               hiveDummyDatabasesToIgnore;
     private final List<String>                               hiveDummyTablesToIgnore;
     private final List<String>                               hiveTablePrefixesToIgnore;
+    private final boolean                                    updateHiveProcessNameWithQualifiedName;
     private final boolean                                    isHivePreProcessEnabled;
     private final Set<String>                                ignoredEntities        = new HashSet<>();
     private final Set<String>                                prunedEntities         = new HashSet<>();
     private final Set<String>                                referredEntitiesToMove = new HashSet<>();
 
-    public PreprocessorContext(AtlasKafkaMessage<HookNotificationMessage> kafkaMessage, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, List<String> hiveDummyDatabasesToIgnore, List<String> hiveDummyTablesToIgnore, List<String> hiveTablePrefixesToIgnore) {
-        this.kafkaMessage                  = kafkaMessage;
-        this.hiveTablesToIgnore            = hiveTablesToIgnore;
-        this.hiveTablesToPrune             = hiveTablesToPrune;
-        this.hiveTablesCache               = hiveTablesCache;
-        this.hiveDummyDatabasesToIgnore    = hiveDummyDatabasesToIgnore;
-        this.hiveDummyTablesToIgnore       = hiveDummyTablesToIgnore;
-        this.hiveTablePrefixesToIgnore     = hiveTablePrefixesToIgnore;
+    public PreprocessorContext(AtlasKafkaMessage<HookNotificationMessage> kafkaMessage, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, List<String> hiveDummyDatabasesToIgnore, List<String> hiveDummyTablesToIgnore, List<String> hiveTablePrefixesToIgnore, boolean updateHiveProcessNameWithQualifiedName) {
+        this.kafkaMessage                           = kafkaMessage;
+        this.hiveTablesToIgnore                     = hiveTablesToIgnore;
+        this.hiveTablesToPrune                      = hiveTablesToPrune;
+        this.hiveTablesCache                        = hiveTablesCache;
+        this.hiveDummyDatabasesToIgnore             = hiveDummyDatabasesToIgnore;
+        this.hiveDummyTablesToIgnore                = hiveDummyTablesToIgnore;
+        this.hiveTablePrefixesToIgnore              = hiveTablePrefixesToIgnore;
+        this.updateHiveProcessNameWithQualifiedName = updateHiveProcessNameWithQualifiedName;
 
         final HookNotificationMessage  message = kafkaMessage.getMessage();
 
@@ -82,7 +84,7 @@ public class PreprocessorContext {
             break;
         }
 
-        this.isHivePreProcessEnabled = !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty();
+        this.isHivePreProcessEnabled = !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty() || updateHiveProcessNameWithQualifiedName;
     }
 
     public AtlasKafkaMessage<HookNotificationMessage> getKafkaMessage() {
@@ -96,6 +98,8 @@ public class PreprocessorContext {
     public int getKafkaPartition() {
         return kafkaMessage.getPartition();
     }
+
+    public boolean updateHiveProcessNameWithQualifiedName() { return updateHiveProcessNameWithQualifiedName; }
 
     public boolean isHivePreprocessEnabled() {
         return isHivePreProcessEnabled;

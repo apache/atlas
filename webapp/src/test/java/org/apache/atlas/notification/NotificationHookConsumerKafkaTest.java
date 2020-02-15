@@ -25,6 +25,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.kafka.*;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -86,7 +87,7 @@ public class NotificationHookConsumerKafkaTest {
         MockitoAnnotations.initMocks(this);
         AtlasType mockType = mock(AtlasType.class);
         when(typeRegistry.getType(anyString())).thenReturn(mockType);
-        AtlasEntity.AtlasEntitiesWithExtInfo mockEntity = mock(AtlasEntity.AtlasEntitiesWithExtInfo.class);
+        AtlasEntity.AtlasEntitiesWithExtInfo mockEntity = new AtlasEntitiesWithExtInfo(createV2Entity());
         when(instanceConverter.toAtlasEntities(anyList())).thenReturn(mockEntity);
 
         initNotificationService();
@@ -205,6 +206,16 @@ public class NotificationHookConsumerKafkaTest {
         entity.set(NAME, "db" + randomString());
         entity.set(DESCRIPTION, randomString());
         entity.set(QUALIFIED_NAME, randomString());
+        return entity;
+    }
+
+    AtlasEntity createV2Entity() {
+        final AtlasEntity entity = new AtlasEntity(AtlasClient.DATA_SET_SUPER_TYPE);
+
+        entity.setAttribute(NAME, "db" + randomString());
+        entity.setAttribute(DESCRIPTION, randomString());
+        entity.setAttribute(QUALIFIED_NAME, randomString());
+
         return entity;
     }
 
