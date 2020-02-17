@@ -221,6 +221,41 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public Map<String, Map<String, Object>> getEntityNamespaces(AtlasVertex entityVertex) throws AtlasBaseException {
+        Map<String, Map<String, Object>>                  ret                  = null;
+        String                                            entityTypeName       = getTypeName(entityVertex);
+        AtlasEntityType                                   entityType           = typeRegistry.getEntityTypeByName(entityTypeName);
+        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType != null ? entityType.getNamespaceAttributes() : null;
+
+        if (MapUtils.isNotEmpty(entityTypeNamespaces)) {
+            for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
+                String                               nsName        = entry.getKey();
+                Map<String, AtlasNamespaceAttribute> nsAttributes  = entry.getValue();
+                Map<String, Object>                  entityNsAttrs = null;
+
+                for (AtlasNamespaceAttribute nsAttribute : nsAttributes.values()) {
+                    Object nsAttrValue = mapVertexToAttribute(entityVertex, nsAttribute, null, false, false);
+
+                    if (nsAttrValue != null) {
+                        if (ret == null) {
+                            ret = new HashMap<>();
+                        }
+
+                        if (entityNsAttrs == null) {
+                            entityNsAttrs = new HashMap<>();
+
+                            ret.put(nsName, entityNsAttrs);
+                        }
+
+                        entityNsAttrs.put(nsAttribute.getName(), nsAttrValue);
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
     public Object getEntityAttribute(AtlasVertex entityVertex, AtlasAttribute attribute) {
         Object ret = null;
 
@@ -770,23 +805,7 @@ public class EntityGraphRetriever {
     }
 
     private void mapNamespaceAttributes(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
-        AtlasEntityType                                   entityType           = typeRegistry.getEntityTypeByName(entity.getTypeName());
-        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType != null ? entityType.getNamespaceAttributes() : null;
-
-        if (MapUtils.isNotEmpty(entityTypeNamespaces)) {
-            for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
-                String                               nsName       = entry.getKey();
-                Map<String, AtlasNamespaceAttribute> nsAttributes = entry.getValue();
-
-                for (AtlasNamespaceAttribute nsAttribute : nsAttributes.values()) {
-                    Object nsAttrValue = mapVertexToAttribute(entityVertex, nsAttribute, null, false, false);
-
-                    if (nsAttrValue != null) {
-                        entity.setNamespaceAttribute(nsName, nsAttribute.getName(), nsAttrValue);
-                    }
-                }
-            }
-        }
+        entity.setNamespaceAttributes(getEntityNamespaces(entityVertex));
     }
 
     public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {

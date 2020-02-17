@@ -353,7 +353,7 @@ public class EntityGraphMapper {
             removedLabels = null;
         } else if (CollectionUtils.isEmpty(labels)) {
             addedLabels   = null;
-            removedLabels = labels;
+            removedLabels = currentLabels;
         } else {
             addedLabels   = new HashSet<String>(CollectionUtils.subtract(labels, currentLabels));
             removedLabels = new HashSet<String>(CollectionUtils.subtract(currentLabels, labels));

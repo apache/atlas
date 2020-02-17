@@ -43,7 +43,9 @@
           "privileges":      [ "entity-read", "entity-read-classification" ],
           "entityTypes":     [ ".*" ],
           "entityIds":       [ ".*" ],
-          "classifications": [ ".*" ]
+          "classifications": [ ".*" ],
+          "labels":          [ ".*" ],
+          "namespaces":      [ ".*" ]
         }
       ]
     },
@@ -51,10 +53,12 @@
     "DATA_STEWARD": {
       "entityPermissions": [
         {
-          "privileges":      [ "entity-read", "entity-create", "entity-update", "entity-read-classification", "entity-add-classification", "entity-update-classification", "entity-remove-classification" ],
+          "privileges":      [ "entity-read", "entity-create", "entity-update", "entity-read-classification", "entity-add-classification", "entity-update-classification", "entity-remove-classification", "entity-add-label", "entity-remove-label", "entity-update-namespace" ],
           "entityTypes":     [ ".*" ],
           "entityIds":       [ ".*" ],
-          "classifications": [ ".*" ]
+          "classifications": [ ".*" ],
+          "labels":          [ ".*" ],
+          "namespaces":      [ ".*" ]
         }
       ]
     }
@@ -62,7 +66,9 @@
 
   "userRoles": {
     "admin": [ "ROLE_ADMIN" ],
-    "rangertagsync": [ "DATA_SCIENTIST" ]
+    "rangertagsync": [ "DATA_SCIENTIST" ],
+    "dataScientist1": [ "DATA_SCIENTIST"],
+    "dataSteward1": [ "DATA_STEWARD"]
   },
 
   "groupRoles": {

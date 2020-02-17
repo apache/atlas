@@ -25,6 +25,7 @@ import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -66,6 +67,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -834,14 +836,44 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
         }
 
+        if (MapUtils.isEmpty(entityNamespaces)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entityNamespaces is null/empty");
+        }
+
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        String          typeName   = getTypeName(entityVertex);
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+        String                           typeName       = getTypeName(entityVertex);
+        AtlasEntityType                  entityType     = typeRegistry.getEntityTypeByName(typeName);
+        AtlasEntityHeader                entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+        Map<String, Map<String, Object>> currNamespaces = entityRetriever.getEntityNamespaces(entityVertex);
+        Set<String>                      updatedNsNames = new HashSet<>();
+
+        for (String nsName : entityType.getNamespaceAttributes().keySet()) {
+            Map<String, Object> nsAttrs     = entityNamespaces.get(nsName);
+            Map<String, Object> currNsAttrs = currNamespaces != null ? currNamespaces.get(nsName) : null;
+
+            if (nsAttrs == null && !isOverwrite) {
+                continue;
+            } else if (MapUtils.isEmpty(nsAttrs) && MapUtils.isEmpty(currNsAttrs)) { // no change
+                continue;
+            } else if (Objects.equals(nsAttrs, currNsAttrs)) { // no change
+                continue;
+            }
+
+            updatedNsNames.add(nsName);
+        }
+
+        AtlasEntityAccessRequestBuilder  requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_NAMESPACE, entityHeader);
+
+        for (String nsName : updatedNsNames) {
+            requestBuilder.setNamespaceName(nsName);
+
+            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update namespace: guid=", guid, ", namespace=", nsName);
+        }
 
         validateNamespaceAttributes(entityVertex, entityType, entityNamespaces, isOverwrite);
 
@@ -867,14 +899,27 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
         }
 
+        if (MapUtils.isEmpty(entityNamespaces)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entityNamespaces is null/empty");
+        }
+
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        String          typeName   = getTypeName(entityVertex);
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+        String                          typeName       = getTypeName(entityVertex);
+        AtlasEntityType                 entityType     = typeRegistry.getEntityTypeByName(typeName);
+        AtlasEntityHeader               entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+
+        AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_NAMESPACE, entityHeader);
+
+        for (String nsName : entityNamespaces.keySet()) {
+            requestBuilder.setNamespaceName(nsName);
+
+            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove namespace: guid=", guid, ", namespace=", nsName);
+        }
 
         entityGraphMapper.removeNamespaceAttributes(entityVertex, entityType, entityNamespaces);
 
@@ -902,6 +947,39 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         validateLabels(labels);
 
+        AtlasEntityHeader entityHeader  = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+        Set<String>       addedLabels   = Collections.emptySet();
+        Set<String>       removedLabels = Collections.emptySet();
+
+        if (CollectionUtils.isEmpty(entityHeader.getLabels())) {
+            addedLabels = labels;
+        } else if (CollectionUtils.isEmpty(labels)) {
+            removedLabels = entityHeader.getLabels();
+        } else {
+            addedLabels   = new HashSet<String>(CollectionUtils.subtract(labels, entityHeader.getLabels()));
+            removedLabels = new HashSet<String>(CollectionUtils.subtract(entityHeader.getLabels(), labels));
+        }
+
+        if (addedLabels != null) {
+            AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_ADD_LABEL, entityHeader);
+
+            for (String label : addedLabels) {
+                requestBuilder.setLabel(label);
+
+                AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add label: guid=", guid, ", label=", label);
+            }
+        }
+
+        if (removedLabels != null) {
+            AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_LABEL, entityHeader);
+
+            for (String label : removedLabels) {
+                requestBuilder.setLabel(label);
+
+                AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove label: guid=", guid, ", label=", label);
+            }
+        }
+
         entityGraphMapper.setLabels(entityVertex, labels);
 
         if (LOG.isDebugEnabled()) {
@@ -920,10 +998,23 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
         }
 
+        if (CollectionUtils.isEmpty(labels)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "labels is null/empty");
+        }
+
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        AtlasEntityHeader               entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+        AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_LABEL, entityHeader);
+
+        for (String label : labels) {
+            requestBuilder.setLabel(label);
+
+            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove label: guid=", guid, ", label=", label);
         }
 
         validateLabels(labels);
@@ -946,10 +1037,23 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
         }
 
+        if (CollectionUtils.isEmpty(labels)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "labels is null/empty");
+        }
+
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        AtlasEntityHeader               entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+        AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_ADD_LABEL, entityHeader);
+
+        for (String label : labels) {
+            requestBuilder.setLabel(label);
+
+            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update label: guid=", guid, ", label=", label);
         }
 
         validateLabels(labels);
