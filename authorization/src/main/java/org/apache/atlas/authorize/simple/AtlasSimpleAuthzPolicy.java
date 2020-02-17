@@ -209,16 +209,24 @@ public class AtlasSimpleAuthzPolicy implements Serializable {
         private List<String> entityTypes;     // name of entity-type, wildcards supported
         private List<String> entityIds;       // value of entity-unique attribute, wildcards supported
         private List<String> classifications; // name of classification-type, wildcards supported
+        private List<String> labels;          // labels, wildcards supported
+        private List<String> namespaces;      // name of namespace-type, wildcards supported
         private List<String> attributes;      // name of entity-attribute, wildcards supported
 
         public AtlasEntityPermission() {
         }
 
         public AtlasEntityPermission(List<String> privileges, List<String> entityTypes, List<String> entityIds, List<String> classifications, List<String> attributes) {
+            this(privileges, entityTypes, entityIds, classifications, attributes, null, null);
+        }
+
+        public AtlasEntityPermission(List<String> privileges, List<String> entityTypes, List<String> entityIds, List<String> classifications, List<String> labels, List<String> namespaces, List<String> attributes) {
             this.privileges      = privileges;
             this.entityTypes     = entityTypes;
             this.entityIds       = entityIds;
             this.classifications = classifications;
+            this.labels          = labels;
+            this.namespaces      = namespaces;
             this.attributes      = attributes;
         }
 
@@ -252,6 +260,22 @@ public class AtlasSimpleAuthzPolicy implements Serializable {
 
         public void setClassifications(List<String> classifications) {
             this.classifications = classifications;
+        }
+
+        public List<String> getLabels() {
+            return labels;
+        }
+
+        public void setLabels(List<String> labels) {
+            this.namespaces = labels;
+        }
+
+        public List<String> getNamespaces() {
+            return namespaces;
+        }
+
+        public void setNamespaces(List<String> namespaces) {
+            this.namespaces = namespaces;
         }
 
         public List<String> getAttributes() {
