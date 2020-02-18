@@ -148,7 +148,7 @@ define(['require',
 
                 this.$searchContainer = $search;
                 this.$search = $search.find('input');
-                let $selection = MultipleSelection.prototype.render.call(this);
+                var $selection = MultipleSelection.prototype.render.call(this);
                 this._transferTabIndex();
                 return $selection;
             };
