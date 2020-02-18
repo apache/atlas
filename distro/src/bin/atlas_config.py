@@ -26,6 +26,7 @@ import errno
 import socket
 from re import split
 from time import sleep
+from distutils.util import strtobool
 
 BIN = "bin"
 LIB = "lib"
@@ -56,10 +57,11 @@ SOLR_SHARDS = "SOLR_SHARDS"
 DEFAULT_SOLR_SHARDS = "1"
 SOLR_REPLICATION_FACTOR = "SOLR_REPLICATION_FACTOR"
 DEFAULT_SOLR_REPLICATION_FACTOR = "1"
+ENABLE_LOGGING_TO_CONSOLE = "ENABLE_LOGGING_TO_CONSOLE"
 
 ENV_KEYS = ["JAVA_HOME", ATLAS_OPTS, ATLAS_SERVER_OPTS, ATLAS_SERVER_HEAP, ATLAS_LOG, ATLAS_PID, ATLAS_CONF,
             "ATLASCPPATH", ATLAS_DATA, ATLAS_HOME, ATLAS_WEBAPP, HBASE_CONF_DIR, SOLR_PORT, MANAGE_LOCAL_HBASE,
-            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA, MANAGE_LOCAL_ELASTICSEARCH]
+            MANAGE_LOCAL_SOLR, MANAGE_EMBEDDED_CASSANDRA, MANAGE_LOCAL_ELASTICSEARCH, ENABLE_LOGGING_TO_CONSOLE]
 IS_WINDOWS = platform.system() == "Windows"
 ON_POSIX = 'posix' in sys.builtin_module_names
 CONF_FILE="atlas-application.properties"
@@ -79,8 +81,6 @@ DEFAULT_ATLAS_HTTPS_PORT="21443"
 ATLAS_ENABLE_TLS="atlas.enableTLS"
 ATLAS_SERVER_BIND_ADDRESS="atlas.server.bind.address"
 DEFAULT_ATLAS_SERVER_HOST="localhost"
-
-
 
 DEBUG = False
 
@@ -184,7 +184,7 @@ def executeEnvSh(confDir):
 
         proc.communicate()
 
-def java(classname, args, classpath, jvm_opts_list, logdir=None, logconsole=False):
+def java(classname, args, classpath, jvm_opts_list, logdir=None, logconsole="false"):
     java_home = os.environ.get("JAVA_HOME", None)
     if java_home:
         prg = os.path.join(java_home, "bin", "java")
@@ -203,7 +203,7 @@ def java(classname, args, classpath, jvm_opts_list, logdir=None, logconsole=Fals
     return runProcess(commandline, logdir,
                       logconsole=logconsole)
 
-def jar(path, logconsole=False):
+def jar(path, logconsole="false"):
     java_home = os.environ.get("JAVA_HOME", None)
     if java_home:
         prg = os.path.join(java_home, "bin", "jar")
@@ -238,7 +238,7 @@ def which(program):
 
     return None
 
-def runProcess(commandline, logdir=None, shell=False, wait=False, logconsole=False):
+def runProcess(commandline, logdir=None, shell=False, wait=False, logconsole="false"):
     """
     Run a process
     :param commandline: command line
@@ -250,29 +250,37 @@ def runProcess(commandline, logdir=None, shell=False, wait=False, logconsole=Fal
     debug ("Executing : %s" % str(commandline))
     timestr = time.strftime("atlas.%Y%m%d-%H%M%S")
 
-    stdoutTargetsList = []
-    stderrTargetsList = []
-
-    if logdir:
-        stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
-        stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
-
-        stdoutTargetsList.append(stdoutFile)
-        stderrTargetsList.append(stderrFile)
+    logconsole = bool(strtobool(logconsole))
 
     if logconsole:
-        stdoutTargetsList.append(sys.stdout)
-        stderrTargetsList.append(sys.stdout)
+        stdoutTargetsList = [sys.stdout]
+        stderrTargetsList = [sys.stderr]
 
-    p = subprocess.Popen(commandline, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
+        if logdir:
+            stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
+            stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
 
-    for line in p.stdout:
-        for target in stdoutTargetsList:
-            target.write(line)
+            stdoutTargetsList.append(stdoutFile)
+            stderrTargetsList.append(stderrFile)
 
-    for line in p.stderr:
-        for target in stderrTargetsList:
-            target.write(line)
+        p = subprocess.Popen(commandline, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
+
+        for line in p.stdout:
+            for target in stdoutTargetsList:
+                target.write(line)
+
+        for line in p.stderr:
+            for target in stderrTargetsList:
+                target.write(line)
+    else:
+        stdoutFile = None
+        stderrFile = None
+
+        if logdir:
+            stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
+            stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
+
+        p = subprocess.Popen(commandline, stdout=stdoutFile, stderr=stderrFile, shell=shell)
 
     if wait:
         p.communicate()
@@ -444,7 +452,7 @@ def is_hbase_local(confdir):
     confFile = os.path.join(confdir, CONF_FILE)
     return is_hbase(confdir) and grep(confFile, HBASE_STORAGE_LOCAL_CONF_ENTRY) is not None
 
-def run_hbase_action(dir, action, hbase_conf_dir = None, logdir = None, wait=True, logconsole=False):
+def run_hbase_action(dir, action, hbase_conf_dir = None, logdir = None, wait=True, logconsole="false"):
     if IS_WINDOWS:
         if action == 'start':
             hbaseScript = 'start-hbase.cmd'
@@ -562,7 +570,7 @@ def wait_for_startup(confdir, wait):
 
     sys.stdout.write('\n')
 
-def run_zookeeper(dir, action, logdir = None, wait=True, logconsole=False):
+def run_zookeeper(dir, action, logdir = None, wait=True, logconsole="false"):
     zookeeperScript = "zkServer.sh"
 
     if IS_WINDOWS:
@@ -573,7 +581,7 @@ def run_zookeeper(dir, action, logdir = None, wait=True, logconsole=False):
     return runProcess(cmd, logdir, False, wait,
                       logconsole=logconsole)
 
-def start_elasticsearch(dir, logdir = None, wait=True, logconsole=False):
+def start_elasticsearch(dir, logdir = None, wait=True, logconsole="false"):
 
     elasticsearchScript = "elasticsearch"
 
@@ -582,12 +590,11 @@ def start_elasticsearch(dir, logdir = None, wait=True, logconsole=False):
 
     cmd = [os.path.join(dir, elasticsearchScript), '-d', '-p', os.path.join(logdir, 'elasticsearch.pid')]
 
-    processVal = runProcess(cmd, logdir, False, wait,
-                            logconsole=logconsole)
+    processVal = runProcess(cmd, logdir, False, wait)
     sleep(6)
     return processVal
 
-def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True, logconsole=False):
+def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True, logconsole="false"):
 
     solrScript = "solr"
 
@@ -608,7 +615,7 @@ def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True, 
     return runProcess(cmd, logdir, False, wait,
                       logconsole=logconsole)
 
-def create_solr_collection(dir, confdir, index, logdir = None, wait=True, logconsole=False):
+def create_solr_collection(dir, confdir, index, logdir = None, wait=True, logconsole="false"):
     solrScript = "solr"
 
     if IS_WINDOWS:
@@ -703,7 +710,7 @@ def server_pid_not_running(pid):
 def grep(file, value):
     for line in open(file).readlines():
         if re.match(value, line):
-           return line
+            return line
     return None
 
 def getConfig(file, key):

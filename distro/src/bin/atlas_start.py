@@ -19,16 +19,15 @@ import os
 import sys
 import traceback
 
-from distutils.util import strtobool
-
 import atlas_config as mc
+
+from distutils.util import strtobool
 
 ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=%s.log"
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_HEAP_OPTS="-Xmx1024m"
 DEFAULT_JVM_OPTS="-Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true -server"
-ENABLE_LOGGING_TO_CONSOLE=bool(strtobool(os.getenv("ENABLE_LOGGING_TO_CONSOLE", "false")))
 
 def main():
 
@@ -38,9 +37,8 @@ def main():
     confdir = mc.dirMustExist(mc.confDir(atlas_home))
     mc.executeEnvSh(confdir)
     logdir = mc.dirMustExist(mc.logDir(atlas_home))
-
-    console_logging = "enabled" if ENABLE_LOGGING_TO_CONSOLE else "disabled"
-    print "logging to console is %s." % console_logging
+    console_logging = "enabled" if bool(strtobool(os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE)))  else "disabled"
+    print "Logging to console is %s." % console_logging
 
     mc.dirMustExist(mc.dataDir(atlas_home))
     if mc.isCygwin():
@@ -121,7 +119,7 @@ def main():
         mc.configure_hbase(atlas_home)
 
         mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir,
-                            logconsole=ENABLE_LOGGING_TO_CONSOLE)
+                            logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
         print "hbase started."
 
     #solr setup
@@ -134,26 +132,28 @@ def main():
             mc.configure_zookeeper(atlas_home)
 
             mc.run_zookeeper(mc.zookeeperBinDir(atlas_home), "start", logdir,
-                             logconsole=ENABLE_LOGGING_TO_CONSOLE)
+                             logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
             print "zookeeper started."
 
-        mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir)
+        mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir,
+                    logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
+
         print "solr started."
 
         print "setting up solr collections..."
-        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), mc.get_solr_vertex_name(confdir), logdir,
-                                  logconsole=ENABLE_LOGGING_TO_CONSOLE)
-        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), mc.get_solr_edge_name(confdir), logdir,
-                                  logconsole=ENABLE_LOGGING_TO_CONSOLE)
-        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), mc.get_solr_fulltext_name(confdir), logdir,
-                                  logconsole=ENABLE_LOGGING_TO_CONSOLE)
+        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "vertex_index", logdir,
+                                  logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
+        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "edge_index", logdir,
+                                  logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
+        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "fulltext_index", logdir,
+                                  logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
 
     #elasticsearch setup
     if mc.is_elasticsearch_local():
         print "configured for local elasticsearch."
 
         mc.start_elasticsearch(mc.elasticsearchBinDir(atlas_home), logdir,
-                               logconsole=ENABLE_LOGGING_TO_CONSOLE)
+                               logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
         print "elasticsearch started."
 
     web_app_path = os.path.join(web_app_dir, "atlas")
@@ -162,19 +162,22 @@ def main():
     if not is_setup:
 
         start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path,
-                           logconsole=ENABLE_LOGGING_TO_CONSOLE)
+                           logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
         mc.wait_for_startup(confdir, 300)
         print "Apache Atlas Server started!!!\n"
     else:
-        process = mc.java("org.apache.atlas.web.setup.AtlasSetup", [], atlas_classpath, jvm_opts_list, jvm_logdir)
+        process = mc.java("org.apache.atlas.web.setup.AtlasSetup", [], atlas_classpath, jvm_opts_list, jvm_logdir,
+                          logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
+
         return process.wait()
 
 
-def start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path, logconsole=False):
+def start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path, logconsole="false"):
     args = ["-app", web_app_path]
     args.extend(sys.argv[1:])
     process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, jvm_logdir,
                       logconsole=logconsole)
+
     mc.writePid(atlas_pid_file, process)
 
 if __name__ == '__main__':
