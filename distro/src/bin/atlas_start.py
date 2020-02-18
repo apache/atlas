@@ -141,11 +141,11 @@ def main():
         print "solr started."
 
         print "setting up solr collections..."
-        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "vertex_index", logdir,
+        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), mc.get_solr_vertex_name(confdir), logdir,
                                   logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
-        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "edge_index", logdir,
+        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), mc.get_solr_edge_name(confdir), logdir,
                                   logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
-        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "fulltext_index", logdir,
+        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), mc.get_solr_fulltext_name(confdir), logdir,
                                   logconsole=os.environ.get(mc.ENABLE_LOGGING_TO_CONSOLE))
 
     #elasticsearch setup
