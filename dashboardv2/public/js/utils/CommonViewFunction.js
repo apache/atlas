@@ -34,7 +34,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 options.showLoader();
                             }
                             tagModel.deleteAssociation(options.guid, options.tagName, options.associatedGuid, {
-                                skipDefaultError: true,
+                                defaultErrorMessage: options.tagName + Messages.deleteErrorMessage,
                                 success: function(data) {
                                     Utils.notifySuccess({
                                         content: "Classification " + options.tagName + Messages.getAbbreviationMsg(false, 'removeSuccessMessage')
@@ -48,16 +48,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
 
                                 },
                                 cust_error: function(model, response) {
-                                    var message = options.tagName + Messages.deleteErrorMessage;
-                                    if (response && response.responseJSON) {
-                                        message = response.responseJSON.errorMessage;
-                                    }
                                     if (options.hideLoader) {
                                         options.hideLoader();
                                     }
-                                    Utils.notifyError({
-                                        content: message
-                                    });
                                 }
                             });
                         },

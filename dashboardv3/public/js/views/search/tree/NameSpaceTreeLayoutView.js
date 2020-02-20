@@ -215,7 +215,6 @@ define([
         refresh: function(options) {
             var that = this;
             this.nameSpaceCollection.fetch({
-                skipDefaultError: true,
                 silent: true,
                 complete: function() {
                     that.nameSpaceCollection.fullCollection.comparator = function(model) {

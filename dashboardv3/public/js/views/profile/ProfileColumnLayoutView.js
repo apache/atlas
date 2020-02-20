@@ -69,7 +69,6 @@ define(['require',
             fetchEntity: function(argument) {
                 var that = this;
                 this.entityModel.getEntity(this.entityDetail.table.guid, {
-                    skipDefaultError: true,
                     success: function(data) {
                         var entity = data.entity,
                             profileData = entity && entity.attributes && entity.attributes.profileData ? entity.attributes.profileData.attributes : null;

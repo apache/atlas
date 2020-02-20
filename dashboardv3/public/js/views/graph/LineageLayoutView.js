@@ -240,7 +240,6 @@ define(['require',
                     "el": that.$(".graph-button-group button,select[data-id='selectDepth']")
                 });
                 this.collection.getLineage(this.guid, {
-                    skipDefaultError: true,
                     queryParam: queryParam,
                     success: function(data) {
                         if (that.isDestroyed) {

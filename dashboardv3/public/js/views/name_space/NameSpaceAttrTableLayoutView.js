@@ -132,7 +132,6 @@ define(['require',
                                 enumDefCollection.fetch({ reset: true });
                                 that.nameSpaceAttr.fullCollection.reset();
                                 that.options.selectedNameSpace.fetch({
-                                    skipDefaultError: true,
                                     complete: function(model, status) {
                                         that.nameSpaceAttr.fullCollection.add(model.responseJSON.attributeDefs);
                                     }
@@ -179,40 +178,40 @@ define(['require',
             getNamespaceTableColumns: function() {
                 var that = this;
                 return this.nameSpaceAttr.constructor.getTableCols({
-                        name: {
-                            label: "Attribute Name",
-                            cell: "html",
-                            editable: false,
-                            formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                fromRaw: function(rawValue, model) {
-                                    return model.get('name');
-                                }
-                            })
-                        },
-                        typeName: {
-                            label: "typeName",
-                            cell: "html",
-                            editable: false,
-                            formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                fromRaw: function(rawValue, model) {
-                                    return model.get('typeName');
-                                }
-                            })
-                        },
-                        options: {
-                            label: "Entity Type(s)",
-                            cell: "html",
-                            editable: false,
-                            formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                    fromRaw: function(rawValue, model) {
-                                        var applicableEntityTypes = '',
-                                            attrEntityTypes = JSON.parse(model.get('options').applicableEntityTypes);
-                                        _.each(attrEntityTypes, function(values) {
-                                            applicableEntityTypes += '<label class="btn btn-action btn-xs btn-blue no-pointer">' + values + '</label>';
-                                        });
-                                    return applicableEntityTypes;
-                                }
-                            })
+                    name: {
+                        label: "Attribute Name",
+                        cell: "html",
+                        editable: false,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                return model.get('name');
+                            }
+                        })
+                    },
+                    typeName: {
+                        label: "typeName",
+                        cell: "html",
+                        editable: false,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                return _.escape(model.get('typeName'));
+                            }
+                        })
+                    },
+                    options: {
+                        label: "Entity Type(s)",
+                        cell: "html",
+                        editable: false,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var applicableEntityTypes = '',
+                                    attrEntityTypes = JSON.parse(model.get('options').applicableEntityTypes);
+                                _.each(attrEntityTypes, function(values) {
+                                    applicableEntityTypes += '<label class="btn btn-action btn-xs btn-blue no-pointer">' + values + '</label>';
+                                });
+                                return applicableEntityTypes;
+                            }
+                        })
                     },
                     tool: {
                         label: "Action",
@@ -226,7 +225,7 @@ define(['require',
                         })
                     }
                 }, this.nameSpaceAttr);
-        }
-    });
-return NameSpaceAttrTableLayoutView;
+            }
+        });
+    return NameSpaceAttrTableLayoutView;
 });

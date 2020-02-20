@@ -174,7 +174,6 @@ define([
                 var opt = options || {};
                 if (opt && !opt.metricData) {
                     that.metricCollection.fetch({
-                        skipDefaultError: true,
                         complete: function() {
                             that.entityCountObj = _.first(that.metricCollection.toJSON());
                             that.classificationTreeUpdate = true;
@@ -351,7 +350,6 @@ define([
                     }
                 };
             this.classificationDefCollection.fetch({
-                skipDefaultError: true,
                 silent: true,
                 complete: function() {
                     --apiCount;
@@ -359,7 +357,6 @@ define([
                 }
             });
             this.metricCollection.fetch({
-                skipDefaultError: true,
                 complete: function() {
                     --apiCount;
                     that.entityCountObj = _.first(that.metricCollection.toJSON());

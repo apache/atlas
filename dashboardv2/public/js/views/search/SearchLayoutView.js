@@ -381,7 +381,6 @@ define(['require',
                         }
                     };
                 this.metricCollection.fetch({
-                    skipDefaultError: true,
                     complete: function() {
                         --apiCount;
                         that.entityCountObj = _.first(that.metricCollection.toJSON());
@@ -390,7 +389,6 @@ define(['require',
                 });
 
                 this.typeHeaders.fetch({
-                    skipDefaultError: true,
                     silent: true,
                     complete: function() {
                         --apiCount;

@@ -91,7 +91,6 @@ define([
                 var opt = options || {};
                 if (opt && !opt.metricData) {
                     that.metricCollection.fetch({
-                        skipDefaultError: true,
                         complete: function() {
                             that.entityCountObj = _.first(that.metricCollection.toJSON());
                             that.ui.entitySearchTree.jstree(true).refresh();
@@ -510,7 +509,6 @@ define([
                     }
                 };
             this.entityDefCollection.fetch({
-                skipDefaultError: true,
                 complete: function() {
                     that.entityDefCollection.fullCollection.comparator = function(model) {
                         return model.get('name').toLowerCase();
@@ -522,7 +520,6 @@ define([
             });
 
             this.metricCollection.fetch({
-                skipDefaultError: true,
                 complete: function() {
                     --apiCount;
                     that.entityCountObj = _.first(that.metricCollection.toJSON());
@@ -531,7 +528,6 @@ define([
             });
 
             this.typeHeaders.fetch({
-                skipDefaultError: true,
                 complete: function() {
                     that.typeHeaders.fullCollection.comparator = function(model) {
                         return model.get('name').toLowerCase();

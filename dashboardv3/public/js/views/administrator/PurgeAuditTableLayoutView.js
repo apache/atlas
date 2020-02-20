@@ -310,7 +310,6 @@ define(['require',
                     }
                 }
                 var apiObj = {
-                    skipDefaultError: true,
                     sort: false,
                     success: function(dataOrCollection, response) {
                         if (!(that.ui.pageRecordText instanceof jQuery)) {

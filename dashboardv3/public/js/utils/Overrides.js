@@ -37,9 +37,7 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
         return oldBackboneSync.apply(this, [method, model,
             _.extend(options, {
                 error: function(response) {
-                    if (!options.skipDefaultError) {
-                        Utils.defaultErrorHandler(that, response);
-                    }
+                    Utils.defaultErrorHandler(that, response, options);
                     that.trigger("error", that, response);
                     if (options.cust_error) {
                         options.cust_error(that, response);

@@ -218,22 +218,20 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             }
         });
     }
-    Utils.defaultErrorHandler = function(model, error) {
+    Utils.defaultErrorHandler = function(model, error, options) {
+        var skipDefaultError = null,
+            defaultErrorMessage = null;
+        if (options) {
+            skipDefaultError = options.skipDefaultError;
+            defaultErrorMessage = options.defaultErrorMessage;
+        }
         if (error && error.status) {
             if (error.status == 401) {
                 window.location = 'login.jsp'
             } else if (error.status == 419) {
                 window.location = 'login.jsp'
             } else if (error.status == 403) {
-                var message = "You are not authorized";
-                if (error.statusText) {
-                    try {
-                        message = JSON.parse(error.statusText).AuthorizationError;
-                    } catch (err) {}
-                    Utils.notifyError({
-                        content: message
-                    });
-                }
+                Utils.serverErrorHandler(error, "You are not authorized");
             } else if (error.status == "0" && error.statusText != "abort") {
                 var diffTime = (new Date().getTime() - prevNetworkErrorTime);
                 if (diffTime > 3000) {
@@ -243,22 +241,23 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                             "It seems you are not connected to the internet. Please check your internet connection and try again"
                     });
                 }
-            } else {
-                Utils.serverErrorHandler(model, error)
+            } else if (skipDefaultError !== true) {
+                Utils.serverErrorHandler(error, defaultErrorMessage);
             }
-        } else {
-            Utils.serverErrorHandler(model, error)
+        } else if (skipDefaultError !== true) {
+            Utils.serverErrorHandler(error, defaultErrorMessage);
         }
     };
-    Utils.serverErrorHandler = function(model, response) {
-        var responseJSON = response ? response.responseJSON : response;
-        if (response && responseJSON && (responseJSON.errorMessage || responseJSON.message || responseJSON.error)) {
+    Utils.serverErrorHandler = function(response, defaultErrorMessage) {
+        var responseJSON = response ? response.responseJSON : response,
+            message = defaultErrorMessage ? defaultErrorMessage : Messages.defaultErrorMessage
+        if (response && responseJSON) {
+            message = responseJSON.errorMessage || responseJSON.message || responseJSON.error || message
+        }
+        var existingError = $(".ui-pnotify-container.alert-danger .ui-pnotify-text").text();
+        if (existingError !== message) {
             Utils.notifyError({
-                content: responseJSON.errorMessage || responseJSON.message || responseJSON.error
-            });
-        } else {
-            Utils.notifyError({
-                content: Messages.defaultErrorMessage
+                content: message
             });
         }
     };
