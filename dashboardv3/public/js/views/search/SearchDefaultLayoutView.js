@@ -57,9 +57,11 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 events["click " + this.ui.attrFilter] = function(e) {
                     if (this.$('.attribute-filter-container').hasClass("hide")) {
                         this.onClickAttrFilter();
+                        this.$('.attributeResultContainer').addClass("overlay");
+                    } else {
+                        this.$('.attributeResultContainer').removeClass("overlay");
                     }
                     this.$('.fa-angle-right').toggleClass('fa-angle-down');
-                    this.$('.attributeResultContainer').addClass("overlay");
                     this.$('.attribute-filter-container, .attr-filter-overlay').toggleClass('hide');
                 };
 
@@ -236,6 +238,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                         enumDefCollection: that.options.enumDefCollection,
                         typeHeaders: that.options.typeHeaders,
                         classificationDefCollection: that.options.classificationDefCollection,
+                        nameSpaceCollection: that.options.nameSpaceCollection,
                         searchTableFilters: that.checkEntityFilter(that.options)
                     };
                 if (that.options.value) {
@@ -295,7 +298,8 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                         this.renderQueryBuilder(_.extend({}, obj, {
                             tag: false,
                             type: true,
-                            attrObj: attrTypeObj
+                            attrObj: attrTypeObj,
+                            applicableType: that.options.value ? that.options.value.type : null
                         }), this.RQueryBuilderEntity);
 
                         this.ui.entityName.html(that.options.value.type);
@@ -362,13 +366,24 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 return col;
             },
             updateFilterOptions: function(rule, filtertype, isTag) {
-                var ruleUrl = CommonViewFunction.attributeFilter.generateUrl({ value: rule, formatedDateToLong: true });
+                var that = this,
+                    ruleUrl = CommonViewFunction.attributeFilter.generateUrl({ value: rule, formatedDateToLong: true });
                 this.options.searchTableFilters[filtertype][isTag ? this.options.value.tag : this.options.value.type] = ruleUrl;
                 if (!isTag && this.options.value && this.options.value.type && this.options.searchTableColumns) {
                     if (!this.options.searchTableColumns[this.options.value.type]) {
                         this.options.searchTableColumns[this.options.value.type] = ["selected", "name", "owner", "description", "tag", "typeName"];
                     }
                     this.options.searchTableColumns[this.options.value.type] = _.sortBy(_.union(this.options.searchTableColumns[this.options.value.type], this.getIdFromRuleObj(rule)));
+                    if (rule.rules) {
+                        _.find(rule.rules, function(checkNamespace) {
+                            if (checkNamespace.data && checkNamespace.data.entityType && checkNamespace.data.entityType == 'namespace') {
+                                if (that.options.searchTableColumns[that.options.value.type].indexOf('namespace') == -1) {
+                                    that.options.searchTableColumns[that.options.value.type].push(checkNamespace.data.entityType);
+                                }
+                                return true;
+                            }
+                        });
+                    }
                 }
             },
             renderQueryBuilder: function(obj, rQueryBuilder) {

@@ -61,6 +61,7 @@ define(['require',
                     'entityDefCollection',
                     'enumDefCollection',
                     'classificationDefCollection',
+                    'nameSpaceCollection',
                     'tag',
                     'searchTableFilters',
                     'systemAttrArr'));
@@ -364,6 +365,30 @@ define(['require',
                         filters.push(returnObj);
                     }
                 });
+                if (this.attrObj.length > 0) {
+
+                    var sortedNamespaceData = _.sortBy(this.nameSpaceCollection.models, function(obj) {
+                        return obj.get('name')
+                    });
+                    _.each(sortedNamespaceData, function(obj) {
+                        var namespaceName = obj.get('name');
+
+                        var sortedNamespaceAttr = _.sortBy(obj.attributes.attributeDefs, function(obj) {
+                            return obj.name;
+                        });
+                        _.each(sortedNamespaceAttr, function(attrDetails) {
+                            if (attrDetails.options && attrDetails.options.applicableEntityTypes && that.options.applicableType && (JSON.parse(attrDetails.options.applicableEntityTypes).indexOf(that.options.applicableType) != -1)) {
+                                var returnObj = that.getObjDef(attrDetails, rules_widgets, isGroupView, 'Select Namespace Attribute', true);
+                                if (returnObj) {
+                                    returnObj.id = namespaceName + "." + returnObj.id;
+                                    returnObj.label = namespaceName + ": " + returnObj.label;
+                                    returnObj.data = { 'entityType': "namespace" };
+                                    filters.push(returnObj);
+                                }
+                            }
+                        })
+                    });
+                }
                 filters = _.uniq(filters, 'id');
                 if (filters && !_.isEmpty(filters)) {
                     this.ui.builder.queryBuilder({

@@ -641,12 +641,12 @@ define(['require',
                 var that = this,
                     nameCheck = 0,
                     columnToShow = null,
-                    col = {};
+                    col = {},
+                    namespaceRenderable = false;
                 this.value = Utils.getUrlState.getQueryParams() || this.value;
                 if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
                     columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
                 }
-
                 col['Check'] = {
                     name: "selected",
                     label: "Select",
@@ -783,6 +783,28 @@ define(['require',
                                 var obj = model.toJSON();
                                 if (obj && obj.typeName) {
                                     return '<a title="Search ' + obj.typeName + '" href="#!/search/searchResult?type=' + obj.typeName + '&searchType=basic">' + obj.typeName + '</a>';
+                                }
+                            }
+                        })
+                    };
+                    col['Namespaces'] = {
+                        label: "Namespaces",
+                        cell: "Html",
+                        editable: false,
+                        resizeable: true,
+                        orderable: true,
+                        renderable: _.contains(columnToShow, 'namespace'),
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var obj = model.toJSON(),
+                                    namespaceStr = '';
+                                if (obj && obj.attributes) {
+                                    _.each(obj.attributes, function(namespaceValue, attributeName) {
+                                        if (attributeName.indexOf('.') != -1) {
+                                            namespaceStr += '<label class="btn btn-action btn-xs btn-blue no-pointer">' + attributeName + ': ' + namespaceValue + '</label>';
+                                        }
+                                    })
+                                    return namespaceStr;
                                 }
                             }
                         })
