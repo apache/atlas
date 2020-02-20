@@ -142,7 +142,7 @@ define([
             );
             this.bindEvents();
             this.entityCountObj = _.first(this.metricCollection.toJSON());
-            this.isEmptyClassification = true;
+            this.isEmptyClassification = false;
             this.entityTreeData = {};
             this.tagId = null;
             this.isGroupView = true;
