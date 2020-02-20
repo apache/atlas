@@ -787,7 +787,7 @@ define(['require',
                             }
                         })
                     };
-                    col['Namespaces'] = {
+                    col['namespace'] = {
                         label: "Namespaces",
                         cell: "Html",
                         editable: false,

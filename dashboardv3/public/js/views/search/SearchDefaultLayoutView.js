@@ -352,7 +352,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
             },
             getIdFromRuleObj: function(rule) {
                 var that = this,
-                    col = [];
+                    col = new Set();
                 _.map(rule.rules, function(obj, key) {
                     if (obj.id === "__state") {
                         that.options.value.includeDE = (obj.value === "ACTIVE" && obj.operator === "=") || (obj.value === "DELETED" && obj.operator === "!=") ? false : true;
@@ -360,10 +360,14 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     if (_.has(obj, "condition")) {
                         return that.getIdFromRuleObj(obj);
                     } else {
-                        return col.push(obj.id);
+                        if (obj && obj.data && obj.data.entityType === "namespace") {
+                            return col.add("namespace");
+                        } else {
+                            return col.add(obj.id);
+                        }
                     }
                 });
-                return col;
+                return Array.from(col);
             },
             updateFilterOptions: function(rule, filtertype, isTag) {
                 var that = this,
@@ -371,19 +375,9 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 this.options.searchTableFilters[filtertype][isTag ? this.options.value.tag : this.options.value.type] = ruleUrl;
                 if (!isTag && this.options.value && this.options.value.type && this.options.searchTableColumns) {
                     if (!this.options.searchTableColumns[this.options.value.type]) {
-                        this.options.searchTableColumns[this.options.value.type] = ["selected", "name", "owner", "description", "tag", "typeName"];
+                        this.options.searchTableColumns[this.options.value.type] = ["selected", "name", "description", "typeName", "owner", "tag", "term"];
                     }
                     this.options.searchTableColumns[this.options.value.type] = _.sortBy(_.union(this.options.searchTableColumns[this.options.value.type], this.getIdFromRuleObj(rule)));
-                    if (rule.rules) {
-                        _.find(rule.rules, function(checkNamespace) {
-                            if (checkNamespace.data && checkNamespace.data.entityType && checkNamespace.data.entityType == 'namespace') {
-                                if (that.options.searchTableColumns[that.options.value.type].indexOf('namespace') == -1) {
-                                    that.options.searchTableColumns[that.options.value.type].push(checkNamespace.data.entityType);
-                                }
-                                return true;
-                            }
-                        });
-                    }
                 }
             },
             renderQueryBuilder: function(obj, rQueryBuilder) {
