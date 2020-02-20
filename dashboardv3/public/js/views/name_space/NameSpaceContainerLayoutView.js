@@ -69,7 +69,6 @@ define([
             fetchNameSpaceGuid: function() {
                 var that = this;
                 this.selectedNameSpace.fetch({
-                    skipDefaultError: true,
                     complete: function(model, status) {
                         that.nameSpaceAttr.fullCollection.add(model.responseJSON.attributeDefs);
                     }

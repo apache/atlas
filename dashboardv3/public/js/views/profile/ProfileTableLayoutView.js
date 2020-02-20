@@ -110,7 +110,6 @@ define(['require',
             fetchEntity: function(argument) {
                 var that = this;
                 this.entityModel.getEntity(this.entityDetail.db.guid, {
-                    skipDefaultError: true,
                     success: function(data) {
                         var entity = data.entity;
                         if (entity.attributes) {

@@ -268,7 +268,6 @@ require(['App',
         }
     });
     this.entityDefCollection.fetch({
-        skipDefaultError: true,
         complete: function() {
             that.entityDefCollection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
@@ -279,7 +278,6 @@ require(['App',
         }
     });
     this.typeHeaders.fetch({
-        skipDefaultError: true,
         complete: function() {
             that.typeHeaders.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
@@ -290,7 +288,6 @@ require(['App',
         }
     });
     this.enumDefCollection.fetch({
-        skipDefaultError: true,
         complete: function() {
             that.enumDefCollection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
@@ -301,7 +298,6 @@ require(['App',
         }
     });
     this.classificationDefCollection.fetch({
-        skipDefaultError: true,
         complete: function() {
             that.classificationDefCollection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
@@ -313,7 +309,6 @@ require(['App',
     });
 
     this.metricCollection.fetch({
-        skipDefaultError: true,
         complete: function() {
             --that.asyncFetchCounter;
             startApp();
@@ -321,7 +316,6 @@ require(['App',
     });
 
     this.nameSpaceCollection.fetch({
-        skipDefaultError: true,
         complete: function() {
             that.nameSpaceCollection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();

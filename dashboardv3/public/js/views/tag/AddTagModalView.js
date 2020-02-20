@@ -439,9 +439,9 @@ define(['require',
                 this.showLoader();
             }
             this.entityModel.saveTraitsEntity(this.tagModel ? options.guid : null, {
-                skipDefaultError: true,
                 data: JSON.stringify(json),
                 type: this.tagModel ? 'PUT' : 'POST',
+                defaultErrorMessage: "Tag " + tagName + " could not be added",
                 success: function(data) {
                     var addupdatetext = that.tagModel ? 'updated successfully to ' : 'added to ';
                     Utils.notifySuccess({
@@ -455,13 +455,6 @@ define(['require',
                     }
                 },
                 cust_error: function(model, response) {
-                    var message = "Tag " + tagName + " could not be added";
-                    if (response && response.responseJSON) {
-                        message = response.responseJSON.errorMessage;
-                    }
-                    Utils.notifyError({
-                        content: message
-                    });
                     if (that.hideLoader) {
                         that.hideLoader();
                     }
