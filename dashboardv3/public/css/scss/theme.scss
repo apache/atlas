@@ -830,3 +830,18 @@ td.searchTableName:hover {
 
     }
 }
+
+.select2-results__option {
+    &.select2-results__option--highlighted {
+        .option-title-light {
+            color: #eaeaea;
+        }
+    }
+
+    .option-title-light {
+        font-size: 12px;
+        color: #a4a4a4;
+    }
+
+
+}
