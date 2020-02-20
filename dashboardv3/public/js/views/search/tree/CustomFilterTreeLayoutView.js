@@ -74,7 +74,7 @@ define([
                 this.ui.groupOrFlatTree.find("i").toggleClass("group-tree-deactivate");
                 this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
                 that.ui[type + "SearchTree"].jstree(true).destroy();
-                that.renderCustomFilter();
+                that.fetchCustomFilter();
             };
 
             return events;
@@ -133,6 +133,18 @@ define([
             this.saveSearchCollection = new VSearchList();
             this.saveSearchAdvanceCollection = new VSearchList();
             this.saveSearchCollection.url = UrlLinks.saveSearchApiUrl();
+            this.saveSearchBaiscCollection.fullCollection.comparator = function(model) {
+                return getModelName(model);
+            }
+            this.saveSearchAdvanceCollection.fullCollection.comparator = function(model) {
+                return getModelName(model);
+            }
+
+            function getModelName(model) {
+                if (model.get('name')) {
+                    return model.get('name').toLowerCase();
+                }
+            };
             this.bindEvents();
             this.customFilterData = null;
             this.isBasic = true;
@@ -140,7 +152,7 @@ define([
             this.isGroupView = true;
         },
         onRender: function() {
-            this.renderCustomFilter();
+            this.fetchCustomFilter();
         },
         manualRender: function(options) {
             _.extend(this.options, options);
@@ -160,21 +172,8 @@ define([
             });
             this.createCustomFilterAction();
         },
-        renderCustomFilter: function() {
+        fetchCustomFilter: function() {
             var that = this;
-            this.saveSearchBaiscCollection.fullCollection.comparator = function(model) {
-                return getModelName(model);
-            }
-            this.saveSearchAdvanceCollection.fullCollection.comparator = function(model) {
-                return getModelName(model);
-            }
-
-            function getModelName(model) {
-                if (model.get('name')) {
-                    return model.get('name').toLowerCase();
-                }
-            };
-
             this.saveSearchCollection.fetch({
                 success: function(collection, data) {
                     that.saveSearchBaiscCollection.fullCollection.reset(_.where(data, { searchType: "BASIC" }));
@@ -403,9 +402,7 @@ define([
                 require([
                     'views/search/save/SaveModalLayoutView'
                 ], function(SaveModalLayoutView) {
-
-                    new SaveModalLayoutView({ 'selectedModel': options.model.clone(), 'collection': that.isBasic ? that.saveSearchBaiscCollection.fullCollection : that.saveSearchAdvanceCollection.fullCollection, 'getValue': that.getValue, 'isBasic': that.isBasic });
-
+                    new SaveModalLayoutView({ 'rename': true, 'selectedModel': options.model.clone(), 'collection': that.isBasic ? that.saveSearchBaiscCollection.fullCollection : that.saveSearchAdvanceCollection.fullCollection, 'getValue': that.getValue, 'isBasic': that.isBasic });
                 });
             }
         },
@@ -474,7 +471,7 @@ define([
             }
         },
         refreshCustomFilterTree: function() {
-            this.ui.customFilterSearchTree.jstree(true).refresh();
+            this.fetchCustomFilter();
         }
 
     });
