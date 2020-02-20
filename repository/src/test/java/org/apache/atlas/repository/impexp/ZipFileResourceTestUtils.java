@@ -317,7 +317,9 @@ public class ZipFileResourceTestUtils {
     }
 
     public static AtlasImportRequest getDefaultImportRequest() {
-        return new AtlasImportRequest();
+        AtlasImportRequest atlasImportRequest = new AtlasImportRequest();
+        atlasImportRequest.setOption("migration", "true");
+        return atlasImportRequest;
     }
 
 
@@ -336,7 +338,8 @@ public class ZipFileResourceTestUtils {
         final String hostName = "localhost";
         final String userName = "admin";
 
-        AtlasImportResult result = importService.run(inputStream, userName, hostName, requestingIP);
+        AtlasImportRequest request = getDefaultImportRequest();
+        AtlasImportResult result = runImportWithParameters(importService, request, inputStream);
         assertEquals(result.getOperationStatus(), AtlasImportResult.OperationStatus.SUCCESS);
         return result;
     }

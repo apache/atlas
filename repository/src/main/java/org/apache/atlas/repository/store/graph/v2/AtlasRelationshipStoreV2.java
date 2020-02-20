@@ -929,6 +929,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     private void sendNotifications(AtlasRelationship ret, OperationType relationshipUpdate) throws AtlasBaseException {
+        if (entityChangeNotifier == null) {
+            return;
+        }
+
         entityChangeNotifier.notifyPropagatedEntities();
         if (notificationsEnabled){
             entityChangeNotifier.notifyRelationshipMutation(ret, relationshipUpdate);

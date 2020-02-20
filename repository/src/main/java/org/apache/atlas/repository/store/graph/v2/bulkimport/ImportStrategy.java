@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,24 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.impexp;
 
-public enum ZipExportFileNames {
-    ATLAS_EXPORT_INFO_NAME("atlas-export-info"),
-    ATLAS_EXPORT_ORDER_NAME("atlas-export-order"),
-    ATLAS_TYPESDEF_NAME("atlas-typesdef");
+package org.apache.atlas.repository.store.graph.v2.bulkimport;
 
-    public final String name;
-    ZipExportFileNames(String name) {
-        this.name = name;
-    }
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
 
-    @Override
-    public String toString() {
-        return this.name;
-    }
-
-    public String toEntryFileName() {
-        return this.name + ".json";
-    }
+public abstract class ImportStrategy {
+    public abstract EntityMutationResponse run(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException;
 }
