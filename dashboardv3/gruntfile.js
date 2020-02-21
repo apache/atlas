@@ -17,6 +17,7 @@
  */
 
 'use strict';
+var sass = require('node-sass');
 module.exports = function(grunt) {
     var buildTime = new Date().getTime(),
         distPath = './dist/n',
@@ -204,6 +205,10 @@ module.exports = function(grunt) {
             }
         },
         sass: {
+            options: {
+                implementation: sass,
+                sourceMap: false
+            },
             build: {
                 files: {
                     [distPath + '/css/style.css']: modulesPath + 'css/scss/style.scss',
