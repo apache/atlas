@@ -293,6 +293,7 @@ public final class EntityGraphRetriever {
 
         ret.setTypeName(typeName);
         ret.setGuid(guid);
+        ret.setIsIncomplete(GraphHelper.isEntityIncomplete(entityVertex));
         ret.setStatus(GraphHelper.getStatus(entityVertex));
         ret.setClassificationNames(GraphHelper.getTraitNames(entityVertex));
 
@@ -350,6 +351,7 @@ public final class EntityGraphRetriever {
         }
 
         entity.setGuid(GraphHelper.getGuid(entityVertex));
+        entity.setIsIncomplete(GraphHelper.isEntityIncomplete(entityVertex));
         entity.setTypeName(GraphHelper.getTypeName(entityVertex));
         entity.setStatus(GraphHelper.getStatus(entityVertex));
         entity.setVersion(GraphHelper.getVersion(entityVertex).longValue());

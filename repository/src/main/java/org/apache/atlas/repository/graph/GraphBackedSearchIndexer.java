@@ -153,6 +153,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                     AtlasCardinality.SINGLE, true, true);
 
             // Add creation_timestamp property to Vertex Index (mixed index)
+            createIndexes(management, Constants.IS_INCOMPLETE_PROPERTY_KEY, Integer.class, false, AtlasCardinality.SINGLE, true, true);
+
+            // Add creation_timestamp property to Vertex Index (mixed index)
             createIndexes(management, Constants.TIMESTAMP_PROPERTY_KEY, Long.class, false, AtlasCardinality.SINGLE, false, false);
 
             // Add modification_timestamp property to Vertex Index (mixed index)

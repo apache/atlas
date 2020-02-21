@@ -70,6 +70,7 @@ public final class Constants {
     public static final String MODIFIED_BY_KEY                     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modifiedBy");
     public static final String TIMESTAMP_PROPERTY_KEY              = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "timestamp");
     public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp");
+    public static final String IS_INCOMPLETE_PROPERTY_KEY          = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "isIncomplete");
 
     /**
      * search backing index name.
@@ -96,6 +97,8 @@ public final class Constants {
 
     public static final String MAX_FULLTEXT_QUERY_STR_LENGTH  = "atlas.graph.fulltext-max-query-str-length";
     public static final String MAX_DSL_QUERY_STR_LENGTH  = "atlas.graph.dsl-max-query-str-length";
+
+    public static final Integer INCOMPLETE_ENTITY_VALUE   = Integer.valueOf(1);
 
     /*
      * replication attributes

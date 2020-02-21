@@ -551,6 +551,13 @@ public final class GraphHelper {
         return vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY, String.class);
     }
 
+    public static Boolean isEntityIncomplete(AtlasElement element) {
+        Integer value = element.getProperty(Constants.IS_INCOMPLETE_PROPERTY_KEY, Integer.class);
+        Boolean ret   = value != null && value.equals(Constants.INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
+
+        return ret;
+    }
+
     public static String getTypeName(AtlasVertex instanceVertex) {
         return instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
     }

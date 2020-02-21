@@ -57,18 +57,21 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 public class AtlasEntity extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    public static final String KEY_IS_INCOMPLETE   = "isIncomplete";
+
     /**
      * Status of the entity - can be active or deleted. Deleted entities are not removed from Atlas store.
      */
     public enum Status { ACTIVE, DELETED }
 
-    private String guid       = null;
-    private Status status     = Status.ACTIVE;
-    private String createdBy  = null;
-    private String updatedBy  = null;
-    private Date   createTime = null;
-    private Date   updateTime = null;
-    private Long   version    = 0L;
+    private String  guid         = null;
+    private Boolean isIncomplete = Boolean.FALSE;
+    private Status  status       = Status.ACTIVE;
+    private String  createdBy    = null;
+    private String  updatedBy    = null;
+    private Date    createTime   = null;
+    private Date    updateTime   = null;
+    private Long    version      = 0L;
 
     private List<AtlasClassification> classifications;
 
@@ -112,6 +115,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
         if (other != null) {
             setGuid(other.getGuid());
+            setIsIncomplete(other.getIsIncomplete());
             setStatus(other.getStatus());
             setCreatedBy(other.getCreatedBy());
             setUpdatedBy(other.getUpdatedBy());
@@ -128,6 +132,12 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     public void setGuid(String guid) {
         this.guid = guid;
+    }
+
+    public Boolean getIsIncomplete() { return isIncomplete; }
+
+    public void setIsIncomplete(Boolean isIncomplete) {
+        this.isIncomplete = isIncomplete;
     }
 
     public Status getStatus() {
@@ -185,6 +195,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     private void init() {
         setGuid(nextInternalId());
+        setIsIncomplete(Boolean.FALSE);
         setStatus(null);
         setCreatedBy(null);
         setUpdatedBy(null);
@@ -206,6 +217,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append("AtlasEntity{");
         super.toString(sb);
         sb.append("guid='").append(guid).append('\'');
+        sb.append(", isIncomplete=").append(isIncomplete);
         sb.append(", status=").append(status);
         sb.append(", createdBy='").append(createdBy).append('\'');
         sb.append(", updatedBy='").append(updatedBy).append('\'');
@@ -229,6 +241,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
         AtlasEntity that = (AtlasEntity) o;
         return Objects.equals(guid, that.guid) &&
+                Objects.equals(isIncomplete, that.isIncomplete) &&
                 status == that.status &&
                 Objects.equals(createdBy, that.createdBy) &&
                 Objects.equals(updatedBy, that.updatedBy) &&
@@ -240,7 +253,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, status, createdBy, updatedBy, createTime, updateTime, version,
+        return Objects.hash(super.hashCode(), guid, isIncomplete, status, createdBy, updatedBy, createTime, updateTime, version,
                             classifications);
     }
 

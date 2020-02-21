@@ -60,6 +60,8 @@ import java.util.Objects;
 
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
+import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
+import static org.apache.atlas.repository.graph.GraphHelper.isEntityIncomplete;
 
 
 @Component
@@ -723,7 +725,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContextV1.get().startMetricRecord("preCreateOrUpdate");
 
-        EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV1(typeRegistry, entityStream);
+        EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV1(typeRegistry, entityStream, entityGraphMapper);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
         RequestContextV1            requestContext   = RequestContextV1.get();
@@ -739,6 +741,13 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
                     // entity would be null if guid is not in the stream but referenced by an entity in the stream
                     if (!isPartialUpdate) {
                         graphDiscoverer.validateAndNormalize(entity);
+
+                        // change entity 'isInComplete' to 'false' during full update
+                        if (isEntityIncomplete(vertex)) {
+                            vertex.removeProperty(IS_INCOMPLETE_PROPERTY_KEY);
+
+                            entity.setIsIncomplete(Boolean.FALSE);
+                        }
                     } else {
                         graphDiscoverer.validateAndNormalizeForUpdate(entity);
                     }

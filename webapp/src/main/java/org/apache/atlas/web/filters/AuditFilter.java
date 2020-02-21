@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.UUID;
 
+import static org.apache.atlas.AtlasConfiguration.REST_API_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF;
 import static org.apache.atlas.AtlasConfiguration.REST_API_ENABLE_DELETE_TYPE_OVERRIDE;
 
 /**
@@ -57,13 +58,15 @@ public class AuditFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(AuditFilter.class);
     private static final Logger METRICS_LOG = LoggerFactory.getLogger("METRICS");
 
-    private boolean deleteTypeOverrideEnabled = false;
+    private boolean deleteTypeOverrideEnabled                = false;
+    private boolean createShellEntityForNonExistingReference = false;
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         LOG.info("AuditFilter initialization started");
 
-        deleteTypeOverrideEnabled = REST_API_ENABLE_DELETE_TYPE_OVERRIDE.getBoolean();
+        deleteTypeOverrideEnabled                = REST_API_ENABLE_DELETE_TYPE_OVERRIDE.getBoolean();
+        createShellEntityForNonExistingReference = REST_API_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF.getBoolean();
 
         LOG.info("REST_API_ENABLE_DELETE_TYPE_OVERRIDE={}", deleteTypeOverrideEnabled);
     }
@@ -87,6 +90,7 @@ public class AuditFilter implements Filter {
             RequestContextV1.clear();
             RequestContextV1 requestContextV1 = RequestContextV1.get();
             requestContextV1.setUser(user);
+            requestContextV1.setCreateShellEntityForNonExistingReference(createShellEntityForNonExistingReference);
 
             if (StringUtils.isNotEmpty(deleteType)) {
                 if (deleteTypeOverrideEnabled) {

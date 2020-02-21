@@ -158,6 +158,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final List<String>                  hiveTablePrefixesToIgnore;
     private final Map<String, PreprocessAction> hiveTablesCache;
     private final boolean                       preprocessEnabled;
+    private final boolean                       createShellEntityForNonExistingReference;
 
     @VisibleForTesting
     final int consumerRetryInterval;
@@ -274,6 +275,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
+
+        createShellEntityForNonExistingReference = AtlasConfiguration.NOTIFICATION_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF.getBoolean();
     }
 
     @Override
@@ -580,6 +583,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         requestContext.setAttemptCount(numRetries + 1);
                         requestContext.setMaxAttempts(maxRetries);
                         requestContext.setUser(messageUser);
+
+                        RequestContextV1.get().setCreateShellEntityForNonExistingReference(createShellEntityForNonExistingReference);
 
                         switch (message.getType()) {
                             case ENTITY_CREATE: {
