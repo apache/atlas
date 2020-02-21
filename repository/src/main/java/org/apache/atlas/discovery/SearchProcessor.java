@@ -46,6 +46,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
@@ -189,7 +190,7 @@ public abstract class SearchProcessor {
 
     protected Predicate buildTraitPredict(AtlasClassificationType classificationType) {
         Predicate traitPredicate;
-        if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED || context.isWildCardSearch()) {
+        if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED || context.isWildCardSearch() || classificationType == MATCH_ALL_CLASSIFICATION_TYPES) {
             traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
                 SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
         } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
@@ -297,7 +298,7 @@ public abstract class SearchProcessor {
                 List<String> classificationNames = AtlasGraphUtilsV2.getClassificationNames(entityVertex);
 
                 if (CollectionUtils.isNotEmpty(classificationNames)) {
-                    if (CollectionUtils.containsAny(classificationNames, typeAndSubTypes)) {
+                    if (typeAndSubTypes.isEmpty() || CollectionUtils.containsAny(classificationNames, typeAndSubTypes)) {
                         continue;
                     }
                 }
@@ -305,7 +306,7 @@ public abstract class SearchProcessor {
                 List<String> propagatedClassificationNames = AtlasGraphUtilsV2.getPropagatedClassificationNames(entityVertex);
 
                 if (CollectionUtils.isNotEmpty(propagatedClassificationNames)) {
-                    if (CollectionUtils.containsAny(propagatedClassificationNames, typeAndSubTypes)) {
+                    if (typeAndSubTypes.isEmpty() || CollectionUtils.containsAny(propagatedClassificationNames, typeAndSubTypes)) {
                         continue;
                     }
                 }
