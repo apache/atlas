@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.apache.atlas.SortOrder.ASCENDING;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
@@ -145,7 +146,7 @@ public class EntitySearchProcessor extends SearchProcessor {
         if (CollectionUtils.isNotEmpty(graphAttributes) || !typeSearchByIndex) {
             AtlasGraphQuery query = context.getGraph().query();
 
-            if (!typeSearchByIndex) {
+            if (!typeSearchByIndex && !isEntityRootType()) {
                 query.in(TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
             }
 
@@ -153,7 +154,7 @@ public class EntitySearchProcessor extends SearchProcessor {
             if (filterClassification) {
                 List<AtlasGraphQuery> orConditions = new LinkedList<>();
 
-                if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED) {
+                if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED || classificationType == MATCH_ALL_CLASSIFICATION_TYPES) {
                     orConditions.add(query.createChildQuery().has(TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
                     orConditions.add(query.createChildQuery().has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, NOT_EQUAL, null));
                 } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {

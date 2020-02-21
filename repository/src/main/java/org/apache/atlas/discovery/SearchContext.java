@@ -120,7 +120,7 @@ public class SearchContext {
 
         if (classificationType != null && !isBuiltInClassificationType()) {
             if (classificationType == MATCH_ALL_CLASSIFICATION_TYPES) {
-                classificationTypeAndSubTypes       = Collections.singleton(ALL_TYPE_QUERY);
+                classificationTypeAndSubTypes       = Collections.emptySet();
                 classificationTypeAndSubTypesQryStr = ALL_TYPE_QUERY;
             } else {
                 classificationTypeAndSubTypes       = searchParameters.getIncludeSubClassifications() ? classificationType.getTypeAndAllSubTypes() : Collections.singleton(classificationType.getTypeName());
@@ -133,7 +133,7 @@ public class SearchContext {
 
         if (entityType != null) {
             if (entityType.equals(MATCH_ALL_ENTITY_TYPES)) {
-                typeAndSubTypes       = Collections.singleton(ALL_TYPE_QUERY);
+                typeAndSubTypes       = Collections.emptySet();
                 typeAndSubTypesQryStr = ALL_TYPE_QUERY;
             } else {
                 typeAndSubTypes       = searchParameters.getIncludeSubTypes() ? entityType.getTypeAndAllSubTypes() : Collections.singleton(entityType.getTypeName());
@@ -202,7 +202,7 @@ public class SearchContext {
     public boolean includeClassificationTypes(Collection<String> classificationTypes) {
         final boolean ret;
 
-        if (classificationType == null) {
+        if (classificationType == null || classificationTypeAndSubTypes.isEmpty()) {
             ret = true;
         } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
             ret = CollectionUtils.isEmpty(classificationTypes);

@@ -191,9 +191,13 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         if (!isWildcardSearch && !isBuiltInType && !graphAttributes.isEmpty()) {
 
             AtlasGremlinQueryProvider queryProvider = AtlasGremlinQueryProvider.INSTANCE;
+            AtlasGraphQuery query = graph.query();
 
-            tagGraphQueryWithAttributes = toGraphFilterQuery(classificationType, filterCriteria, allAttributes,
-                                                             graph.query().in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes));
+            if (!isClassificationRootType()) {
+                query.in(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes);
+            }
+
+            tagGraphQueryWithAttributes = toGraphFilterQuery(classificationType, filterCriteria, allAttributes, query);
             gremlinQueryBindings       = new HashMap<>();
             StringBuilder gremlinQuery = new StringBuilder();
 
@@ -300,7 +304,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 // vertex results (as these might be lower in number)
                 if (CollectionUtils.isNotEmpty(classificationVertices)) {
                     for (AtlasVertex classificationVertex : classificationVertices) {
-                        Iterable<AtlasEdge> edges = classificationVertex.getEdges(AtlasEdgeDirection.IN);
+                        Iterable<AtlasEdge> edges = classificationVertex.getEdges(AtlasEdgeDirection.IN, Constants.CLASSIFICATION_LABEL);
 
                         for (AtlasEdge edge : edges) {
                             AtlasVertex entityVertex = edge.getOutVertex();
