@@ -256,6 +256,56 @@
       ]
     },
     {
+      "name": "__MigrationImportStatus",
+      "superTypes": [
+        "__internal"
+      ],
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "name",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": false,
+          "isUnique": true
+        },
+        {
+          "name": "size",
+          "typeName": "int",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "position",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "startTime",
+          "typeName": "long",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        },
+        {
+          "name": "endTime",
+          "typeName": "long",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    },
+    {
       "name": "__AtlasUserSavedSearch",
       "superTypes": [
         "__internal"

@@ -22,6 +22,7 @@ import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.pc.WorkItemBuilder;
 import org.apache.atlas.pc.WorkItemManager;
+import org.apache.atlas.repository.migration.DataMigrationStatusService;
 import org.apache.atlas.repository.store.graph.v2.BulkImporterImpl;
 import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
 import org.apache.commons.lang.StringUtils;
@@ -30,25 +31,27 @@ import org.slf4j.LoggerFactory;
 
 public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManager {
     private static final Logger LOG = LoggerFactory.getLogger(EntityCreationManager.class);
+    private static final long STATUS_REPORT_TIMEOUT_DURATION = 5 * 60 * 1000; // 5 min
     private static final String WORKER_PREFIX = "migration-import";
 
     private final StatusReporter<String, String> statusReporter;
+    private final DataMigrationStatusService dataMigrationStatusService;
     private final AtlasImportResult importResult;
     private final int streamSize;
-    private final long STATUS_REPORT_TIMEOUT_DURATION = 5 * 60 * 1000; // 5 min
     private String currentTypeName;
     private float currentPercent;
 
-    public EntityCreationManager(WorkItemBuilder builder, int batchSize, int numWorkers, AtlasImportResult importResult, int streamSize) {
+    public EntityCreationManager(WorkItemBuilder builder, int batchSize, int numWorkers, DataMigrationStatusService dataMigrationStatusService, AtlasImportResult importResult, int streamSize) {
         super(builder, WORKER_PREFIX, batchSize, numWorkers, true);
+        this.dataMigrationStatusService = dataMigrationStatusService;
         this.importResult = importResult;
         this.streamSize = streamSize;
 
         this.statusReporter = new StatusReporter<>(STATUS_REPORT_TIMEOUT_DURATION);
     }
 
-    public int read(EntityImportStream entityStream) {
-        int currentIndex = 0;
+    public int read(EntityImportStream entityStream, String startPosition) {
+        int currentIndex = StringUtils.isEmpty(startPosition) ? 0 : Integer.valueOf(startPosition);
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo;
         while ((entityWithExtInfo = entityStream.getNextEntityWithExtInfo()) != null) {
             AtlasEntity entity = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
@@ -103,8 +106,10 @@ public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManag
             return;
         }
 
+        String currentPosition = split[1];
+        dataMigrationStatusService.savePosition(currentPosition);
         importResult.incrementMeticsCounter(split[0]);
-        this.currentPercent = updateImportMetrics(split[0], Integer.parseInt(split[1]), getStreamSize(), getCurrentPercent());
+        this.currentPercent = updateImportMetrics(split[0], Integer.parseInt(currentPosition), getStreamSize(), getCurrentPercent());
     }
 
     private static float updateImportMetrics(String typeNameGuid, int currentIndex, int streamSize, float currentPercent) {

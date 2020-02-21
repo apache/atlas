@@ -26,8 +26,8 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.migration.DataMigrationStatusService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.ImportStrategy;
@@ -53,11 +53,13 @@ public class BulkImporterImpl implements BulkImporter {
 
     private final AtlasEntityStore entityStore;
     private AtlasTypeRegistry typeRegistry;
+    private DataMigrationStatusService dataMigrationStatusService;
 
     @Inject
-    public BulkImporterImpl(AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
+    public BulkImporterImpl(AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry, DataMigrationStatusService dataMigrationStatusService) {
         this.entityStore = entityStore;
         this.typeRegistry = typeRegistry;
+        this.dataMigrationStatusService = dataMigrationStatusService;
     }
 
     @Override
@@ -65,7 +67,7 @@ public class BulkImporterImpl implements BulkImporter {
         ImportStrategy importStrategy =
                 (importResult.getRequest().getOptions() != null &&
                         importResult.getRequest().getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION))
-                ? new MigrationImport(new AtlasGraphProvider(), this.typeRegistry)
+                ? new MigrationImport(new AtlasGraphProvider(), this.typeRegistry, dataMigrationStatusService)
                 : new RegularImport(this.entityStore, this.typeRegistry);
 
         LOG.info("BulkImportImpl: {}", importStrategy.getClass().getSimpleName());
