@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 public class HivePreprocessor {
     private static final Logger LOG = LoggerFactory.getLogger(HivePreprocessor.class);
@@ -163,11 +164,14 @@ public class HivePreprocessor {
         @Override
         public void preprocess(AtlasEntity entity, PreprocessorContext context) {
             if (context.updateHiveProcessNameWithQualifiedName()) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("setting {}.name={}. topic-offset={}, partition={}", entity.getTypeName(), entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), context.getKafkaMessageOffset(), context.getKafkaPartition());
-                }
+                Object name          = entity.getAttribute(ATTRIBUTE_NAME);
+                Object qualifiedName = entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
-                entity.setAttribute(ATTRIBUTE_NAME, entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                if (!Objects.equals(name, qualifiedName)) {
+                    LOG.info("setting {}.name={}. topic-offset={}, partition={}", entity.getTypeName(), qualifiedName, context.getKafkaMessageOffset(), context.getKafkaPartition());
+
+                    entity.setAttribute(ATTRIBUTE_NAME, qualifiedName);
+                }
             }
 
             if (context.isIgnoredEntity(entity.getGuid())) {
