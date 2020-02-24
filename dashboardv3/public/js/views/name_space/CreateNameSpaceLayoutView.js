@@ -349,9 +349,7 @@ define(['require',
                         }
                         if (isMultiCheck) {
                             obj.multiValued = true;
-                            if (obj.typeName == "string" || obj.typeName == "int" || obj.typeName == "float") {
-                                obj.typeName = "array<" + obj.typeName + ">";
-                            }
+                            obj.typeName = "array<" + obj.typeName + ">";
                         }
                     });
                     var notifyObj = {
@@ -489,9 +487,7 @@ define(['require',
                             }
                             if (isMultiCheck) {
                                 obj.multiValued = true;
-                                if (obj.typeName == "string" || obj.typeName == "int" || obj.typeName == "float") {
-                                    obj.typeName = "array<" + obj.typeName + ">";
-                                }
+                                obj.typeName = "array<" + obj.typeName + ">";
                             }
 
                         });

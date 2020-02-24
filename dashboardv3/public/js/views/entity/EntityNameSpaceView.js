@@ -62,39 +62,21 @@ define([
         initialize: function(options) {
             var that = this;
             _.extend(this, _.pick(options, "entity", "nameSpaceCollection", "enumDefCollection", "guid", "fetchCollection"));
-            this.editMode - false;
+            this.editMode = false;
             this.$("editBox").hide();
-            var nameSpaceSet = {};
-            this.treeData = [];
             this.actualCollection = new Backbone.Collection(
                 _.map(this.entity.namespaceAttributes, function(val, key) {
-                    var foundNameSpace = that.nameSpaceCollection.fullCollection.find({ name: key });
-                    var tempData = {
-                        text: key,
-                        name: key,
-                        parent: "#",
-                        icon: "fa fa-folder-o",
-                        children: []
-                    }
+                    var foundNameSpace = that.nameSpaceCollection[key];
                     if (foundNameSpace) {
-                        var attributeDefs = foundNameSpace.get("attributeDefs");
                         _.each(val, function(aVal, aKey) {
-                            var foundAttr = _.find(attributeDefs, function(o) {
+                            var foundAttr = _.find(foundNameSpace, function(o) {
                                 return o.name === aKey
                             });
                             if (foundAttr) {
-                                var treVal = aKey + " : " + (foundAttr.typeName === "date" ? moment(aVal).format("MM/DD/YYYY") : aVal);
-                                tempData.children.push({
-                                    text: treVal,
-                                    name: treVal,
-                                    icon: "fa fa-file-o",
-                                    children: []
-                                })
                                 val[aKey] = { value: aVal, typeName: foundAttr.typeName };
                             }
                         })
                     }
-                    that.treeData.push(tempData);
                     return _.extend({}, val, { __internal_UI_nameSpaceName: key });
                 }));
             this.collection = new Backbone.Collection();
@@ -230,22 +212,38 @@ define([
             var modelObj = { isNew: true };
             this.collection.unshift(modelObj);
         },
-        generateTree: function() {
-            this.ui.namespaceTree.jstree({
-                plugins: ["core", "sort", "changed", "wholerow", "conditionalselect"],
-                conditionalselect: function(node) {
-                    return false;
-                },
-                state: { opened: true, selected: false },
-                core: {
-                    multiple: false,
-                    data: this.treeData
-                }
-            })
+        renderNamespace: function() {
+            var li = ""
+            this.actualCollection.forEach(function(obj) {
+                var attrLi = "";
+                _.each(obj.attributes, function(val, key) {
+                    if (key !== "__internal_UI_nameSpaceName") {
+                        var newVal = val;
+                        if (_.isObject(val) && !_.isUndefinedNull(val.value)) {
+                            newVal = val.value;
+                            if (newVal.length > 0 && val.typeName.indexOf("date") > -1) {
+                                newVal = _.map(newVal, function(dates) {
+                                    return moment(dates).format("MM/DD/YYYY");
+                                });
+                            }
+                            if (val.typeName === "date") {
+                                newVal = moment(newVal).format("MM/DD/YYYY");
+                            }
+
+                        }
+                        attrLi += "<tr><td>" + _.escape(key) + " (" + _.escape(val.typeName) + ")</td><td>" + _.escape(newVal) + "</td></tr>";
+                    }
+                });
+                li += "<ul class='namespace-tree-parent'><li class='table'>" + _.escape(obj.get("__internal_UI_nameSpaceName")) + "</li>" +
+                    "<li class='namespace-tree-child entity-detail-table'>" +
+                    "<table class='table'>" + attrLi + "</table>" +
+                    "</li></ul>";
+            });
+            this.ui.namespaceTree.html(li);
         },
         onRender: function() {
             this.panelOpenClose();
-            this.generateTree();
+            this.renderNamespace();
         }
     });
 });

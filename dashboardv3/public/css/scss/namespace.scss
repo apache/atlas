@@ -24,8 +24,19 @@
     }
 
     .namespace-tree-child {
-        padding-left: 20px;
+        &.entity-detail-table table {
+            td {
+                &:nth-child(1) {
+                    width: 35%;
+                }
+
+                word-break: break-all;
+            }
+        }
+
+        padding-left: 5px;
         margin-top: 10px;
+        font-weight: 100;
     }
 }
 
@@ -61,8 +72,8 @@
     .expandable .attr-details {
         max-height: 300px;
         overflow: auto;
-        margin-left: 100px;
-        width: calc(100% - 100px);
+        margin-left: 30px;
+        width: calc(100% - 30px);
     }
 }
 
@@ -124,7 +135,6 @@
 .name-space-details {
     .backgrid {
         td.expandable-content {
-            width: 100%;
             max-width: none;
             background: #f8f8f8;
 

@@ -30,8 +30,9 @@ define(['require',
     'utils/Messages',
     'utils/Enums',
     'utils/UrlLinks',
+    'moment',
     'platform'
-], function(require, Backbone, tableDragger, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks, platform) {
+], function(require, Backbone, tableDragger, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks, moment, platform) {
     'use strict';
 
     var SearchResultLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -801,6 +802,20 @@ define(['require',
                                 if (obj && obj.attributes) {
                                     _.each(obj.attributes, function(namespaceValue, attributeName) {
                                         if (attributeName.indexOf('.') != -1) {
+                                            var isDate = false,
+                                                namespace = that.options.nameSpaceCollection.fullCollection.find({ "name": attributeName.split('.')[0] });
+                                            if (namespace) {
+                                                var getAttributes = namespace.get('attributeDefs');
+                                                getAttributes.every(function(attrTypeCheck) {
+                                                    if (attributeName.split('.')[1] === attrTypeCheck.name && attrTypeCheck.typeName.indexOf("date") > -1) {
+                                                        isDate = true;
+                                                    }
+                                                    return !isDate;
+                                                });
+                                            }
+                                            if (isDate) {
+                                                namespaceValue = moment(namespaceValue).format("MM/DD/YYYY")
+                                            }
                                             namespaceStr += '<label class="btn btn-action btn-xs btn-blue no-pointer">' + attributeName + ': ' + namespaceValue + '</label>';
                                         }
                                     })

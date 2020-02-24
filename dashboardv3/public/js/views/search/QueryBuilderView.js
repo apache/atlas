@@ -63,6 +63,7 @@ define(['require',
                     'classificationDefCollection',
                     'nameSpaceCollection',
                     'tag',
+                    'type',
                     'searchTableFilters',
                     'systemAttrArr'));
                 this.attrObj = _.sortBy(this.attrObj, 'name');
@@ -365,29 +366,28 @@ define(['require',
                         filters.push(returnObj);
                     }
                 });
-                if (this.attrObj.length > 0) {
-
-                    var sortedNamespaceData = _.sortBy(this.nameSpaceCollection.models, function(obj) {
-                        return obj.get('name')
-                    });
-                    _.each(sortedNamespaceData, function(obj) {
-                        var namespaceName = obj.get('name');
-
-                        var sortedNamespaceAttr = _.sortBy(obj.attributes.attributeDefs, function(obj) {
-                            return obj.name;
-                        });
-                        _.each(sortedNamespaceAttr, function(attrDetails) {
-                            if (attrDetails.options && attrDetails.options.applicableEntityTypes && that.options.applicableType && (JSON.parse(attrDetails.options.applicableEntityTypes).indexOf(that.options.applicableType) != -1)) {
+                if (this.type) {
+                    var entityDef = this.entityDefCollection.fullCollection.find({ name: that.options.applicableType }),
+                        namespaceAttributeDefs = null;
+                    if (entityDef) {
+                        namespaceAttributeDefs = entityDef.get("namespaceAttributeDefs");
+                    }
+                    if (namespaceAttributeDefs) {
+                        _.each(namespaceAttributeDefs, function(attributes, key) {
+                            var sortedAttributes = _.sortBy(attributes, function(obj) {
+                                return obj.name;
+                            });
+                            _.each(sortedAttributes, function(attrDetails) {
                                 var returnObj = that.getObjDef(attrDetails, rules_widgets, isGroupView, 'Select Namespace Attribute', true);
                                 if (returnObj) {
-                                    returnObj.id = namespaceName + "." + returnObj.id;
-                                    returnObj.label = namespaceName + ": " + returnObj.label;
+                                    returnObj.id = key + "." + returnObj.id;
+                                    returnObj.label = key + ": " + returnObj.label;
                                     returnObj.data = { 'entityType': "namespace" };
                                     filters.push(returnObj);
                                 }
-                            }
-                        })
-                    });
+                            });
+                        });
+                    }
                 }
                 filters = _.uniq(filters, 'id');
                 if (filters && !_.isEmpty(filters)) {

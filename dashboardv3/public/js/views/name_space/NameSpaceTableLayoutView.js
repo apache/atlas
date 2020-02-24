@@ -79,7 +79,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entity', 'entityName', 'attributeDefs', 'typeHeaders', 'nameSpaceCollection', 'nameSpaceAttr', 'selectedNameSpace'));
+                _.extend(this, _.pick(options, 'guid', 'entity', 'entityName', 'attributeDefs', 'typeHeaders', 'nameSpaceCollection', 'entityDefCollection', 'nameSpaceAttr', 'selectedNameSpace'));
                 this.limit = 10;
                 this.offset = 0;
                 this.pervOld = [];
@@ -188,6 +188,7 @@ define(['require',
                                 enumDefCollection.fetch({ reset: true });
                                 that.showDetails = true;
                                 that.toggleNamespaceDetailsAttrView();
+                                that.entityDefCollection.fetch({ silent: true });
                             },
                             parent: that.$el,
                             tagCollection: that.nameSpaceCollection,
@@ -224,6 +225,7 @@ define(['require',
                             enumDefCollection.fetch({ reset: true });
                             that.showDetails = true;
                             that.toggleNamespaceDetailsAttrView();
+                            that.entityDefCollection.fetch({ silent: true });
                         },
                         tagCollection: that.nameSpaceCollection,
                         enumDefCollection: enumDefCollection,
@@ -256,7 +258,7 @@ define(['require',
                         editable: false,
                         sortable: false,
                         cell: Backgrid.ExpandableCell,
-                        fixWidth: "50",
+                        fixWidth: "20",
                         accordion: false,
                         alwaysVisible: true,
                         expand: function(el, model) {
@@ -298,7 +300,7 @@ define(['require',
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return '<a title= "' + model.get('name') + '" href ="#!/administrator/namespace/' + model.get('guid') + '">' + model.get('name') + '</a>';
+                                return '<a title= "' + model.get('name') + '" href ="#!/administrator/namespace/' + model.get('guid') + '?from=namespace">' + model.get('name') + '</a>';
                             }
                         })
                     },

@@ -34,7 +34,7 @@ define(['require',
                 entity: this.entity,
                 getValue: this.getValue.bind(this),
                 getNamespaceDroupdown: this.getNamespaceDroupdown.bind(this),
-                nameSpaceCollection: this.nameSpaceCollection.fullCollection.toJSON(),
+                nameSpaceCollection: this.nameSpaceCollection,
                 model: this.model.toJSON()
             }
         },
@@ -107,18 +107,36 @@ define(['require',
                     if (_.isUndefinedNull(updateObj[key])) {
                         updateObj[key] = { value: null, typeName: typeName };
                     }
-                    updateObj[key].value = multi ? $(this).select2("val") : e.currentTarget.value;
+                    updateObj[key].value = e.currentTarget.value;
+                    if (multi && typeName.indexOf("date") == -1) {
+                        updateObj[key].value = $(this).select2("val");
+                    }
                     if (!that.model.has("__internal_UI_nameSpaceName")) {
                         updateObj["__internal_UI_nameSpaceName"] = namespace;
                     }
-                    if (typeName === "date") {
-                        updateObj[key].value = new Date(updateObj[key].value).getTime()
+                    if (typeName.indexOf("date") > -1) {
+                        if (multi && updateObj[key].value) {
+                            var dateValues = updateObj[key].value.split(','),
+                                dateStr = [];
+                            if (dateValues.length) {
+                                _.each(dateValues, function(selectedDate) {
+                                    dateStr.push(new Date(selectedDate.trim()).getTime());
+                                });
+                                updateObj[key].value = dateStr;
+                            }
+                        } else {
+                            updateObj[key].value = new Date(updateObj[key].value).getTime()
+                        }
                     }
                     that.model.set(updateObj);
                 });
                 this.$el.on('keypress', '.select2_only_number .select2-search__field', function() {
-                    $(this).val($(this).val().replace(/[^\d].+/, ""));
+                    var typename = $(this).parents(".select2_only_number").find("select[data-typename]").data("typename")
+                    if (typename.indexOf("float") > -1 && event.which == 46) {
+                        return;
+                    }
                     if ((event.which < 48 || event.which > 57)) {
+
                         event.preventDefault();
                     }
                 });
@@ -138,33 +156,62 @@ define(['require',
                 if (!_.isEmpty(val)) {
                     val = _.escape(val);
                 }
-                if (typeName === "boolean") {
+                if (!_.isUndefinedNull(val) && typeName.indexOf("boolean") > -1) {
                     val = String(val);
                 }
-                if (typeName === "date" && _.isNumber(val)) {
-                    val = moment(val).format("MM/DD/YYYY");
+                if (typeName.indexOf("date") > -1) {
+                    if (isMultiValued && val) {
+                        var dateVlaues = val.split(',');
+                        if (dateVlaues.length) {
+                            var dateStr = [];
+                            _.each(dateVlaues, function(selectedDate) {
+                                selectedDate = parseInt(selectedDate);
+                                dateStr.push(moment(selectedDate).format("MM/DD/YYYY"));
+                            });
+                            val = dateStr.join(',');
+                        }
+                    } else if (val) {
+                        val = parseInt(val);
+                        val = moment(val).format("MM/DD/YYYY");
+                    }
                 }
                 if (typeName.indexOf("string") > -1) {
-                    returnEL = '<' + elType + ' type="text" data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '"  multiple="' + isMultiValued + '" placeholder="Enter String" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
-                } else if (typeName === "boolean") {
-                    returnEL = '<select data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" class="form-control"><option value="">--Select Value--</option><option value="true" ' + (!_.isUndefinedNull(val) && val == "true" ? "selected" : "") + '>true</option><option value="false" ' + (!_.isUndefinedNull(val) && val == "false" ? "selected" : "") + '>false</option></select>';
-                } else if (typeName === "date") {
-                    returnEL = '<input type="text" data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" data-type="date" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '>'
+                    returnEL = '<' + elType + ' type="text" data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-tags="true"  placeholder="Enter String" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
+                } else if (typeName.indexOf("boolean") > -1) {
+                    returnEL = '<select data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" class="form-control">' + (isMultiValued ? "" : '<option value="">--Select Value--</option>') + '<option value="true" ' + (!_.isUndefinedNull(val) && val == "true" ? "selected" : "") + '>true</option><option value="false" ' + (!_.isUndefinedNull(val) && val == "false" ? "selected" : "") + '>false</option></select>';
+                } else if (typeName.indexOf("date") > -1) {
+                    returnEL = '<' + (isMultiValued ? "textarea" : "input") + ' type="text" data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '"data-multi="' + isMultiValued + '" data-type="date" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '>' + (isMultiValued === true && !_.isUndefinedNull(val) ? val : "") + (isMultiValued ? "</textarea>" : "");
                     setTimeout(function() {
-                        var dateObj = { "singleDatePicker": true, "showDropdowns": true };
-                        that.$el.find('input[data-type="date"]').daterangepicker(dateObj);
+                        var dateObj = { "singleDatePicker": true, autoUpdateInput: isMultiValued ? false : true },
+                            dateEl = that.$el.find('[data-type="date"][data-key="' + key + '"]').daterangepicker(dateObj);
+                        if (isMultiValued) {
+                            dateEl.on("apply.daterangepicker", function(ev, picker) {
+                                var val = picker.element.val();
+                                if (val !== "") {
+                                    val += ", ";
+                                }
+                                picker.element.val(val += picker.startDate.format('MM/DD/YYYY'));
+                                that.$el.find(".custom-col-1[data-id='value']>[data-key]").trigger('change');
+                            });
+                        }
                     }, 0);
-                } else if (typeName === "byte" || typeName === "short" || typeName.indexOf("int") > -1 || typeName.indexOf("float") > -1 || typeName === "double" || typeName === "long") {
+                } else if (typeName.indexOf("byte") > -1 || typeName.indexOf("short") > -1 || typeName.indexOf("int") > -1 || typeName.indexOf("float") > -1 || typeName.indexOf("double") > -1 || typeName.indexOf("long") > -1) {
                     allowOnlyNum = true;
-                    returnEL = '<' + elType + ' data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" type="number" data-multi="' + isMultiValued + '"  multiple="' + isMultiValued + '" placeholder="Enter Number" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
+                    returnEL = '<' + elType + ' data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" type="number" data-multi="' + isMultiValued + '" data-tags="true" placeholder="Enter Number" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
                 } else if (typeName) {
+                    if (isMultiValued) {
+                        var multipleType = typeName.match("array<(.*)>");
+                        if (multipleType && multipleType[1]) {
+                            typeName = multipleType[1];
+                        }
+                    }
                     var foundEnumType = this.enumDefCollection.fullCollection.find({ name: typeName });
                     if (foundEnumType) {
                         var enumOptions = "";
                         _.forEach(foundEnumType.get("elementDefs"), function(obj) {
                             enumOptions += '<option value="' + obj.value + '">' + obj.value + '</option>'
                         });
-                        returnEL = '<select data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '">' + enumOptions + '</select>';
+                        returnEL = '<select data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" >' + enumOptions + '</select>';
                     }
                     setTimeout(function() {
                         var selectEl = that.$el.find('.custom-col-1[data-id="value"] select[data-key="' + key + '"]');
@@ -179,7 +226,11 @@ define(['require',
                         if (allowOnlyNum) {
                             selectEl.parent().addClass("select2_only_number");
                         }
-                        selectEl.select2({ tags: true, multiple: true, data: data });
+                        selectEl.select2({
+                            tags: selectEl.data("tags") ? true : false,
+                            multiple: true,
+                            data: data
+                        });
                         selectEl.val(data).trigger("change");
                     }, 0);
                 }
@@ -226,28 +277,28 @@ define(['require',
             if (keys.length === 1) {
                 isSelected = true;
             }
-            _.each(nameSpaceCollection, function(obj) {
+            _.each(nameSpaceCollection, function(obj, key) {
                 var options = "";
-                if (obj.attributeDefs.length) {
-                    _.each(obj.attributeDefs, function(attrObj) {
-                        var entityNamespace = that.model.collection.filter({ __internal_UI_nameSpaceName: obj.name }),
+                if (obj.length) {
+                    _.each(obj, function(attrObj) {
+                        var entityNamespace = that.model.collection.filter({ __internal_UI_nameSpaceName: key }),
                             hasAttr = false;
                         if (entityNamespace) {
-                            var found = entityNamespace.find(function(obj) {
-                                return obj.attributes.hasOwnProperty(attrObj.name);
+                            var found = entityNamespace.find(function(eObj) {
+                                return eObj.attributes.hasOwnProperty(attrObj.name);
                             });
                             if (found) {
                                 hasAttr = true;
                             }
                         }
-                        if ((isSelected && keys[0] === attrObj.name) || !(hasAttr) && attrObj.options.applicableEntityTypes.indexOf('"' + that.entity.typeName + '"') > -1) {
-                            var value = obj.name + ":" + attrObj.name + ":" + attrObj.typeName;
+                        if ((isSelected && keys[0] === attrObj.name) || !(hasAttr)) {
+                            var value = key + ":" + attrObj.name + ":" + attrObj.typeName;
                             if (isSelected && keys[0] === attrObj.name) { selectdVal = value };
                             options += '<option value="' + value + '">' + attrObj.name + ' (' + _.escape(attrObj.typeName) + ')</option>';
                         }
                     });
                     if (options.length) {
-                        optgroup += '<optgroup label="' + obj.name + '">' + options + '</optgroup>';
+                        optgroup += '<optgroup label="' + key + '">' + options + '</optgroup>';
                     }
                 }
             });
@@ -266,7 +317,7 @@ define(['require',
                 trs = "";
             _.each(this.model.attributes, function(val, key) {
                 if (key !== "__internal_UI_nameSpaceName" && key !== "isNew") {
-                    var td = '<td class="custom-col-1" data-key=' + key + '>' + key + '</td><td class="custom-col-0">:</td><td class="custom-col-1" data-id="value">' + that.getAttrElement({ namespace: that.model.get("__internal_UI_nameSpaceName"), key: key, val: val }) + '</td>';
+                    var td = '<td class="custom-col-1" data-key=' + key + '>' + key + ' (' + _.escape(val.typeName) + ')</td><td class="custom-col-0">:</td><td class="custom-col-1" data-id="value">' + that.getAttrElement({ namespace: that.model.get("__internal_UI_nameSpaceName"), key: key, val: val }) + '</td>';
 
                     td += '<td class="custom-col-2 btn-group">' +
                         '<button class="btn btn-default btn-sm" data-key="' + key + '" data-id="deleteItem">' +

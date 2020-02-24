@@ -245,7 +245,7 @@ define(['require',
                         enumDefCollection: this.enumDefCollection,
                         classificationDefCollection: this.classificationDefCollection,
                         glossaryCollection: this.glossaryCollection,
-                        nameSpaceCollection: this.nameSpaceCollection,
+                        nameSpaceCollection: this.activeEntityDef.get('namespaceAttributeDefs'),
                         searchVent: this.searchVent,
                         attributeDefs: (function() {
                             return that.getEntityDef(collectionJSON);
@@ -255,7 +255,9 @@ define(['require',
                     this.renderEntityDetailTableLayoutView(obj);
                     this.renderEntityUserDefineView(obj);
                     this.renderEntityLabelDefineView(obj);
-                    this.renderEntityNameSpaceView(obj);
+                    if (obj.nameSpaceCollection) {
+                        this.renderEntityNameSpaceView(obj);
+                    }
                     this.renderRelationshipLayoutView(obj);
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);

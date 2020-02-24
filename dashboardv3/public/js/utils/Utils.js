@@ -340,6 +340,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     urlUpdate['searchUrl'] = options.url;
                 } else if (Utils.getUrlState.isGlossaryTab(options.url)) {
                     urlUpdate['glossaryUrl'] = options.url;
+                } else if (Utils.getUrlState.isAdministratorTab(options.url)) {
+                    urlUpdate['administratorUrl'] = options.url;
                 }
                 $.extend(Globals.saveApplicationState.tabState, urlUpdate);
             }
@@ -561,6 +563,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 urlPath = "tagUrl";
             } else if (queryParams.from == "glossary") {
                 urlPath = "glossaryUrl";
+            } else if (queryParams.from == "namespace") {
+                urlPath = "administratorUrl";
             }
         }
         Utils.setUrl({
