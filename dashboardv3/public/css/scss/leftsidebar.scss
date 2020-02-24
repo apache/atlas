@@ -207,11 +207,29 @@
                     span {
                         color: #fff !important;
                     }
+
+                    .clear-icon {
+                        color: $color_ironside_gray_approx !important;
+                    }
+
+                    .wildcard-btn {
+                        color: $color_jungle_green_approx !important;
+                    }
+                }
+
+                .wildcard-btn {
+                    margin: 0px;
+                    color: $color_jungle_green_approx !important;
+                }
+
+                .wildcard-btn:hover {
+                    margin: 0px;
+                    color: $white !important;
                 }
 
                 input {
                     color: $color_ironside_gray_approx !important;
-                    width: 150px;
+                    width: 130px;
                     display: inline-block;
                 }
 
@@ -219,7 +237,8 @@
                     background-color: #fff;
                 }
 
-                &:hover .clear-icon {
+
+                .clear-icon {
                     color: $color_ironside_gray_approx !important;
                 }
 
@@ -237,12 +256,23 @@
             .clear-icon {
                 color: $color_ironside_gray_approx !important;
                 position: absolute;
-                top: 30%;
-                right: 12px;
+                z-index: 3;
+                top: 29%;
+                right: 48px;
             }
 
-            .has-feedback .form-control {
-                padding: 6px 12px;
+            .has-feedback input {
+                padding: 6px 25px 6px 6px;
+
+            }
+
+            .has-feedback input:focus {
+                border-color: $color_havelock_blue_approx !important;
+
+            }
+
+            .wildcard-search:hover {
+                background-color: $white;
             }
         }
 

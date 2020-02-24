@@ -34,14 +34,18 @@
                     </li>
                     <li data-id="createTag" data-type="classification"> <i class="fa fa-plus"></i><span>Create Classification</span>
                     </li>
-                    <li data-id="wildCardClick" data-type="classification">
+                    <li class="wildcard-search" data-type="classification" data-id="wildCardContainer">
                         <div class="has-feedback align-left-right-icon search-box">
-                            <input type="text" class="form-control" name="wildcard search" placeholder="Wildcard search" data-id="wildCardValue" />
-                            <span class="fa fa-times clear-icon" data-id="clearWildCard"> </span>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="wildcard search" placeholder="Wildcard search" data-id="wildCardValue" />
+                                <span class="fa fa-times clear-icon" data-id="clearWildCard"> </span>
+                                <div class="input-group-btn">
+                                    <span class="btn  btn-md wildcard-btn btn-action" data-id="wildCardSearch" data-original-title="Wildcard Search"><i class="fa fa-search"></i></span>
+                                </div>
+                            </div>
                         </div>
                     </li>
-            </button>
-            </ul>
+                </ul>
             </button>
         </div>
     </div>
