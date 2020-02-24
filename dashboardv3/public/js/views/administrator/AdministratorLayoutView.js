@@ -67,7 +67,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'guid', 'entity', 'entityName', 'attributeDefs', 'nameSpaceCollection', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'guid', 'entity', 'entityName', 'attributeDefs', 'entityDefCollection', 'nameSpaceCollection', 'enumDefCollection'));
 
             },
             onShow: function() {
@@ -87,7 +87,7 @@ define(['require',
             renderNameSpaceLayoutView: function(obj) {
                 var that = this;
                 require(['views/name_space/NameSpaceTableLayoutView'], function(NameSpaceTableLayoutView) {
-                    that.RNamespaceTableLayoutView.show(new NameSpaceTableLayoutView({ nameSpaceCollection: that.nameSpaceCollection }));
+                    that.RNamespaceTableLayoutView.show(new NameSpaceTableLayoutView({ nameSpaceCollection: that.nameSpaceCollection, entityDefCollection: that.entityDefCollection }));
                 });
             },
             renderEnumLayoutView: function(obj) {

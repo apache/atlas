@@ -57,9 +57,7 @@ define(['require',
                     this.model.set({ "name": e.target.value.trim() });
                 };
                 events["change " + this.ui.dataTypeSelector] = function(e) {
-                    //this.ui.multiValueSelect.hide();
                     if (e.target.value.trim() === 'enumeration' || e.target.value.trim() === 'Enumeration') {
-                        // this.model.set({ "typeName": "enum" });
                         this.ui.enumTypeSelectorContainer.show();
                         this.emumTypeSelectDisplay();
                         this.ui.stringLengthContainer.hide();
@@ -67,13 +65,9 @@ define(['require',
                         this.model.set({ "typeName": e.target.value.trim() });
                         this.model.set({ "enumValues": null });
                         this.ui.stringLengthContainer.show();
-                        //this.ui.multiValueSelect.show();
                         this.ui.enumTypeSelectorContainer.hide();
                         this.ui.enumValueSelectorContainer.hide();
                     } else {
-                        // if (e.target.value.trim() === 'int' || e.target.value.trim() === 'float') {
-                        //     this.ui.multiValueSelect.show();
-                        // }
                         this.model.set({ "typeName": e.target.value.trim() });
                         this.model.set({ "enumValues": null });
                         this.ui.enumTypeSelectorContainer.hide();
@@ -101,9 +95,9 @@ define(['require',
                 events["change " + this.ui.enumValueSelector] = function(e) {
                     this.model.set({ "enumValues": this.ui.enumValueSelector.val() });
                 };
-                // events["change " + this.ui.multiValueSelectStatus] = function(e) {
-                //     this.model.set({ "multiValueSelect": e.target.checked });
-                // };
+                events["change " + this.ui.multiValueSelectStatus] = function(e) {
+                    this.model.set({ "multiValueSelect": e.target.checked });
+                };
                 events["click " + this.ui.close] = 'onCloseButton';
                 events["click " + this.ui.createNewEnum] = 'onCreateUpdateEnum';
                 return events;
@@ -150,7 +144,7 @@ define(['require',
                     this.ui.attributeInput.attr("disabled", "false");
                     this.ui.dataTypeSelector.attr("disabled", "false");
                     this.ui.dataTypeSelector.attr("disabled", "false");
-                    //this.ui.multiValueSelect.hide();
+                    this.ui.multiValueSelect.hide();
                     this.ui.dataTypeSelector.val(this.parentView.attrDetails.attrTypeName);
                     if (this.parentView.attrDetails.attrTypeName == "string") {
                         this.ui.stringLengthContainer.show();
@@ -176,11 +170,11 @@ define(['require',
                             this.ui.enumTypeSelector.val(typeName).trigger('change');
                         }
                     }
-                    // if (this.parentView.attrDetails.multiValued) {
-                    //     this.ui.multiValueSelect.show();
-                    //     $(this.ui.multiValueSelectStatus).prop('checked', true).trigger('change');
-                    //     this.ui.multiValueSelectStatus.attr("disabled", "false");
-                    // }
+                    if (this.parentView.attrDetails && this.parentView.attrDetails.multiValued) {
+                        this.ui.multiValueSelect.show();
+                        $(this.ui.multiValueSelectStatus).prop('checked', true).trigger('change');
+                        this.ui.multiValueSelectStatus.attr("disabled", "false");
+                    }
                 }
             },
             showEnumValues: function(enumName) {

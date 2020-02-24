@@ -185,6 +185,7 @@ define(['require',
                         cell: "html",
                         editable: false,
                         sortable: false,
+                        fixWidth: "20",
                         cell: Backgrid.ExpandableCell,
                         accordion: false,
                         expand: function(el, model) {

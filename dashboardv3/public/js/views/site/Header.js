@@ -34,6 +34,7 @@ define(['require',
         ui: {
             backButton: "[data-id='backButton']",
             menuHamburger: "[data-id='menuHamburger']",
+            administrator: "[data-id='administrator']",
             signOut: "[data-id='signOut']"
         },
         events: function() {
@@ -52,6 +53,16 @@ define(['require',
                 var path = Utils.getBaseUrl(window.location.pathname);
                 window.location = path + "/logout.html";
             };
+            events['click ' + this.ui.administrator] = function() {
+                Utils.setUrl({
+                    url: "#!/administrator",
+                    mergeBrowserUrl: false,
+                    trigger: true,
+                    updateTabState: true
+                });
+            };
+
+
             return events;
 
         },

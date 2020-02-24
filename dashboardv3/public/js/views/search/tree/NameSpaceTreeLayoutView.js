@@ -142,46 +142,25 @@ define([
                 this.ui.nameSpaceSearchTree.jstree(true).deselect_all();
                 this.namespaceID = null;
             }
-            // if (this.options.value === undefined) {
-            //     this.options.value = {};
-            // }
-            // if (!this.options.value.tag) {
-            //     this.ui.nameSpaceSearchTree.jstree(true).deselect_all();
-            //     this.nameSpaceId = null;
-            // } else {
-            //     if (that.options.value.tag.indexOf("*") != -1) {
-            //         that.ui.nameSpaceSearchTree.jstree(true).deselect_all();
-            //     }
-            //     var dataFound = this.nameSpaceCollection.fullCollection.find(function(obj) {
-            //         return obj.get("name") === that.options.value.tag;
-            //     });
-            //     if (dataFound) {
-            //         if ((this.nameSpaceId && this.nameSpaceId !== dataFound.get("guid")) || this.nameSpaceId === null) {
-            //             if (this.nameSpaceId) {
-            //                 this.ui.nameSpaceSearchTree.jstree(true).deselect_node(this.nameSpaceId);
-            //             }
-            //             this.fromManualRender = true;
-            //             this.nameSpaceId = dataFound.get("guid");
-            //             this.ui.nameSpaceSearchTree.jstree(true).select_node(dataFound.get("guid"));
-            //         }
-            //     }
-            //     if (!dataFound && Globals[that.options.value.tag]) {
-            //         this.fromManualRender = true;
-            //         this.typeId = Globals[that.options.value.tag].guid;
-            //         this.ui.nameSpaceSearchTree.jstree(true).select_node(this.typeId);
-            //     }
-            // }
         },
         onNodeSelect: function(nodeData) {
             var that = this,
                 options = nodeData.node.original,
-                url = "#!/administrator/namespace";
+                url = "#!/administrator/namespace",
+                trigger = true,
+                queryParams = Utils.getUrlState.getQueryParams();
+
             if (options.parent === undefined) {
                 url += "/" + options.id;
-                this.triggerUrl(url);
-            } else {
-                //this.triggerSearch();
             }
+
+            if (queryParams && queryParams.from === "namespace" && Utils.getUrlState.getQueryUrl().queyParams[0] === url) {
+                trigger = false;
+            }
+            if (trigger) {
+                this.triggerUrl(url);
+            }
+
         },
         onViewEditNameSpace: function() {
             var selectedNode = this.ui.nameSpaceSearchTree.jstree("get_selected", true);
@@ -194,16 +173,6 @@ define([
                 }
             }
         },
-        // triggerSearch: function(params, url) {
-        //     var serachUrl = url ? url : "#!/search/searchResult";
-        //     Utils.setUrl({
-        //         url: serachUrl,
-        //         urlParams: params,
-        //         mergeBrowserUrl: false,
-        //         trigger: true,
-        //         updateTabState: true
-        //     });
-        // },
         triggerUrl: function(url) {
             Utils.setUrl({
                 url: url,
@@ -252,32 +221,6 @@ define([
                         };
                     return nodeStructure;
                 };
-            // getChildren = function(options) {
-            //     var children = options.children,
-            //         data = [],
-            //         dataWithoutEmptyTag = [],
-            //         isAttrNode = true;
-            //     if (children && children.length) {
-            //         _.each(children, function(attrDetail) {
-            //             var nodeDetails = {
-            //                     name: _.escape(attrDetail.name),
-            //                     model: attrDetail
-            //                 },
-            //                 nodeProperties = {
-            //                     parent: options.parent,
-            //                     text: _.escape(attrDetail.name),
-            //                     model: attrDetail,
-            //                     id: options.parent + "_" + _.escape(attrDetail.name)
-            //                 },
-            //                 getNodeDetails = generateNode(nodeDetails, isAttrNode),
-            //                 classificationNode = _.extend(getNodeDetails, nodeProperties);
-            //             data.push(classificationNode);
-            //         });
-            //     } else {
-            //         return null;
-            //     }
-            //     return data;
-            // };
             _.each(namsSpaceTreeData, function(filterNode) {
                 nameSpaceList.push(generateNode(filterNode));
             });

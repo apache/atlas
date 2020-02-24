@@ -63,7 +63,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entity', 'entityName', 'attributeDefs', 'typeHeaders', 'nameSpaceCollection', 'nameSpaceAttr'));
+                _.extend(this, _.pick(options, 'guid', 'entity', 'entityName', 'attributeDefs', 'typeHeaders', 'nameSpaceCollection', 'nameSpaceAttr', 'entityDefCollection'));
                 this.commonTableOptions = {
                     collection: this.nameSpaceAttr,
                     includeFilter: false,
@@ -141,6 +141,7 @@ define(['require',
                                 that.renderTableLayoutView();
                                 that.showDetails = true;
                                 that.toggleNamespaceDetailsAttrView();
+                                that.entityDefCollection.fetch({ silent: true });
                             },
                             parent: that.$el,
                             tagCollection: that.nameSpaceCollection,
@@ -189,7 +190,7 @@ define(['require',
                         })
                     },
                     typeName: {
-                        label: "typeName",
+                        label: "Type Name",
                         cell: "html",
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {

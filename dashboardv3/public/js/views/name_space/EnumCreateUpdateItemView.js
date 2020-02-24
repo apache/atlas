@@ -70,6 +70,7 @@ define(["require", "backbone", "hbs!tmpl/name_space/EnumCreateUpdateItemView_tmp
                     this.ui.enumCancleBtn.attr("disabled", "true");
                 };
                 events["click " + this.ui.enumOkBtn] = function(e) {
+                    this.ui.enumCancleBtn.attr("disabled", "true");
                     this.onUpdateEnum();
                 };
                 return events;
@@ -173,6 +174,9 @@ define(["require", "backbone", "hbs!tmpl/name_space/EnumCreateUpdateItemView_tmp
                     return;
                 }
                 this.ui.enumOkBtn.attr("disabled", "true");
+                this.ui.enumSelector.attr("disabled", "true");
+                this.ui.valueSelector.attr("disabled", "true");
+                this.ui.enumCancleBtn.attr("disabled", "true");
                 if (enumName) {
                     var enumDef = enumName.get("elementDefs");
                     if (enumDef.length === selectedEnumValues.length) {
@@ -231,6 +235,8 @@ define(["require", "backbone", "hbs!tmpl/name_space/EnumCreateUpdateItemView_tmp
                     complete: function(model, status) {
                         that.emumTypeSelectDisplay();
                         that.ui.enumOkBtn.removeAttr("disabled");
+                        that.ui.enumSelector.removeAttr("disabled");
+                        that.ui.valueSelector.removeAttr("disabled");
                         if (that.options.closeModal) {
                             that.options.closeModal();
                         }
@@ -246,6 +252,8 @@ define(["require", "backbone", "hbs!tmpl/name_space/EnumCreateUpdateItemView_tmp
                         content: "No updated values"
                     });
                     that.ui.enumOkBtn.removeAttr("disabled");
+                    that.ui.enumSelector.removeAttr("disabled");
+                    that.ui.valueSelector.removeAttr("disabled");
                     if (that.options.closeModal) {
                         that.options.closeModal();
                     }

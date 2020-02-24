@@ -133,7 +133,7 @@ define([
             this.showDefaultPage();
         },
         showDefaultPage: function() {
-            if (this.options.value) {
+            if (Utils.getUrlState.isSearchTab() && this.options.value) {
                 if (
                     !this.options.value.type &&
                     !this.options.value.tag &&

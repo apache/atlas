@@ -106,7 +106,8 @@ define([
                             guid: that.options.namespaceID,
                             typeHeaders: that.typeHeaders,
                             enumDefCollection: that.enumDefCollection,
-                            selectedNameSpace:that.selectedNameSpace
+                            selectedNameSpace: that.selectedNameSpace,
+                            entityDefCollection: that.options.entityDefCollection
                         }));
                 });
             }
