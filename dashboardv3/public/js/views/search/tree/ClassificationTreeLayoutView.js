@@ -52,6 +52,7 @@ define([
             wildCardClick: '[data-id="wildCardClick"]',
             wildCardSearch: '[data-id="wildCardSearch"]',
             wildCardValue: '[data-id="wildCardValue"]',
+            wildCardContainer: '[data-id="wildCardContainer"]',
             clearWildCard: '[data-id="clearWildCard"]'
         },
         templateHelpers: function() {
@@ -69,7 +70,8 @@ define([
                 that.refresh({ type: type });
             };
 
-            events["click " + this.ui.createTag] = function() {
+            events["click " + this.ui.createTag] = function(e) {
+                e.stopPropagation();
                 that.onClickCreateTag();
             };
 
@@ -96,7 +98,9 @@ define([
             events["click " + this.ui.wildCardSearch] = function(e) {
                 e.stopPropagation();
                 var tagValue = this.ui.wildCardValue.val();
-                that.findSearchResult(tagValue);
+                if (tagValue.indexOf("*") != -1) {
+                    that.findSearchResult(tagValue);
+                }
             };
             events["click " + this.ui.wildCardValue] = function(e) {
                 e.stopPropagation();
@@ -104,8 +108,12 @@ define([
             events["click " + this.ui.clearWildCard] = function(e) {
                 e.stopPropagation();
                 that.ui.wildCardValue.val("");
+                that.ui.clearWildCard.addClass('hide-icon');
             }
-            events["keyup " + this.ui.wildCardValue] = function(e) {
+            events["click " + this.ui.wildCardContainer] = function(e) {
+                e.stopPropagation();
+            }
+            events["keydown " + this.ui.wildCardValue] = function(e) {
                 e.stopPropagation();
                 var code = e.which;
                 if (this.ui.wildCardValue.val().length > 0) {
@@ -114,14 +122,17 @@ define([
                     this.ui.clearWildCard.addClass('hide-icon');
                 }
                 if (code == 13) {
+                    e.preventDefault();
                     var tagValue = this.ui.wildCardValue.val();
                     if (tagValue.indexOf("*") != -1) {
                         that.findSearchResult(tagValue);
                     }
-
                 }
             };
-
+            events["keyup " + this.ui.wildCardValue] = function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+            };
             return events;
         },
         initialize: function(options) {
