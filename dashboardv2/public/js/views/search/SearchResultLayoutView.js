@@ -203,12 +203,7 @@ define(['require',
                             });
                         }
                     });
-
-                    if (this.multiSelectEntity.length > 0) {
-                        this.$('.multiSelectTag,.multiSelectTerm').show();
-                    } else {
-                        this.$('.multiSelectTag,.multiSelectTerm').hide();
-                    }
+                    this.updateMultiSelect();
                 });
                 this.listenTo(this.searchCollection, "error", function(model, response) {
                     this.hideLoader({ type: 'error' });
@@ -339,6 +334,13 @@ define(['require',
                     updateTabState: true
                 }, options));
             },
+            updateMultiSelect: function() {
+                if (this.multiSelectEntity.length > 0) {
+                    this.$('.multiSelectTag,.multiSelectTerm').show();
+                } else {
+                    this.$('.multiSelectTag,.multiSelectTerm').hide();
+                }
+            },
             updateColumnList: function(updatedList) {
                 if (updatedList) {
                     var listOfColumns = [];
@@ -388,13 +390,13 @@ define(['require',
                         if (that.isDestroyed) {
                             return;
                         }
-                        that.ui.gotoPage.val('');
-                        that.ui.gotoPage.parent().removeClass('has-error');
-                        that.ui.gotoPagebtn.prop("disabled", true);
                         Globals.searchApiCallRef = undefined;
                         var isFirstPage = that.offset === 0,
                             dataLength = 0,
                             goToPage = that.ui.gotoPage.val();
+                        that.ui.gotoPage.val('');
+                        that.ui.gotoPage.parent().removeClass('has-error');
+                        that.ui.gotoPagebtn.prop("disabled", true);
                         if (!(that.ui.pageRecordText instanceof jQuery)) {
                             return;
                         }
@@ -414,6 +416,7 @@ define(['require',
                                 pageNumber = goToPage;
                                 that.offset = (that.activePage - 1) * that.limit;
                             } else {
+                                that.finalPage = that.activePage;
                                 that.ui.nextData.attr('disabled', true);
                                 that.offset = that.offset - that.limit;
                             }
@@ -475,6 +478,9 @@ define(['require',
                         that.ui.activePage.attr('title', "Page " + that.activePage);
                         that.ui.activePage.text(that.activePage);
                         that.renderTableLayoutView();
+                        that.multiSelectEntity = [];
+                        that.updateMultiSelect();
+
                         if (dataLength > 0) {
                             that.$('.searchTable').removeClass('noData')
                         }
@@ -523,6 +529,7 @@ define(['require',
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
                 } else {
+                    _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset });
                     if (isPostMethod) {
                         apiObj['data'] = _.extend(checkBoxValue, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification', 'termName'));
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
@@ -1214,6 +1221,13 @@ define(['require',
                 var that = this;
                 var goToPage = parseInt(this.ui.gotoPage.val());
                 if (!(_.isNaN(goToPage) || goToPage <= -1)) {
+                    if (this.finalPage && this.finalPage < goToPage) {
+                        Utils.notifyInfo({
+                            html: true,
+                            content: Messages.search.noRecordForPage + '<b>' + Utils.getNumberSuffix({ number: goToPage, sup: true }) + '</b> page'
+                        });
+                        return;
+                    }
                     this.offset = (goToPage - 1) * this.limit;
                     if (this.offset <= -1) {
                         this.offset = 0;
