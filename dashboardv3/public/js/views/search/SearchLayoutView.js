@@ -487,6 +487,7 @@ define(['require',
                     placeholder: "Select Type",
                     dropdownAdapter: $.fn.select2.amd.require("ServiceTypeFilterDropdownAdapter"),
                     allowClear: true,
+                    dropdownCssClass: "searchLayoutView",
                     getFilterBox: this.getFilterBox.bind(this),
                     onFilterSubmit: function(options) {
                         that.filterTypeSelected = options.filterVal;

@@ -495,3 +495,9 @@ div.columnmanager-dropdown-container {
 .table-hover>tbody>tr:hover {
     background-color: #fafafa;
 }
+
+.input-group {
+    .form-control {
+        z-index: 1;
+    }
+}

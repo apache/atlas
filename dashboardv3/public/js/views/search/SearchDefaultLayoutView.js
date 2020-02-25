@@ -48,7 +48,8 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                 entityName: ".entityName",
                 classificationName: ".classificationName",
                 createNewEntity: '[data-id="createNewEntity"]',
-                clearQuerySearch: "[data-id='clearQuerySearch']"
+                clearQuerySearch: "[data-id='clearQuerySearch']",
+                refreshSearchQuery: "[data-id='refreshSearchResult']"
             },
             /** ui events hash */
             events: function() {
@@ -63,6 +64,10 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     }
                     this.$('.fa-angle-right').toggleClass('fa-angle-down');
                     this.$('.attribute-filter-container, .attr-filter-overlay').toggleClass('hide');
+                };
+
+                events["click " + this.ui.refreshSearchQuery] = function(e) {
+                    this.options.searchVent.trigger('search:refresh');
                 };
 
                 events["click " + this.ui.attrApply] = function(e) {
@@ -360,7 +365,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     if (_.has(obj, "condition")) {
                         return that.getIdFromRuleObj(obj);
                     } else {
-                        if (obj && obj.data && obj.data.entityType === "namespace") {
+                        if ((obj && obj.data && obj.data.entityType === "namespace") || obj.id.indexOf(".") > -1) {
                             return col.add("namespace");
                         } else {
                             return col.add(obj.id);
@@ -377,7 +382,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     if (!this.options.searchTableColumns[this.options.value.type]) {
                         this.options.searchTableColumns[this.options.value.type] = ["selected", "name", "description", "typeName", "owner", "tag", "term"];
                     }
-                    this.options.searchTableColumns[this.options.value.type] = _.sortBy(_.union(this.options.searchTableColumns[this.options.value.type], this.getIdFromRuleObj(rule)));
+                    this.options.searchTableColumns[this.options.value.type] = _.sortBy(_.union(_.without(this.options.searchTableColumns[this.options.value.type], "namespace"), this.getIdFromRuleObj(rule)));
                 }
             },
             renderQueryBuilder: function(obj, rQueryBuilder) {

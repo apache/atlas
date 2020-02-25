@@ -67,7 +67,7 @@ define(['require',
             } else {
                 this.modal = modal = new Modal({
                     titleHtml: true,
-                    title: '<span>' + (this.selectedModel && this.rename ? 'Rename' : 'Save/Save As..') + (this.isBasic ? " Basic" : " Advanced") + ' Custom Filter</span>',
+                    title: '<span>' + (this.selectedModel && this.rename ? 'Rename' : 'Save') + (this.isBasic ? " Basic" : " Advanced") + ' Custom Filter</span>',
                     content: this,
                     cancelText: "Cancel",
                     okCloses: false,
@@ -112,7 +112,7 @@ define(['require',
                         that.ui.saveAsName.append(options);
                         that.ui.saveAsName.val("");
                         that.ui.saveAsName.select2({
-                            placeholder: "Save/Save As.. filter",
+                            placeholder: "Enter filter name ",
                             allowClear: false,
                             tags: true,
                             multiple: false,
@@ -121,9 +121,9 @@ define(['require',
                                     return state.text;
                                 }
                                 if (!state.element) {
-                                    return $("<span><span class='option-title-light'>Save:</span> <strong> " + _.escape(state.text) + "</strong></span>");
+                                    return $("<span><span class='option-title-light'>New:</span> <strong>" + _.escape(state.text) + "</strong></span>");
                                 } else {
-                                    return $("<span><span class='option-title-light'>Save As:</span> <strong>" + _.escape(state.text) + "</strong></span>");
+                                    return $("<span><span class='option-title-light'>Update:</span> <strong>" + _.escape(state.text) + "</strong></span>");
                                 }
                             }
                         }).on("change", function() {

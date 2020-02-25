@@ -131,16 +131,20 @@ define(['require',
 
                 dropdownWithSearch.prototype.render = function() {
                     // Copy and modify default search render method
-                    var $rendered = Dropdown.prototype.render.call(this);
+                    var $rendered = Dropdown.prototype.render.call(this),
+                        dropdownCssClass = this.options.get("dropdownCssClass")
+                    if (dropdownCssClass) {
+                        $rendered.addClass(dropdownCssClass);
+                    }
 
                     // Add ability for a placeholder in the search box
                     var placeholder = this.options.get("placeholderForSearch") || "";
                     var $search = $(
-                        '<span class="select2-search select2-search--dropdown"><div class="row">' +
-                        '<div class="col-md-10"><input class="select2-search__field" placeholder="' + placeholder + '" type="search"' +
+                        '<span class="select2-search select2-search--dropdown"><div class="clearfix">' +
+                        '<div class="col-md-10 no-padding" style="width: calc(100% - 30px);"><input class="select2-search__field" placeholder="' + placeholder + '" type="search"' +
                         ' tabindex="-1" autocomplete="off" autocorrect="off" autocapitalize="off"' +
                         ' spellcheck="false" role="textbox" /></div>' +
-                        '<div class="col-md-2"><button type="button" style="margin-left: -20px" class="btn btn-action btn-sm filter " title="Type Filter"><i class="fa fa-filter"></i></button></div>' +
+                        '<div class="col-md-2 no-padding" style="width: 30px;"><button type="button" style="padding: 3px 6px;margin: 0px 4px;" class="btn btn-action btn-sm filter " title="Type Filter"><i class="fa fa-filter"></i></button></div>' +
                         '</div></span>'
                     );
                     if (!this.options.options.getFilterBox) {

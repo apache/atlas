@@ -276,7 +276,7 @@ define(['require',
                         return '<li class="parent-node" data-id="tags">' +
                             '<div><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div>' +
                             (hasChild ? '<i class="fa toggleArrow fa-angle-right" data-id="expandArrow" data-name="' + name + '"></i>' : '') +
-                            '<a href="#!/tag/tagAttribute/' + name + '?viewType=' + (isTree ? 'tree' : 'flat') + '"  data-name="' + name + '">' + name + '</a></div>' +
+                            '<a href="#!/tag/tagAttribute/' + name + '?viewType=' + (isTree ? 'tree' : 'flat') + '&searchType=basic"  data-name="' + name + '">' + name + '</a></div>' +
                             (isTree && hasChild ? '<ul class="child hide">' + that.generateTree({ 'data': options.children, 'isTree': isTree }) + '</ul>' : '') + '</li>';
                     };
                 if (isTree) {
