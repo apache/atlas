@@ -74,6 +74,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
+import static org.apache.atlas.web.filters.HeadersUtil.SERVER_KEY;
 
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
@@ -137,8 +138,9 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             keycloakAuthenticationEntryPoint.setLoginUri("/login.jsp");
             authenticationEntryPoint = keycloakAuthenticationEntryPoint;
         } else {
-            BasicAuthenticationEntryPoint basicAuthenticationEntryPoint = new BasicAuthenticationEntryPoint();
-            basicAuthenticationEntryPoint.setRealmName("atlas.com");
+            LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> entryPointMap = new LinkedHashMap<>();
+            entryPointMap.put(new RequestHeaderRequestMatcher(HeadersUtil.USER_AGENT_KEY, HeadersUtil.USER_AGENT_VALUE), atlasAuthenticationEntryPoint);
+            AtlasDelegatingAuthenticationEntryPoint basicAuthenticationEntryPoint = new AtlasDelegatingAuthenticationEntryPoint(entryPointMap);
             authenticationEntryPoint = basicAuthenticationEntryPoint;
         }
         return authenticationEntryPoint;
@@ -146,7 +148,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
 
     public DelegatingAuthenticationEntryPoint getDelegatingAuthenticationEntryPoint() throws Exception {
         LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> entryPointMap = new LinkedHashMap<>();
-        entryPointMap.put(new RequestHeaderRequestMatcher("User-Agent", "Mozilla"), atlasAuthenticationEntryPoint);
+        entryPointMap.put(new RequestHeaderRequestMatcher(HeadersUtil.USER_AGENT_KEY, HeadersUtil.USER_AGENT_VALUE), atlasAuthenticationEntryPoint);
         DelegatingAuthenticationEntryPoint entryPoint = new DelegatingAuthenticationEntryPoint(entryPointMap);
         entryPoint.setDefaultEntryPoint(getAuthenticationEntryPoint());
         return entryPoint;
@@ -187,7 +189,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                     .headers()
                 .addHeaderWriter(new StaticHeadersWriter(HeadersUtil.CONTENT_SEC_POLICY_KEY, HeadersUtil.headerMap.get(HeadersUtil.CONTENT_SEC_POLICY_KEY)))
-                .addHeaderWriter(new StaticHeadersWriter(HeadersUtil.SERVER_KEY, HeadersUtil.headerMap.get(HeadersUtil.SERVER_KEY)))
+                .addHeaderWriter(new StaticHeadersWriter(SERVER_KEY, HeadersUtil.headerMap.get(SERVER_KEY)))
                         .and()
                     .servletApi()
                 .and()
