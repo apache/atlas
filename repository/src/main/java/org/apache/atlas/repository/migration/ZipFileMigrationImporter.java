@@ -23,7 +23,6 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
-import org.apache.atlas.model.migration.MigrationImportStatus;
 import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -51,33 +50,25 @@ public class ZipFileMigrationImporter implements Runnable {
 
     private final ImportService importService;
     private final String fileToImport;
-    private DataMigrationStatusService dataMigrationStatusService;
 
-    public ZipFileMigrationImporter(ImportService importService, String fileName, DataMigrationStatusService dataMigrationStatusService) {
+    public ZipFileMigrationImporter(ImportService importService, String fileName) {
         this.importService = importService;
         this.fileToImport = fileName;
-        this.dataMigrationStatusService = dataMigrationStatusService;
     }
 
     @Override
     public void run() {
         try {
-            detectFileToImport();
+            FileWatcher fileWatcher = new FileWatcher(fileToImport);
+            fileWatcher.start();
 
             int streamSize = getStreamSizeFromComment(fileToImport);
-            MigrationImportStatus status = dataMigrationStatusService.createGet(fileToImport, streamSize);
-            performImport(new FileInputStream(new File(fileToImport)), status.getPosition(), streamSize);
-            dataMigrationStatusService.setEndTime();
+            performImport(new FileInputStream(new File(fileToImport)), streamSize);
         } catch (IOException e) {
             LOG.error("Migration Import: IO Error!", e);
         } catch (AtlasBaseException e) {
             LOG.error("Migration Import: Error!", e);
         }
-    }
-
-    private void detectFileToImport() throws IOException {
-        FileWatcher fileWatcher = new FileWatcher(fileToImport);
-        fileWatcher.start();
     }
 
     private int getStreamSizeFromComment(String fileToImport) {
@@ -105,13 +96,13 @@ public class ZipFileMigrationImporter implements Runnable {
         return Integer.valueOf(s);
     }
 
-    private void performImport(InputStream fs, String position, int streamSize) throws AtlasBaseException {
+    private void performImport(InputStream fs, int streamSize) throws AtlasBaseException {
         try {
-            LOG.info("Migration Import: {}: Position: {}: Starting...", fileToImport, position);
+            LOG.info("Migration Import: {}: Starting...", fileToImport);
 
             RequestContext.get().setUser(getUserNameFromEnvironment(), null);
 
-            importService.run(fs, getImportRequest(streamSize, position),
+            importService.run(fs, getImportRequest(streamSize),
                     getUserNameFromEnvironment(),
                     InetAddress.getLocalHost().getHostName(),
                     InetAddress.getLocalHost().getHostAddress());
@@ -121,7 +112,6 @@ public class ZipFileMigrationImporter implements Runnable {
             throw new AtlasBaseException(ex);
         } finally {
             LOG.info("Migration Import: {}: Done!", fileToImport);
-            dataMigrationStatusService.deleteStatus();
         }
     }
 
@@ -129,19 +119,14 @@ public class ZipFileMigrationImporter implements Runnable {
         return System.getProperty(ENV_USER_NAME);
     }
 
-    private AtlasImportRequest getImportRequest(int streamSize, String position) throws AtlasException {
+    private AtlasImportRequest getImportRequest(int streamSize) throws AtlasException {
         AtlasImportRequest request = new AtlasImportRequest();
 
         request.setSizeOption(streamSize);
         request.setOption(AtlasImportRequest.OPTION_KEY_MIGRATION, "true");
         request.setOption(AtlasImportRequest.OPTION_KEY_NUM_WORKERS, getPropertyValue(APPLICATION_PROPERTY_MIGRATION_NUMER_OF_WORKERS, DEFAULT_NUMBER_OF_WORKDERS));
         request.setOption(AtlasImportRequest.OPTION_KEY_BATCH_SIZE, getPropertyValue(APPLICATION_PROPERTY_MIGRATION_BATCH_SIZE, DEFAULT_BATCH_SIZE));
-
-        request.setOption(AtlasImportRequest.START_POSITION_KEY,
-                        (StringUtils.isEmpty(position)
-                        ? Integer.toString(MIGRATION_IMPORT_START_POSITION.getInt())
-                        : position)
-                );
+        request.setOption(AtlasImportRequest.START_POSITION_KEY, Integer.toString(MIGRATION_IMPORT_START_POSITION.getInt()));
 
         return request;
     }

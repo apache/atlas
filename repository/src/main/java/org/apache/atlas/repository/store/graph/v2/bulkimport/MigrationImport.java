@@ -26,7 +26,6 @@ import org.apache.atlas.repository.converters.AtlasFormatConverters;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.migration.DataMigrationStatusService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -45,16 +44,14 @@ public class MigrationImport extends ImportStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(MigrationImport.class);
 
     private final AtlasTypeRegistry typeRegistry;
-    private final DataMigrationStatusService dataMigrationStatusService;
     private AtlasGraph atlasGraph;
     private EntityGraphRetriever entityGraphRetriever;
     private EntityGraphMapper entityGraphMapper;
     private AtlasEntityStore entityStore;
 
-    public MigrationImport(AtlasGraphProvider atlasGraphProvider, AtlasTypeRegistry typeRegistry, DataMigrationStatusService dataMigrationStatusService) {
+    public MigrationImport(AtlasGraphProvider atlasGraphProvider, AtlasTypeRegistry typeRegistry) {
         this.typeRegistry = typeRegistry;
         setupEntityStore(atlasGraphProvider, typeRegistry);
-        this.dataMigrationStatusService = dataMigrationStatusService;
         LOG.info("MigrationImport: Using bulkLoading...");
     }
 
@@ -70,11 +67,11 @@ public class MigrationImport extends ImportStrategy {
         int index = 0;
         int streamSize = entityStream.size();
         EntityMutationResponse ret = new EntityMutationResponse();
-        EntityCreationManager creationManager = createEntityCreationManager(atlasGraph, dataMigrationStatusService, importResult, streamSize);
+        EntityCreationManager creationManager = createEntityCreationManager(atlasGraph, importResult, streamSize);
 
         try {
             LOG.info("Migration Import: Size: {}: Starting...", streamSize);
-            index = creationManager.read(entityStream, importResult.getRequest().getStartPosition());
+            index = creationManager.read(entityStream);
             creationManager.drain();
             creationManager.extractResults();
         } catch (Exception ex) {
@@ -87,14 +84,14 @@ public class MigrationImport extends ImportStrategy {
         return ret;
     }
 
-    private EntityCreationManager createEntityCreationManager(AtlasGraph threadedAtlasGraph, DataMigrationStatusService dataMigrationStatusService, AtlasImportResult importResult, int streamSize) {
+    private EntityCreationManager createEntityCreationManager(AtlasGraph threadedAtlasGraph, AtlasImportResult importResult, int streamSize) {
         int batchSize = importResult.getRequest().getOptionKeyBatchSize();
         int numWorkers = getNumWorkers(importResult.getRequest().getOptionKeyNumWorkers());
 
         EntityConsumerBuilder consumerBuilder =
                 new EntityConsumerBuilder(threadedAtlasGraph, entityStore, entityGraphRetriever, typeRegistry, batchSize);
 
-        return new EntityCreationManager(consumerBuilder, batchSize, numWorkers, dataMigrationStatusService, importResult, streamSize);
+        return new EntityCreationManager(consumerBuilder, batchSize, numWorkers, importResult, streamSize);
     }
 
     private static int getNumWorkers(int numWorkersFromOptions) {

@@ -60,14 +60,14 @@ public class DataMigrationService implements Service {
     @Inject
     public DataMigrationService(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, Configuration configuration,
                                 GraphBackedSearchIndexer indexer, AtlasTypeDefStoreInitializer storeInitializer,
-                                AtlasTypeRegistry typeRegistry, ImportService importService, DataMigrationStatusService dataMigrationStatusService) {
+                                AtlasTypeRegistry typeRegistry, ImportService importService) {
         this.configuration = configuration;
 
 
         String fileName = getFileName();
         boolean zipFileBasedMigrationImport = StringUtils.endsWithIgnoreCase(fileName, FILE_EXTENSION_ZIP);
         this.thread        = (zipFileBasedMigrationImport)
-            ?  new Thread(new ZipFileMigrationImporter(importService, fileName, dataMigrationStatusService), "zipFileBasedMigrationImporter")
+            ?  new Thread(new ZipFileMigrationImporter(importService, fileName), "zipFileBasedMigrationImporter")
             :  new Thread(new FileImporter(migrator, typeDefStore, typeRegistry, storeInitializer, fileName, indexer));
     }
 
