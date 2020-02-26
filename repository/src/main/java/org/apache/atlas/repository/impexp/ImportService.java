@@ -92,7 +92,7 @@ public class ImportService {
             request = new AtlasImportRequest();
         }
 
-        EntityImportStream source = createZipSource(request, inputStream, AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
+        EntityImportStream source = createZipSource(inputStream, AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
         return run(source, request, userName, hostName, requestingIP);
     }
 
@@ -248,18 +248,8 @@ public class ImportService {
         return (int) (endTime - startTime);
     }
 
-    private EntityImportStream createZipSource(AtlasImportRequest request, InputStream inputStream, String configuredTemporaryDirectory) throws AtlasBaseException {
+    private EntityImportStream createZipSource(InputStream inputStream, String configuredTemporaryDirectory) throws AtlasBaseException {
         try {
-            if (request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION)) {
-                LOG.info("Migration mode: Detected...", request.getOptions().get("size"));
-                return getZipDirectEntityImportStream(request, inputStream);
-            }
-
-            if (request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_FORMAT) &&
-                    request.getOptions().get(AtlasImportRequest.OPTION_KEY_FORMAT).equals(AtlasImportRequest.OPTION_KEY_FORMAT_ZIP_DIRECT) ) {
-                return getZipDirectEntityImportStream(request, inputStream);
-            }
-
             if (StringUtils.isEmpty(configuredTemporaryDirectory)) {
                 return new ZipSource(inputStream);
             }
@@ -270,15 +260,9 @@ public class ImportService {
         }
     }
 
-    private EntityImportStream getZipDirectEntityImportStream(AtlasImportRequest request, InputStream inputStream) throws IOException, AtlasBaseException {
-        ZipSourceDirect zipSourceDirect = new ZipSourceDirect(inputStream, request.getSizeOption());
-        LOG.info("Using ZipSourceDirect: Size: {} entities", zipSourceDirect.size());
-        return zipSourceDirect;
-    }
-
     @VisibleForTesting
     boolean checkHiveTableIncrementalSkipLineage(AtlasImportRequest importRequest, AtlasExportRequest exportRequest) {
-        if (exportRequest == null || CollectionUtils.isEmpty(exportRequest.getItemsToExport())) {
+        if (CollectionUtils.isEmpty(exportRequest.getItemsToExport())) {
             return false;
         }
 

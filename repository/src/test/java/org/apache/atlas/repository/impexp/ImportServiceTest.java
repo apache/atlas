@@ -136,11 +136,6 @@ public class ImportServiceTest extends ExportImportTestBase {
         return getZipSource("dup_col_deleted.zip");
     }
 
-    @DataProvider(name = "zipDirect1")
-    public static Object[][] getZipDirect(ITestContext context) throws IOException, AtlasBaseException {
-        return getZipSource("dup_col_deleted.zip");
-    }
-
     @Test(dataProvider = "sales")
     public void importDB1(InputStream inputStream) throws AtlasBaseException, IOException {
         loadBaseModel();
@@ -534,17 +529,6 @@ public class ImportServiceTest extends ExportImportTestBase {
             }
         }
     }
-
-    @Test(dataProvider = "zipDirect1")
-    public void zipSourceDirect(InputStream inputStream) throws IOException, AtlasBaseException {
-        loadBaseModel();
-        loadFsModel();
-        loadHiveModel();
-
-        runImportWithNoParameters(importService, inputStream);
-
-    }
-
 
     private AtlasImportRequest getImportRequest(String replicatedFrom){
         AtlasImportRequest importRequest = getDefaultImportRequest();

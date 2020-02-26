@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.*;
 
 public class WorkItemManager<T, U extends WorkItemConsumer> {
@@ -34,7 +33,7 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
     private final ExecutorService  service;
     private final List<U>          consumers = new ArrayList<>();
     private CountDownLatch         countdownLatch;
-    private Queue<Object>          resultsQueue;
+    private BlockingQueue<Object>  resultsQueue;
 
     public WorkItemManager(WorkItemBuilder builder, String namePrefix, int batchSize, int numWorkers, boolean collectResults) {
         this.numWorkers = numWorkers;
@@ -50,13 +49,13 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
         this(builder, "workItemConsumer", batchSize, numWorkers, false);
     }
 
-    public void setResultsCollection(Queue<Object> resultsQueue) {
+    public void setResultsCollection(BlockingQueue<Object> resultsQueue) {
         this.resultsQueue = resultsQueue;
     }
 
     private void createConsumers(WorkItemBuilder builder, int numWorkers, boolean collectResults) {
         if (collectResults) {
-            setResultsCollection(new ConcurrentLinkedQueue<>());
+            setResultsCollection(new LinkedBlockingQueue<>());
         }
 
         for (int i = 0; i < numWorkers; i++) {
@@ -125,7 +124,7 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
         LOG.info("WorkItemManager: Shutdown done!");
     }
 
-    public Queue getResults() {
+    public BlockingQueue getResults() {
         return this.resultsQueue;
     }
 

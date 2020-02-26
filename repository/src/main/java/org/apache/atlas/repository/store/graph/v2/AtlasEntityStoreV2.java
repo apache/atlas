@@ -332,11 +332,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
-    public EntityMutationResponse createOrUpdateForImportNoCommit(EntityStream entityStream) throws AtlasBaseException {
-        return createOrUpdate(entityStream, false, true, true);
-    }
-
-    @Override
     @GraphTransaction
     public EntityMutationResponse updateEntity(AtlasObjectId objectId, AtlasEntityWithExtInfo updatedEntityInfo, boolean isPartialUpdate) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
@@ -1215,10 +1210,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             ret.setGuidAssignments(context.getGuidAssignments());
 
-            if (!RequestContext.get().isImportInProgress()) {
-                // Notify the change listeners
-                entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
-            }
+            // Notify the change listeners
+            entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");

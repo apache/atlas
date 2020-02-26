@@ -81,9 +81,9 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
             AtlasGraph        graph        = getGraph();
 
             for (AtlasEntityType entityType : typeRegistry.getAllEntityTypes()) {
-                LOG.info("finding entities of type: {}", entityType.getTypeName());
+                LOG.info("finding entities of type {}", entityType.getTypeName());
+
                 Iterable<Object> iterable = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType.getTypeName()).vertexIds();
-                LOG.info("found entities of type: {}", entityType.getTypeName());
                 int              count    = 0;
 
                 for (Iterator<Object> iter = iterable.iterator(); iter.hasNext(); ) {

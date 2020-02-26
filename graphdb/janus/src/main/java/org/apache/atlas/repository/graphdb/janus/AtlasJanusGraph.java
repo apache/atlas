@@ -116,7 +116,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
             }
         }
 
-        janusGraph = (StandardJanusGraph) graphInstance;
+        janusGraph = (StandardJanusGraph) AtlasJanusGraphDatabase.getGraphInstance();
     }
 
     @Override

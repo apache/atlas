@@ -199,10 +199,6 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         return cache.get(guid);
     }
 
-    public static void clearCache() {
-        guidVertexCache.get().clear();
-    }
-
     boolean logException(Throwable t) {
         if (t instanceof AtlasBaseException) {
             Response.Status httpCode = ((AtlasBaseException) t).getAtlasErrorCode().getHttpCode();

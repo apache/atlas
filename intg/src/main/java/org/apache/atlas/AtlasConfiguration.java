@@ -64,7 +64,6 @@ public enum AtlasConfiguration {
     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH("atlas.custom.attribute.value.max.length", 500),
     LABEL_MAX_LENGTH("atlas.entity.label.max.length", 50),
     IMPORT_TEMP_DIRECTORY("atlas.import.temp.directory", ""),
-    MIGRATION_IMPORT_START_POSITION("atlas.migration.import.start.position", 0),
     LINEAGE_USING_GREMLIN("atlas.lineage.query.use.gremlin", false);
 
     private static final Configuration APPLICATION_PROPERTIES;

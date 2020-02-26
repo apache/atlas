@@ -44,16 +44,10 @@ public class AtlasImportRequest implements Serializable {
     public  static final String TRANSFORMS_KEY             = "transforms";
     public  static final String TRANSFORMERS_KEY           = "transformers";
     public  static final String OPTION_KEY_REPLICATED_FROM = "replicatedFrom";
-    public  static final String OPTION_KEY_MIGRATION       = "migration";
-    public  static final String OPTION_KEY_NUM_WORKERS     = "numWorkers";
-    public  static final String OPTION_KEY_BATCH_SIZE      = "batchSize";
-    public  static final String OPTION_KEY_FORMAT          = "format";
-    public  static final String OPTION_KEY_FORMAT_ZIP_DIRECT = "zipDirect";
-    public  static final String START_POSITION_KEY         = "startPosition";
+    private static final String START_POSITION_KEY         = "startPosition";
     private static final String START_GUID_KEY             = "startGuid";
     private static final String FILE_NAME_KEY              = "fileName";
     private static final String UPDATE_TYPE_DEFINITION_KEY = "updateTypeDefinition";
-    private static final String OPTION_KEY_STREAM_SIZE     = "size";
 
     private Map<String, String> options;
 
@@ -114,7 +108,7 @@ public class AtlasImportRequest implements Serializable {
             return null;
         }
 
-        return this.options.get(key);
+        return (String) this.options.get(key);
     }
 
     @JsonIgnore
@@ -127,41 +121,10 @@ public class AtlasImportRequest implements Serializable {
         return isReplicationOptionSet() ? options.get(OPTION_KEY_REPLICATED_FROM) : StringUtils.EMPTY;
     }
 
-    @JsonIgnore
-    public int getOptionKeyNumWorkers() {
-        return getOptionsValue(OPTION_KEY_NUM_WORKERS, 1);
-    }
-
-    @JsonIgnore
-    public int getOptionKeyBatchSize() {
-        return getOptionsValue(OPTION_KEY_BATCH_SIZE, 1);
-    }
-
-    private int getOptionsValue(String optionKeyBatchSize, int defaultValue) {
-        String optionsValue = getOptionForKey(optionKeyBatchSize);
-
-        return StringUtils.isEmpty(optionsValue) ?
-                defaultValue :
-                Integer.valueOf(optionsValue);
-    }
-
     @JsonAnySetter
     public void setOption(String key, String value) {
         if (null == options) {
             options = new HashMap<>();
         }
         options.put(key, value);
-    }
-
-    public void setSizeOption(int size) {
-        setOption(OPTION_KEY_STREAM_SIZE, Integer.toString(size));
-    }
-
-    public int getSizeOption() {
-        if (!this.options.containsKey(OPTION_KEY_STREAM_SIZE)) {
-            return 1;
-        }
-
-        return Integer.valueOf(this.options.get(OPTION_KEY_STREAM_SIZE));
-    }
-}
+    }}

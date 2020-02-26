@@ -247,8 +247,7 @@ public class AuditsWriter {
             }
 
             updateReplicationAttribute(replicationOptionState, sourceServerName, sourceServerFullName, entityGuids,
-                    Constants.ATTR_NAME_REPLICATED_FROM,
-                    (result.getExportResult() != null) ? result.getExportResult().getChangeMarker() : 0);
+                    Constants.ATTR_NAME_REPLICATED_FROM, result.getExportResult().getChangeMarker());
         }
 
         public void add(String userName, String sourceCluster, long startTime,

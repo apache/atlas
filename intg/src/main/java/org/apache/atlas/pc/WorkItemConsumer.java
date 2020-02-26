@@ -21,7 +21,6 @@ package org.apache.atlas.pc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +37,7 @@ public abstract class WorkItemConsumer<T> implements Runnable {
     private final AtomicBoolean    isDirty           = new AtomicBoolean(false);
     private final AtomicLong       maxCommitTimeInMs = new AtomicLong(DEFAULT_COMMIT_TIME_IN_MS);
     private CountDownLatch         countdownLatch;
-    private Queue<Object>          results;
+    private BlockingQueue<Object>  results;
 
     public WorkItemConsumer(BlockingQueue<T> queue) {
         this.queue          = queue;
@@ -102,7 +101,11 @@ public abstract class WorkItemConsumer<T> implements Runnable {
     protected abstract void processItem(T item);
 
     protected void addResult(Object value) {
-        results.add(value);
+        try {
+            results.put(value);
+        } catch (InterruptedException e) {
+            LOG.error("Interrupted while adding result: {}", value);
+        }
     }
 
     protected void updateCommitTime(long commitTime) {
@@ -115,7 +118,7 @@ public abstract class WorkItemConsumer<T> implements Runnable {
         this.countdownLatch = countdownLatch;
     }
 
-    public <V> void setResults(Queue<Object> queue) {
+    public <V> void setResults(BlockingQueue<Object> queue) {
         this.results = queue;
     }
 }

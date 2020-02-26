@@ -361,9 +361,7 @@ public class EntityGraphMapper {
 
         updateLabels(vertex, labels);
 
-        if (entityChangeNotifier != null) {
-            entityChangeNotifier.onLabelsUpdatedFromEntity(GraphHelper.getGuid(vertex), addedLabels, removedLabels);
-        }
+        entityChangeNotifier.onLabelsUpdatedFromEntity(GraphHelper.getGuid(vertex), addedLabels, removedLabels);
     }
 
     public void addLabels(AtlasVertex vertex, Set<String> labels) throws AtlasBaseException {
@@ -380,10 +378,7 @@ public class EntityGraphMapper {
             if (!updatedLabels.equals(existingLabels)) {
                 updateLabels(vertex, updatedLabels);
                 updatedLabels.removeAll(existingLabels);
-
-                if (entityChangeNotifier != null) {
-                    entityChangeNotifier.onLabelsUpdatedFromEntity(GraphHelper.getGuid(vertex), updatedLabels, null);
-                }
+                entityChangeNotifier.onLabelsUpdatedFromEntity(GraphHelper.getGuid(vertex), updatedLabels, null);
             }
         }
     }
@@ -400,10 +395,7 @@ public class EntityGraphMapper {
                 if (!updatedLabels.equals(existingLabels)) {
                     updateLabels(vertex, updatedLabels);
                     existingLabels.removeAll(updatedLabels);
-
-                    if (entityChangeNotifier != null) {
-                        entityChangeNotifier.onLabelsUpdatedFromEntity(GraphHelper.getGuid(vertex), null, existingLabels);
-                    }
+                    entityChangeNotifier.onLabelsUpdatedFromEntity(GraphHelper.getGuid(vertex), null, existingLabels);
                 }
             }
         }
@@ -1956,9 +1948,7 @@ public class EntityGraphMapper {
                 Set<AtlasVertex>  vertices           = addedClassifications.get(classification);
                 List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
 
-                if (entityChangeNotifier != null) {
-                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification));
-                }
+                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification));
             }
 
             RequestContext.get().endMetricRecord(metric);
@@ -2066,10 +2056,7 @@ public class EntityGraphMapper {
             AtlasEntity entity = updateClassificationText(entry.getKey());
 
             List<AtlasClassification> deletedClassificationNames = entry.getValue();
-
-            if (entityChangeNotifier != null) {
-                entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassificationNames);
-            }
+            entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassificationNames);
         }
     }
 
@@ -2296,19 +2283,17 @@ public class EntityGraphMapper {
             notificationVertices.addAll(entitiesToPropagateTo);
         }
 
-        if (entityChangeNotifier != null) {
-            for (AtlasVertex vertex : notificationVertices) {
-                String entityGuid = GraphHelper.getGuid(vertex);
-                AtlasEntity entity = instanceConverter.getAndCacheEntity(entityGuid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
+        for (AtlasVertex vertex : notificationVertices) {
+            String      entityGuid = GraphHelper.getGuid(vertex);
+            AtlasEntity entity     = instanceConverter.getAndCacheEntity(entityGuid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
 
-                if (isActive(entity)) {
-                    vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
-                    entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
-                }
+            if (isActive(entity)) {
+                vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+                entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
             }
         }
 
-        if (entityChangeNotifier != null && MapUtils.isNotEmpty(removedPropagations)) {
+        if (MapUtils.isNotEmpty(removedPropagations)) {
             for (AtlasClassification classification : removedPropagations.keySet()) {
                 List<AtlasVertex> propagatedVertices = removedPropagations.get(classification);
                 List<AtlasEntity> propagatedEntities = updateClassificationText(classification, propagatedVertices);
@@ -2541,7 +2526,7 @@ public class EntityGraphMapper {
     private List<AtlasEntity> updateClassificationText(AtlasClassification classification, Collection<AtlasVertex> propagatedVertices) throws AtlasBaseException {
         List<AtlasEntity> propagatedEntities = new ArrayList<>();
 
-        if (fullTextMapperV2 != null && CollectionUtils.isNotEmpty(propagatedVertices)) {
+        if(CollectionUtils.isNotEmpty(propagatedVertices)) {
             for(AtlasVertex vertex : propagatedVertices) {
                 AtlasEntity entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
 
