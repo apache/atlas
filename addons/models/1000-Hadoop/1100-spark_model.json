@@ -436,8 +436,8 @@
     {
       "name": "spark_ml_model_ml_directory",
       "serviceType": "spark",
-      "typeVersion": "1.0",
-      "relationshipCategory": "COMPOSITION",
+      "typeVersion": "1.1",
+      "relationshipCategory": "AGGREGATION",
       "endDef1": {
         "type": "spark_ml_model",
         "name": "directory",
@@ -445,7 +445,7 @@
         "cardinality": "SINGLE"
       },
       "endDef2": {
-        "type": "spark_ml_directory",
+        "type": "DataSet",
         "name": "model",
         "isContainer": false,
         "cardinality": "SINGLE"
@@ -455,8 +455,8 @@
     {
       "name": "spark_ml_pipeline_ml_directory",
       "serviceType": "spark",
-      "typeVersion": "1.0",
-      "relationshipCategory": "COMPOSITION",
+      "typeVersion": "1.1",
+      "relationshipCategory": "AGGREGATION",
       "endDef1": {
         "type": "spark_ml_pipeline",
         "name": "directory",
@@ -464,7 +464,7 @@
         "cardinality": "SINGLE"
       },
       "endDef2": {
-        "type": "spark_ml_directory",
+        "type": "DataSet",
         "name": "pipeline",
         "isContainer": false,
         "cardinality": "SINGLE"
