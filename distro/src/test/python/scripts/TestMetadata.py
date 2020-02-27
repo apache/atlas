@@ -66,7 +66,8 @@ class TestMetadata(unittest.TestCase):
     @patch.object(mc, "is_hbase_local")
     @patch.object(mc, "is_solr_local")
     @patch.object(mc, "wait_for_startup")
-    def test_main_embedded(self, wait_for_startup_mock, is_solr_local_mock, is_hbase_local_mock, java_mock, exists_mock, expandWebApp_mock,
+    @patch.object(mc, "should_log_to_console")
+    def test_main_embedded(self, should_log_to_console_mock, wait_for_startup_mock, is_solr_local_mock, is_hbase_local_mock, java_mock, exists_mock, expandWebApp_mock,
                            atlasDir_mock, executeEnvSh_mock, writePid_mock, exist_pid_mock, grep_mock,
                            getConfigWithDefault_mock, getConfig_mock, configure_hbase_mock, runProcess_mock):
         sys.argv = []
@@ -76,6 +77,7 @@ class TestMetadata(unittest.TestCase):
         is_hbase_local_mock.return_value = True
         is_solr_local_mock.return_value = True
         wait_for_startup_mock.return_value = True
+        should_log_to_console_mock.return_value = False
 
         exist_pid_mock(789)
         exist_pid_mock.assert_called_with(789)
@@ -88,35 +90,35 @@ class TestMetadata(unittest.TestCase):
 
         if IS_WINDOWS:
             calls = [call(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf'],
-                          'atlas_home\\logs', False, True),
+                          'atlas_home\\logs', False, True, logconsole=False),
                      call(['atlas_home\\solr\\bin\\solr.cmd', 'start', '-z', 'localhost:9838', '-p', '9838'],
-                          'atlas_home\\logs', False, True),
+                          'atlas_home\\logs', False, True, logconsole=False),
                      call(['atlas_home\\solr\\bin\\solr.cmd', 'create', '-c', 'vertex_index', '-d',
                            'atlas_home\\conf\\solr', '-shards', '1',
-                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True),
+                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True, logconsole=False),
                      call(['atlas_home\\solr\\bin\\solr.cmd', 'create', '-c', 'edge_index', '-d',
                            'atlas_home\\conf\\solr', '-shards', '1',
-                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True),
+                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True, logconsole=False),
                      call(['atlas_home\\solr\\bin\\solr.cmd', 'create', '-c', 'fulltext_index', '-d',
                            'atlas_home\\conf\\solr', '-shards', '1',
-                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True)]
+                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True, logconsole=False)]
 
             runProcess_mock.assert_has_calls(calls)
         else:
             calls = [
                 call(['atlas_home/hbase/bin/hbase-daemon.sh', '--config', 'atlas_home/hbase/conf', 'start', 'master'],
-                     'atlas_home/logs', False, True),
+                     'atlas_home/logs', False, True, logconsole=False),
                 call(['atlas_home/solr/bin/solr', 'start', '-z', 'localhost:9838', '-p', '9838'], 'atlas_home/logs',
-                     False, True),
+                     False, True, logconsole=False),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'vertex_index', '-d',
                       'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',
-                      '1'], 'atlas_home/logs', False, True),
+                      '1'], 'atlas_home/logs', False, True, logconsole=False),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'edge_index', '-d',
                       'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',
-                      '1'], 'atlas_home/logs', False, True),
+                      '1'], 'atlas_home/logs', False, True, logconsole=False),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'fulltext_index', '-d',
                       'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',
-                      '1'], 'atlas_home/logs', False, True)]
+                      '1'], 'atlas_home/logs', False, True, logconsole=False)]
 
             runProcess_mock.assert_has_calls(calls)
 
@@ -130,7 +132,7 @@ class TestMetadata(unittest.TestCase):
                 ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home',
                  '-Datlas.conf=atlas_home\\conf', '-Xmx1024m',
                  '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true', '-server'],
-                'atlas_home\\logs')
+                'atlas_home\\logs', logconsole=False)
 
         else:
             java_mock.assert_called_with(
@@ -140,7 +142,7 @@ class TestMetadata(unittest.TestCase):
                 ['-Datlas.log.dir=atlas_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home',
                  '-Datlas.conf=atlas_home/conf', '-Xmx1024m',
                  '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true', '-server'],
-                'atlas_home/logs')
+                'atlas_home/logs', logconsole=False)
 
         pass
 
@@ -159,7 +161,8 @@ class TestMetadata(unittest.TestCase):
     @patch.object(mc, "is_hbase_local")
     @patch.object(mc, "is_solr_local")
     @patch.object(mc, "wait_for_startup")
-    def test_main_default(self, wait_for_startup_mock, is_solr_local_mock, is_hbase_local_mock, java_mock, exists_mock, expandWebApp_mock,
+    @patch.object(mc, "should_log_to_console")
+    def test_main_default(self, should_log_to_console_mock, wait_for_startup_mock, is_solr_local_mock, is_hbase_local_mock, java_mock, exists_mock, expandWebApp_mock,
                           atlasDir_mock, executeEnvSh_mock, writePid_mock, exist_pid_mock, grep_mock,
                           getConfigWithDefault_mock, getConfig_mock, configure_hbase_mock, runProcess_mock):
         sys.argv = []
@@ -169,6 +172,7 @@ class TestMetadata(unittest.TestCase):
         is_hbase_local_mock.return_value = False
         is_solr_local_mock.return_value = False
         wait_for_startup_mock.return_value = True
+        should_log_to_console_mock.return_value = False
 
         exist_pid_mock(789)
         exist_pid_mock.assert_called_with(789)
@@ -181,35 +185,35 @@ class TestMetadata(unittest.TestCase):
 
         if IS_WINDOWS:
             calls = [call(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf'],
-                          'atlas_home\\logs', False, True),
+                          'atlas_home\\logs', False, True, logconsole=False),
                      call(['atlas_home\\solr\\bin\\solr.cmd', 'start', '-z', 'localhost:9838', '-p', '9838'],
-                          'atlas_home\\logs', False, True),
+                          'atlas_home\\logs', False, True, logconsole=False),
                      call(['atlas_home\\solr\\bin\\solr.cmd', 'create', '-c', 'vertex_index', '-d',
                            'atlas_home\\conf\\solr', '-shards', '1',
-                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True),
+                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True, logconsole=False),
                      call(['atlas_home\\solr\\bin\\solr.cmd', 'create', '-c', 'edge_index', '-d',
                            'atlas_home\\conf\\solr', '-shards', '1',
-                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True),
+                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True, logconsole=False),
                      call(['atlas_home\\solr\\bin\\solr.cmd', 'create', '-c', 'fulltext_index', '-d',
                            'atlas_home\\conf\\solr', '-shards', '1',
-                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True)]
+                           '-replicationFactor', '1'], 'atlas_home\\logs', False, True, logconsole=False)]
 
             runProcess_mock.assert_not_called(calls)
         else:
             calls = [
                 call(['atlas_home/hbase/bin/hbase-daemon.sh', '--config', 'atlas_home/hbase/conf', 'start', 'master'],
-                     'atlas_home/logs', False, True),
+                     'atlas_home/logs', False, True, logconsole=False),
                 call(['atlas_home/solr/bin/solr', 'start', '-z', 'localhost:9838', '-p', '9838'], 'atlas_home/logs',
-                     False, True),
+                     False, True, logconsole=False),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'vertex_index', '-d',
                       'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',
-                      '1'], 'atlas_home/logs', False, True),
+                      '1'], 'atlas_home/logs', False, True, logconsole=False),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'edge_index', '-d',
                       'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',
-                      '1'], 'atlas_home/logs', False, True),
+                      '1'], 'atlas_home/logs', False, True, logconsole=False),
                 call(['atlas_home/solr/bin/solr', 'create', '-c', 'fulltext_index', '-d',
                       'atlas_home/solr/server/solr/configsets/_default/conf', '-shards', '1', '-replicationFactor',
-                      '1'], 'atlas_home/logs', False, True)]
+                      '1'], 'atlas_home/logs', False, True, logconsole=False)]
 
             runProcess_mock.assert_not_called(calls)
 
@@ -223,7 +227,7 @@ class TestMetadata(unittest.TestCase):
                 ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home',
                  '-Datlas.conf=atlas_home\\conf', '-Xmx1024m',
                  '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true', '-server'],
-                'atlas_home\\logs')
+                'atlas_home\\logs', logconsole=False)
 
         else:
             java_mock.assert_called_with(
@@ -233,7 +237,7 @@ class TestMetadata(unittest.TestCase):
                 ['-Datlas.log.dir=atlas_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home',
                  '-Datlas.conf=atlas_home/conf', '-Xmx1024m',
                  '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true', '-server'],
-                'atlas_home/logs')
+                'atlas_home/logs', logconsole=False)
 
         pass
 
