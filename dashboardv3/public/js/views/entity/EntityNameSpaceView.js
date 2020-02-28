@@ -117,10 +117,8 @@ define([
                 this.$el.find(".panel-heading").addClass("collapsed");
                 this.$el.find(".panel-collapse.collapse").removeClass("in");
                 this.ui.addNameSpace.text("Add");
-                this.ui.addNameSpace.attr("data-original-title", "Add");
             } else {
                 this.ui.addNameSpace.text("Edit");
-                this.ui.addNameSpace.attr("data-original-title", "Edit All");
                 this.$el.find(".panel-heading").removeClass("collapsed");
                 this.$el.find(".panel-collapse.collapse").addClass("in");
             }
@@ -157,8 +155,13 @@ define([
             if (!this.validate()) {
                 return;
             }
+            var nData = this.generateData();
+            if (this.actualCollection.length === 0 && _.isEmpty(nData)) {
+                this.onCancel();
+                return;
+            }
             this.entityModel.saveNamespaceEntity(this.guid, {
-                data: JSON.stringify(this.generateData()),
+                data: JSON.stringify(nData),
                 type: "POST",
                 success: function(data) {
                     Utils.notifySuccess({

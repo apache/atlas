@@ -38,8 +38,8 @@ define(['require',
                 model: this.model.toJSON()
             }
         },
-        tagName: 'tr',
-        className: "custom-tr",
+        tagName: 'li',
+        className: "namespace-tree-child",
 
         /** Layout sub regions */
         regions: {},
@@ -142,9 +142,10 @@ define(['require',
                 });
             }
         },
-        getAttrElement: function(options) {
+        getAttrElement: function(opt) {
             var that = this,
-                returnEL = "N/A";
+                returnEL = "N/A",
+                options = $.extend(true, {}, opt);
             if (options) {
                 var key = options.key,
                     typeName = options.val.typeName || "",
@@ -153,24 +154,21 @@ define(['require',
                     namespace = options.namespace,
                     allowOnlyNum = false;
                 var elType = isMultiValued ? "select" : "input";
-                if (!_.isEmpty(val)) {
+                if (!isMultiValued && !_.isEmpty(val)) {
                     val = _.escape(val);
                 }
                 if (!_.isUndefinedNull(val) && typeName.indexOf("boolean") > -1) {
                     val = String(val);
                 }
                 if (typeName.indexOf("date") > -1) {
-                    if (isMultiValued && val) {
-                        var dateVlaues = val.split(',');
-                        if (dateVlaues.length) {
-                            var dateStr = [];
-                            _.each(dateVlaues, function(selectedDate) {
-                                selectedDate = parseInt(selectedDate);
-                                dateStr.push(moment(selectedDate).format("MM/DD/YYYY"));
-                            });
-                            val = dateStr.join(',');
-                        }
-                    } else if (val) {
+                    if (isMultiValued && val && val.length) {
+                        var dateStr = [];
+                        _.each(val, function(selectedDate) {
+                            selectedDate = parseInt(selectedDate);
+                            dateStr.push(moment(selectedDate).format("MM/DD/YYYY"));
+                        });
+                        val = dateStr.join(',');
+                    } else if (!isMultiValued && val) {
                         val = parseInt(val);
                         val = moment(val).format("MM/DD/YYYY");
                     }
@@ -199,13 +197,14 @@ define(['require',
                     allowOnlyNum = true;
                     returnEL = '<' + elType + ' data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" type="number" data-multi="' + isMultiValued + '" data-tags="true" placeholder="Enter Number" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
                 } else if (typeName) {
+                    var modTypeName = typeName;
                     if (isMultiValued) {
                         var multipleType = typeName.match("array<(.*)>");
                         if (multipleType && multipleType[1]) {
-                            typeName = multipleType[1];
+                            modTypeName = multipleType[1];
                         }
                     }
-                    var foundEnumType = this.enumDefCollection.fullCollection.find({ name: typeName });
+                    var foundEnumType = this.enumDefCollection.fullCollection.find({ name: modTypeName });
                     if (foundEnumType) {
                         var enumOptions = "";
                         _.forEach(foundEnumType.get("elementDefs"), function(obj) {
@@ -214,15 +213,17 @@ define(['require',
                         returnEL = '<select data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" >' + enumOptions + '</select>';
                     }
                     setTimeout(function() {
-                        var selectEl = that.$el.find('.custom-col-1[data-id="value"] select[data-key="' + key + '"]');
-                        selectEl.val((val || ""));
-                        selectEl.select2();
+                        if (!isMultiValued) {
+                            var selectEl = that.$el.find('.custom-col-1[data-id="value"] select[data-key="' + key + '"]');
+                            selectEl.val((val || ""));
+                            selectEl.select2();
+                        }
                     }, 0);
                 }
                 if (isMultiValued) {
                     setTimeout(function() {
                         var selectEl = that.$el.find('.custom-col-1[data-id="value"] select[data-key="' + key + '"][data-multi="true"]');
-                        var data = val && val.split(",") || [];
+                        var data = val && val.length && (_.isArray(val) ? val : val.split(",")) || [];
                         if (allowOnlyNum) {
                             selectEl.parent().addClass("select2_only_number");
                         }
@@ -323,7 +324,7 @@ define(['require',
                         '<button class="btn btn-default btn-sm" data-key="' + key + '" data-id="deleteItem">' +
                         '<i class="fa fa-times"> </i>' +
                         '</button></td>';
-                    trs += "<tr>" + td + "</tr>";
+                    trs += "<tr class='custom-tr'>" + td + "</tr>";
                 }
             })
             this.$("[data-id='namespaceTreeChild']").html("<table class='custom-table'>" + trs + "</table>");

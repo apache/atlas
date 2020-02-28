@@ -30,6 +30,11 @@ define(['require',
         {
 
             template: NameSpaceAttributeItemViewTmpl,
+            templateHelpers: function() {
+                return {
+                    modalID: this.viewId
+                };
+            },
 
             /** Layout sub regions */
             regions: {},
@@ -109,12 +114,14 @@ define(['require',
              */
             initialize: function(options) {
                 this.parentView = options.parentView;
+                this.viewId = options.model ? options.model.cid : this.parentView.cid;
 
             },
             onRender: function() {
                 var that = this,
                     entitytypes = '',
                     enumTypes = [];
+                this.model.set({ "modalID": this.viewId });
                 this.parentView.typeHeaders.fullCollection.each(function(model) {
                     if (model.toJSON().category == "ENTITY") {
                         that.ui.entityTypeSelector.append("<option>" + model.get('name') + "</option>");

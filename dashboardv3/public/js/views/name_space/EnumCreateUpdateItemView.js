@@ -89,12 +89,20 @@ define(["require", "backbone", "hbs!tmpl/name_space/EnumCreateUpdateItemView_tmp
                     entitytypes = "",
                     enumTypes = [];
                 this.ui.enumValueSelectorContainer.hide();
+                this.bindEvents();
                 this.emumTypeSelectDisplay();
                 if (!this.options.closeModal) {
                     this.ui.enumCancleBtn.attr("disabled", "true");
                     this.ui.enumCancleBtn.text("Clear");
                 }
             },
+            bindEvents: function() {
+                var that = this;
+                this.listenTo(this.enumDefCollection, 'reset', function() {
+                    that.emumTypeSelectDisplay();
+                })
+            },
+
             showEnumValues: function(enumName) {
                 var enumValues = "",
                     selectedValues = [],
@@ -225,7 +233,8 @@ define(["require", "backbone", "hbs!tmpl/name_space/EnumCreateUpdateItemView_tmp
                                 content: "Enumeration " + selectedEnumName + " updated successfully"
                             });
                         }
-                        if (that.options.onUpdateEnum) {
+                        that.enumDefCollection.fetch({ reset: true });
+                        if (that.options.onUpdateEnum) { //callback from namespaceattributeItemView
                             that.options.onUpdateEnum();
                         }
                         that.ui.enumCancleBtn.attr("disabled", "true");
