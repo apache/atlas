@@ -904,7 +904,15 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             CommonViewFunction.restCsrfCustomHeader = header;
                             CommonViewFunction.restCsrfMethodsToIgnore = {};
                             methods.map(function(method) { CommonViewFunction.restCsrfMethodsToIgnore[method] = true; });
+                            var statusCodeErrorFn = function(error) {
+                                Utils.defaultErrorHandler(null, error)
+                            }
                             Backbone.$.ajaxSetup({
+                                statusCode: {
+                                    401: statusCodeErrorFn,
+                                    419: statusCodeErrorFn,
+                                    403: statusCodeErrorFn
+                                },
                                 beforeSend: CommonViewFunction.addRestCsrfCustomHeader
                             });
                         }
