@@ -15,21 +15,25 @@
  * limitations under the License.
 -->
 {{#ifCond model "has" "isNew"}}
-<td class="custom-col-1">
-    {{{callmyfunction getNamespaceDroupdown nameSpaceCollection}}}
-</td>
-<td class="custom-col-0"> : </td>
-<td class="custom-col-1" data-id="value">
-    <input type="text" data-key disabled class="form-control">
-</td>
-<td class="custom-col-2 btn-group">
-    <button class="btn btn-default btn-sm" data-id="deleteItem">
-        <i class="fa fa-minus"> </i>
-    </button>
-    <button class="btn btn-default btn-sm" data-id="addItem">
-        <i class="fa fa-plus"> </i>
-    </button>
-</td>
+<table class="custom-table" style="font-weight: 100;">
+    <tr class="custom-tr">
+        <td class="custom-col-1">
+            {{{callmyfunction getNamespaceDroupdown nameSpaceCollection}}}
+        </td>
+        <td class="custom-col-0"> : </td>
+        <td class="custom-col-1" data-id="value">
+            <input type="text" data-key disabled class="form-control">
+        </td>
+        <td class="custom-col-2 btn-group">
+            <button class="btn btn-default btn-sm" data-id="deleteItem">
+                <i class="fa fa-minus"> </i>
+            </button>
+            <button class="btn btn-default btn-sm" data-id="addItem">
+                <i class="fa fa-plus"> </i>
+            </button>
+        </td>
+    </tr>
+</table>
 {{else}}
 <hr />
 <ul class="namespace-tree-parent">

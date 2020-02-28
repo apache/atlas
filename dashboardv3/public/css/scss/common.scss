@@ -228,7 +228,6 @@ pre {
         .custom-col-1,
         .custom-col-2 {
             vertical-align: top;
-            display: inline-block;
 
             textarea {
                 resize: vertical;
@@ -254,8 +253,13 @@ pre {
         .custom-col-2 {
             text-align: center;
             width: 17%;
-            margin-left: 1%;
+            padding-left: 1%;
             margin-bottom: 10px;
+
+            &>button {
+                padding: 7px 10px;
+                margin-bottom: 10px;
+            }
         }
     }
 }

@@ -151,15 +151,15 @@ define(['require',
             },
             onEditAttr: function(e) {
                 var that = this,
-                    isAttrEdit = e.target.dataset && e.target.dataset.id === 'attributeEdit' ? true : false,
-                    guid = e.target.dataset && e.target.dataset.guid ? e.target.dataset.guid : null,
+                    isAttrEdit = e.currentTarget.dataset && e.currentTarget.dataset.id === 'attributeEdit' ? true : false,
+                    guid = e.currentTarget.dataset && e.currentTarget.dataset.guid ? e.currentTarget.dataset.guid : null,
                     selectedNamespace = that.nameSpaceCollection.fullCollection.findWhere({ guid: guid }),
                     attrributes = selectedNamespace ? selectedNamespace.get('attributeDefs') : null,
-                    attrName = e.target.dataset.name ? e.target.dataset.name : null,
+                    attrName = e.currentTarget.dataset.name ? e.currentTarget.dataset.name : null,
                     attrDetails = { name: attrName };
                 if (selectedNamespace) {
                     that.ui.namespaceAttrPageOk.text("Save");
-                    that.newAttr = e.target && e.target.dataset.action === "createAttr" ? true : false;
+                    that.newAttr = e.currentTarget && e.currentTarget.dataset.action === "createAttr" ? true : false;
                     that.guid = guid;
                     _.each(attrributes, function(attrObj) {
                         if (attrObj.name === attrName) {
@@ -176,7 +176,7 @@ define(['require',
 
                     that.showDetails = false;
                     that.toggleNamespaceDetailsAttrView();
-                    that.ui.namespaceAttrPageOk.attr('data-action', e.target.dataset.id);
+                    that.ui.namespaceAttrPageOk.attr('data-action', e.currentTarget.dataset.id);
                     require(["views/name_space/CreateNameSpaceLayoutView"], function(CreateNameSpaceLayoutView) {
                         that.view = new CreateNameSpaceLayoutView({
                             onEditCallback: function() {

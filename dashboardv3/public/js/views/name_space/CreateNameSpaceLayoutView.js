@@ -281,17 +281,67 @@ define(['require',
                     return true;
                 }
             },
+            namespaceAttributes: function(modelEl, obj, elementValues) {
+                obj.options = {
+                    "applicableEntityTypes": JSON.stringify(modelEl.find(".entityTypeSelector").val()),
+                    "maxStrLength": modelEl.find(".stringLengthVal").val() ? modelEl.find(".stringLengthVal").val() : "0"
+                };
+
+                if (obj.typeName != "string" && obj.typeName != "boolean" && obj.typeName != "byte" && obj.typeName != "short" && obj.typeName != "int" && obj.typeName != "float" && obj.typeName != "double" && obj.typeName != "long" && obj.typeName != "date") {
+                    var enumName = enumDefCollection.fullCollection.findWhere({ name: obj.typeName });
+                    if (enumName) {
+                        var enumDef = enumName.get('elementDefs');
+                        if (enumDef.length === obj.enumValues.length) {
+                            _.each(enumDef, function(enumVal, index) {
+                                if (obj.enumValues.indexOf(enumVal.value) === -1) {
+                                    this.isPutCall = true;
+                                };
+                            })
+                        } else {
+                            this.isPutCall = true;
+                        }
+                    } else {
+                        this.isPostCallEnum = true;
+                    }
+
+                    _.each(obj.enumValues, function(inputEnumVal, index) {
+                        elementValues.push({
+                            "ordinal": index + 1,
+                            "value": inputEnumVal
+                        })
+                    });
+                }
+                if (obj.multiValueSelect) {
+                    obj.multiValued = true;
+                    obj.typeName = "array<" + obj.typeName + ">";
+                }
+            },
+            highlightAttrinuteName: function(modelEl, obj) {
+                Utils.notifyInfo({
+                    content: "Attribute " + obj.name + " already exist"
+                });
+                modelEl.find(".attributeInput").css("borderColor", "red");
+                this.loaderStatus(false);
+            },
+            createEnumObject: function(arrayObj, obj, enumVal) {
+                return arrayObj.push({
+                    "name": obj.typeName,
+                    "elementDefs": enumVal
+                });
+            },
             onCreateNameSpace: function() {
                 var that = this,
                     validate = true,
                     attrNameValidate = true,
                     enumValue = true,
                     stringValidate = true,
-                    isPutCall = false,
-                    isPostCallEnum = false,
                     enumDefs = [],
-                    putEnumDef = [];
+                    putEnumDef = [],
+                    attrNames = [],
+                    isvalidName = true;
                 this.checkLoader = 0;
+                this.isPutCall = false;
+                this.isPostCallEnum = false;
 
                 if (this.validateValues()) {
                     return;
@@ -305,51 +355,22 @@ define(['require',
                 }
                 if (attributeObj.length) {
                     _.each(attributeObj, function(obj) {
-                        var isMultiCheck = obj.multiValueSelect;
-                        obj.options = {
-                            "applicableEntityTypes": JSON.stringify(that.$el.find(".entityTypeSelector").val()),
-                            "maxStrLength": that.$el.find(".stringLengthVal").val() ? that.$el.find(".stringLengthVal").val() : "0"
-                        };
-                        if (obj.typeName != "string" && obj.typeName != "boolean" && obj.typeName != "byte" && obj.typeName != "short" && obj.typeName != "int" && obj.typeName != "float" && obj.typeName != "double" && obj.typeName != "long" && obj.typeName != "date") {
-                            obj.typeName = obj.typeName;
-                            var enumName = enumDefCollection.fullCollection.findWhere({ name: obj.typeName });
-                            if (enumName) {
-                                var enumDef = enumName.get('elementDefs');
-                                if (enumDef.length === obj.enumValues.length) {
-                                    _.each(enumDef, function(enumVal, index) {
-                                        if (obj.enumValues.indexOf(enumVal.value) === -1) {
-                                            isPutCall = true;
-                                        };
-                                    })
-                                } else {
-                                    isPutCall = true;
-                                }
-                            } else {
-                                isPostCallEnum = true;
-                            }
-                            var elementValues = [];
-                            _.each(obj.enumValues, function(inputEnumVal, index) {
-                                elementValues.push({
-                                    "ordinal": index + 1,
-                                    "value": inputEnumVal
-                                })
-                            });
-                            if (isPostCallEnum) {
-                                enumDefs.push({
-                                    "name": obj.typeName,
-                                    "elementDefs": elementValues
-                                })
-                            }
-                            if (isPutCall) {
-                                putEnumDef.push({
-                                    "name": obj.typeName,
-                                    "elementDefs": elementValues
-                                })
-                            }
+                        var modelEl = this.$('#' + obj.modalID);
+                        modelEl.find(".attributeInput").css("borderColor", "transparent");;
+                        if (attrNames.indexOf(obj.name) > -1) {
+                            that.highlightAttrinuteName(modelEl, obj);
+                            isvalidName = false;
+                            return true;
+                        } else {
+                            attrNames.push(obj.name);
                         }
-                        if (isMultiCheck) {
-                            obj.multiValued = true;
-                            obj.typeName = "array<" + obj.typeName + ">";
+                        var elementValues = [];
+                        that.namespaceAttributes(modelEl, obj, elementValues);
+                        if (that.isPostCallEnum) {
+                            that.createEnumObject(enumDefs, obj, elementValues);
+                        }
+                        if (that.isPutCall) {
+                            that.createEnumObject(putEnumDef, obj, elementValues);
                         }
                     });
                     var notifyObj = {
@@ -368,210 +389,178 @@ define(['require',
                         }
                     };
                 }
-                this.json = {
-                    "enumDefs": enumDefs,
-                    "structDefs": [],
-                    "classificationDefs": [],
-                    "entityDefs": [],
-                    "namespaceDefs": [{
-                        "category": "NAMESPACE",
-                        "createdBy": "admin",
-                        "updatedBy": "admin",
-                        "version": 1,
-                        "typeVersion": "1.1",
-                        "name": name.trim(),
-                        "description": description.trim(),
-                        "attributeDefs": attributeObj
-                    }]
-                };
-
-                var apiObj = {
-                    sort: false,
-                    success: function(model, response) {
-                        var nameSpaveDef = model.namespaceDefs;
-                        if (nameSpaveDef) {
-                            that.options.nameSpaceCollection.fullCollection.add(nameSpaveDef);
-                            Utils.notifySuccess({
-                                content: "Namespace " + name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
-                            });
-                        }
-                        that.checkLoader--;
-                        if (that.checkLoader == 0) {
-                            that.options.onUpdateNamespace();
-                        }
-                    },
-                    silent: true,
-                    reset: true,
-                    complete: function(model, status) {
-                        that.loaderStatus(false);
-                    }
-                }
-                that.checkLoader++;
-                $.extend(apiObj, { contentType: 'application/json', dataType: 'json', data: JSON.stringify(that.json) })
-                this.options.nameSpaceCollection.constructor.nonCrudOperation.call(this, UrlLinks.nameSpaceApiUrl(), "POST", apiObj);
-                if (isPutCall) {
-                    var putData = {
-                        "enumDefs": putEnumDef
+                if (isvalidName) {
+                    this.json = {
+                        "enumDefs": enumDefs,
+                        "structDefs": [],
+                        "classificationDefs": [],
+                        "entityDefs": [],
+                        "namespaceDefs": [{
+                            "category": "NAMESPACE",
+                            "createdBy": "admin",
+                            "updatedBy": "admin",
+                            "version": 1,
+                            "typeVersion": "1.1",
+                            "name": name.trim(),
+                            "description": description.trim(),
+                            "attributeDefs": attributeObj
+                        }]
                     };
+                    var apiObj = {
+                        sort: false,
+                        success: function(model, response) {
+                            var nameSpaveDef = model.namespaceDefs;
+                            if (nameSpaveDef) {
+                                that.options.nameSpaceCollection.fullCollection.add(nameSpaveDef);
+                                Utils.notifySuccess({
+                                    content: "Namespace " + name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
+                                });
+                            }
+                            that.checkLoader--;
+                            if (that.checkLoader == 0) {
+                                that.options.onUpdateNamespace();
+                            }
+                        },
+                        silent: true,
+                        reset: true,
+                        complete: function(model, status) {
+                            attrNames = [];
+                            that.loaderStatus(false);
+                        }
+                    }
                     that.checkLoader++;
-                    $.extend(apiObj, { contentType: 'application/json', dataType: 'json', data: JSON.stringify(putData) })
-                    this.options.nameSpaceCollection.constructor.nonCrudOperation.call(this, UrlLinks.typedefsUrl().defs, "PUT", apiObj);
+                    $.extend(apiObj, { contentType: 'application/json', dataType: 'json', data: JSON.stringify(that.json) })
+                    this.options.nameSpaceCollection.constructor.nonCrudOperation.call(this, UrlLinks.nameSpaceApiUrl(), "POST", apiObj);
+                    if (that.isPutCall) {
+                        var putData = {
+                            "enumDefs": putEnumDef
+                        };
+                        that.checkLoader++;
+                        $.extend(apiObj, { contentType: 'application/json', dataType: 'json', data: JSON.stringify(putData) })
+                        this.options.nameSpaceCollection.constructor.nonCrudOperation.call(this, UrlLinks.typedefsUrl().defs, "PUT", apiObj);
+                    }
+                } else {
+                    attrNames = [];
                 }
+
             },
             onUpdateAttr: function() {
                 var that = this,
                     attrNameValidate = true,
                     enumValue = true,
                     stringValidate = true,
-                    attributeDefs = that.options.selectedNamespace.get('attributeDefs'),
                     enumDefs = [],
                     postEnumDef = [],
-                    isPutCall = false,
-                    isPostCallEnum = false;
+                    selectedNamespace = $.extend(true, {}, that.options.selectedNamespace.toJSON()),
+                    attributeDefs = selectedNamespace['attributeDefs'],
+                    isvalidName = true;
                 this.checkLoader = 0;
+                this.isPutCall = false;
+                this.isPostCallEnum = false;
                 if (this.validateValues()) {
                     return;
                 };
                 if (this.$el.find(".namespace-attr").length > 0 && this.collection.length > 0) {
-
                     this.loaderStatus(true);
-                    var attributeObj = this.collection.toJSON(),
-                        name = this.collection.first().get("name"),
-                        multipleName = '';
-                    if (this.collection.length === 1 && this.collection.first().get("name") === "") {
-                        attributeObj = [];
-                    }
-                    if (attributeObj.length > 0) {
-                        _.each(attributeObj, function(obj) {
-                            var isMultiCheck = obj.multiValueSelect;
-                            multipleName += obj.name + ", ";
-                            obj.options = {
-                                "applicableEntityTypes": JSON.stringify(that.$el.find(".entityTypeSelector").val()),
-                                "maxStrLength": that.$el.find(".stringLengthVal").val() ? that.$el.find(".stringLengthVal").val() : "0"
-                            };
-                            if (obj.typeName != "string" && obj.typeName != "boolean" && obj.typeName != "byte" && obj.typeName != "short" && obj.typeName != "int" && obj.typeName != "float" && obj.typeName != "double" && obj.typeName != "long" && obj.typeName != "date") {
-                                var enumName = enumDefCollection.fullCollection.findWhere({ name: obj.typeName });
-                                if (enumName) {
-                                    var enumDef = enumName.get('elementDefs');
-                                    if (enumDef.length === obj.enumValues.length) {
-                                        _.each(enumDef, function(enumVal, index) {
-                                            if (obj.enumValues.indexOf(enumVal.value) === -1) {
-                                                isPutCall = true;
-                                            };
-                                        })
-                                    } else {
-                                        isPutCall = true;
+                    if (this.collection.length > 0) {
+                        this.collection.each(function(model) {
+                            var obj = model.toJSON(),
+                                modelEl = this.$('#' + obj.modalID);
+                            modelEl.find(".attributeInput").css("borderColor", "transparent");
+                            if (that.options.isNewAttr == true && _.find(attributeDefs, { name: obj.name })) {
+                                that.highlightAttrinuteName(modelEl, obj);
+                                isvalidName = false;
+                                return true;
+                            }
+                            var elementValues = [];
+                            that.namespaceAttributes(modelEl, obj, elementValues);
+                            if (that.isPostCallEnum) {
+                                that.createEnumObject(postEnumDef, obj, elementValues);
+                            } else if (that.isPutCall) {
+                                that.createEnumObject(enumDefs, obj, elementValues);
+                            }
+
+                            if (that.options.isNewAttr == true) {
+                                selectedNamespace.attributeDefs.push(obj);
+                            } else {
+                                var attrDef = selectedNamespace.attributeDefs;
+                                _.each(attrDef, function(attrObj) {
+                                    if (attrObj.name === that.$el.find(".attributeInput")[0].value) {
+                                        attrObj.name = obj.name;
+                                        attrObj.typeName = obj.typeName;
+                                        attrObj.multiValued = obj.multiValueSelect || false;
+                                        attrObj.options.applicableEntityTypes = obj.options.applicableEntityTypes;
+                                        attrObj.enumValues = obj.enumValues;
+                                        attrObj.options.maxStrLength = obj.options.maxStrLength;
                                     }
-                                } else {
-                                    isPostCallEnum = true;
-                                }
-                                var elementValues = [];
-                                _.each(obj.enumValues, function(inputEnumVal, index) {
-                                    elementValues.push({
-                                        "ordinal": index + 1,
-                                        "value": inputEnumVal
-                                    })
                                 });
-                                if (isPostCallEnum) {
-                                    postEnumDef.push({
-                                        "name": obj.typeName,
-                                        "elementDefs": elementValues
-                                    })
-
-                                } else if (isPutCall) {
-                                    enumDefs.push({
-                                        "name": obj.typeName,
-                                        "elementDefs": elementValues
-                                    })
-                                }
                             }
-                            if (isMultiCheck) {
-                                obj.multiValued = true;
-                                obj.typeName = "array<" + obj.typeName + ">";
-                            }
-
                         });
-                        var notifyObj = {
-                            modal: true,
-                            confirm: {
-                                confirm: true,
-                                buttons: [{
-                                        text: "Ok",
-                                        addClass: "btn-atlas btn-md",
-                                        click: function(notice) {
-                                            notice.remove();
-                                        }
-                                    },
-                                    null
-                                ]
-                            }
-                        };
-                        if (that.options.isNewAttr == true) {
-                            _.each(attributeObj, function(obj) {
-                                attributeDefs.push(obj);
-                            })
-                        } else {
-                            var selectedNamespaceUpdateCopy = that.options.selectedNamespace;
-                            var attrDef = selectedNamespaceUpdateCopy.toJSON().attributeDefs;
-                            _.each(attrDef, function(attrObj) {
-                                if (attrObj.name === that.$el.find(".attributeInput")[0].value) {
-                                    attrObj.name = attributeObj[0].name;
-                                    attrObj.typeName = attributeObj[0].typeName;
-                                    attrObj.multiValued = attributeObj[0].multiValueSelect || false;
-                                    attrObj.options.applicableEntityTypes = attributeObj[0].options.applicableEntityTypes;
-                                    attrObj.enumValues = attributeObj[0].enumValues;
-                                    attrObj.options.maxStrLength = attributeObj[0].options.maxStrLength;
+                        if (isvalidName) {
+                            var notifyObj = {
+                                modal: true,
+                                confirm: {
+                                    confirm: true,
+                                    buttons: [{
+                                            text: "Ok",
+                                            addClass: "btn-atlas btn-md",
+                                            click: function(notice) {
+                                                notice.remove();
+                                            }
+                                        },
+                                        null
+                                    ]
                                 }
-                            });
-                        }
-                        var putNameSpace = function() {
-                            that.checkLoader++;
-                            $.extend(apiObj, { contentType: 'application/json', dataType: 'json', data: JSON.stringify(that.json) })
-                            that.options.nameSpaceCollection.constructor.nonCrudOperation.call(that, UrlLinks.nameSpaceUpdateUrl(), "PUT", apiObj);
-                        }
-                        this.json = {
-                            "enumDefs": enumDefs,
-                            "structDefs": [],
-                            "classificationDefs": [],
-                            "entityDefs": [],
-                            "namespaceDefs": that.options.isNewAttr ? [that.options.selectedNamespace.toJSON()] : [selectedNamespaceUpdateCopy.toJSON()]
-                        };
-                        var apiObj = {
-                            sort: false,
-                            success: function(model, response) {
-                                if (model.namespaceDefs.length === 0 && model.enumDefs.length) {
-                                    putNameSpace();
-                                } else {
-                                    var selectedNameSpace = that.options.nameSpaceCollection.fullCollection.findWhere({ guid: that.options.guid });
-                                    Utils.notifySuccess({
-                                        content: "One or more Namespace attribute" + Messages.getAbbreviationMsg(false, 'editSuccessMessage')
-                                    });
-                                    if (model.namespaceDefs && model.namespaceDefs.length) {
-                                        that.options.selectedNamespace.set(model.namespaceDefs[0]);
-                                    }
-                                    that.options.onEditCallback();
-                                }
-                                that.checkLoader--;
-                                if (that.checkLoader == 0) {
-                                    that.options.onUpdateNamespace();
-                                }
-
-                            },
-                            silent: true,
-                            reset: true,
-                            complete: function(model, status) {
-                                that.loaderStatus(false);
-                            }
-                        }
-                        if (isPostCallEnum) {
-                            var postData = {
-                                "enumDefs": postEnumDef
                             };
-                            this.checkLoader++;
-                            $.extend(apiObj, { contentType: 'application/json', dataType: 'json', data: JSON.stringify(postData) })
-                            this.options.nameSpaceCollection.constructor.nonCrudOperation.call(this, UrlLinks.typedefsUrl().defs, "POST", apiObj);
-                        } else {
-                            putNameSpace();
+
+                            var putNameSpace = function() {
+                                that.checkLoader++;
+                                $.extend(apiObj, { contentType: 'application/json', dataType: 'json', data: JSON.stringify(that.json) })
+                                that.options.nameSpaceCollection.constructor.nonCrudOperation.call(that, UrlLinks.nameSpaceUpdateUrl(), "PUT", apiObj);
+                            }
+                            this.json = {
+                                "enumDefs": enumDefs,
+                                "structDefs": [],
+                                "classificationDefs": [],
+                                "entityDefs": [],
+                                "namespaceDefs": that.options.isNewAttr ? [selectedNamespace] : [selectedNamespace]
+                            };
+                            var apiObj = {
+                                sort: false,
+                                success: function(model, response) {
+                                    if (model.namespaceDefs.length === 0 && model.enumDefs.length) {
+                                        putNameSpace();
+                                    } else {
+                                        var selectedNameSpace = that.options.nameSpaceCollection.fullCollection.findWhere({ guid: that.options.guid });
+                                        Utils.notifySuccess({
+                                            content: "One or more Namespace attribute" + Messages.getAbbreviationMsg(false, 'editSuccessMessage')
+                                        });
+                                        if (model.namespaceDefs && model.namespaceDefs.length) {
+                                            that.options.selectedNamespace.set(model.namespaceDefs[0]);
+                                        }
+                                        that.options.onEditCallback();
+                                    }
+                                    that.checkLoader--;
+                                    if (that.checkLoader == 0) {
+                                        that.options.onUpdateNamespace();
+                                    }
+                                },
+                                silent: true,
+                                reset: true,
+                                complete: function(model, status) {
+                                    that.loaderStatus(false);
+                                }
+                            }
+                            if (that.isPostCallEnum) {
+                                var postData = {
+                                    "enumDefs": postEnumDef
+                                };
+                                this.checkLoader++;
+                                $.extend(apiObj, { contentType: 'application/json', dataType: 'json', data: JSON.stringify(postData) })
+                                this.options.nameSpaceCollection.constructor.nonCrudOperation.call(this, UrlLinks.typedefsUrl().defs, "POST", apiObj);
+                            } else {
+                                putNameSpace();
+                            }
                         }
                     }
                 } else {
