@@ -18,7 +18,10 @@
           "privileges":      [ ".*" ],
           "entityTypes":     [ ".*" ],
           "entityIds":       [ ".*" ],
-          "classifications": [ ".*" ]
+          "classifications": [ ".*" ],
+          "labels" : [ ".*" ],
+          "namespaces" : [ ".*" ],
+          "attributes" :[ ".*" ]
         }
       ],
       "relationshipPermissions": [
