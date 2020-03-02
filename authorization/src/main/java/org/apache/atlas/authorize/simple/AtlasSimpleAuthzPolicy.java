@@ -267,7 +267,7 @@ public class AtlasSimpleAuthzPolicy implements Serializable {
         }
 
         public void setLabels(List<String> labels) {
-            this.namespaces = labels;
+            this.labels = labels;
         }
 
         public List<String> getNamespaces() {
