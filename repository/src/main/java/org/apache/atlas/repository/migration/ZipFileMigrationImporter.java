@@ -84,10 +84,8 @@ public class ZipFileMigrationImporter implements Runnable {
     }
 
     private AtlasImportRequest getImportRequest() throws AtlasException {
-        return new AtlasImportRequest();
-    }
-
-    private String getPropertyValue(String property, String defaultValue) throws AtlasException {
-        return ApplicationProperties.get().getString(property, defaultValue);
+        AtlasImportRequest request = new AtlasImportRequest();
+        request.setOption(AtlasImportRequest.OPTION_KEY_FORMAT, AtlasImportRequest.OPTION_KEY_FORMAT_ZIP_DIRECT);
+        return request;
     }
 }

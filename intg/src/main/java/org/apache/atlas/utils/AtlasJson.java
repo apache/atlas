@@ -251,6 +251,10 @@ public class AtlasJson {
         return ret;
     }
 
+    public static ObjectCodec getMapper() {
+        return mapper;
+    }
+
     static class DateSerializer extends JsonSerializer<Date> {
         @Override
         public void serialize(Date value, JsonGenerator jgen, SerializerProvider provider) throws IOException {

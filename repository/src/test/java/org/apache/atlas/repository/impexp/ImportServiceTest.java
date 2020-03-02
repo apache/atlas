@@ -187,6 +187,11 @@ public class ImportServiceTest extends AtlasTestBase {
         return getZipSource("salesNewTypeAttrs-next.zip");
     }
 
+    @DataProvider(name = "zip-direct-3")
+    public static Object[][] getZipDirect3(ITestContext context) throws IOException, AtlasBaseException {
+        return getZipSource("zip-direct-3.zip");
+    }
+
     @Test(dataProvider = "salesNewTypeAttrs-next", dependsOnMethods = "importDB4")
     public void importDB5(InputStream inputStream) throws AtlasBaseException, IOException {
         final String newEnumDefName = "database_action";
@@ -345,6 +350,16 @@ public class ImportServiceTest extends AtlasTestBase {
             assertEquals(tag1.getAllAttributes().size(), 2);
             throw e;
         }
+    }
+
+    @Test(dataProvider = "zip-direct-3", expectedExceptions = AtlasBaseException.class)
+    public void zipDirectSample(InputStream inputStream) throws IOException, AtlasBaseException {
+        loadBaseModel();
+        loadFsModel();
+
+        AtlasImportRequest request = new AtlasImportRequest();
+        request.setOption(AtlasImportRequest.OPTION_KEY_FORMAT, AtlasImportRequest.OPTION_KEY_FORMAT_ZIP_DIRECT);
+        runImportWithParameters(importService, request, inputStream);
     }
 
     @DataProvider(name = "relationshipLineage")
