@@ -31,4 +31,8 @@ public enum ZipExportFileNames {
     public String toString() {
         return this.name;
     }
+
+    public String toEntryFileName() {
+        return this.name + ".json";
+    }
 }
