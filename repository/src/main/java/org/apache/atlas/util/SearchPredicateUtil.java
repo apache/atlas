@@ -542,6 +542,43 @@ public class SearchPredicateUtil {
         return ret;
     }
 
+    public static VertexAttributePredicateGenerator getNotContainsPredicateGenerator() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getNotContainsPredicateGenerator");
+        }
+
+        VertexAttributePredicateGenerator ret = new VertexAttributePredicateGenerator() {
+            @Override
+            public Predicate generatePredicate(final String attrName, final Object attrVal, final Class attrClass) {
+                final Predicate ret;
+
+                if (attrName == null || attrClass == null || attrVal == null) {
+                    ret = ALWAYS_FALSE;
+                } else if (String.class.isAssignableFrom(attrClass)) {
+                    ret = StringPredicate.getNotContainsPredicate(attrName, attrClass, (String) attrVal);
+                } else if (Collection.class.isAssignableFrom(attrClass)) {
+                    // Check if the provided value is present in the list of stored values
+                    ret = new VertexAttributePredicate(attrName, attrClass) {
+                        @Override
+                        protected boolean compareValue(final Object vertexAttrVal) {
+                            return !((Collection) vertexAttrVal).contains(attrVal);
+                        }
+                    };
+                } else {
+                    ret = ALWAYS_FALSE;
+                }
+
+                return ret;
+            }
+        };
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getNotContainsPredicateGenerator");
+        }
+
+        return ret;
+    }
+
     public static VertexAttributePredicateGenerator getIsNullPredicateGenerator() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getIsNullPredicateGenerator");
@@ -1289,6 +1326,14 @@ public class SearchPredicateUtil {
             return new StringPredicate(attrName, attrClass, value) {
                 protected boolean compareValue(Object vertexAttrVal) {
                     return ((String) vertexAttrVal).contains(value);
+                }
+            };
+        }
+
+        static VertexAttributePredicate getNotContainsPredicate(String attrName, Class attrClass, String value) {
+            return new StringPredicate(attrName, attrClass, value) {
+                protected boolean compareValue(Object vertexAttrVal) {
+                    return !((String) vertexAttrVal).contains(value);
                 }
             };
         }

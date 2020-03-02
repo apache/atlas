@@ -25,6 +25,7 @@ import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -51,6 +52,7 @@ import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAME_DELIMITER;
 import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
@@ -76,6 +78,7 @@ public abstract class SearchProcessor {
     public static final String  ALL_TYPE_QUERY             = "[* TO *]";
     public static final char    CUSTOM_ATTR_SEPARATOR      = '=';
     public static final String  CUSTOM_ATTR_SEARCH_FORMAT  = "\"\\\"%s\\\":\\\"%s\\\"\"";
+    public static final String  CUSTOM_ATTR_SEARCH_FORMAT_GRAPH = "\"%s\":\"%s\"";
 
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
     private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
@@ -114,6 +117,8 @@ public abstract class SearchProcessor {
 
         OPERATOR_MAP.put(SearchParameters.Operator.CONTAINS, INDEX_SEARCH_PREFIX + "\"%s\": (*%s*)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.CONTAINS, getContainsPredicateGenerator());
+
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NOT_CONTAINS, getNotContainsPredicateGenerator());
 
         // TODO: Add contains any, contains all mappings here
 
@@ -481,11 +486,62 @@ public abstract class SearchProcessor {
                     return PredicateUtils.anyPredicate(predicates);
                 }
             }
-        } else if (indexAttributes.contains(criteria.getAttributeName()) && !isPipeSeparatedSystemAttribute(criteria.getAttributeName())){
-            return toInMemoryPredicate(type, criteria.getAttributeName(), criteria.getOperator(), criteria.getAttributeValue());
+        } else if (indexAttributes.contains(criteria.getAttributeName())) {
+            String                    attrName  = criteria.getAttributeName();
+            String                    attrValue = criteria.getAttributeValue();
+            SearchParameters.Operator operator  = criteria.getOperator();
+
+            //process attribute value and attribute operator for pipeSeperated fields
+            if (isPipeSeparatedSystemAttribute(attrName)) {
+                FilterCriteria processedCriteria = processPipeSeperatedSystemAttribute(attrName, operator, attrValue);
+                attrValue                        = processedCriteria.getAttributeValue();
+                operator                         = processedCriteria.getOperator();
+            }
+
+            return toInMemoryPredicate(type, attrName, operator, attrValue);
         }
 
         return null;
+    }
+
+    private FilterCriteria processPipeSeperatedSystemAttribute(String attrName, SearchParameters.Operator op, String attrVal) {
+
+        FilterCriteria ret = new FilterCriteria();
+
+        if (op != null && attrVal != null) {
+            switch (op) {
+                case STARTS_WITH:
+                    attrVal = CLASSIFICATION_NAME_DELIMITER + attrVal;
+                    op      = SearchParameters.Operator.CONTAINS;
+                    break;
+                case ENDS_WITH:
+                    attrVal = attrVal + CLASSIFICATION_NAME_DELIMITER;
+                    op      = SearchParameters.Operator.CONTAINS;
+                    break;
+                case EQ:
+                    attrVal = GraphHelper.getDelimitedClassificationNames(Collections.singleton(attrVal));
+                    op      = SearchParameters.Operator.CONTAINS;
+                    break;
+                case NEQ:
+                    attrVal = GraphHelper.getDelimitedClassificationNames(Collections.singleton(attrVal));
+                    op      = SearchParameters.Operator.NOT_CONTAINS;
+                    break;
+                case CONTAINS:
+                    if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY)) {
+                        attrVal = getCustomAttributeIndexQueryValue(attrVal, true);
+                    }
+                    break;
+                default:
+                    LOG.warn("{}: unsupported operator. Ignored", op);
+                    break;
+            }
+        }
+
+        ret.setAttributeName(attrName);
+        ret.setOperator(op);
+        ret.setAttributeValue(attrVal);
+
+        return ret;
     }
 
     private String toIndexExpression(AtlasStructType type, String attrName, SearchParameters.Operator op, String attrVal) {
@@ -499,7 +555,7 @@ public abstract class SearchProcessor {
                 // map '__customAttributes' 'CONTAINS' operator to 'EQ' operator (solr limitation for json serialized string search)
                 // map '__customAttributes' value from 'key1=value1' to '\"key1\":\"value1\"' (escape special characters and surround with quotes)
                 if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY) && op == SearchParameters.Operator.CONTAINS) {
-                    ret = String.format(OPERATOR_MAP.get(SearchParameters.Operator.EQ), qualifiedName, getCustomAttributeIndexQueryValue(escapeIndexQueryValue));
+                    ret = String.format(OPERATOR_MAP.get(op), qualifiedName, getCustomAttributeIndexQueryValue(escapeIndexQueryValue, false));
                 } else {
                     ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue);
                 }
@@ -511,7 +567,7 @@ public abstract class SearchProcessor {
         return ret;
     }
 
-    private String getCustomAttributeIndexQueryValue(String attrValue) {
+    private String getCustomAttributeIndexQueryValue(String attrValue, boolean forGraphQuery) {
         String ret = null;
 
         if (StringUtils.isNotEmpty(attrValue)) {
@@ -520,7 +576,11 @@ public abstract class SearchProcessor {
             String value        = key != null ? attrValue.substring(separatorIdx + 1) : null;
 
             if (key != null && value != null) {
-                ret = String.format(CUSTOM_ATTR_SEARCH_FORMAT, key, value);
+                if (forGraphQuery) {
+                    ret = String.format(CUSTOM_ATTR_SEARCH_FORMAT_GRAPH, key, value);
+                } else {
+                    ret = String.format(CUSTOM_ATTR_SEARCH_FORMAT, key, value);
+                }
             } else {
                 ret = attrValue;
             }
@@ -631,6 +691,13 @@ public abstract class SearchProcessor {
                 String                    attrName  = criteria.getAttributeName();
                 String                    attrValue = criteria.getAttributeValue();
                 SearchParameters.Operator operator  = criteria.getOperator();
+
+                //process attribute value and attribute operator for pipeSeperated fields
+                if (isPipeSeparatedSystemAttribute(attrName)) {
+                    FilterCriteria processedCriteria = processPipeSeperatedSystemAttribute(attrName, operator, attrValue);
+                    attrValue                        = processedCriteria.getAttributeValue();
+                    operator                         = processedCriteria.getOperator();
+                }
 
                 try {
                     final String qualifiedName = type.getQualifiedAttributeName(attrName);

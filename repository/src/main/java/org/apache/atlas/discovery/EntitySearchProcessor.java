@@ -310,6 +310,11 @@ public class EntitySearchProcessor extends SearchProcessor {
                     getVertices(queryResult, entityVertices);
 
                     isLastResultPage = entityVertices.size() < limit;
+
+                    //incase when operator is NEQ in pipeSeperatedSystemAttributes
+                    if (graphQueryPredicate != null) {
+                        CollectionUtils.filter(entityVertices, graphQueryPredicate);
+                    }
                 }
 
                 super.filter(entityVertices);
