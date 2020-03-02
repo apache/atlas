@@ -222,9 +222,43 @@ public abstract class SearchProcessor {
                 processSearchAttributes(structType, criteria, indexFiltered, graphFiltered, allAttributes);
             }
         } else if (StringUtils.isNotEmpty(filterCriteria.getAttributeName())) {
-            try {
-                String attributeName = filterCriteria.getAttributeName();
+            String attributeName = filterCriteria.getAttributeName();
 
+            if (StringUtils.equals(attributeName, Constants.IS_INCOMPLETE_PROPERTY_KEY)) {
+                // when entity is incomplete (i.e. shell entity):
+                //   vertex property IS_INCOMPLETE_PROPERTY_KEY will be set to INCOMPLETE_ENTITY_VALUE
+                // when entity is not incomplete (i.e. not a shell entity):
+                //   vertex property IS_INCOMPLETE_PROPERTY_KEY will not be set
+
+                String attributeValue = filterCriteria.getAttributeValue();
+
+                switch (filterCriteria.getOperator()) {
+                    case EQ:
+                        if (attributeValue == null || StringUtils.equals(attributeValue, "0") || StringUtils.equalsIgnoreCase(attributeValue, "false")) {
+                            filterCriteria.setOperator(SearchParameters.Operator.IS_NULL);
+                        } else {
+                            filterCriteria.setOperator(SearchParameters.Operator.EQ);
+                            filterCriteria.setAttributeValue(Constants.INCOMPLETE_ENTITY_VALUE.toString());
+                        }
+                    break;
+
+                    case NEQ:
+                        if (attributeValue == null || StringUtils.equals(attributeValue, "0") || StringUtils.equalsIgnoreCase(attributeValue, "false")) {
+                            filterCriteria.setOperator(SearchParameters.Operator.EQ);
+                            filterCriteria.setAttributeValue(Constants.INCOMPLETE_ENTITY_VALUE.toString());
+                        } else {
+                            filterCriteria.setOperator(SearchParameters.Operator.IS_NULL);
+                        }
+                    break;
+
+                    case NOT_NULL:
+                        filterCriteria.setOperator(SearchParameters.Operator.EQ);
+                        filterCriteria.setAttributeValue(Constants.INCOMPLETE_ENTITY_VALUE.toString());
+                    break;
+                }
+            }
+
+            try {
                 if (isIndexSearchable(filterCriteria, structType)) {
                     indexFiltered.add(attributeName);
                 } else {
