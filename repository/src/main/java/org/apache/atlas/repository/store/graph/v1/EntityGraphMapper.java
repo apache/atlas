@@ -73,6 +73,12 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
+import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.INCOMPLETE_ENTITY_VALUE;
+
 
 @Component
 public class EntityGraphMapper {
