@@ -347,7 +347,7 @@ public class ExportService {
         final Set<String>                     structTypes         = new HashSet<>();
         final Set<String>                     enumTypes           = new HashSet<>();
         final Set<String>                     relationshipTypes   = new HashSet<>();
-        final Set<String>                     namespaceTypes     = new HashSet<>();
+        final Set<String>                     businessMetadataTypes = new HashSet<>();
         final AtlasExportResult               result;
         private final ZipSink                 sink;
 

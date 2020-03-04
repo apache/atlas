@@ -28,7 +28,7 @@ import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
-import org.apache.atlas.model.typedef.AtlasNamespaceDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
@@ -321,8 +321,8 @@ public class AtlasTypeUtil {
                                             List<AtlasClassificationDef> traits,
                                             List<AtlasEntityDef> classes,
                                             List<AtlasRelationshipDef> relations,
-                                            List<AtlasNamespaceDef> namespaces) {
-        return new AtlasTypesDef(enums, structs, traits, classes, relations, namespaces);
+                                            List<AtlasBusinessMetadataDef> businessMetadataDefs) {
+        return new AtlasTypesDef(enums, structs, traits, classes, relations, businessMetadataDefs);
     }
 
     public static List<AtlasTypeDefHeader> toTypeDefHeader(AtlasTypesDef typesDef) {

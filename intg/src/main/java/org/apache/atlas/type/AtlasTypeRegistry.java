@@ -20,10 +20,10 @@ package org.apache.atlas.type;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasNamespaceDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -193,15 +193,15 @@ public class AtlasTypeRegistry {
         return registryData.classificationDefs.getTypeByName(name);
     }
 
-    public Collection<AtlasNamespaceType> getAllNamespaceTypes() {
-        return registryData.namespaceDefs.getAllTypes();
+    public Collection<AtlasBusinessMetadataType> getAllBusinessMetadataTypes() {
+        return registryData.businessMetadataDefs.getAllTypes();
     }
 
-    public Collection<AtlasNamespaceDef> getAllNamespaceDefs() {
-        return registryData.namespaceDefs.getAll();
+    public Collection<AtlasBusinessMetadataDef> getAllBusinessMetadataDefs() {
+        return registryData.businessMetadataDefs.getAll();
     }
 
-    public AtlasNamespaceType getNamespaceTypeByName(String name) { return registryData.namespaceDefs.getTypeByName(name); }
+    public AtlasBusinessMetadataType getBusinessMetadataTypeByName(String name) { return registryData.businessMetadataDefs.getTypeByName(name); }
 
     public Collection<AtlasRelationshipDef> getAllRelationshipDefs() { return registryData.relationshipDefs.getAll(); }
 
@@ -229,12 +229,12 @@ public class AtlasTypeRegistry {
         return registryData.relationshipDefs.getTypeDefByName(name);
     }
 
-    public AtlasNamespaceDef getNamespaceDefByGuid(String guid) {
-        return registryData.namespaceDefs.getTypeDefByGuid(guid);
+    public AtlasBusinessMetadataDef getBusinessMetadataDefByGuid(String guid) {
+        return registryData.businessMetadataDefs.getTypeDefByGuid(guid);
     }
 
-    public AtlasNamespaceDef getNamespaceDefByName(String name) {
-        return registryData.namespaceDefs.getTypeDefByName(name);
+    public AtlasBusinessMetadataDef getBusinessMetadataDefByName(String name) {
+        return registryData.businessMetadataDefs.getTypeDefByName(name);
     }
 
     public AtlasRelationshipType getRelationshipTypeByName(String name) { return registryData.relationshipDefs.getTypeByName(name); }
@@ -285,25 +285,24 @@ public class AtlasTypeRegistry {
     }
 
     static class RegistryData {
-        final TypeCache                                                       allTypes;
-        final TypeDefCache<AtlasEnumDef, AtlasEnumType>                       enumDefs;
-        final TypeDefCache<AtlasStructDef, AtlasStructType>                   structDefs;
-        final TypeDefCache<AtlasClassificationDef, AtlasClassificationType>   classificationDefs;
-        final TypeDefCache<AtlasEntityDef, AtlasEntityType>                   entityDefs;
-        final TypeDefCache<AtlasRelationshipDef, AtlasRelationshipType>       relationshipDefs;
-        final TypeDefCache<AtlasNamespaceDef, AtlasNamespaceType>             namespaceDefs;
-        final TypeDefCache<? extends AtlasBaseTypeDef, ? extends AtlasType>[] allDefCaches;
+        final TypeCache                                                         allTypes;
+        final TypeDefCache<AtlasEnumDef, AtlasEnumType>                         enumDefs;
+        final TypeDefCache<AtlasStructDef, AtlasStructType>                     structDefs;
+        final TypeDefCache<AtlasClassificationDef, AtlasClassificationType>     classificationDefs;
+        final TypeDefCache<AtlasEntityDef, AtlasEntityType>                     entityDefs;
+        final TypeDefCache<AtlasRelationshipDef, AtlasRelationshipType>         relationshipDefs;
+        final TypeDefCache<AtlasBusinessMetadataDef, AtlasBusinessMetadataType> businessMetadataDefs;
+        final TypeDefCache<? extends AtlasBaseTypeDef, ? extends AtlasType>[]   allDefCaches;
 
         RegistryData() {
-            allTypes           = new TypeCache();
-            enumDefs           = new TypeDefCache<>(allTypes);
-            structDefs         = new TypeDefCache<>(allTypes);
-            classificationDefs = new TypeDefCache<>(allTypes);
-            entityDefs         = new TypeDefCache<>(allTypes);
-            relationshipDefs   = new TypeDefCache<>(allTypes);
-            namespaceDefs      = new TypeDefCache<>(allTypes);
-            allDefCaches       = new TypeDefCache[] { enumDefs, structDefs, classificationDefs, entityDefs,
-                    relationshipDefs, namespaceDefs };
+            allTypes             = new TypeCache();
+            enumDefs             = new TypeDefCache<>(allTypes);
+            structDefs           = new TypeDefCache<>(allTypes);
+            classificationDefs   = new TypeDefCache<>(allTypes);
+            entityDefs           = new TypeDefCache<>(allTypes);
+            relationshipDefs     = new TypeDefCache<>(allTypes);
+            businessMetadataDefs = new TypeDefCache<>(allTypes);
+            allDefCaches         = new TypeDefCache[] { enumDefs, structDefs, classificationDefs, entityDefs, relationshipDefs, businessMetadataDefs};
 
             init();
         }
@@ -362,7 +361,7 @@ public class AtlasTypeRegistry {
                 classificationDefs.updateGuid(typeName, guid);
                 entityDefs.updateGuid(typeName, guid);
                 relationshipDefs.updateGuid(typeName, guid);
-                namespaceDefs.updateGuid(typeName, guid);
+                businessMetadataDefs.updateGuid(typeName, guid);
             }
         }
 
@@ -373,7 +372,7 @@ public class AtlasTypeRegistry {
                 classificationDefs.removeTypeDefByGuid(guid);
                 entityDefs.removeTypeDefByGuid(guid);
                 relationshipDefs.removeTypeDefByGuid(guid);
-                namespaceDefs.removeTypeDefByGuid(guid);
+                businessMetadataDefs.removeTypeDefByGuid(guid);
             }
         }
 
@@ -384,7 +383,7 @@ public class AtlasTypeRegistry {
                 classificationDefs.removeTypeDefByName(typeName);
                 entityDefs.removeTypeDefByName(typeName);
                 relationshipDefs.removeTypeDefByName(typeName);
-                namespaceDefs.removeTypeDefByName(typeName);
+                businessMetadataDefs.removeTypeDefByName(typeName);
             }
         }
 
@@ -395,7 +394,7 @@ public class AtlasTypeRegistry {
             classificationDefs.clear();
             entityDefs.clear();
             relationshipDefs.clear();
-            namespaceDefs.clear();
+            businessMetadataDefs.clear();
             init();
         }
     }
@@ -414,7 +413,7 @@ public class AtlasTypeRegistry {
             addTypesWithNoRefResolve(parent.getAllClassificationDefs());
             addTypesWithNoRefResolve(parent.getAllEntityDefs());
             addTypesWithNoRefResolve(parent.getAllRelationshipDefs());
-            addTypesWithNoRefResolve(parent.getAllNamespaceDefs());
+            addTypesWithNoRefResolve(parent.getAllBusinessMetadataDefs());
 
             addedTypes.clear();
             updatedTypes.clear();
@@ -494,7 +493,7 @@ public class AtlasTypeRegistry {
                 addTypesWithNoRefResolve(typesDef.getClassificationDefs());
                 addTypesWithNoRefResolve(typesDef.getEntityDefs());
                 addTypesWithNoRefResolve(typesDef.getRelationshipDefs());
-                addTypesWithNoRefResolve(typesDef.getNamespaceDefs());
+                addTypesWithNoRefResolve(typesDef.getBusinessMetadataDefs());
             }
 
             resolveReferences();
@@ -595,7 +594,7 @@ public class AtlasTypeRegistry {
                 updateTypesWithNoRefResolve(typesDef.getClassificationDefs());
                 updateTypesWithNoRefResolve(typesDef.getEntityDefs());
                 updateTypesWithNoRefResolve(typesDef.getRelationshipDefs());
-                updateTypesWithNoRefResolve(typesDef.getNamespaceDefs());
+                updateTypesWithNoRefResolve(typesDef.getBusinessMetadataDefs());
             }
 
             if (LOG.isDebugEnabled()) {
@@ -610,7 +609,7 @@ public class AtlasTypeRegistry {
                 removeTypesWithNoRefResolve(typesDef.getClassificationDefs());
                 removeTypesWithNoRefResolve(typesDef.getEntityDefs());
                 removeTypesWithNoRefResolve(typesDef.getRelationshipDefs());
-                removeTypesWithNoRefResolve(typesDef.getNamespaceDefs());
+                removeTypesWithNoRefResolve(typesDef.getBusinessMetadataDefs());
             }
 
             resolveReferences();
@@ -645,8 +644,8 @@ public class AtlasTypeRegistry {
                 case RELATIONSHIP:
                     registryData.relationshipDefs.removeTypeDefByName(typeDef.getName());
                     break;
-                case NAMESPACE:
-                    registryData.namespaceDefs.removeTypeDefByName(typeDef.getName());
+                case BUSINESS_METADATA:
+                    registryData.businessMetadataDefs.removeTypeDefByName(typeDef.getName());
                     break;
             }
             deletedTypes.add(typeDef);
@@ -669,8 +668,8 @@ public class AtlasTypeRegistry {
                 case RELATIONSHIP:
                     registryData.relationshipDefs.removeTypeDefByGuid(typeDef.getGuid());
                     break;
-                case NAMESPACE:
-                    registryData.namespaceDefs.removeTypeDefByGuid(typeDef.getGuid());
+                case BUSINESS_METADATA:
+                    registryData.businessMetadataDefs.removeTypeDefByGuid(typeDef.getGuid());
                     break;
             }
             deletedTypes.add(typeDef);
@@ -758,9 +757,9 @@ public class AtlasTypeRegistry {
                     AtlasRelationshipDef relationshipDef = (AtlasRelationshipDef) typeDef;
 
                     registryData.relationshipDefs.addType(relationshipDef, new AtlasRelationshipType(relationshipDef));
-                } else if (typeDef.getClass().equals(AtlasNamespaceDef.class)) {
-                    AtlasNamespaceDef namespaceDef = (AtlasNamespaceDef) typeDef;
-                    registryData.namespaceDefs.addType(namespaceDef, new AtlasNamespaceType(namespaceDef));
+                } else if (typeDef.getClass().equals(AtlasBusinessMetadataDef.class)) {
+                    AtlasBusinessMetadataDef businessMetadataDef = (AtlasBusinessMetadataDef) typeDef;
+                    registryData.businessMetadataDefs.addType(businessMetadataDef, new AtlasBusinessMetadataType(businessMetadataDef));
                 }
 
                 addedTypes.add(typeDef);
@@ -840,11 +839,11 @@ public class AtlasTypeRegistry {
 
                     registryData.relationshipDefs.removeTypeDefByGuid(guid);
                     registryData.relationshipDefs.addType(relationshipDef, new AtlasRelationshipType(relationshipDef));
-                } else if (typeDef.getClass().equals(AtlasNamespaceDef.class)) {
-                    AtlasNamespaceDef namespaceDef = (AtlasNamespaceDef) typeDef;
+                } else if (typeDef.getClass().equals(AtlasBusinessMetadataDef.class)) {
+                    AtlasBusinessMetadataDef businessMetadataDef = (AtlasBusinessMetadataDef) typeDef;
 
-                    registryData.namespaceDefs.removeTypeDefByGuid(guid);
-                    registryData.namespaceDefs.addType(namespaceDef, new AtlasNamespaceType(namespaceDef));
+                    registryData.businessMetadataDefs.removeTypeDefByGuid(guid);
+                    registryData.businessMetadataDefs.addType(businessMetadataDef, new AtlasBusinessMetadataType(businessMetadataDef));
                 }
 
                 updatedTypes.add(typeDef);
@@ -887,11 +886,11 @@ public class AtlasTypeRegistry {
 
                     registryData.relationshipDefs.removeTypeDefByName(name);
                     registryData.relationshipDefs.addType(relationshipDef, new AtlasRelationshipType(relationshipDef));
-                } else if (typeDef.getClass().equals(AtlasNamespaceDef.class)) {
-                    AtlasNamespaceDef namespaceDef = (AtlasNamespaceDef) typeDef;
+                } else if (typeDef.getClass().equals(AtlasBusinessMetadataDef.class)) {
+                    AtlasBusinessMetadataDef businessMetadataDef = (AtlasBusinessMetadataDef) typeDef;
 
-                    registryData.namespaceDefs.removeTypeDefByName(name);
-                    registryData.namespaceDefs.addType(namespaceDef, new AtlasNamespaceType(namespaceDef));
+                    registryData.businessMetadataDefs.removeTypeDefByName(name);
+                    registryData.businessMetadataDefs.addType(businessMetadataDef, new AtlasBusinessMetadataType(businessMetadataDef));
                 }
 
                 updatedTypes.add(typeDef);

@@ -20,10 +20,10 @@ package org.apache.atlas.store;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasNamespaceDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -82,26 +82,26 @@ public interface AtlasTypeDefStore {
 
     AtlasRelationshipDef getRelationshipDefByGuid(String guid) throws AtlasBaseException;
 
-    AtlasRelationshipDef updateRelationshipDefByName(String name, AtlasRelationshipDef structDef) throws AtlasBaseException;
+    AtlasRelationshipDef updateRelationshipDefByName(String name, AtlasRelationshipDef relationshipDef) throws AtlasBaseException;
 
-    AtlasRelationshipDef updateRelationshipDefByGuid(String guid, AtlasRelationshipDef structDef) throws AtlasBaseException;
+    AtlasRelationshipDef updateRelationshipDefByGuid(String guid, AtlasRelationshipDef relationshipDef) throws AtlasBaseException;
 
-    /* Namespace Def operations */
-    AtlasNamespaceDef getNamespaceDefByName(String name) throws AtlasBaseException;
+    /* business-metadata Def operations */
+    AtlasBusinessMetadataDef getBusinessMetadataDefByName(String name) throws AtlasBaseException;
 
-    AtlasNamespaceDef getNamespaceDefByGuid(String guid) throws AtlasBaseException;
+    AtlasBusinessMetadataDef getBusinessMetadataDefByGuid(String guid) throws AtlasBaseException;
 
     /* Bulk Operations */
 
-    AtlasTypesDef createTypesDef(AtlasTypesDef atlasTypesDef) throws AtlasBaseException;
+    AtlasTypesDef createTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException;
 
-    AtlasTypesDef updateTypesDef(AtlasTypesDef atlasTypesDef) throws AtlasBaseException;
+    AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException;
 
     AtlasTypesDef createUpdateTypesDef(AtlasTypesDef typesToCreateUpdate) throws AtlasBaseException;
 
     AtlasTypesDef createUpdateTypesDef(AtlasTypesDef typesToCreate, AtlasTypesDef typesToUpdate) throws AtlasBaseException;
 
-    void deleteTypesDef(AtlasTypesDef atlasTypesDef) throws AtlasBaseException;
+    void deleteTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException;
 
     AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException;
 

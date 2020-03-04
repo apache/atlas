@@ -154,8 +154,8 @@ public class FilterUtil {
                             return atlasType.getTypeCategory() == TypeCategory.ENUM;
                         case "RELATIONSHIP":
                             return atlasType.getTypeCategory() == TypeCategory.RELATIONSHIP;
-                        case "NAMESPACE":
-                            return atlasType.getTypeCategory() == TypeCategory.NAMESPACE;
+                        case "BUSINESS_METADATA":
+                            return atlasType.getTypeCategory() == TypeCategory.BUSINESS_METADATA;
                         default:
                             // This shouldn't have happened
                             return false;

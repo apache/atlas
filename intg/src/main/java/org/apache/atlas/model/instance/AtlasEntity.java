@@ -93,7 +93,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private List<AtlasClassification>        classifications;
     private List<AtlasTermAssignmentHeader>  meanings;
     private Map<String, String>              customAttributes;
-    private Map<String, Map<String, Object>> namespaceAttributes;
+    private Map<String, Map<String, Object>> businessAttributes;
     private Set<String>                      labels;
 
     @JsonIgnore
@@ -218,7 +218,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setRelationshipAttributes(other.getRelationshipAttributes());
             setMeanings(other.getMeanings());
             setCustomAttributes(other.getCustomAttributes());
-            setNamespaceAttributes(other.getNamespaceAttributes());
+            setBusinessAttributes(other.getBusinessAttributes());
             setLabels(other.getLabels());
         }
     }
@@ -350,39 +350,39 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.customAttributes = customAttributes;
     }
 
-    public Map<String, Map<String, Object>> getNamespaceAttributes() {
-        return namespaceAttributes;
+    public Map<String, Map<String, Object>> getBusinessAttributes() {
+        return businessAttributes;
     }
 
-    public void setNamespaceAttributes(Map<String, Map<String, Object>> namespaceAttributes) {
-        this.namespaceAttributes = namespaceAttributes;
+    public void setBusinessAttributes(Map<String, Map<String, Object>> businessAttributes) {
+        this.businessAttributes = businessAttributes;
     }
 
-    public void setNamespaceAttribute(String nsName, String nsAttrName, Object nsValue) {
-        Map<String, Map<String, Object>> namespaceAttributes = this.namespaceAttributes;
+    public void setBusinessAttribute(String nsName, String nsAttrName, Object nsValue) {
+        Map<String, Map<String, Object>> businessAttributes = this.businessAttributes;
 
-        if (namespaceAttributes == null) {
-            namespaceAttributes = new HashMap<>();
+        if (businessAttributes == null) {
+            businessAttributes = new HashMap<>();
 
-            this.namespaceAttributes = namespaceAttributes;
+            this.businessAttributes = businessAttributes;
         }
 
-        Map<String, Object> namespaceAttributeMap = namespaceAttributes.get(nsName);
+        Map<String, Object> businessAttributeMap = businessAttributes.get(nsName);
 
-        if (namespaceAttributeMap == null) {
-            namespaceAttributeMap = new HashMap<>();
+        if (businessAttributeMap == null) {
+            businessAttributeMap = new HashMap<>();
 
-            namespaceAttributes.put(nsName, namespaceAttributeMap);
+            businessAttributes.put(nsName, businessAttributeMap);
         }
 
-        namespaceAttributeMap.put(nsAttrName, nsValue);
+        businessAttributeMap.put(nsAttrName, nsValue);
     }
 
-    public Object getNamespaceAttribute(String nsName, String nsAttrName) {
-        Map<String, Map<String, Object>> namespaceAttributes   = this.namespaceAttributes;
-        Map<String, Object>              namespaceAttributeMap = namespaceAttributes == null ? null : namespaceAttributes.get(nsName);
+    public Object getBusinessAttribute(String bmName, String bmAttrName) {
+        Map<String, Map<String, Object>> businessAttributes   = this.businessAttributes;
+        Map<String, Object>              businessAttributeMap = businessAttributes == null ? null : businessAttributes.get(bmName);
 
-        return namespaceAttributeMap == null ? null : namespaceAttributeMap.get(nsAttrName);
+        return businessAttributeMap == null ? null : businessAttributeMap.get(bmAttrName);
     }
 
     public Set<String> getLabels() {
@@ -441,7 +441,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setClassifications(null);
         setMeanings(null);
         setCustomAttributes(null);
-        setNamespaceAttributes(null);
+        setBusinessAttributes(null);
         setLabels(null);
     }
 
@@ -480,8 +480,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append(", customAttributes=[");
         dumpObjects(customAttributes, sb);
         sb.append("]");
-        sb.append(", namespaceAttributes=[");
-        dumpObjects(namespaceAttributes, sb);
+        sb.append(", businessAttributes=[");
+        dumpObjects(businessAttributes, sb);
         sb.append("]");
         sb.append(", labels=[");
         dumpObjects(labels, sb);
@@ -511,7 +511,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                 Objects.equals(version, that.version) &&
                 Objects.equals(relationshipAttributes, that.relationshipAttributes) &&
                 Objects.equals(customAttributes, that.customAttributes) &&
-                Objects.equals(namespaceAttributes, that.namespaceAttributes) &&
+                Objects.equals(businessAttributes, that.businessAttributes) &&
                 Objects.equals(labels, that.labels) &&
                 Objects.equals(classifications, that.classifications);
     }
@@ -519,7 +519,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), guid, homeId, isProxy, isIncomplete, provenanceType, status, createdBy, updatedBy,
-                createTime, updateTime, version, relationshipAttributes, classifications, customAttributes, namespaceAttributes, labels);
+                createTime, updateTime, version, relationshipAttributes, classifications, customAttributes, businessAttributes, labels);
     }
 
     @Override

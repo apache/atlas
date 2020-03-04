@@ -29,7 +29,7 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
     private final String              entityId;
     private final AtlasClassification classification;
     private final String              label;
-    private final String              namespaceName;
+    private final String              businessMetadata;
     private final String              attributeName;
     private final AtlasTypeRegistry   typeRegistry;
     private final Set<String>         entityClassifications;
@@ -67,14 +67,14 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
         this(typeRegistry, action, entity, classification, attributeName, null, null, userName, userGroups);
     }
 
-    public AtlasEntityAccessRequest(AtlasTypeRegistry typeRegistry, AtlasPrivilege action, AtlasEntityHeader entity, AtlasClassification classification, String attributeName, String label, String namespaceName, String userName, Set<String> userGroups) {
+    public AtlasEntityAccessRequest(AtlasTypeRegistry typeRegistry, AtlasPrivilege action, AtlasEntityHeader entity, AtlasClassification classification, String attributeName, String label, String businessMetadata, String userName, Set<String> userGroups) {
         super(action, userName, userGroups);
 
         this.entity                = entity;
         this.entityId              = super.getEntityId(entity, typeRegistry);
         this.classification        = classification;
         this.label                 = label;
-        this.namespaceName         = namespaceName;
+        this.businessMetadata      = businessMetadata;
         this.attributeName         = attributeName;
         this.typeRegistry          = typeRegistry;
         this.entityClassifications = super.getClassificationNames(entity);
@@ -96,8 +96,8 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
         return label;
     }
 
-    public String getNamespaceName() {
-        return namespaceName;
+    public String getBusinessMetadata() {
+        return businessMetadata;
     }
 
     public String getAttributeName() {
@@ -122,7 +122,7 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
 
     @Override
     public String toString() {
-        return "AtlasEntityAccessRequest[entity=" + entity + ", classification=" + classification + ", label=" + label + ", namespaceName=" + namespaceName + ", attributeName=" + attributeName +
+        return "AtlasEntityAccessRequest[entity=" + entity + ", classification=" + classification + ", label=" + label + ", businessMetadata=" + businessMetadata + ", attributeName=" + attributeName +
                 ", action=" + getAction() + ", accessTime=" + getAccessTime() + ", user=" + getUser() +
                 ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() +
                 ", forwardedAddresses=" + getForwardedAddresses() + ", remoteIPAddress=" + getRemoteIPAddress() + "]";
@@ -136,7 +136,7 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
         private       AtlasEntityHeader   entity;
         private       AtlasClassification classification;
         private       String              label;
-        private       String              namespaceName;
+        private       String              businessMetadata;
         private       String              attributeName;
 
         public AtlasEntityAccessRequestBuilder(AtlasTypeRegistry typeRegistry, AtlasPrivilege action) {
@@ -180,8 +180,8 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
             return this;
         }
 
-        public AtlasEntityAccessRequestBuilder setNamespaceName(String namespaceName) {
-            this.namespaceName = namespaceName;
+        public AtlasEntityAccessRequestBuilder setBusinessMetadata(String businessMetadata) {
+            this.businessMetadata = businessMetadata;
 
             return this;
         }
@@ -193,7 +193,7 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
         }
 
         public AtlasEntityAccessRequest build() {
-            return new AtlasEntityAccessRequest(typeRegistry, action, entity, classification, attributeName, label, namespaceName, userName, userGroups);
+            return new AtlasEntityAccessRequest(typeRegistry, action, entity, classification, attributeName, label, businessMetadata, userName, userGroups);
         }
     }
 }

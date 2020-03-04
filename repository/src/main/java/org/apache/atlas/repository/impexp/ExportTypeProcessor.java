@@ -24,11 +24,11 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasNamespaceType;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
@@ -106,8 +106,8 @@ class ExportTypeProcessor {
             addClassificationType((AtlasClassificationType)type, context);
         } else if (type instanceof AtlasRelationshipType) {
             addRelationshipType(type.getTypeName(), context);
-        } else if (type instanceof AtlasNamespaceType) {
-            addNamespaceType((AtlasNamespaceType) type, context);
+        } else if (type instanceof AtlasBusinessMetadataType) {
+            addBusinessMetadataType((AtlasBusinessMetadataType) type, context);
         } else if (type instanceof AtlasStructType) {
             addStructType((AtlasStructType)type, context);
         } else if (type instanceof AtlasEnumType) {
@@ -172,11 +172,11 @@ class ExportTypeProcessor {
         }
     }
 
-    private void addNamespaceType(AtlasNamespaceType namespaceType, ExportService.ExportContext context) {
-        if (!context.namespaceTypes.contains(namespaceType.getTypeName())) {
-            context.namespaceTypes.add(namespaceType.getTypeName());
+    private void addBusinessMetadataType(AtlasBusinessMetadataType businessMetadataType, ExportService.ExportContext context) {
+        if (!context.businessMetadataTypes.contains(businessMetadataType.getTypeName())) {
+            context.businessMetadataTypes.add(businessMetadataType.getTypeName());
 
-            addAttributeTypes(namespaceType, context);
+            addAttributeTypes(businessMetadataType, context);
         }
     }
 

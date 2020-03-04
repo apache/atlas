@@ -37,34 +37,34 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class AtlasNamespaceDef extends AtlasStructDef implements Serializable {
+public class AtlasBusinessMetadataDef extends AtlasStructDef implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final String ATTR_OPTION_APPLICABLE_ENTITY_TYPES = "applicableEntityTypes";
-    public static final String ATTR_MAX_STRING_LENGTH = "maxStrLength";
-    public static final String ATTR_VALID_PATTERN = "validPattern";
+    public static final String ATTR_MAX_STRING_LENGTH              = "maxStrLength";
+    public static final String ATTR_VALID_PATTERN                  = "validPattern";
 
-    public AtlasNamespaceDef() {
+    public AtlasBusinessMetadataDef() {
         this(null, null, null, null);
     }
 
-    public AtlasNamespaceDef(String name, String description) {
+    public AtlasBusinessMetadataDef(String name, String description) {
         this(name, description, null, null, null);
     }
 
-    public AtlasNamespaceDef(String name, String description, String typeVersion) {
+    public AtlasBusinessMetadataDef(String name, String description, String typeVersion) {
         this(name, description, typeVersion, null, null);
     }
 
-    public AtlasNamespaceDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
+    public AtlasBusinessMetadataDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
         this(name, description, typeVersion, attributeDefs, null);
     }
 
-    public AtlasNamespaceDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
-        super(TypeCategory.NAMESPACE, name, description, typeVersion, attributeDefs, options);
+    public AtlasBusinessMetadataDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
+        super(TypeCategory.BUSINESS_METADATA, name, description, typeVersion, attributeDefs, options);
     }
 
-    public AtlasNamespaceDef(AtlasNamespaceDef other) {
+    public AtlasBusinessMetadataDef(AtlasBusinessMetadataDef other) {
         super(other);
     }
 
@@ -79,7 +79,7 @@ public class AtlasNamespaceDef extends AtlasStructDef implements Serializable {
             sb = new StringBuilder();
         }
 
-        sb.append("AtlasNamespaceDef{");
+        sb.append("AtlasBusinessMetadataDef{");
         super.toString(sb);
         sb.append('}');
 

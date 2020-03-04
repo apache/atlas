@@ -857,72 +857,72 @@ public class EntityREST {
     }
 
     @POST
-    @Path("/guid/{guid}/namespaces")
+    @Path("/guid/{guid}/businessmetata")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    public void addOrUpdateNamespaceAttributes(@PathParam("guid") final String guid, @QueryParam("isOverwrite") @DefaultValue("false") boolean isOverwrite, Map<String, Map<String, Object>> entityNamespaces) throws AtlasBaseException {
+    public void addOrUpdateBusinessAttributes(@PathParam("guid") final String guid, @QueryParam("isOverwrite") @DefaultValue("false") boolean isOverwrite, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addOrUpdateNamespaceAttributes(" + guid + ", isOverwrite=" + isOverwrite + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addOrUpdateBusinessAttributes(" + guid + ", isOverwrite=" + isOverwrite + ")");
             }
 
-            entitiesStore.addOrUpdateNamespaceAttributes(guid, entityNamespaces, isOverwrite);
+            entitiesStore.addOrUpdateBusinessAttributes(guid, businessAttributes, isOverwrite);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
 
     @DELETE
-    @Path("/guid/{guid}/namespaces")
+    @Path("/guid/{guid}/businessmetata")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    public void removeNamespaceAttributes(@PathParam("guid") final String guid, Map<String, Map<String, Object>> entityNamespaces) throws AtlasBaseException {
+    public void removeBusinessAttributes(@PathParam("guid") final String guid, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.removeNamespaceAttributes(" + guid + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.removeBusinessAttributes(" + guid + ")");
             }
 
-            entitiesStore.removeNamespaceAttributes(guid, entityNamespaces);
+            entitiesStore.removeBusinessAttributes(guid, businessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
 
     @POST
-    @Path("/guid/{guid}/namespace/{namespace}")
+    @Path("/guid/{guid}/businessmetata/{bmName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    public void addOrUpdateNamespaceAttributes(@PathParam("guid") final String guid, @PathParam("namespace") final String namespace, Map<String, Object> entityNsAttributes) throws AtlasBaseException {
+    public void addOrUpdateBusinessAttributes(@PathParam("guid") final String guid, @PathParam("bmName") final String bmName, Map<String, Object> businessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addOrUpdateNamespaceAttributes(" + guid + ", " + namespace + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addOrUpdateBusinessAttributes(" + guid + ", " + bmName + ")");
             }
 
-            entitiesStore.addOrUpdateNamespaceAttributes(guid, Collections.singletonMap(namespace, entityNsAttributes), false);
+            entitiesStore.addOrUpdateBusinessAttributes(guid, Collections.singletonMap(bmName, businessAttributes), false);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
 
     @DELETE
-    @Path("/guid/{guid}/namespace/{namespace}")
+    @Path("/guid/{guid}/businessmetata/{bmName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
-    public void removeNamespaceAttributes(@PathParam("guid") final String guid, @PathParam("namespace") final String namespace, Map<String, Object> entityNsAttributes) throws AtlasBaseException {
+    public void removeBusinessAttributes(@PathParam("guid") final String guid, @PathParam("bmName") final String bmName, Map<String, Object> businessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.removeNamespaceAttributes(" + guid + ", " + namespace + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.removeBusinessAttributes(" + guid + ", " + bmName + ")");
             }
 
-            entitiesStore.removeNamespaceAttributes(guid, Collections.singletonMap(namespace, entityNsAttributes));
+            entitiesStore.removeBusinessAttributes(guid, Collections.singletonMap(bmName, businessAttributes));
         } finally {
             AtlasPerfTracer.log(perf);
         }

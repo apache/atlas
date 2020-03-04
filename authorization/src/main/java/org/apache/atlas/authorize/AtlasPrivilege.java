@@ -42,7 +42,7 @@ public enum AtlasPrivilege {
 
      ENTITY_ADD_LABEL("entity-add-label"),
      ENTITY_REMOVE_LABEL("entity-remove-label"),
-     ENTITY_UPDATE_NAMESPACE("entity-update-namespace");
+     ENTITY_UPDATE_BUSINESS_METADATA("entity-update-business-metadata");
 
      private final String type;
 

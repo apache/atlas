@@ -48,7 +48,7 @@ import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasNamespaceType.AtlasNamespaceAttribute;
+import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -221,33 +221,33 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public Map<String, Map<String, Object>> getEntityNamespaces(AtlasVertex entityVertex) throws AtlasBaseException {
-        Map<String, Map<String, Object>>                  ret                  = null;
-        String                                            entityTypeName       = getTypeName(entityVertex);
-        AtlasEntityType                                   entityType           = typeRegistry.getEntityTypeByName(entityTypeName);
-        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType != null ? entityType.getNamespaceAttributes() : null;
+    public Map<String, Map<String, Object>> getBusinessMetadata(AtlasVertex entityVertex) throws AtlasBaseException {
+        Map<String, Map<String, Object>>                         ret             = null;
+        String                                                   entityTypeName  = getTypeName(entityVertex);
+        AtlasEntityType                                          entityType      = typeRegistry.getEntityTypeByName(entityTypeName);
+        Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBm    = entityType != null ? entityType.getBusinessAttributes() : null;
 
-        if (MapUtils.isNotEmpty(entityTypeNamespaces)) {
-            for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
-                String                               nsName        = entry.getKey();
-                Map<String, AtlasNamespaceAttribute> nsAttributes  = entry.getValue();
-                Map<String, Object>                  entityNsAttrs = null;
+        if (MapUtils.isNotEmpty(entityTypeBm)) {
+            for (Map.Entry<String, Map<String, AtlasBusinessAttribute>> entry : entityTypeBm.entrySet()) {
+                String                                      bmName        = entry.getKey();
+                Map<String, AtlasBusinessAttribute> bmAttributes  = entry.getValue();
+                Map<String, Object>                         entityBmAttrs = null;
 
-                for (AtlasNamespaceAttribute nsAttribute : nsAttributes.values()) {
-                    Object nsAttrValue = mapVertexToAttribute(entityVertex, nsAttribute, null, false, false);
+                for (AtlasBusinessAttribute bmAttribute : bmAttributes.values()) {
+                    Object bmAttrValue = mapVertexToAttribute(entityVertex, bmAttribute, null, false, false);
 
-                    if (nsAttrValue != null) {
+                    if (bmAttrValue != null) {
                         if (ret == null) {
                             ret = new HashMap<>();
                         }
 
-                        if (entityNsAttrs == null) {
-                            entityNsAttrs = new HashMap<>();
+                        if (entityBmAttrs == null) {
+                            entityBmAttrs = new HashMap<>();
 
-                            ret.put(nsName, entityNsAttrs);
+                            ret.put(bmName, entityBmAttrs);
                         }
 
-                        entityNsAttrs.put(nsAttribute.getName(), nsAttrValue);
+                        entityBmAttrs.put(bmAttribute.getName(), bmAttrValue);
                     }
                 }
             }
@@ -622,7 +622,7 @@ public class EntityGraphRetriever {
 
             mapSystemAttributes(entityVertex, entity);
 
-            mapNamespaceAttributes(entityVertex, entity);
+            mapBusinessAttributes(entityVertex, entity);
 
             mapAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo, includeReferences);
 
@@ -804,8 +804,8 @@ public class EntityGraphRetriever {
         }
     }
 
-    private void mapNamespaceAttributes(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
-        entity.setNamespaceAttributes(getEntityNamespaces(entityVertex));
+    private void mapBusinessAttributes(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
+        entity.setBusinessAttributes(getBusinessMetadata(entityVertex));
     }
 
     public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {

@@ -20,7 +20,7 @@ package org.apache.atlas.type;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.typedef.AtlasNamespaceDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
@@ -28,45 +28,45 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.apache.atlas.model.typedef.AtlasNamespaceDef.*;
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.*;
 
 
-public class AtlasNamespaceType extends AtlasStructType {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasNamespaceType.class);
+public class AtlasBusinessMetadataType extends AtlasStructType {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasBusinessMetadataType.class);
 
-    private final AtlasNamespaceDef namespaceDef;
+    private final AtlasBusinessMetadataDef businessMetadataDef;
 
 
-    public AtlasNamespaceType(AtlasNamespaceDef namespaceDef) {
-        super(namespaceDef);
+    public AtlasBusinessMetadataType(AtlasBusinessMetadataDef businessMetadataDef) {
+        super(businessMetadataDef);
 
-        this.namespaceDef = namespaceDef;
+        this.businessMetadataDef = businessMetadataDef;
     }
 
     @Override
     public boolean isValidValue(Object o) {
-        return true; // there is no runtime instance for Namespaces, so return true
+        return true; // there is no runtime instance for businessMetadataDef, so return true
     }
 
     @Override
     public AtlasStruct createDefaultValue() {
-        return null;  // there is no runtime instance for Namespaces, so return null
+        return null;  // there is no runtime instance for businessMetadataDef, so return null
     }
 
     @Override
     public Object getNormalizedValue(Object a) {
-        return null;  // there is no runtime instance for Namespaces, so return null
+        return null;  // there is no runtime instance for businessMetadataDef, so return null
     }
 
-    public AtlasNamespaceDef getNamespaceDef() {
-        return namespaceDef;
+    public AtlasBusinessMetadataDef getBusinessMetadataDef() {
+        return businessMetadataDef;
     }
 
     @Override
     void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferences(typeRegistry);
 
-        Map<String, AtlasNamespaceAttribute> a = new HashMap<>();
+        Map<String, AtlasBusinessAttribute> a = new HashMap<>();
 
         for (AtlasAttribute attribute : super.allAttributes.values()) {
             AtlasAttributeDef attributeDef = attribute.getAttributeDef();
@@ -79,9 +79,9 @@ public class AtlasNamespaceType extends AtlasStructType {
                 attrType = ((AtlasMapType) attrType).getValueType();
             }
 
-            // check if attribute type is not struct/classification/entity/namespace
+            // check if attribute type is not struct/classification/entity/business-metadata
             if (attrType instanceof AtlasStructType) {
-                throw new AtlasBaseException(AtlasErrorCode.NAMESPACE_DEF_ATTRIBUTE_TYPE_INVALID, getTypeName(), attrName);
+                throw new AtlasBaseException(AtlasErrorCode.BUSINESS_METADATA_DEF_ATTRIBUTE_TYPE_INVALID, getTypeName(), attrName);
             }
 
             Set<String>          entityTypeNames = attribute.getOptionSet(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
@@ -99,7 +99,7 @@ public class AtlasNamespaceType extends AtlasStructType {
                 }
             }
 
-            AtlasNamespaceAttribute nsAttribute;
+            AtlasBusinessAttribute bmAttribute;
             if (attribute.getAttributeType() instanceof AtlasBuiltInTypes.AtlasStringType) {
                 Integer maxStringLength = attribute.getOptionInt(ATTR_MAX_STRING_LENGTH);
                 if (maxStringLength == null) {
@@ -107,12 +107,12 @@ public class AtlasNamespaceType extends AtlasStructType {
                 }
 
                 String validPattern = attribute.getOptionString(ATTR_VALID_PATTERN);
-                nsAttribute = new AtlasNamespaceAttribute(attribute, entityTypes, maxStringLength, validPattern);
+                bmAttribute = new AtlasBusinessAttribute(attribute, entityTypes, maxStringLength, validPattern);
             } else {
-                nsAttribute = new AtlasNamespaceAttribute(attribute, entityTypes);
+                bmAttribute = new AtlasBusinessAttribute(attribute, entityTypes);
             }
 
-            a.put(attrName, nsAttribute);
+            a.put(attrName, bmAttribute);
         }
 
         super.allAttributes = Collections.unmodifiableMap(a);
@@ -123,23 +123,23 @@ public class AtlasNamespaceType extends AtlasStructType {
         super.resolveReferencesPhase2(typeRegistry);
 
         for (AtlasAttribute attribute : super.allAttributes.values()) {
-            AtlasNamespaceAttribute nsAttribute = (AtlasNamespaceAttribute) attribute;
-            Set<AtlasEntityType>    entityTypes = nsAttribute.getApplicableEntityTypes();
+            AtlasBusinessAttribute bmAttribute = (AtlasBusinessAttribute) attribute;
+            Set<AtlasEntityType>   entityTypes = bmAttribute.getApplicableEntityTypes();
 
             if (CollectionUtils.isNotEmpty(entityTypes)) {
                 for (AtlasEntityType entityType : entityTypes) {
-                    entityType.addNamespaceAttribute(nsAttribute);
+                    entityType.addBusinessAttribute(bmAttribute);
                 }
             }
         }
     }
 
-    public static class AtlasNamespaceAttribute extends AtlasAttribute {
+    public static class AtlasBusinessAttribute extends AtlasAttribute {
         private final Set<AtlasEntityType> applicableEntityTypes;
         private final int                  maxStringLength;
         private final String               validPattern;
 
-        public AtlasNamespaceAttribute(AtlasAttribute attribute, Set<AtlasEntityType> applicableEntityTypes) {
+        public AtlasBusinessAttribute(AtlasAttribute attribute, Set<AtlasEntityType> applicableEntityTypes) {
             super(attribute);
 
             this.maxStringLength       = 0;
@@ -147,7 +147,7 @@ public class AtlasNamespaceType extends AtlasStructType {
             this.applicableEntityTypes = applicableEntityTypes;
         }
 
-        public AtlasNamespaceAttribute(AtlasAttribute attribute, Set<AtlasEntityType> applicableEntityTypes, int maxStringLength, String validPattern) {
+        public AtlasBusinessAttribute(AtlasAttribute attribute, Set<AtlasEntityType> applicableEntityTypes, int maxStringLength, String validPattern) {
             super(attribute);
 
             this.maxStringLength       = maxStringLength;
@@ -156,8 +156,8 @@ public class AtlasNamespaceType extends AtlasStructType {
         }
 
         @Override
-        public AtlasNamespaceType getDefinedInType() {
-            return (AtlasNamespaceType) super.getDefinedInType();
+        public AtlasBusinessMetadataType getDefinedInType() {
+            return (AtlasBusinessMetadataType) super.getDefinedInType();
         }
 
         public Set<AtlasEntityType> getApplicableEntityTypes() {

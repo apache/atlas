@@ -150,21 +150,21 @@ public class AtlasSimpleAuthorizerTest {
     }
 
     @Test(enabled = true)
-    public void testNamespaces() {
+    public void testBusinessMetadata() {
         try {
-            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_UPDATE_NAMESPACE);
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
 
             request.setUser(USER_DATA_SCIENTIST, Collections.emptySet());
 
             boolean isAccessAllowed = authorizer.isAccessAllowed(request);
 
-            AssertJUnit.assertEquals("user " + USER_DATA_SCIENTIST + " shouldn't be allowed to update namespace", false, isAccessAllowed);
+            AssertJUnit.assertEquals("user " + USER_DATA_SCIENTIST + " shouldn't be allowed to update business-metadata", false, isAccessAllowed);
 
             request.setUser(USER_DATA_STEWARD, Collections.emptySet());
 
             isAccessAllowed = authorizer.isAccessAllowed(request);
 
-            AssertJUnit.assertEquals("user " + USER_DATA_STEWARD + " should be allowed to update namespace", true, isAccessAllowed);
+            AssertJUnit.assertEquals("user " + USER_DATA_STEWARD + " should be allowed to update business-metadata", true, isAccessAllowed);
         } catch (AtlasAuthorizationException e) {
             LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
 

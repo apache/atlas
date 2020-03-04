@@ -250,19 +250,19 @@ public interface AtlasEntityStore {
     /**
      *
      * @param guid
-     * @param namespaceAttributes
+     * @param businessAttrbutes
      * @param isOverwrite
      * @throws AtlasBaseException
      */
-    void addOrUpdateNamespaceAttributes(String guid, Map<String, Map<String, Object>> namespaceAttributes, boolean isOverwrite) throws AtlasBaseException;
+    void addOrUpdateBusinessAttributes(String guid, Map<String, Map<String, Object>> businessAttrbutes, boolean isOverwrite) throws AtlasBaseException;
 
     /**
      *
      * @param guid
-     * @param namespaceAttributes
+     * @param businessAttributes
      * @throws AtlasBaseException
      */
-    void removeNamespaceAttributes(String guid, Map<String, Map<String, Object>> namespaceAttributes) throws AtlasBaseException;
+    void removeBusinessAttributes(String guid, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException;
 
     /**
      * Remove given labels, if labels is null/empty, no labels will be removed. If any labels in
