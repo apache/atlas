@@ -45,7 +45,7 @@ import java.util.HashSet;
 public class TableReplicationRequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TableReplicationRequestProcessor.class);
 
-    private static final String QUERY_DB_NAME_EQUALS= "where db.name='%s'";
+    private static final String QUERY_DB_NAME_EQUALS = "qualifiedName startsWith '%s'";
     private static final String ATTR_NAME_KEY = "name";
     private static final String TYPE_HIVE_TABLE = "hive_table";
     private static final String ATTR_QUALIFIED_NAME_KEY = "qualifiedName";
@@ -83,7 +83,7 @@ public class TableReplicationRequestProcessor {
         deleteTables(sourceCluster, guidsToDelete);
     }
 
-    private List<String> getQualifiedNamesFromRequest(AtlasExportRequest exportRequest){
+    private List<String> getQualifiedNamesFromRequest(AtlasExportRequest exportRequest) {
         List<String> qualifiedNames = new ArrayList<>();
 
         for (AtlasObjectId objectId : exportRequest.getItemsToExport()) {
@@ -95,7 +95,7 @@ public class TableReplicationRequestProcessor {
     private List<String> getEntitiesFromQualifiedNames(List<String> qualifiedNames) throws AtlasBaseException {
 
         List<String> safeGUIDs = new ArrayList<>();
-        for(String qualifiedName : qualifiedNames) {
+        for (String qualifiedName : qualifiedNames) {
             String guid = getGuidByUniqueAttributes(Collections.singletonMap(ATTR_QUALIFIED_NAME_KEY, qualifiedName));
             safeGUIDs.add(guid);
         }
@@ -133,9 +133,18 @@ public class TableReplicationRequestProcessor {
 
             if (CollectionUtils.isEmpty(searchResult.getEntities())) {
                 break;
+            } else {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("getGuidsToDelete: {}", searchResult.getApproximateCount());
+                }
             }
 
+            String classificationName = String.format(REPLICATED_TAG_NAME, sourceCluster);
             for (AtlasEntityHeader entityHeader : searchResult.getEntities()) {
+                if (!entityHeader.getClassificationNames().contains(classificationName)) {
+                    continue;
+                }
+
                 String guid = entityHeader.getGuid();
                 if (!excludeGUIDs.contains(guid)) {
                     unsafeGUIDs.add(guid);
@@ -155,8 +164,7 @@ public class TableReplicationRequestProcessor {
         parameters.setTypeName(TYPE_HIVE_TABLE);
         parameters.setExcludeDeletedEntities(true);
 
-        parameters.setClassification(String.format(REPLICATED_TAG_NAME, sourceCluster));
-        parameters.setAttributes(new HashSet<String>(){{ add(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM); }});
+        parameters.setAttributes(new HashSet<String>() {{ add(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM); }});
         parameters.setQuery(query);
 
         return parameters;
