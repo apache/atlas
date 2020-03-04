@@ -48,7 +48,7 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasNamespaceType.AtlasNamespaceAttribute;
+import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -827,17 +827,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void addOrUpdateNamespaceAttributes(String guid, Map<String, Map<String, Object>> entityNamespaces, boolean isOverwrite) throws AtlasBaseException {
+    public void addOrUpdateBusinessAttributes(String guid, Map<String, Map<String, Object>> businessAttrbutes, boolean isOverwrite) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> addOrUpdateNamespaceAttributes(guid={}, entityNamespaces={}, isOverwrite={})", guid, entityNamespaces, isOverwrite);
+
+            LOG.debug("==> addOrUpdateBusinessAttributes(guid={}, businessAttributes={}, isOverwrite={})", guid, businessAttrbutes, isOverwrite);
         }
 
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
         }
 
-        if (MapUtils.isEmpty(entityNamespaces)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entityNamespaces is null/empty");
+        if (MapUtils.isEmpty(businessAttrbutes)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "businessAttributes is null/empty");
         }
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
@@ -846,61 +847,61 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        String                           typeName       = getTypeName(entityVertex);
-        AtlasEntityType                  entityType     = typeRegistry.getEntityTypeByName(typeName);
-        AtlasEntityHeader                entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-        Map<String, Map<String, Object>> currNamespaces = entityRetriever.getEntityNamespaces(entityVertex);
-        Set<String>                      updatedNsNames = new HashSet<>();
+        String                           typeName                     = getTypeName(entityVertex);
+        AtlasEntityType                  entityType                   = typeRegistry.getEntityTypeByName(typeName);
+        AtlasEntityHeader                entityHeader                 = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+        Map<String, Map<String, Object>> currEntityBusinessAttributes = entityRetriever.getBusinessMetadata(entityVertex);
+        Set<String>                      updatedBusinessMetadataNames = new HashSet<>();
 
-        for (String nsName : entityType.getNamespaceAttributes().keySet()) {
-            Map<String, Object> nsAttrs     = entityNamespaces.get(nsName);
-            Map<String, Object> currNsAttrs = currNamespaces != null ? currNamespaces.get(nsName) : null;
+        for (String bmName : entityType.getBusinessAttributes().keySet()) {
+            Map<String, Object> bmAttrs     = businessAttrbutes.get(bmName);
+            Map<String, Object> currBmAttrs = currEntityBusinessAttributes != null ? currEntityBusinessAttributes.get(bmName) : null;
 
-            if (nsAttrs == null && !isOverwrite) {
+            if (bmAttrs == null && !isOverwrite) {
                 continue;
-            } else if (MapUtils.isEmpty(nsAttrs) && MapUtils.isEmpty(currNsAttrs)) { // no change
+            } else if (MapUtils.isEmpty(bmAttrs) && MapUtils.isEmpty(currBmAttrs)) { // no change
                 continue;
-            } else if (Objects.equals(nsAttrs, currNsAttrs)) { // no change
+            } else if (Objects.equals(bmAttrs, currBmAttrs)) { // no change
                 continue;
             }
 
-            updatedNsNames.add(nsName);
+            updatedBusinessMetadataNames.add(bmName);
         }
 
-        AtlasEntityAccessRequestBuilder  requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_NAMESPACE, entityHeader);
+        AtlasEntityAccessRequestBuilder  requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, entityHeader);
 
-        for (String nsName : updatedNsNames) {
-            requestBuilder.setNamespaceName(nsName);
+        for (String bmName : updatedBusinessMetadataNames) {
+            requestBuilder.setBusinessMetadata(bmName);
 
-            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update namespace: guid=", guid, ", namespace=", nsName);
+            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update business-metadata: guid=", guid, ", business-metadata-name=", bmName);
         }
 
-        validateNamespaceAttributes(entityVertex, entityType, entityNamespaces, isOverwrite);
+        validateBusinessAttributes(entityVertex, entityType, businessAttrbutes, isOverwrite);
 
         if (isOverwrite) {
-            entityGraphMapper.setNamespaceAttributes(entityVertex, entityType, entityNamespaces);
+            entityGraphMapper.setBusinessAttributes(entityVertex, entityType, businessAttrbutes);
         } else {
-            entityGraphMapper.addOrUpdateNamespaceAttributes(entityVertex, entityType, entityNamespaces);
+            entityGraphMapper.addOrUpdateBusinessAttributes(entityVertex, entityType, businessAttrbutes);
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== addOrUpdateNamespaceAttributes(guid={}, entityNamespaces={}, isOverwrite={})", guid, entityNamespaces, isOverwrite);
+            LOG.debug("<== addOrUpdateBusinessAttributes(guid={}, businessAttributes={}, isOverwrite={})", guid, businessAttrbutes, isOverwrite);
         }
     }
 
     @Override
     @GraphTransaction
-    public void removeNamespaceAttributes(String guid, Map<String, Map<String, Object>> entityNamespaces) throws AtlasBaseException {
+    public void removeBusinessAttributes(String guid, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> removeNamespaceAttributes(guid={}, entityNamespaces={})", guid, entityNamespaces);
+            LOG.debug("==> removeBusinessAttributes(guid={}, businessAttributes={})", guid, businessAttributes);
         }
 
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
         }
 
-        if (MapUtils.isEmpty(entityNamespaces)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entityNamespaces is null/empty");
+        if (MapUtils.isEmpty(businessAttributes)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "businessAttributes is null/empty");
         }
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
@@ -912,19 +913,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         String                          typeName       = getTypeName(entityVertex);
         AtlasEntityType                 entityType     = typeRegistry.getEntityTypeByName(typeName);
         AtlasEntityHeader               entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+        AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, entityHeader);
 
-        AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_NAMESPACE, entityHeader);
+        for (String bmName : businessAttributes.keySet()) {
+            requestBuilder.setBusinessMetadata(bmName);
 
-        for (String nsName : entityNamespaces.keySet()) {
-            requestBuilder.setNamespaceName(nsName);
-
-            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove namespace: guid=", guid, ", namespace=", nsName);
+            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove business-metadata: guid=", guid, ", business-metadata=", bmName);
         }
 
-        entityGraphMapper.removeNamespaceAttributes(entityVertex, entityType, entityNamespaces);
+        entityGraphMapper.removeBusinessAttributes(entityVertex, entityType, businessAttributes);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== removeNamespaceAttributes(guid={}, entityNamespaces={})", guid, entityNamespaces);
+            LOG.debug("<== removeBusinessAttributes(guid={}, businessAttributes={})", guid, businessAttributes);
         }
     }
 
@@ -1065,7 +1065,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-    private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceNamespaceAttributes) throws AtlasBaseException {
+    private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
         }
@@ -1206,7 +1206,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 RequestContext.get().endMetricRecord(checkForUnchangedEntities);
             }
 
-            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications, replaceNamespaceAttributes);
+            EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications, replaceBusinessAttributes);
 
             ret.setGuidAssignments(context.getGuidAssignments());
 
@@ -1478,42 +1478,42 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-    private void validateNamespaceAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> entityNamespaces, boolean isOverwrite) throws AtlasBaseException {
+    private void validateBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes, boolean isOverwrite) throws AtlasBaseException {
         List<String> messages = new ArrayList<>();
 
-        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+        Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessMetadata = entityType.getBusinessAttributes();
 
-        for (String nsName : entityNamespaces.keySet()) {
-            if (!entityTypeNamespaces.containsKey(nsName)) {
-                messages.add(nsName + ": invalid namespace for entity type " + entityType.getTypeName());
+        for (String bmName : businessAttributes.keySet()) {
+            if (!entityTypeBusinessMetadata.containsKey(bmName)) {
+                messages.add(bmName + ": invalid business-metadata for entity type " + entityType.getTypeName());
 
                 continue;
             }
 
-            Map<String, AtlasNamespaceAttribute> entityTypeNsAttributes = entityTypeNamespaces.get(nsName);
-            Map<String, Object>                  entityNsAttributes     = entityNamespaces.get(nsName);
+            Map<String, AtlasBusinessAttribute> entityTypeBusinessAttributes = entityTypeBusinessMetadata.get(bmName);
+            Map<String, Object>                         entityBusinessAttributes     = businessAttributes.get(bmName);
 
-            for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes.values()) {
-                AtlasType attrType  = nsAttribute.getAttributeType();
-                String    attrName  = nsAttribute.getName();
-                Object    attrValue = entityNsAttributes.get(attrName);
-                String    fieldName = entityType.getTypeName() + "." + nsName + "." + attrName;
+            for (AtlasBusinessAttribute bmAttribute : entityTypeBusinessAttributes.values()) {
+                AtlasType attrType  = bmAttribute.getAttributeType();
+                String    attrName  = bmAttribute.getName();
+                Object    attrValue = entityBusinessAttributes.get(attrName);
+                String    fieldName = entityType.getTypeName() + "." + bmName + "." + attrName;
 
                 if (attrValue != null) {
                     attrType.validateValue(attrValue, fieldName, messages);
-                } else if (!nsAttribute.getAttributeDef().getIsOptional()) {
+                } else if (!bmAttribute.getAttributeDef().getIsOptional()) {
                     final boolean isAttrValuePresent;
 
                     if (isOverwrite) {
                         isAttrValuePresent = false;
                     } else {
-                        Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, nsAttribute.getVertexPropertyName(), Object.class);
+                        Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, bmAttribute.getVertexPropertyName(), Object.class);
 
                         isAttrValuePresent = existingValue != null;
                     }
 
                     if (!isAttrValuePresent) {
-                        messages.add(fieldName + ": mandatory namespace attribute value missing in type " + entityType.getTypeName());
+                        messages.add(fieldName + ": mandatory business-metadata attribute value missing in type " + entityType.getTypeName());
                     }
                 }
             }

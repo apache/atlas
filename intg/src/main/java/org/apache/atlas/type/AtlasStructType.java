@@ -112,7 +112,7 @@ public class AtlasStructType extends AtlasType {
                 throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_TYPE_INVALID, getTypeName(), attributeDef.getName());
             }
 
-            if (attrType instanceof AtlasNamespaceType) {
+            if (attrType instanceof AtlasBusinessMetadataType) {
                 throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_TYPE_INVALID, getTypeName(), attributeDef.getName());
             }
 
@@ -227,7 +227,7 @@ public class AtlasStructType extends AtlasType {
         }
 
         if (ret == null) {
-            ret = getNamespaceAttribute(attributeName);
+            ret = getBusinesAAttribute(attributeName);
         }
 
         return ret;
@@ -237,7 +237,7 @@ public class AtlasStructType extends AtlasType {
         return null;
     }
 
-    public AtlasAttribute getNamespaceAttribute(String attributeName) {
+    public AtlasAttribute getBusinesAAttribute(String attributeName) {
         return null;
     }
 

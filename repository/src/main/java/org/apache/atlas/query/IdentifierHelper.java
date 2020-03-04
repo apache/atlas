@@ -20,7 +20,7 @@ package org.apache.atlas.query;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.type.AtlasNamespaceType;
+import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 
@@ -186,12 +186,12 @@ public class IdentifierHelper {
         private void updateTypeInfo(org.apache.atlas.query.Lookup lookup, GremlinQueryComposer.Context context) {
             parts = StringUtils.split(raw, ".");
 
-            // check if this is a namespace attribute
+            // check if this is a business attribute
             if (parts.length == 2) {
                 try {
                     AtlasType type = lookup.getType(parts[0]);
 
-                    if (type instanceof AtlasNamespaceType) {
+                    if (type instanceof AtlasBusinessMetadataType) {
                         parts = new String[1];
                         parts[0] = raw;
                     }

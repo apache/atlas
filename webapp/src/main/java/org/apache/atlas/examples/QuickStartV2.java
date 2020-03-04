@@ -37,13 +37,13 @@ import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasNamespaceDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
@@ -56,7 +56,7 @@ import java.util.*;
 
 import static java.util.Arrays.asList;
 import static org.apache.atlas.AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME;
-import static org.apache.atlas.model.typedef.AtlasNamespaceDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES;
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory.AGGREGATION;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory.COMPOSITION;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
@@ -318,25 +318,25 @@ public class QuickStartV2 {
         List<AtlasRelationshipDef>   relationshipDefs   = asList(tableDatabaseTypeDef, viewDatabaseTypeDef, viewTablesTypeDef, tableColumnsTypeDef, tableStorageDescTypeDef, processProcessExecutionTypeDef);
         List<AtlasClassificationDef> classificationDefs = asList(dimClassifDef, factClassifDef, piiClassifDef, metricClassifDef, etlClassifDef, jdbcClassifDef, logClassifDef);
 
-        // Namespace definitions
-        AtlasAttributeDef nsAttrDef1 = new AtlasAttributeDef("attr1", "int");
-        AtlasAttributeDef nsAttrDef2 = new AtlasAttributeDef("attr2", "int");
+        // BusinessMetadata definitions
+        AtlasAttributeDef bmAttrDef1 = new AtlasAttributeDef("attr1", "int");
+        AtlasAttributeDef bmAttrDef2 = new AtlasAttributeDef("attr2", "int");
 
-        nsAttrDef1.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(Collections.singleton(TABLE_TYPE)));
-        nsAttrDef1.setIsOptional(true);
-        nsAttrDef1.setIsUnique(false);
+        bmAttrDef1.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(Collections.singleton(TABLE_TYPE)));
+        bmAttrDef1.setIsOptional(true);
+        bmAttrDef1.setIsUnique(false);
 
-        nsAttrDef2.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(Collections.singleton(TABLE_TYPE)));
-        nsAttrDef2.setIsOptional(true);
-        nsAttrDef2.setIsUnique(false);
+        bmAttrDef2.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(Collections.singleton(TABLE_TYPE)));
+        bmAttrDef2.setIsOptional(true);
+        bmAttrDef2.setIsUnique(false);
 
-        AtlasNamespaceDef testNamespaceDef = new AtlasNamespaceDef("test_namespace", "test_description", VERSION_1);
+        AtlasBusinessMetadataDef testBusinessMetadataDef = new AtlasBusinessMetadataDef("test_businessMetadata", "test_description", VERSION_1);
 
-        testNamespaceDef.setAttributeDefs(Arrays.asList(nsAttrDef1, nsAttrDef2));
+        testBusinessMetadataDef.setAttributeDefs(Arrays.asList(bmAttrDef1, bmAttrDef2));
 
-        List<AtlasNamespaceDef> namespaceDefs  = asList(testNamespaceDef);
+        List<AtlasBusinessMetadataDef> businessMetadataDefs  = asList(testBusinessMetadataDef);
 
-        return new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, entityDefs, relationshipDefs, namespaceDefs);
+        return new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, entityDefs, relationshipDefs, businessMetadataDefs);
     }
 
     void createEntities() throws Exception {

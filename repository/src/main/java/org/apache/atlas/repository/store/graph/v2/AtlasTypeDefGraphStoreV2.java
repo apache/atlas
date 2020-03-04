@@ -101,8 +101,8 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
     }
 
     @Override
-    protected AtlasDefStore<AtlasNamespaceDef> getNamespaceDefStore(AtlasTypeRegistry typeRegistry) {
-        return new AtlasNamespaceDefStoreV2(this, typeRegistry);
+    protected AtlasDefStore<AtlasBusinessMetadataDef> getBusinessMetadataDefStore(AtlasTypeRegistry typeRegistry) {
+        return new AtlasBusinessMetadataDefStoreV2(this, typeRegistry);
     }
 
     @Override
@@ -498,8 +498,8 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
             case RELATIONSHIP:
                 return TypeCategory.RELATIONSHIP;
 
-            case NAMESPACE:
-                return TypeCategory.NAMESPACE;
+            case BUSINESS_METADATA:
+                return TypeCategory.BUSINESS_METADATA;
         }
 
         return null;

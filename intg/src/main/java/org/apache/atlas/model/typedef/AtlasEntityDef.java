@@ -66,8 +66,8 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
     private List<AtlasRelationshipAttributeDef> relationshipAttributeDefs;
 
     // this is a read-only field, any value provided during create & update operation is ignored
-    // the value of this field is derived from all the namespaceDefs this entityType is referenced in
-    private Map<String, List<AtlasAttributeDef>> namespaceAttributeDefs;
+    // the value of this field is derived from all the businessMetadataDefs this entityType is referenced in
+    private Map<String, List<AtlasAttributeDef>> businessAttributeDefs;
 
 
     public AtlasEntityDef() {
@@ -132,7 +132,7 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
             setSuperTypes(other.getSuperTypes());
             setSubTypes(other.getSubTypes());
             setRelationshipAttributeDefs(other.getRelationshipAttributeDefs());
-            setNamespaceAttributeDefs(other.getNamespaceAttributeDefs());
+            setBusinessAttributeDefs(other.getBusinessAttributeDefs());
         }
     }
 
@@ -170,12 +170,12 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         this.relationshipAttributeDefs = relationshipAttributeDefs;
     }
 
-    public Map<String, List<AtlasAttributeDef>> getNamespaceAttributeDefs() {
-        return namespaceAttributeDefs;
+    public Map<String, List<AtlasAttributeDef>> getBusinessAttributeDefs() {
+        return businessAttributeDefs;
     }
 
-    public void setNamespaceAttributeDefs(Map<String, List<AtlasAttributeDef>> namespaceAttributeDefs) {
-        this.namespaceAttributeDefs = namespaceAttributeDefs;
+    public void setBusinessAttributeDefs(Map<String, List<AtlasAttributeDef>> businessAttributeDefs) {
+        this.businessAttributeDefs = businessAttributeDefs;
     }
 
     public boolean hasSuperType(String typeName) {
@@ -235,11 +235,11 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
             }
         }
         sb.append(']');
-        sb.append(", namespaceAttributeDefs={");
-        if (MapUtils.isNotEmpty(namespaceAttributeDefs)) {
+        sb.append(", businessAttributeDefs={");
+        if (MapUtils.isNotEmpty(businessAttributeDefs)) {
             int nsIdx = 0;
 
-            for (Map.Entry<String, List<AtlasAttributeDef>> entry : namespaceAttributeDefs.entrySet()) {
+            for (Map.Entry<String, List<AtlasAttributeDef>> entry : businessAttributeDefs.entrySet()) {
                 String                  nsName  = entry.getKey();
                 List<AtlasAttributeDef> nsAttrs = entry.getValue();
 

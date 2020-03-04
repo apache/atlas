@@ -30,11 +30,11 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
-import org.apache.atlas.model.typedef.AtlasNamespaceDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
@@ -252,10 +252,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             }
         }
 
-        if (CollectionUtils.isNotEmpty(typesDef.getNamespaceDefs())) {
-            for (AtlasNamespaceDef namespaceDef : typesDef.getNamespaceDefs()) {
-                if (!typeRegistry.isRegisteredType(namespaceDef.getName())) {
-                    typesToCreate.getNamespaceDefs().add(namespaceDef);
+        if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
+            for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
+                if (!typeRegistry.isRegisteredType(businessMetadataDef.getName())) {
+                    typesToCreate.getBusinessMetadataDefs().add(businessMetadataDef);
                 }
             }
         }
@@ -344,16 +344,16 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             }
         }
 
-        if (CollectionUtils.isNotEmpty(typesDef.getNamespaceDefs())) {
-            for (AtlasNamespaceDef namespaceDef : typesDef.getNamespaceDefs()) {
-                AtlasNamespaceDef oldNamespaceDef = typeRegistry.getNamespaceDefByName(namespaceDef.getName());
+        if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
+            for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
+                AtlasBusinessMetadataDef oldDef = typeRegistry.getBusinessMetadataDefByName(businessMetadataDef.getName());
 
-                if (oldNamespaceDef == null) {
+                if (oldDef == null) {
                     continue;
                 }
 
-                if (updateTypeAttributes(oldNamespaceDef, namespaceDef, checkTypeVersion)) {
-                    typesToUpdate.getNamespaceDefs().add(namespaceDef);
+                if (updateTypeAttributes(oldDef, businessMetadataDef, checkTypeVersion)) {
+                    typesToUpdate.getBusinessMetadataDefs().add(businessMetadataDef);
                 }
             }
         }

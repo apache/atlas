@@ -42,20 +42,20 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasTypesDef {
-    private List<AtlasEnumDef>           enumDefs;
-    private List<AtlasStructDef>         structDefs;
-    private List<AtlasClassificationDef> classificationDefs;
-    private List<AtlasEntityDef>         entityDefs;
-    private List<AtlasRelationshipDef>   relationshipDefs;
-    private List<AtlasNamespaceDef>      namespaceDefs;
+    private List<AtlasEnumDef>             enumDefs;
+    private List<AtlasStructDef>           structDefs;
+    private List<AtlasClassificationDef>   classificationDefs;
+    private List<AtlasEntityDef>           entityDefs;
+    private List<AtlasRelationshipDef>     relationshipDefs;
+    private List<AtlasBusinessMetadataDef> businessMetadataDefs;
 
     public AtlasTypesDef() {
-        enumDefs           = new ArrayList<>();
-        structDefs         = new ArrayList<>();
-        classificationDefs = new ArrayList<>();
-        entityDefs         = new ArrayList<>();
-        relationshipDefs   = new ArrayList<>();
-        namespaceDefs      = new ArrayList<>();
+        enumDefs             = new ArrayList<>();
+        structDefs           = new ArrayList<>();
+        classificationDefs   = new ArrayList<>();
+        entityDefs           = new ArrayList<>();
+        relationshipDefs     = new ArrayList<>();
+        businessMetadataDefs = new ArrayList<>();
     }
 
     /**
@@ -86,18 +86,18 @@ public class AtlasTypesDef {
         this(enumDefs, structDefs, classificationDefs, entityDefs, relationshipDefs, new ArrayList<>());
     }
 
-    public AtlasTypesDef(List<AtlasEnumDef>           enumDefs,
-                         List<AtlasStructDef>         structDefs,
-                         List<AtlasClassificationDef> classificationDefs,
-                         List<AtlasEntityDef>         entityDefs,
-                         List<AtlasRelationshipDef>   relationshipDefs,
-                         List<AtlasNamespaceDef>      namespaceDefs) {
-        this.enumDefs           = enumDefs;
-        this.structDefs         = structDefs;
-        this.classificationDefs = classificationDefs;
-        this.entityDefs         = entityDefs;
-        this.relationshipDefs   = relationshipDefs;
-        this.namespaceDefs      = namespaceDefs;
+    public AtlasTypesDef(List<AtlasEnumDef>             enumDefs,
+                         List<AtlasStructDef>           structDefs,
+                         List<AtlasClassificationDef>   classificationDefs,
+                         List<AtlasEntityDef>           entityDefs,
+                         List<AtlasRelationshipDef>     relationshipDefs,
+                         List<AtlasBusinessMetadataDef> businessMetadataDefs) {
+        this.enumDefs             = enumDefs;
+        this.structDefs           = structDefs;
+        this.classificationDefs   = classificationDefs;
+        this.entityDefs           = entityDefs;
+        this.relationshipDefs     = relationshipDefs;
+        this.businessMetadataDefs = businessMetadataDefs;
     }
 
     public List<AtlasEnumDef> getEnumDefs() {
@@ -138,12 +138,12 @@ public class AtlasTypesDef {
         this.relationshipDefs = relationshipDefs;
     }
 
-    public void setNamespaceDefs(List<AtlasNamespaceDef> namespaceDefs) {
-        this.namespaceDefs = namespaceDefs;
+    public void setBusinessMetadataDefs(List<AtlasBusinessMetadataDef> businessMetadataDefs) {
+        this.businessMetadataDefs = businessMetadataDefs;
     }
 
-    public List<AtlasNamespaceDef> getNamespaceDefs() {
-        return namespaceDefs;
+    public List<AtlasBusinessMetadataDef> getBusinessMetadataDefs() {
+        return businessMetadataDefs;
     }
 
     public boolean hasClassificationDef(String name) {
@@ -165,8 +165,8 @@ public class AtlasTypesDef {
         return hasTypeDef(relationshipDefs, name);
     }
 
-    public boolean hasNamespaceDef(String name) {
-        return hasTypeDef(namespaceDefs, name);
+    public boolean hasBusinessMetadataDef(String name) {
+        return hasTypeDef(businessMetadataDefs, name);
     }
 
     private <T extends AtlasBaseTypeDef> boolean hasTypeDef(Collection<T> typeDefs, String name) {
@@ -188,7 +188,7 @@ public class AtlasTypesDef {
                 CollectionUtils.isEmpty(classificationDefs) &&
                 CollectionUtils.isEmpty(entityDefs) &&
                 CollectionUtils.isEmpty(relationshipDefs) &&
-                CollectionUtils.isEmpty(namespaceDefs);
+                CollectionUtils.isEmpty(businessMetadataDefs);
     }
 
     public void clear() {
@@ -211,8 +211,8 @@ public class AtlasTypesDef {
             relationshipDefs.clear();
         }
 
-        if (namespaceDefs != null) {
-            namespaceDefs.clear();
+        if (businessMetadataDefs != null) {
+            businessMetadataDefs.clear();
         }
     }
     public StringBuilder toString(StringBuilder sb) {
@@ -235,8 +235,8 @@ public class AtlasTypesDef {
         sb.append("}");
         sb.append("relationshipDefs={");
         AtlasBaseTypeDef.dumpObjects(relationshipDefs, sb);
-        sb.append("namespaceDefs={");
-        AtlasBaseTypeDef.dumpObjects(namespaceDefs, sb);
+        sb.append("businessMetadataDefs={");
+        AtlasBaseTypeDef.dumpObjects(businessMetadataDefs, sb);
         sb.append("}");
 
         return sb;

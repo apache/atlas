@@ -161,12 +161,12 @@ public enum AtlasErrorCode {
     INVALID_LABEL_LENGTH(400, "ATLAS-400-00-08F", "Invalid label: {0}, label size should not be greater than {1}"),
     INVALID_LABEL_CHARACTERS(400, "ATLAS-400-00-090", "Invalid label: {0}, label should contain alphanumeric characters, '_' or '-'"),
     INVALID_PROPAGATION_TYPE(400, "ATLAS-400-00-091", "Invalid propagation {0} for relationship-type={1}. Default value is {2}"),
-    DUPLICATE_NAMESPACE_ATTRIBUTE(400, "ATLAS-400-00-092", "Duplicate Namespace Attributes: {0} not allowed within the same namespace: {1}"),
-    APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED(400, "ATLAS-400-00-093", "Cannot remove applicableEntityTypes in Attribute Def: {0}, defined in namespace: {1}"),
-    NAMESPACE_DEF_ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-094", "{0}.{1}: invalid attribute type. Namespace attribute cannot be of type entity/classification/struct/namespace"),
-    INVALID_NAMESPACE_NAME_FOR_ENTITY_TYPE(400, "ATLAS-400-00-095", "Invalid Namespace: {0} specified for entity, applicable namespaces: {1}"),
-    NAMESPACE_ATTRIBUTE_DOES_NOT_EXIST(400, "ATLAS-400-00-096", "Namespace attribute does not exist  in entity: {0}"),
-    NAMESPACE_ATTRIBUTE_ALREADY_EXISTS(400, "ATLAS-400-00-097", "Namespace attribute already exists in entity: {0}"),
+    DUPLICATE_BUSINESS_METADATA_ATTRIBUTE(400, "ATLAS-400-00-092", "Duplicate business-metadata attributes: {0} not allowed within the same business-metadata: {1}"),
+    APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED(400, "ATLAS-400-00-093", "Cannot remove applicableEntityTypes in Attribute Def: {0}, defined in business-metadata: {1}"),
+    BUSINESS_METADATA_DEF_ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-094", "{0}.{1}: invalid attribute type. Business-metadata attribute cannot be of type entity/classification/struct/business-metadata"),
+    INVALID_BUSINESS_METADATA_NAME_FOR_ENTITY_TYPE(400, "ATLAS-400-00-095", "Invalid business-metadata: {0} specified for entity, applicable business-metadata: {1}"),
+    BUSINESS_METADATA_ATTRIBUTE_DOES_NOT_EXIST(400, "ATLAS-400-00-096", "Business-metadata attribute does not exist in entity: {0}"),
+    BUSINESS_METADATA_ATTRIBUTE_ALREADY_EXISTS(400, "ATLAS-400-00-097", "Business-metadata attribute already exists in entity: {0}"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 

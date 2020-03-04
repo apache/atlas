@@ -31,6 +31,6 @@ public class DataTypes {
         TRAIT,
         CLASS,
         RELATIONSHIP,
-        NAMESPACE
+        BUSINESS_METADATA
     }
 }

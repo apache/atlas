@@ -53,7 +53,7 @@ import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasNamespaceType.AtlasNamespaceAttribute;
+import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
@@ -254,7 +254,7 @@ public class EntityGraphMapper {
         }
     }
 
-    public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications, boolean replaceNamespaceAttributes) throws AtlasBaseException {
+    public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
         EntityMutationResponse resp       = new EntityMutationResponse();
@@ -276,7 +276,7 @@ public class EntityGraphMapper {
                 resp.addEntity(CREATE, constructHeader(createdEntity, entityType, vertex));
                 addClassifications(context, guid, createdEntity.getClassifications());
 
-                addOrUpdateNamespaceAttributes(vertex, entityType, createdEntity.getNamespaceAttributes());
+                addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
 
                 reqContext.cache(createdEntity);
             }
@@ -303,8 +303,8 @@ public class EntityGraphMapper {
                     addClassifications(context, guid, updatedEntity.getClassifications());
                 }
 
-                if (replaceNamespaceAttributes) {
-                    setNamespaceAttributes(vertex, entityType, updatedEntity.getNamespaceAttributes());
+                if (replaceBusinessAttributes) {
+                    setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
                 }
 
                 reqContext.cache(updatedEntity);
@@ -420,95 +420,95 @@ public class EntityGraphMapper {
     }
 
     /*
-     * reset/overwrite namespace attributes of the entity with given values
+     * reset/overwrite business attributes of the entity with given values
      */
-    public void setNamespaceAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> entityNamespaces) throws AtlasBaseException {
+    public void setBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> setNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+            LOG.debug("==> setBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
 
-        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+        Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
 
-        for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
-            String                               nsName                 = entry.getKey();
-            Map<String, AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
-            Map<String, Object>                  entityNsAttributes     = MapUtils.isEmpty(entityNamespaces) ? null : entityNamespaces.get(nsName);
+        for (Map.Entry<String, Map<String, AtlasBusinessAttribute>> entry : entityTypeBusinessAttributes.entrySet()) {
+            String                              bmName             = entry.getKey();
+            Map<String, AtlasBusinessAttribute> bmAttributes       = entry.getValue();
+            Map<String, Object>                 entityBmAttributes = MapUtils.isEmpty(businessAttributes) ? null : businessAttributes.get(bmName);
 
-            for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes.values()) {
-                String nsAttrName          = nsAttribute.getName();
-                Object nsAttrExistingValue = entityVertex.getProperty(nsAttribute.getVertexPropertyName(), Object.class);
-                Object nsAttrNewValue      = MapUtils.isEmpty(entityNsAttributes) ? null : entityNsAttributes.get(nsAttrName);
+            for (AtlasBusinessAttribute bmAttribute : bmAttributes.values()) {
+                String bmAttrName          = bmAttribute.getName();
+                Object bmAttrExistingValue = entityVertex.getProperty(bmAttribute.getVertexPropertyName(), Object.class);
+                Object bmAttrNewValue      = MapUtils.isEmpty(entityBmAttributes) ? null : entityBmAttributes.get(bmAttrName);
 
-                if (nsAttrExistingValue == null) {
-                    if (nsAttrNewValue != null) {
+                if (bmAttrExistingValue == null) {
+                    if (bmAttrNewValue != null) {
                         if (LOG.isDebugEnabled()) {
-                            LOG.debug("setNamespaceAttributes(): adding {}.{}={}", nsName, nsAttribute.getName(), nsAttrNewValue);
+                            LOG.debug("setBusinessAttributes(): adding {}.{}={}", bmName, bmAttribute.getName(), bmAttrNewValue);
                         }
 
-                        mapAttribute(nsAttribute, nsAttrNewValue, entityVertex, CREATE, new EntityMutationContext());
+                        mapAttribute(bmAttribute, bmAttrNewValue, entityVertex, CREATE, new EntityMutationContext());
                     }
                 } else {
-                    if (nsAttrNewValue != null) {
-                        if (!Objects.equals(nsAttrExistingValue, nsAttrNewValue)) {
+                    if (bmAttrNewValue != null) {
+                        if (!Objects.equals(bmAttrExistingValue, bmAttrNewValue)) {
                             if (LOG.isDebugEnabled()) {
-                                LOG.debug("setNamespaceAttributes(): updating {}.{}={}", nsName, nsAttribute.getName(), nsAttrNewValue);
+                                LOG.debug("setBusinessAttributes(): updating {}.{}={}", bmName, bmAttribute.getName(), bmAttrNewValue);
                             }
 
-                            mapAttribute(nsAttribute, nsAttrNewValue, entityVertex, UPDATE, new EntityMutationContext());
+                            mapAttribute(bmAttribute, bmAttrNewValue, entityVertex, UPDATE, new EntityMutationContext());
                         }
                     } else {
                         if (LOG.isDebugEnabled()) {
-                            LOG.debug("setNamespaceAttributes(): removing {}.{}", nsName, nsAttribute.getName());
+                            LOG.debug("setBusinessAttributes(): removing {}.{}", bmName, bmAttribute.getName());
                         }
 
-                        entityVertex.removeProperty(nsAttribute.getVertexPropertyName());
+                        entityVertex.removeProperty(bmAttribute.getVertexPropertyName());
                     }
                 }
             }
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== setNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+            LOG.debug("<== setBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
     }
 
     /*
-     * add or update the given namespace attributes on the entity
+     * add or update the given business attributes on the entity
      */
-    public void addOrUpdateNamespaceAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> entityNamespaces) throws AtlasBaseException {
+    public void addOrUpdateBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> addOrUpdateNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+            LOG.debug("==> addOrUpdateBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
 
-        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+        Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
 
-        if (MapUtils.isNotEmpty(entityTypeNamespaces) && MapUtils.isNotEmpty(entityNamespaces)) {
-            for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
-                String                               nsName                 = entry.getKey();
-                Map<String, AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
-                Map<String, Object>                  entityNsAttributes     = entityNamespaces.get(nsName);
+        if (MapUtils.isNotEmpty(entityTypeBusinessAttributes) && MapUtils.isNotEmpty(businessAttributes)) {
+            for (Map.Entry<String, Map<String, AtlasBusinessAttribute>> entry : entityTypeBusinessAttributes.entrySet()) {
+                String                              bmName             = entry.getKey();
+                Map<String, AtlasBusinessAttribute> bmAttributes       = entry.getValue();
+                Map<String, Object>                 entityBmAttributes = businessAttributes.get(bmName);
 
-                if (MapUtils.isEmpty(entityNsAttributes)) {
+                if (MapUtils.isEmpty(entityBmAttributes)) {
                     continue;
                 }
 
-                for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes.values()) {
-                    String nsAttrName = nsAttribute.getName();
+                for (AtlasBusinessAttribute bmAttribute : bmAttributes.values()) {
+                    String bmAttrName = bmAttribute.getName();
 
-                    if (!entityNsAttributes.containsKey(nsAttrName)) {
+                    if (!entityBmAttributes.containsKey(bmAttrName)) {
                         continue;
                     }
 
-                    Object nsAttrValue   = entityNsAttributes.get(nsAttrName);
-                    Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, nsAttribute.getVertexPropertyName(), Object.class);
+                    Object bmAttrValue   = entityBmAttributes.get(bmAttrName);
+                    Object existingValue = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, bmAttribute.getVertexPropertyName(), Object.class);
 
                     if (existingValue == null) {
-                        if (nsAttrValue != null) {
-                            mapAttribute(nsAttribute, nsAttrValue, entityVertex, CREATE, new EntityMutationContext());
+                        if (bmAttrValue != null) {
+                            mapAttribute(bmAttribute, bmAttrValue, entityVertex, CREATE, new EntityMutationContext());
                         }
                     } else {
-                        if (!Objects.equals(existingValue, nsAttrValue)) {
-                            mapAttribute(nsAttribute, nsAttrValue, entityVertex, UPDATE, new EntityMutationContext());
+                        if (!Objects.equals(existingValue, bmAttrValue)) {
+                            mapAttribute(bmAttribute, bmAttrValue, entityVertex, UPDATE, new EntityMutationContext());
                         }
                     }
                 }
@@ -516,43 +516,43 @@ public class EntityGraphMapper {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== addOrUpdateNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+            LOG.debug("<== addOrUpdateBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
     }
 
     /*
-     * remove the given namespace attributes from the entity
+     * remove the given business attributes from the entity
      */
-    public void removeNamespaceAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> entityNamespaces) {
+    public void removeBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> removeNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+            LOG.debug("==> removeBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
 
-        Map<String, Map<String, AtlasNamespaceAttribute>> entityTypeNamespaces = entityType.getNamespaceAttributes();
+        Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
 
-        if (MapUtils.isNotEmpty(entityTypeNamespaces) && MapUtils.isNotEmpty(entityNamespaces)) {
-            for (Map.Entry<String, Map<String, AtlasNamespaceAttribute>> entry : entityTypeNamespaces.entrySet()) {
-                String                               nsName                 = entry.getKey();
-                Map<String, AtlasNamespaceAttribute> entityTypeNsAttributes = entry.getValue();
+        if (MapUtils.isNotEmpty(entityTypeBusinessAttributes) && MapUtils.isNotEmpty(businessAttributes)) {
+            for (Map.Entry<String, Map<String, AtlasBusinessAttribute>> entry : entityTypeBusinessAttributes.entrySet()) {
+                String                              bmName       = entry.getKey();
+                Map<String, AtlasBusinessAttribute> bmAttributes = entry.getValue();
 
-                if (!entityNamespaces.containsKey(nsName)) { // nothing to remove for this namespace
+                if (!businessAttributes.containsKey(bmName)) { // nothing to remove for this business-metadata
                     continue;
                 }
 
-                Map<String, Object> entityNsAttributes = entityNamespaces.get(nsName);
+                Map<String, Object> entityBmAttributes = businessAttributes.get(bmName);
 
-                for (AtlasNamespaceAttribute nsAttribute : entityTypeNsAttributes.values()) {
-                    // if (entityNsAttributes is empty) remove all attributes in this namespace
-                    // else remove the attribute only if its given in entityNsAttributes
-                    if (MapUtils.isEmpty(entityNsAttributes) || entityNsAttributes.containsKey(nsAttribute.getName())) {
-                        entityVertex.removeProperty(nsAttribute.getVertexPropertyName());
+                for (AtlasBusinessAttribute bmttribute : bmAttributes.values()) {
+                    // if (entityBmAttributes is empty) remove all attributes in this business-metadata
+                    // else remove the attribute only if its given in entityBmAttributes
+                    if (MapUtils.isEmpty(entityBmAttributes) || entityBmAttributes.containsKey(bmttribute.getName())) {
+                        entityVertex.removeProperty(bmttribute.getVertexPropertyName());
                     }
                 }
             }
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== removeNamespaceAttributes(entityVertex={}, entityType={}, entityNamespaces={}", entityVertex, entityType.getTypeName(), entityNamespaces);
+            LOG.debug("<== removeBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
     }
 
