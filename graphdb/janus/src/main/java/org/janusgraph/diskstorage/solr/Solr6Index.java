@@ -144,7 +144,7 @@ public class Solr6Index implements IndexProvider {
     private static Solr6Index instance = null;
     public static final ConfigOption<Boolean> CREATE_SOLR_CLIENT_PER_REQUEST = new ConfigOption(SOLR_NS, "create-client-per-request", "when false, allows the sharing of solr client across other components.", org.janusgraph.diskstorage.configuration.ConfigOption.Type.LOCAL, false);
 
-    private enum Mode {
+    public enum Mode {
         HTTP, CLOUD;
 
         public static Mode parse(String mode) {
@@ -184,7 +184,6 @@ public class Solr6Index implements IndexProvider {
     private final boolean waitSearcher;
     private final boolean kerberosEnabled;
 
-
     public Solr6Index(final Configuration config) throws BackendException {
         // Add Kerberos-enabled SolrHttpClientBuilder
         HttpClientUtil.setHttpClientBuilder(new Krb5HttpClientBuilder().getBuilder());
@@ -216,6 +215,15 @@ public class Solr6Index implements IndexProvider {
             logger.info("Solr Client will be shared for direct interation with SOLR.");
         }
         Solr6Index.instance = this;
+    }
+
+    public static Mode getSolrMode() {
+        if (Solr6Index.instance != null) {
+                return Mode.parse(Solr6Index.instance.configuration.get(SOLR_MODE));
+        } else {
+            logger.debug(" No Solr6Index available. Will return null");
+            return null;
+        }
     }
 
     public static SolrClient getSolrClient() {

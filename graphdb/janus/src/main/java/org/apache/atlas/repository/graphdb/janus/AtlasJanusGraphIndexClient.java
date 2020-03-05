@@ -29,17 +29,18 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.*;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.response.V2Response;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.TermsResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +73,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
         try {
             solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
+            Solr6Index.Mode solrMode = Solr6Index.getSolrMode();
 
             if (solrClient == null) {
                 LOG.warn("AtlasJanusGraphIndexClient.applySearchWeight(): Non SOLR index stores are not supported yet.");
@@ -100,7 +102,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 try {
                     LOG.info("Attempting to update free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
 
-                    updateFreeTextRequestHandler(solrClient, collectionName, indexFieldName2SearchWeightMap);
+                    updateFreeTextRequestHandler(solrClient, collectionName, indexFieldName2SearchWeightMap, solrMode);
 
                     LOG.info("Successfully updated free text request handler {} for collection {}..", FREETEXT_REQUEST_HANDLER, collectionName);
 
@@ -114,7 +116,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 try {
                     LOG.info("Attempting to create free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
 
-                    createFreeTextRequestHandler(solrClient, collectionName, indexFieldName2SearchWeightMap);
+                    createFreeTextRequestHandler(solrClient, collectionName, indexFieldName2SearchWeightMap, solrMode);
                     LOG.info("Successfully created free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
 
                     return;
@@ -249,6 +251,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
         try {
             solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
+            Solr6Index.Mode solrMode = Solr6Index.getSolrMode();
 
             if (solrClient == null) {
                 LOG.warn("The indexing system is not solr based. Suggestions feature will not be available.");
@@ -259,7 +262,8 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             //update the request handler
             performRequestHandlerAction(collectionName,
                                         solrClient,
-                                        generatePayLoadForSuggestions(generateSuggestionsString(suggestionProperties)));
+                                        generatePayLoadForSuggestions(generateSuggestionsString(suggestionProperties)),
+                                        solrMode);
         } catch (Throwable t) {
             String msg = String.format("Error encountered in creating the request handler '%s' for collection '%s'", Constants.TERMS_REQUEST_HANDLER, collectionName);
 
@@ -458,35 +462,51 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         return ret.toString();
     }
 
-    private V2Response updateFreeTextRequestHandler(SolrClient solrClient, String collectionName,
-                                                    Map<String, Integer> indexFieldName2SearchWeightMap) throws IOException, SolrServerException, AtlasBaseException {
+    private SolrResponse updateFreeTextRequestHandler(SolrClient solrClient, String collectionName,
+                                                    Map<String, Integer> indexFieldName2SearchWeightMap,
+                                                    Solr6Index.Mode mode) throws IOException, SolrServerException, AtlasBaseException {
         String searchWeightString = generateSearchWeightString(indexFieldName2SearchWeightMap);
         String payLoadString      = generatePayLoadForFreeText("update-requesthandler", searchWeightString);
 
-        return performRequestHandlerAction(collectionName, solrClient, payLoadString);
+        return performRequestHandlerAction(collectionName, solrClient, payLoadString, mode);
     }
 
-    private V2Response createFreeTextRequestHandler(SolrClient solrClient, String collectionName,
-                                                    Map<String, Integer> indexFieldName2SearchWeightMap) throws IOException, SolrServerException, AtlasBaseException {
+    private SolrResponse createFreeTextRequestHandler(SolrClient solrClient, String collectionName,
+                                                    Map<String, Integer> indexFieldName2SearchWeightMap,
+                                                    Solr6Index.Mode mode) throws IOException, SolrServerException, AtlasBaseException {
         String searchWeightString = generateSearchWeightString(indexFieldName2SearchWeightMap);
         String payLoadString      = generatePayLoadForFreeText("create-requesthandler", searchWeightString);
 
-        return performRequestHandlerAction(collectionName, solrClient, payLoadString);
+        return performRequestHandlerAction(collectionName, solrClient, payLoadString, mode);
     }
 
-    private V2Response performRequestHandlerAction(String collectionName,
+    private SolrResponse performRequestHandlerAction(String collectionName,
                                                    SolrClient solrClient,
-                                                   String actionPayLoad) throws IOException, SolrServerException, AtlasBaseException {
-        V2Request v2Request = new V2Request.Builder(String.format("/collections/%s/config", collectionName))
-                                                    .withMethod(SolrRequest.METHOD.POST)
-                                                    .withPayload(actionPayLoad)
-                                                    .build();
+                                                   String actionPayLoad,
+                                                   Solr6Index.Mode mode) throws IOException, SolrServerException, AtlasBaseException {
 
-        return validateResponseForSuccess(v2Request.process(solrClient));
+        switch (mode) {
+            case CLOUD:
+                SolrRequest v2request = new V2Request.Builder(String.format("/collections/%s/config", collectionName))
+                        .withMethod(SolrRequest.METHOD.POST)
+                        .withPayload(actionPayLoad)
+                        .build();
+
+                return validateResponseForSuccess(v2request.process(solrClient));
+            case HTTP:
+                Collection<ContentStream> contentStreams = ClientUtils.toContentStreams(actionPayLoad, "application/json; charset=UTF-8");
+                GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, String.format("/%s/config", collectionName), null);
+                request.setContentStreams(contentStreams);
+                request.setUseV2(false);
+
+                return validateResponseForSuccess(request.process(solrClient));
+            default:
+                throw new IllegalArgumentException("Unsupported Solr operation mode: " + mode);
+        }
     }
 
-    private V2Response validateResponseForSuccess(V2Response v2Response) throws AtlasBaseException {
-        if(v2Response == null) {
+    private SolrResponse validateResponseForSuccess(SolrResponse solrResponse) throws AtlasBaseException {
+        if(solrResponse == null) {
             String msg = "Received null response .";
 
             LOG.error(msg);
@@ -495,10 +515,10 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("V2 Response is {}", v2Response.toString());
+            LOG.debug("V2 Response is {}", solrResponse.toString());
         }
 
-        NamedList<Object> response = v2Response.getResponse();
+        NamedList<Object> response = solrResponse.getResponse();
 
         if(response != null) {
             Object errorMessages = response.get("errorMessages");
@@ -523,7 +543,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 throw new AtlasBaseException(msg);
             } else {
                 if(LOG.isDebugEnabled()) {
-                    LOG.debug("Successfully performed response handler action. V2 Response is {}", v2Response.toString());
+                    LOG.debug("Successfully performed response handler action. V2 Response is {}", solrResponse.toString());
                 }
             }
 
@@ -533,7 +553,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             }
         }
 
-        return v2Response;
+        return solrResponse;
     }
 
         static final class TermFreq {
