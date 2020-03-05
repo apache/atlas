@@ -262,6 +262,9 @@ require(['App',
                         }
                     }
                 }
+                if (response['atlas.ui.default.version'] !== undefined) {
+                    Globals.DEFAULT_UI = response['atlas.ui.default.version'];
+                }
             }
             --that.asyncFetchCounter;
             startApp();

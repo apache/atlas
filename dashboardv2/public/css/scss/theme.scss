@@ -26,6 +26,10 @@ header.atlas-header {
     background-color: $white;
     border-bottom: 1px $color_mystic_approx solid;
 
+    table {
+        width: 100%;
+    }
+
     .navbar-nav {
         display: table;
 
@@ -123,6 +127,10 @@ header.atlas-header {
             border: 1px solid #666363;
             overflow: hidden;
             @include clearfix();
+        }
+
+        .tab-content>.tab-pane.active {
+            padding: 18px;
         }
     }
 }

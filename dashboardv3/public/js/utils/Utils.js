@@ -231,11 +231,15 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             skipDefaultError = options.skipDefaultError;
             defaultErrorMessage = options.defaultErrorMessage;
         }
+        var redirectToLoginPage = function() {
+            Utils.localStorage.setValue("last_ui_load", "v2");
+            window.location = 'login.jsp';
+        }
         if (error && error.status) {
             if (error.status == 401) {
-                window.location = 'login.jsp'
+                redirectToLoginPage();
             } else if (error.status == 419) {
-                window.location = 'login.jsp'
+                redirectToLoginPage();
             } else if (error.status == 403) {
                 Utils.serverErrorHandler(error, "You are not authorized");
             } else if (error.status == "0" && error.statusText != "abort") {

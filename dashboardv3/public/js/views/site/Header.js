@@ -35,7 +35,8 @@ define(['require',
             backButton: "[data-id='backButton']",
             menuHamburger: "[data-id='menuHamburger']",
             administrator: "[data-id='administrator']",
-            signOut: "[data-id='signOut']"
+            signOut: "[data-id='signOut']",
+            uiSwitch: "[data-id='uiSwitch']"
         },
         events: function() {
             var events = {};
@@ -49,7 +50,7 @@ define(['require',
                 $('body').toggleClass("full-screen");
             };
             events['click ' + this.ui.signOut] = function() {
-                Utils.localStorage.setValue("atlas_ui", "beta");
+                Utils.localStorage.setValue("last_ui_load", "v2");
                 var path = Utils.getBaseUrl(window.location.pathname);
                 window.location = path + "/logout.html";
             };
@@ -60,6 +61,13 @@ define(['require',
                     trigger: true,
                     updateTabState: true
                 });
+            };
+            events["click " + this.ui.uiSwitch] = function() {
+                var path = Utils.getBaseUrl(window.location.pathname) + "/index.html";
+                if (window.location.hash.length > 2) {
+                    path += window.location.hash;
+                }
+                window.location.href = path;
             };
 
 
