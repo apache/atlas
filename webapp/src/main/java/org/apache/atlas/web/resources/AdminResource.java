@@ -124,6 +124,8 @@ public class AdminResource {
     private static final String isEntityCreateAllowed          = "atlas.entity.create.allowed";
     private static final String editableEntityTypes            = "atlas.ui.editable.entity.types";
     private static final String DEFAULT_EDITABLE_ENTITY_TYPES  = "hdfs_path";
+    private static final String DEFAULT_UI_VERSION             = "atlas.ui.default.version";
+    private static final String UI_VERSION_V2                  = "v2";
     private static final List TIMEZONE_LIST  = Arrays.asList(TimeZone.getAvailableIDs());
 
     @Context
@@ -148,6 +150,7 @@ public class AdminResource {
     private final  AtlasEntityStore         entityStore;
     private final  AtlasPatchManager        patchManager;
     private final  AtlasAuditService        auditService;
+    private final  String                   defaultUIVersion;
 
     static {
         try {
@@ -177,6 +180,11 @@ public class AdminResource {
         this.importExportOperationLock = new ReentrantLock();
         this.patchManager              = patchManager;
         this.auditService              = auditService;
+        if (atlasProperties != null) {
+            defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
+        } else {
+            defaultUIVersion = UI_VERSION_V2;
+        }
     }
 
     /**
@@ -317,6 +325,7 @@ public class AdminResource {
         responseData.put(isEntityUpdateAllowed, isEntityUpdateAccessAllowed);
         responseData.put(isEntityCreateAllowed, isEntityCreateAccessAllowed);
         responseData.put(editableEntityTypes, getEditableEntityTypes(atlasProperties));
+        responseData.put(DEFAULT_UI_VERSION, defaultUIVersion);
         responseData.put("userName", userName);
         responseData.put("groups", groups);
         responseData.put("timezones", TIMEZONE_LIST);

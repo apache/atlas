@@ -175,7 +175,7 @@ require.config({
         'sparkline': 'libs/sparkline/jquery.sparkline.min',
         'table-dragger': 'libs/table-dragger/table-dragger',
         'jstree': 'libs/jstree/jstree.min',
-        'jquery-steps': 'libs/jquery-steps/jquery.steps.min',
+        'jquery-steps': 'libs/jquery-steps/jquery.steps.min'
     },
 
     /**
@@ -251,6 +251,9 @@ require(['App',
                             Globals.entityTypeConfList = entityTypeList;
                         }
                     }
+                }
+                if (response['atlas.ui.default.version'] !== undefined) {
+                    Globals.DEFAULT_UI = response['atlas.ui.default.version'];
                 }
             }
             --that.asyncFetchCounter;

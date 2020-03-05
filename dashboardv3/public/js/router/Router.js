@@ -59,7 +59,6 @@ define([
                 _.pick(options, "entityDefCollection", "typeHeaders", "enumDefCollection", "classificationDefCollection", "metricCollection", "nameSpaceCollection")
             );
             this.showRegions();
-            this.bindFooterEvent();
             this.bindCommonEvents();
             this.listenTo(this, "route", this.postRouteExecute, this);
             this.searchVent = new Backbone.Wreqr.EventAggregator();
@@ -88,15 +87,6 @@ define([
                     entityFilters: {}
                 }
             };
-        },
-        bindFooterEvent: function() {
-            $("body").on("click", "#sUI", function() {
-                var path = Utils.getBaseUrl(window.location.pathname) + "/index.html";
-                if (window.location.hash.length > 2) {
-                    path += window.location.hash;
-                }
-                window.location.href = path;
-            });
         },
         bindCommonEvents: function() {
             var that = this;

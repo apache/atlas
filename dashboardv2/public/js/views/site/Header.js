@@ -34,7 +34,8 @@ define(['require',
             menuHamburger: "[data-id='menuHamburger']",
             globalSearch: "[data-id='globalSearch']",
             clearGlobalSearch: "[data-id='clearGlobalSearch']",
-            signOut: "[data-id='signOut']"
+            signOut: "[data-id='signOut']",
+            uiSwitch: "[data-id='uiSwitch']"
         },
         events: function() {
             var events = {};
@@ -70,13 +71,19 @@ define(['require',
                 $('body').toggleClass("full-screen");
             };
             events['click ' + this.ui.signOut] = function() {
-
-                Utils.localStorage.setValue("atlas_ui", "classic");
+                Utils.localStorage.setValue("last_ui_load", "v1");
                 var path = Utils.getBaseUrl(window.location.pathname);
                 window.location = path + "/logout.html";
             };
-            return events;
+            events["click " + this.ui.uiSwitch] = function() {
+                var path = Utils.getBaseUrl(window.location.pathname) + "/n/index.html";
+                if (window.location.hash.length > 2) {
+                    path += window.location.hash;
+                }
+                window.location.href = path;
+            };
 
+            return events;
         },
         initialize: function(options) {
             this.bindEvent();
