@@ -97,7 +97,7 @@ public class EntitySearchProcessor extends SearchProcessor {
         if (!isEntityRootType()) {
             typeNamePredicate = SearchPredicateUtil.getINPredicateGenerator().generatePredicate(TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);
         } else {
-            typeNamePredicate = null;
+            typeNamePredicate = SearchPredicateUtil.generateIsEntityVertexPredicate(context.getTypeRegistry());
         }
 
         processSearchAttributes(entityType, filterCriteria, indexAttributes, graphAttributes, allAttributes);
@@ -111,9 +111,8 @@ public class EntitySearchProcessor extends SearchProcessor {
             graphIndexQueryBuilder.addTypeAndSubTypesQueryFilter(indexQuery, typeAndSubTypesQryStr);
 
             // TypeName check to be done in-memory as well to address ATLAS-2121 (case sensitivity)
-            if (typeNamePredicate != null) {
-                inMemoryPredicate = typeNamePredicate;
-            }
+            inMemoryPredicate = typeNamePredicate;
+
         }
 
         if (attrSearchByIndex) {
@@ -168,6 +167,10 @@ public class EntitySearchProcessor extends SearchProcessor {
                 query.or(orConditions);
 
                 // Construct a parallel in-memory predicate
+                if (isEntityRootType()) {
+                    inMemoryPredicate = typeNamePredicate;
+                }
+
                 if (graphQueryPredicate != null) {
                     graphQueryPredicate = PredicateUtils.andPredicate(graphQueryPredicate, traitPredicate);
                 } else {
@@ -210,9 +213,8 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         // Prepare the graph query and in-memory filter for the filtering phase
-        if (typeNamePredicate != null) {
-            filterGraphQueryPredicate = typeNamePredicate;
-        }
+        filterGraphQueryPredicate = typeNamePredicate;
+
 
         Predicate attributesPredicate = constructInMemoryPredicate(entityType, filterCriteria, allAttributes);
 
@@ -310,6 +312,11 @@ public class EntitySearchProcessor extends SearchProcessor {
                     getVertices(queryResult, entityVertices);
 
                     isLastResultPage = entityVertices.size() < limit;
+
+                    // Do in-memory filtering
+                    if (inMemoryPredicate != null) {
+                        CollectionUtils.filter(entityVertices, inMemoryPredicate);
+                    }
 
                     //incase when operator is NEQ in pipeSeperatedSystemAttributes
                     if (graphQueryPredicate != null) {

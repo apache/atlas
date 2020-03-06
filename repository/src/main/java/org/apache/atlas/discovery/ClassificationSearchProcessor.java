@@ -70,6 +70,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
     private final Map<String, Object>    gremlinQueryBindings;
     private final String                 gremlinTagFilterQuery;
     private final Predicate              traitPredicate;
+    private final Predicate              isEntityPredicate;
 
     // Some index engines may take space as a delimiter, when basic search is
     // executed, unsatisfying results may be returned.
@@ -148,12 +149,14 @@ public class ClassificationSearchProcessor extends SearchProcessor {
 
             LOG.debug("Using query string  '{}'.", indexQuery);
 
+            isEntityPredicate = SearchPredicateUtil.generateIsEntityVertexPredicate(context.getTypeRegistry());
             traitPredicate    = buildTraitPredict(classificationType);
             inMemoryPredicate = inMemoryPredicate == null ? traitPredicate : PredicateUtils.andPredicate(inMemoryPredicate, traitPredicate);
 
         } else {
             indexQuery     = null;
             traitPredicate = null;
+            isEntityPredicate = null;
         }
 
         // index query directly on classification
@@ -282,6 +285,11 @@ public class ClassificationSearchProcessor extends SearchProcessor {
 
                     getVerticesFromIndexQueryResult(queryResult, entityVertices);
                     isLastResultPage = entityVertices.size() < limit;
+
+                    if (isEntityPredicate != null) {
+                        // Do in-memory filtering
+                        CollectionUtils.filter(entityVertices, isEntityPredicate);
+                    }
                 } else {
                     if (classificationIndexQuery != null) {
                         Iterator<AtlasIndexQuery.Result> queryResult = classificationIndexQuery.vertices(qryOffset, limit);
