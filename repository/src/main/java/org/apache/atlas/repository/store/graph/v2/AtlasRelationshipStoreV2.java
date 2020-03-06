@@ -99,10 +99,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     private final EntityGraphRetriever      entityRetriever;
     private final DeleteHandlerDelegate     deleteDelegate;
     private final GraphHelper               graphHelper = GraphHelper.getInstance();
-    private final AtlasEntityChangeNotifier entityChangeNotifier;
+    private final IAtlasEntityChangeNotifier entityChangeNotifier;
 
     @Inject
-    public AtlasRelationshipStoreV2(AtlasTypeRegistry typeRegistry, DeleteHandlerDelegate deleteDelegate, AtlasEntityChangeNotifier entityChangeNotifier) {
+    public AtlasRelationshipStoreV2(AtlasTypeRegistry typeRegistry, DeleteHandlerDelegate deleteDelegate, IAtlasEntityChangeNotifier entityChangeNotifier) {
         this.typeRegistry         = typeRegistry;
         this.entityRetriever      = new EntityGraphRetriever(typeRegistry);
         this.deleteDelegate       = deleteDelegate;

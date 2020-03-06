@@ -53,7 +53,7 @@ import java.util.Set;
 
 
 @Component
-public class FullTextMapperV2 {
+public class FullTextMapperV2 implements IFullTextMapper {
     private static final Logger LOG = LoggerFactory.getLogger(FullTextMapperV2.class);
 
     private static final String FULL_TEXT_DELIMITER                  = " ";
@@ -84,6 +84,8 @@ public class FullTextMapperV2 {
      * @return Full text string ONLY for the added classifications
      * @throws AtlasBaseException
      */
+
+    @Override
     public String getIndexTextForClassifications(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         String                       ret     = null;
         final AtlasEntityWithExtInfo entityWithExtInfo;
@@ -120,6 +122,7 @@ public class FullTextMapperV2 {
         return ret;
     }
 
+    @Override
     public String getIndexTextForEntity(String guid) throws AtlasBaseException {
         String                   ret    = null;
         final AtlasEntity        entity;
@@ -150,6 +153,7 @@ public class FullTextMapperV2 {
         return ret;
     }
 
+    @Override
     public String getClassificationTextForEntity(AtlasEntity entity) throws AtlasBaseException {
         String                   ret    = null;
 
@@ -271,10 +275,12 @@ public class FullTextMapperV2 {
         }
     }
 
+    @Override
     public AtlasEntity getAndCacheEntity(String guid) throws AtlasBaseException {
         return getAndCacheEntity(guid, true);
     }
 
+    @Override
     public AtlasEntity  getAndCacheEntity(String guid, boolean includeReferences) throws AtlasBaseException {
         RequestContext context = RequestContext.get();
         AtlasEntity    entity  = context.getEntity(guid);
@@ -294,6 +300,7 @@ public class FullTextMapperV2 {
         return entity;
     }
 
+    @Override
     public AtlasEntityWithExtInfo getAndCacheEntityWithExtInfo(String guid) throws AtlasBaseException {
         RequestContext         context           = RequestContext.get();
         AtlasEntityWithExtInfo entityWithExtInfo = context.getEntityWithExtInfo(guid);

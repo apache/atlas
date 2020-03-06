@@ -44,6 +44,9 @@ public class AtlasImportRequest implements Serializable {
     public  static final String TRANSFORMS_KEY             = "transforms";
     public  static final String TRANSFORMERS_KEY           = "transformers";
     public  static final String OPTION_KEY_REPLICATED_FROM = "replicatedFrom";
+    public  static final String OPTION_KEY_MIGRATION       = "migration";
+    public  static final String OPTION_KEY_NUM_WORKERS     = "numWorkers";
+    public  static final String OPTION_KEY_BATCH_SIZE      = "batchSize";
     public  static final String OPTION_KEY_FORMAT          = "format";
     public  static final String OPTION_KEY_FORMAT_ZIP_DIRECT = "zipDirect";
     private static final String START_POSITION_KEY         = "startPosition";
@@ -122,6 +125,24 @@ public class AtlasImportRequest implements Serializable {
     @JsonIgnore
     public String getOptionKeyReplicatedFrom() {
         return isReplicationOptionSet() ? options.get(OPTION_KEY_REPLICATED_FROM) : StringUtils.EMPTY;
+    }
+
+    @JsonIgnore
+    public int getOptionKeyNumWorkers() {
+        return getOptionsValue(OPTION_KEY_NUM_WORKERS, 1);
+    }
+
+    @JsonIgnore
+    public int getOptionKeyBatchSize() {
+        return getOptionsValue(OPTION_KEY_BATCH_SIZE, 1);
+    }
+
+    private int getOptionsValue(String optionKeyBatchSize, int defaultValue) {
+        String optionsValue = getOptionForKey(optionKeyBatchSize);
+
+        return StringUtils.isEmpty(optionsValue) ?
+                defaultValue :
+                Integer.valueOf(optionsValue);
     }
 
     @JsonAnySetter

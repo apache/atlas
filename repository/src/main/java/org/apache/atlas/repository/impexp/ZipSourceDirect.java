@@ -64,6 +64,10 @@ public class ZipSourceDirect implements EntityImportStream {
         this.zipInputStream = new ZipInputStream(inputStream);
         this.streamSize = streamSize;
         prepareStreamForFetch();
+
+        if (this.streamSize == 1) {
+            LOG.info("ZipSourceDirect: Stream Size set to: {}. This will cause inaccurate percentage reporting.", this.streamSize);
+        }
     }
 
     @Override
@@ -226,6 +230,10 @@ public class ZipSourceDirect implements EntityImportStream {
     }
 
     public int size() {
+        if (this.streamSize == 1) {
+            return currentPosition;
+        }
+
         return this.streamSize;
     }
 

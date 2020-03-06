@@ -24,6 +24,8 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.repository.impexp.ImportService;
+import org.apache.atlas.type.AtlasType;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,11 +34,20 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.util.Map;
+import java.util.zip.ZipFile;
 
 public class ZipFileMigrationImporter implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(ZipFileMigrationImporter.class);
 
-    private static String ENV_USER_NAME = "user.name";
+    private static final String APPLICATION_PROPERTY_MIGRATION_NUMER_OF_WORKERS = "atlas.migration.mode.workers";
+    private static final String APPLICATION_PROPERTY_MIGRATION_BATCH_SIZE       = "atlas.migration.mode.batch.size";
+    private static final String DEFAULT_NUMBER_OF_WORKERS = "4";
+    private static final String DEFAULT_BATCH_SIZE = "100";
+    private static final String ZIP_FILE_COMMENT_ENTITIES_COUNT = "entitiesCount";
+    private static final String ZIP_FILE_COMMENT_TOTAL_COUNT = "total";
+
+    private final static String ENV_USER_NAME = "user.name";
 
     private final ImportService importService;
     private final String fileToImport;
@@ -52,7 +63,8 @@ public class ZipFileMigrationImporter implements Runnable {
             FileWatcher fileWatcher = new FileWatcher(fileToImport);
             fileWatcher.start();
 
-            performImport(new FileInputStream(new File(fileToImport)));
+            int streamSize = getStreamSizeFromComment(fileToImport);
+            performImport(new FileInputStream(new File(fileToImport)), streamSize);
         } catch (IOException e) {
             LOG.error("Migration Import: IO Error!", e);
         } catch (AtlasBaseException e) {
@@ -60,19 +72,46 @@ public class ZipFileMigrationImporter implements Runnable {
         }
     }
 
-    private void performImport(InputStream fs) throws AtlasBaseException {
+    private int getStreamSizeFromComment(String fileToImport) {
+        int ret = 1;
+        try {
+            ZipFile zipFile = new ZipFile(fileToImport);
+            String comment = zipFile.getComment();
+            ret = processZipFileStreamSizeComment(comment);
+            zipFile.close();
+        } catch (IOException e) {
+            LOG.error("Error opening ZIP file: {}", fileToImport, e);
+        }
+
+        return ret;
+    }
+
+    private int processZipFileStreamSizeComment(String comment) {
+        if (StringUtils.isEmpty(comment)) {
+            return 1;
+        }
+
+        Map map = AtlasType.fromJson(comment, Map.class);
+        int entitiesCount = (int) map.get(ZIP_FILE_COMMENT_ENTITIES_COUNT);
+        int totalCount = (int) map.get(ZIP_FILE_COMMENT_TOTAL_COUNT);
+        LOG.info("ZipFileMigrationImporter: Zip file: Comment: streamSize: {}: total: {}", entitiesCount, totalCount);
+
+        return entitiesCount;
+    }
+
+    private void performImport(InputStream fs, int streamSize) throws AtlasBaseException {
         try {
             LOG.info("Migration Import: {}: Starting...", fileToImport);
 
             RequestContext.get().setUser(getUserNameFromEnvironment(), null);
 
-            importService.run(fs, getImportRequest(),
+            importService.run(fs, getImportRequest(streamSize),
                     getUserNameFromEnvironment(),
                     InetAddress.getLocalHost().getHostName(),
                     InetAddress.getLocalHost().getHostAddress());
 
         } catch (Exception ex) {
-            LOG.error("Error loading zip for migration", ex);
+            LOG.error("Migration Import: Error loading zip for migration!", ex);
             throw new AtlasBaseException(ex);
         } finally {
             LOG.info("Migration Import: {}: Done!", fileToImport);
@@ -83,9 +122,17 @@ public class ZipFileMigrationImporter implements Runnable {
         return System.getProperty(ENV_USER_NAME);
     }
 
-    private AtlasImportRequest getImportRequest() throws AtlasException {
+    private AtlasImportRequest getImportRequest(int streamSize) throws AtlasException {
         AtlasImportRequest request = new AtlasImportRequest();
-        request.setOption(AtlasImportRequest.OPTION_KEY_FORMAT, AtlasImportRequest.OPTION_KEY_FORMAT_ZIP_DIRECT);
+
+        request.setSizeOption(streamSize);
+        request.setOption(AtlasImportRequest.OPTION_KEY_MIGRATION, "true");
+        request.setOption(AtlasImportRequest.OPTION_KEY_NUM_WORKERS, getPropertyValue(APPLICATION_PROPERTY_MIGRATION_NUMER_OF_WORKERS, DEFAULT_NUMBER_OF_WORKERS));
+        request.setOption(AtlasImportRequest.OPTION_KEY_BATCH_SIZE, getPropertyValue(APPLICATION_PROPERTY_MIGRATION_BATCH_SIZE, DEFAULT_BATCH_SIZE));
+
         return request;
+    }
+    private String getPropertyValue(String property, String defaultValue) throws AtlasException {
+        return ApplicationProperties.get().getString(property, defaultValue);
     }
 }

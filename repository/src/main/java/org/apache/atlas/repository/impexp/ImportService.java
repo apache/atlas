@@ -250,8 +250,9 @@ public class ImportService {
 
     private EntityImportStream createZipSource(AtlasImportRequest request, InputStream inputStream, String configuredTemporaryDirectory) throws AtlasBaseException {
         try {
-            if (request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_FORMAT) &&
-                    request.getOptions().get(AtlasImportRequest.OPTION_KEY_FORMAT).equals(AtlasImportRequest.OPTION_KEY_FORMAT_ZIP_DIRECT) ) {
+            if (request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION) || (request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_FORMAT) &&
+                    request.getOptions().get(AtlasImportRequest.OPTION_KEY_FORMAT).equals(AtlasImportRequest.OPTION_KEY_FORMAT_ZIP_DIRECT))) {
+                LOG.info("ZipSource Format: ZipDirect: Size: {}", request.getOptions().get("size"));
                 return getZipDirectEntityImportStream(request, inputStream);
             }
 
