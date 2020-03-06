@@ -18,33 +18,29 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.BulkImporter;
+import org.apache.atlas.repository.store.graph.v2.bulkimport.ImportStrategy;
+import org.apache.atlas.repository.store.graph.v2.bulkimport.MigrationImport;
+import org.apache.atlas.repository.store.graph.v2.bulkimport.RegularImport;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.Constants;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -55,100 +51,77 @@ public class BulkImporterImpl implements BulkImporter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2.class);
 
     private final AtlasEntityStore entityStore;
-    private final EntityGraphRetriever entityGraphRetriever;
     private AtlasTypeRegistry typeRegistry;
-    private final int MAX_ATTEMPTS = 2;
-    private boolean directoryBasedImportConfigured;
 
     @Inject
     public BulkImporterImpl(AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
         this.entityStore = entityStore;
-        this.entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
         this.typeRegistry = typeRegistry;
-        this.directoryBasedImportConfigured = StringUtils.isNotEmpty(AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
     }
 
     @Override
     public EntityMutationResponse bulkImport(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> bulkImport()");
+        ImportStrategy importStrategy = null;
+
+        if (importResult.getRequest().getOptions() != null &&
+                importResult.getRequest().getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION)) {
+            importStrategy = new MigrationImport(new AtlasGraphProvider(), this.typeRegistry);
+        } else {
+            importStrategy = new RegularImport(this.entityStore, this.typeRegistry);
         }
 
-        if (entityStream == null || !entityStream.hasNext()) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
+        LOG.info("BulkImportImpl: {}", importStrategy.getClass().getSimpleName());
+        return importStrategy.run(entityStream, importResult);
+    }
+
+    @VisibleForTesting
+    static String getJsonArray(String json, String vertexGuid) {
+        String quotedGuid = String.format("\"%s\"", vertexGuid);
+        if (StringUtils.isEmpty(json)) {
+            json = String.format("[%s]", quotedGuid);
+        } else {
+            json = json.replace("]", "").concat(",").concat(quotedGuid).concat("]");
+        }
+        return json;
+    }
+
+    @VisibleForTesting
+    public static float updateImportProgress(Logger log, int currentIndex, int streamSize, float currentPercent, String additionalInfo) {
+        final double tolerance   = 0.000001;
+        final int    MAX_PERCENT = 100;
+
+        int     maxSize        = (currentIndex <= streamSize) ? streamSize : currentIndex;
+        if (maxSize <= 0) {
+            return currentPercent;
         }
 
-        EntityMutationResponse ret = new EntityMutationResponse();
-        ret.setGuidAssignments(new HashMap<>());
+        float   percent        = (float) ((currentIndex * MAX_PERCENT) / maxSize);
+        boolean updateLog      = Double.compare(percent, currentPercent) > tolerance;
+        float   updatedPercent = (MAX_PERCENT < maxSize) ? percent : ((updateLog) ? ++currentPercent : currentPercent);
 
-        Set<String>  processedGuids = new HashSet<>();
-        float        currentPercent = 0f;
-        List<String> residualList   = new ArrayList<>();
+        if (updateLog) {
+            log.info("bulkImport(): progress: {}% (of {}) - {}", (int) Math.ceil(percent), maxSize, additionalInfo);
+        }
 
-        EntityImportStreamWithResidualList entityImportStreamWithResidualList = new EntityImportStreamWithResidualList(entityStream, residualList);
+        return updatedPercent;
+    }
 
-        while (entityImportStreamWithResidualList.hasNext()) {
-            AtlasEntityWithExtInfo entityWithExtInfo = entityImportStreamWithResidualList.getNextEntityWithExtInfo();
-            AtlasEntity            entity            = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
+    public static void updateImportMetrics(String prefix, List<AtlasEntityHeader> list, Set<String> processedGuids, AtlasImportResult importResult) {
+        if (list == null) {
+            return;
+        }
 
-            if (entity == null) {
+        for (AtlasEntityHeader h : list) {
+            if (processedGuids.contains(h.getGuid())) {
                 continue;
             }
 
-            for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-                try {
-                    AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, null);
-                    EntityMutationResponse resp = entityStore.createOrUpdateForImport(oneEntityStream);
-
-                    if (resp.getGuidAssignments() != null) {
-                        ret.getGuidAssignments().putAll(resp.getGuidAssignments());
-                    }
-
-                    currentPercent = updateImportMetrics(entityWithExtInfo, resp, importResult, processedGuids,
-                            entityStream.getPosition(),
-                            entityImportStreamWithResidualList.getStreamSize(),
-                            currentPercent);
-
-                    entityStream.onImportComplete(entity.getGuid());
-                    break;
-                } catch (AtlasBaseException e) {
-                    if (!updateResidualList(e, residualList, entityWithExtInfo.getEntity().getGuid())) {
-                        throw e;
-                    }
-                    break;
-                } catch (AtlasSchemaViolationException e) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Entity: {}", entity.getGuid(), e);
-                    }
-
-                    if (attempt == 0) {
-                        updateVertexGuid(entity);
-                    } else {
-                        LOG.error("Guid update failed: {}", entityWithExtInfo.getEntity().getGuid());
-                        throw e;
-                    }
-                } catch (Throwable e) {
-                    AtlasBaseException abe = new AtlasBaseException(e);
-                    if (!updateResidualList(abe, residualList, entityWithExtInfo.getEntity().getGuid())) {
-                        throw abe;
-                    }
-
-                    LOG.warn("Exception: {}", entity.getGuid(), e);
-                    break;
-                } finally {
-                    RequestContext.get().clearCache();
-                }
-            }
+            processedGuids.add(h.getGuid());
+            importResult.incrementMeticsCounter(String.format(prefix, h.getTypeName()));
         }
-
-        importResult.getProcessedEntities().addAll(processedGuids);
-        LOG.info("bulkImport(): done. Total number of entities (including referred entities) imported: {}", processedGuids.size());
-
-        return ret;
     }
 
-    @GraphTransaction
-    public void updateVertexGuid(AtlasEntity entity) {
+    public static void updateVertexGuid(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityGraphRetriever, AtlasEntity entity) {
         String entityGuid = entity.getGuid();
         AtlasObjectId objectId = entityGraphRetriever.toAtlasObjectIdWithoutGuid(entity);
 
@@ -176,116 +149,9 @@ public class BulkImporterImpl implements BulkImporter {
         LOG.warn("GUID Updated: Entity: {}: from: {}: to: {}", objectId, vertexGuid, entity.getGuid());
     }
 
-    private void addHistoricalGuid(AtlasVertex v, String vertexGuid) {
+    public static void addHistoricalGuid(AtlasVertex v, String vertexGuid) {
         String existingJson = AtlasGraphUtilsV2.getProperty(v, HISTORICAL_GUID_PROPERTY_KEY, String.class);
 
         AtlasGraphUtilsV2.setProperty(v, HISTORICAL_GUID_PROPERTY_KEY, getJsonArray(existingJson, vertexGuid));
-    }
-
-    @VisibleForTesting
-    static String getJsonArray(String json, String vertexGuid) {
-        String quotedGuid = String.format("\"%s\"", vertexGuid);
-        if (StringUtils.isEmpty(json)) {
-            json = String.format("[%s]", quotedGuid);
-        } else {
-            json = json.replace("]", "").concat(",").concat(quotedGuid).concat("]");
-        }
-        return json;
-    }
-
-    private boolean updateResidualList(AtlasBaseException e, List<String> lineageList, String guid) {
-        if (!e.getAtlasErrorCode().getErrorCode().equals(AtlasErrorCode.INVALID_OBJECT_ID.getErrorCode())) {
-            return false;
-        }
-
-        lineageList.add(guid);
-
-        return true;
-    }
-
-    private float updateImportMetrics(AtlasEntity.AtlasEntityWithExtInfo currentEntity,
-                                      EntityMutationResponse             resp,
-                                      AtlasImportResult                  importResult,
-                                      Set<String>                        processedGuids,
-                                      int currentIndex, int streamSize, float currentPercent) {
-        if (!directoryBasedImportConfigured) {
-            updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
-            updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
-            updateImportMetrics("entity:%s:deleted", resp.getDeletedEntities(), processedGuids, importResult);
-        }
-
-        String lastEntityImported = String.format("entity:last-imported:%s:[%s]:(%s)", currentEntity.getEntity().getTypeName(), currentIndex, currentEntity.getEntity().getGuid());
-
-        return updateImportProgress(LOG, currentIndex, streamSize, currentPercent, lastEntityImported);
-    }
-
-    @VisibleForTesting
-    static float updateImportProgress(Logger log, int currentIndex, int streamSize, float currentPercent, String additionalInfo) {
-        final double tolerance   = 0.000001;
-        final int    MAX_PERCENT = 100;
-
-        int     maxSize        = (currentIndex <= streamSize) ? streamSize : currentIndex;
-        float   percent        = (float) ((currentIndex * MAX_PERCENT) / maxSize);
-        boolean updateLog      = Double.compare(percent, currentPercent) > tolerance;
-        float   updatedPercent = (MAX_PERCENT < maxSize) ? percent : ((updateLog) ? ++currentPercent : currentPercent);
-
-        if (updateLog) {
-            log.info("bulkImport(): progress: {}% (of {}) - {}", (int) Math.ceil(percent), maxSize, additionalInfo);
-        }
-
-        return updatedPercent;
-    }
-
-    private static void updateImportMetrics(String prefix, List<AtlasEntityHeader> list, Set<String> processedGuids, AtlasImportResult importResult) {
-        if (list == null) {
-            return;
-        }
-
-        for (AtlasEntityHeader h : list) {
-            if (processedGuids.contains(h.getGuid())) {
-                continue;
-            }
-
-            processedGuids.add(h.getGuid());
-            importResult.incrementMeticsCounter(String.format(prefix, h.getTypeName()));
-        }
-    }
-
-    private static class EntityImportStreamWithResidualList {
-        private final EntityImportStream stream;
-        private final List<String>       residualList;
-        private       boolean            navigateResidualList;
-        private       int                currentResidualListIndex;
-
-
-        public EntityImportStreamWithResidualList(EntityImportStream stream, List<String> residualList) {
-            this.stream                   = stream;
-            this.residualList             = residualList;
-            this.navigateResidualList     = false;
-            this.currentResidualListIndex = 0;
-        }
-
-        public AtlasEntity.AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
-            if (navigateResidualList == false) {
-                return stream.getNextEntityWithExtInfo();
-            } else {
-                stream.setPositionUsingEntityGuid(residualList.get(currentResidualListIndex++));
-                return stream.getNextEntityWithExtInfo();
-            }
-        }
-
-        public boolean hasNext() {
-            if (!navigateResidualList) {
-                boolean streamHasNext = stream.hasNext();
-                navigateResidualList = (streamHasNext == false);
-                return streamHasNext ? streamHasNext : (currentResidualListIndex < residualList.size());
-            } else {
-                return (currentResidualListIndex < residualList.size());
-            }
-        }
-
-        public int getStreamSize() {
-            return stream.size() + residualList.size();
-        }
     }
 }
