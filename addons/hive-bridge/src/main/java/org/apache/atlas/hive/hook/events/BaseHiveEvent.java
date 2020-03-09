@@ -79,6 +79,8 @@ public abstract class BaseHiveEvent {
     public static final String AWS_S3_BUCKET                       = "aws_s3_bucket";
     public static final String AWS_S3_PSEUDO_DIR                   = "aws_s3_pseudo_dir";
     public static final String AWS_S3_OBJECT                       = "aws_s3_object";
+    public static final String AWS_S3_V2_BUCKET                    = "aws_s3_v2_bucket";
+    public static final String AWS_S3_V2_PSEUDO_DIR                = "aws_s3_v2_directory";
 
     public static final String SCHEME_SEPARATOR                    = "://";
     public static final String S3_SCHEME                           = "s3" + SCHEME_SEPARATOR;
@@ -139,6 +141,7 @@ public abstract class BaseHiveEvent {
     public static final String ATTRIBUTE_NAMESPACE                 = "namespace";
     public static final String ATTRIBUTE_OBJECT_PREFIX             = "objectPrefix";
     public static final String ATTRIBUTE_BUCKET                    = "bucket";
+    public static final String ATTRIBUTE_CONTAINER                 = "container";
     public static final String ATTRIBUTE_HOSTNAME                  = "hostName";
     public static final String ATTRIBUTE_EXEC_TIME                 = "execTime";
     public static final String ATTRIBUTE_DDL_QUERIES               = "ddlQueries";
@@ -160,6 +163,7 @@ public abstract class BaseHiveEvent {
     public static final String RELATIONSHIP_HIVE_TABLE_COLUMNS = "hive_table_columns";
     public static final String RELATIONSHIP_HIVE_TABLE_STORAGE_DESC = "hive_table_storagedesc";
     public static final String RELATIONSHIP_AWS_S3_BUCKET_S3_PSEUDO_DIRS = "aws_s3_bucket_aws_s3_pseudo_dirs";
+    public static final String RELATIONSHIP_AWS_S3_V2_CONTAINER_CONTAINED = "aws_s3_v2_container_contained";
     public static final String RELATIONSHIP_HIVE_PROCESS_PROCESS_EXE = "hive_process_process_executions";
     public static final String RELATIONSHIP_HIVE_DB_DDL_QUERIES = "hive_db_ddl_queries";
     public static final String RELATIONSHIP_HIVE_TABLE_DDL_QUERIES = "hive_table_ddl_queries";
@@ -579,33 +583,10 @@ public abstract class BaseHiveEvent {
         }
 
         if (isS3Path(strPath)) {
-            String      bucketName          = path.toUri().getAuthority();
-            String      bucketQualifiedName = (path.toUri().getScheme() + SCHEME_SEPARATOR + path.toUri().getAuthority() + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + metadataNamespace;
-            String      pathQualifiedName   = (strPath + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + metadataNamespace;
-            AtlasEntity bucketEntity        = context.getEntity(bucketQualifiedName);
-
-            ret = context.getEntity(pathQualifiedName);
-
-            if (ret == null) {
-                if (bucketEntity == null) {
-                    bucketEntity = new AtlasEntity(AWS_S3_BUCKET);
-
-                    bucketEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, bucketQualifiedName);
-                    bucketEntity.setAttribute(ATTRIBUTE_NAME, bucketName);
-
-                    context.putEntity(bucketQualifiedName, bucketEntity);
-                }
-
-                extInfo.addReferredEntity(bucketEntity);
-
-                ret = new AtlasEntity(AWS_S3_PSEUDO_DIR);
-
-                ret.setRelationshipAttribute(ATTRIBUTE_BUCKET, AtlasTypeUtil.getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_AWS_S3_BUCKET_S3_PSEUDO_DIRS));
-                ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
-                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, pathQualifiedName);
-                ret.setAttribute(ATTRIBUTE_NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
-
-                context.putEntity(pathQualifiedName, ret);
+            if (context.isAwsS3AtlasModelVersionV2()) {
+                ret = addS3PathEntityV2(path, strPath, extInfo);
+            } else {
+                ret = addS3PathEntityV1(path, strPath, extInfo);
             }
         } else {
             String nameServiceID     = HdfsNameServiceResolver.getNameServiceIDForPath(strPath);
@@ -1150,6 +1131,113 @@ public abstract class BaseHiveEvent {
         return strPath != null && (strPath.startsWith(S3_SCHEME) || strPath.startsWith(S3A_SCHEME));
     }
 
+    private AtlasEntity addS3PathEntityV1(Path path, String strPath, AtlasEntityExtInfo extInfo) {
+        String      metadataNamespace   = getMetadataNamespace();
+        String      bucketName          = path.toUri().getAuthority();
+        String      bucketQualifiedName = (path.toUri().getScheme() + SCHEME_SEPARATOR + path.toUri().getAuthority() + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + metadataNamespace;
+        String      pathQualifiedName   = (strPath + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + metadataNamespace;
+        AtlasEntity bucketEntity        = context.getEntity(bucketQualifiedName);
+        AtlasEntity ret                 = context.getEntity(pathQualifiedName);
+
+        if (ret == null) {
+            if (bucketEntity == null) {
+                bucketEntity = new AtlasEntity(AWS_S3_BUCKET);
+
+                bucketEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, bucketQualifiedName);
+                bucketEntity.setAttribute(ATTRIBUTE_NAME, bucketName);
+
+                context.putEntity(bucketQualifiedName, bucketEntity);
+            }
+
+            extInfo.addReferredEntity(bucketEntity);
+
+            ret = new AtlasEntity(AWS_S3_PSEUDO_DIR);
+
+            ret.setRelationshipAttribute(ATTRIBUTE_BUCKET, AtlasTypeUtil.getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_AWS_S3_BUCKET_S3_PSEUDO_DIRS));
+            ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
+            ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, pathQualifiedName);
+            ret.setAttribute(ATTRIBUTE_NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
+
+            context.putEntity(pathQualifiedName, ret);
+        }
+
+        return ret;
+    }
+
+    private AtlasEntity addS3PathEntityV2(Path path, String strPath, AtlasEntityExtInfo extInfo) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> addS3PathEntityV2(strPath={})", strPath);
+        }
+
+        String      metadataNamespace = getMetadataNamespace();
+        String      pathQualifiedName = strPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+        AtlasEntity ret               = context.getEntity(pathQualifiedName);
+
+        if (ret == null) {
+            String      bucketName          = path.toUri().getAuthority();
+            String      schemeAndBucketName = (path.toUri().getScheme() + SCHEME_SEPARATOR + bucketName).toLowerCase();
+            String      bucketQualifiedName = schemeAndBucketName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+            AtlasEntity bucketEntity        = context.getEntity(bucketQualifiedName);
+
+            if (bucketEntity == null) {
+                bucketEntity = new AtlasEntity(AWS_S3_V2_BUCKET);
+
+                bucketEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, bucketQualifiedName);
+                bucketEntity.setAttribute(ATTRIBUTE_NAME, bucketName);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("adding entity: typeName={}, qualifiedName={}", bucketEntity.getTypeName(), bucketEntity.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                }
+
+                context.putEntity(bucketQualifiedName, bucketEntity);
+            }
+
+            extInfo.addReferredEntity(bucketEntity);
+
+            AtlasRelatedObjectId parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_AWS_S3_V2_CONTAINER_CONTAINED);
+            String               parentPath  = Path.SEPARATOR;
+            String               dirPath     = path.toUri().getPath();
+
+            if (StringUtils.isEmpty(dirPath)) {
+                dirPath = Path.SEPARATOR;
+            }
+
+            for (String subDirName : dirPath.split(Path.SEPARATOR)) {
+                if (StringUtils.isEmpty(subDirName)) {
+                    continue;
+                }
+
+                String subDirPath          = parentPath + subDirName + Path.SEPARATOR;
+                String subDirQualifiedName = schemeAndBucketName + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+
+                ret = new AtlasEntity(AWS_S3_V2_PSEUDO_DIR);
+
+                ret.setRelationshipAttribute(ATTRIBUTE_CONTAINER, parentObjId);
+                ret.setAttribute(ATTRIBUTE_OBJECT_PREFIX, subDirPath);
+                ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
+                ret.setAttribute(ATTRIBUTE_NAME, subDirName);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                }
+
+                context.putEntity(subDirQualifiedName, ret);
+
+                parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_AWS_S3_V2_CONTAINER_CONTAINED);
+                parentPath  = subDirPath;
+            }
+
+            if (ret == null) {
+                ret = bucketEntity;
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== addS3PathEntityV2(strPath={})", strPath);
+        }
+
+        return ret;
+    }
 
     static final class EntityComparator implements Comparator<Entity> {
         @Override
