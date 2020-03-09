@@ -34,3 +34,25 @@ COPY --from=staging /src/ ./
 RUN export MAVEN_OPTS="-Xms2g -Xmx2g" \
     && mvn clean -DskipTests package -Pdist
 
+FROM openjdk:11.0-slim as production
+
+WORKDIR /app/
+
+COPY --from=builder /src/distro/target/*.tar.gz /app/
+
+RUN (for TARBALL in ./*-server.tar.gz; do tar -zxf "$TARBALL"; done) \
+    && rm *.tar.gz \
+    && ls \
+    && mv apache-atlas-*/* ./ \
+    && apt-get update \
+    && apt-get -y install \
+        dumb-init \
+        python \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN sed -i 's/atlas.graph.storage.backend=hbase2/atlas.graph.storage.backend=cassandra/g' conf/atlas-application.properties
+RUN mv /app/conf/cassandra.yml.template /app/conf/cassandra.yml \
+    && sed -i 's/127.0.0.1/cassandra/g' /app/conf/cassandra.yml
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["/bin/bash", "-c", "/app/bin/atlas_start.py & tail -fF /app/logs/application.log"]
