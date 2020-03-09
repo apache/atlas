@@ -18,75 +18,74 @@
 
 define(['require',
     'backbone',
-    'hbs!tmpl/name_space/NameSpaceTableLayoutView_tmpl',
+    'hbs!tmpl/business_metadata/BusinessMetadataTableLayoutView_tmpl',
     'collection/VEntityList',
-    'collection/VTagList',
     'models/VSearch',
     'utils/Utils',
     'utils/Messages',
     'utils/Enums',
     'utils/UrlLinks',
     'utils/CommonViewFunction'
-], function(require, Backbone, NameSpaceTableLayoutView_tmpl, VEntityList, VTagList, VSearch, Utils, Messages, Enums, UrlLinks, CommonViewFunction) {
+], function(require, Backbone, BusinessMetadataTableLayoutView_tmpl, VEntityList, VSearch, Utils, Messages, Enums, UrlLinks, CommonViewFunction) {
     'use strict';
 
-    var NameSpaceTableLayoutView = Backbone.Marionette.LayoutView.extend(
-        /** @lends NameSpaceTableLayoutView */
+    var BusinessMetadataTableLayoutView = Backbone.Marionette.LayoutView.extend(
+        /** @lends BusinessMetadataTableLayoutView */
         {
-            _viewName: 'NameSpaceTableLayoutView',
+            _viewName: 'BusinessMetadataTableLayoutView',
 
-            template: NameSpaceTableLayoutView_tmpl,
+            template: BusinessMetadataTableLayoutView_tmpl,
 
             /** Layout sub regions */
             regions: {
-                RNameSpaceTableLayoutView: "#r_nameSpaceTableLayoutView",
+                RBusinessMetadataTableLayoutView: "#r_businessMetadataTableLayoutView",
                 RModal: "#r_modal"
             },
 
             /** ui selector cache */
             ui: {
-                namespaceAttrPage: "[data-id='namespaceAttrPage']",
-                namespaceAttrPageTitle: "[data-id='namespaceAttrPageTitle']",
-                namespaceDetailPage: "[data-id='namespaceDetailPage']",
+                businessMetadataAttrPage: "[data-id='businessMetadataAttrPage']",
+                businessMetadataAttrPageTitle: "[data-id='businessMetadataAttrPageTitle']",
+                businessMetadataDetailPage: "[data-id='businessMetadataDetailPage']",
                 auditCreate: "[data-id='auditCreate']",
                 pageRecordText: "[data-id='pageRecordText']",
                 activePage: "[data-id='activePage']",
-                createNameSpace: "[data-id='createNameSpace']",
+                createBusinessMetadata: "[data-id='createBusinessMetadata']",
                 attributeEdit: "[data-id='attributeEdit']",
                 addAttribute: '[data-id="addAttribute"]',
-                namespaceAttrPageOk: '[data-id="namespaceAttrPageOk"]',
+                businessMetadataAttrPageOk: '[data-id="businessMetadataAttrPageOk"]',
                 colManager: "[data-id='colManager']",
-                deleteNamespace: '[data-id="deleteNamespace"]',
-                namespaceAttrFontLoader: '.namespace-attr-fontLoader',
-                namespaceAttrTableOverlay: '.namespace-attr-tableOverlay'
+                deleteBusinessMetadata: '[data-id="deleteBusinessMetadata"]',
+                businessMetadataAttrFontLoader: '.business-metadata-attr-fontLoader',
+                businessMetadataAttrTableOverlay: '.businessMetadata-attr-tableOverlay'
 
             },
             /** ui events hash */
             events: function() {
                 var events = {},
                     that = this;
-                events["click " + this.ui.createNameSpace] = "onClickCreateNamespace";
+                events["click " + this.ui.createBusinessMetadata] = "onClickCreateBusinessMetadata";
                 events["click " + this.ui.addAttribute] = "onEditAttr";
                 events["click " + this.ui.attributeEdit] = "onEditAttr";
-                events["click " + this.ui.deleteNamespace] = function(e) {
+                events["click " + this.ui.deleteBusinessMetadata] = function(e) {
                     that.guid = e.target.dataset.guid;
-                    that.deleteNamespaceElement();
+                    that.deleteBusinessMetadataElement();
                 };
                 return events;
             },
             /**
-             * intialize a new NameSpaceTableLayoutView Layout
+             * intialize a new BusinessMetadataTableLayoutView Layout
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'entity', 'entityName', 'attributeDefs', 'typeHeaders', 'nameSpaceCollection', 'entityDefCollection', 'nameSpaceAttr', 'selectedNameSpace'));
+                _.extend(this, _.pick(options, 'guid', 'entity', 'entityName', 'attributeDefs', 'typeHeaders', 'businessMetadataDefCollection', 'entityDefCollection', 'businessMetadataAttr', 'selectedBusinessMetadata'));
                 this.limit = 10;
                 this.offset = 0;
                 this.pervOld = [];
                 this.onlyPurge = true;
                 this.newAttr = false;
                 this.commonTableOptions = {
-                    collection: this.nameSpaceCollection,
+                    collection: this.businessMetadataDefCollection,
                     includeFilter: false,
                     includePagination: true,
                     includeFooterRecords: true,
@@ -118,47 +117,47 @@ define(['require',
                 this.showDetails = true; // toggle between sttribute page and detail page
             },
             onRender: function() {
-                this.toggleNamespaceDetailsAttrView();
-                $.extend(this.nameSpaceCollection.queryParams, { count: this.limit });
-                this.nameSpaceCollection.fullCollection.sort({ silent: true });
+                this.toggleBusinessMetadataDetailsAttrView();
+                $.extend(this.businessMetadataDefCollection.queryParams, { count: this.limit });
+                this.businessMetadataDefCollection.fullCollection.sort({ silent: true });
                 this.renderTableLayoutView();
                 this.$('.tableOverlay').hide();
                 this.$('.auditTable').show(); // Only for first time table show because we never hide after first render.
-                this.nameSpaceCollection.comparator = function(model) {
+                this.businessMetadataDefCollection.comparator = function(model) {
                     return -model.get('timestamp');
                 }
             },
-            toggleNamespaceDetailsAttrView: function() {
+            toggleBusinessMetadataDetailsAttrView: function() {
                 var that = this;
                 if (that.showDetails) {
-                    that.ui.namespaceAttrPage.hide();
-                    that.ui.namespaceDetailPage.show();
+                    that.ui.businessMetadataAttrPage.hide();
+                    that.ui.businessMetadataDetailPage.show();
                 } else {
-                    that.ui.namespaceAttrPage.show();
-                    that.ui.namespaceDetailPage.hide();
+                    that.ui.businessMetadataAttrPage.show();
+                    that.ui.businessMetadataDetailPage.hide();
                 }
             },
             bindEvents: function() {},
             loaderStatus: function(isActive) {
                 var that = this;
                 if (isActive) {
-                    that.$('.namespace-attr-tableOverlay').show();
-                    that.$('.namespace-attr-fontLoader').show();
+                    that.$('.businessMetadata-attr-tableOverlay').show();
+                    that.$('.business-metadata-attr-fontLoader').show();
                 } else {
-                    that.$('.namespace-attr-tableOverlay').hide();
-                    that.$('.namespace-attr-fontLoader').hide();
+                    that.$('.businessMetadata-attr-tableOverlay').hide();
+                    that.$('.business-metadata-attr-fontLoader').hide();
                 }
             },
             onEditAttr: function(e) {
                 var that = this,
                     isAttrEdit = e.currentTarget.dataset && e.currentTarget.dataset.id === 'attributeEdit' ? true : false,
                     guid = e.currentTarget.dataset && e.currentTarget.dataset.guid ? e.currentTarget.dataset.guid : null,
-                    selectedNamespace = that.nameSpaceCollection.fullCollection.findWhere({ guid: guid }),
-                    attrributes = selectedNamespace ? selectedNamespace.get('attributeDefs') : null,
+                    selectedBusinessMetadata = that.businessMetadataDefCollection.fullCollection.findWhere({ guid: guid }),
+                    attrributes = selectedBusinessMetadata ? selectedBusinessMetadata.get('attributeDefs') : null,
                     attrName = e.currentTarget.dataset.name ? e.currentTarget.dataset.name : null,
                     attrDetails = { name: attrName };
-                if (selectedNamespace) {
-                    that.ui.namespaceAttrPageOk.text("Save");
+                if (selectedBusinessMetadata) {
+                    that.ui.businessMetadataAttrPageOk.text("Save");
                     that.newAttr = e.currentTarget && e.currentTarget.dataset.action === "createAttr" ? true : false;
                     that.guid = guid;
                     _.each(attrributes, function(attrObj) {
@@ -175,63 +174,62 @@ define(['require',
                     });
 
                     that.showDetails = false;
-                    that.toggleNamespaceDetailsAttrView();
-                    that.ui.namespaceAttrPageOk.attr('data-action', e.currentTarget.dataset.id);
-                    require(["views/name_space/CreateNameSpaceLayoutView"], function(CreateNameSpaceLayoutView) {
-                        that.view = new CreateNameSpaceLayoutView({
+                    that.toggleBusinessMetadataDetailsAttrView();
+                    that.ui.businessMetadataAttrPageOk.attr('data-action', e.currentTarget.dataset.id);
+                    require(["views/business_metadata/CreateBusinessMetadataLayoutView"], function(CreateBusinessMetadataLayoutView) {
+                        that.view = new CreateBusinessMetadataLayoutView({
                             onEditCallback: function() {
-                                that.nameSpaceCollection.fullCollection.sort({ silent: true });
+                                that.businessMetadataDefCollection.fullCollection.sort({ silent: true });
                                 that.renderTableLayoutView();
 
                             },
-                            onUpdateNamespace: function() {
+                            onUpdateBusinessMetadata: function() {
                                 enumDefCollection.fetch({ reset: true });
                                 that.showDetails = true;
-                                that.toggleNamespaceDetailsAttrView();
+                                that.toggleBusinessMetadataDetailsAttrView();
                                 that.entityDefCollection.fetch({ silent: true });
                             },
                             parent: that.$el,
-                            tagCollection: that.nameSpaceCollection,
+                            businessMetadataDefCollection: that.businessMetadataDefCollection,
                             enumDefCollection: enumDefCollection,
                             isAttrEdit: isAttrEdit,
                             typeHeaders: typeHeaders,
                             attrDetails: attrDetails,
-                            selectedNamespace: selectedNamespace,
-                            nameSpaceCollection: nameSpaceCollection,
+                            selectedBusinessMetadata: selectedBusinessMetadata,
                             guid: that.guid,
                             isNewAttr: that.newAttr
                         });
                         if (isAttrEdit) {
-                            that.ui.namespaceAttrPageTitle.text("Update Attribute of: " + selectedNamespace.get('name'));
+                            that.ui.businessMetadataAttrPageTitle.text("Update Attribute of: " + selectedBusinessMetadata.get('name'));
                         } else {
-                            that.ui.namespaceAttrPageTitle.text("Add Namespace Attribute for: " + selectedNamespace.get('name'));
+                            that.ui.businessMetadataAttrPageTitle.text("Add Business Metadata Attribute for: " + selectedBusinessMetadata.get('name'));
                         }
 
                         that.RModal.show(that.view);
                     });
                 }
             },
-            onClickCreateNamespace: function(e) {
+            onClickCreateBusinessMetadata: function(e) {
                 var that = this,
-                    isNewNameSpace = true;
+                    isNewBusinessMetadata = true;
                 that.showDetails = false;
-                that.ui.namespaceAttrPageOk.text("Create");
-                that.ui.namespaceAttrPageOk.attr('data-action', 'createNamespace');
-                that.ui.namespaceAttrPageTitle.text("Create Namespace");
-                that.toggleNamespaceDetailsAttrView();
-                require(["views/name_space/CreateNameSpaceLayoutView"], function(CreateNameSpaceLayoutView) {
-                    that.view = new CreateNameSpaceLayoutView({
-                        onUpdateNamespace: function() {
+                that.ui.businessMetadataAttrPageOk.text("Create");
+                that.ui.businessMetadataAttrPageOk.attr('data-action', 'createBusinessMetadata');
+                that.ui.businessMetadataAttrPageTitle.text("Create Business Metadata");
+                that.toggleBusinessMetadataDetailsAttrView();
+                require(["views/business_metadata/CreateBusinessMetadataLayoutView"], function(CreateBusinessMetadataLayoutView) {
+                    that.view = new CreateBusinessMetadataLayoutView({
+                        onUpdateBusinessMetadata: function() {
                             enumDefCollection.fetch({ reset: true });
                             that.showDetails = true;
-                            that.toggleNamespaceDetailsAttrView();
+                            that.toggleBusinessMetadataDetailsAttrView();
                             that.entityDefCollection.fetch({ silent: true });
                         },
-                        tagCollection: that.nameSpaceCollection,
+                        tagCollection: that.businessMetadataDefCollection,
                         enumDefCollection: enumDefCollection,
                         typeHeaders: typeHeaders,
-                        isNewNameSpace: isNewNameSpace,
-                        nameSpaceCollection: nameSpaceCollection
+                        isNewBusinessMetadata: isNewBusinessMetadata,
+                        businessMetadataDefCollection: businessMetadataDefCollection
                     });
                     that.RModal.show(that.view);
                 });
@@ -239,19 +237,19 @@ define(['require',
             renderTableLayoutView: function() {
                 var that = this;
                 require(['utils/TableLayout'], function(TableLayout) {
-                    var cols = new Backgrid.Columns(that.getNamespaceTableColumns());
-                    that.RNameSpaceTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
+                    var cols = new Backgrid.Columns(that.getBusinessMetadataTableColumns());
+                    that.RBusinessMetadataTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         columns: cols
                     })));
-                    if (!(that.nameSpaceCollection.models.length < that.limit)) {
-                        that.RNameSpaceTableLayoutView.$el.find('table tr').last().hide();
+                    if (!(that.businessMetadataDefCollection.models.length < that.limit)) {
+                        that.RBusinessMetadataTableLayoutView.$el.find('table tr').last().hide();
                     }
 
                 });
             },
-            getNamespaceTableColumns: function() {
+            getBusinessMetadataTableColumns: function() {
                 var that = this;
-                return this.nameSpaceCollection.constructor.getTableCols({
+                return this.businessMetadataDefCollection.constructor.getTableCols({
                     attributeDefs: {
                         label: "",
                         cell: "html",
@@ -273,7 +271,7 @@ define(['require',
                                 _.each(model.attributes.attributeDefs, function(attrObj) {
                                     var applicableEntityTypes = '',
                                         typeName = attrObj.typeName;
-                                    if (attrObj.options) {
+                                    if (attrObj.options && attrObj.options.applicableEntityTypes) {
                                         // attrEntityTypes = JSON.parse(attrObj.options.applicableEntityTypes).join(', ');
                                         var entityTypes = JSON.parse(attrObj.options.applicableEntityTypes);
                                         _.each(entityTypes, function(values) {
@@ -300,7 +298,7 @@ define(['require',
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return '<a title= "' + model.get('name') + '" href ="#!/administrator/namespace/' + model.get('guid') + '?from=namespace">' + model.get('name') + '</a>';
+                                return '<a title= "' + model.get('name') + '" href ="#!/administrator/businessMetadata/' + model.get('guid') + '?from=bm">' + model.get('name') + '</a>';
                             }
                         })
                     },
@@ -365,14 +363,14 @@ define(['require',
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return "<button type='button' data-id='addAttribute' data-guid='" + model.get('guid') + "'' title='' class='btn btn-action btn-xs ' style='margin-bottom: 10px;' data-action='createAttr' data-original-title='Add Namespace attribute'><i class='fa fa-plus'></i> Attributes</button>";
-                                // "<button type='button' data-id='deleteNamespace' data-guid='" + model.get('guid') + "'' title='' class='btn btn-action btn-xs ' style='margin-bottom: 10px;' data-action='createAttr' data-original-title='Delete Namespace'><i class='fa fa-trash-o'></i> Delete</button>";
+                                return "<button type='button' data-id='addAttribute' data-guid='" + model.get('guid') + "'' title='' class='btn btn-action btn-xs ' style='margin-bottom: 10px;' data-action='createAttr' data-original-title='Add Business Metadata attribute'><i class='fa fa-plus'></i> Attributes</button>";
+                                // "<button type='button' data-id='deleteBusinessMetadata' data-guid='" + model.get('guid') + "'' title='' class='btn btn-action btn-xs ' style='margin-bottom: 10px;' data-action='createAttr' data-original-title='Delete BusinessMetadata'><i class='fa fa-trash-o'></i> Delete</button>";
                             }
                         })
                     }
-                }, this.nameSpaceCollection);
+                }, this.businessMetadataDefCollection);
             },
-            deleteNamespaceElement: function(nameSpaceName) {
+            deleteBusinessMetadataElement: function(businessMetadataName) {
                 var that = this,
                     notifyObj = {
                         modal: true,
@@ -381,28 +379,28 @@ define(['require',
                         },
                         cancel: function(argument) {}
                     };
-                var text = "Are you sure you want to delete the namespace";
+                var text = "Are you sure you want to delete the business metadata";
                 notifyObj["text"] = text;
                 Utils.notifyConfirm(notifyObj);
             },
             onNotifyDeleteOk: function(data) {
                 var that = this,
-                    deleteNamespaceData = that.nameSpaceCollection.fullCollection.findWhere({ guid: that.guid });
+                    deleteBusinessMetadataData = that.businessMetadataDefCollection.fullCollection.findWhere({ guid: that.guid });
                 // that.$('.position-relative .fontLoader').addClass('show');
                 that.$('.tableOverlay').show();
-                if (deleteNamespaceData) {
-                    var nameSpaceName = deleteNamespaceData.get("name");
-                    deleteNamespaceData.deleteNameSpace({
-                        typeName: nameSpaceName,
+                if (deleteBusinessMetadataData) {
+                    var businessMetadataName = deleteBusinessMetadataData.get("name");
+                    deleteBusinessMetadataData.deleteBusinessMetadata({
+                        typeName: businessMetadataName,
                         success: function() {
                             Utils.notifySuccess({
-                                content: "Namespace " + nameSpaceName + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
+                                content: "Business Metadata " + businessMetadataName + Messages.getAbbreviationMsg(false, 'deleteSuccessMessage')
                             });
-                            that.nameSpaceCollection.fullCollection.remove(deleteNamespaceData);
-                            that.nameSpaceCollection.fullCollection.sort({ silent: true });
+                            that.businessMetadataDefCollection.fullCollection.remove(deleteBusinessMetadataData);
+                            that.businessMetadataDefCollection.fullCollection.sort({ silent: true });
                             that.renderTableLayoutView();
                             that.showDetails = true;
-                            that.toggleNamespaceDetailsAttrView();
+                            that.toggleBusinessMetadataDetailsAttrView();
                             that.loaderStatus(false);
                         },
                         complete: function() {
@@ -417,5 +415,5 @@ define(['require',
                 }
             }
         });
-    return NameSpaceTableLayoutView;
+    return BusinessMetadataTableLayoutView;
 });

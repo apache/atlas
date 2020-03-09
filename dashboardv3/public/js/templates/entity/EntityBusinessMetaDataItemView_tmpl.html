@@ -18,7 +18,7 @@
 <table class="custom-table" style="font-weight: 100;">
     <tr class="custom-tr">
         <td class="custom-col-1">
-            {{{callmyfunction getNamespaceDroupdown nameSpaceCollection}}}
+            {{{callmyfunction getBusinessMetadataDroupdown businessMetadataCollection}}}
         </td>
         <td class="custom-col-0"> : </td>
         <td class="custom-col-1" data-id="value">
@@ -36,9 +36,9 @@
 </table>
 {{else}}
 <hr />
-<ul class="namespace-tree-parent">
-    <li>{{model.__internal_UI_nameSpaceName}}</li>
-    <li class="namespace-tree-child" data-id="namespaceTreeChild">
+<ul class="business-metadata-tree-parent">
+    <li>{{model.__internal_UI_businessMetadataName}}</li>
+    <li class="business-metadata-tree-child" data-id="businessMetadataTreeChild">
     </li>
 </ul>
 {{/ifCond}}

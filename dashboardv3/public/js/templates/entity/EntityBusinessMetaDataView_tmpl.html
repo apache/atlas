@@ -14,28 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="namespace">
-    <div class="panel-heading" data-toggle="collapse" href="#namespaceCollapse" aria-expanded="false" style="width: 70%;">
+<div class="panel panel-default custom-panel expand_collapse_panel-icon">
+    <div class="panel-heading" data-toggle="collapse" href="#businessMetadataCollapse" aria-expanded="false" style="width: 70%;">
         <h4 class="panel-title">
-            <a>Namespaces</a>
+            <a>Business Metadata</a>
         </h4>
         <div class="btn-group pull-left">
             <button type="button" title="Collapse"><i class="ec-icon fa"></i></button>
         </div>
     </div>
     <div class="panel-actions">
-        <button class="btn btn-action btn-sm" data-id="addNameSpace">Add</button>
-        <button class="btn btn-action btn-sm" style="display: none;" data-id="saveNameSpace">Save</button>
+        <button class="btn btn-action btn-sm" data-id="addBusinessMetadata">Add</button>
+        <button class="btn btn-action btn-sm" style="display: none;" data-id="saveBusinessMetadata">Save</button>
         <button class="btn btn-action btn-sm" style="display: none;" data-id="cancel">Cancel</button>
     </div>
-    <div id="namespaceCollapse" class="panel-collapse collapse">
+    <div id="businessMetadataCollapse" class="panel-collapse collapse">
         <div class="panel-body">
-            <div data-id="namespaceTree"></div>
+            <div data-id="businessMetadataTree"></div>
             <div class="editBox" style="display: none;">
                 <div class="form-group">
                     <a href="javascript:void(0)" class="btn btn-action btn-sm" data-id="addItem" data-type="addAttrButton">Add New Attribute</a>
                 </div>
-                <ul class="namespace-tree-parent" data-id="itemView"></ul>
+                <ul class="business-metadata-tree-parent" data-id="itemView"></ul>
             </div>
         </div>
     </div>

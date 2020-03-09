@@ -15,15 +15,15 @@
 // limitations under the License.
 
 
-/* namespace */
-.namespace-tree-parent {
+/* business-metadata */
+.business-metadata-tree-parent {
     padding: 0px;
 
     >li:first-child {
         font-weight: 600;
     }
 
-    .namespace-tree-child {
+    .business-metadata-tree-child {
         &.entity-detail-table table {
             td {
                 &:nth-child(1) {
@@ -40,7 +40,7 @@
     }
 }
 
-.namespace-options.dropdown {
+.business-metadata-options.dropdown {
     .dropdown-menu {
         min-width: 100px;
 
@@ -59,7 +59,7 @@
     }
 }
 
-.namespace-options.dropdown.open {
+.business-metadata-options.dropdown.open {
     .btn-action {
         background-color: $color_jungle_green_approx;
         border: 1px solid $color_jungle_green_approx;
@@ -67,7 +67,7 @@
     }
 }
 
-.namespace-details {
+.business-metadata-details {
 
     .expandable .attr-details {
         max-height: 300px;
@@ -78,7 +78,7 @@
 }
 
 .tab-pane {
-    .namespace-attr-page {
+    .business-metadata-attr-page {
         position: absolute;
         top: 0px;
         left: 0px;
@@ -89,7 +89,7 @@
     }
 }
 
-.namespace-attr-page {
+.business-metadata-attr-page {
     .form-horizontal {
         padding: 10px 22px;
         // border: 1px solid #DEDEDE;
@@ -108,21 +108,21 @@
             padding-right: 10px;
         }
 
-        .namespace-attr {
+        .business-metadata-attr {
             border: 1px solid #DEDEDE;
             padding: 10px 20px
         }
     }
 }
 
-.namespace-attr-fontLoader {
+.business-metadata-attr-fontLoader {
     position: absolute;
     top: 50%;
     left: 50%;
     display: none;
 }
 
-.namespace-attr-tableOverlay {
+.business-metadata-attr-tableOverlay {
     position: absolute;
     width: 100%;
     height: 100%;
@@ -132,7 +132,7 @@
     opacity: 0.2;
 }
 
-.name-space-details {
+.business-metadata-details {
     .backgrid {
         td.expandable-content {
             max-width: none;
@@ -152,7 +152,7 @@
     }
 }
 
-.namespace-attr-page {
+.business-metadata-attr-page {
     .modal-footer {
         text-align: center;
     }

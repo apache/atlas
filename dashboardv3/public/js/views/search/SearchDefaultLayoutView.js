@@ -243,7 +243,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                         enumDefCollection: that.options.enumDefCollection,
                         typeHeaders: that.options.typeHeaders,
                         classificationDefCollection: that.options.classificationDefCollection,
-                        nameSpaceCollection: that.options.nameSpaceCollection,
+                        businessMetadataDefCollection: that.options.businessMetadataDefCollection,
                         searchTableFilters: that.checkEntityFilter(that.options)
                     };
                 if (that.options.value) {
@@ -365,8 +365,8 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     if (_.has(obj, "condition")) {
                         return that.getIdFromRuleObj(obj);
                     } else {
-                        if ((obj && obj.data && obj.data.entityType === "namespace") || obj.id.indexOf(".") > -1) {
-                            return col.add("namespace");
+                        if ((obj && obj.data && obj.data.entityType === "businessMetadata") || obj.id.indexOf(".") > -1) {
+                            return col.add("businessMetadata");
                         } else {
                             return col.add(obj.id);
                         }
@@ -382,7 +382,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                     if (!this.options.searchTableColumns[this.options.value.type]) {
                         this.options.searchTableColumns[this.options.value.type] = ["selected", "name", "description", "typeName", "owner", "tag", "term"];
                     }
-                    this.options.searchTableColumns[this.options.value.type] = _.sortBy(_.union(_.without(this.options.searchTableColumns[this.options.value.type], "namespace"), this.getIdFromRuleObj(rule)));
+                    this.options.searchTableColumns[this.options.value.type] = _.sortBy(_.union(_.without(this.options.searchTableColumns[this.options.value.type], "businessMetadata"), this.getIdFromRuleObj(rule)));
                 }
             },
             renderQueryBuilder: function(obj, rQueryBuilder) {

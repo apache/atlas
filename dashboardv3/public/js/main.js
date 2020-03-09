@@ -219,10 +219,10 @@ require(['App',
     this.metricCollection = new VTagList();
     this.metricCollection.url = UrlLinks.metricsApiUrl();
     this.metricCollection.modelAttrName = "data";
-    // nameSpace
-    this.nameSpaceCollection = new VEntityList();
-    this.nameSpaceCollection.url = UrlLinks.nameSpaceApiUrl();
-    this.nameSpaceCollection.modelAttrName = "namespaceDefs";
+    // businessMetadata
+    this.businessMetadataDefCollection = new VEntityList();
+    this.businessMetadataDefCollection.url = UrlLinks.businessMetadataDefApiUrl();
+    this.businessMetadataDefCollection.modelAttrName = "businessMetadataDefs";
 
     App.appRouter = new Router({
         entityDefCollection: this.entityDefCollection,
@@ -230,7 +230,7 @@ require(['App',
         enumDefCollection: this.enumDefCollection,
         classificationDefCollection: this.classificationDefCollection,
         metricCollection: this.metricCollection,
-        nameSpaceCollection: this.nameSpaceCollection
+        businessMetadataDefCollection: this.businessMetadataDefCollection
     });
 
     var startApp = function() {
@@ -318,12 +318,12 @@ require(['App',
         }
     });
 
-    this.nameSpaceCollection.fetch({
+    this.businessMetadataDefCollection.fetch({
         complete: function() {
-            that.nameSpaceCollection.fullCollection.comparator = function(model) {
+            that.businessMetadataDefCollection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
             };
-            that.nameSpaceCollection.fullCollection.sort({ silent: true });
+            that.businessMetadataDefCollection.fullCollection.sort({ silent: true });
             --that.asyncFetchCounter;
             startApp();
         }

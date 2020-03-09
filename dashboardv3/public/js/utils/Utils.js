@@ -567,7 +567,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 urlPath = "tagUrl";
             } else if (queryParams.from == "glossary") {
                 urlPath = "glossaryUrl";
-            } else if (queryParams.from == "namespace") {
+            } else if (queryParams.from == "bm") {
                 urlPath = "administratorUrl";
             }
         }

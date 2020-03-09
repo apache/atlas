@@ -365,7 +365,7 @@ define(['require',
                         this.searchTableColumns[this.value.type] = listOfColumns.length ? listOfColumns : null;
                     }
                 } else if (this.value && this.value.type && this.searchTableColumns && this.value.attributes) {
-                    this.searchTableColumns[this.value.type] = this.value.entityFilters ? this.value.attributes.split(",") : this.value.attributes.replace("namespace,", "").split(",");
+                    this.searchTableColumns[this.value.type] = this.value.entityFilters ? this.value.attributes.split(",") : this.value.attributes.replace("businessMetadata,", "").split(",");
                 }
             },
             fetchCollection: function(value, options) {
@@ -648,8 +648,7 @@ define(['require',
                 var that = this,
                     nameCheck = 0,
                     columnToShow = null,
-                    col = {},
-                    namespaceRenderable = false;
+                    col = {};
                 this.value = Utils.getUrlState.getQueryParams() || this.value;
                 if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
                     columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
@@ -794,25 +793,25 @@ define(['require',
                             }
                         })
                     };
-                    col['namespace'] = {
-                        label: "Namespaces",
+                    col['businessMetaData'] = {
+                        label: "Business MetaData",
                         cell: "Html",
                         editable: false,
                         resizeable: true,
                         orderable: true,
                         alwaysVisible: true, //Backgrid.ColumnManager.js -> render() to hide the name in dropdownlist
-                        renderable: _.contains(columnToShow, 'namespace'),
+                        renderable: _.contains(columnToShow, 'businessMetaData'),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON(),
-                                    namespaceStr = '';
+                                    businessMetadataStr = '';
                                 if (obj && obj.attributes) {
-                                    _.each(obj.attributes, function(namespaceValue, attributeName) {
+                                    _.each(obj.attributes, function(businessMetadataValue, attributeName) {
                                         if (attributeName.indexOf('.') != -1) {
                                             var isDate = false,
-                                                namespace = that.options.nameSpaceCollection.fullCollection.find({ "name": attributeName.split('.')[0] });
-                                            if (namespace) {
-                                                var getAttributes = namespace.get('attributeDefs');
+                                                businessMetadata = that.options.businessMetadataDefCollection.fullCollection.find({ "name": attributeName.split('.')[0] });
+                                            if (businessMetadata) {
+                                                var getAttributes = businessMetadata.get('attributeDefs');
                                                 getAttributes.every(function(attrTypeCheck) {
                                                     if (attributeName.split('.')[1] === attrTypeCheck.name && attrTypeCheck.typeName.indexOf("date") > -1) {
                                                         isDate = true;
@@ -821,12 +820,12 @@ define(['require',
                                                 });
                                             }
                                             if (isDate) {
-                                                namespaceValue = moment(namespaceValue).format("MM/DD/YYYY")
+                                                businessMetadataValue = moment(businessMetadataValue).format("MM/DD/YYYY")
                                             }
-                                            namespaceStr += '<label class="btn btn-action btn-xs btn-blue no-pointer">' + attributeName + ': ' + namespaceValue + '</label>';
+                                            businessMetadataStr += '<label class="btn btn-action btn-xs btn-blue no-pointer">' + attributeName + ': ' + businessMetadataValue + '</label>';
                                         }
                                     })
-                                    return namespaceStr;
+                                    return businessMetadataStr;
                                 }
                             }
                         })

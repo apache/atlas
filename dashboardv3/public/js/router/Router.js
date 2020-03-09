@@ -49,14 +49,14 @@ define([
             "!/detailPage/:id": "detailPage",
             //Audit table
             '!/administrator': 'administrator',
-            '!/administrator/namespace/:id': 'nameSpaceDetailPage',
+            '!/administrator/businessMetadata/:id': 'businessMetadataDetailPage',
             // Default
             "*actions": "defaultAction"
         },
         initialize: function(options) {
             _.extend(
                 this,
-                _.pick(options, "entityDefCollection", "typeHeaders", "enumDefCollection", "classificationDefCollection", "metricCollection", "nameSpaceCollection")
+                _.pick(options, "entityDefCollection", "typeHeaders", "enumDefCollection", "classificationDefCollection", "metricCollection", "businessMetadataDefCollection")
             );
             this.showRegions();
             this.bindCommonEvents();
@@ -75,7 +75,7 @@ define([
                 classificationDefCollection: this.classificationDefCollection,
                 glossaryCollection: this.glossaryCollection,
                 metricCollection: this.metricCollection,
-                nameSpaceCollection: this.nameSpaceCollection
+                businessMetadataDefCollection: this.businessMetadataDefCollection
             };
             this.sharedObj = {
                 searchTableColumns: {},
@@ -486,7 +486,7 @@ define([
             var that = this;
             require(["views/site/Header", "views/site/SideNavLayoutView", 'views/administrator/AdministratorLayoutView'], function(Header, SideNavLayoutView, AdministratorLayoutView) {
                 var value = Utils.getUrlState.getQueryParams(),
-                    paramObj = _.extend({ value: value, namespaceID: null }, that.preFetchedCollectionLists);
+                    paramObj = _.extend({ value: value, guid: null }, that.preFetchedCollectionLists);
                 that.renderViewIfNotExists(that.getHeaderOptions(Header));
                 that.renderViewIfNotExists({
                     view: App.rSideNav,
@@ -502,13 +502,13 @@ define([
                 App.rContent.show(new AdministratorLayoutView(paramObj));
             });
         },
-        nameSpaceDetailPage: function(namespaceGuid) {
+        businessMetadataDetailPage: function(guid) {
             var that = this;
-            require(["views/site/Header", "views/site/SideNavLayoutView", "views/name_space/NameSpaceContainerLayoutView", ], function(Header, SideNavLayoutView, NameSpaceContainerLayoutView) {
+            require(["views/site/Header", "views/site/SideNavLayoutView", "views/business_metadata/BusinessMetadataContainerLayoutView", ], function(Header, SideNavLayoutView, BusinessMetadataContainerLayoutView) {
                 var paramObj = Utils.getUrlState.getQueryParams();
                 that.renderViewIfNotExists(that.getHeaderOptions(Header));
                 var options = _.extend({
-                        namespaceID: namespaceGuid,
+                        guid: guid,
                         value: paramObj,
                         searchVent: that.searchVent,
                         categoryEvent: that.categoryEvent
@@ -525,7 +525,7 @@ define([
                         return new SideNavLayoutView(options);
                     }
                 });
-                App.rContent.show(new NameSpaceContainerLayoutView(options));
+                App.rContent.show(new BusinessMetadataContainerLayoutView(options));
             });
         },
         defaultAction: function(actions) {

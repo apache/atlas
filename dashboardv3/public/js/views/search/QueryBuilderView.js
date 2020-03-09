@@ -54,18 +54,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options,
-                    'attrObj',
-                    'value',
-                    'typeHeaders',
-                    'entityDefCollection',
-                    'enumDefCollection',
-                    'classificationDefCollection',
-                    'nameSpaceCollection',
-                    'tag',
-                    'type',
-                    'searchTableFilters',
-                    'systemAttrArr'));
+                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'tag', 'type', 'searchTableFilters', 'systemAttrArr'));
                 this.attrObj = _.sortBy(this.attrObj, 'name');
                 //this.systemAttrArr = _.sortBy(this.systemAttrArr, 'name');
                 this.filterType = this.tag ? 'tagFilters' : 'entityFilters';
@@ -368,21 +357,21 @@ define(['require',
                 });
                 if (this.type) {
                     var entityDef = this.entityDefCollection.fullCollection.find({ name: that.options.applicableType }),
-                        namespaceAttributeDefs = null;
+                        businessMetadataAttributeDefs = null;
                     if (entityDef) {
-                        namespaceAttributeDefs = entityDef.get("namespaceAttributeDefs");
+                        BusinessMetadataAttributeDefs = entityDef.get("businessAttributeDefs");
                     }
-                    if (namespaceAttributeDefs) {
-                        _.each(namespaceAttributeDefs, function(attributes, key) {
+                    if (BusinessMetadataAttributeDefs) {
+                        _.each(BusinessMetadataAttributeDefs, function(attributes, key) {
                             var sortedAttributes = _.sortBy(attributes, function(obj) {
                                 return obj.name;
                             });
                             _.each(sortedAttributes, function(attrDetails) {
-                                var returnObj = that.getObjDef(attrDetails, rules_widgets, isGroupView, 'Select Namespace Attribute', true);
+                                var returnObj = that.getObjDef(attrDetails, rules_widgets, isGroupView, 'Select Business Metadata Attribute', true);
                                 if (returnObj) {
                                     returnObj.id = key + "." + returnObj.id;
                                     returnObj.label = key + ": " + returnObj.label;
-                                    returnObj.data = { 'entityType': "namespace" };
+                                    returnObj.data = { 'entityType': "businessMetadata" };
                                     filters.push(returnObj);
                                 }
                             });
