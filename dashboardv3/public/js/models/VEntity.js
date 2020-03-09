@@ -96,20 +96,20 @@ define(['require',
             }, options);
             return this.constructor.nonCrudOperation.call(this, url, "POST", options);
         },
-        saveNameSpaceAttribute: function(options) {
-            var url = UrlLinks.nameSpaceUpdateUrl();
+        saveBusinessMetadata: function(options) {
+            var url = UrlLinks.businessMetadataDefApiUrl();
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'
             }, options);
-            return this.constructor.nonCrudOperation.call(this, url, 'PUT', options);
+            return this.constructor.nonCrudOperation.call(this, url, '', options);
         },
-        deleteNameSpace: function(options) {
-            var url = UrlLinks.nameSpaceUpdateUrl(options.typeName);
+        deleteBusinessMetadata: function(options) {
+            var url = UrlLinks.businessMetadataDefApiUrl(options.typeName);
             return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
         },
-        saveNamespaceEntity: function(guid, options) {
-            var url = UrlLinks.entitiesNamespaceApiUrl(guid);
+        saveBusinessMetadataEntity: function(guid, options) {
+            var url = UrlLinks.entitiesBusinessMetadataApiUrl(guid);
             options = _.extend({
                 contentType: 'application/json',
                 dataType: 'json'

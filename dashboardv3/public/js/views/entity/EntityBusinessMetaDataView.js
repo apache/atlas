@@ -19,57 +19,56 @@
 define([
     "require",
     "backbone",
-    "hbs!tmpl/entity/EntityNameSpaceView_tmpl",
-    "views/entity/EntityNameSpaceItemView",
+    "hbs!tmpl/entity/EntityBusinessMetaDataView_tmpl",
+    "views/entity/EntityBusinessMetaDataItemView",
     "models/VEntity",
     "utils/Utils",
-    "utils/Enums",
     "utils/Messages",
     "utils/CommonViewFunction",
     'moment'
-], function(require, Backbone, EntityNameSpaceViewTmpl, EntityNameSpaceItemView, VEntity, Utils, Enums, Messages, CommonViewFunction, moment) {
+], function(require, Backbone, EntityBusinessMetaDataView_tmpl, EntityBusinessMetaDataItemView, VEntity, Utils, Messages, CommonViewFunction, moment) {
     "use strict";
 
     return Backbone.Marionette.CompositeView.extend({
-        _viewName: "EntityNameSpaceView",
-        template: EntityNameSpaceViewTmpl,
-        childView: EntityNameSpaceItemView,
+        _viewName: "EntityBusinessMetaDataView",
+        template: EntityBusinessMetaDataView_tmpl,
+        childView: EntityBusinessMetaDataItemView,
         childViewContainer: "[data-id='itemView']",
         childViewOptions: function() {
             return {
                 editMode: this.editMode,
                 entity: this.entity,
-                nameSpaceCollection: this.nameSpaceCollection,
+                businessMetadataCollection: this.businessMetadataCollection,
                 enumDefCollection: this.enumDefCollection
             };
         },
         /** ui selector cache */
         ui: {
             addItem: "[data-id='addItem']",
-            addNameSpace: "[data-id='addNameSpace']",
-            saveNameSpace: "[data-id='saveNameSpace']",
-            namespaceTree: "[data-id='namespaceTree']",
+            addBusinessMetadata: "[data-id='addBusinessMetadata']",
+            saveBusinessMetadata: "[data-id='saveBusinessMetadata']",
+            businessMetadataTree: "[data-id='businessMetadataTree']",
             cancel: "[data-id='cancel']"
         },
         events: function() {
             var events = {};
             events["click " + this.ui.addItem] = 'createNameElement';
-            events["click " + this.ui.addNameSpace] = "onAddNameSpace";
-            events["click " + this.ui.saveNameSpace] = "onSaveNameSpace";
+            events["click " + this.ui.addBusinessMetadata] = "onAddBusinessMetadata";
+            events["click " + this.ui.saveBusinessMetadata] = "onSaveBusinessMetadata";
             events["click " + this.ui.cancel] = "onCancel";
             return events;
         },
         initialize: function(options) {
             var that = this;
-            _.extend(this, _.pick(options, "entity", "nameSpaceCollection", "enumDefCollection", "guid", "fetchCollection"));
+            _.extend(this, _.pick(options, "entity", "businessMetadataCollection", "enumDefCollection", "guid", "fetchCollection"));
             this.editMode = false;
             this.$("editBox").hide();
             this.actualCollection = new Backbone.Collection(
-                _.map(this.entity.namespaceAttributes, function(val, key) {
-                    var foundNameSpace = that.nameSpaceCollection[key];
-                    if (foundNameSpace) {
+                _.map(this.entity.businessAttributes, function(val, key) {
+                    var foundBusinessMetadata = that.businessMetadataCollection[key];
+                    if (foundBusinessMetadata) {
                         _.each(val, function(aVal, aKey) {
-                            var foundAttr = _.find(foundNameSpace, function(o) {
+                            var foundAttr = _.find(foundBusinessMetadata, function(o) {
                                 return o.name === aKey
                             });
                             if (foundAttr) {
@@ -77,7 +76,7 @@ define([
                             }
                         })
                     }
-                    return _.extend({}, val, { __internal_UI_nameSpaceName: key });
+                    return _.extend({}, val, { __internal_UI_businessMetadataName: key });
                 }));
             this.collection = new Backbone.Collection();
             this.entityModel = new VEntity();
@@ -86,12 +85,12 @@ define([
             var silent = options && options.silent || false;
             this.collection.reset(this.actualCollection.toJSON(), { silent: silent });
         },
-        onAddNameSpace: function() {
-            this.ui.addNameSpace.hide();
-            this.ui.saveNameSpace.show();
+        onAddBusinessMetadata: function() {
+            this.ui.addBusinessMetadata.hide();
+            this.ui.saveBusinessMetadata.show();
             this.ui.cancel.show();
             this.editMode = true;
-            this.ui.namespaceTree.hide();
+            this.ui.businessMetadataTree.hide();
             this.$(".editBox").show();
             this.updateToActualData({ silent: true });
             if (this.collection.length === 0) {
@@ -103,10 +102,10 @@ define([
         },
         onCancel: function() {
             this.ui.cancel.hide();
-            this.ui.saveNameSpace.hide();
-            this.ui.addNameSpace.show();
+            this.ui.saveBusinessMetadata.hide();
+            this.ui.addBusinessMetadata.show();
             this.editMode = false;
-            this.ui.namespaceTree.show();
+            this.ui.businessMetadataTree.show();
             this.$(".editBox").hide();
             this.updateToActualData();
             this.panelOpenClose();
@@ -116,9 +115,9 @@ define([
             if (collection && collection.length === 0) {
                 this.$el.find(".panel-heading").addClass("collapsed");
                 this.$el.find(".panel-collapse.collapse").removeClass("in");
-                this.ui.addNameSpace.text("Add");
+                this.ui.addBusinessMetadata.text("Add");
             } else {
-                this.ui.addNameSpace.text("Edit");
+                this.ui.addBusinessMetadata.text("Edit");
                 this.$el.find(".panel-heading").removeClass("collapsed");
                 this.$el.find(".panel-collapse.collapse").addClass("in");
             }
@@ -150,7 +149,7 @@ define([
             });
             return validation;
         },
-        onSaveNameSpace: function() {
+        onSaveBusinessMetadata: function() {
             var that = this;
             if (!this.validate()) {
                 return;
@@ -160,14 +159,14 @@ define([
                 this.onCancel();
                 return;
             }
-            this.entityModel.saveNamespaceEntity(this.guid, {
+            this.entityModel.saveBusinessMetadataEntity(this.guid, {
                 data: JSON.stringify(nData),
                 type: "POST",
                 success: function(data) {
                     Utils.notifySuccess({
-                        content: "One or more namespace attributes" + Messages.getAbbreviationMsg(false, 'editSuccessMessage')
+                        content: "One or more Business Metadada attributes" + Messages.getAbbreviationMsg(false, 'editSuccessMessage')
                     });
-                    that.entity.namespaceAttributes = data;
+                    that.entity.businessAttributes = data;
                     this.editMode = false;
                     that.fetchCollection();
                     that.onCancel();
@@ -181,10 +180,10 @@ define([
             var finalObj = {};
             this.collection.forEach(function(model) {
                 if (!model.has("addAttrButton")) {
-                    var nameSpaceName = model.get("__internal_UI_nameSpaceName"),
+                    var businessMetadataName = model.get("__internal_UI_businessMetadataName"),
                         modelObj = model.toJSON();
                     _.each(modelObj, function(o, k) {
-                        if (k === "isNew" && k === "__internal_UI_nameSpaceName") {
+                        if (k === "isNew" || k === "__internal_UI_businessMetadataName") {
                             delete modelObj[k];
                             return;
                         }
@@ -192,20 +191,20 @@ define([
                             modelObj[k] = o.value;
                         }
                     })
-                    if (nameSpaceName !== undefined) {
-                        if (finalObj[nameSpaceName]) {
-                            finalObj[nameSpaceName] = _.extend(finalObj[nameSpaceName], modelObj);
+                    if (businessMetadataName !== undefined) {
+                        if (finalObj[businessMetadataName]) {
+                            finalObj[businessMetadataName] = _.extend(finalObj[businessMetadataName], modelObj);
                         } else {
-                            finalObj[nameSpaceName] = modelObj;
+                            finalObj[businessMetadataName] = modelObj;
                         }
                     }
                 }
             });
             if (_.isEmpty(finalObj)) {
                 this.actualCollection.forEach(function(model) {
-                    var nameSpaceName = model.get("__internal_UI_nameSpaceName");
-                    if (nameSpaceName) {
-                        finalObj[nameSpaceName] = {};
+                    var businessMetadataName = model.get("__internal_UI_businessMetadataName");
+                    if (businessMetadataName) {
+                        finalObj[businessMetadataName] = {};
                     }
                 })
             }
@@ -215,12 +214,12 @@ define([
             var modelObj = { isNew: true };
             this.collection.unshift(modelObj);
         },
-        renderNamespace: function() {
+        renderBusinessMetadata: function() {
             var li = ""
             this.actualCollection.forEach(function(obj) {
                 var attrLi = "";
                 _.each(obj.attributes, function(val, key) {
-                    if (key !== "__internal_UI_nameSpaceName") {
+                    if (key !== "__internal_UI_businessMetadataName") {
                         var newVal = val;
                         if (_.isObject(val) && !_.isUndefinedNull(val.value)) {
                             newVal = val.value;
@@ -237,16 +236,16 @@ define([
                         attrLi += "<tr><td>" + _.escape(key) + " (" + _.escape(val.typeName) + ")</td><td>" + _.escape(newVal) + "</td></tr>";
                     }
                 });
-                li += "<ul class='namespace-tree-parent'><li class='table'>" + _.escape(obj.get("__internal_UI_nameSpaceName")) + "</li>" +
-                    "<li class='namespace-tree-child entity-detail-table'>" +
+                li += "<ul class='business-metadata-tree-parent'><li class='table'>" + _.escape(obj.get("__internal_UI_businessMetadataName")) + "</li>" +
+                    "<li class='business-metadata-tree-child entity-detail-table'>" +
                     "<table class='table'>" + attrLi + "</table>" +
                     "</li></ul>";
             });
-            this.ui.namespaceTree.html(li);
+            this.ui.businessMetadataTree.html(li);
         },
         onRender: function() {
             this.panelOpenClose();
-            this.renderNamespace();
+            this.renderBusinessMetadata();
         }
     });
 });

@@ -47,7 +47,7 @@ define(['require',
                 RRelationshipLayoutView: "#r_relationshipLayoutView",
                 REntityUserDefineView: "#r_entityUserDefineView",
                 REntityLabelDefineView: "#r_entityLabelDefineView",
-                REntityNameSpaceView: "#r_entityNameSpaceView"
+                REntityBusinessMetadataView: "#r_entityBusinessMetadataView"
             },
             /** ui selector cache */
             ui: {
@@ -121,7 +121,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection', 'nameSpaceCollection', 'searchVent'));
+                _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection', 'businessMetadataDefCollection', 'searchVent'));
                 $('body').addClass("detail-page");
             },
             bindEvents: function() {
@@ -245,7 +245,7 @@ define(['require',
                         enumDefCollection: this.enumDefCollection,
                         classificationDefCollection: this.classificationDefCollection,
                         glossaryCollection: this.glossaryCollection,
-                        nameSpaceCollection: this.activeEntityDef.get('namespaceAttributeDefs'),
+                        businessMetadataCollection: this.activeEntityDef.get('businessAttributeDefs'),
                         searchVent: this.searchVent,
                         attributeDefs: (function() {
                             return that.getEntityDef(collectionJSON);
@@ -255,8 +255,8 @@ define(['require',
                     this.renderEntityDetailTableLayoutView(obj);
                     this.renderEntityUserDefineView(obj);
                     this.renderEntityLabelDefineView(obj);
-                    if (obj.nameSpaceCollection) {
-                        this.renderEntityNameSpaceView(obj);
+                    if (obj.businessMetadataCollection) {
+                        this.renderEntityBusinessMetadataView(obj);
                     }
                     this.renderRelationshipLayoutView(obj);
                     this.renderAuditTableLayoutView(obj);
@@ -517,10 +517,10 @@ define(['require',
                     that.REntityLabelDefineView.show(new EntityLabelDefineView(obj));
                 });
             },
-            renderEntityNameSpaceView: function(obj) {
+            renderEntityBusinessMetadataView: function(obj) {
                 var that = this;
-                require(['views/entity/EntityNameSpaceView'], function(EntityNameSpaceView) {
-                    that.REntityNameSpaceView.show(new EntityNameSpaceView(obj));
+                require(['views/entity/EntityBusinessMetaDataView'], function(EntityBusinessMetaDataView) {
+                    that.REntityBusinessMetadataView.show(new EntityBusinessMetaDataView(obj));
                 });
             },
             renderTagTableLayoutView: function(obj) {

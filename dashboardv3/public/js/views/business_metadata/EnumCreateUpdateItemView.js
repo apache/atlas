@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(["require", "backbone", "hbs!tmpl/name_space/EnumCreateUpdateItemView_tmpl", "utils/Utils", "utils/UrlLinks", "utils/Messages"], function(
+define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemView_tmpl", "utils/Utils", "utils/UrlLinks", "utils/Messages"], function(
     require,
     Backbone,
     EnumCreateUpdateItemViewTmpl,
@@ -82,7 +82,7 @@ define(["require", "backbone", "hbs!tmpl/name_space/EnumCreateUpdateItemView_tmp
              */
             initialize: function(options) {
                 this.enumDefCollection = options.enumDefCollection;
-                this.nameSpaceCollection = options.nameSpaceCollection;
+                this.businessMetadataDefCollection = options.businessMetadataDefCollection;
             },
             onRender: function() {
                 var that = this,
@@ -234,7 +234,7 @@ define(["require", "backbone", "hbs!tmpl/name_space/EnumCreateUpdateItemView_tmp
                             });
                         }
                         that.enumDefCollection.fetch({ reset: true });
-                        if (that.options.onUpdateEnum) { //callback from namespaceattributeItemView
+                        if (that.options.onUpdateEnum) { //callback from BusinessMetadataAttributeItemView
                             that.options.onUpdateEnum();
                         }
                         that.ui.enumCancleBtn.attr("disabled", "true");
@@ -253,9 +253,9 @@ define(["require", "backbone", "hbs!tmpl/name_space/EnumCreateUpdateItemView_tmp
                 };
                 $.extend(apiObj, { contentType: "application/json", dataType: "json", data: JSON.stringify(this.json) });
                 if (isPostCallEnum) {
-                    this.nameSpaceCollection.constructor.nonCrudOperation.call(this, UrlLinks.typedefsUrl().defs, "POST", apiObj);
+                    this.businessMetadataDefCollection.constructor.nonCrudOperation.call(this, UrlLinks.typedefsUrl().defs, "POST", apiObj);
                 } else if (isPutCall) {
-                    this.nameSpaceCollection.constructor.nonCrudOperation.call(this, UrlLinks.typedefsUrl().defs, "PUT", apiObj);
+                    this.businessMetadataDefCollection.constructor.nonCrudOperation.call(this, UrlLinks.typedefsUrl().defs, "PUT", apiObj);
                 } else {
                     Utils.notifySuccess({
                         content: "No updated values"

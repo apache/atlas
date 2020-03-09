@@ -17,7 +17,7 @@
  */
 define([
     "require",
-    "hbs!tmpl/search/tree/NameSpaceTreeLayoutView_tmpl",
+    "hbs!tmpl/search/tree/BusinessMetadataTreeLayoutView_tmpl",
     "utils/Utils",
     "utils/Messages",
     "utils/Globals",
@@ -27,11 +27,11 @@ define([
     "collection/VGlossaryList",
     "utils/Enums",
     "jstree"
-], function(require, NameSpaceTreeLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList, Enums) {
+], function(require, BusinessMetadataTreeLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList, Enums) {
     "use strict";
 
-    var NameSpaceTreeLayoutView = Marionette.LayoutView.extend({
-        template: NameSpaceTreeLayoutViewTmpl,
+    var BusinessMetadataTreeLayoutView = Marionette.LayoutView.extend({
+        template: BusinessMetadataTreeLayoutViewTmpl,
 
         regions: {},
         ui: {
@@ -39,10 +39,10 @@ define([
             refreshTree: '[data-id="refreshTree"]',
 
             // tree el
-            nameSpaceSearchTree: '[data-id="nameSpaceSearchTree"]',
+            businessMetadataSearchTree: '[data-id="businessMetadataSearchTree"]',
 
             // Create
-            createNameSpace: '[data-id="createNameSpace"]'
+            createBusinessMetadata: '[data-id="createBusinessMetadata"]'
         },
         templateHelpers: function() {
             return {
@@ -54,14 +54,13 @@ define([
                 that = this;
             // refresh individual tree
             events["click " + this.ui.refreshTree] = function(e) {
-                var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
-                that.refresh({ type: type });
+                that.refresh();
             };
 
-            events["click " + this.ui.createNameSpace] = function(e) {
+            events["click " + this.ui.createBusinessMetadata] = function(e) {
                 e.stopPropagation();
-                that.triggerUrl("#!/administrator?tabActive=namespace");
+                that.triggerUrl("#!/administrator?tabActive=bm");
             };
 
             return events;
@@ -73,52 +72,48 @@ define([
                 _.pick(
                     options,
                     "typeHeaders",
-                    "namespaceID",
+                    "guid",
                     "searchVent",
                     "entityDefCollection",
                     "enumDefCollection",
-                    "nameSpaceCollection",
+                    "businessMetadataDefCollection",
                     "searchTableColumns",
                     "searchTableFilters",
-                    "metricCollection",
-                    "nameSpaceCollection"
+                    "metricCollection"
                 )
             );
             this.bindEvents();
         },
         onRender: function() {
-            this.renderNameSpaceTree();
-            //this.createNameSpaceAction();
+            this.renderBusinessMetadataTree();
+            //this.createBusinessMetadataAction();
         },
         bindEvents: function() {
             var that = this;
             this.listenTo(
-                this.nameSpaceCollection.fullCollection,
+                this.businessMetadataDefCollection.fullCollection,
                 "reset add remove",
                 function() {
-                    if (this.ui.nameSpaceSearchTree.jstree(true)) {
-                        that.ui.nameSpaceSearchTree.jstree(true).refresh();
+                    if (this.ui.businessMetadataSearchTree.jstree(true)) {
+                        that.ui.businessMetadataSearchTree.jstree(true).refresh();
                     } else {
-                        this.renderNameSpaceTree();
+                        this.renderBusinessMetadataTree();
                     }
                 },
                 this
             );
-            // this.options.nameSpaceVent.on("Save:NamespaceAttribute", function(data) {
-            //     that.ui.nameSpaceSearchTree.jstree(true).refresh();
-            // });
-            $("body").on("click", ".namespacePopoverOptions li", function(e) {
-                that.$(".nameSpacePopover").popover("hide");
-                that[$(this).find("a").data("fn") + "NameSpace"](e);
+            $("body").on("click", ".businessMetadataPopoverOptions li", function(e) {
+                that.$(".businessMetadataPopover").popover("hide");
+                that[$(this).find("a").data("fn") + "BusinessMetadata"](e);
             });
         },
-        createNameSpaceAction: function() {
+        createBusinessMetadataAction: function() {
             var that = this;
             Utils.generatePopover({
                 el: this.$el,
-                contentClass: "namespacePopoverOptions",
+                contentClass: "businessMetadataPopoverOptions",
                 popoverOptions: {
-                    selector: ".nameSpacePopover",
+                    selector: ".businessMetadataPopover",
                     content: function() {
                         var type = $(this).data("detail"),
                             liString =
@@ -128,25 +123,25 @@ define([
                 }
             });
         },
-        renderNameSpaceTree: function() {
+        renderBusinessMetadataTree: function() {
             this.generateSearchTree({
-                $el: this.ui.nameSpaceSearchTree
+                $el: this.ui.businessMetadataSearchTree
             });
         },
         manualRender: function(options) {
             var that = this;
             _.extend(this, options);
-            if (Utils.getUrlState.isAdministratorTab() && this.namespaceID) {
-                this.ui.nameSpaceSearchTree.jstree(true).select_node(this.namespaceID);
+            if (Utils.getUrlState.isAdministratorTab() && this.guid) {
+                this.ui.businessMetadataSearchTree.jstree(true).select_node(this.guid);
             } else {
-                this.ui.nameSpaceSearchTree.jstree(true).deselect_all();
-                this.namespaceID = null;
+                this.ui.businessMetadataSearchTree.jstree(true).deselect_all();
+                this.guid = null;
             }
         },
         onNodeSelect: function(nodeData) {
             var that = this,
                 options = nodeData.node.original,
-                url = "#!/administrator/namespace",
+                url = "#!/administrator/businessMetadata",
                 trigger = true,
                 queryParams = Utils.getUrlState.getQueryParams();
 
@@ -154,7 +149,7 @@ define([
                 url += "/" + options.id;
             }
 
-            if (queryParams && queryParams.from === "namespace" && Utils.getUrlState.getQueryUrl().queyParams[0] === url) {
+            if (queryParams && queryParams.from === "bm" && Utils.getUrlState.getQueryUrl().queyParams[0] === url) {
                 trigger = false;
             }
             if (trigger) {
@@ -162,11 +157,11 @@ define([
             }
 
         },
-        onViewEditNameSpace: function() {
-            var selectedNode = this.ui.nameSpaceSearchTree.jstree("get_selected", true);
+        onViewEditBusinessMetadata: function() {
+            var selectedNode = this.ui.businessMetadataSearchTree.jstree("get_selected", true);
             if (selectedNode && selectedNode[0]) {
                 selectedNode = selectedNode[0];
-                var url = "#!/administrator?tabActive=namespace";
+                var url = "#!/administrator?tabActive=bm";
                 if (selectedNode.parent && selectedNode.original && selectedNode.original.name) {
                     url += "&ns=" + selectedNode.parent + "&nsa=" + selectedNode.original.name;
                     this.triggerUrl(url);
@@ -183,22 +178,22 @@ define([
         },
         refresh: function(options) {
             var that = this;
-            this.nameSpaceCollection.fetch({
+            this.businessMetadataDefCollection.fetch({
                 silent: true,
                 complete: function() {
-                    that.nameSpaceCollection.fullCollection.comparator = function(model) {
+                    that.businessMetadataDefCollection.fullCollection.comparator = function(model) {
                         return model.get("name").toLowerCase();
                     };
-                    that.nameSpaceCollection.fullCollection.sort({ silent: true });
-                    that.ui.nameSpaceSearchTree.jstree(true).refresh();
+                    that.businessMetadataDefCollection.fullCollection.sort({ silent: true });
+                    that.ui.businessMetadataSearchTree.jstree(true).refresh();
                 }
             });
         },
-        getNameSpaceTree: function(options) {
+        getBusinessMetadataTree: function(options) {
             var that = this,
-                nameSpaceList = [],
+                businessMetadataList = [],
                 allCustomFilter = [],
-                namsSpaceTreeData = that.nameSpaceCollection.fullCollection.models,
+                namsSpaceTreeData = that.businessMetadataDefCollection.fullCollection.models,
                 openClassificationNodesState = function(treeDate) {
                     if (treeDate.length == 1) {
                         _.each(treeDate, function(model) {
@@ -211,31 +206,31 @@ define([
                         nodeStructure = {
                             text: attrNode ? _.escape(nodeOptions.name) : _.escape(nodeOptions.get("name")),
                             name: attrNode ? _.escape(nodeOptions.name) : _.escape(nodeOptions.get("name")),
-                            type: "nameSpace",
+                            type: "businessMetadata",
                             id: attrNode ? _.escape(nodeOptions.name) : nodeOptions.get("guid"),
                             icon: attrNode ? "fa fa-file-o" : "fa fa-folder-o",
                             children: [],
-                            state: { selected: nodeOptions.get("guid") === that.namespaceID },
-                            gType: "NameSpace",
+                            state: { selected: nodeOptions.get("guid") === that.guid },
+                            gType: "BusinessMetadata",
                             model: nodeOptions
                         };
                     return nodeStructure;
                 };
             _.each(namsSpaceTreeData, function(filterNode) {
-                nameSpaceList.push(generateNode(filterNode));
+                businessMetadataList.push(generateNode(filterNode));
             });
 
             var treeView = [{
                 icon: "fa fa-folder-o",
-                gType: "nameSpace",
-                type: "nameSpaceFolder",
-                children: nameSpaceList,
-                text: "Namespace",
-                name: "Namespace",
+                gType: "businessMetadata",
+                type: "businessMetadataFolder",
+                children: businessMetadataList,
+                text: "BusinessMetadata",
+                name: "BusinessMetadata",
                 state: { opened: true }
             }];
             var customFilterList = treeView;
-            return nameSpaceList;
+            return businessMetadataList;
         },
         generateSearchTree: function(options) {
             var $el = options && options.$el,
@@ -246,7 +241,7 @@ define([
                         plugins: ["search", "core", "sort", "conditionalselect", "changed", "wholerow", "node_customize"],
                         conditionalselect: function(node) {
                             var type = node.original.type;
-                            if (type == "nameSpaceFolder") {
+                            if (type == "businessMetadataFolder") {
                                 if (node.children.length) {
                                     return false;
                                 } else {
@@ -268,7 +263,7 @@ define([
                                 if (node.parent === "#") {
                                     $(el).append('<div class="tools"><i class="fa"></i></div>');
                                 } else {
-                                    $(el).append('<div class="tools"><i class="fa fa-ellipsis-h nameSpacePopover" rel="popover"></i></div>');
+                                    $(el).append('<div class="tools"><i class="fa fa-ellipsis-h businessMetadataPopover" rel="popover"></i></div>');
                                 }
                             }
                         },
@@ -276,7 +271,7 @@ define([
                             multiple: false,
                             data: function(node, cb) {
                                 if (node.id === "#") {
-                                    cb(that.getNameSpaceTree());
+                                    cb(that.getBusinessMetadataTree());
                                 }
                             }
                         }
@@ -322,5 +317,5 @@ define([
                 });
         }
     });
-    return NameSpaceTreeLayoutView;
+    return BusinessMetadataTreeLayoutView;
 });

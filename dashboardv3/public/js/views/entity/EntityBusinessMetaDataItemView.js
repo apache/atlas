@@ -17,29 +17,29 @@
  */
 define(['require',
     'backbone',
-    'hbs!tmpl/entity/EntityNameSpaceItemView_tmpl',
+    'hbs!tmpl/entity/EntityBusinessMetaDataItemView_tmpl',
     'moment',
     'daterangepicker'
-], function(require, Backbone, EntityNameSpaceItemViewTmpl, moment) {
+], function(require, Backbone, EntityBusinessMetaDataItemViewTmpl, moment) {
     'use strict';
 
     return Backbone.Marionette.ItemView.extend({
-        _viewName: 'EntityNameSpaceItemView',
+        _viewName: 'EntityBusinessMetaDataItemView',
 
-        template: EntityNameSpaceItemViewTmpl,
+        template: EntityBusinessMetaDataItemViewTmpl,
 
         templateHelpers: function() {
             return {
                 editMode: this.editMode,
                 entity: this.entity,
                 getValue: this.getValue.bind(this),
-                getNamespaceDroupdown: this.getNamespaceDroupdown.bind(this),
-                nameSpaceCollection: this.nameSpaceCollection,
+                getBusinessMetadataDroupdown: this.getBusinessMetadataDroupdown.bind(this),
+                businessMetadataCollection: this.businessMetadataCollection,
                 model: this.model.toJSON()
             }
         },
         tagName: 'li',
-        className: "namespace-tree-child",
+        className: "business-metadata-tree-child",
 
         /** Layout sub regions */
         regions: {},
@@ -61,7 +61,7 @@ define(['require',
         },
 
         /**
-         * intialize a new EntityNameSpaceItemView Layout
+         * intialize a new EntityBusinessMetaDataItemView Layout
          * @constructs
          */
         initialize: function(options) {
@@ -73,7 +73,7 @@ define(['require',
             this.ui.keyEl.select2({ placeholder: "Select Attribute" });
 
             if (this.editMode && (!this.model.has("isNew"))) {
-                this.getEditNamespaceEl();
+                this.getEditBusinessMetadataEl();
             }
             this.initializeElement();
             this.bindEvent();
@@ -100,7 +100,7 @@ define(['require',
                 });
                 this.$el.off("change", ".custom-col-1[data-id='value']>[data-key]").on("change", ".custom-col-1[data-id='value']>[data-key]", function(e) {
                     var key = $(this).data("key"),
-                        namespace = $(this).data("namespace"),
+                        businessMetadata = $(this).data("businessMetadata"),
                         typeName = $(this).data("typename"),
                         multi = $(this).data("multi"),
                         updateObj = that.model.toJSON();
@@ -111,8 +111,8 @@ define(['require',
                     if (multi && typeName.indexOf("date") == -1) {
                         updateObj[key].value = $(this).select2("val");
                     }
-                    if (!that.model.has("__internal_UI_nameSpaceName")) {
-                        updateObj["__internal_UI_nameSpaceName"] = namespace;
+                    if (!that.model.has("__internal_UI_businessMetadataName")) {
+                        updateObj["__internal_UI_businessMetadataName"] = businessMetadata;
                     }
                     if (typeName.indexOf("date") > -1) {
                         if (multi && updateObj[key].value) {
@@ -151,7 +151,7 @@ define(['require',
                     typeName = options.val.typeName || "",
                     val = options.val.value,
                     isMultiValued = typeName && typeName.indexOf("array<") === 0,
-                    namespace = options.namespace,
+                    businessMetadata = options.businessMetadata,
                     allowOnlyNum = false;
                 var elType = isMultiValued ? "select" : "input";
                 if (!isMultiValued && !_.isEmpty(val)) {
@@ -174,11 +174,11 @@ define(['require',
                     }
                 }
                 if (typeName.indexOf("string") > -1) {
-                    returnEL = '<' + elType + ' type="text" data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-tags="true"  placeholder="Enter String" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
+                    returnEL = '<' + elType + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" data-tags="true"  placeholder="Enter String" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
                 } else if (typeName.indexOf("boolean") > -1) {
-                    returnEL = '<select data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" class="form-control">' + (isMultiValued ? "" : '<option value="">--Select Value--</option>') + '<option value="true" ' + (!_.isUndefinedNull(val) && val == "true" ? "selected" : "") + '>true</option><option value="false" ' + (!_.isUndefinedNull(val) && val == "false" ? "selected" : "") + '>false</option></select>';
+                    returnEL = '<select data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" class="form-control">' + (isMultiValued ? "" : '<option value="">--Select Value--</option>') + '<option value="true" ' + (!_.isUndefinedNull(val) && val == "true" ? "selected" : "") + '>true</option><option value="false" ' + (!_.isUndefinedNull(val) && val == "false" ? "selected" : "") + '>false</option></select>';
                 } else if (typeName.indexOf("date") > -1) {
-                    returnEL = '<' + (isMultiValued ? "textarea" : "input") + ' type="text" data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '"data-multi="' + isMultiValued + '" data-type="date" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '>' + (isMultiValued === true && !_.isUndefinedNull(val) ? val : "") + (isMultiValued ? "</textarea>" : "");
+                    returnEL = '<' + (isMultiValued ? "textarea" : "input") + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '"data-multi="' + isMultiValued + '" data-type="date" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '>' + (isMultiValued === true && !_.isUndefinedNull(val) ? val : "") + (isMultiValued ? "</textarea>" : "");
                     setTimeout(function() {
                         var dateObj = { "singleDatePicker": true, autoUpdateInput: isMultiValued ? false : true },
                             dateEl = that.$el.find('[data-type="date"][data-key="' + key + '"]').daterangepicker(dateObj);
@@ -195,7 +195,7 @@ define(['require',
                     }, 0);
                 } else if (typeName.indexOf("byte") > -1 || typeName.indexOf("short") > -1 || typeName.indexOf("int") > -1 || typeName.indexOf("float") > -1 || typeName.indexOf("double") > -1 || typeName.indexOf("long") > -1) {
                     allowOnlyNum = true;
-                    returnEL = '<' + elType + ' data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" type="number" data-multi="' + isMultiValued + '" data-tags="true" placeholder="Enter Number" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
+                    returnEL = '<' + elType + ' data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" type="number" data-multi="' + isMultiValued + '" data-tags="true" placeholder="Enter Number" class="form-control" ' + (!_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '></' + elType + '>';
                 } else if (typeName) {
                     var modTypeName = typeName;
                     if (isMultiValued) {
@@ -210,7 +210,7 @@ define(['require',
                         _.forEach(foundEnumType.get("elementDefs"), function(obj) {
                             enumOptions += '<option value="' + obj.value + '">' + obj.value + '</option>'
                         });
-                        returnEL = '<select data-key="' + key + '" data-namespace="' + namespace + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" >' + enumOptions + '</select>';
+                        returnEL = '<select data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '" data-multi="' + isMultiValued + '" >' + enumOptions + '</select>';
                     }
                     setTimeout(function() {
                         if (!isMultiValued) {
@@ -245,7 +245,7 @@ define(['require',
                     hasModalData = this.model.get(key[1]);
                 if (!hasModalData) {
                     var tempObj = {
-                        "__internal_UI_nameSpaceName": key[0]
+                        "__internal_UI_businessMetadataName": key[0]
                     };
                     if (this.model.has("isNew")) {
                         tempObj["isNew"] = true;
@@ -253,13 +253,13 @@ define(['require',
                     tempObj[key[1]] = null;
                     this.model.clear({ silent: true }).set(tempObj)
                 }
-                valEl.html(this.getAttrElement({ namespace: key[0], key: key[1], val: hasModalData ? hasModalData : { typeName: key[2] } }));
+                valEl.html(this.getAttrElement({ businessMetadata: key[0], key: key[1], val: hasModalData ? hasModalData : { typeName: key[2] } }));
                 if (manual === undefined) {
                     this.model.collection.trigger("selected:attr", e.currentTarget.value, this.model);
                 }
             }
         },
-        getValue: function(value, key, namespaceName) {
+        getValue: function(value, key, businessMetadataName) {
             var typeName = value.typeName,
                 value = value.value;
             if (typeName === "date") {
@@ -268,24 +268,24 @@ define(['require',
                 return value;
             }
         },
-        getNamespaceDroupdown: function(nameSpaceCollection) {
+        getBusinessMetadataDroupdown: function(businessMetadataCollection) {
             var optgroup = "";
             var that = this;
-            var model = that.model.omit(["isNew", "__internal_UI_nameSpaceName"]),
+            var model = that.model.omit(["isNew", "__internal_UI_businessMetadataName"]),
                 keys = _.keys(model),
                 isSelected = false,
                 selectdVal = null;
             if (keys.length === 1) {
                 isSelected = true;
             }
-            _.each(nameSpaceCollection, function(obj, key) {
+            _.each(businessMetadataCollection, function(obj, key) {
                 var options = "";
                 if (obj.length) {
                     _.each(obj, function(attrObj) {
-                        var entityNamespace = that.model.collection.filter({ __internal_UI_nameSpaceName: key }),
+                        var entityBusinessMetadata = that.model.collection.filter({ __internal_UI_businessMetadataName: key }),
                             hasAttr = false;
-                        if (entityNamespace) {
-                            var found = entityNamespace.find(function(eObj) {
+                        if (entityBusinessMetadata) {
+                            var found = entityBusinessMetadata.find(function(eObj) {
                                 return eObj.attributes.hasOwnProperty(attrObj.name);
                             });
                             if (found) {
@@ -313,12 +313,12 @@ define(['require',
             }, 0);
             return '<select data-id="key">' + optgroup + '</select>';
         },
-        getEditNamespaceEl: function() {
+        getEditBusinessMetadataEl: function() {
             var that = this,
                 trs = "";
             _.each(this.model.attributes, function(val, key) {
-                if (key !== "__internal_UI_nameSpaceName" && key !== "isNew") {
-                    var td = '<td class="custom-col-1" data-key=' + key + '>' + key + ' (' + _.escape(val.typeName) + ')</td><td class="custom-col-0">:</td><td class="custom-col-1" data-id="value">' + that.getAttrElement({ namespace: that.model.get("__internal_UI_nameSpaceName"), key: key, val: val }) + '</td>';
+                if (key !== "__internal_UI_businessMetadataName" && key !== "isNew") {
+                    var td = '<td class="custom-col-1" data-key=' + key + '>' + key + ' (' + _.escape(val.typeName) + ')</td><td class="custom-col-0">:</td><td class="custom-col-1" data-id="value">' + that.getAttrElement({ businessMetadata: that.model.get("__internal_UI_businessMetadataName"), key: key, val: val }) + '</td>';
 
                     td += '<td class="custom-col-2 btn-group">' +
                         '<button class="btn btn-default btn-sm" data-key="' + key + '" data-id="deleteItem">' +
@@ -327,7 +327,7 @@ define(['require',
                     trs += "<tr class='custom-tr'>" + td + "</tr>";
                 }
             })
-            this.$("[data-id='namespaceTreeChild']").html("<table class='custom-table'>" + trs + "</table>");
+            this.$("[data-id='businessMetadataTreeChild']").html("<table class='custom-table'>" + trs + "</table>");
         },
         onDeleteItem: function(e) {
             var key = $(e.currentTarget).data("key");

@@ -17,13 +17,13 @@
 <div class="fontLoader">
     <i class="fa fa-refresh fa-spin-custom"></i>
 </div>
-<form name="tagDefinitionform" class="hide form-horizontal" data-id="createTagForm" style="width: 70%;margin: 0 auto;">
+<form class="hide form-horizontal" data-id="createForm" style="width: 70%;margin: 0 auto;">
     {{#if fromTable}}
     <div class="form-group">
         <label class="control-label col-sm-2 {{#if create}}required{{/if}}" for="name">Name</label>
         {{#if create}}
         <div class="col-sm-10">
-            <input class="form-control namespace-name" data-id="tagName" placeholder="Name(required)" autofocus />
+            <input class="form-control businessMetadata-name" data-id="name" placeholder="Name(required)" autofocus />
         </div>
         {{else}}
         <span class="ellipsis-with-margin control-label text-left col-sm-10" data-id="title"></span> {{/if}}
@@ -39,7 +39,7 @@
         <!-- <h4 class="col-sm-6">Attributes</h4> -->
         {{#if isEditAttr}}
         <div class="col-sm-12 no-padding-left">
-            <button title="Add Namespace attribute" type="button" class="btn btn-action btn-sm pull-left" data-id="attributeData"><i class="fa fa-plus"></i> Add Namespace attribute</button>
+            <button title="Add Business Metadata attribute" type="button" class="btn btn-action btn-sm pull-left" data-id="attributeData"><i class="fa fa-plus"></i> Add Business Metadata attribute</button>
         </div>
         {{/if}}
     </div>
@@ -48,6 +48,6 @@
     </div>
 </form>
 <div class="modal-footer " data-id="modalFooter">
-    <button type="button" class="btn btn-action cancel" data-id="namespaceAttrPageCancle">Cancel</button>
-    <button type="button" class="btn btn-atlas ok" data-id="namespaceAttrPageOk">Ok</button>
+    <button type="button" class="btn btn-action cancel" data-id="businessMetadataAttrPageCancle">Cancel</button>
+    <button type="button" class="btn btn-atlas ok" data-id="businessMetadataAttrPageOk">Ok</button>
 </div>

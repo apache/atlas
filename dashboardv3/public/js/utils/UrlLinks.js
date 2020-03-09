@@ -37,6 +37,9 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         classificationDefApiUrl: function(name) {
             return this.getDefApiUrl('classification', name);
         },
+        businessMetadataDefApiUrl: function(name) {
+            return this.getDefApiUrl('business_metadata', name);
+        },
         enumDefApiUrl: function(name) {
             return this.getDefApiUrl('enum', name);
         },
@@ -99,9 +102,9 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                 return this.baseUrlV2 + '/entity/bulk/classification';
             }
         },
-        entitiesNamespaceApiUrl: function(guid) {
+        entitiesBusinessMetadataApiUrl: function(guid) {
             if (guid) {
-                return this.baseUrlV2 + '/entity/guid/' + guid + '/namespaces?isOverwrite=true';
+                return this.baseUrlV2 + '/entity/guid/' + guid + '/businessmetata?isOverwrite=true';
             }
         },
         entityCollectionaudit: function(guid) {
@@ -129,14 +132,6 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                 url = url + "?" + queryParam.join("&");
             }
             return url;
-        },
-        classicationApiUrl: function(name, guid) {
-            var typeUrl = this.typedefsUrl();
-            if (name) {
-                return typeUrl.def + '/name/' + name + '?type=classification';
-            } else if (guid) {
-                return typeUrl.def + '/guid/' + guid + '?type=classification';
-            }
         },
         typesApiUrl: function() {
             return this.typedefsUrl().defs + '/headers?excludeInternalTypesAndReferences=true'
@@ -234,24 +229,6 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         },
         purgeApiUrl: function() {
             return this.baseUrl + '/admin/audit';
-        },
-        nameSpaceApiUrl: function() {
-            return this.typedefsUrl().defs + '?type=namespace';
-        },
-        nameSpaceGuidApiUrl: function(guid) {
-            var lineageUrl = this.baseUrlV2 + '/types/namespacedef/guid';
-            if (guid) {
-                return lineageUrl + '/' + guid;
-            } else {
-                return lineageUrl
-            }
-        },
-        nameSpaceUpdateUrl: function(name) {
-            if (name) {
-                return this.typedefsUrl().def + '/name/' + name;
-            } else {
-                return this.typedefsUrl().defs + '?type=namespace';
-            }
         }
     });
 

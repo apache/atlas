@@ -37,7 +37,7 @@ define(['require',
 
             /** Layout sub regions */
             regions: {
-                RNamespaceTableLayoutView: "#r_namespaceTableLayoutView",
+                RBusinessMetadataTableLayoutView: "#r_businessMetadataTableLayoutView",
                 REnumTableLayoutView: '#r_enumTableLayoutView'
             },
 
@@ -67,7 +67,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'guid', 'entity', 'entityName', 'attributeDefs', 'entityDefCollection', 'nameSpaceCollection', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'guid', 'entityDefCollection', 'businessMetadataDefCollection', 'enumDefCollection'));
 
             },
             onShow: function() {
@@ -81,21 +81,21 @@ define(['require',
                 this.renderEnumLayoutView();
             },
             onRender: function() {
-                this.renderNameSpaceLayoutView();
+                this.renderBusinessMetadataLayoutView();
                 this.bindEvents();
             },
-            renderNameSpaceLayoutView: function(obj) {
+            renderBusinessMetadataLayoutView: function(obj) {
                 var that = this;
-                require(['views/name_space/NameSpaceTableLayoutView'], function(NameSpaceTableLayoutView) {
-                    that.RNamespaceTableLayoutView.show(new NameSpaceTableLayoutView({ nameSpaceCollection: that.nameSpaceCollection, entityDefCollection: that.entityDefCollection }));
+                require(['views/business_metadata/BusinessMetadataTableLayoutView'], function(BusinessMetadataTableLayoutView) {
+                    that.RBusinessMetadataTableLayoutView.show(new BusinessMetadataTableLayoutView({ businessMetadataDefCollection: that.businessMetadataDefCollection, entityDefCollection: that.entityDefCollection }));
                 });
             },
             renderEnumLayoutView: function(obj) {
                 var that = this;
-                require(["views/name_space/EnumCreateUpdateItemView"], function(EnumCreateUpdateItemView) {
+                require(["views/business_metadata/EnumCreateUpdateItemView"], function(EnumCreateUpdateItemView) {
                     var view = new EnumCreateUpdateItemView({
                         enumDefCollection: that.enumDefCollection,
-                        nameSpaceCollection: that.nameSpaceCollection
+                        businessMetadataDefCollection: that.businessMetadataDefCollection
                     });
                     that.REnumTableLayoutView.show(view);
                 });

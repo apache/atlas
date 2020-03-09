@@ -17,19 +17,19 @@
  */
 define(['require',
     'backbone',
-    'hbs!tmpl/name_space/NameSpaceAttributeItemView_tmpl',
+    'hbs!tmpl/business_metadata/BusinessMetadataAttributeItemView_tmpl',
     'utils/Utils',
     'utils/UrlLinks',
     'utils/Messages'
 
-], function(require, Backbone, NameSpaceAttributeItemViewTmpl, Utils, UrlLinks, Messages) {
+], function(require, Backbone, BusinessMetadataAttributeItemViewTmpl, Utils, UrlLinks, Messages) {
     'use strict';
 
     return Backbone.Marionette.ItemView.extend(
         /** @lends GlobalExclusionListView */
         {
 
-            template: NameSpaceAttributeItemViewTmpl,
+            template: BusinessMetadataAttributeItemViewTmpl,
             templateHelpers: function() {
                 return {
                     modalID: this.viewId
@@ -62,34 +62,47 @@ define(['require',
                     this.model.set({ "name": e.target.value.trim() });
                 };
                 events["change " + this.ui.dataTypeSelector] = function(e) {
+                    var obj = { options: this.model.get('options') || {} };
+                    debugger;
+                    delete obj.enumValues;
+                    delete obj.options.maxStrLength;
                     if (e.target.value.trim() === 'enumeration' || e.target.value.trim() === 'Enumeration') {
                         this.ui.enumTypeSelectorContainer.show();
                         this.emumTypeSelectDisplay();
                         this.ui.stringLengthContainer.hide();
-                    } else if (e.target.value.trim() === 'string' || e.target.value.trim() === 'String') {
-                        this.model.set({ "typeName": e.target.value.trim() });
-                        this.model.set({ "enumValues": null });
-                        this.ui.stringLengthContainer.show();
-                        this.ui.enumTypeSelectorContainer.hide();
-                        this.ui.enumValueSelectorContainer.hide();
                     } else {
-                        this.model.set({ "typeName": e.target.value.trim() });
-                        this.model.set({ "enumValues": null });
-                        this.ui.enumTypeSelectorContainer.hide();
-                        this.ui.enumValueSelectorContainer.hide();
-                        this.ui.stringLengthContainer.hide();
+                        obj.typeName = e.target.value.trim();
+                        if (e.target.value.trim() === 'string' || e.target.value.trim() === 'String') {
+                            this.ui.stringLengthContainer.show();
+                            this.ui.enumTypeSelectorContainer.hide();
+                            this.ui.enumValueSelectorContainer.hide();
+                            obj.options["maxStrLength"] = e.target.value.trim();
+                        } else {
+                            this.ui.enumTypeSelectorContainer.hide();
+                            this.ui.enumValueSelectorContainer.hide();
+                            this.ui.stringLengthContainer.hide();
+                        }
                     }
+                    this.model.set(obj);
                 };
                 events["change " + this.ui.enumTypeSelector] = function(e) {
                     this.model.set({ "enumValues": e.target.value.trim() });
                 };
                 events["change " + this.ui.stringLengthContainer] = function(e) {
-                    this.model.set({ "maxStrLength": e.target.value.trim() });
+                    var options = this.model.get('options') || {};
+                    if (this.ui.dataTypeSelector.val() == 'string') {
+                        options["maxStrLength"] = e.target.value.trim();
+                    }
+                    this.model.set({ "options": options });
+
                 };
                 events["change " + this.ui.enumTypeSelector] = function(e) {
                     var emumValue = this.ui.enumTypeSelector.select2('data')[0] ? this.ui.enumTypeSelector.select2('data')[0].text : this.ui.enumTypeSelector.val();
 
                     this.model.set({ "typeName": emumValue });
+                    if (this.model.get("multiValueSelect")) {
+                        this.model.set({ "typeName": "array<" + emumValue + ">" });
+                    }
                     if (emumValue == '' || emumValue == null) {
                         this.ui.enumValueSelectorContainer.hide();
                     } else {
@@ -102,7 +115,19 @@ define(['require',
                 };
                 events["change " + this.ui.multiValueSelectStatus] = function(e) {
                     this.model.set({ "multiValueSelect": e.target.checked });
+                    var typename = this.model.get('typeName');
+                    if (e.target.checked) {
+                        typename = "array<" + typename + ">";
+                    } else {
+                        typename = typename.replace('array<', '').replace('>', '');
+                    }
+                    this.model.set({ "typeName": typename });
                 };
+                events["change " + this.ui.entityTypeSelector] = function(e) {
+                    var options = this.model.get('options') || {};
+                    options.applicableEntityTypes = JSON.stringify(this.ui.entityTypeSelector.val());
+                    this.model.set({ "options": options });
+                }
                 events["click " + this.ui.close] = 'onCloseButton';
                 events["click " + this.ui.createNewEnum] = 'onCreateUpdateEnum';
                 return events;
@@ -115,13 +140,12 @@ define(['require',
             initialize: function(options) {
                 this.parentView = options.parentView;
                 this.viewId = options.model ? options.model.cid : this.parentView.cid;
-
             },
             onRender: function() {
                 var that = this,
                     entitytypes = '',
                     enumTypes = [];
-                this.model.set({ "modalID": this.viewId });
+                //this.model.set({ "modalID": this.viewId });
                 this.parentView.typeHeaders.fullCollection.each(function(model) {
                     if (model.toJSON().category == "ENTITY") {
                         that.ui.entityTypeSelector.append("<option>" + model.get('name') + "</option>");
@@ -139,14 +163,14 @@ define(['require',
                 this.ui.entityTypeSelector.on('select2:open', function(e) { // to make selected option disable in dropdown added remove-from-list class
                     $('.select2-dropdown--below').addClass('remove-from-list');
                 });
-                this.ui.stringLengthValue.val('50'); //default length for string is 50
+                this.ui.stringLengthValue.val('50').trigger('change'); //default length for string is 50
                 this.ui.enumValueSelector.attr("disabled", "false"); // cannot edit the values
                 this.emumTypeSelectDisplay();
                 this.ui.enumTypeSelectorContainer.hide();
                 this.ui.enumValueSelectorContainer.hide();
                 if (this.parentView.isAttrEdit) {
                     this.ui.close.hide();
-                    this.ui.createNewEnum.hide(); // cannot add new namespace on edit view
+                    this.ui.createNewEnum.hide(); // cannot add new businessMetadata on edit view
                     this.ui.attributeInput.val(this.parentView.attrDetails.name);
                     this.ui.attributeInput.attr("disabled", "false");
                     this.ui.dataTypeSelector.attr("disabled", "false");
@@ -222,7 +246,7 @@ define(['require',
             },
             onCreateUpdateEnum: function(e) {
                 var that = this;
-                require(["views/name_space/EnumCreateUpdateItemView", "modules/Modal"], function(EnumCreateUpdateItemView, Modal) {
+                require(["views/business_metadata/EnumCreateUpdateItemView", "modules/Modal"], function(EnumCreateUpdateItemView, Modal) {
                     var view = new EnumCreateUpdateItemView({
                             onUpdateEnum: function() {
                                 that.ui.enumValueSelectorContainer.hide();
@@ -238,7 +262,7 @@ define(['require',
                                 });
                             },
                             enumDefCollection: that.parentView.enumDefCollection,
-                            nameSpaceCollection: that.parentView.options.nameSpaceCollection
+                            businessMetadataDefCollection: that.parentView.options.businessMetadataDefCollection
                         }),
                         modal = new Modal({
                             title: "Create/ Update Enum",
