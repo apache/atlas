@@ -56,6 +56,8 @@ public enum AtlasConfiguration {
     RELATIONSHIP_WARN_NO_RELATIONSHIPS("atlas.relationships.warnOnNoRelationships", false),
     ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES("atlas.entity.change.notify.ignore.relationship.attributes", true),
 
+    CLASSIFICATION_PROPAGATION_DEFAULT("atlas.classification.propagation.default", true),
+
     //search configuration
     SEARCH_MAX_LIMIT("atlas.search.maxlimit", 10000),
     SEARCH_DEFAULT_LIMIT("atlas.search.defaultlimit", 100),
