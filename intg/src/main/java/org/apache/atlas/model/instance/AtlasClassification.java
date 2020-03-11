@@ -104,6 +104,10 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         return propagate;
     }
 
+    public Boolean getPropagate() {
+        return propagate;
+    }
+
     public void setPropagate(Boolean propagate) {
         this.propagate = propagate;
     }
