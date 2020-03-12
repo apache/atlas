@@ -21,11 +21,15 @@ import com.google.inject.Inject;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
+import org.apache.atlas.type.AtlasBusinessMetadataType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.Assert;
@@ -37,6 +41,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.*;
 
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_MAX_STRING_LENGTH;
 import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES;
 
 import static org.apache.atlas.utils.TestLoadModelUtils.loadBaseModel;
@@ -82,13 +87,157 @@ public class AtlasBusinessMetadataDefStoreV2Test {
         businessMetadataName = TEST_BUSINESS_METADATA + randomCount;
     }
 
-    @Test
+    @Test(priority = -1)
     public void createBusinessMetadataDef() throws AtlasBaseException {
         createBusinessMetadataTypes(businessMetadataName);
         Assert.assertEquals(typeRegistry.getAllBusinessMetadataDefs().size(), 1);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName("hive_table");
         Map<String, Map<String, AtlasBusinessAttribute>> m1 = entityType.getBusinessAttributes();
         Assert.assertEquals(m1.get(businessMetadataName).size(), 2);
+    }
+
+    @Test
+    public void createBusinessMetadataDefWithoutAttributes() throws AtlasBaseException {
+        createBusinessMetadataTypesWithoutAttributes(businessMetadataName);
+
+        AtlasBusinessMetadataType businessMetadataType = typeRegistry.getBusinessMetadataTypeByName(businessMetadataName);
+        Assert.assertTrue(businessMetadataType.getAllAttributes() == null ? true : businessMetadataType.getAllAttributes().isEmpty());
+    }
+
+    private void createBusinessMetadataTypesWithoutAttributes(String businessMetadataName) throws AtlasBaseException {
+        List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
+        businessMetadataDefs.add(createBusinessMetadataDefWithoutAttributes(businessMetadataName));
+        typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
+        typeDefStore.createTypesDef(typesDefs);
+    }
+
+    private AtlasBusinessMetadataDef createBusinessMetadataDefWithoutAttributes(String businessMetadataName) {
+        AtlasBusinessMetadataDef businessMetadataDef = new AtlasBusinessMetadataDef(businessMetadataName, "test_description", null);
+        return businessMetadataDef;
+    }
+
+    @Test
+    public void createBusinessMetadataDefIsOptionalIsUnique() throws AtlasBaseException {
+        createBusinessMetadataTypesIsOptionalIsUnique(businessMetadataName);
+
+        AtlasBusinessMetadataType businessMetadataType = typeRegistry.getBusinessMetadataTypeByName(businessMetadataName);
+        AtlasStructType.AtlasAttribute atlasAttribute = businessMetadataType.getAttribute("test_business_attribute1");
+        AtlasStructDef.AtlasAttributeDef atlasAttributeDef = atlasAttribute.getAttributeDef();
+
+        Assert.assertFalse(atlasAttributeDef.getIsOptional());
+        Assert.assertTrue(atlasAttributeDef.getIsUnique());
+    }
+
+    private void createBusinessMetadataTypesIsOptionalIsUnique(String businessMetadataName) throws AtlasBaseException {
+        List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
+        businessMetadataDefs.add(createBusinessMetadataDefIsOptionalIsUnique(businessMetadataName));
+        typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
+        typeDefStore.createTypesDef(typesDefs);
+    }
+
+    private AtlasBusinessMetadataDef createBusinessMetadataDefIsOptionalIsUnique(String businessMetadataName) {
+        AtlasBusinessMetadataDef businessMetadataDef = new AtlasBusinessMetadataDef(businessMetadataName, "test_description", null);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute1", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "int",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE, false, true);
+        return businessMetadataDef;
+    }
+
+    private void addBusinessAttribute(AtlasBusinessMetadataDef businessMetadataDef, String name, Set<String> applicableEntityTypes,
+                                       String typeName, AtlasStructDef.AtlasAttributeDef.Cardinality cardinality, boolean isOptional, boolean isUnique) {
+        AtlasStructDef.AtlasAttributeDef attributeDef = new AtlasStructDef.AtlasAttributeDef(name, typeName);
+
+        attributeDef.setCardinality(cardinality);
+        attributeDef.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(applicableEntityTypes));
+        attributeDef.setIsOptional(isOptional);
+        attributeDef.setIsUnique(isUnique);
+
+        businessMetadataDef.addAttribute(attributeDef);
+    }
+
+    @Test
+    public void createBusinessMetadataDefParentApplicableType() throws AtlasBaseException {
+        createBusinessMetadataTypesParentApplicableType(businessMetadataName);
+
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName("hive_table");
+        AtlasBusinessAttribute businessAttribute = entityType.getBusinessAttribute(businessMetadataName, "test_business_attribute_asset_type");
+        AtlasStructDef.AtlasAttributeDef attributeDef = businessAttribute.getAttributeDef();
+        String applicableType = attributeDef.getOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
+
+        Assert.assertEquals(applicableType, "[\"Asset\"]");
+    }
+    private void createBusinessMetadataTypesParentApplicableType(String businessMetadataName) throws AtlasBaseException {
+        List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
+        businessMetadataDefs.add(createBusinessMetadataDefParentApplicableType(businessMetadataName));
+        typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
+        typeDefStore.createTypesDef(typesDefs);
+    }
+
+    private AtlasBusinessMetadataDef createBusinessMetadataDefParentApplicableType(String businessMetadataName) {
+        AtlasBusinessMetadataDef businessMetadataDef = new AtlasBusinessMetadataDef(businessMetadataName, "test_description", null);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute_asset_type", new HashSet<>(Arrays.asList("Asset")), "int",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        return businessMetadataDef;
+    }
+
+    private void createEnumTypes() throws AtlasBaseException {
+        List<AtlasEnumDef> atlasEnumDefs = new ArrayList(typesDefs.getEnumDefs());
+        String _description = "_description";
+        AtlasEnumDef myEnum =
+                new AtlasEnumDef("ENUM_1", "ENUM_1" + _description, "1.0",
+                        Arrays.asList(
+                                new AtlasEnumDef.AtlasEnumElementDef("USER", "Element" + _description, 1),
+                                new AtlasEnumDef.AtlasEnumElementDef("ROLE", "Element" + _description, 2),
+                                new AtlasEnumDef.AtlasEnumElementDef("GROUP", "Element" + _description, 3)
+                        ));
+        atlasEnumDefs.add(myEnum);
+        typesDefs.setEnumDefs(atlasEnumDefs);
+    }
+
+    @Test
+    public void createBusinessMetadataDefMultivaluedAttributes() throws AtlasBaseException {
+        createEnumTypes();
+        createBusinessMetadataTypesMultivaluedAttributes(businessMetadataName);
+
+        AtlasBusinessMetadataType businessMetadataType = typeRegistry.getBusinessMetadataTypeByName(businessMetadataName);
+        Assert.assertEquals(businessMetadataType.getAllAttributes().size(), 10);
+        Map<String, AtlasStructType.AtlasAttribute> attributeMap = businessMetadataType.getAllAttributes();
+        for (Map.Entry<String, AtlasStructType.AtlasAttribute> e : attributeMap.entrySet()) {
+            AtlasStructType.AtlasAttribute atlasAttribute = e.getValue();
+            AtlasStructDef.AtlasAttributeDef atlasAttributeDef = atlasAttribute.getAttributeDef();
+            Assert.assertTrue(atlasAttributeDef.getTypeName().startsWith("array<"));
+        }
+    }
+
+    private void createBusinessMetadataTypesMultivaluedAttributes(String businessMetadataName) throws AtlasBaseException {
+        List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
+        businessMetadataDefs.add(createBusinessMetadataDefMultivaluedAttributes(businessMetadataName));
+        typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
+        typeDefStore.createTypesDef(typesDefs);
+    }
+
+    private AtlasBusinessMetadataDef createBusinessMetadataDefMultivaluedAttributes(String businessMetadataName) {
+        AtlasBusinessMetadataDef businessMetadataDef = new AtlasBusinessMetadataDef(businessMetadataName, "test_description", null);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute1", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "array<boolean>",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute2", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "array<byte>",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute3", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "array<short>",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute4", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "array<int>",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute5", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "array<long>",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute6", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "array<float>",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute7", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "array<double>",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute8", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "array<string>",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute9", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "array<date>",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        addBusinessAttribute(businessMetadataDef, "test_business_attribute10", new HashSet<>(Arrays.asList("hive_table", "fs_path")), "array<ENUM_1>",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        return businessMetadataDef;
     }
 
     @Test
@@ -278,6 +427,9 @@ public class AtlasBusinessMetadataDefStoreV2Test {
 
         attributeDef.setCardinality(cardinality);
         attributeDef.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(applicableEntityTypes));
+        if (typeName.contains(AtlasBaseTypeDef.ATLAS_TYPE_STRING)) {
+            attributeDef.setOption(ATTR_MAX_STRING_LENGTH, "20");
+        }
         attributeDef.setIsOptional(true);
         attributeDef.setIsUnique(false);
 

@@ -178,6 +178,13 @@ public class AtlasTypeUtil {
             Collections.<AtlasConstraintDef>emptyList());
     }
 
+    public static AtlasAttributeDef createOptionalAttrDef(String name, String dataType, Map<String, String> options, String desc) {
+        return new AtlasAttributeDef(name, dataType, true,
+                Cardinality.SINGLE, 0, 1,
+                false, false, false, "",
+                Collections.<AtlasConstraintDef>emptyList(), options, desc, 0, null);
+    }
+
     public static AtlasAttributeDef createRequiredAttrDef(String name, String dataType) {
         return new AtlasAttributeDef(name, dataType, false,
             Cardinality.SINGLE, 1, 1,
@@ -283,6 +290,13 @@ public class AtlasTypeUtil {
 
     public static AtlasEntityDef createClassTypeDef(String name, String description, String version, Set<String> superTypes, Map<String, String> options, AtlasAttributeDef... attrDefs) {
         return new AtlasEntityDef(name, description, version, Arrays.asList(attrDefs), superTypes, options);
+    }
+
+    public static AtlasBusinessMetadataDef createBusinessMetadataDef(String name, String description, String typeVersion, AtlasAttributeDef... attributeDefs) {
+        if (attributeDefs == null || attributeDefs.length == 0) {
+            return new AtlasBusinessMetadataDef(name, description, typeVersion);
+        }
+        return new AtlasBusinessMetadataDef(name, description, typeVersion, Arrays.asList(attributeDefs));
     }
 
     public static AtlasRelationshipDef createRelationshipTypeDef(String                  name,
