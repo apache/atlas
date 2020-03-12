@@ -227,8 +227,8 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         sessionApiUrl: function() {
             return this.baseUrl + '/admin/session';
         },
-        purgeApiUrl: function() {
-            return this.baseUrl + '/admin/audit';
+        adminApiUrl: function() {
+            return this.baseUrl + '/admin/audits';
         }
     });
 

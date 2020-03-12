@@ -54,9 +54,8 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'tag', 'type', 'searchTableFilters', 'systemAttrArr'));
+                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'businessMetadataDefCollection', 'tag', 'type', 'searchTableFilters', 'systemAttrArr', 'adminAttrFilters'));
                 this.attrObj = _.sortBy(this.attrObj, 'name');
-                //this.systemAttrArr = _.sortBy(this.systemAttrArr, 'name');
                 this.filterType = this.tag ? 'tagFilters' : 'entityFilters';
             },
             bindEvents: function() {},
@@ -312,70 +311,82 @@ define(['require',
             onRender: function() {
                 var that = this,
                     filters = [],
-                    isGroupView = false,
+                    isGroupView = true,
                     placeHolder = '--Select Attribute--';
-                if (this.attrObj.length > 0 && this.systemAttrArr.length > 0) {
-                    isGroupView = true;
-                } else if (this.attrObj.length === 0 || this.systemAttrArr.length === 0) {
-                    isGroupView = false;
-                }
-                if (this.attrObj.length === 0) {
-                    placeHolder = '--Select System Attribute--';
-                }
-                if (this.value) {
-                    var rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
-                }
-                _.each(this.attrObj, function(obj) {
-                    var type = that.tag ? 'Classification' : 'Entity';
-                    var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'Select ' + type + ' Attribute');
-                    if (returnObj) {
-                        filters.push(returnObj);
+                var rules_widgets = null;
+                if (this.adminAttrFilters) {
+                    filters = this.adminAttrFilters;
+                    rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters ? this.searchTableFilters["adminAttrFilters"] : null, "formatDate": true });;
+                } else {
+                    if (this.value) {
+                        var rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
                     }
-                });
-                var sortMap = {
-                    "__guid": 1,
-                    "__typeName": 2,
-                    "__timestamp": 3,
-                    "__modificationTimestamp": 4,
-                    "__createdBy": 5,
-                    "__modifiedBy": 6,
-                    "__isIncomplete": 7,
-                    "__state": 8,
-                    "__classificationNames": 9,
-                    "__propagatedClassificationNames": 10,
-                    "__labels": 11,
-                    "__customAttributes": 12,
-                }
-                this.systemAttrArr = _.sortBy(this.systemAttrArr, function(obj) {
-                    return sortMap[obj.name]
-                })
-                _.each(this.systemAttrArr, function(obj) {
-                    var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'Select System Attribute', true);
-                    if (returnObj) {
-                        filters.push(returnObj);
+                    _.each(this.attrObj, function(obj) {
+                        var type = that.tag ? that.value.tag : that.value.type;
+                        var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, (type + ' Attribute'));
+                        if (returnObj) {
+                            filters.push(returnObj);
+                        }
+                    });
+                    var sortMap = {
+                        "__guid": 1,
+                        "__typeName": 2,
+                        "__timestamp": 3,
+                        "__modificationTimestamp": 4,
+                        "__createdBy": 5,
+                        "__modifiedBy": 6,
+                        "__isIncomplete": 7,
+                        "__state": 8,
+                        "__classificationNames": 9,
+                        "__propagatedClassificationNames": 10,
+                        "__labels": 11,
+                        "__customAttributes": 12,
                     }
-                });
-                if (this.type) {
-                    var entityDef = this.entityDefCollection.fullCollection.find({ name: that.options.applicableType }),
-                        businessMetadataAttributeDefs = null;
-                    if (entityDef) {
-                        BusinessMetadataAttributeDefs = entityDef.get("businessAttributeDefs");
-                    }
-                    if (BusinessMetadataAttributeDefs) {
-                        _.each(BusinessMetadataAttributeDefs, function(attributes, key) {
-                            var sortedAttributes = _.sortBy(attributes, function(obj) {
-                                return obj.name;
-                            });
+                    this.systemAttrArr = _.sortBy(this.systemAttrArr, function(obj) {
+                        return sortMap[obj.name]
+                    })
+                    _.each(this.systemAttrArr, function(obj) {
+                        var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'System Attribute', true);
+                        if (returnObj) {
+                            filters.push(returnObj);
+                        }
+                    });
+                    if (this.type) {
+                        var pushBusinessMetadataFilter = function(sortedAttributes, businessMetadataKey) {
                             _.each(sortedAttributes, function(attrDetails) {
-                                var returnObj = that.getObjDef(attrDetails, rules_widgets, isGroupView, 'Select Business Metadata Attribute', true);
+                                var returnObj = that.getObjDef(attrDetails, rules_widgets, isGroupView, 'Business Metadata Attribute', true);
                                 if (returnObj) {
-                                    returnObj.id = key + "." + returnObj.id;
-                                    returnObj.label = key + ": " + returnObj.label;
+                                    returnObj.id = businessMetadataKey + "." + returnObj.id;
+                                    returnObj.label = businessMetadataKey + ": " + returnObj.label;
                                     returnObj.data = { 'entityType': "businessMetadata" };
                                     filters.push(returnObj);
                                 }
                             });
-                        });
+                        };
+                        if (this.value.type == "_ALL_ENTITY_TYPES") {
+                            this.businessMetadataDefCollection.each(function(model) {
+                                var sortedAttributes = model.get('attributeDefs');
+                                sortedAttributes = _.sortBy(sortedAttributes, function(obj) {
+                                    return obj.name;
+                                });
+                                pushBusinessMetadataFilter(sortedAttributes, model.get('name'));
+                            })
+
+                        } else {
+                            var entityDef = this.entityDefCollection.fullCollection.find({ name: this.value.type }),
+                                businessMetadataAttributeDefs = null;
+                            if (entityDef) {
+                                businessMetadataAttributeDefs = entityDef.get("businessAttributeDefs");
+                            }
+                            if (businessMetadataAttributeDefs) {
+                                _.each(businessMetadataAttributeDefs, function(attributes, key) {
+                                    var sortedAttributes = _.sortBy(attributes, function(obj) {
+                                        return obj.name;
+                                    });
+                                    pushBusinessMetadataFilter(sortedAttributes, key);
+                                });
+                            }
+                        }
                     }
                 }
                 filters = _.uniq(filters, 'id');

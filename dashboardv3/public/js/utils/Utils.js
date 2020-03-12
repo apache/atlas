@@ -411,6 +411,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 matchString: "detailPage"
             });
         },
+        isPurgePage: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "purge"
+            });
+        },
         getLastValue: function() {
             return this.getQueryUrl().lastValue;
         },
