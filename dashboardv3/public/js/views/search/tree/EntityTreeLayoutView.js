@@ -171,23 +171,27 @@ define([
                 this.ui.entitySearchTree.jstree(true).deselect_all();
                 this.typeId = null;
             } else {
-                var dataFound = this.typeHeaders.fullCollection.find(function(obj) {
-                    return obj.get("name") === that.options.value.type
-                });
-                if (dataFound) {
-                    if ((this.typeId && this.typeId !== dataFound.get("guid")) || this.typeId === null) {
-                        if (this.typeId) {
-                            this.ui.entitySearchTree.jstree(true).deselect_node(this.typeId);
-                        }
-                        this.fromManualRender = true;
-                        this.typeId = dataFound.get("guid");
-                        this.ui.entitySearchTree.jstree(true).select_node(dataFound.get("guid"));
-                    }
-                }
-                if (!dataFound && Globals[that.options.value.type]) {
+                if (that.options.value.type === "_ALL_ENTITY_TYPES" && this.typeId !== "_ALL_ENTITY_TYPES") {
                     this.fromManualRender = true;
+                    if (this.typeId) {
+                        this.ui.entitySearchTree.jstree(true).deselect_node(this.typeId);
+                    }
                     this.typeId = Globals[that.options.value.type].guid;
                     this.ui.entitySearchTree.jstree(true).select_node(this.typeId);
+                } else if (this.typeId !== "_ALL_ENTITY_TYPES" && that.options.value.type !== this.typeId) {
+                    var dataFound = this.typeHeaders.fullCollection.find(function(obj) {
+                        return obj.get("name") === that.options.value.type
+                    });
+                    if (dataFound) {
+                        if ((this.typeId && this.typeId !== dataFound.get("guid")) || this.typeId === null) {
+                            if (this.typeId) {
+                                this.ui.entitySearchTree.jstree(true).deselect_node(this.typeId);
+                            }
+                            this.fromManualRender = true;
+                            this.typeId = dataFound.get("guid");
+                            this.ui.entitySearchTree.jstree(true).select_node(dataFound.get("guid"));
+                        }
+                    }
                 }
             }
         },
@@ -301,7 +305,7 @@ define([
                                 text: _.escape(modelname),
                                 name: model.get("name"),
                                 type: model.get("category"),
-                                gType: "serviceType",
+                                gType: "Entity",
                                 guid: model.get("guid"),
                                 id: model.get("guid"),
                                 model: model,
@@ -336,7 +340,7 @@ define([
                         text: _.escape(rootEntity.name),
                         name: rootEntity.name,
                         type: rootEntity.category,
-                        gType: "serviceType",
+                        gType: "Entity",
                         guid: rootEntity.guid,
                         id: rootEntity.guid,
                         model: rootEntity,
@@ -389,7 +393,7 @@ define([
                             parent = {
                                 icon: "fa fa-folder-o",
                                 type: type,
-                                gType: "serviceType",
+                                gType: "ServiceType",
                                 children: getParrent.children,
                                 text: _.escape(textName),
                                 name: data[parents[i]].name,

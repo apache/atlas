@@ -214,7 +214,8 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
             renderGlobalSearch: function() {
                 var that = this;
                 require(["views/search/GlobalSearchLayoutView"], function(GlobalSearchLayoutView) {
-                    that.RGlobalSearchLayoutView.show(new GlobalSearchLayoutView(_.extend({ closeOnSubmit: true }, that.options)));
+
+                    that.RGlobalSearchLayoutView.show(new GlobalSearchLayoutView(_.extend({ closeOnSubmit: true }, _.omit(that.options, "value"))));
                 });
             },
             renderSearchResult: function() {
@@ -303,8 +304,7 @@ define(["require", "backbone", "utils/Globals", "hbs!tmpl/search/SearchDefaultLa
                         this.renderQueryBuilder(_.extend({}, obj, {
                             tag: false,
                             type: true,
-                            attrObj: attrTypeObj,
-                            applicableType: that.options.value ? that.options.value.type : null
+                            attrObj: attrTypeObj
                         }), this.RQueryBuilderEntity);
 
                         this.ui.entityName.html(that.options.value.type);
