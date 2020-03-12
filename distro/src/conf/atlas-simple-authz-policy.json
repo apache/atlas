@@ -20,7 +20,7 @@
           "entityIds":       [ ".*" ],
           "classifications": [ ".*" ],
           "labels" : [ ".*" ],
-          "namespaces" : [ ".*" ],
+          "businessMetadata" : [ ".*" ],
           "attributes" :[ ".*" ]
         }
       ],

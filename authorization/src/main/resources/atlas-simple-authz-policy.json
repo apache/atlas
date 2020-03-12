@@ -45,7 +45,7 @@
           "entityIds":       [ ".*" ],
           "classifications": [ ".*" ],
           "labels":          [ ".*" ],
-          "namespaces":      [ ".*" ]
+          "businessMetadata":      [ ".*" ]
         }
       ]
     },
@@ -53,12 +53,12 @@
     "DATA_STEWARD": {
       "entityPermissions": [
         {
-          "privileges":      [ "entity-read", "entity-create", "entity-update", "entity-read-classification", "entity-add-classification", "entity-update-classification", "entity-remove-classification", "entity-add-label", "entity-remove-label", "entity-update-namespace" ],
+          "privileges":      [ "entity-read", "entity-create", "entity-update", "entity-read-classification", "entity-add-classification", "entity-update-classification", "entity-remove-classification", "entity-add-label", "entity-remove-label", "entity-update-business-metadata" ],
           "entityTypes":     [ ".*" ],
           "entityIds":       [ ".*" ],
           "classifications": [ ".*" ],
           "labels":          [ ".*" ],
-          "namespaces":      [ ".*" ]
+          "businessMetadata":      [ ".*" ]
         }
       ],
       "relationshipPermissions": [
