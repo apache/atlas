@@ -38,7 +38,8 @@ define(['require',
             /** Layout sub regions */
             regions: {
                 RBusinessMetadataTableLayoutView: "#r_businessMetadataTableLayoutView",
-                REnumTableLayoutView: '#r_enumTableLayoutView'
+                REnumTableLayoutView: '#r_enumTableLayoutView',
+                RAdminTableLayoutView: '#r_adminTableLayoutView'
             },
 
             /** ui selector cache */
@@ -67,7 +68,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'guid', 'entityDefCollection', 'businessMetadataDefCollection', 'enumDefCollection'));
+                _.extend(this, _.pick(options, 'value', 'entityDefCollection', 'businessMetadataDefCollection', 'enumDefCollection', 'searchTableFilters'));
 
             },
             onShow: function() {
@@ -79,6 +80,7 @@ define(['require',
             },
             bindEvents: function() {
                 this.renderEnumLayoutView();
+                this.renderAdminLayoutView();
             },
             onRender: function() {
                 this.renderBusinessMetadataLayoutView();
@@ -98,6 +100,15 @@ define(['require',
                         businessMetadataDefCollection: that.businessMetadataDefCollection
                     });
                     that.REnumTableLayoutView.show(view);
+                });
+            },
+            renderAdminLayoutView: function(obj) {
+                var that = this;
+                require(["views/audit/AdminAuditTableLayoutView"], function(AdminAuditTableLayoutView) {
+                    var view = new AdminAuditTableLayoutView({
+                        searchTableFilters: that.searchTableFilters
+                    });
+                    that.RAdminTableLayoutView.show(view);
                 });
             }
         });

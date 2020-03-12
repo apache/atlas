@@ -486,7 +486,7 @@ define([
             var that = this;
             require(["views/site/Header", "views/site/SideNavLayoutView", 'views/administrator/AdministratorLayoutView'], function(Header, SideNavLayoutView, AdministratorLayoutView) {
                 var value = Utils.getUrlState.getQueryParams(),
-                    paramObj = _.extend({ value: value, guid: null }, that.preFetchedCollectionLists);
+                    paramObj = _.extend({ value: value, guid: null }, that.preFetchedCollectionLists, that.sharedObj);
                 that.renderViewIfNotExists(that.getHeaderOptions(Header));
                 that.renderViewIfNotExists({
                     view: App.rSideNav,

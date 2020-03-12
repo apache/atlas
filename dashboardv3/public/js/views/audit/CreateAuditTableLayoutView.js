@@ -39,6 +39,7 @@ define(['require',
             ui: {
                 auditValue: "[data-id='auditValue']",
                 name: "[data-id='name']",
+                nameContainer: "[data-id='nameContainer']",
                 noData: "[data-id='noData']",
                 tableAudit: "[data-id='tableAudit']",
                 auditHeaderValue: "[data-id='auditHeaderValue']",
@@ -156,8 +157,8 @@ define(['require',
                         that.noDetailsShow();
                     }
 
-                } else if (detailObj == "Deleted entity") {
-                    that.updateName(this.entityName ? this.entityName : "Entity");
+                } else if (detailObj == "Deleted entity" || detailObj == "Purged entity") {
+                    this.entityName ? that.updateName(this.entityName) : this.ui.nameContainer.empty().append("<h4 class='text-center'><i>No Records Found!</i></h4>");
                 }
             }
         });

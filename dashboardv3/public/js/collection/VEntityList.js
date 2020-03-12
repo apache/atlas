@@ -54,6 +54,14 @@ define(['require',
                 } catch (e) {
                     console.log(e);
                 }
+            },
+            getAdminData: function(options) {
+                var url = UrlLinks.adminApiUrl();
+                options = _.extend({
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }, options);
+                return this.constructor.nonCrudOperation.call(this, url, 'POST', options);
             }
         },
         //Static Class Members

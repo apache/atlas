@@ -67,13 +67,23 @@
     }
 }
 
-.business-metadata-details {
-
+.business-metadata-details,
+.admin-details {
     .expandable .attr-details {
         max-height: 300px;
         overflow: auto;
         margin-left: 30px;
         width: calc(100% - 30px);
+    }
+
+    .admin-type-dropdown {
+        width: 100px;
+    }
+
+    .expandable .admin-attr-details {
+        max-height: 100px;
+        margin-left: 20px;
+        width: calc(100% - 27px);
     }
 }
 
