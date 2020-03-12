@@ -19,14 +19,9 @@
 define(['require',
     'backbone',
     'hbs!tmpl/business_metadata/BusinessMetadataTableLayoutView_tmpl',
-    'collection/VEntityList',
-    'models/VSearch',
     'utils/Utils',
-    'utils/Messages',
-    'utils/Enums',
-    'utils/UrlLinks',
-    'utils/CommonViewFunction'
-], function(require, Backbone, BusinessMetadataTableLayoutView_tmpl, VEntityList, VSearch, Utils, Messages, Enums, UrlLinks, CommonViewFunction) {
+    'utils/Messages'
+], function(require, Backbone, BusinessMetadataTableLayoutView_tmpl, Utils, Messages) {
     'use strict';
 
     var BusinessMetadataTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -47,18 +42,12 @@ define(['require',
                 businessMetadataAttrPage: "[data-id='businessMetadataAttrPage']",
                 businessMetadataAttrPageTitle: "[data-id='businessMetadataAttrPageTitle']",
                 businessMetadataDetailPage: "[data-id='businessMetadataDetailPage']",
-                auditCreate: "[data-id='auditCreate']",
-                pageRecordText: "[data-id='pageRecordText']",
-                activePage: "[data-id='activePage']",
                 createBusinessMetadata: "[data-id='createBusinessMetadata']",
                 attributeEdit: "[data-id='attributeEdit']",
                 addAttribute: '[data-id="addAttribute"]',
                 businessMetadataAttrPageOk: '[data-id="businessMetadataAttrPageOk"]',
                 colManager: "[data-id='colManager']",
-                deleteBusinessMetadata: '[data-id="deleteBusinessMetadata"]',
-                businessMetadataAttrFontLoader: '.business-metadata-attr-fontLoader',
-                businessMetadataAttrTableOverlay: '.businessMetadata-attr-tableOverlay'
-
+                deleteBusinessMetadata: '[data-id="deleteBusinessMetadata"]'
             },
             /** ui events hash */
             events: function() {
@@ -80,9 +69,6 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'guid', 'entity', 'entityName', 'attributeDefs', 'typeHeaders', 'businessMetadataDefCollection', 'entityDefCollection', 'businessMetadataAttr', 'selectedBusinessMetadata'));
                 this.limit = 10;
-                this.offset = 0;
-                this.pervOld = [];
-                this.onlyPurge = true;
                 this.newAttr = false;
                 this.commonTableOptions = {
                     collection: this.businessMetadataDefCollection,
@@ -111,8 +97,6 @@ define(['require',
                     filterOpts: {},
                     paginatorOpts: {}
                 };
-                this.currPage = 1;
-                this.isFilters = null;
                 this.guid = null;
                 this.showDetails = true; // toggle between sttribute page and detail page
             },
@@ -225,11 +209,10 @@ define(['require',
                             that.toggleBusinessMetadataDetailsAttrView();
                             that.entityDefCollection.fetch({ silent: true });
                         },
-                        tagCollection: that.businessMetadataDefCollection,
+                        businessMetadataDefCollection: that.businessMetadataDefCollection,
                         enumDefCollection: enumDefCollection,
                         typeHeaders: typeHeaders,
-                        isNewBusinessMetadata: isNewBusinessMetadata,
-                        businessMetadataDefCollection: businessMetadataDefCollection
+                        isNewBusinessMetadata: isNewBusinessMetadata
                     });
                     that.RModal.show(that.view);
                 });
@@ -272,7 +255,6 @@ define(['require',
                                     var applicableEntityTypes = '',
                                         typeName = attrObj.typeName;
                                     if (attrObj.options && attrObj.options.applicableEntityTypes) {
-                                        // attrEntityTypes = JSON.parse(attrObj.options.applicableEntityTypes).join(', ');
                                         var entityTypes = JSON.parse(attrObj.options.applicableEntityTypes);
                                         _.each(entityTypes, function(values) {
                                             applicableEntityTypes += '<label class="btn btn-action btn-xs btn-blue no-pointer">' + values + '</label>';
@@ -283,11 +265,11 @@ define(['require',
                                     }
                                     attrRow += "<tr> <td style='display:table-cell'>" + _.escape(attrObj.name) + "</td><td style='display:table-cell'>" + typeName + "</td><td style='display:table-cell'>" + applicableEntityTypes + "</td><td style='display:table-cell'> <div class='btn btn-action btn-sm' style='margin-left:0px;' data-id='attributeEdit' data-guid='" + model.get('guid') + "' data-name ='" + _.escape(attrObj.name) + "' data-action='attributeEdit' >Edit</div> </td></tr> ";
                                 });
-                                var purgeText = '<div class="row"><div class="col-sm-12 attr-details"><table style="padding: 50px;">' + attrTableHeading + attrRow + '</table></div></div>';
-                                $(el).append($('<div>').html(purgeText));
+                                var adminText = '<div class="row"><div class="col-sm-12 attr-details"><table style="padding: 50px;">' + attrTableHeading + attrRow + '</table></div></div>';
+                                $(el).append($('<div>').html(adminText));
                             } else {
-                                var purgeText = '<div class="row"><div class="col-sm-12 attr-details"><h5 class="text-center"> No attributes to show.</h5></div></div>';
-                                $(el).append($('<div>').html(purgeText));
+                                var adminText = '<div class="row"><div class="col-sm-12 attr-details"><h5 class="text-center"> No attributes to show.</h5></div></div>';
+                                $(el).append($('<div>').html(adminText));
                             }
 
                         }
@@ -364,7 +346,6 @@ define(['require',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 return "<button type='button' data-id='addAttribute' data-guid='" + model.get('guid') + "'' title='' class='btn btn-action btn-xs ' style='margin-bottom: 10px;' data-action='createAttr' data-original-title='Add Business Metadata attribute'><i class='fa fa-plus'></i> Attributes</button>";
-                                // "<button type='button' data-id='deleteBusinessMetadata' data-guid='" + model.get('guid') + "'' title='' class='btn btn-action btn-xs ' style='margin-bottom: 10px;' data-action='createAttr' data-original-title='Delete BusinessMetadata'><i class='fa fa-trash-o'></i> Delete</button>";
                             }
                         })
                     }
@@ -386,7 +367,6 @@ define(['require',
             onNotifyDeleteOk: function(data) {
                 var that = this,
                     deleteBusinessMetadataData = that.businessMetadataDefCollection.fullCollection.findWhere({ guid: that.guid });
-                // that.$('.position-relative .fontLoader').addClass('show');
                 that.$('.tableOverlay').show();
                 if (deleteBusinessMetadataData) {
                     var businessMetadataName = deleteBusinessMetadataData.get("name");

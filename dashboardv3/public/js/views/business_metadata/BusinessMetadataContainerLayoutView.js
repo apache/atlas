@@ -47,33 +47,7 @@ define([
             initialize: function(options) {
                 _.extend(this, options);
             },
-            bindEvents: function() {
-                // this.listenTo(this.businessMetadataDefCollection, 'reset', function() {
-                //     if (!this.model) {
-                //         this.model = this.businessMetadataDefCollection.fullCollection.findWhere({ guid: this.guid });
-                //         if (this.model) {
-                //             this.renderTagDetail();
-                //         } else {
-                //             this.$('.fontLoader').hide();
-                //             Utils.notifyError({
-                //                 content: 'Tag Not Found'
-                //             });
-                //         }
-                //     }
-                // }, this);
-                // this.listenTo(this.collection, 'error', function(error, response) {
-                //     if (response.responseJSON && response.responseJSON.error) {
-                //         Utils.notifyError({
-                //             content: response.responseJSON.error
-                //         });
-                //     } else {
-                //         Utils.notifyError({
-                //             content: 'Something went wrong'
-                //         });
-                //     }
-                //     this.$('.fontLoader').hide();
-                // }, this);
-            },
+            bindEvents: function() {},
             onRender: function() {
                 this.updateView();
             },

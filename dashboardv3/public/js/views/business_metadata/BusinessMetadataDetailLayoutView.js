@@ -32,10 +32,7 @@ define(['require',
             /** ui selector cache */
             ui: {
                 title: '[data-id="title"]',
-                editBox: '[data-id="editBox"]',
-                saveButton: "[data-id='saveButton']",
                 description: '[data-id="description"]',
-                publishButton: '[data-id="publishButton"]',
                 backButton: '[data-id="backButton"]'
             },
             /** ui events hash */
@@ -51,16 +48,15 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'model', 'enumDefCollection', 'typeHeaders'));
+                _.extend(this, _.pick(options, 'model'));
             },
             onRender: function() {
                 this.renderDetail();
             },
             renderDetail: function() {
-                var that = this;
-                this.ui.title.html('<span>' + that.model.get('name') + '</span>');
-                if (that.model.get('description')) {
-                    this.ui.description.text((that.model.get('description')));
+                this.ui.title.html('<span>' + this.model.get('name') + '</span>');
+                if (this.model.get('description')) {
+                    this.ui.description.text((this.model.get('description')));
                 }
             }
         });

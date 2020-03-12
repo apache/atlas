@@ -17,12 +17,8 @@
  */
 define(['require',
     'backbone',
-    'hbs!tmpl/business_metadata/BusinessMetadataAttributeItemView_tmpl',
-    'utils/Utils',
-    'utils/UrlLinks',
-    'utils/Messages'
-
-], function(require, Backbone, BusinessMetadataAttributeItemViewTmpl, Utils, UrlLinks, Messages) {
+    'hbs!tmpl/business_metadata/BusinessMetadataAttributeItemView_tmpl'
+], function(require, Backbone, BusinessMetadataAttributeItemViewTmpl) {
     'use strict';
 
     return Backbone.Marionette.ItemView.extend(
@@ -63,27 +59,35 @@ define(['require',
                 };
                 events["change " + this.ui.dataTypeSelector] = function(e) {
                     var obj = { options: this.model.get('options') || {} };
-                    debugger;
                     delete obj.enumValues;
                     delete obj.options.maxStrLength;
                     if (e.target.value.trim() === 'enumeration' || e.target.value.trim() === 'Enumeration') {
                         this.ui.enumTypeSelectorContainer.show();
+                        this.ui.enumTypeSelector.show();
                         this.emumTypeSelectDisplay();
                         this.ui.stringLengthContainer.hide();
+                        this.ui.stringLengthValue.hide();
                     } else {
                         obj.typeName = e.target.value.trim();
                         if (e.target.value.trim() === 'string' || e.target.value.trim() === 'String') {
                             this.ui.stringLengthContainer.show();
+                            this.ui.stringLengthValue.show();
                             this.ui.enumTypeSelectorContainer.hide();
+                            this.ui.enumTypeSelector.hide();
                             this.ui.enumValueSelectorContainer.hide();
                             obj.options["maxStrLength"] = e.target.value.trim();
                         } else {
                             this.ui.enumTypeSelectorContainer.hide();
+                            this.ui.enumTypeSelector.hide();
                             this.ui.enumValueSelectorContainer.hide();
                             this.ui.stringLengthContainer.hide();
+                            this.ui.stringLengthValue.hide();
                         }
                     }
                     this.model.set(obj);
+                    if (e.target.value.trim() != 'enumeration') {
+                        this.ui.multiValueSelectStatus.trigger('change');
+                    }
                 };
                 events["change " + this.ui.enumTypeSelector] = function(e) {
                     this.model.set({ "enumValues": e.target.value.trim() });
@@ -138,15 +142,14 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                this.parentView = options.parentView;
-                this.viewId = options.model ? options.model.cid : this.parentView.cid;
+                _.extend(this, _.pick(options, "typeHeaders", "businessMetadataDefCollection", "enumDefCollection", "isAttrEdit", "attrDetails", "viewId", "collection"));
+                this.viewId = options.model ? options.model.cid : this.viewId;
             },
             onRender: function() {
                 var that = this,
                     entitytypes = '',
                     enumTypes = [];
-                //this.model.set({ "modalID": this.viewId });
-                this.parentView.typeHeaders.fullCollection.each(function(model) {
+                this.typeHeaders.fullCollection.each(function(model) {
                     if (model.toJSON().category == "ENTITY") {
                         that.ui.entityTypeSelector.append("<option>" + model.get('name') + "</option>");
                         entitytypes += '<option  value="' + (model.get('name')) + '" data-name="' + (model.get('name')) + '">' + model.get('name') + '</option>';
@@ -167,24 +170,26 @@ define(['require',
                 this.ui.enumValueSelector.attr("disabled", "false"); // cannot edit the values
                 this.emumTypeSelectDisplay();
                 this.ui.enumTypeSelectorContainer.hide();
+                this.ui.enumTypeSelector.hide();
                 this.ui.enumValueSelectorContainer.hide();
-                if (this.parentView.isAttrEdit) {
+                if (this.isAttrEdit) {
                     this.ui.close.hide();
                     this.ui.createNewEnum.hide(); // cannot add new businessMetadata on edit view
-                    this.ui.attributeInput.val(this.parentView.attrDetails.name);
+                    this.ui.attributeInput.val(this.attrDetails.name);
                     this.ui.attributeInput.attr("disabled", "false");
                     this.ui.dataTypeSelector.attr("disabled", "false");
                     this.ui.dataTypeSelector.attr("disabled", "false");
                     this.ui.multiValueSelect.hide();
-                    this.ui.dataTypeSelector.val(this.parentView.attrDetails.attrTypeName);
-                    if (this.parentView.attrDetails.attrTypeName == "string") {
+                    this.ui.dataTypeSelector.val(this.attrDetails.attrTypeName);
+                    if (this.attrDetails.attrTypeName == "string") {
                         this.ui.stringLengthContainer.show();
-                        this.ui.stringLengthValue.val(this.parentView.attrDetails.maxStrLength);
+                        this.ui.stringLengthValue.show();
+                        this.ui.stringLengthValue.val(this.attrDetails.maxStrLength);
                     } else {
                         this.ui.stringLengthContainer.hide();
+                        this.ui.stringLengthValue.hide();
                     }
-
-                    _.each(this.parentView.attrDetails.attrEntityType, function(valName) {
+                    _.each(this.attrDetails.attrEntityType, function(valName) {
                         that.ui.entityTypeSelector.find('option').each(function(o) {
                             var $el = $(this)
                             if ($el.data("name") === valName) {
@@ -192,16 +197,16 @@ define(['require',
                             }
                         })
                     });
-                    this.ui.entityTypeSelector.val(this.parentView.attrDetails.attrEntityType).trigger('change');
-                    if (this.parentView.attrDetails && this.parentView.attrDetails.attrTypeName) {
-                        var typeName = this.parentView.attrDetails.attrTypeName;
+                    this.ui.entityTypeSelector.val(this.attrDetails.attrEntityType).trigger('change');
+                    if (this.attrDetails && this.attrDetails.attrTypeName) {
+                        var typeName = this.attrDetails.attrTypeName;
                         if (typeName != "string" && typeName != "boolean" && typeName != "byte" && typeName != "short" && typeName != "int" && typeName != "float" && typeName != "double" && typeName != "long" && typeName != "date") {
                             this.ui.enumTypeSelector.attr("disabled", "false");
                             this.ui.dataTypeSelector.val("enumeration").trigger('change');
                             this.ui.enumTypeSelector.val(typeName).trigger('change');
                         }
                     }
-                    if (this.parentView.attrDetails && this.parentView.attrDetails.multiValued) {
+                    if (this.attrDetails && this.attrDetails.multiValued) {
                         this.ui.multiValueSelect.show();
                         $(this.ui.multiValueSelectStatus).prop('checked', true).trigger('change');
                         this.ui.multiValueSelectStatus.attr("disabled", "false");
@@ -211,7 +216,7 @@ define(['require',
             showEnumValues: function(enumName) {
                 var enumValues = '',
                     selectedValues = [],
-                    selectedEnum = this.parentView.enumDefCollection.fullCollection.findWhere({ name: enumName }),
+                    selectedEnum = this.enumDefCollection.fullCollection.findWhere({ name: enumName }),
                     selectedEnumValues = selectedEnum ? selectedEnum.get('elementDefs') : null,
                     savedValues = [];
                 _.each(selectedEnumValues, function(enumVal, index) {
@@ -231,7 +236,7 @@ define(['require',
             },
             emumTypeSelectDisplay: function() {
                 var enumTypes = '';
-                this.parentView.enumDefCollection.fullCollection.each(function(model, index) {
+                this.enumDefCollection.fullCollection.each(function(model, index) {
                     enumTypes += "<option>" + _.escape(model.get('name')) + "</option>";
                 });
                 this.ui.enumTypeSelector.empty();
@@ -255,14 +260,14 @@ define(['require',
                             },
                             closeModal: function() {
                                 modal.trigger("cancel");
-                                that.parentView.enumDefCollection.fetch({
+                                that.enumDefCollection.fetch({
                                     success: function() {
                                         that.ui.enumTypeSelector.val(that.model.get('typeName')).trigger('change');
                                     }
                                 });
                             },
-                            enumDefCollection: that.parentView.enumDefCollection,
-                            businessMetadataDefCollection: that.parentView.options.businessMetadataDefCollection
+                            enumDefCollection: that.enumDefCollection,
+                            businessMetadataDefCollection: that.businessMetadataDefCollection
                         }),
                         modal = new Modal({
                             title: "Create/ Update Enum",
@@ -279,12 +284,12 @@ define(['require',
                 });
             },
             onCloseButton: function() {
-                var tagName = this.parentView.$el.find('[data-id="tagName"]').val();
-                if (this.parentView.collection.models.length > 0) {
+                var tagName = this.$el.find('[data-id="tagName"]').val();
+                if (this.collection.models.length > 0) {
                     this.model.destroy();
                 }
-                if (this.parentView.collection.models.length == 0 && tagName != "") {
-                    this.parentView.$el.parent().next().find('button.ok').removeAttr("disabled");
+                if (this.collection.models.length == 0 && tagName != "") {
+                    this.$el.parent().next().find('button.ok').removeAttr("disabled");
                 }
             }
         });
