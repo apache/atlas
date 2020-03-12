@@ -258,27 +258,31 @@ define([
                 this.ui.classificationSearchTree.jstree(true).deselect_all();
                 this.tagId = null;
             } else {
-                if ((that.options.value.tag.indexOf('*') != -1)) {
-                    that.ui.classificationSearchTree.jstree(true).deselect_all();
-                    that.ui.wildCardValue.val(that.options.value.tag);
-                }
-                var dataFound = this.classificationDefCollection.fullCollection.find(function(obj) {
-                    return obj.get("name") === that.options.value.tag
-                });
-                if (dataFound) {
-                    if ((this.tagId && this.tagId !== dataFound.get("guid")) || this.tagId === null) {
-                        if (this.tagId) {
-                            this.ui.classificationSearchTree.jstree(true).deselect_node(this.tagId);
-                        }
-                        this.fromManualRender = true;
-                        this.tagId = dataFound.get("guid");
-                        this.ui.classificationSearchTree.jstree(true).select_node(dataFound.get("guid"));
-                    }
-                }
-                if (!dataFound && Globals[that.options.value.tag]) {
+                if (that.options.value.tag === "_ALL_CLASSIFICATION_TYPES" && this.tagId !== "_ALL_CLASSIFICATION_TYPES") {
                     this.fromManualRender = true;
-                    this.typeId = Globals[that.options.value.tag].guid;
-                    this.ui.classificationSearchTree.jstree(true).select_node(this.typeId);
+                    if (this.tagId) {
+                        this.ui.classificationSearchTree.jstree(true).deselect_node(this.tagId);
+                    }
+                    this.tagId = Globals[that.options.value.tag].guid;
+                    this.ui.classificationSearchTree.jstree(true).select_node(this.tagId);
+                } else if (this.tagId !== "_ALL_CLASSIFICATION_TYPES" && that.options.value.tag !== this.tagId) {
+                    if ((that.options.value.tag.indexOf('*') != -1)) {
+                        that.ui.classificationSearchTree.jstree(true).deselect_all();
+                        that.ui.wildCardValue.val(that.options.value.tag);
+                    }
+                    var dataFound = this.classificationDefCollection.fullCollection.find(function(obj) {
+                        return obj.get("name") === that.options.value.tag
+                    });
+                    if (dataFound) {
+                        if ((this.tagId && this.tagId !== dataFound.get("guid")) || this.tagId === null) {
+                            if (this.tagId) {
+                                this.ui.classificationSearchTree.jstree(true).deselect_node(this.tagId);
+                            }
+                            this.fromManualRender = true;
+                            this.tagId = dataFound.get("guid");
+                            this.ui.classificationSearchTree.jstree(true).select_node(dataFound.get("guid"));
+                        }
+                    }
                 }
             }
         },
@@ -516,8 +520,8 @@ define([
                 name: rootClassification.name,
                 type: rootClassification.category,
                 gType: "Classification",
-                guid: "root-classification",
-                id: "root-classification",
+                guid: rootClassification.guid,
+                id: rootClassification.guid,
                 model: rootClassification,
                 children: [],
                 icon: "fa fa-tag",
