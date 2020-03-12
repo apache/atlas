@@ -26,6 +26,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.*;
@@ -100,7 +101,7 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
             }
 
             AtlasBusinessAttribute bmAttribute;
-            if (attribute.getAttributeType() instanceof AtlasBuiltInTypes.AtlasStringType) {
+            if (attrType instanceof AtlasBuiltInTypes.AtlasStringType) {
                 Integer maxStringLength = attribute.getOptionInt(ATTR_MAX_STRING_LENGTH);
                 if (maxStringLength == null) {
                     throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, attributeDef.getName(), "options." + ATTR_MAX_STRING_LENGTH);
@@ -170,6 +171,47 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
 
         public int getMaxStringLength() {
             return maxStringLength;
+        }
+
+        public boolean isValidLength(Object value) {
+            boolean ret = true;
+            if (value != null) {
+                AtlasType attrType = getAttributeType();
+
+                if (attrType instanceof AtlasBuiltInTypes.AtlasStringType) {
+                    ret = isValidStringValue(value);
+                } else if (attrType instanceof AtlasArrayType) {
+                    attrType = ((AtlasArrayType) attrType).getElementType();
+                    if (attrType instanceof AtlasBuiltInTypes.AtlasStringType) {
+                        ret = isValidArrayValue(value);
+                    }
+                }
+            }
+            return ret;
+        }
+
+        private boolean isValidStringValue(Object obj) {
+            return obj == null || String.valueOf(obj).length() <= this.maxStringLength;
+        }
+
+        private boolean isValidArrayValue(Object obj) {
+            if (obj instanceof List || obj instanceof Set) {
+                Collection objList = (Collection) obj;
+
+                for (Object element : objList) {
+                    if (!isValidStringValue(element)) {
+                        return false;
+                    }
+                }
+            } else if (obj.getClass().isArray()) {
+                int arrayLen = Array.getLength(obj);
+                for (int i = 0; i < arrayLen; i++) {
+                    if (!isValidStringValue(Array.get(obj, i))) {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
     }
 }

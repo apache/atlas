@@ -1501,6 +1501,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 if (attrValue != null) {
                     attrType.validateValue(attrValue, fieldName, messages);
+                    boolean isValidLength = bmAttribute.isValidLength(attrValue);
+                    if (!isValidLength) {
+                        messages.add(fieldName + ":  Business attribute-value exceeds maximum length limit");
+                    }
+
                 } else if (!bmAttribute.getAttributeDef().getIsOptional()) {
                     final boolean isAttrValuePresent;
 
