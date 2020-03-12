@@ -72,7 +72,6 @@ define(['require',
                     filterOpts: {},
                     paginatorOpts: {}
                 };
-                this.isFilters = null;
                 this.showDetails = true;
             },
             onRender: function() {

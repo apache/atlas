@@ -163,6 +163,7 @@ define(['require',
                 this.multiSelectEntity = [];
                 this.searchType = 'Basic Search';
                 this.columnOrder = null;
+                this.defaultColumns = ["selected", "name", "description", "typeName", "owner", "tag", "term"];
                 if (this.value) {
                     if (this.value.searchType && this.value.searchType == 'dsl') {
                         this.searchType = 'Advanced Search';
@@ -227,7 +228,7 @@ define(['require',
                         this.updateColumnList(state);
                         var excludeDefaultColumn = [];
                         if (this.value && this.value.type) {
-                            excludeDefaultColumn = _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag", "term");
+                            excludeDefaultColumn = _.difference(this.searchTableColumns[this.value.type], this.defaultColumns);
                             if (this.searchTableColumns[this.value.type] === null) {
                                 this.ui.columnEmptyInfo.show();
                             } else {
@@ -380,7 +381,7 @@ define(['require',
                 }
 
                 if (isPostMethod && isSearchTab) {
-                    var excludeDefaultColumn = this.value.type && this.searchTableColumns ? _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag") : null,
+                    var excludeDefaultColumn = this.value.type && this.searchTableColumns ? _.difference(this.searchTableColumns[this.value.type], this.defaultColumns) : null,
                         filterObj = {
                             'entityFilters': entityFilters,
                             'tagFilters': tagFilters,
@@ -793,14 +794,14 @@ define(['require',
                             }
                         })
                     };
-                    col['businessMetaData'] = {
-                        label: "Business MetaData",
+                    col['businessMetadata'] = {
+                        label: "Business Metadata",
                         cell: "Html",
                         editable: false,
                         resizeable: true,
                         orderable: true,
                         alwaysVisible: true, //Backgrid.ColumnManager.js -> render() to hide the name in dropdownlist
-                        renderable: _.contains(columnToShow, 'businessMetaData'),
+                        renderable: _.contains(columnToShow, 'businessMetadata'),
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 var obj = model.toJSON(),

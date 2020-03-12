@@ -277,3 +277,12 @@ pre {
     margin-left: 5px;
     float: left;
 }
+
+.errorValidate {
+    border-color: red !important;
+}
+
+.errorValidate+span .select2-selection {
+    border-color: red !important;
+
+}

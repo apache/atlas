@@ -22,11 +22,8 @@ define(['require',
     'utils/Utils',
     'utils/Messages',
     'views/business_metadata/BusinessMetadataAttributeItemView',
-    'collection/VTagList',
-    'models/VEntity',
-    'utils/UrlLinks',
-    'platform'
-], function(require, Backbone, CreateBusinessMetadataLayoutViewTmpl, Utils, Messages, BusinessMetadataAttributeItemView, VTagList, VEntity, UrlLinks, platform) {
+    'models/VEntity'
+], function(require, Backbone, CreateBusinessMetadataLayoutViewTmpl, Utils, Messages, BusinessMetadataAttributeItemView, VEntity) {
 
     var CreateBusinessMetadataLayoutView = Backbone.Marionette.CompositeView.extend(
         /** @lends CreateBusinessMetadataLayoutView */
@@ -53,8 +50,13 @@ define(['require',
 
             childViewOptions: function() {
                 return {
-                    // saveButton: this.ui.saveButton,
-                    parentView: this
+                    typeHeaders: this.typeHeaders,
+                    businessMetadataDefCollection: this.businessMetadataDefCollection,
+                    enumDefCollection: this.enumDefCollection,
+                    isAttrEdit: this.isAttrEdit,
+                    attrDetails: this.attrDetails,
+                    viewId: this.cid,
+                    collection: this.collection
                 };
             },
             /** ui selector cache */
@@ -76,18 +78,9 @@ define(['require',
                     var that = this,
                         modal = that.$el;
                     if (e.target.dataset.action == "attributeEdit" || e.target.dataset.action == "addAttribute") {
-                        // var selectedBusinessMetadata = that.businessMetadataDefCollection.fullCollection.findWhere({ guid: that.guid });
                         that.onUpdateAttr();
                     } else {
-                        if (that.$el.find('.form-control.businessMetadata-name')[0].value === "") {
-                            $(that.$el.find('.form-control.businessMetadata-name')[0]).css("borderColor", "red");
-                            Utils.notifyInfo({
-                                content: "Business Metadata name is empty."
-                            });
-
-                        } else {
-                            that.onCreateBusinessMetadata();
-                        }
+                        that.onCreateBusinessMetadata();
                     }
 
                 };
@@ -101,7 +94,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'businessMetadataDefCollection', 'enumDefCollection', 'model', 'descriptionData', 'isNewBusinessMetadata', 'isAttrEdit', 'entityDefCollection', 'typeHeaders', 'attrDetails'));
+                _.extend(this, _.pick(options, 'businessMetadataDefCollection', 'selectedBusinessMetadata', 'enumDefCollection', 'model', 'isNewBusinessMetadata', 'isAttrEdit', 'typeHeaders', 'attrDetails'));
                 this.fromTable = this.isNewBusinessMetadata ? true : false;
                 this.isEditAttr = this.isAttrEdit ? false : true;
                 this.businessMetadataModel = new VEntity();
@@ -183,128 +176,56 @@ define(['require',
                     parent.$('.business-metadata-attr-fontLoader').hide();
                 }
             },
-            validateValues: function() {
-                var attrNameValidate = true,
-                    enumValue = true,
-                    stringValidate = true,
-                    enumType = true;
-                if (this.$el.find(".attributeInput").length > 0) {
-                    this.$el.find(".attributeInput").each(function() {
-                        if ($(this).val() === "") {
-                            $(this).css("borderColor", "red");
-                            attrNameValidate = false;
-                        }
+            validateValues: function(attributeDefs) {
+                var isValidate = true,
+                    isAttrDuplicate = true,
+                    validationFileds = this.$el.find('.require'),
+                    attrNames = [];
+                if (attributeDefs && !this.isAttrEdit) {
+                    attrNames = _.map(attributeDefs, function(model) {
+                        return model.name.toLowerCase();
                     });
                 }
-                if (this.$el.find(".enumvalue-container").length > 0 && this.$el.find(".enumvalue-container")[0].style.display != 'none') {
-                    this.$el.find(".enumvalue-container").each(function(index) {
-                        if (this.style.display != 'none') {
-                            if ($(this).find(".enumValueSelector").length > 0) {
-                                $(this).find(".enumValueSelector").each(function(index) {
-                                    if ($(this).val().length === 0) {
-                                        $(this).css("borderColor", "red");
-                                        enumValue = false;
-                                    }
-                                });
+                validationFileds.each(function(elements) {
+                    $(this).removeClass('errorValidate');
+                    if (validationFileds[elements].value == '' || validationFileds[elements].value == null) {
+                        if (validationFileds[elements].style.display != 'none') {
+                            $(validationFileds[elements]).addClass('errorValidate');
+                            $(this).addClass('errorValidate');
+                            if (isValidate) { isValidate = false; }
+                        }
+                    }
+                });
+                if (isValidate) {
+                    this.$el.find('.attributeInput').each(function(element) {
+                        var attrValue = this.value.toLowerCase();
+                        if (attrNames.indexOf(attrValue) > -1) {
+                            Utils.notifyInfo({
+                                content: "Attribute name already exist"
+                            });
+                            $(this).addClass('errorValidate');
+                            if (isAttrDuplicate) { isAttrDuplicate = false; }
+                        } else {
+                            if (attrValue.length) {
+                                attrNames.push(attrValue);
                             }
                         }
-                    })
-                }
-                if (this.$el.find(".enumtype-container").length > 0 && this.$el.find(".enumtype-container")[0].style.display != 'none') {
-                    this.$el.find(".enumtype-container").each(function(index) {
-                        if (this.style.display != 'none') {
-                            if ($(this).find(".enumTypeSelector").length > 0) {
-                                $(this).find(".enumTypeSelector").each(function(index) {
-                                    if ($(this).val() == null || $(this).val() == '' || $(this).val().length === 0) {
-                                        $(this).css("borderColor", "red");
-                                        enumType = false;
-                                    }
-                                });
-                            }
-                        }
-                    })
-                }
-                if (this.$el.find(".stringlength-container").length > 0 && this.$el.find(".stringlength-container")[0].style.display != 'none') {
-                    this.$el.find(".stringlength-container").each(function(index) {
-                        if (this.style.display != 'none') {
-                            if ($(this).find(".stringLengthVal").length > 0) {
-                                $(this).find(".stringLengthVal").each(function(index) {
-                                    if ($(this).val().length === 0) {
-                                        $(this).css("borderColor", "red");
-                                        stringValidate = false;
-                                    }
-                                });
-                            }
-                        };
-                    })
+                    });
                 }
 
-                this.$el.find(".attributeInput").keyup(function() {
-                    $(this).css("borderColor", "#e8e9ee");
-                });
-                if (!attrNameValidate) {
+                if (!isValidate) {
                     Utils.notifyInfo({
-                        content: "Please fill the attributes details"
+                        content: "Please fill the details"
                     });
                     return true;
                 }
-                if (!enumType) {
-                    Utils.notifyInfo({
-                        content: "Please enter the Enumeration Name or select another type"
-                    });
+                if (!isAttrDuplicate) {
                     return true;
                 }
-                if (!enumValue) {
-                    Utils.notifyInfo({
-                        content: "Please enter the Enum values or select another type"
-                    });
-                    return true;
-                }
-                if (!stringValidate) {
-                    Utils.notifyInfo({
-                        content: "Please enter the Max Length for string or select another type"
-                    });
-                    return true;
-                }
-            },
-            businessMetadataAttributes: function(modelEl, attrObj) {
-                var obj = {
-                    options: {
-                        "applicableEntityTypes": JSON.stringify(modelEl.find(".entityTypeSelector").val()),
-                        "maxStrLength": modelEl.find(".stringLengthVal").val() ? modelEl.find(".stringLengthVal").val() : "0"
-                    }
-                };
-                // var types = ["string","boolean"];
-                // if (attrObj.typeName != "string" && attrObj.typeName != "boolean" && attrObj.typeName != "byte" && attrObj.typeName != "short" && attrObj.typeName != "int" && attrObj.typeName != "float" && attrObj.typeName != "double" && attrObj.typeName != "long" && attrObj.typeName != "date") {
-                //     var enumName = enumDefCollection.fullCollection.findWhere({ name: attrObj.typeName });
-                //     if (enumName) {
-                //         return 
-                //     }
-                // }
-                if (obj.multiValueSelect) {
-                    obj.multiValued = true;
-                    obj.typeName = "array<" + obj.typeName + ">";
-                }
-                return obj;
-            },
-            highlightAttrinuteName: function(modelEl, obj) {
-                Utils.notifyInfo({
-                    content: "Attribute " + obj.name + " already exist"
-                });
-                modelEl.find(".attributeInput").css("borderColor", "red");
-                this.loaderStatus(false);
-            },
-            createEnumObject: function(arrayObj, obj, enumVal) {
-                return arrayObj.push({
-                    "name": obj.typeName,
-                    "elementDefs": enumVal
-                });
+
             },
             onCreateBusinessMetadata: function() {
-                var that = this,
-                    attrNames = [],
-                    isvalidName = true;
-
+                var that = this;
                 if (this.validateValues()) {
                     return;
                 };
@@ -315,162 +236,86 @@ define(['require',
                 if (this.collection.length === 1 && this.collection.first().get("name") === "") {
                     attributeObj = [];
                 }
-                if (attributeObj.length) {
-                    // _.each(attributeObj, function(obj) {
-                    //     var modelEl = this.$('#' + obj.modalID);
-                    //     modelEl.find(".attributeInput").css("borderColor", "transparent");;
-                    //     if (attrNames.indexOf(obj.name) > -1) {
-                    //         that.highlightAttrinuteName(modelEl, obj);
-                    //         isvalidName = false;
-                    //         return true;
-                    //     } else {
-                    //         attrNames.push(obj.name);
-                    //     }
-                    //     obj = that.businessMetadataAttributes(modelEl, obj);
-                    //     // if (that.isPostCallEnum) {
-                    //     //     that.createEnumObject(enumDefs, obj, elementValues);
-                    //     // }
-                    //     // if (that.isPutCall) {
-                    //     //     that.createEnumObject(putEnumDef, obj, elementValues);
-                    //     // }
-                    // });
-                    var notifyObj = {
-                        modal: true,
-                        confirm: {
-                            confirm: true,
-                            buttons: [{
-                                    text: "Ok",
-                                    addClass: "btn-atlas btn-md",
-                                    click: function(notice) {
-                                        notice.remove();
-                                    }
-                                },
-                                null
-                            ]
+                this.json = {
+                    "enumDefs": [],
+                    "structDefs": [],
+                    "classificationDefs": [],
+                    "entityDefs": [],
+                    "businessMetadataDefs": [{
+                        "category": "BUSINESS_METADATA",
+                        "createdBy": "admin",
+                        "updatedBy": "admin",
+                        "version": 1,
+                        "typeVersion": "1.1",
+                        "name": name.trim(),
+                        "description": description.trim(),
+                        "attributeDefs": attributeObj
+                    }]
+                };
+                var apiObj = {
+                    sort: false,
+                    data: this.json,
+                    success: function(model, response) {
+                        var nameSpaveDef = model.businessMetadataDefs;
+                        if (nameSpaveDef) {
+                            that.businessMetadataDefCollection.fullCollection.add(nameSpaveDef);
+                            Utils.notifySuccess({
+                                content: "Business Metadata " + name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
+                            });
                         }
-                    };
+                        that.options.onUpdateBusinessMetadata();
+                    },
+                    silent: true,
+                    reset: true,
+                    complete: function(model, status) {
+                        that.loaderStatus(false);
+                    }
                 }
-                if (isvalidName) {
+                apiObj.type = "POST";
+                that.businessMetadataModel.saveBusinessMetadata(apiObj);
+            },
+            onUpdateAttr: function() {
+                var that = this,
+                    selectedBusinessMetadataClone = $.extend(true, {}, that.selectedBusinessMetadata.toJSON()),
+                    attributeDefs = selectedBusinessMetadataClone['attributeDefs'],
+                    isvalidName = true;
+                if (this.validateValues(attributeDefs)) {
+                    return;
+                };
+                if (this.collection.length > 0) {
+                    this.loaderStatus(true);
+                    if (selectedBusinessMetadataClone.attributeDefs === undefined) {
+                        selectedBusinessMetadataClone.attributeDefs = [];
+                    }
+                    selectedBusinessMetadataClone.attributeDefs = selectedBusinessMetadataClone.attributeDefs.concat(this.collection.toJSON());
                     this.json = {
                         "enumDefs": [],
                         "structDefs": [],
                         "classificationDefs": [],
                         "entityDefs": [],
-                        "businessMetadataDefs": [{
-                            "category": "BUSINESS_METADATA",
-                            "createdBy": "admin",
-                            "updatedBy": "admin",
-                            "version": 1,
-                            "typeVersion": "1.1",
-                            "name": name.trim(),
-                            "description": description.trim(),
-                            "attributeDefs": attributeObj
-                        }]
+                        "businessMetadataDefs": [selectedBusinessMetadataClone]
                     };
                     var apiObj = {
                         sort: false,
                         data: this.json,
                         success: function(model, response) {
-                            var nameSpaveDef = model.businessMetadataDefs;
-                            if (nameSpaveDef) {
-                                that.options.businessMetadataDefCollection.fullCollection.add(nameSpaveDef);
-                                Utils.notifySuccess({
-                                    content: "Business Metadata " + name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
-                                });
+                            Utils.notifySuccess({
+                                content: "One or more Business Metadada attribute" + Messages.getAbbreviationMsg(false, 'editSuccessMessage')
+                            });
+                            if (model.businessMetadataDefs && model.businessMetadataDefs.length) {
+                                that.selectedBusinessMetadata.set(model.businessMetadataDefs[0]);
                             }
+                            that.options.onEditCallback();
                             that.options.onUpdateBusinessMetadata();
                         },
                         silent: true,
                         reset: true,
                         complete: function(model, status) {
-                            attrNames = [];
                             that.loaderStatus(false);
                         }
                     }
-                    apiObj.type = "POST";
+                    apiObj.type = "PUT";
                     that.businessMetadataModel.saveBusinessMetadata(apiObj);
-                } else {
-                    attrNames = [];
-                }
-            },
-            onUpdateAttr: function() {
-                var that = this,
-                    selectedBusinessMetadata = $.extend(true, {}, that.options.selectedBusinessMetadata.toJSON()),
-                    attributeDefs = selectedBusinessMetadata['attributeDefs'],
-                    isvalidName = true;
-                if (this.validateValues()) {
-                    return;
-                };
-                if (this.collection.length > 0) {
-                    this.loaderStatus(true);
-                    if (selectedBusinessMetadata.attributeDefs === undefined) {
-                        selectedBusinessMetadata.attributeDefs = [];
-                    }
-                    selectedBusinessMetadata.attributeDefs = selectedBusinessMetadata.attributeDefs.concat(this.collection.toJSON());
-                    // this.collection.each(function(model) {
-                    //     var obj = model.toJSON(),
-                    //         modelEl = this.$('#' + obj.modalID);
-                    //     modelEl.find(".attributeInput").css("borderColor", "transparent");
-                    //     // if (that.options.isNewAttr == true && _.find(attributeDefs, { name: obj.name })) {
-                    //     //     that.highlightAttrinuteName(modelEl, obj);
-                    //     //     isvalidName = false;
-                    //     //     return true;
-                    //     // }
-                    //     obj = that.businessMetadataAttributes(modelEl, obj);
-                    //     // if (that.isPostCallEnum) {
-                    //     //     that.createEnumObject(postEnumDef, obj, elementValues);
-                    //     // } else if (that.isPutCall) {
-                    //     //     that.createEnumObject(enumDefs, obj, elementValues);
-                    //     // }
-
-                    //     // if (that.options.isNewAttr == true) {
-                    //     //     selectedBusinessMetadata.attributeDefs.push(obj);
-                    //     // } else {
-                    //     //     var attrDef = selectedBusinessMetadata.attributeDefs;
-                    //     //     _.each(attrDef, function(attrObj) {
-                    //     //         if (attrObj.name === that.$el.find(".attributeInput")[0].value) {
-                    //     //             attrObj.name = obj.name;
-                    //     //             attrObj.typeName = obj.typeName;
-                    //     //             attrObj.multiValued = obj.multiValueSelect || false;
-                    //     //             attrObj.options.applicableEntityTypes = obj.options.applicableEntityTypes;
-                    //     //             attrObj.enumValues = obj.enumValues;
-                    //     //             attrObj.options.maxStrLength = obj.options.maxStrLength;
-                    //     //         }
-                    //     //     });
-                    //     // }
-                    // });
-                    if (isvalidName) {
-                        this.json = {
-                            "enumDefs": [],
-                            "structDefs": [],
-                            "classificationDefs": [],
-                            "entityDefs": [],
-                            "businessMetadataDefs": [selectedBusinessMetadata]
-                        };
-                        var apiObj = {
-                            sort: false,
-                            data: this.json,
-                            success: function(model, response) {
-                                var selectedBusinessMetadata = that.options.businessMetadataDefCollection.fullCollection.findWhere({ guid: that.options.guid });
-                                Utils.notifySuccess({
-                                    content: "One or more Business Metadada attribute" + Messages.getAbbreviationMsg(false, 'editSuccessMessage')
-                                });
-                                if (model.businessMetadataDefs && model.businessMetadataDefs.length) {
-                                    that.options.selectedBusinessMetadata.set(model.businessMetadataDefs[0]);
-                                }
-                                that.options.onEditCallback();
-                                that.options.onUpdateBusinessMetadata();
-                            },
-                            silent: true,
-                            reset: true,
-                            complete: function(model, status) {
-                                that.loaderStatus(false);
-                            }
-                        }
-                        apiObj.type = "PUT";
-                        that.businessMetadataModel.saveBusinessMetadata(apiObj);
-                    }
-
                 } else {
                     Utils.notifySuccess({
                         content: "No attribute updated"

@@ -15,13 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemView_tmpl", "utils/Utils", "utils/UrlLinks", "utils/Messages"], function(
+define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemView_tmpl", "utils/Utils", "utils/UrlLinks"], function(
     require,
     Backbone,
     EnumCreateUpdateItemViewTmpl,
     Utils,
-    UrlLinks,
-    Messages
+    UrlLinks
 ) {
     "use strict";
 
@@ -81,13 +80,9 @@ define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemV
              * @constructs
              */
             initialize: function(options) {
-                this.enumDefCollection = options.enumDefCollection;
-                this.businessMetadataDefCollection = options.businessMetadataDefCollection;
+                _.extend(this, _.pick(options, "businessMetadataDefCollection", "enumDefCollection"));
             },
             onRender: function() {
-                var that = this,
-                    entitytypes = "",
-                    enumTypes = [];
                 this.ui.enumValueSelectorContainer.hide();
                 this.bindEvents();
                 this.emumTypeSelectDisplay();
@@ -107,8 +102,7 @@ define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemV
                 var enumValues = "",
                     selectedValues = [],
                     selectedEnum = this.enumDefCollection.fullCollection.findWhere({ name: enumName }),
-                    selectedEnumValues = selectedEnum ? selectedEnum.get("elementDefs") : null,
-                    savedValues = [];
+                    selectedEnumValues = selectedEnum ? selectedEnum.get("elementDefs") : null;
                 _.each(selectedEnumValues, function(enumVal, index) {
                     selectedValues.push(_.unescape(enumVal.value));
                     enumValues += "<option>" + enumVal.value + "</option>";
