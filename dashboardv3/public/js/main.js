@@ -342,7 +342,7 @@ require(['App',
 
     CommonViewFunction.fetchRootClassificationAttributes({
         url: UrlLinks.rootClassificationDefUrl(Enums.addOnClassification[0]),
-        classification: Enums.addOnClassification[0],
+        classification: Enums.addOnClassification,
         callback: function() {
             --that.asyncFetchCounter;
             startApp();
