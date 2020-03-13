@@ -258,18 +258,15 @@ define([
                 this.ui.classificationSearchTree.jstree(true).deselect_all();
                 this.tagId = null;
             } else {
-                if (that.options.value.tag === "_ALL_CLASSIFICATION_TYPES" && this.tagId !== "_ALL_CLASSIFICATION_TYPES") {
+                if ((that.options.value.tag === "_ALL_CLASSIFICATION_TYPES" && this.tagId !== "_ALL_CLASSIFICATION_TYPES") || (that.options.value.tag === "_NOT_CLASSIFIED" && this.tagId !== "_NOT_CLASSIFIED") || (that.options.value.tag === "_CLASSIFIED" && this.tagId !== "_CLASSIFIED")) {
                     this.fromManualRender = true;
                     if (this.tagId) {
                         this.ui.classificationSearchTree.jstree(true).deselect_node(this.tagId);
                     }
                     this.tagId = Globals[that.options.value.tag].guid;
                     this.ui.classificationSearchTree.jstree(true).select_node(this.tagId);
-                } else if (this.tagId !== "_ALL_CLASSIFICATION_TYPES" && that.options.value.tag !== this.tagId) {
-                    if ((that.options.value.tag.indexOf('*') != -1)) {
-                        that.ui.classificationSearchTree.jstree(true).deselect_all();
+                } else if ((this.tagId !== "_ALL_CLASSIFICATION_TYPES" && that.options.value.tag !== this.tagId) || (this.tagId !== "_NOT_CLASSIFIED" && that.options.value.tag !== this.tagId) || (this.tagId !== "_CLASSIFIED" && that.options.value.tag !== this.tagId)) {
                         that.ui.wildCardValue.val(that.options.value.tag);
-                    }
                     var dataFound = this.classificationDefCollection.fullCollection.find(function(obj) {
                         return obj.get("name") === that.options.value.tag
                     });
@@ -513,23 +510,26 @@ define([
             return classificationData;
         },
         pushRootClassificationToJstree: function(data) {
-            var rootClassification = Globals[Enums.addOnClassification[0]];
-            var isSelected = this.options.value && this.options.value.tag ? this.options.value.tag == rootClassification.name : false;
-            var rootClassificationNode = {
-                text: _.escape(rootClassification.name),
-                name: rootClassification.name,
-                type: rootClassification.category,
-                gType: "Classification",
-                guid: rootClassification.guid,
-                id: rootClassification.guid,
-                model: rootClassification,
-                children: [],
-                icon: "fa fa-tag",
-                state: {
-                    selected: isSelected
+            var that = this;
+            _.each(Enums.addOnClassification, function(addOnClassification) {
+                var rootClassification = Globals[addOnClassification];
+                var isSelected = that.options.value && that.options.value.tag ? that.options.value.tag == rootClassification.name : false;
+                var rootClassificationNode = {
+                    text: _.escape(rootClassification.name),
+                    name: rootClassification.name,
+                    type: rootClassification.category,
+                    gType: "Classification",
+                    guid: rootClassification.guid,
+                    id: rootClassification.guid,
+                    model: rootClassification,
+                    children: [],
+                    icon: "fa fa-tag",
+                    state: {
+                        selected: isSelected
+                    }
                 }
-            }
-            data.push(rootClassificationNode);
+                data.push(rootClassificationNode);
+            });
             return data;
         },
         generateSearchTree: function(options) {

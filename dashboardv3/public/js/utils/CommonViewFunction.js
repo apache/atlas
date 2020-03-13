@@ -1012,7 +1012,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 cache: true,
                 success: function(response) {
                     if (response) {
-                        Globals[options.classification] = Object.assign(response, { name: options.classification, guid: options.classification });
+                        _.each(options.classification, function(rootClassification) {
+                            var responseData = $.extend(true, {}, response);
+                            Globals[rootClassification] = Object.assign(responseData, { name: rootClassification, guid: rootClassification });
+                        });
                     }
                 },
                 complete: function(response) {
