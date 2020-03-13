@@ -110,7 +110,7 @@ public class AtlasPamAuthenticationProvider extends AtlasAbstractAuthenticationP
             LOG.debug("Pam Authentication Failed:", e);
         }
         if (isDebugEnabled) {
-            LOG.debug("<== AtlasPamAuthenticationProvider getPamAuthentication");
+            LOG.debug("<== AtlasPamAuthenticationProvider getPamAuthentication : " + jaasAuthenticationProvider);
         }
         return authentication;
     }
@@ -127,6 +127,13 @@ public class AtlasPamAuthenticationProvider extends AtlasAbstractAuthenticationP
             if (!options.containsKey("service")) {
                 options.put("service", "atlas-login");
             }
+
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("AtlasPAMAuthenticationProvider{groupsFromUGI= "+ groupsFromUGI +'\'' +
+                        ", options=" + options +
+                         '}');
+            }
+
         } catch (Exception e) {
             LOG.error("Exception while setLdapProperties", e);
         }
@@ -148,6 +155,16 @@ public class AtlasPamAuthenticationProvider extends AtlasAbstractAuthenticationP
             UserAuthorityGranter[] authorityGranters = new UserAuthorityGranter[]{authorityGranter};
             jaasAuthenticationProvider.setAuthorityGranters(authorityGranters);
             jaasAuthenticationProvider.afterPropertiesSet();
+
+            if(LOG.isDebugEnabled()) {
+                LOG.debug("AtlasPAMAuthenticationProvider{" +
+                        "jaasAuthenticationProvider='" + jaasAuthenticationProvider + '\'' +
+                        ", loginModuleName='" + loginModuleName + '\'' +
+                        ", controlFlag='" + controlFlag + '\'' +
+                        ", options='" + options + '}');
+            }
+
+
         } catch (Exception e) {
             LOG.error("Failed to init PAM Authentication", e);
         }

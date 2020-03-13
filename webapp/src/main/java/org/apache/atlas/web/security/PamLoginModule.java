@@ -22,7 +22,8 @@ package org.apache.atlas.web.security;
 import org.jvnet.libpam.PAM;
 import org.jvnet.libpam.PAMException;
 import org.jvnet.libpam.UnixUser;
-
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.*;
 import javax.security.auth.login.FailedLoginException;
@@ -35,6 +36,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class PamLoginModule extends Object implements LoginModule {
+    private static final Logger LOG = LoggerFactory.getLogger(PamLoginModule.class);
+
     public static final String SERVICE_KEY = "service";
 
     private PAM pam;
@@ -110,6 +113,9 @@ public class PamLoginModule extends Object implements LoginModule {
 
             initUserName(nameCallback);
             initPassword(passwordCallback);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Searching for user " + nameCallback.getName());
         }
         catch (IOException | UnsupportedCallbackException ex)
         {
@@ -150,6 +156,8 @@ public class PamLoginModule extends Object implements LoginModule {
             principal = new PamPrincipal(user);
             authSucceeded = true;
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("user " + username );
             return true;
         }
         catch (PAMException ex)

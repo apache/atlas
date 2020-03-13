@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Arrays;
 
 import org.apache.atlas.utils.AuthenticationUtil;
 
@@ -106,7 +107,7 @@ public abstract class AtlasAbstractAuthenticationProvider implements Authenticat
             String[] groups = ugi.getGroupNames();
 
             if(LOG.isDebugEnabled()) {
-                LOG.debug("UserGroupInformation userGroups=" + groups);
+                LOG.debug("UserGroupInformation userGroups=" + Arrays.toString(groups));
             }
 
             if (groups != null) {
