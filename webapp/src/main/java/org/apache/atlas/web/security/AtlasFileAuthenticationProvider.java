@@ -16,9 +16,7 @@
  */
 package org.apache.atlas.web.security;
 
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.dao.UserDao;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -30,7 +28,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.Collection;
  
@@ -41,57 +38,42 @@ public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthentication
     private static Logger logger = LoggerFactory.getLogger(AtlasFileAuthenticationProvider.class);
 
     private final UserDetailsService userDetailsService;
-    private boolean v1ValidationEnabled = true;
 
     @Inject
     public AtlasFileAuthenticationProvider(UserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
 
-    @PostConstruct
-    public void setup() {
-        try {
-            Configuration configuration = ApplicationProperties.get();
-            v1ValidationEnabled = configuration.getBoolean("atlas.authentication.method.file.v1-validation.enabled", true);
-        } catch (Exception e) {
-            logger.error("Exception while setup", e);
-        }
-    }
-
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String username = authentication.getName();
         String password = (String) authentication.getCredentials();
+
         if (username == null || username.isEmpty()) {
             logger.error("Username can't be null or empty.");
-            throw new BadCredentialsException(
-                    "Username can't be null or empty.");
+
+            throw new BadCredentialsException("Username can't be null or empty.");
         }
 
         if (password == null || password.isEmpty()) {
             logger.error("Password can't be null or empty.");
-            throw new BadCredentialsException(
-                    "Password can't be null or empty.");
+
+            throw new BadCredentialsException("Password can't be null or empty.");
         }
 
-        UserDetails user = userDetailsService.loadUserByUsername(username);
-        String encodedPassword = UserDao.encrypt(password, username);
+        UserDetails user            = userDetailsService.loadUserByUsername(username);
+        boolean     isValidPassword = UserDao.checkEncrypted(password, user.getPassword(), username);
 
-        boolean isValidPassword = encodedPassword.equals(user.getPassword());
-
-
-        if (!isValidPassword && v1ValidationEnabled) {
-            encodedPassword = UserDao.getSha256Hash(password);
-        }
-
-        if (!encodedPassword.equals(user.getPassword())) {
+        if (!isValidPassword) {
             logger.error("Wrong password " + username);
+
             throw new BadCredentialsException("Wrong password");
         }
+
         Collection<? extends GrantedAuthority> authorities = user.getAuthorities();
+
         authentication = new UsernamePasswordAuthenticationToken(username, password, authorities);
 
         return authentication;
     }
-
 }

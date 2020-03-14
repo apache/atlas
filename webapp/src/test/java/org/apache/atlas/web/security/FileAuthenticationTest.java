@@ -92,6 +92,7 @@ public class FileAuthenticationTest {
     private void setupUserCredential(String tmpDir) throws Exception {
 
         StringBuilder credentialFileStr = new StringBuilder(1024);
+        credentialFileStr.append("adminv3=ADMIN::$2a$10$ZVnkc2if06JMLCJEAhTKbOPeWDXTCFLL8zMA6FzZoP.bu8ThT43ha\n");
         credentialFileStr.append("admin=ADMIN::a4a88c0872bf652bb9ed803ece5fd6e82354838a9bf59ab4babb1dab322154e1\n");
         credentialFileStr.append("adminv1=ADMIN::8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918\n");
         credentialFileStr.append("michael=DATA_SCIENTIST::95bfb24de17d285d734b9eaa9109bfe922adc85f20d2e5e66a78bddb4a4ebddb\n");
@@ -110,6 +111,18 @@ public class FileAuthenticationTest {
     }
 
 
+
+    @Test
+    public void testValidUserLoginWithV3password() {
+
+        when(authentication.getName()).thenReturn("adminv3");
+        when(authentication.getCredentials()).thenReturn("admin");
+
+        Authentication auth = authProvider.authenticate(authentication);
+        LOG.debug(" {}", auth);
+
+        assertTrue(auth.isAuthenticated());
+    }
 
     @Test
     public void testValidUserLogin() {
