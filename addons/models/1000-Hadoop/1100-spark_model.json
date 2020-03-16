@@ -359,6 +359,14 @@
       ]
     },
     {
+      "name" : "spark_column_lineage",
+      "superTypes" : [
+        "Process"
+      ],
+      "serviceType": "spark",
+      "typeVersion" : "1.0"
+    },
+    {
       "name": "spark_ml_pipeline",
       "superTypes": [
         "DataSet"
@@ -468,6 +476,25 @@
         "name": "pipeline",
         "isContainer": false,
         "cardinality": "SINGLE"
+      },
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "spark_process_column_lineages",
+      "serviceType": "spark",
+      "typeVersion": "1.0",
+      "relationshipCategory": "AGGREGATION",
+      "endDef1": {
+        "type": "spark_column_lineage",
+        "name": "process",
+        "isContainer": false,
+        "cardinality": "SINGLE"
+      },
+      "endDef2": {
+        "type": "spark_process",
+        "name": "columnLineages",
+        "isContainer": true,
+        "cardinality": "SET"
       },
       "propagateTags": "NONE"
     }
