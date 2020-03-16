@@ -235,6 +235,10 @@ public class ImportService {
         result.incrementMeticsCounter("duration", getDuration(this.endTimestamp, this.startTimestamp));
 
         result.setOperationStatus(AtlasImportResult.OperationStatus.SUCCESS);
+        if (isMigrationMode(result.getRequest())) {
+            return;
+        }
+
         auditsWriter.write(userName, result, startTimestamp, endTimestamp, importSource.getCreationOrder());
     }
 
@@ -250,7 +254,7 @@ public class ImportService {
 
     private EntityImportStream createZipSource(AtlasImportRequest request, InputStream inputStream, String configuredTemporaryDirectory) throws AtlasBaseException {
         try {
-            if (request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION) || (request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_FORMAT) &&
+            if (isMigrationMode(request) || (request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_FORMAT) &&
                     request.getOptions().get(AtlasImportRequest.OPTION_KEY_FORMAT).equals(AtlasImportRequest.OPTION_KEY_FORMAT_ZIP_DIRECT))) {
                 LOG.info("ZipSource Format: ZipDirect: Size: {}", request.getOptions().get("size"));
                 return getZipDirectEntityImportStream(request, inputStream);
@@ -287,5 +291,9 @@ public class ImportService {
         return importRequest.isReplicationOptionSet() && exportRequest.isReplicationOptionSet() &&
                 exportRequest.getFetchTypeOptionValue().equalsIgnoreCase(AtlasExportRequest.FETCH_TYPE_INCREMENTAL) &&
                 exportRequest.getSkipLineageOptionValue();
+    }
+
+    private boolean isMigrationMode(AtlasImportRequest request) {
+        return request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION);
     }
 }

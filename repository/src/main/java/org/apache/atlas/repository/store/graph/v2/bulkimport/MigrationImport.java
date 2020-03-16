@@ -20,12 +20,14 @@ package org.apache.atlas.repository.store.graph.v2.bulkimport;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.converters.AtlasFormatConverters;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.migration.DataMigrationStatusService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -65,10 +67,12 @@ public class MigrationImport extends ImportStrategy {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "importResult should contain request");
         }
 
-        int index = 0;
+        DataMigrationStatusService dataMigrationStatusService = createMigrationStatusService(importResult);
+
+        long index = 0;
         int streamSize = entityStream.size();
         EntityMutationResponse ret = new EntityMutationResponse();
-        EntityCreationManager creationManager = createEntityCreationManager(atlasGraph, importResult);
+        EntityCreationManager creationManager = createEntityCreationManager(atlasGraph, importResult, dataMigrationStatusService);
 
         try {
             LOG.info("Migration Import: Size: {}: Starting...", streamSize);
@@ -85,14 +89,23 @@ public class MigrationImport extends ImportStrategy {
         return ret;
     }
 
-    private EntityCreationManager createEntityCreationManager(AtlasGraph threadedAtlasGraph, AtlasImportResult importResult) {
+    private DataMigrationStatusService createMigrationStatusService(AtlasImportResult importResult) {
+        DataMigrationStatusService dataMigrationStatusService = new DataMigrationStatusService();
+        dataMigrationStatusService.init(importResult.getRequest().getOptions().get(AtlasImportRequest.OPTION_KEY_MIGRATION_FILE_NAME));
+        return dataMigrationStatusService;
+    }
+
+    private EntityCreationManager createEntityCreationManager(AtlasGraph threadedAtlasGraph,
+                                                              AtlasImportResult importResult,
+                                                              DataMigrationStatusService dataMigrationStatusService) {
+        atlasGraph = threadedAtlasGraph;
         int batchSize = importResult.getRequest().getOptionKeyBatchSize();
         int numWorkers = getNumWorkers(importResult.getRequest().getOptionKeyNumWorkers());
 
         EntityConsumerBuilder consumerBuilder =
                 new EntityConsumerBuilder(threadedAtlasGraph, entityStore, entityGraphRetriever, typeRegistry, batchSize);
 
-        return new EntityCreationManager(consumerBuilder, batchSize, numWorkers, importResult);
+        return new EntityCreationManager(consumerBuilder, batchSize, numWorkers, importResult, dataMigrationStatusService);
     }
 
     private static int getNumWorkers(int numWorkersFromOptions) {

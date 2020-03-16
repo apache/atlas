@@ -18,6 +18,9 @@
 
 package org.apache.atlas.pc;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -25,8 +28,20 @@ import java.util.Map;
 import java.util.Set;
 
 public class StatusReporter<T, U> {
+    private static final Logger LOG = LoggerFactory.getLogger(StatusReporter.class);
+
     private Map<T,U> producedItems = new LinkedHashMap<>();
     private Set<T> processedSet = new HashSet<>();
+    private long timeoutDuration;
+    private long lastAck;
+
+    public StatusReporter() {
+        this.timeoutDuration = -1;
+    }
+
+    public StatusReporter(long timeoutDurationInMs) {
+        this.timeoutDuration = timeoutDurationInMs;
+    }
 
     public void produced(T item, U index) {
         this.producedItems.put(item, index);
@@ -44,7 +59,8 @@ public class StatusReporter<T, U> {
         U ack = null;
         U ret;
         do {
-            ret = completionIndex(getFirstElement(this.producedItems));
+            Map.Entry<T, U> firstElement = getFirstElement(this.producedItems);
+            ret = completionIndex(firstElement);
             if (ret != null) {
                 ack = ret;
             }
@@ -63,13 +79,32 @@ public class StatusReporter<T, U> {
 
     private U completionIndex(Map.Entry<T, U> lookFor) {
         U ack = null;
-        if (lookFor == null || !processedSet.contains(lookFor.getKey())) {
+        if (lookFor == null) {
             return ack;
         }
 
-        ack = lookFor.getValue();
+        if (hasTimeoutDurationReached(System.currentTimeMillis())) {
+            LOG.warn("Ack: Timeout: {} - {}", lookFor.getKey(), lookFor.getValue());
+            return acknowledged(lookFor);
+        }
+
+        if (!processedSet.contains(lookFor.getKey())) {
+            return ack;
+        }
+
+        return acknowledged(lookFor);
+    }
+
+    private U acknowledged(Map.Entry<T, U> lookFor) {
+        U ack = lookFor.getValue();
         producedItems.remove(lookFor.getKey());
         processedSet.remove(lookFor);
         return ack;
+    }
+
+    private boolean hasTimeoutDurationReached(long now) {
+        boolean b = (this.timeoutDuration > -1) && (this.lastAck != 0) && ((now - this.lastAck) >= timeoutDuration);
+        lastAck = System.currentTimeMillis();
+        return b;
     }
 }
