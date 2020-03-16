@@ -107,22 +107,19 @@ public class EntitySearchProcessor extends SearchProcessor {
 
         StringBuilder indexQuery = new StringBuilder();
 
+        // TypeName check to be done in-memory as well to address ATLAS-2121 (case sensitivity)
+        inMemoryPredicate = typeNamePredicate;
+
         if (typeSearchByIndex) {
             graphIndexQueryBuilder.addTypeAndSubTypesQueryFilter(indexQuery, typeAndSubTypesQryStr);
-
-            // TypeName check to be done in-memory as well to address ATLAS-2121 (case sensitivity)
-            inMemoryPredicate = typeNamePredicate;
-
         }
 
         if (attrSearchByIndex) {
             constructFilterQuery(indexQuery, entityType, filterCriteria, indexAttributes);
 
             Predicate attributePredicate = constructInMemoryPredicate(entityType, filterCriteria, indexAttributes);
-            if (inMemoryPredicate != null) {
+            if (attributePredicate != null) {
                 inMemoryPredicate = PredicateUtils.andPredicate(inMemoryPredicate, attributePredicate);
-            } else {
-                inMemoryPredicate = attributePredicate;
             }
         } else {
             graphAttributes.addAll(indexAttributes);
@@ -314,9 +311,7 @@ public class EntitySearchProcessor extends SearchProcessor {
                     isLastResultPage = entityVertices.size() < limit;
 
                     // Do in-memory filtering
-                    if (inMemoryPredicate != null) {
-                        CollectionUtils.filter(entityVertices, inMemoryPredicate);
-                    }
+                    CollectionUtils.filter(entityVertices, inMemoryPredicate);
 
                     //incase when operator is NEQ in pipeSeperatedSystemAttributes
                     if (graphQueryPredicate != null) {
