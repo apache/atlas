@@ -79,7 +79,6 @@ define(['require',
                 this.limit = 25;
                 this.entityCollection.url = UrlLinks.adminApiUrl();
                 this.entityCollection.modelAttrName = "events";
-                this.onlyAdmin = true;
                 this.commonTableOptions = {
                     collection: this.entityCollection,
                     includeFilter: false,
@@ -152,7 +151,7 @@ define(['require',
                 }]
             },
             onRender: function() {
-                var str = '<option>All</option><option>Admin</option>';
+                var str = '<option>All</option><option>Purged</option>';
                 this.ui.adminType.html(str);
                 this.ui.adminType.select2({});
                 this.ui.adminRegion.hide();
@@ -174,7 +173,7 @@ define(['require',
                     "operator": "like",
                     "attributeValue": "admin"
                 }];
-                if (!this.onlyAdmin) {
+                if (this.onlyPurged === true) {
                     adminAttributes.push({
                         "attributeName": "operation",
                         "operator": "like",
@@ -281,7 +280,7 @@ define(['require',
                             } else {
                                 adminValues = '';
                             }
-                            var adminText = '<div class="row"><div class="col-sm-12 attr-details admin-attr-details"><div class="col-sm-2">Admin Entities: </div><div class="col-sm-10">' + adminValues + '</div></div></div>';
+                            var adminText = '<div class="row"><div class="col-sm-12 attr-details admin-attr-details"><div class="col-sm-2">Purged Entities: </div><div class="col-sm-10">' + adminValues + '</div></div></div>';
                             $(el).append($('<div>').html(adminText));
 
                         }
@@ -294,18 +293,7 @@ define(['require',
                     operation: {
                         label: "Operation",
                         cell: "String",
-                        editable: false,
-                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
-                                if (rawValue === "PURGE" && model.attributes.params) {
-                                    var adminLength = model.attributes.result.replace('[', '').replace(']', '').split(',').length;
-                                    return adminLength === 1 ? adminLength + " entity purged." : adminLength + " entities purged.";
-                                } else {
-                                    return "No entity purged.";
-                                }
-
-                            }
-                        })
+                        editable: false
                     },
                     clientId: {
                         label: "Client ID",
@@ -336,7 +324,7 @@ define(['require',
 
             },
             onClickAdminType: function(e, value) {
-                this.onlyAdmin = e.currentTarget.value === "Admin" ? false : true;
+                this.onlyPurged = e.currentTarget.value === "Purged";
                 this.getAdminCollection();
             },
             onClickAdminEntity: function(e) {
@@ -348,7 +336,7 @@ define(['require',
                             guid: $(e.target).text(),
                         },
                         modal = new Modal({
-                            title: "Admin Entity Details : " + obj.guid,
+                            title: "Purged Entity Details: " + obj.guid,
                             content: new AuditTableLayoutView(obj),
                             mainClass: "modal-full-screen",
                             okCloses: true,
