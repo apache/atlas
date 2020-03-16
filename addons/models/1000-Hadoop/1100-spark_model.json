@@ -306,6 +306,34 @@
       ]
     },
     {
+      "name": "spark_application",
+      "superTypes": [
+        "Process"
+      ],
+      "serviceType": "spark",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "currentUser",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "isUnique": false,
+          "isIndexable": true,
+          "searchWeight": 10
+        },
+        {
+          "name": "remoteUser",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "isUnique": false,
+          "isIndexable": true,
+          "searchWeight": 10
+        }
+      ]
+    },
+    {
       "name": "spark_process",
       "superTypes": [
         "Process"
@@ -495,6 +523,25 @@
         "name": "columnLineages",
         "isContainer": true,
         "cardinality": "SET"
+
+      },
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "spark_application_processes",
+      "serviceType": "spark",
+      "typeVersion": "1.0",
+      "relationshipCategory": "AGGREGATION",
+      "endDef1": {
+        "type": "spark_application",
+        "name": "processes",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "type": "spark_process",
+        "name": "application",
+        "cardinality": "SINGLE"
       },
       "propagateTags": "NONE"
     }
