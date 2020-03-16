@@ -23,6 +23,8 @@ import org.testng.annotations.Test;
 import java.util.concurrent.BlockingQueue;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 public class StatusReporterTest {
     private static class IntegerConsumer extends WorkItemConsumer<Integer> {
@@ -90,5 +92,21 @@ public class StatusReporterTest {
             }
             statusReporter.processed((Integer) result);
         }
+    }
+
+    @Test
+    public void reportWithTimeout() throws InterruptedException {
+        StatusReporter<Integer, Integer> statusReporter = new StatusReporter<>(2000);
+        statusReporter.produced(1, 100);
+        statusReporter.produced(2, 200);
+
+        statusReporter.processed(2);
+        Integer ack = statusReporter.ack();
+        assertNull(ack);
+
+        Thread.sleep(3000);
+        ack = statusReporter.ack();
+        assertNotNull(ack);
+        assertEquals(ack, Integer.valueOf(200));
     }
 }

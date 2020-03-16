@@ -44,12 +44,13 @@ public class AtlasImportRequest implements Serializable {
     public  static final String TRANSFORMS_KEY             = "transforms";
     public  static final String TRANSFORMERS_KEY           = "transformers";
     public  static final String OPTION_KEY_REPLICATED_FROM = "replicatedFrom";
+    public  static final String OPTION_KEY_MIGRATION_FILE_NAME = "migrationFileName";
     public  static final String OPTION_KEY_MIGRATION       = "migration";
     public  static final String OPTION_KEY_NUM_WORKERS     = "numWorkers";
     public  static final String OPTION_KEY_BATCH_SIZE      = "batchSize";
     public  static final String OPTION_KEY_FORMAT          = "format";
     public  static final String OPTION_KEY_FORMAT_ZIP_DIRECT = "zipDirect";
-    private static final String START_POSITION_KEY         = "startPosition";
+    public static final String START_POSITION_KEY          = "startPosition";
     private static final String START_GUID_KEY             = "startGuid";
     private static final String FILE_NAME_KEY              = "fileName";
     private static final String UPDATE_TYPE_DEFINITION_KEY = "updateTypeDefinition";
