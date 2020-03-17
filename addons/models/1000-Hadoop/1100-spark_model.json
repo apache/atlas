@@ -523,7 +523,6 @@
         "name": "columnLineages",
         "isContainer": true,
         "cardinality": "SET"
-
       },
       "propagateTags": "NONE"
     },
@@ -541,6 +540,40 @@
       "endDef2": {
         "type": "spark_process",
         "name": "application",
+        "cardinality": "SINGLE"
+      },
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "spark_ml_model_dataset",
+      "serviceType": "spark",
+      "typeVersion": "1.0",
+      "relationshipCategory": "ASSOCIATION",
+      "endDef1": {
+        "type": "spark_ml_model",
+        "name": "dataset",
+        "cardinality": "SINGLE"
+      },
+      "endDef2": {
+        "type": "DataSet",
+        "name": "model",
+        "cardinality": "SINGLE"
+      },
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "spark_ml_pipeline_dataset",
+      "serviceType": "spark",
+      "typeVersion": "1.0",
+      "relationshipCategory": "ASSOCIATION",
+      "endDef1": {
+        "type": "spark_ml_pipeline",
+        "name": "dataset",
+        "cardinality": "SINGLE"
+      },
+      "endDef2": {
+        "type": "DataSet",
+        "name": "pipeline",
         "cardinality": "SINGLE"
       },
       "propagateTags": "NONE"
