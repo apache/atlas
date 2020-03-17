@@ -109,7 +109,8 @@ module.exports = function(grunt) {
                     'jquery.sparkline.min.js': { 'jquery-sparkline': 'sparkline' },
                     'table-dragger.js': { 'table-dragger/dist': 'table-dragger' },
                     'jstree.min.js': { 'jstree/dist': 'jstree' },
-                    'jquery.steps.min.js': { 'jquery-steps/build': 'jquery-steps' }
+                    'jquery.steps.min.js': { 'jquery-steps/build': 'jquery-steps' },
+                    'dropzone-amd-module.js': { 'dropzone/dist': "dropzone/js" }
                 }
 
             },
@@ -147,7 +148,8 @@ module.exports = function(grunt) {
                     'query-builder.default.min.css': { 'jQuery-QueryBuilder/dist/css': 'jQueryQueryBuilder/css' },
                     'daterangepicker.css': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/css' },
                     'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' },
-                    'pretty-checkbox.min.css': { 'pretty-checkbox/dist': 'pretty-checkbox/css' }
+                    'pretty-checkbox.min.css': { 'pretty-checkbox/dist': 'pretty-checkbox/css' },
+                    'dropzone.css': { 'dropzone/dist': "dropzone/css" }
                 }
 
             },

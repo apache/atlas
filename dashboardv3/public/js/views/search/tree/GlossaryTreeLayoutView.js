@@ -37,11 +37,15 @@ define([
             refreshTree: '[data-id="refreshTree"]',
             termSearchTree: '[data-id="termSearchTree"]',
             createGlossary: '[data-id="createGlossary"]',
-            showGlossaryType: '[data-id="showGlossaryType"]'
+            showGlossaryType: '[data-id="showGlossaryType"]',
+            importGlossary: "[data-id='importGlossary']",
+            downloadTemplate: "[data-id='downloadTemplate']"
+
         },
         templateHelpers: function() {
             return {
-                apiBaseUrl: UrlLinks.apiBaseUrl
+                apiBaseUrl: UrlLinks.apiBaseUrl,
+                importTmplUrl: UrlLinks.glossaryImportTempUrl()
             };
         },
         events: function() {
@@ -72,6 +76,13 @@ define([
                 e.stopPropagation();
                 this.isTermView = !this.isTermView;
                 this.glossarySwitchBtnUpdate();
+            };
+            events["click " + this.ui.importGlossary] = function(e) {
+                e.stopPropagation();
+                that.onClickImportGlossary();
+            };
+            events['click ' + this.ui.downloadTemplate] = function(e) {
+                e.stopPropagation();
             };
             return events;
         },
@@ -581,7 +592,8 @@ define([
                     gId: glossaryId,
                     guid: getSelectedParent,
                     gType: that.isTermView ? 'term' : 'category',
-                    viewType: that.isTermView ? 'term' : 'category'
+                    viewType: that.isTermView ? 'term' : 'category',
+                    searchType: "basic"
                 }
                 var serachUrl = '#!/glossary/' + guid;
                 this.triggerSearch(params, serachUrl);
@@ -683,6 +695,18 @@ define([
         refresh: function(options) {
             this.glossaryTermId = null;
             this.fetchGlossary();
+        },
+        onClickImportGlossary: function() {
+            var that = this;
+            require([
+                'views/glossary/ImportGlossaryLayoutView'
+            ], function(ImportGlossaryLayoutView) {
+                var view = new ImportGlossaryLayoutView({
+                    callback: function() {
+                        that.refresh();
+                    }
+                });
+            });
         }
     });
     return GlossaryTreeLayoutView;

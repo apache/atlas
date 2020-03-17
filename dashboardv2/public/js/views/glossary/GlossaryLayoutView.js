@@ -22,9 +22,10 @@ define(['require',
     'utils/Utils',
     'utils/Messages',
     'utils/Globals',
+    'utils/UrlLinks',
     'utils/CommonViewFunction',
     'jstree'
-], function(require, Backbone, GlossaryLayoutViewTmpl, Utils, Messages, Globals, CommonViewFunction) {
+], function(require, Backbone, GlossaryLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, CommonViewFunction) {
     'use strict';
 
     var GlossaryLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -39,6 +40,7 @@ define(['require',
             templateHelpers: function() {
                 return {
                     isAssignView: this.isAssignView,
+                    importTmplUrl: UrlLinks.glossaryImportTempUrl(),
                     isAssignAttributeRelationView: this.isAssignAttributeRelationView
                 };
             },
@@ -51,7 +53,8 @@ define(['require',
                 searchCategory: "[data-id='searchCategory']",
                 glossaryView: 'input[name="glossaryView"]',
                 termTree: "[data-id='termTree']",
-                categoryTree: "[data-id='categoryTree']"
+                categoryTree: "[data-id='categoryTree']",
+                importGlossary: "[data-id='importGlossary']"
             },
             /** ui events hash */
             events: function() {
@@ -75,6 +78,7 @@ define(['require',
                     })
                 };
                 events["click " + this.ui.refreshGlossary] = 'getGlossary';
+                events["click " + this.ui.importGlossary] = 'onClickImportGlossary';
                 events["keyup " + this.ui.searchTerm] = function() {
                     this.ui.termTree.jstree("search", this.ui.searchTerm.val());
                 };
@@ -740,6 +744,18 @@ define(['require',
                         updateTabState: true
                     });
                 }
+            },
+            onClickImportGlossary: function() {
+                var that = this;
+                require([
+                    'views/glossary/ImportGlossaryLayoutView'
+                ], function(ImportGlossaryLayoutView) {
+                    var view = new ImportGlossaryLayoutView({
+                        callback: function() {
+                            that.getGlossary();
+                        }
+                    });
+                });
             }
         });
     return GlossaryLayoutView;

@@ -185,6 +185,12 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
                 return glossaryUrl;
             }
         },
+        glossaryImportTempUrl: function() {
+            return this.glossaryApiUrl() + '/import/template';
+        },
+        glossaryImportUrl: function() {
+            return this.glossaryApiUrl() + '/import';
+        },
         categoryApiUrl: function(options) {
             var guid = options && options.guid,
                 list = options && options.list,

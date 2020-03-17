@@ -17,7 +17,7 @@
 <div class="col-sm-12 {{#unless isAssignView}}add-seperator{{/unless}}">
     <div class="row">
         {{#unless isAssignView}}
-        <div class="col-sm-8 no-padding" style="margin-top: 5px;">
+        <div class="col-sm-7 no-padding" style="margin-top: 5px;">
             <span class="pull-left">Terms</span>
             <label class="switch pull-left">
                 <input type="checkbox" class="switch-input" name="glossaryView" value="text" />
@@ -25,9 +25,17 @@
             </label>
             <span class="pull-left">Category</span>
         </div>
-        <div class="{{#if isAssignView}}col-sm-2{{else}}col-sm-4{{/if}} no-padding-right">
+        <div class="{{#if isAssignView}}col-sm-2{{else}}col-sm-5{{/if}} no-padding-right">
             <button type="button" class="btn btn-action btn-md pull-right" title="Refresh" data-id="refreshGlossary" onclick="this.blur();" type="button"><i class="fa fa-refresh"></i></button>
             <button type="button" class="btn btn-action btn-md pull-right" data-id="createGlossary" type="button"><i class="fa fa-plus"></i></button>
+            <div class="dropdown pull-right">
+                <button type="button" data-toggle="dropdown" class="btn btn-action btn-md dropdown-toggle" type="button"><i class="fa fa-paperclip"></i></button>
+                <ul class="dropdown-menu">
+                    <li><a href="{{importTmplUrl}}">Download Import template</a></li>
+                    <li><a href="javascript:void(0)" data-id="importGlossary">Import Glossary</a></li>
+                </ul>
+            </div>
+            <!--  -->
             {{/unless}}
         </div>
     </div>
