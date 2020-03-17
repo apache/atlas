@@ -175,7 +175,8 @@ require.config({
         'sparkline': 'libs/sparkline/jquery.sparkline.min',
         'table-dragger': 'libs/table-dragger/table-dragger',
         'jstree': 'libs/jstree/jstree.min',
-        'jquery-steps': 'libs/jquery-steps/jquery.steps.min'
+        'jquery-steps': 'libs/jquery-steps/jquery.steps.min',
+        'dropzone': 'libs/dropzone/js/dropzone-amd-module'
     },
 
     /**

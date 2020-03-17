@@ -426,3 +426,15 @@ span.tree-tooltip {
         display: block;
     }
 }
+
+.glossary-dropdown {
+    left: -190px !important;
+
+    span a {
+        padding: 0px !important;
+
+        span {
+            margin-left: 0px !important;
+        }
+    }
+}
