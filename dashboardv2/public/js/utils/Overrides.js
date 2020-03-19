@@ -55,7 +55,10 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
         return this.charAt(0).toUpperCase() + this.slice(1);
     }
 
-
+    /*
+     * Overriding default sortType
+     */
+    Backgrid.Column.prototype.defaults.sortType = "toggle";
 
     /*
      * Overriding Cell for adding custom className to Cell i.e <td>

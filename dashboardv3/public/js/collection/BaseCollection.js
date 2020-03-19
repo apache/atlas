@@ -113,7 +113,7 @@ define(['require',
         /** BaseCollection's Static Attributes */
         {
             // Static functions
-            getTableCols: function(cols, collection) {
+            getTableCols: function(cols, collection, defaultSortDirection) {
                 var retCols = _.map(cols, function(v, k, l) {
                     var defaults = collection.constructor.tableCols[k];
                     if (!defaults) {
@@ -121,7 +121,8 @@ define(['require',
                         defaults = {};
                     }
                     return _.extend({
-                        'name': k
+                        'name': k,
+                        direction: defaultSortDirection ? defaultSortDirection : null,
                     }, defaults, v);
                 });
                 return retCols;
