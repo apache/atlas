@@ -264,6 +264,8 @@ define(['require',
                     includeSizeAbleColumns: false,
                     includeTableLoader: false,
                     includeAtlasTableSorting: true,
+                    showDefaultTableSorted: true,
+                    updateFullCollectionManually: true,
                     columnOpts: {
                         opts: {
                             initialColumnsVisible: null,
@@ -445,9 +447,8 @@ define(['require',
                                 attributeObject: dataOrCollection.entities,
                                 referredEntities: dataOrCollection.referredEntities
                             });
-                            that.searchCollection.referredEntities = dataOrCollection.referredEntities;
-                            that.searchCollection.entities = dataOrCollection.entities;
                             that.searchCollection.reset(dataOrCollection.entities, { silent: true });
+                            that.searchCollection.fullCollection.reset(dataOrCollection.entities, { silent: true });
                         }
 
 

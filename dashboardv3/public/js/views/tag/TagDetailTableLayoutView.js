@@ -116,7 +116,7 @@ define(['require',
                     col = {};
 
                 return this.tagCollection.constructor.getTableCols({
-                        tag: {
+                        typeName: {
                             label: "Classification",
                             cell: "html",
                             editable: false,
