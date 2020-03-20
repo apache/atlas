@@ -175,12 +175,8 @@ public class ZipSourceDirect implements EntityImportStream {
 
     @Override
     public void setPosition(int index) {
-        try {
-            for (int i = 0; i < index; i++) {
-                moveNextEntry();
-            }
-        } catch (IOException e) {
-            LOG.error("Error setting position: {}. Position may be beyond the stream size.", index);
+        for (int i = 0; i < index; i++) {
+            moveNext();
         }
     }
 

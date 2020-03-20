@@ -90,6 +90,8 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
     private void processEntity(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, long currentCount) {
         try {
             RequestContext.get().setImportInProgress(true);
+            RequestContext.get().setCreateShellEntityForNonExistingReference(true);
+
             AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, null);
 
             LOG.debug("Processing: {}", currentCount);
@@ -163,7 +165,10 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
     }
 
     private void retryProcessEntity(int retryCount) {
-        LOG.info("Replaying: Starting!: Buffer: {}: Retry count: {}", entityBuffer.size(), retryCount);
+        if (LOG.isDebugEnabled() || retryCount > 1) {
+            LOG.info("Replaying: Starting!: Buffer: {}: Retry count: {}", entityBuffer.size(), retryCount);
+        }
+
         for (AtlasEntity.AtlasEntityWithExtInfo e : entityBuffer) {
             processEntity(e, counter.get());
         }

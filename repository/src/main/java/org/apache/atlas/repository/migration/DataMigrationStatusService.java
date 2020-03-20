@@ -99,8 +99,8 @@ public class DataMigrationStatusService {
         this.status = null;
     }
 
-    public void savePosition(String position) {
-        this.status.setCurrentIndex(Long.valueOf(position));
+    public void savePosition(Long position) {
+        this.status.setCurrentIndex(position);
         this.migrationStatusVertexManagement.updateVertexPartial(this.status);
     }
 
