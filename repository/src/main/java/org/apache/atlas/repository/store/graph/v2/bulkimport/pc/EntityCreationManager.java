@@ -35,7 +35,7 @@ public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManag
     private static final String WORKER_PREFIX = "migration-import";
     private static final long STATUS_REPORT_TIMEOUT_DURATION = 1 * 60 * 1000; // 5 min
 
-    private final StatusReporter<String, String> statusReporter;
+    private final StatusReporter<String, Long> statusReporter;
     private final AtlasImportResult importResult;
     private final DataMigrationStatusService dataMigrationStatusService;
     private String currentTypeName;
@@ -51,7 +51,7 @@ public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManag
     }
 
     public long read(EntityImportStream entityStream) {
-        long currentIndex = this.dataMigrationStatusService.getStatus().getCurrentIndex();
+        long currentIndex = entityStream.getPosition();
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo;
         this.entityImportStream = entityStream;
         this.dataMigrationStatusService.setStatus("IN_PROGRESS");
@@ -68,6 +68,8 @@ public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManag
                 break;
             }
         }
+
+        this.dataMigrationStatusService.setStatus("DONE");
         return currentIndex;
     }
 
@@ -83,7 +85,7 @@ public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManag
         }
 
         setCurrentTypeName(typeName);
-        statusReporter.produced(entityWithExtInfo.getEntity().getGuid(), String.format("%s:%s", entityWithExtInfo.getEntity().getTypeName(), currentIndex));
+        statusReporter.produced(entityWithExtInfo.getEntity().getGuid(), currentIndex);
         super.checkProduce(entityWithExtInfo);
         extractResults();
     }
@@ -98,25 +100,19 @@ public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManag
     }
 
     private void logStatus() {
-        String ack = statusReporter.ack();
-        if (StringUtils.isEmpty(ack)) {
+        Long ack = statusReporter.ack();
+        if (ack == null) {
             return;
         }
 
-        String[] split = ack.split(":");
-        if (split.length == 0 || split.length < 2) {
-            return;
-        }
-
-        importResult.incrementMeticsCounter(split[0]);
-        String currentPosition = split[1];
-        dataMigrationStatusService.savePosition(currentPosition);
-        this.currentPercent = updateImportMetrics(split[0], Integer.parseInt(currentPosition), this.entityImportStream.size(), getCurrentPercent());
+        importResult.incrementMeticsCounter(getCurrentTypeName());
+        dataMigrationStatusService.savePosition(ack);
+        this.currentPercent = updateImportMetrics(getCurrentTypeName(), ack, this.entityImportStream.size(), getCurrentPercent());
     }
 
-    private static float updateImportMetrics(String typeNameGuid, int currentIndex, int streamSize, float currentPercent) {
+    private static float updateImportMetrics(String typeNameGuid, long currentIndex, int streamSize, float currentPercent) {
         String lastEntityImported = String.format("entity:last-imported:%s:(%s)", typeNameGuid, currentIndex);
-        return BulkImporterImpl.updateImportProgress(LOG, currentIndex, streamSize, currentPercent, lastEntityImported);
+        return BulkImporterImpl.updateImportProgress(LOG, (int) currentIndex, streamSize, currentPercent, lastEntityImported);
     }
 
     private String getCurrentTypeName() {

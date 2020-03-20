@@ -54,7 +54,7 @@ public class DataMigrationStatusServiceTest {
         assertEquals(ret.getTotalCount(), expected.getTotalCount());
         assertEquals(ret.getCurrentIndex(), expected.getCurrentIndex());
 
-        dataMigrationStatusService.savePosition("100");
+        dataMigrationStatusService.savePosition(100l);
         assertNotNull(dataMigrationStatusService.getStatus());
         assertNotNull(dataMigrationStatusService.getStatus().getCurrentIndex(), "100");
         assertNotNull(dataMigrationStatusService.getCreate(expected).getCurrentIndex(), "100");
