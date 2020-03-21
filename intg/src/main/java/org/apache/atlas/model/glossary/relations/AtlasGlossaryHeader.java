@@ -27,6 +27,13 @@ public class AtlasGlossaryHeader {
     private String relationGuid;
     private String displayText;
 
+    public AtlasGlossaryHeader(String glossaryGuid) {
+        this.glossaryGuid = glossaryGuid;
+    }
+
+    public AtlasGlossaryHeader() {
+    }
+
     public String getDisplayText() {
         return displayText;
     }

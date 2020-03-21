@@ -167,6 +167,7 @@ public enum AtlasErrorCode {
     INVALID_BUSINESS_METADATA_NAME_FOR_ENTITY_TYPE(400, "ATLAS-400-00-095", "Invalid business-metadata: {0} specified for entity, applicable business-metadata: {1}"),
     BUSINESS_METADATA_ATTRIBUTE_DOES_NOT_EXIST(400, "ATLAS-400-00-096", "Business-metadata attribute does not exist in entity: {0}"),
     BUSINESS_METADATA_ATTRIBUTE_ALREADY_EXISTS(400, "ATLAS-400-00-097", "Business-metadata attribute already exists in entity: {0}"),
+    INVALID_FILE_TYPE(400, "ATLAS-400-00-98", "The provided file type {0} is not supported."),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
@@ -190,6 +191,7 @@ public enum AtlasErrorCode {
     INVALID_LINEAGE_ENTITY_TYPE(404, "ATLAS-404-00-011", "Given instance guid {0} with type {1} is not a valid lineage entity type."),
     INSTANCE_GUID_DELETED(404, "ATLAS-404-00-012", "Given instance guid {0} has been deleted"),
     NO_PROPAGATED_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-013", "No propagated classifications associated with entity: {0}"),
+    NO_DATA_FOUND(404, "ATLAS-404-00-014", "No data found in the uploaded file"),
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
@@ -221,7 +223,9 @@ public enum AtlasErrorCode {
     HIVE_HOOK(500, "ATLAS-500-00-010", "HiveHook: {0}"),
     HIVE_HOOK_METASTORE_BRIDGE(500, "ATLAS-500-00-011", "HiveHookMetaStoreBridge: {0}"),
     DATA_ACCESS_LOAD_FAILED(500, "ATLAS-500-00-013", "Load failed: {0}"),
-    ENTITY_NOTIFICATION_FAILED(500, "ATLAS-500-00-014", "Notification failed for operation: {0} : {1}");
+    ENTITY_NOTIFICATION_FAILED(500, "ATLAS-500-00-014", "Notification failed for operation: {0} : {1}"),
+    FAILED_TO_UPLOAD(500, "ATLAS-500-00-015", "Error occurred while uploading the file: {0}"),
+    FAILED_TO_CREATE_GLOSSARY_TERM(500, "ATLAS-500-00-016", "Error occurred while creating glossary term: {0}");
 
     private String errorCode;
     private String errorMessage;

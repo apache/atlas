@@ -34,6 +34,7 @@ import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.FileUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -41,6 +42,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,9 +54,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.glossary.GlossaryUtils.getAtlasGlossaryCategorySkeleton;
-import static org.apache.atlas.glossary.GlossaryUtils.getAtlasGlossaryTermSkeleton;
-import static org.apache.atlas.glossary.GlossaryUtils.getGlossarySkeleton;
+import static org.apache.atlas.glossary.GlossaryUtils.*;
 
 @Service
 public class GlossaryService {
@@ -67,7 +68,7 @@ public class GlossaryService {
     private final AtlasTypeRegistry         atlasTypeRegistry;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
 
-    private final char[] invalidNameChars = {'@', '.'};
+    private static final char[] invalidNameChars = { '@', '.' };
 
     @Inject
     public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore,
@@ -1029,7 +1030,7 @@ public class GlossaryService {
         termHeaders.forEach(t -> t.setDisplayText(getDisplayText(termMap.get(t.getTermGuid()))));
     }
 
-    private boolean isNameInvalid(String name) {
+    public static boolean isNameInvalid(String name) {
         return StringUtils.containsAny(name, invalidNameChars);
     }
 
@@ -1080,4 +1081,37 @@ public class GlossaryService {
         }
     }
 
+    public List<AtlasGlossaryTerm> importGlossaryData(InputStream inputStream, String fileName) throws AtlasBaseException {
+        List<AtlasGlossaryTerm> ret;
+
+        try {
+            if (StringUtils.isBlank(fileName)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_FILE_TYPE, fileName);
+            }
+
+            List<String[]> fileData       = FileUtils.readFileData(fileName, inputStream);
+            List<String>   failedTermMsgs = new ArrayList<>();
+
+            ret = glossaryTermUtils.getGlossaryTermDataList(fileData, failedTermMsgs);
+            ret = createGlossaryTerms(ret);
+        } catch (IOException e) {
+            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_UPLOAD, e);
+        }
+
+        return ret;
+    }
+
+    private List<AtlasGlossaryTerm> createGlossaryTerms(List<AtlasGlossaryTerm> glossaryTerms) throws AtlasBaseException {
+        List<AtlasGlossaryTerm> ret = new ArrayList<>();
+
+        for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
+            try {
+                ret.add(createTerm(glossaryTerm));
+            } catch (AtlasBaseException e) {
+                throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_CREATE_GLOSSARY_TERM, e);
+            }
+        }
+
+        return ret;
+    }
 }
