@@ -201,6 +201,11 @@ public final class Constants {
     public static final String  ATTR_NAME_REPLICATED_FROM = "replicatedFrom";
     public static final Integer INCOMPLETE_ENTITY_VALUE   = Integer.valueOf(1);
 
+    /*
+     * All supported file-format extensions for AtlasGlossaryTerms file upload
+     */
+    public enum GlossaryImportSupportedFileExtensions { XLSX, XLS, CSV }
+
     private Constants() {
     }
 

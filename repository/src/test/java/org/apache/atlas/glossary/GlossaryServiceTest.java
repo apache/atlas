@@ -36,13 +36,14 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.utils.TestLoadModelUtils;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.utils.TestLoadModelUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.SkipException;
@@ -52,7 +53,11 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -80,13 +85,16 @@ public class GlossaryServiceTest {
 
     private AtlasRelatedObjectId relatedObjectId;
 
+    public static final String CSV_FILES   = "/csvFiles/";
+    public static final String EXCEL_FILES = "/excelFiles/";
+
     @DataProvider
     public static Object[][] getGlossaryTermsProvider() {
         return new Object[][]{
                 // offset, limit, expected
-                {0, -1, 4},
+                {0, -1, 6},
                 {0, 2, 2},
-                {2, 5, 2},
+                {2, 5, 4},
         };
     }
 
@@ -845,7 +853,6 @@ public class GlossaryServiceTest {
         } catch (AtlasBaseException e) {
             fail("RelatedTerm association should've succeeded", e);
         }
-
     }
 
     @Test(dataProvider = "getGlossaryTermsProvider" , groups = "Glossary.GET.postUpdate", dependsOnGroups = "Glossary.UPDATE")
@@ -897,7 +904,6 @@ public class GlossaryServiceTest {
         };
     }
 
-
     @Test(dataProvider = "getCategoryTermsProvider",  dependsOnGroups = "Glossary.CREATE")
     public void testGetCategoryTerms(int offset, int limit, int expected) {
         for (AtlasGlossaryCategory c : Arrays.asList(accountCategory, mortgageCategory)) {
@@ -908,6 +914,86 @@ public class GlossaryServiceTest {
             } catch (AtlasBaseException e) {
                 fail("Category term retrieval should've been a success", e);
             }
+        }
+    }
+
+    @Test
+    public void testGetTemplate(){
+        try {
+            String glossaryTermHeaderListAsString = GlossaryTermUtils.getGlossaryTermHeaders();
+
+            assertNotNull(glossaryTermHeaderListAsString);
+            assertEquals(glossaryTermHeaderListAsString,"GlossaryName, TermName, ShortDescription, LongDescription, Examples, Abbreviation, Usage, AdditionalAttributes, TranslationTerms, ValidValuesFor, Synonyms, ReplacedBy, ValidValues, ReplacementTerms, SeeAlso, TranslatedTerms, IsA, Antonyms, Classifies, PreferredToTerms, PreferredTerms");
+        } catch (Exception e) {
+            fail("The Template for Glossary Term should've been a success",e);
+        }
+    }
+
+    @Test( dependsOnGroups = "Glossary.CREATE" )
+    public void testImportGlossaryData(){
+        try {
+            InputStream             inputStream           = getFile(CSV_FILES,"template_1.csv");
+            List<AtlasGlossaryTerm> atlasGlossaryTermList = glossaryService.importGlossaryData(inputStream,"template_1.csv");
+
+            assertNotNull(atlasGlossaryTermList);
+            assertEquals(atlasGlossaryTermList.size(), 1);
+
+            InputStream             inputStream1           = getFile(EXCEL_FILES,"template_1.xlsx");
+            List<AtlasGlossaryTerm> atlasGlossaryTermList1 = glossaryService.importGlossaryData(inputStream1,"template_1.xlsx");
+
+            assertNotNull(atlasGlossaryTermList1);
+            assertEquals(atlasGlossaryTermList1.size(), 1);
+        } catch (AtlasBaseException e){
+            fail("The GlossaryTerm should have been created "+e);
+        }
+    }
+
+    @Test
+    public void testEmptyFileException() {
+        InputStream inputStream = getFile(CSV_FILES, "empty.csv");
+
+        try {
+            glossaryService.importGlossaryData(inputStream, "empty.csv");
+            fail("Error occurred : Failed to recognize the empty file.");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getMessage(),"No Data found in the uploaded file !");
+        }
+    }
+
+    @Test
+    public void testIncorrectFileException() {
+        InputStream inputStream = getFile(CSV_FILES, "incorrectFile.csv");
+
+        try {
+            glossaryService.importGlossaryData(inputStream, "incorrectFile.csv");
+            fail("Error occurred : Failed to recognize the incorrect file.");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getMessage(),"The uploaded file has not been processed due to the following errors : \n" +
+                    "[\n" +
+                    "The provided Reference Glossary and TermName does not exist in the system  GentsFootwear: for record with TermName  : BankBranch1 and GlossaryName : testBankingGlossary]");
+        }
+    }
+
+    private static InputStream getFile(String subDir, String fileName){
+        final String userDir  = System.getProperty("user.dir");
+        String       filePath = getTestFilePath(userDir, subDir, fileName);
+        File         f        = new File(filePath);
+        InputStream  fs       = null;
+
+        try {
+            fs = new FileInputStream(f);
+        } catch (FileNotFoundException e) {
+            LOG.error("File could not be found at: {}", filePath, e);
+        }
+
+        return fs;
+    }
+
+    private static String getTestFilePath(String startPath, String subDir, String fileName) {
+        if (StringUtils.isNotEmpty(subDir)) {
+            return startPath + "/src/test/resources/" + subDir + "/" + fileName;
+        } else {
+            return startPath + "/src/test/resources/" + fileName;
         }
     }
 }
