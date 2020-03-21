@@ -18,6 +18,7 @@
 package org.apache.atlas.listener;
 
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -80,6 +81,26 @@ public class ChangedTypeDefs {
         if (CollectionUtils.isNotEmpty(typeDefs)) {
             for (AtlasBaseTypeDef typeDef : typeDefs) {
                 if (typeDef instanceof AtlasEntityDef) {
+                    ret = true;
+
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public boolean hasBusinessMetadataDef() {
+        return hasBusinessMetadataDef(createdTypeDefs) || hasEntityDef(updatedTypeDefs) || hasEntityDef(deletedTypeDefs);
+    }
+
+    private boolean hasBusinessMetadataDef(List<? extends AtlasBaseTypeDef> typeDefs) {
+        boolean ret = false;
+
+        if (CollectionUtils.isNotEmpty(typeDefs)) {
+            for (AtlasBaseTypeDef typeDef : typeDefs) {
+                if (typeDef instanceof AtlasBusinessMetadataDef) {
                     ret = true;
 
                     break;

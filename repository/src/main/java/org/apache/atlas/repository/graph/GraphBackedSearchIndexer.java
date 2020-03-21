@@ -377,6 +377,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(baseTypeDef.getName());
 
                 resolveIndexFieldNames(managementSystem, entityType);
+            } else if(TypeCategory.BUSINESS_METADATA.equals(baseTypeDef.getCategory())) {
+                AtlasBusinessMetadataType businessMetadataType = typeRegistry.getBusinessMetadataTypeByName(baseTypeDef.getName());
+
+                resolveIndexFieldNames(managementSystem, businessMetadataType);
             } else {
                 LOG.debug("Ignoring the non-entity type definition {}", baseTypeDef.getName());
             }
@@ -385,6 +389,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     private void resolveIndexFieldNames(AtlasGraphManagement managementSystem, AtlasEntityType entityType) {
         for(AtlasAttribute attribute: entityType.getAllAttributes().values()) {
+            resolveIndexFieldName(managementSystem, attribute);
+        }
+    }
+
+    private void resolveIndexFieldNames(AtlasGraphManagement managementSystem, AtlasBusinessMetadataType businessMetadataType) {
+        for (AtlasAttribute attribute : businessMetadataType.getAllAttributes().values()) {
             resolveIndexFieldName(managementSystem, attribute);
         }
     }
