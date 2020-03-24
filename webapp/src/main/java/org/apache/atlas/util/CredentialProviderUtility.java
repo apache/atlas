@@ -28,6 +28,7 @@ import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import java.io.Console;
 import java.io.IOException;
 import java.util.Arrays;
+
 import static org.apache.atlas.security.SecurityProperties.KEYSTORE_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
@@ -39,6 +40,7 @@ import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_K
  */
 public class CredentialProviderUtility {
     private static final String[] KEYS = new String[] { KEYSTORE_PASSWORD_KEY, TRUSTSTORE_PASSWORD_KEY, SERVER_CERT_PASSWORD_KEY };
+
     public static abstract class TextDevice {
         public abstract void printf(String fmt, Object... params);
 
@@ -73,17 +75,11 @@ public class CredentialProviderUtility {
         try {
             CommandLine cmd                    = new DefaultParser().parse(createOptions(), args);
             boolean     generatePasswordOption = cmd.hasOption("g");
-            String      key                    = cmd.getOptionValue("k");
-            char[]      cred                   = null;
-            String      providerPath           = cmd.getOptionValue("f");
-
-            if (cmd.hasOption("p")) {
-                cred = cmd.getOptionValue("p").toCharArray();
-            }
 
             if (generatePasswordOption) {
                 String userName = cmd.getOptionValue("u");
                 String password = cmd.getOptionValue("p");
+
                 if (userName != null && password != null) {
                     String  encryptedPassword = UserDao.encrypt(password);
                     boolean silentOption      = cmd.hasOption("s");
@@ -97,20 +93,6 @@ public class CredentialProviderUtility {
                     System.out.println("Please provide username and password as input. Usage: cputil.py -g -u <username> -p <password>");
                 }
 
-                return;
-            }
-
-            if (key != null && cred != null && providerPath != null) {
-                if (!StringUtils.isEmpty(String.valueOf(cred))) {
-                    Configuration conf = new Configuration(false);
-                    conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerPath);
-                    CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
-                    provider.createCredentialEntry(key, cred);
-                    provider.flush();
-                    System.out.println("Password is stored in Credential Provider");
-                } else {
-                    System.out.println("Please enter a valid password");
-                }
                 return;
             }
         } catch (Exception e) {
@@ -152,8 +134,6 @@ public class CredentialProviderUtility {
     private static Options createOptions() {
         Options options = new Options();
 
-        options.addOption("k", "ldapkey", true, "key");
-        options.addOption("f", "ldapPath", true, "path");
         options.addOption("g", "generatePassword", false, "Generate Password");
         options.addOption("s", "silent", false, "Silent");
         options.addOption("u", "username", true, "UserName");
