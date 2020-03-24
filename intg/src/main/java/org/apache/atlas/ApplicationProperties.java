@@ -18,7 +18,6 @@
 package org.apache.atlas;
 
 import org.apache.atlas.security.InMemoryJAASConfiguration;
-import org.apache.atlas.security.SecurityUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
@@ -57,10 +56,6 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  STORAGE_BACKEND_HBASE           = "hbase";
     public static final String  STORAGE_BACKEND_HBASE2          = "hbase2";
     public static final String  INDEX_BACKEND_SOLR              = "solr";
-    public static final String  LDAP_TYPE                       =  "atlas.authentication.method.ldap.type";
-    public static final String  LDAP_AD_BIND_PASSWORD           =  "atlas.authentication.method.ldap.ad.bind.password";
-    public static final String  LDAP_BIND_PASSWORD              =  "atlas.authentication.method.ldap.bind.password";
-    public static final String  MASK_LDAP_PASSWORD              =  "*****";
     public static final String  DEFAULT_GRAPHDB_BACKEND         = GRAPHBD_BACKEND_JANUS;
     public static final boolean DEFAULT_SOLR_WAIT_SEARCHER      = true;
     public static final boolean DEFAULT_INDEX_MAP_NAME          = false;
@@ -139,8 +134,6 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             ApplicationProperties appProperties = new ApplicationProperties(url);
 
             appProperties.setDefaults();
-
-            setLdapPasswordFromKeystore(appProperties);
 
             Configuration configuration = appProperties.interpolatedConfiguration();
 
@@ -274,28 +267,6 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         }
 
         return inStr;
-    }
-
-    private static void setLdapPasswordFromKeystore(Configuration configuration) {
-        try {
-            if (configuration.getString(LDAP_TYPE).equalsIgnoreCase("ldap")) {
-                String maskPasssword = configuration.getString(LDAP_BIND_PASSWORD);
-                if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
-                    String password = SecurityUtil.getPassword(configuration, LDAP_BIND_PASSWORD);
-                    configuration.clearProperty(LDAP_BIND_PASSWORD);
-                    configuration.addProperty(LDAP_BIND_PASSWORD, password);
-                }
-            } else if (configuration.getString(LDAP_TYPE).equalsIgnoreCase("ad")) {
-                String maskPasssword = configuration.getString(LDAP_AD_BIND_PASSWORD);
-                if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
-                    String password = SecurityUtil.getPassword(configuration, LDAP_AD_BIND_PASSWORD);
-                    configuration.clearProperty(LDAP_AD_BIND_PASSWORD);
-                    configuration.addProperty(LDAP_AD_BIND_PASSWORD, password);
-                }
-            }
-        } catch (Exception e) {
-            LOG.info("Error in getting secure password : {} ", e);
-        }
     }
 
     private void setDefaults() {
