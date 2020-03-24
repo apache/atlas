@@ -174,7 +174,7 @@ public class CredentialProviderUtility {
         while (true) {
             char[]  passwd1 = textDevice.readPassword("Please enter the password value for %s:", key);
             char[]  passwd2 = textDevice.readPassword("Please enter the password value for %s again:", key);
-            boolean isMatch = !Arrays.equals(passwd1, passwd2);
+            boolean isMatch = Arrays.equals(passwd1, passwd2);
 
             if (!isMatch) {
                 textDevice.printf("Password entries don't match. Please try again.\n");
