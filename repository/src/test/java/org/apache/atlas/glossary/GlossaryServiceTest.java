@@ -956,7 +956,7 @@ public class GlossaryServiceTest {
             glossaryService.importGlossaryData(inputStream, "empty.csv");
             fail("Error occurred : Failed to recognize the empty file.");
         } catch (AtlasBaseException e) {
-            assertEquals(e.getMessage(),"No Data found in the uploaded file !");
+            assertEquals(e.getMessage(),"No data found in the uploaded file");
         }
     }
 
@@ -970,7 +970,7 @@ public class GlossaryServiceTest {
         } catch (AtlasBaseException e) {
             assertEquals(e.getMessage(),"The uploaded file has not been processed due to the following errors : \n" +
                     "[\n" +
-                    "The provided Reference Glossary and TermName does not exist in the system  GentsFootwear: for record with TermName  : BankBranch1 and GlossaryName : testBankingGlossary]");
+                    "The provided Reference Glossary and TermName does not exist in the system GentsFootwear: for record with TermName  : BankBranch1 and GlossaryName : testBankingGlossary]");
         }
     }
 
