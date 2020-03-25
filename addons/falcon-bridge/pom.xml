@@ -159,11 +159,6 @@
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>hdfs-model</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>org.apache.kafka</groupId>
                                             <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
                                             <version>${kafka.version}</version>

@@ -128,11 +128,6 @@
             <artifactId>atlas-notification</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>hdfs-model</artifactId>
-        </dependency>
-
         <!-- to bring up atlas server for integration tests -->
         <dependency>
             <groupId>org.apache.atlas</groupId>
@@ -258,11 +253,6 @@
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
-                                            <artifactId>hdfs-model</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
                                             <artifactId>atlas-common</artifactId>
                                             <version>${project.version}</version>
                                         </artifactItem>
@@ -300,16 +290,6 @@
                                             <groupId>commons-configuration</groupId>
                                             <artifactId>commons-configuration</artifactId>
                                             <version>${commons-conf.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.hbase</groupId>
-                                            <artifactId>hbase-common</artifactId>
-                                            <version>${hbase.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.hbase</groupId>
-                                            <artifactId>hbase-server</artifactId>
-                                            <version>${hbase.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.sun.jersey</groupId>
