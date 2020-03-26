@@ -103,14 +103,11 @@ define(['require',
                     that.newAttr = isAttrEdit ? false : true;
                     _.each(attrributes, function(attrObj) {
                         if (attrObj.name === attrName) {
-                            attrDetails.attrTypeName = attrObj.typeName;
+                            attrDetails = $.extend(true, {}, attrObj);
                             if (attrObj.typeName.includes('array')) {
-                                attrDetails.attrTypeName = attrObj.typeName.replace("array<", "").replace(">", "");
+                                attrDetails.typeName = attrObj.typeName.replace("array<", "").replace(">", "");
                                 attrDetails.multiValued = true;
                             }
-                            attrDetails.attrEntityType = attrObj.options && attrObj.options.applicableEntityTypes ? JSON.parse(attrObj.options.applicableEntityTypes) : null;
-                            attrDetails.maxStrLength = attrObj.options && attrObj.options.maxStrLength ? attrObj.options.maxStrLength : null;
-                            attrDetails.enumValues = attrObj.enumValues ? attrObj.enumValues : null;
                         }
                     });
                     this.showDetails = false;
@@ -121,10 +118,12 @@ define(['require',
                                 enumDefCollection.fetch({ reset: true });
                                 that.businessMetadataAttr.reset(that.model.get("attributeDefs"));
                             },
-                            onUpdateBusinessMetadata: function() {
+                            onUpdateBusinessMetadata: function(fetch) {
                                 that.showDetails = true;
                                 that.toggleBusinessMetadataDetailsAttrView();
-                                that.entityDefCollection.fetch({ silent: true });
+                                if (fetch) {
+                                    that.entityDefCollection.fetch({ silent: true });
+                                }
                             },
                             parent: that.$el,
                             businessMetadataDefCollection: that.businessMetadataDefCollection,

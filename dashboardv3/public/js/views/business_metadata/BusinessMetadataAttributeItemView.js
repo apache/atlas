@@ -40,6 +40,7 @@ define(['require',
                 attributeInput: "[data-id='attributeInput']",
                 close: "[data-id='close']",
                 dataTypeSelector: "[data-id='dataTypeSelector']",
+                searchWeightSelector: "[data-id='searchWeightSelector']",
                 entityTypeSelector: "[data-id='entityTypeSelector']",
                 enumTypeSelectorContainer: "[data-id='enumTypeSelectorContainer']",
                 enumTypeSelector: "[data-id='enumTypeSelector']",
@@ -56,6 +57,9 @@ define(['require',
                 var events = {};
                 events["keyup " + this.ui.attributeInput] = function(e) {
                     this.model.set({ "name": e.target.value.trim() });
+                };
+                events["change " + this.ui.searchWeightSelector] = function(e) {
+                    this.model.set({ "searchWeight": e.target.value.trim() });
                 };
                 events["change " + this.ui.dataTypeSelector] = function(e) {
                     var obj = { options: this.model.get('options') || {} };
@@ -142,13 +146,16 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, "typeHeaders", "businessMetadataDefCollection", "enumDefCollection", "isAttrEdit", "attrDetails", "viewId", "collection"));
+                _.extend(this, _.pick(options, "typeHeaders", "businessMetadataDefCollection", "enumDefCollection", "isAttrEdit", "viewId", "collection"));
                 this.viewId = options.model ? options.model.cid : this.viewId;
             },
             onRender: function() {
                 var that = this,
                     entitytypes = '',
-                    enumTypes = [];
+                    enumTypes = [],
+                    searchWeightValue = '5',
+                    stringLengthValue = '50',
+                    applicableEntityType = '';
                 this.typeHeaders.fullCollection.each(function(model) {
                     if (model.toJSON().category == "ENTITY") {
                         that.ui.entityTypeSelector.append("<option>" + model.get('name') + "</option>");
@@ -162,51 +169,57 @@ define(['require',
                     selectionAdapter: $.fn.select2.amd.require("TagHideDeleteButtonAdapter")
                 });
                 this.ui.entityTypeSelector.html(entitytypes);
-
                 this.ui.entityTypeSelector.on('select2:open', function(e) { // to make selected option disable in dropdown added remove-from-list class
                     $('.select2-dropdown--below').addClass('remove-from-list');
                 });
-                this.ui.stringLengthValue.val('50').trigger('change'); //default length for string is 50
+                if (this.model.get("searchWeight") && this.model.get("searchWeight") != -1) {
+                    searchWeightValue = this.model.get("searchWeight");
+                }
+                if (this.model.get("options")) {
+                    stringLengthValue = this.model.get("options").maxStrLength || '50';
+                    applicableEntityType = this.model.get("options").applicableEntityTypes ? JSON.parse(this.model.get("options").applicableEntityTypes) : null;
+                }
+                this.ui.stringLengthValue.val(stringLengthValue).trigger('change'); //default length for string is 50
+                this.ui.searchWeightSelector.val(searchWeightValue).trigger('change');
                 this.ui.enumValueSelector.attr("disabled", "false"); // cannot edit the values
                 this.emumTypeSelectDisplay();
                 this.ui.enumTypeSelectorContainer.hide();
                 this.ui.enumTypeSelector.hide();
                 this.ui.enumValueSelectorContainer.hide();
                 if (this.isAttrEdit) {
+                    var typeName = this.model.get("typeName");
                     this.ui.close.hide();
                     this.ui.createNewEnum.hide(); // cannot add new businessMetadata on edit view
-                    this.ui.attributeInput.val(this.attrDetails.name);
+                    this.ui.attributeInput.val(this.model.get("name"));
                     this.ui.attributeInput.attr("disabled", "false");
                     this.ui.dataTypeSelector.attr("disabled", "false");
                     this.ui.dataTypeSelector.attr("disabled", "false");
                     this.ui.multiValueSelect.hide();
-                    this.ui.dataTypeSelector.val(this.attrDetails.attrTypeName);
-                    if (this.attrDetails.attrTypeName == "string") {
+                    this.ui.dataTypeSelector.val(typeName);
+                    if (typeName == "string") {
                         this.ui.stringLengthContainer.show();
                         this.ui.stringLengthValue.show();
-                        this.ui.stringLengthValue.val(this.attrDetails.maxStrLength);
                     } else {
                         this.ui.stringLengthContainer.hide();
                         this.ui.stringLengthValue.hide();
                     }
-                    _.each(this.attrDetails.attrEntityType, function(valName) {
-                        that.ui.entityTypeSelector.find('option').each(function(o) {
-                            var $el = $(this)
-                            if ($el.data("name") === valName) {
-                                $el.attr("data-allowremove", "false");
-                            }
-                        })
-                    });
-                    this.ui.entityTypeSelector.val(this.attrDetails.attrEntityType).trigger('change');
-                    if (this.attrDetails && this.attrDetails.attrTypeName) {
-                        var typeName = this.attrDetails.attrTypeName;
-                        if (typeName != "string" && typeName != "boolean" && typeName != "byte" && typeName != "short" && typeName != "int" && typeName != "float" && typeName != "double" && typeName != "long" && typeName != "date") {
-                            this.ui.enumTypeSelector.attr("disabled", "false");
-                            this.ui.dataTypeSelector.val("enumeration").trigger('change');
-                            this.ui.enumTypeSelector.val(typeName).trigger('change');
-                        }
+                    if (applicableEntityType) {
+                        _.each(applicableEntityType, function(valName) {
+                            that.ui.entityTypeSelector.find('option').each(function(o) {
+                                var $el = $(this)
+                                if ($el.data("name") === valName) {
+                                    $el.attr("data-allowremove", "false");
+                                }
+                            })
+                        });
                     }
-                    if (this.attrDetails && this.attrDetails.multiValued) {
+                    this.ui.entityTypeSelector.val(applicableEntityType).trigger('change');
+                    if (typeName != "string" && typeName != "boolean" && typeName != "byte" && typeName != "short" && typeName != "int" && typeName != "float" && typeName != "double" && typeName != "long" && typeName != "date") {
+                        this.ui.enumTypeSelector.attr("disabled", "false");
+                        this.ui.dataTypeSelector.val("enumeration").trigger('change');
+                        this.ui.enumTypeSelector.val(typeName).trigger('change');
+                    }
+                    if (this.model.get("multiValued")) {
                         this.ui.multiValueSelect.show();
                         $(this.ui.multiValueSelectStatus).prop('checked', true).trigger('change');
                         this.ui.multiValueSelectStatus.attr("disabled", "false");

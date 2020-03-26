@@ -146,14 +146,11 @@ define(['require',
                     that.guid = guid;
                     _.each(attrributes, function(attrObj) {
                         if (attrObj.name === attrName) {
-                            attrDetails.attrTypeName = attrObj.typeName;
+                            attrDetails = $.extend(true, {}, attrObj);
                             if (attrObj.typeName.includes('array')) {
-                                attrDetails.attrTypeName = attrObj.typeName.replace("array<", "").replace(">", "");
+                                attrDetails.typeName = attrObj.typeName.replace("array<", "").replace(">", "");
                                 attrDetails.multiValued = true;
                             }
-                            attrDetails.attrEntityType = attrObj.options && attrObj.options.applicableEntityTypes ? JSON.parse(attrObj.options.applicableEntityTypes) : null;
-                            attrDetails.maxStrLength = attrObj.options && attrObj.options.maxStrLength ? attrObj.options.maxStrLength : null;
-                            attrDetails.enumValues = attrObj.enumValues ? attrObj.enumValues : null;
                         }
                     });
 
@@ -165,13 +162,14 @@ define(['require',
                             onEditCallback: function() {
                                 that.businessMetadataDefCollection.fullCollection.sort({ silent: true });
                                 that.renderTableLayoutView();
-
                             },
-                            onUpdateBusinessMetadata: function() {
-                                enumDefCollection.fetch({ reset: true });
+                            onUpdateBusinessMetadata: function(fetch) {
                                 that.showDetails = true;
                                 that.toggleBusinessMetadataDetailsAttrView();
-                                that.entityDefCollection.fetch({ silent: true });
+                                if (fetch) {
+                                    enumDefCollection.fetch({ reset: true });
+                                    that.entityDefCollection.fetch({ silent: true });
+                                }
                             },
                             parent: that.$el,
                             businessMetadataDefCollection: that.businessMetadataDefCollection,
@@ -203,11 +201,13 @@ define(['require',
                 that.toggleBusinessMetadataDetailsAttrView();
                 require(["views/business_metadata/CreateBusinessMetadataLayoutView"], function(CreateBusinessMetadataLayoutView) {
                     that.view = new CreateBusinessMetadataLayoutView({
-                        onUpdateBusinessMetadata: function() {
-                            enumDefCollection.fetch({ reset: true });
+                        onUpdateBusinessMetadata: function(fetch) {
                             that.showDetails = true;
                             that.toggleBusinessMetadataDetailsAttrView();
-                            that.entityDefCollection.fetch({ silent: true });
+                            if (fetch) {
+                                enumDefCollection.fetch({ reset: true });
+                                that.entityDefCollection.fetch({ silent: true });
+                            }
                         },
                         businessMetadataDefCollection: that.businessMetadataDefCollection,
                         enumDefCollection: enumDefCollection,
