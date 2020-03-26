@@ -44,8 +44,8 @@ define([
             refreshTree: '[data-id="refreshTree"]',
             groupOrFlatTree: '[data-id="groupOrFlatTreeView"]',
             customFilterSearchTree: '[data-id="customFilterSearchTree"]',
-            showCustomFilter: '[data-id="showCustomFilter"]'
-
+            showCustomFilter: '[data-id="showCustomFilter"]',
+            customFilterTreeLoader: '[data-id="customFilterTreeLoader"]'
         },
         templateHelpers: function() {
             return {
@@ -55,8 +55,8 @@ define([
         events: function() {
             var events = {},
                 that = this;
-            // refresh individual tree
             events["click " + this.ui.refreshTree] = function(e) {
+                that.changeLoaderState(true);
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.refreshCustomFilterTree();
@@ -66,6 +66,7 @@ define([
                 this.customFilterSwitchBtnUpdate();
             };
             events["click " + this.ui.groupOrFlatTree] = function(e) {
+                that.changeLoaderState(true);
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 this.isGroupView = !this.isGroupView;
@@ -152,7 +153,17 @@ define([
             this.isGroupView = true;
         },
         onRender: function() {
+            this.changeLoaderState(true);
             this.fetchCustomFilter();
+        },
+        changeLoaderState: function(showLoader) {
+            if (showLoader) {
+                this.ui.customFilterSearchTree.hide();
+                this.ui.customFilterTreeLoader.show();
+            } else {
+                this.ui.customFilterSearchTree.show();
+                this.ui.customFilterTreeLoader.hide();
+            }
         },
         manualRender: function(options) {
             _.extend(this.options, options);
@@ -178,6 +189,7 @@ define([
                 success: function(collection, data) {
                     that.saveSearchBaiscCollection.fullCollection.reset(_.where(data, { searchType: "BASIC" }));
                     that.saveSearchAdvanceCollection.fullCollection.reset(_.where(data, { searchType: "ADVANCED" }));
+                    that.changeLoaderState(false);
                 },
                 silent: true
             });

@@ -30,20 +30,22 @@
         </div>
     </div>
 </div>
-<!-- <div class="clearfix add-seperator">
-    <button type="button" class="btn btn-action btn-md pull-left" data-id="createTag" type="button"><i class="fa fa-plus"></i> Create Tag</button>
-</div> -->
 <div class="row">
-    <div class="list-view col-sm-12">
-        <input type="text" class="form-control" data-id="offlineSearchTag" placeholder="Search Classification">
-        <ul class="tag-tree" data-id="tagsList">
-        </ul>
+    <div class="col-sm-12 text-center" data-id="tagTreeLoader">
+        <i class="fa fa-refresh fa-spin-custom"></i>
     </div>
-    <div class="tree-view col-sm-12" style="display: none;">
-        <div class="treeLov">
-            <select class="form-control" data-id="treeLov"></select>
+    <div data-id="tagTreeView">
+        <div class="list-view col-sm-12">
+            <input type="text" class="form-control" data-id="offlineSearchTag" placeholder="Search Classification">
+            <ul class="tag-tree" data-id="tagsList">
+            </ul>
         </div>
-        <ul class="tag-tree" data-id="tagsParent">
-        </ul>
+        <div class="tree-view col-sm-12" style="display: none;">
+            <div class="treeLov">
+                <select class="form-control" data-id="treeLov"></select>
+            </div>
+            <ul class="tag-tree" data-id="tagsParent">
+            </ul>
+        </div>
     </div>
 </div>

@@ -42,7 +42,8 @@ define([
             entitySearchTree: '[data-id="entitySearchTree"]',
 
             // Show/hide empty values in tree
-            showEmptyServiceType: '[data-id="showEmptyServiceType"]'
+            showEmptyServiceType: '[data-id="showEmptyServiceType"]',
+            entityTreeLoader: '[data-id="entityTreeLoader"]'
         },
         templateHelpers: function() {
             return {
@@ -52,8 +53,8 @@ define([
         events: function() {
             var events = {},
                 that = this;
-            // refresh individual tree
             events["click " + this.ui.refreshTree] = function(e) {
+                that.changeLoaderState(true);
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.ui[type + "SearchTree"].jstree(true).destroy();
@@ -74,7 +75,6 @@ define([
                 this.ui.groupOrFlatTree.tooltip('hide');
                 this.ui.groupOrFlatTree.find("i").toggleClass("fa-sitemap fa-list-ul");
                 this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
-
                 that.ui[type + "SearchTree"].jstree(true).destroy();
                 that.renderEntityTree();
             };
@@ -88,17 +88,20 @@ define([
                 that[$(this).find('a').data('fn') + "Entity"](e)
             });
             this.searchVent.on("Entity:Count:Update", function(options) {
+                that.changeLoaderState(true);
                 var opt = options || {};
                 if (opt && !opt.metricData) {
                     that.metricCollection.fetch({
                         complete: function() {
                             that.entityCountObj = _.first(that.metricCollection.toJSON());
                             that.ui.entitySearchTree.jstree(true).refresh();
+                            that.changeLoaderState(false);
                         }
                     });
                 } else {
                     that.entityCountObj = opt.metricData;
                     that.ui.entitySearchTree.jstree(true).refresh();
+                    that.changeLoaderState(false);
                 }
             });
         },
@@ -126,8 +129,19 @@ define([
             this.isGroupView = true;
         },
         onRender: function() {
+            this.changeLoaderState(true);
             this.renderEntityTree();
             this.createEntityAction();
+            this.changeLoaderState(false);
+        },
+        changeLoaderState: function(showLoader) {
+            if (showLoader) {
+                this.ui.entitySearchTree.hide();
+                this.ui.entityTreeLoader.show();
+            } else {
+                this.ui.entitySearchTree.show();
+                this.ui.entityTreeLoader.hide();
+            }
         },
         createEntityAction: function() {
             var that = this;
@@ -510,6 +524,7 @@ define([
                 renderTree = function() {
                     if (apiCount === 0) {
                         that.renderEntityTree();
+                        that.changeLoaderState(false);
                     }
                 };
             this.entityDefCollection.fetch({

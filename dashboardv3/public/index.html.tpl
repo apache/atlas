@@ -118,6 +118,7 @@
             </div>
         </div>
     </div>
+    <div class="module-loader"></div>
     <!-- build:js scripts/main.js -->
     <script data-main="js/main.js?bust=<%- bust %>" src="js/libs/requirejs/require.js?bust=<%- bust %>"></script>
     <!-- endbuild -->

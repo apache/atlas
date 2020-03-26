@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 /* loader.scss */
 
 .fa-spin-custom {
@@ -164,5 +163,43 @@
 
     100% {
         background-position: 468px 0;
+    }
+}
+
+.loader-row .fontLoader-relative {
+    margin-top: 43px;
+}
+
+.module-loader {
+    position: fixed;
+    top: 0;
+    height: 2px;
+    z-index: 9999;
+    background: repeating-linear-gradient(to right, $color_jungle_green_approx 0%, $color_havelock_blue_approx 50%, #38bb4e 100%);
+    width: 100%;
+    background-size: 200% auto;
+    background-position: 0 100%;
+    animation: moduleLoader 2s infinite;
+    animation-fill-mode: forwards;
+    animation-timing-function: linear;
+    transition: all 2s linear;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s linear 0.33s, opacity 0.33s linear;
+
+    &.show-loader {
+        opacity: 1;
+        transition-delay: 0s;
+        visibility: visible;
+    }
+}
+
+@keyframes moduleLoader {
+    0% {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: -200% 0;
     }
 }

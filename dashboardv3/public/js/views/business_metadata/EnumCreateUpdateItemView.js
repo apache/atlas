@@ -150,14 +150,14 @@ define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemV
                     selectedEnumValues = this.ui.valueSelector.val();
 
                 if (selectedEnumName == "" || selectedEnumName == null) {
-                    this.ui.enumOkBtn.removeAttr("disabled");
+                    this.ui.enumOkBtn.hideButtonLoader();
                     Utils.notifyInfo({
                         content: "Please enter the Enumeration Name"
                     });
                     return true;
                 }
                 if (selectedEnumValues == "" || selectedEnumValues == null) {
-                    this.ui.enumOkBtn.removeAttr("disabled");
+                    this.ui.enumOkBtn.hideButtonLoader();
                     Utils.notifyInfo({
                         content: "Please  enter the Enum values"
                     });
@@ -175,7 +175,7 @@ define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemV
                 if (this.validationEnum()) {
                     return;
                 }
-                this.ui.enumOkBtn.attr("disabled", "true");
+                this.ui.enumOkBtn.showButtonLoader();
                 this.ui.enumSelector.attr("disabled", "true");
                 this.ui.valueSelector.attr("disabled", "true");
                 this.ui.enumCancleBtn.attr("disabled", "true");
@@ -237,7 +237,7 @@ define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemV
                     reset: true,
                     complete: function(model, status) {
                         that.emumTypeSelectDisplay();
-                        that.ui.enumOkBtn.removeAttr("disabled");
+                        that.ui.enumOkBtn.hideButtonLoader();
                         that.ui.enumSelector.removeAttr("disabled");
                         that.ui.valueSelector.removeAttr("disabled");
                         if (that.options.closeModal) {
@@ -254,7 +254,7 @@ define(["require", "backbone", "hbs!tmpl/business_metadata/EnumCreateUpdateItemV
                     Utils.notifySuccess({
                         content: "No updated values"
                     });
-                    that.ui.enumOkBtn.removeAttr("disabled");
+                    that.ui.enumOkBtn.hideButtonLoader();
                     that.ui.enumSelector.removeAttr("disabled");
                     that.ui.valueSelector.removeAttr("disabled");
                     if (that.options.closeModal) {

@@ -39,8 +39,8 @@ define([
             createGlossary: '[data-id="createGlossary"]',
             showGlossaryType: '[data-id="showGlossaryType"]',
             importGlossary: "[data-id='importGlossary']",
-            downloadTemplate: "[data-id='downloadTemplate']"
-
+            downloadTemplate: "[data-id='downloadTemplate']",
+            glossaryTreeLoader: ".glossary-tree-loader"
         },
         templateHelpers: function() {
             return {
@@ -52,6 +52,7 @@ define([
             var events = {},
                 that = this;
             events["click " + this.ui.refreshTree] = function(e) {
+                that.changeLoaderState(true);
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.refresh({ type: type });
@@ -96,6 +97,7 @@ define([
                     } else {
                         this.renderGlossaryTree();
                     }
+                    that.changeLoaderState();
                 },
                 this
             );
@@ -144,9 +146,18 @@ define([
             this.bindEvents();
         },
         onRender: function() {
+            this.changeLoaderState(true);
             this.fetchGlossary();
         },
-
+        changeLoaderState: function(showLoader) {
+            if (showLoader) {
+                this.ui.termSearchTree.hide();
+                this.ui.glossaryTreeLoader.show();
+            } else {
+                this.ui.termSearchTree.show();
+                this.ui.glossaryTreeLoader.hide();
+            }
+        },
         onBeforeDestroy: function() {
             this.options.categoryEvent.off("Success:TermRename")
         },
