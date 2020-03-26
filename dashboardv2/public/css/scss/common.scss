@@ -273,3 +273,37 @@ pre {
     margin-left: 5px;
     float: left;
 }
+
+.button-loader:after {
+    content: "\f021";
+    position: absolute;
+    left: -6px;
+    bottom: 4px;
+    font-family: FontAwesome;
+    background: transparent;
+    height: 34px;
+    width: 38px;
+    line-height: 34px;
+    text-align: center;
+    animation: spin 1000ms infinite linear;
+}
+
+@-webkit-keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(359deg);
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(359deg);
+    }
+}

@@ -42,7 +42,8 @@ define([
             businessMetadataSearchTree: '[data-id="businessMetadataSearchTree"]',
 
             // Create
-            createBusinessMetadata: '[data-id="createBusinessMetadata"]'
+            createBusinessMetadata: '[data-id="createBusinessMetadata"]',
+            businessMetadataTreeLoader: '[data-id="businessMetadataTreeLoader"]'
         },
         templateHelpers: function() {
             return {
@@ -54,6 +55,7 @@ define([
                 that = this;
             // refresh individual tree
             events["click " + this.ui.refreshTree] = function(e) {
+                that.changeLoaderState(true);
                 e.stopPropagation();
                 that.refresh();
             };
@@ -85,7 +87,9 @@ define([
             this.bindEvents();
         },
         onRender: function() {
+            this.changeLoaderState(true);
             this.renderBusinessMetadataTree();
+            this.changeLoaderState(false);
             //this.createBusinessMetadataAction();
         },
         bindEvents: function() {
@@ -106,6 +110,15 @@ define([
                 that.$(".businessMetadataPopover").popover("hide");
                 that[$(this).find("a").data("fn") + "BusinessMetadata"](e);
             });
+        },
+        changeLoaderState: function(showLoader) {
+            if (showLoader) {
+                this.ui.businessMetadataSearchTree.hide();
+                this.ui.businessMetadataTreeLoader.show();
+            } else {
+                this.ui.businessMetadataSearchTree.show();
+                this.ui.businessMetadataTreeLoader.hide();
+            }
         },
         createBusinessMetadataAction: function() {
             var that = this;
@@ -186,6 +199,7 @@ define([
                     };
                     that.businessMetadataDefCollection.fullCollection.sort({ silent: true });
                     that.ui.businessMetadataSearchTree.jstree(true).refresh();
+                    that.changeLoaderState(false);
                 }
             });
         },

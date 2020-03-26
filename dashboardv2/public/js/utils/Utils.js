@@ -870,7 +870,12 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         } else {
             tableEl.addClass('hide-empty-value');
         }
-
+    }
+    $.fn.showButtonLoader = function() {
+        $(this).css({ "position": "relative" }).attr("disabled", "true").addClass('button-loader');
+    }
+    $.fn.hideButtonLoader = function() {
+        $(this).removeClass('button-loader').removeAttr("disabled");
     }
     return Utils;
 });

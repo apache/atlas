@@ -53,7 +53,8 @@ define([
             wildCardSearch: '[data-id="wildCardSearch"]',
             wildCardValue: '[data-id="wildCardValue"]',
             wildCardContainer: '[data-id="wildCardContainer"]',
-            clearWildCard: '[data-id="clearWildCard"]'
+            clearWildCard: '[data-id="clearWildCard"]',
+            classificationTreeLoader: '[data-id="classificationTreeLoader"]'
         },
         templateHelpers: function() {
             return {
@@ -63,8 +64,8 @@ define([
         events: function() {
             var events = {},
                 that = this;
-            // refresh individual tree
             events["click " + this.ui.refreshTree] = function(e) {
+                that.changeLoaderState(true);
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.refresh({ type: type });
@@ -159,9 +160,21 @@ define([
             this.isGroupView = true;
         },
         onRender: function() {
+            this.changeLoaderState(true);
             this.renderClassificationTree();
             this.createClassificationAction();
             this.ui.clearWildCard.addClass('hide-icon');
+            this.changeLoaderState(false);
+        },
+        changeLoaderState: function(showLoader) {
+            if (showLoader) {
+                this.ui.classificationSearchTree.hide();
+                this.ui.classificationTreeLoader.show();
+            } else {
+                this.ui.classificationSearchTree.show();
+                this.ui.classificationTreeLoader.hide();
+            }
+
         },
         bindEvents: function() {
             var that = this;
@@ -182,6 +195,7 @@ define([
                 that[$(this).find('a').data('fn') + "Classification"](e)
             });
             this.searchVent.on("Classification:Count:Update", function(options) {
+                that.changeLoaderState(true);
                 var opt = options || {};
                 if (opt && !opt.metricData) {
                     that.metricCollection.fetch({
@@ -189,12 +203,15 @@ define([
                             that.entityCountObj = _.first(that.metricCollection.toJSON());
                             that.classificationTreeUpdate = true;
                             that.ui.classificationSearchTree.jstree(true).refresh();
+                            that.changeLoaderState(false);
                         }
                     });
                 } else {
                     that.entityCountObj = opt.metricData;
                     that.ui.classificationSearchTree.jstree(true).refresh();
+                    that.changeLoaderState(false);
                 }
+
             });
         },
         findSearchResult: function(tagValue) {
@@ -266,7 +283,10 @@ define([
                     this.tagId = Globals[that.options.value.tag].guid;
                     this.ui.classificationSearchTree.jstree(true).select_node(this.tagId);
                 } else if ((this.tagId !== "_ALL_CLASSIFICATION_TYPES" && that.options.value.tag !== this.tagId) || (this.tagId !== "_NOT_CLASSIFIED" && that.options.value.tag !== this.tagId) || (this.tagId !== "_CLASSIFIED" && that.options.value.tag !== this.tagId)) {
+                    if ((that.options.value.tag.indexOf('*') != -1)) {
+                        that.ui.classificationSearchTree.jstree(true).deselect_all();
                         that.ui.wildCardValue.val(that.options.value.tag);
+                    }
                     var dataFound = this.classificationDefCollection.fullCollection.find(function(obj) {
                         return obj.get("name") === that.options.value.tag
                     });
@@ -359,6 +379,7 @@ define([
                         that.classificationDefCollection.fullCollection.sort({ silent: true });
                         that.classificationTreeUpdate = true
                         that.ui.classificationSearchTree.jstree(true).refresh();
+                        that.changeLoaderState(false);
                     }
                 };
             this.classificationDefCollection.fetch({
@@ -423,8 +444,8 @@ define([
                                     that.tagId = isSelectedChild ? child.get("guid") : null;
                                 }
                             }
-                            var modelJSON = child.toJSON();
                             if (child) {
+                                var modelJSON = child.toJSON();
                                 var nodeDetails = {
                                         name: _.escape(name),
                                         model: modelJSON,
@@ -639,7 +660,7 @@ define([
                     });
                 });
                 modal.on("ok", function() {
-                    modal.$el.find("button.ok").attr("disabled", "true");
+                    modal.$el.find("button.ok").showButtonLoader();
                     that.onCreateTagButton(view, modal);
                 });
                 modal.on("closeModal", function() {
@@ -666,6 +687,7 @@ define([
                 Utils.notifyInfo({
                     content: "Please fill the attributes or delete the input box"
                 });
+                modal.$el.find("button.ok").hideButtonLoader();
                 return;
             }
 
@@ -724,6 +746,7 @@ define([
                     }
                     notifyObj["text"] = text;
                     Utils.notifyConfirm(notifyObj);
+                    modal.$el.find("button.ok").hideButtonLoader();
                     return false;
                 }
             }
@@ -758,9 +781,11 @@ define([
                         content: "Classification " + name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
                     });
                     modal.trigger("cancel");
+                    modal.$el.find("button.ok").showButtonLoader();
                     that.typeHeaders.fetch({ reset: true });
-                    var url = "#!/tag/tagAttribute/" + name;
-                    this.onClassificationUpdate(url);
+                },
+                complete: function() {
+                    modal.$el.find("button.ok").hideButtonLoader();
                 }
             });
         },

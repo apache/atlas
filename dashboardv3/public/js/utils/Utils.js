@@ -919,5 +919,11 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         }
 
     }
+    $.fn.showButtonLoader = function() {
+        $(this).css({ "position": "relative" }).attr("disabled", "true").addClass('button-loader');
+    }
+    $.fn.hideButtonLoader = function() {
+        $(this).removeClass('button-loader').removeAttr("disabled");
+    }
     return Utils;
 });

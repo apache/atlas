@@ -54,7 +54,9 @@ define(['require',
                 glossaryView: 'input[name="glossaryView"]',
                 termTree: "[data-id='termTree']",
                 categoryTree: "[data-id='categoryTree']",
-                importGlossary: "[data-id='importGlossary']"
+                importGlossary: "[data-id='importGlossary']",
+                glossaryTreeLoader: "[data-id='glossaryTreeLoader']",
+                glossaryTreeView: "[data-id='glossaryTreeView']"
             },
             /** ui events hash */
             events: function() {
@@ -110,6 +112,7 @@ define(['require',
                 this.listenTo(this.glossaryCollection.fullCollection, "reset add change", function(skip) {
                     this.generateTree();
                     this.setValues();
+                    this.changeLoaderState(false);
                 }, this);
                 this.listenTo(this.glossaryCollection, "update:details", function(options) {
                     var isGlossaryUpdate = options.isGlossaryUpdate;
@@ -127,6 +130,7 @@ define(['require',
                             this.setValues({ trigger: false });
                         }
                     }
+                    this.changeLoaderState(false);
                 }, this);
                 if (!this.isAssignView) {
                     $('body').on('click', '.termPopoverOptions li, .categoryPopoverOptions li', function(e) {
@@ -136,6 +140,7 @@ define(['require',
                 }
             },
             onRender: function() {
+                this.changeLoaderState(true);
                 if (this.isAssignCategoryView) {
                     this.$('.category-view').show();
                     this.$('.term-view').hide();
@@ -144,6 +149,15 @@ define(['require',
                     this.generateTree();
                 } else {
                     this.getGlossary();
+                }
+            },
+            changeLoaderState: function(showLoader) {
+                if (showLoader) {
+                    this.ui.glossaryTreeLoader.show();
+                    this.ui.glossaryTreeView.hide();
+                } else {
+                    this.ui.glossaryTreeLoader.hide();
+                    this.ui.glossaryTreeView.show();
                 }
             },
             setValues: function(options) {
@@ -213,6 +227,7 @@ define(['require',
                 }
             },
             getGlossary: function() {
+                this.changeLoaderState(true);
                 this.glossaryCollection.fetch({ reset: true });
             },
             generateCategoryData: function(options) {
@@ -685,6 +700,7 @@ define(['require',
                     notifyObj = {
                         modal: true,
                         ok: function(argument) {
+                            that.changeLoaderState(true);
                             if (type == "Glossary") {
                                 that.glossaryCollection.fullCollection.get(guid).destroy(options, { silent: true, reset: false });
                             } else if (type == "GlossaryCategory") {
@@ -692,6 +708,7 @@ define(['require',
                             } else if (type == "GlossaryTerm") {
                                 new that.glossaryCollection.model().deleteTerm(guid, options);
                             }
+                            that.changeLoaderState(false);
                         },
                         cancel: function(argument) {}
                     };

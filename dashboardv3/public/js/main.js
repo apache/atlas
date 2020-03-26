@@ -15,7 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+var modulesLoadCount = 0,
+    showModuleLoader = function() {
+        if (modulesLoadCount === 1) {
+            document.querySelector(".module-loader").classList.add("show-loader");
+        }
+    },
+    hideModuleLoader = function() {
+        setTimeout(function() {
+            if (modulesLoadCount === 0) {
+                document.querySelector(".module-loader").className = "module-loader";
+            }
+        }, 1000);
+    };
 require.config({
     /* starting point for application */
     'hbs': {
@@ -27,6 +39,7 @@ require.config({
         'templateExtension': 'html', // Set the extension automatically appended to templates
         'compileOptions': {} // options object which is passed to Handlebars compiler
     },
+
     'urlArgs': "bust=" + getBustValue(),
     /**
      * Requested as soon as the loader has processed the configuration. It does
@@ -36,6 +49,23 @@ require.config({
      * @type {Array} An array of dependencies to load.
      */
     'deps': ['marionette'],
+
+    onNodeCreated: function(node, config, moduleName, url) {
+        console.log("module " + moduleName + " is about to be loaded");
+        ++modulesLoadCount;
+        showModuleLoader();
+        node.addEventListener("load", function() {
+            console.log("module " + moduleName + " has been loaded");
+            --modulesLoadCount;
+            hideModuleLoader();
+        });
+
+        node.addEventListener("error", function() {
+            console.log("module " + moduleName + " could not be loaded");
+            --modulesLoadCount;
+            hideModuleLoader();
+        });
+    },
 
     /**
      * The number of seconds to wait before giving up on loading a script.
