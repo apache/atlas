@@ -54,7 +54,6 @@ define(['require',
                     businessMetadataDefCollection: this.businessMetadataDefCollection,
                     enumDefCollection: this.enumDefCollection,
                     isAttrEdit: this.isAttrEdit,
-                    attrDetails: this.attrDetails,
                     viewId: this.cid,
                     collection: this.collection
                 };
@@ -104,16 +103,9 @@ define(['require',
                     this.create = true;
                 }
                 if (!this.isNewBusinessMetadata) {
-                    this.collection = this.isAttrEdit ? new Backbone.Collection([{
-                        "name": this.attrDetails.name,
-                        "typeName": this.attrDetails.attrTypeName,
-                        "isOptional": true,
-                        "cardinality": "SINGLE",
-                        "valuesMinCount": 0,
-                        "valuesMaxCount": 1,
-                        "isUnique": false,
-                        "isIndexable": false
-                    }]) : new Backbone.Collection([{
+                    this.collection = this.isAttrEdit ? new Backbone.Collection([
+                        this.attrDetails
+                    ]) : new Backbone.Collection([{
                         "name": "",
                         "typeName": "string",
                         "isOptional": true,
@@ -263,7 +255,7 @@ define(['require',
                                 content: "Business Metadata " + name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
                             });
                         }
-                        that.options.onUpdateBusinessMetadata();
+                        that.options.onUpdateBusinessMetadata(true);
                     },
                     silent: true,
                     reset: true,
@@ -306,7 +298,7 @@ define(['require',
                                 that.selectedBusinessMetadata.set(model.businessMetadataDefs[0]);
                             }
                             that.options.onEditCallback();
-                            that.options.onUpdateBusinessMetadata();
+                            that.options.onUpdateBusinessMetadata(true);
                         },
                         silent: true,
                         reset: true,
