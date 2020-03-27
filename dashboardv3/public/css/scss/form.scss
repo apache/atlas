@@ -107,8 +107,16 @@ label {
     font-weight: 600;
 }
 
-button:focus {
-    outline: none !important;
+button {
+    &:focus {
+        outline: none !important;
+    }
+
+    &[disabled] {
+        .fa {
+            opacity: .65;
+        }
+    }
 }
 
 .btn {

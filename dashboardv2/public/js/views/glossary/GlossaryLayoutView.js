@@ -79,7 +79,10 @@ define(['require',
                         }
                     })
                 };
-                events["click " + this.ui.refreshGlossary] = 'getGlossary';
+                events["click " + this.ui.refreshGlossary] = function() {
+                    this.ui.refreshGlossary.attr("disabled", true);
+                    this.getGlossary();
+                };
                 events["click " + this.ui.importGlossary] = 'onClickImportGlossary';
                 events["keyup " + this.ui.searchTerm] = function() {
                     this.ui.termTree.jstree("search", this.ui.searchTerm.val());
@@ -113,6 +116,7 @@ define(['require',
                     this.generateTree();
                     this.setValues();
                     this.changeLoaderState(false);
+                    this.ui.refreshGlossary.attr("disabled", false);
                 }, this);
                 this.listenTo(this.glossaryCollection, "update:details", function(options) {
                     var isGlossaryUpdate = options.isGlossaryUpdate;

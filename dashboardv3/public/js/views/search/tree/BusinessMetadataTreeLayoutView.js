@@ -56,6 +56,7 @@ define([
             // refresh individual tree
             events["click " + this.ui.refreshTree] = function(e) {
                 that.changeLoaderState(true);
+                that.ui.refreshTree.attr("disabled", true).tooltip("hide");
                 e.stopPropagation();
                 that.refresh();
             };
@@ -200,6 +201,7 @@ define([
                     that.businessMetadataDefCollection.fullCollection.sort({ silent: true });
                     that.ui.businessMetadataSearchTree.jstree(true).refresh();
                     that.changeLoaderState(false);
+                    that.ui.refreshTree.attr("disabled", false);
                 }
             });
         },

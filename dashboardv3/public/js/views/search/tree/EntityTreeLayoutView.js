@@ -55,6 +55,7 @@ define([
                 that = this;
             events["click " + this.ui.refreshTree] = function(e) {
                 that.changeLoaderState(true);
+                this.ui.refreshTree.attr("disabled", true).tooltip("hide");
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.ui[type + "SearchTree"].jstree(true).destroy();
@@ -525,6 +526,7 @@ define([
                     if (apiCount === 0) {
                         that.renderEntityTree();
                         that.changeLoaderState(false);
+                        that.ui.refreshTree.attr("disabled", false);
                     }
                 };
             this.entityDefCollection.fetch({

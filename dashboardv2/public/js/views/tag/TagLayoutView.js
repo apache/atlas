@@ -113,6 +113,7 @@ define(['require',
             },
             fetchCollections: function() {
                 this.changeLoaderState(true);
+                this.ui.refreshTag.attr("disabled", true);
                 this.collection.fetch({ reset: true });
                 this.ui.offLineSearchTag.val("");
             },
@@ -245,6 +246,7 @@ define(['require',
 
                 }
                 this.changeLoaderState(false);
+                this.ui.refreshTag.attr("disabled", false);
             },
             getTagTreeList: function(options) {
                 var that = this,
