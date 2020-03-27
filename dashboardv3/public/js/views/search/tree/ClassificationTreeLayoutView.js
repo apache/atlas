@@ -66,6 +66,7 @@ define([
                 that = this;
             events["click " + this.ui.refreshTree] = function(e) {
                 that.changeLoaderState(true);
+                that.ui.refreshTree.attr("disabled", true).tooltip("hide");
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.refresh({ type: type });
@@ -380,6 +381,7 @@ define([
                         that.classificationTreeUpdate = true
                         that.ui.classificationSearchTree.jstree(true).refresh();
                         that.changeLoaderState(false);
+                        that.ui.refreshTree.attr("disabled", false);
                     }
                 };
             this.classificationDefCollection.fetch({

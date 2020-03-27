@@ -83,7 +83,7 @@ define([
         },
         updateToActualData: function(options) {
             var silent = options && options.silent || false;
-            this.collection.reset(this.actualCollection.toJSON(), { silent: silent });
+            this.collection.reset($.extend(true, [], this.actualCollection.toJSON()), { silent: silent });
         },
         onAddBusinessMetadata: function() {
             this.ui.addBusinessMetadata.hide();

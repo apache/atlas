@@ -180,7 +180,7 @@ define(['require',
                 } else if (typeName.indexOf("date") > -1) {
                     returnEL = '<' + (isMultiValued ? "textarea" : "input") + ' type="text" data-key="' + key + '" data-businessMetadata="' + businessMetadata + '" data-typename="' + typeName + '"data-multi="' + isMultiValued + '" data-type="date" class="form-control" ' + (isMultiValued === false && !_.isUndefinedNull(val) ? 'value="' + val + '"' : "") + '>' + (isMultiValued === true && !_.isUndefinedNull(val) ? val : "") + (isMultiValued ? "</textarea>" : "");
                     setTimeout(function() {
-                        var dateObj = { "singleDatePicker": true, autoUpdateInput: isMultiValued ? false : true },
+                        var dateObj = { singleDatePicker: true, showDropdowns: true, autoUpdateInput: isMultiValued ? false : true },
                             dateEl = that.$el.find('[data-type="date"][data-key="' + key + '"]').daterangepicker(dateObj);
                         if (isMultiValued) {
                             dateEl.on("apply.daterangepicker", function(ev, picker) {

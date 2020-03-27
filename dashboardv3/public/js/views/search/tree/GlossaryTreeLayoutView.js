@@ -53,10 +53,10 @@ define([
                 that = this;
             events["click " + this.ui.refreshTree] = function(e) {
                 that.changeLoaderState(true);
+                that.ui.refreshTree.attr("disabled", true).tooltip("hide");
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.refresh({ type: type });
-
             };
 
             events["click " + this.ui.createGlossary] = function(e) {
@@ -98,6 +98,7 @@ define([
                         this.renderGlossaryTree();
                     }
                     that.changeLoaderState();
+                    that.ui.refreshTree.attr("disabled", false);
                 },
                 this
             );

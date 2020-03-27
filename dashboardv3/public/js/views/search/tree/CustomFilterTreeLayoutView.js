@@ -57,6 +57,7 @@ define([
                 that = this;
             events["click " + this.ui.refreshTree] = function(e) {
                 that.changeLoaderState(true);
+                that.ui.refreshTree.attr("disabled", true).tooltip("hide");
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.refreshCustomFilterTree();
@@ -190,6 +191,7 @@ define([
                     that.saveSearchBaiscCollection.fullCollection.reset(_.where(data, { searchType: "BASIC" }));
                     that.saveSearchAdvanceCollection.fullCollection.reset(_.where(data, { searchType: "ADVANCED" }));
                     that.changeLoaderState(false);
+                    that.ui.refreshTree.attr("disabled", false);
                 },
                 silent: true
             });
