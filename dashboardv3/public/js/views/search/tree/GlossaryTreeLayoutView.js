@@ -711,12 +711,13 @@ define([
         onClickImportGlossary: function() {
             var that = this;
             require([
-                'views/glossary/ImportGlossaryLayoutView'
-            ], function(ImportGlossaryLayoutView) {
-                var view = new ImportGlossaryLayoutView({
+                'views/import/ImportLayoutView'
+            ], function(ImportLayoutView) {
+                var view = new ImportLayoutView({
                     callback: function() {
                         that.refresh();
-                    }
+                    },
+                    isGlossary: true
                 });
             });
         }

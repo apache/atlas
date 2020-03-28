@@ -43,11 +43,14 @@ define([
 
             // Show/hide empty values in tree
             showEmptyServiceType: '[data-id="showEmptyServiceType"]',
-            entityTreeLoader: '[data-id="entityTreeLoader"]'
+            entityTreeLoader: '[data-id="entityTreeLoader"]',
+            importBusinessMetadata: "[data-id='importBusinessMetadata']",
+            downloadBusinessMetadata: "[data-id='downloadBusinessMetadata']"
         },
         templateHelpers: function() {
             return {
-                apiBaseUrl: UrlLinks.apiBaseUrl
+                apiBaseUrl: UrlLinks.apiBaseUrl,
+                importTmplUrl: UrlLinks.businessMetadataImportTempUrl()
             };
         },
         events: function() {
@@ -78,6 +81,13 @@ define([
                 this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
                 that.ui[type + "SearchTree"].jstree(true).destroy();
                 that.renderEntityTree();
+            };
+            events["click " + this.ui.importBusinessMetadata] = function(e) {
+                e.stopPropagation();
+                that.onClickImportBusinessMetadata();
+            };
+            events["click " + this.ui.downloadBusinessMetadata] = function(e) {
+                e.stopPropagation();
             };
 
             return events;
@@ -558,7 +568,14 @@ define([
                     renderTree();
                 }
             });
-
+        },
+        onClickImportBusinessMetadata: function() {
+            var that = this;
+            require([
+                'views/import/ImportLayoutView'
+            ], function(ImportLayoutView) {
+                var view = new ImportLayoutView({});
+            });
         }
     });
     return EntityTreeLayoutview;

@@ -29,10 +29,15 @@
                 <div class=" btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i class="fa fa-ellipsis-v"></i>
                 </div>
-                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <ul class="dropdown-menu tree-droupdown" aria-labelledby="dropdownMenuButton">
                     <li data-id="groupOrFlatTreeView" data-type="entity"> <i class="fa fa-list-ul"></i><span>Show flat tree</span>
                     </li>
+                    <li data-id="downloadBusinessMetadata"><i class="fa fa-download"></i> <span><a href="{{importTmplUrl}}"><span>Download Import template</span></a></span>
+                    </li>
+                    <li data-id="importBusinessMetadata"> <i class="fa fa-upload"></i><a href="javascript:void(0)"><span>Import Business Metadata</span></a>
+                    </li>
                 </ul>
+            </button>
             </button>
         </div>
     </div>
