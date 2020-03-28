@@ -70,6 +70,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     public static final String RELATIONSHIP_STORM_TOPOLOGY_NODES = "storm_topology_nodes";
     public static final String RELATIONSHIP_DATASET_PROCESS_INPUTS = "dataset_process_inputs";
     public static final String RELATIONSHIP_PROCESS_DATASET_OUTPUTS = "process_dataset_outputs";
+    public static final String HBASE_TABLE_QUALIFIED_NAME_FORMAT    = "%s:%s@%s";
 
     /**
      * This is the client-side hook that storm fires when a topology is added.
@@ -389,7 +390,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     }
 
     public static String getHbaseTableQualifiedName(String metadataNamespace, String nameSpace, String tableName) {
-        return String.format("%s.%s@%s", nameSpace.toLowerCase(), tableName.toLowerCase(), metadataNamespace);
+        return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), tableName.toLowerCase(), metadataNamespace);
     }
 
     public static String getHdfsPathQualifiedName(String metadataNamespace, String hdfsPath) {
