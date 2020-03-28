@@ -472,7 +472,10 @@ define(['require',
                     treeLoaded = function(options) {
                         if (that.query[options.type].isNodeNotFoundAtLoad == true) {
                             var id = that.glossary.selectedItem.guid;
-                            options.$el.jstree('activate_node', id);
+                            if (id) {
+                                options.$el.jstree('activate_node', id);
+                            }
+                            that.changeLoaderState(false);
                         }
                     },
                     createAction = function(options) {
