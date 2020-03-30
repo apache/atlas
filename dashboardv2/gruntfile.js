@@ -209,6 +209,7 @@ module.exports = function(grunt) {
             build: {
                 files: {
                     [distPath + '/css/style.css']: modulesPath + 'css/scss/style.scss',
+                    [distPath + '/css/migration-style.css']: modulesPath + 'css/scss/migration-style.scss',
                     [distPath + '/css/login.css']: modulesPath + 'css/scss/login.scss'
                 }
             }

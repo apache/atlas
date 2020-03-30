@@ -60,7 +60,7 @@ define(['require',
                     that.metricCollection = new VTagList();
                     that.metricCollection.url = UrlLinks.metricsApiUrl();
                     that.metricCollection.modelAttrName = "data";
-                    that.RStatisticsView.show(new Statistics({ hideModal: false, metricCollection: that.metricCollection }));
+                    that.RStatisticsView.show(new Statistics({ metricCollection: that.metricCollection, isMigrationView: true }));
                 })
             }
         });

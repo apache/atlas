@@ -112,3 +112,18 @@
         }
     }
 }
+
+.refresh-container {
+    background: white;
+    position: fixed;
+    z-index: 9999;
+    right: 23px;
+    top: 7px;
+    border-radius: 23px;
+
+    .btn {
+        margin: 0px;
+        border-radius: 23px;
+        padding: 10px 10px;
+    }
+}

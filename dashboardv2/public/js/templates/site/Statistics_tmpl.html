@@ -14,7 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="panel-group server-stats-container statsContainer hide" id="accordion">
+<div class="refresh-container statisticsRefresh hide" data-id="statisticsRefresh">
+    <button type="button" class="btn fa fa-refresh pull-right btn-sm btn-action" title="Refresh Data"></button>
+</div>
+<div class="panel-group server-stats-container statsContainer hide col-md-12" id="accordion">
     <div class="panel panel-default custom-panel expand_collapse_panel-icon" data-id="entity">
         <div class="panel-heading" data-toggle="collapse" href="#entityCountCollapse" aria-expanded="true">
             <h4 class="panel-title">
@@ -89,7 +92,7 @@
                     </div>
                 </div>
                 <div class="col-sm-12">
-                    <div class="card-container panel panel-primary">
+                    <div class="card-container panel panel-primary hide" data-id="notificationDetails">
                         <div class="panel-heading">Notification Details</div>
                         <div class="panel-body">
                             <table data-id="offset-card" class="table stat-table notification-table table-striped ">
