@@ -38,25 +38,10 @@
     <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
     <link rel="stylesheet" type="text/css" href="css/animate.min.css?bust=<%- bust %>" />
     <link rel="stylesheet" href="js/libs/backgrid/css/backgrid.css?bust=<%- bust %>" />
-    <link rel="stylesheet" href="js/libs/backgrid-filter/css/backgrid-filter.min.css?bust=<%- bust %>" />
-    <link rel="stylesheet" href="js/libs/backgrid-paginator/css/backgrid-paginator.css?bust=<%- bust %>" />
-    <link rel="stylesheet" href="js/libs/backgrid-orderable-columns/css/backgrid-orderable-columns.css?bust=<%- bust %>" />
-    <link rel="stylesheet" href="js/libs/backgrid-sizeable-columns/css/backgrid-sizeable-columns.css?bust=<%- bust %>" />
-    <link rel="stylesheet" href="js/external_lib/backgrid-columnmanager/css/Backgrid.ColumnManager.css?bust=<%- bust %>" />
-    <link rel="stylesheet" href="js/libs/select2/css/select2.min.css?bust=<%- bust %>" />
     <link rel="stylesheet" href="js/libs/bootstrap/css/bootstrap.min.css?bust=<%- bust %>" />
-    <link rel="stylesheet" href="js/libs/jquery-asBreadcrumbs/css/asBreadcrumbs.min.css?bust=<%- bust %>" />
     <link rel="stylesheet" href="css/googlefonts.css?bust=<%- bust %>" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="js/external_lib/jquery-ui/jquery-ui.min.css?bust=<%- bust %>" />
-    <link href="css/bootstrap-sidebar.css?bust=<%- bust %>" rel="stylesheet" />
     <link href="js/libs/font-awesome/css/font-awesome.min.css?bust=<%- bust %>" rel="stylesheet" />
-    <link href="js/external_lib/pnotify/pnotify.custom.min.css?bust=<%- bust %>" rel="stylesheet" />
-    <link href="js/libs/jQueryQueryBuilder/css/query-builder.default.min.css?bust=<%- bust %>" rel="stylesheet" />
-    <link href="js/libs/bootstrap-daterangepicker/css/daterangepicker.css?bust=<%- bust %>" rel="stylesheet" />
-    <link rel="stylesheet" href="js/libs/nvd3/css/nv.d3.min.css?bust=<%- bust %>" />
-    <link href="js/libs/jstree/css/default/default-theme.min.css?bust=<%- bust %>" rel="stylesheet" />
-    <link href="js/libs/pretty-checkbox/css/pretty-checkbox.min.css?bust=<%- bust %>" rel="stylesheet" />
-    <link href="css/style.css?bust=<%- bust %>" rel="stylesheet" />
+    <link href="css/migration-style.css?bust=<%- bust %>" rel="stylesheet" />
 </head>
 
 <body>

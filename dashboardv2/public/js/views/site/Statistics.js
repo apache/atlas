@@ -55,10 +55,20 @@ define(['require',
                 osCard: "[data-id='os-card']",
                 runtimeCard: "[data-id='runtime-card']",
                 memoryCard: "[data-id='memory-card']",
-                memoryPoolUsage: "[data-id='memory-pool-usage-card']"
+                memoryPoolUsage: "[data-id='memory-pool-usage-card']",
+                statisticsRefresh: "[data-id='statisticsRefresh']",
+                notificationDetails: "[data-id='notificationDetails']"
             },
             /** ui events hash */
-            events: function() {},
+            events: function() {
+                var events = {};
+                events["click " + this.ui.statisticsRefresh] = function(e) {
+                    this.$('.statsContainer,.statsNotificationContainer,.statisticsRefresh').addClass('hide');
+                    this.$('.statsLoader,.statsNotificationLoader').addClass('show');
+                    this.fetchMetricData();
+                };
+                return events;
+            },
             /**
              * intialize a new AboutAtlasView Layout
              * @constructs
@@ -67,7 +77,7 @@ define(['require',
                 _.extend(this, options);
                 var that = this;
                 this.DATA_MAX_LENGTH = 25;
-                if (this.hideModal !== false) {
+                if (this.isMigrationView !== true) {
                     var modal = new Modal({
                         title: 'Statistics',
                         content: this,
@@ -110,6 +120,9 @@ define(['require',
                         that.renderSystemDeatils({ data: data });
                         that.renderClassifications({ data: data });
                         that.$('.statsContainer,.statsNotificationContainer').removeClass('hide');
+                        if (that.isMigrationView) {
+                            that.$('.statisticsRefresh').removeClass('hide');
+                        }
                         that.$('.statsLoader,.statsNotificationLoader').removeClass('show');
                         if (options && options.update) {
                             if (that.modal) {
@@ -279,7 +292,7 @@ define(['require',
                         });
                         return tableBody;
                     };
-                if (data.Notification) {
+                if (!that.isMigrationView && data.Notification) {
                     var tableCol = [{
                                 label: "Total <br> (from " + (that.getValue({
                                     "value": data.Server["startTimeStamp"],
@@ -347,6 +360,7 @@ define(['require',
                             }
                         })
                     )
+                    that.ui.notificationDetails.removeClass('hide');
                 }
 
                 if (data.Server) {
