@@ -96,12 +96,12 @@ public class DataMigrationStatusService {
 
     public void savePosition(Long position) {
         this.status.setCurrentIndex(position);
-        this.migrationStatusVertexManagement.updateVertexPartial(this.status);
+        this.migrationStatusVertexManagement.updateVertexPartialPosition(this.status);
     }
 
     public void setStatus(String status) {
         this.status.setOperationStatus(status);
-        this.migrationStatusVertexManagement.updateVertexPartial(this.status);
+        this.migrationStatusVertexManagement.updateVertexPartialStatus(this.status);
     }
 
     private static class MigrationStatusVertexManagement {
@@ -170,13 +170,23 @@ public class DataMigrationStatusService {
             return null;
         }
 
-        public void updateVertexPartial(MigrationImportStatus status) {
+        public void updateVertexPartialPosition(MigrationImportStatus status) {
             try {
                 setEncodedProperty(vertex, PROPERTY_KEY_POSITION, status.getCurrentIndex());
             } catch (Exception e) {
                 LOG.warn("Error updating status. Please rely on log messages.", e);
             } finally {
                 graph.commit();
+            }
+        }
+
+        public void updateVertexPartialStatus(MigrationImportStatus status) {
+            try {
+                setEncodedProperty(vertex, PROPERTY_KEY_STATUS, status.getOperationStatus());
+            } catch (Exception e) {
+                LOG.warn("Error updating status. Please rely on log messages.", e);
+            } finally {
+                atlasGraph.commit();
             }
         }
 

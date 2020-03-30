@@ -38,7 +38,9 @@ public class DataMigrationStatusServiceTest {
     AtlasGraph atlasGraph;
 
     @Test
-    public void createUpdateDelete() throws AtlasBaseException {
+    public void createUpdateDelete() {
+        final String STATUS_DONE = "DONE";
+
         DataMigrationStatusService dataMigrationStatusService = new DataMigrationStatusService(atlasGraph);
 
         MigrationImportStatus expected = new MigrationImportStatus("/tmp/defg.zip");
@@ -58,6 +60,11 @@ public class DataMigrationStatusServiceTest {
         assertNotNull(dataMigrationStatusService.getStatus());
         assertNotNull(dataMigrationStatusService.getStatus().getCurrentIndex(), "100");
         assertNotNull(dataMigrationStatusService.getCreate(expected).getCurrentIndex(), "100");
+
+
+        dataMigrationStatusService.setStatus(STATUS_DONE);
+        assertNotNull(dataMigrationStatusService.getCreate(expected).getOperationStatus());
+        assertEquals(dataMigrationStatusService.getCreate(expected).getOperationStatus(), STATUS_DONE);
 
         dataMigrationStatusService.delete();
         assertNull(dataMigrationStatusService.getStatus());

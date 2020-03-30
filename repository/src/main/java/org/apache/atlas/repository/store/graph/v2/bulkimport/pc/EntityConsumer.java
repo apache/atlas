@@ -80,9 +80,9 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
 
     @Override
     protected void processItem(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        int delta = (MapUtils.isEmpty(entityWithExtInfo.getReferredEntities())
+        int delta = MapUtils.isEmpty(entityWithExtInfo.getReferredEntities())
                 ? 1
-                : entityWithExtInfo.getReferredEntities().size()) + 1;
+                : entityWithExtInfo.getReferredEntities().size() + 1;
 
         long currentCount = counter.addAndGet(delta);
         currentBatch.addAndGet(delta);
@@ -91,7 +91,7 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
             processEntity(entityWithExtInfo, currentCount);
             attemptCommit();
         } catch (Exception e) {
-            LOG.info("Data loss: Please re-submit!", e);
+            LOG.info("Invalid entities. Possible data loss: Please correct and re-submit!", e);
         }
     }
 
