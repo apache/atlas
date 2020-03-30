@@ -113,7 +113,7 @@ define(['require',
                         "valuesMinCount": 0,
                         "valuesMaxCount": 1,
                         "isUnique": false,
-                        "isIndexable": false
+                        "isIndexable": true
                     }]);
                 } else {
                     this.collection = new Backbone.Collection();
@@ -149,7 +149,7 @@ define(['require',
                     "valuesMinCount": 0,
                     "valuesMaxCount": 1,
                     "isUnique": false,
-                    "isIndexable": false
+                    "isIndexable": true
                 }));
             },
             onClickAddAttriBtn: function() {
