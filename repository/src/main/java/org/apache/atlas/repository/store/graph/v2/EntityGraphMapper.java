@@ -318,8 +318,10 @@ public class EntityGraphMapper {
 
         RequestContext req = RequestContext.get();
 
-        for (AtlasEntityHeader entity : req.getDeletedEntities()) {
-            resp.addEntity(DELETE, entity);
+        if(!req.isPurgeRequested()) {
+            for (AtlasEntityHeader entity : req.getDeletedEntities()) {
+                resp.addEntity(DELETE, entity);
+            }
         }
 
         for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
