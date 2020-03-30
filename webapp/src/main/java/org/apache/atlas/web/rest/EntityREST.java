@@ -17,8 +17,11 @@
  */
 package org.apache.atlas.web.rest;
 
+import com.sun.jersey.core.header.FormDataContentDisposition;
+import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
@@ -31,14 +34,15 @@ import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
-import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -61,8 +65,14 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1172,5 +1182,44 @@ public class EntityREST {
                 throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UNIQUE_INVALID, entityType.getTypeName(), attributeName);
             }
         }
+    }
+
+    /**
+     * Get the sample Template for uploading/creating bulk BusinessMetaData
+     *
+     * @return Template File
+     * @throws AtlasBaseException
+     * @HTTP 400 If the provided fileType is not supported
+     */
+    @GET
+    @Path("/businessmetadata/import/template")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response produceTemplate() {
+        return Response.ok(new StreamingOutput() {
+            @Override
+            public void write(OutputStream outputStream) throws IOException, WebApplicationException {
+                outputStream.write(FileUtils.getBusinessMetadataHeaders().getBytes());
+            }
+        }).header("Content-Disposition", "attachment; filename=\"template_business_metadata\"").build();
+    }
+
+    /**
+     * Upload the file for creating Business Metadata in BULK
+     *
+     * @param uploadedInputStream InputStream of file
+     * @param fileDetail          FormDataContentDisposition metadata of file
+     * @return
+     * @throws AtlasBaseException
+     * @HTTP 200 If Business Metadata creation was successful
+     * @HTTP 400 If Business Metadata definition has invalid or missing information
+     * @HTTP 409 If Business Metadata already exists (duplicate qualifiedName)
+     */
+    @POST
+    @Path("/businessmetadata/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public BulkImportResponse importBMAttributes(@FormDataParam("file") InputStream uploadedInputStream,
+                                                 @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
+
+        return entitiesStore.bulkCreateOrUpdateBusinessAttributes(uploadedInputStream, fileDetail.getFileName());
     }
 }

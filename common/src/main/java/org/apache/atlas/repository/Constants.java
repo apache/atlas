@@ -202,9 +202,9 @@ public final class Constants {
     public static final Integer INCOMPLETE_ENTITY_VALUE   = Integer.valueOf(1);
 
     /*
-     * All supported file-format extensions for AtlasGlossaryTerms file upload
+     * All supported file-format extensions for Bulk Imports through file upload
      */
-    public enum GlossaryImportSupportedFileExtensions { XLSX, XLS, CSV }
+    public enum SupportedFileExtensions { XLSX, XLS, CSV }
 
     private Constants() {
     }

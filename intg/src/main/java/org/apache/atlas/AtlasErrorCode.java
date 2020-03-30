@@ -168,6 +168,7 @@ public enum AtlasErrorCode {
     BUSINESS_METADATA_ATTRIBUTE_DOES_NOT_EXIST(400, "ATLAS-400-00-096", "Business-metadata attribute does not exist in entity: {0}"),
     BUSINESS_METADATA_ATTRIBUTE_ALREADY_EXISTS(400, "ATLAS-400-00-097", "Business-metadata attribute already exists in entity: {0}"),
     INVALID_FILE_TYPE(400, "ATLAS-400-00-98", "The provided file type {0} is not supported."),
+    INVALID_BUSINESS_ATTRIBUTES_IMPORT_DATA(400, "ATLAS-400-00-99","The uploaded file was not processed due to following errors : {0}"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
@@ -192,6 +193,7 @@ public enum AtlasErrorCode {
     INSTANCE_GUID_DELETED(404, "ATLAS-404-00-012", "Given instance guid {0} has been deleted"),
     NO_PROPAGATED_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-013", "No propagated classifications associated with entity: {0}"),
     NO_DATA_FOUND(404, "ATLAS-404-00-014", "No data found in the uploaded file"),
+    FILE_NAME_NOT_FOUND(404, "ATLAS-404-00-015", "File name should not be blank"),
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),

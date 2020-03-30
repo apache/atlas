@@ -29,7 +29,9 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.bulkimport.BulkImportResponse;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -274,4 +276,13 @@ public interface AtlasEntityStore {
      * Add given labels to the given entity, if labels is null/empty, no labels will be added.
      */
     void addLabels(String guid, Set<String> labels) throws AtlasBaseException;
+
+    /**
+     *
+     * @param inputStream
+     * @param fileName
+     * @throws AtlasBaseException
+     *
+     */
+    BulkImportResponse bulkCreateOrUpdateBusinessAttributes(InputStream inputStream, String fileName) throws AtlasBaseException;
 }

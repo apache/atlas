@@ -40,19 +40,26 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.store.DeleteType;
+import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
+import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.bulkimport.BulkImportResponse;
+import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -64,9 +71,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +85,9 @@ import java.util.Objects;
 import java.util.Set;
 
 import static java.lang.Boolean.FALSE;
-import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
+import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
+import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PURGE;
+import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getCustomAttributes;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
@@ -93,6 +106,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final AtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphMapper         entityGraphMapper;
     private final EntityGraphRetriever      entityRetriever;
+
 
     @Inject
     public AtlasEntityStoreV2(DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry,
@@ -1525,5 +1539,230 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (!messages.isEmpty()) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
         }
+    }
+
+    @Override
+    @GraphTransaction
+    public BulkImportResponse bulkCreateOrUpdateBusinessAttributes(InputStream inputStream, String fileName) throws AtlasBaseException {
+        BulkImportResponse ret = new BulkImportResponse();
+        try {
+            if (StringUtils.isBlank(fileName)) {
+                throw new AtlasBaseException(AtlasErrorCode.FILE_NAME_NOT_FOUND, fileName);
+            }
+            List<String[]> fileData = FileUtils.readFileData(fileName, inputStream);
+
+            Map<String, AtlasEntity> attributesToAssociate = getBusinessMetadataDefList(fileData, ret);
+
+            for (Map.Entry<String, AtlasEntity> entry : attributesToAssociate.entrySet()) {
+                AtlasEntity entity = entry.getValue();
+                try{
+                    addOrUpdateBusinessAttributes(entity.getGuid(), entity.getBusinessAttributes(), true);
+                    BulkImportResponse.ImportInfo successImportInfo = new BulkImportResponse.ImportInfo(entity.getAttribute(Constants.QUALIFIED_NAME).toString(), entity.getBusinessAttributes().toString());
+                    ret.setSuccessImportInfoList(successImportInfo);
+                }catch(Exception e){
+                    LOG.error("Error occurred while updating BusinessMetadata Attributes for Entity "+entity.getAttribute(Constants.QUALIFIED_NAME).toString());
+                    BulkImportResponse.ImportInfo failedImportInfo = new BulkImportResponse.ImportInfo(entity.getAttribute(Constants.QUALIFIED_NAME).toString(), entity.getBusinessAttributes().toString(), BulkImportResponse.ImportStatus.FAILED, e.getMessage());
+                    ret.setFailedImportInfoList(failedImportInfo);
+                }
+            }
+        } catch (IOException e) {
+            LOG.error("An Exception occurred while uploading the file : "+e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_UPLOAD, e);
+        }
+
+        return ret;
+    }
+
+    private Map<String, AtlasEntity> getBusinessMetadataDefList(List<String[]> fileData, BulkImportResponse bulkImportResponse) throws AtlasBaseException {
+        Map<String, AtlasEntity> ret = new HashMap<>();
+        Map<String, Map<String, Object>> newBMAttributes = new HashMap<>();
+        Map<String, AtlasVertex> vertexCache = new HashMap<>();
+        Map<String, Object> attribute = new HashMap<>();
+
+        for (int lineIndex = 0; lineIndex < fileData.size(); lineIndex++) {
+            List<String> failedTermMsgList = new ArrayList<>();
+            AtlasEntity atlasEntity = new AtlasEntity();
+            String[] record = fileData.get(lineIndex);
+            if (missingFieldsCheck(record, bulkImportResponse, lineIndex+1)) {
+                continue;
+            }
+            String typeName = record[FileUtils.TYPENAME_COLUMN_INDEX];
+            String uniqueAttrValue = record[FileUtils.UNIQUE_ATTR_VALUE_COLUMN_INDEX];
+            String bmAttribute = record[FileUtils.BM_ATTR_NAME_COLUMN_INDEX];
+            String bmAttributeValue = record[FileUtils.BM_ATTR_VALUE_COLUMN_INDEX];
+            String uniqueAttrName = Constants.QUALIFIED_NAME;
+            if (record.length > FileUtils.UNIQUE_ATTR_NAME_COLUMN_INDEX) {
+                uniqueAttrName = typeName+"."+record[FileUtils.UNIQUE_ATTR_NAME_COLUMN_INDEX];
+            }
+
+            if (validateTypeName(typeName, bulkImportResponse, lineIndex+1)) {
+                continue;
+            }
+
+            String vertexKey = typeName + "_" + uniqueAttrName + "_" + uniqueAttrValue;
+            AtlasVertex atlasVertex = vertexCache.get(vertexKey);
+            if (atlasVertex == null) {
+                atlasVertex = AtlasGraphUtilsV2.findByTypeAndUniquePropertyName(typeName, uniqueAttrName, uniqueAttrValue);
+            }
+
+            if (atlasVertex == null) {
+                LOG.error("Provided UniqueAttributeValue is not valid : " + uniqueAttrValue + " at line #" + (lineIndex + 1));
+                failedTermMsgList.add("Provided UniqueAttributeValue is not valid : " + uniqueAttrValue + " at line #" + (lineIndex + 1));
+            }
+
+            vertexCache.put(vertexKey, atlasVertex);
+            String[] businessAttributeName = bmAttribute.split(FileUtils.ESCAPE_CHARACTER + ".");
+            if (validateBMAttributeName(uniqueAttrValue,bmAttribute,bulkImportResponse,lineIndex+1)) {
+                continue;
+            }
+
+            String bMName = businessAttributeName[0];
+            String bMAttributeName = businessAttributeName[1];
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+            if (validateBMAttribute(uniqueAttrValue, businessAttributeName, entityType, bulkImportResponse,lineIndex+1)) {
+                continue;
+            }
+
+            AtlasBusinessAttribute atlasBusinessAttribute = entityType.getBusinessAttributes().get(bMName).get(bMAttributeName);
+            if (atlasBusinessAttribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY) {
+                AtlasArrayType arrayType = (AtlasArrayType) atlasBusinessAttribute.getAttributeType();
+                List attributeValueData;
+
+                if(arrayType.getElementType() instanceof AtlasEnumType){
+                    attributeValueData = AtlasGraphUtilsV2.assignEnumValues(bmAttributeValue, (AtlasEnumType) arrayType.getElementType(), failedTermMsgList, lineIndex+1);
+                }else{
+                    attributeValueData = assignMultipleValues(bmAttributeValue, arrayType.getElementTypeName(), failedTermMsgList, lineIndex+1);
+                }
+                attribute.put(bmAttribute, attributeValueData);
+            } else {
+                attribute.put(bmAttribute, bmAttributeValue);
+            }
+
+            if(failedMsgCheck(uniqueAttrValue,bmAttribute, failedTermMsgList, bulkImportResponse, lineIndex+1)) {
+                continue;
+            }
+
+            if(ret.containsKey(vertexKey)) {
+                atlasEntity = ret.get(vertexKey);
+                atlasEntity.setBusinessAttribute(bMName, bMAttributeName, attribute.get(bmAttribute));
+                ret.put(vertexKey, atlasEntity);
+            } else {
+                String guid = GraphHelper.getGuid(atlasVertex);
+                atlasEntity.setGuid(guid);
+                atlasEntity.setTypeName(typeName);
+                atlasEntity.setAttribute(Constants.QUALIFIED_NAME,uniqueAttrValue);
+                newBMAttributes = entityRetriever.getBusinessMetadata(atlasVertex) != null ? entityRetriever.getBusinessMetadata(atlasVertex) : newBMAttributes;
+                atlasEntity.setBusinessAttributes(newBMAttributes);
+                atlasEntity.setBusinessAttribute(bMName, bMAttributeName, attribute.get(bmAttribute));
+                ret.put(vertexKey, atlasEntity);
+            }
+        }
+        return ret;
+    }
+
+    private boolean validateTypeName(String typeName, BulkImportResponse bulkImportResponse, int lineIndex) {
+        boolean ret = false;
+
+        if(!typeRegistry.getAllEntityDefNames().contains(typeName)){
+            ret = true;
+            LOG.error("Invalid entity-type: " + typeName + " at line #" + lineIndex);
+            String failedTermMsgs = "Invalid entity-type: " + typeName + " at line #" + lineIndex;
+            BulkImportResponse.ImportInfo importInfo = new BulkImportResponse.ImportInfo(BulkImportResponse.ImportStatus.FAILED, failedTermMsgs, lineIndex);
+            bulkImportResponse.getFailedImportInfoList().add(importInfo);
+        }
+        return ret;
+    }
+
+    private List assignMultipleValues(String bmAttributeValues, String elementTypeName, List failedTermMsgList, int lineIndex) {
+
+        String[] arr = bmAttributeValues.split(FileUtils.ESCAPE_CHARACTER + FileUtils.PIPE_CHARACTER);
+        try {
+            switch (elementTypeName) {
+
+                case AtlasBaseTypeDef.ATLAS_TYPE_FLOAT:
+                    return AtlasGraphUtilsV2.floatParser(arr, failedTermMsgList, lineIndex);
+
+                case AtlasBaseTypeDef.ATLAS_TYPE_INT:
+                    return AtlasGraphUtilsV2.intParser(arr, failedTermMsgList, lineIndex);
+
+                case AtlasBaseTypeDef.ATLAS_TYPE_LONG:
+                    return AtlasGraphUtilsV2.longParser(arr, failedTermMsgList, lineIndex);
+
+                case AtlasBaseTypeDef.ATLAS_TYPE_SHORT:
+                    return AtlasGraphUtilsV2.shortParser(arr, failedTermMsgList, lineIndex);
+
+                case AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE:
+                    return AtlasGraphUtilsV2.doubleParser(arr, failedTermMsgList, lineIndex);
+
+                case AtlasBaseTypeDef.ATLAS_TYPE_DATE:
+                    return AtlasGraphUtilsV2.dateParser(arr, failedTermMsgList, lineIndex);
+
+                case AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN:
+                    return AtlasGraphUtilsV2.booleanParser(arr, failedTermMsgList, lineIndex);
+
+                default:
+                    return Arrays.asList(arr);
+            }
+        } catch (Exception e) {
+            LOG.error("On line index " + lineIndex + "the provided BusinessMetadata AttributeValue " + bmAttributeValues + " are not of type - " + elementTypeName);
+            failedTermMsgList.add("On line index " + lineIndex + "the provided BusinessMetadata AttributeValue " + bmAttributeValues + " are not of type - " + elementTypeName);
+        }
+        return null;
+    }
+
+    private boolean missingFieldsCheck(String[] record, BulkImportResponse bulkImportResponse, int lineIndex){
+        boolean missingFieldsCheck = (record.length < FileUtils.UNIQUE_ATTR_NAME_COLUMN_INDEX) ||
+                    StringUtils.isBlank(record[FileUtils.TYPENAME_COLUMN_INDEX]) ||
+                        StringUtils.isBlank(record[FileUtils.UNIQUE_ATTR_VALUE_COLUMN_INDEX]) ||
+                            StringUtils.isBlank(record[FileUtils.BM_ATTR_NAME_COLUMN_INDEX]) ||
+                                StringUtils.isBlank(record[FileUtils.BM_ATTR_VALUE_COLUMN_INDEX]);
+
+        if(missingFieldsCheck){
+            LOG.error("Missing fields: " + Arrays.toString(record) + " at line #" + lineIndex);
+            String failedTermMsgs = "Missing fields: " + Arrays.toString(record) + " at line #" + lineIndex;
+            BulkImportResponse.ImportInfo importInfo = new BulkImportResponse.ImportInfo(BulkImportResponse.ImportStatus.FAILED, failedTermMsgs, lineIndex);
+            bulkImportResponse.getFailedImportInfoList().add(importInfo);
+        }
+        return missingFieldsCheck;
+    }
+
+    private boolean validateBMAttributeName(String uniqueAttrValue, String bmAttribute, BulkImportResponse bulkImportResponse, int lineIndex) {
+        boolean ret = false;
+        String[] businessAttributeName = bmAttribute.split(FileUtils.ESCAPE_CHARACTER + ".");
+        if(businessAttributeName.length < 2){
+            LOG.error("Provided businessAttributeName is not in proper format : " + bmAttribute + " at line #" + lineIndex);
+            String failedTermMsgs = "Provided businessAttributeName is not in proper format : " + bmAttribute + " at line #" + lineIndex;
+            BulkImportResponse.ImportInfo importInfo = new BulkImportResponse.ImportInfo(uniqueAttrValue, bmAttribute,  BulkImportResponse.ImportStatus.FAILED, failedTermMsgs, lineIndex);
+            bulkImportResponse.getFailedImportInfoList().add(importInfo);
+            ret = true;
+        }
+        return ret;
+    }
+
+    private boolean validateBMAttribute(String uniqueAttrValue,String[] businessAttributeName, AtlasEntityType entityType, BulkImportResponse bulkImportResponse, int lineIndex) {
+        boolean ret = false;
+        String bMName = businessAttributeName[0];
+        String bMAttributeName = businessAttributeName[1];
+
+        if(entityType.getBusinessAttributes(bMName) == null ||
+                entityType.getBusinessAttributes(bMName).get(bMAttributeName) == null){
+            ret = true;
+            LOG.error("Provided businessAttributeName is not valid : " + bMName+"."+bMAttributeName + " at line #" + lineIndex);
+            String failedTermMsgs = "Provided businessAttributeName is not valid : " + bMName+"."+bMAttributeName + " at line #" + lineIndex;
+            BulkImportResponse.ImportInfo importInfo = new BulkImportResponse.ImportInfo(uniqueAttrValue, bMName+"."+bMAttributeName, BulkImportResponse.ImportStatus.FAILED, failedTermMsgs, lineIndex);
+            bulkImportResponse.getFailedImportInfoList().add(importInfo);
+        }
+        return ret;
+    }
+
+    private boolean failedMsgCheck(String uniqueAttrValue, String bmAttribute, List<String> failedTermMsgList,BulkImportResponse bulkImportResponse,int lineIndex) {
+        boolean ret = false;
+        if(!failedTermMsgList.isEmpty()){
+            ret = true;
+            String failedTermMsg = StringUtils.join(failedTermMsgList, "\n");
+            BulkImportResponse.ImportInfo importInfo = new BulkImportResponse.ImportInfo(uniqueAttrValue, bmAttribute, BulkImportResponse.ImportStatus.FAILED, failedTermMsg, lineIndex);
+            bulkImportResponse.getFailedImportInfoList().add(importInfo);
+        }
+        return ret;
     }
 }

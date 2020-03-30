@@ -29,6 +29,7 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -39,9 +40,11 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -49,6 +52,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,11 +66,10 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
-import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
@@ -674,4 +677,128 @@ public class AtlasGraphUtilsV2 {
         }
         return classificationNames;
     }
+
+    public static List<Date> dateParser(String[] arr, List failedTermMsgList, int lineIndex) {
+
+        List<Date> ret = new ArrayList();
+        for (String s : arr) {
+            try{
+                SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
+                Date date = formatter.parse(s);
+                ret.add(date);
+            }
+            catch(Exception e){
+                LOG.error("Provided value "+s+" is not of Date type at line #"+lineIndex);
+                failedTermMsgList.add("Provided value "+s+" is not of Date type at line #"+lineIndex);
+            }
+        }
+        return ret;
+    }
+
+    public static List<Boolean> booleanParser(String[] arr, List failedTermMsgList, int lineIndex) {
+
+        List<Boolean> ret = new ArrayList();
+        for (String s : arr) {
+            try{
+                ret.add(Boolean.parseBoolean(s));
+            }
+            catch(Exception e){
+                LOG.error("Provided value "+s+" is not of Boolean type at line #"+lineIndex);
+                failedTermMsgList.add("Provided value "+s+" is not of Boolean type at line #"+lineIndex);
+            }
+        }
+        return ret;
+    }
+
+    public static List<Double> doubleParser(String[] arr, List failedTermMsgList, int lineIndex) {
+
+        List<Double> ret = new ArrayList();
+        for (String s : arr) {
+            try{
+                ret.add(Double.parseDouble(s));
+            }
+            catch(Exception e){
+                LOG.error("Provided value "+s+" is not of Double type at line #"+lineIndex);
+                failedTermMsgList.add("Provided value "+s+" is not of Double type at line #"+lineIndex);
+            }
+        }
+        return ret;
+    }
+
+    public static List<Short> shortParser(String[] arr, List failedTermMsgList, int lineIndex) {
+
+        List<Short> ret = new ArrayList();
+        for (String s : arr) {
+            try{
+                ret.add(Short.parseShort(s));
+            }
+            catch(Exception e){
+                LOG.error("Provided value "+s+" is not of Short type at line #"+lineIndex);
+                failedTermMsgList.add("Provided value "+s+" is not of Short type at line #"+lineIndex);
+            }
+        }
+        return ret;
+    }
+
+    public static List<Long> longParser(String[] arr, List failedTermMsgList, int lineIndex) {
+
+        List<Long> ret = new ArrayList();
+        for (String s : arr) {
+            try{
+                ret.add(Long.parseLong(s));
+            }
+            catch(Exception e){
+                LOG.error("Provided value "+s+" is not of Long type at line #"+lineIndex);
+                failedTermMsgList.add("Provided value "+s+" is not of Long type at line #"+lineIndex);
+            }
+        }
+        return ret;
+    }
+
+    public static List<Integer> intParser(String[] arr, List failedTermMsgList, int lineIndex) {
+
+        List<Integer> ret = new ArrayList();
+        for (String s : arr) {
+            try{
+                ret.add(Integer.parseInt(s));
+            }
+            catch(Exception e){
+                LOG.error("Provided value "+s+" is not of Integer type at line #"+lineIndex);
+                failedTermMsgList.add("Provided value "+s+" is Integer of Long type at line #"+lineIndex);
+            }
+        }
+        return ret;
+    }
+
+    public static List<Float> floatParser(String[] arr, List failedTermMsgList, int lineIndex) {
+
+        List<Float> ret = new ArrayList();
+        for (String s : arr) {
+            try{
+                ret.add(Float.parseFloat(s));
+            }
+            catch(Exception e){
+                LOG.error("Provided value "+s+" is Float of Long type at line #"+lineIndex);
+                failedTermMsgList.add("Provided value "+s+" is Float of Long type at line #"+lineIndex);
+            }
+        }
+        return ret;
+    }
+
+    public static List assignEnumValues(String bmAttributeValues, AtlasEnumType enumType, List<String> failedTermMsgList, int lineIndex) {
+        List<String> ret = new ArrayList<>();
+        String[] arr = bmAttributeValues.split(FileUtils.ESCAPE_CHARACTER + FileUtils.PIPE_CHARACTER);
+        AtlasEnumDef.AtlasEnumElementDef atlasEnumDef;
+        for(String s : arr){
+            atlasEnumDef = enumType.getEnumElementDef(s);
+            if(atlasEnumDef==null){
+                LOG.error("Provided value "+s+" is Enumeration of Long type at line #"+lineIndex);
+                failedTermMsgList.add("Provided value "+s+" is Enumeration of Long type at line #"+lineIndex);
+            }else{
+                ret.add(s);
+            }
+        }
+        return ret;
+    }
+
 }
