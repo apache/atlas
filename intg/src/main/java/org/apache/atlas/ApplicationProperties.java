@@ -277,24 +277,28 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     }
 
     private static void setLdapPasswordFromKeystore(Configuration configuration) {
-        try {
-            if (configuration.getString(LDAP_TYPE).equalsIgnoreCase("ldap")) {
-                String maskPasssword = configuration.getString(LDAP_BIND_PASSWORD);
-                if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
-                    String password = SecurityUtil.getPassword(configuration, LDAP_BIND_PASSWORD);
-                    configuration.clearProperty(LDAP_BIND_PASSWORD);
-                    configuration.addProperty(LDAP_BIND_PASSWORD, password);
+        String ldapType = configuration.getString(LDAP_TYPE);
+
+        if (StringUtils.isNotEmpty(ldapType)) {
+            try {
+                if (ldapType.equalsIgnoreCase("ldap")) {
+                    String maskPasssword = configuration.getString(LDAP_BIND_PASSWORD);
+                    if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
+                        String password = SecurityUtil.getPassword(configuration, LDAP_BIND_PASSWORD);
+                        configuration.clearProperty(LDAP_BIND_PASSWORD);
+                        configuration.addProperty(LDAP_BIND_PASSWORD, password);
+                    }
+                } else if (ldapType.equalsIgnoreCase("ad")) {
+                    String maskPasssword = configuration.getString(LDAP_AD_BIND_PASSWORD);
+                    if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
+                        String password = SecurityUtil.getPassword(configuration, LDAP_AD_BIND_PASSWORD);
+                        configuration.clearProperty(LDAP_AD_BIND_PASSWORD);
+                        configuration.addProperty(LDAP_AD_BIND_PASSWORD, password);
+                    }
                 }
-            } else if (configuration.getString(LDAP_TYPE).equalsIgnoreCase("ad")) {
-                String maskPasssword = configuration.getString(LDAP_AD_BIND_PASSWORD);
-                if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
-                    String password = SecurityUtil.getPassword(configuration, LDAP_AD_BIND_PASSWORD);
-                    configuration.clearProperty(LDAP_AD_BIND_PASSWORD);
-                    configuration.addProperty(LDAP_AD_BIND_PASSWORD, password);
-                }
+            } catch (Exception e) {
+                LOG.error("Error in getting secure password ", e);
             }
-        } catch (Exception e) {
-            LOG.error("Error in getting secure password ", e);
         }
     }
 
