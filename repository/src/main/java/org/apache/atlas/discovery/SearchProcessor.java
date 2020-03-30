@@ -79,7 +79,7 @@ public abstract class SearchProcessor {
     public static final char    CUSTOM_ATTR_SEPARATOR      = '=';
     public static final String  CUSTOM_ATTR_SEARCH_FORMAT  = "\"\\\"%s\\\":\\\"%s\\\"\"";
     public static final String  CUSTOM_ATTR_SEARCH_FORMAT_GRAPH = "\"%s\":\"%s\"";
-
+    public static final String  WILDCARD_CHAR                   = "*";
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
     private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
 
@@ -195,12 +195,17 @@ public abstract class SearchProcessor {
 
     protected Predicate buildTraitPredict(AtlasClassificationType classificationType) {
         Predicate traitPredicate;
-        if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED || context.isWildCardSearch() || classificationType == MATCH_ALL_CLASSIFICATION_TYPES) {
+        if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED || classificationType == MATCH_ALL_CLASSIFICATION_TYPES) {
             traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
                 SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
         } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
             traitPredicate = PredicateUtils.andPredicate(SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
                 SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
+        } else if (context.isWildCardSearch()) {
+            String wildcardName = context.getClassificationName();
+            wildcardName = wildcardName.replace(WILDCARD_CHAR,"");
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsPredicateGenerator().generatePredicate(CLASSIFICATION_NAMES_KEY, wildcardName, String.class),
+                    SearchPredicateUtil.getContainsPredicateGenerator().generatePredicate(PROPAGATED_CLASSIFICATION_NAMES_KEY, wildcardName, String.class));
         } else {
             traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypes(), List.class),
                 SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypes(), List.class));
