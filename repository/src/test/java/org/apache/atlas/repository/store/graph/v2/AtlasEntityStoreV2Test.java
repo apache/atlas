@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
+import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -37,6 +38,7 @@ import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.util.FileUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +49,9 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -55,20 +60,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.AtlasErrorCode.*;
+import static org.apache.atlas.AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS;
+import static org.apache.atlas.AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_KEY_LENGTH;
+import static org.apache.atlas.AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_VALUE;
+import static org.apache.atlas.AtlasErrorCode.INVALID_LABEL_CHARACTERS;
+import static org.apache.atlas.AtlasErrorCode.INVALID_LABEL_LENGTH;
 import static org.apache.atlas.TestUtilsV2.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtilsV2.COLUMN_TYPE;
 import static org.apache.atlas.TestUtilsV2.NAME;
 import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
+import static org.apache.atlas.TestUtilsV2.getFile;
 import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2Test.class);
+    public static final String CSV_FILES   = "/csvFiles/";
 
     private AtlasEntitiesWithExtInfo deptEntity;
     private AtlasEntityWithExtInfo   dbEntity;
@@ -208,15 +220,15 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         AtlasEntitiesWithExtInfo entitiesInfo = new AtlasEntitiesWithExtInfo(tableEntity);
 
         AtlasEntity col1 = TestUtilsV2.createColumnEntity(tableEntity);
-        col1.setAttribute(TestUtilsV2.NAME, "col1");
+        col1.setAttribute(NAME, "col1");
 
         AtlasEntity col2 = TestUtilsV2.createColumnEntity(tableEntity);
-        col2.setAttribute(TestUtilsV2.NAME, "col2");
+        col2.setAttribute(NAME, "col2");
 
         columns.add(AtlasTypeUtil.getAtlasObjectId(col1));
         columns.add(AtlasTypeUtil.getAtlasObjectId(col2));
 
-        tableEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
+        tableEntity.setAttribute(COLUMNS_ATTR_NAME, columns);
 
         entitiesInfo.addReferredEntity(dbEntity.getEntity());
         entitiesInfo.addReferredEntity(col1);
@@ -230,14 +242,14 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
         //Complete update. Add  array elements - col3,col4
         AtlasEntity col3 = TestUtilsV2.createColumnEntity(tableEntity);
-        col3.setAttribute(TestUtilsV2.NAME, "col3");
+        col3.setAttribute(NAME, "col3");
 
         AtlasEntity col4 = TestUtilsV2.createColumnEntity(tableEntity);
-        col4.setAttribute(TestUtilsV2.NAME, "col4");
+        col4.setAttribute(NAME, "col4");
 
         columns.add(AtlasTypeUtil.getAtlasObjectId(col3));
         columns.add(AtlasTypeUtil.getAtlasObjectId(col4));
-        tableEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
+        tableEntity.setAttribute(COLUMNS_ATTR_NAME, columns);
 
         entitiesInfo.addReferredEntity(col3);
         entitiesInfo.addReferredEntity(col4);
@@ -252,7 +264,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         columns.clear();
         columns.add(AtlasTypeUtil.getAtlasObjectId(col4));
         columns.add(AtlasTypeUtil.getAtlasObjectId(col3));
-        tableEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
+        tableEntity.setAttribute(COLUMNS_ATTR_NAME, columns);
 
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
@@ -280,7 +292,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         AtlasEntity              tableEntity  = new AtlasEntity(tblEntity.getEntity());
         AtlasEntitiesWithExtInfo entitiesInfo = new AtlasEntitiesWithExtInfo(tableEntity);
         Map<String, AtlasStruct> partsMap     = new HashMap<>();
-        partsMap.put("part0", new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "test"));
+        partsMap.put("part0", new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, NAME, "test"));
 
         tableEntity.setAttribute("partitionsMap", partsMap);
 
@@ -294,7 +306,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         Assert.assertTrue(partsMap.get("part0").equals(((Map<String, AtlasStruct>) updatedTableDef1.getAttribute("partitionsMap")).get("part0")));
 
         //update map - add a map key
-        partsMap.put("part1", new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "test1"));
+        partsMap.put("part1", new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, NAME, "test1"));
         tableEntity.setAttribute("partitionsMap", partsMap);
 
         init();
@@ -309,7 +321,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
         //update map - remove a key and add another key
         partsMap.remove("part0");
-        partsMap.put("part2", new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "test2"));
+        partsMap.put("part2", new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, NAME, "test2"));
         tableEntity.setAttribute("partitionsMap", partsMap);
 
         init();
@@ -325,7 +337,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
         //update struct value for existing map key
         AtlasStruct partition2 = partsMap.get("part2");
-        partition2.setAttribute(TestUtilsV2.NAME, "test2Updated");
+        partition2.setAttribute(NAME, "test2Updated");
 
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
@@ -340,7 +352,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
         //Test map pointing to a class
 
-        AtlasEntity col0 = new AtlasEntity(TestUtilsV2.COLUMN_TYPE, TestUtilsV2.NAME, "test1");
+        AtlasEntity col0 = new AtlasEntity(COLUMN_TYPE, NAME, "test1");
         col0.setAttribute("type", "string");
         col0.setAttribute("table", AtlasTypeUtil.getAtlasObjectId(tableEntity));
 
@@ -351,7 +363,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         init();
         entityStore.createOrUpdate(new AtlasEntityStream(col0WithExtendedInfo), false);
 
-        AtlasEntity col1 = new AtlasEntity(TestUtilsV2.COLUMN_TYPE, TestUtilsV2.NAME, "test2");
+        AtlasEntity col1 = new AtlasEntity(COLUMN_TYPE, NAME, "test2");
         col1.setAttribute("type", "string");
         col1.setAttribute("table", AtlasTypeUtil.getAtlasObjectId(tableEntity));
 
@@ -440,8 +452,8 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         AtlasEntitiesWithExtInfo entitiesInfo = new AtlasEntitiesWithExtInfo(tableEntity);
 
         List<AtlasStruct> partitions = new ArrayList<AtlasStruct>(){{
-            add(new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "part1"));
-            add(new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "part2"));
+            add(new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, NAME, "part1"));
+            add(new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, NAME, "part2"));
         }};
         tableEntity.setAttribute("partitions", partitions);
 
@@ -451,7 +463,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
 
         //add a new element to array of struct
-        partitions.add(new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "part3"));
+        partitions.add(new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, NAME, "part3"));
         tableEntity.setAttribute("partitions", partitions);
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
@@ -467,7 +479,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         validateEntity(entitiesInfo, getEntityFromStore(updatedTable));
 
         //Update struct value within array of struct
-        partitions.get(0).setAttribute(TestUtilsV2.NAME, "part4");
+        partitions.get(0).setAttribute(NAME, "part4");
         tableEntity.setAttribute("partitions", partitions);
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
@@ -476,7 +488,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
 
         //add a repeated element to array of struct
-        partitions.add(new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, TestUtilsV2.NAME, "part4"));
+        partitions.add(new AtlasStruct(TestUtilsV2.PARTITION_STRUCT_TYPE, NAME, "part4"));
         tableEntity.setAttribute("partitions", partitions);
         init();
         response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
@@ -499,11 +511,11 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         AtlasEntity              tableEntity    = new AtlasEntity(tblEntity.getEntity());
         AtlasEntitiesWithExtInfo entitiesInfo   = new AtlasEntitiesWithExtInfo(tableEntity);
 
-        AtlasStruct serdeInstance = new AtlasStruct(TestUtilsV2.SERDE_TYPE, TestUtilsV2.NAME, "serde1Name");
+        AtlasStruct serdeInstance = new AtlasStruct(TestUtilsV2.SERDE_TYPE, NAME, "serde1Name");
         serdeInstance.setAttribute("serde", "test");
         serdeInstance.setAttribute("description", "testDesc");
         tableEntity.setAttribute("serde1", serdeInstance);
-        tableEntity.setAttribute("database", new AtlasObjectId(databaseEntity.getTypeName(), TestUtilsV2.NAME, databaseEntity.getAttribute(TestUtilsV2.NAME)));
+        tableEntity.setAttribute("database", new AtlasObjectId(databaseEntity.getTypeName(), NAME, databaseEntity.getAttribute(NAME)));
 
         init();
         EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesInfo), false);
@@ -547,7 +559,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         response = entityStore.createOrUpdate(new InMemoryMapEntityStream(tableCloneMap), false);
         final AtlasEntityHeader tableDefinition = response.getFirstUpdatedEntityByTypeName(TABLE_TYPE);
         AtlasEntity updatedTableDefinition = getEntityFromStore(tableDefinition);
-        Assert.assertNotNull(updatedTableDefinition.getAttribute("database"));
+        assertNotNull(updatedTableDefinition.getAttribute("database"));
         Assert.assertEquals(((AtlasObjectId) updatedTableDefinition.getAttribute("database")).getGuid(), dbCreated.getGuid());
     }
 
@@ -563,7 +575,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         //The optional boolean attribute should have a non-null value
         final String isReplicatedAttr = "isReplicated";
         final String paramsAttr = "parameters";
-        Assert.assertNotNull(firstEntityCreated.getAttribute(isReplicatedAttr));
+        assertNotNull(firstEntityCreated.getAttribute(isReplicatedAttr));
         Assert.assertEquals(firstEntityCreated.getAttribute(isReplicatedAttr), Boolean.FALSE);
         Assert.assertNull(firstEntityCreated.getAttribute(paramsAttr));
 
@@ -578,8 +590,8 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
         AtlasEntity firstEntityUpdated = getEntityFromStore(response.getFirstUpdatedEntityByTypeName(TestUtilsV2.DATABASE_TYPE));
 
-        Assert.assertNotNull(firstEntityUpdated);
-        Assert.assertNotNull(firstEntityUpdated.getAttribute(isReplicatedAttr));
+        assertNotNull(firstEntityUpdated);
+        assertNotNull(firstEntityUpdated.getAttribute(isReplicatedAttr));
         Assert.assertEquals(firstEntityUpdated.getAttribute(isReplicatedAttr), Boolean.TRUE);
         Assert.assertEquals(firstEntityUpdated.getAttribute(paramsAttr), params);
 
@@ -645,7 +657,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         //Update required attribute
         Map<String, AtlasEntity> tableCloneMap = new HashMap<>();
         AtlasEntity tableEntity = new AtlasEntity(TABLE_TYPE);
-        tableEntity.setAttribute(TestUtilsV2.NAME, "table_" + TestUtilsV2.randomString());
+        tableEntity.setAttribute(NAME, "table_" + TestUtilsV2.randomString());
         tableCloneMap.put(tableEntity.getGuid(), tableEntity);
 
         entityStore.createOrUpdate(new InMemoryMapEntityStream(tableCloneMap), false);
@@ -713,14 +725,14 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         // create new column entity
         AtlasEntity col1 = TestUtilsV2.createColumnEntity(tblEntity);
         AtlasEntity col2 = TestUtilsV2.createColumnEntity(tblEntity);
-        col1.setAttribute(TestUtilsV2.NAME, "col1");
-        col2.setAttribute(TestUtilsV2.NAME, "col2");
+        col1.setAttribute(NAME, "col1");
+        col2.setAttribute(NAME, "col2");
 
         List<AtlasObjectId> columns = new ArrayList<>();
         columns.add(AtlasTypeUtil.getAtlasObjectId(col1));
         columns.add(AtlasTypeUtil.getAtlasObjectId(col2));
 
-        tblEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
+        tblEntity.setAttribute(COLUMNS_ATTR_NAME, columns);
 
         AtlasEntitiesWithExtInfo tableEntityInfo = new AtlasEntitiesWithExtInfo(tblEntity);
         tableEntityInfo.addReferredEntity(col1.getGuid(), col1);
@@ -731,16 +743,16 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         AtlasEntityHeader tblHeader = response.getFirstEntityCreated();
         AtlasEntity createdTblEntity = getEntityFromStore(tblHeader);
 
-        columns = (List<AtlasObjectId>) createdTblEntity.getAttribute(TestUtilsV2.COLUMNS_ATTR_NAME);
+        columns = (List<AtlasObjectId>) createdTblEntity.getAttribute(COLUMNS_ATTR_NAME);
         assertEquals(columns.size(), 2);
 
         // update - add 2 more columns to table
         AtlasEntity col3 = TestUtilsV2.createColumnEntity(createdTblEntity);
-        col3.setAttribute(TestUtilsV2.NAME, "col3");
+        col3.setAttribute(NAME, "col3");
         col3.setAttribute("description", "description col3");
 
         AtlasEntity col4 = TestUtilsV2.createColumnEntity(createdTblEntity);
-        col4.setAttribute(TestUtilsV2.NAME, "col4");
+        col4.setAttribute(NAME, "col4");
         col4.setAttribute("description", "description col4");
 
         columns.clear();
@@ -749,7 +761,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
         tblEntity = new AtlasEntity(TABLE_TYPE);
         tblEntity.setGuid(createdTblEntity.getGuid());
-        tblEntity.setAttribute(TestUtilsV2.COLUMNS_ATTR_NAME, columns);
+        tblEntity.setAttribute(COLUMNS_ATTR_NAME, columns);
 
         tableEntityInfo = new AtlasEntitiesWithExtInfo(tblEntity);
         tableEntityInfo.addReferredEntity(col3.getGuid(), col3);
@@ -760,7 +772,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         tblHeader = response.getFirstEntityPartialUpdated();
         AtlasEntity updatedTblEntity = getEntityFromStore(tblHeader);
 
-        columns = (List<AtlasObjectId>) updatedTblEntity.getAttribute(TestUtilsV2.COLUMNS_ATTR_NAME);
+        columns = (List<AtlasObjectId>) updatedTblEntity.getAttribute(COLUMNS_ATTR_NAME);
         // deleted columns are included in the attribute; hence use >=
         assertTrue(columns.size() >= 2);
     }
@@ -1215,14 +1227,14 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
 
         entityStore.removeLabels(tblEntityGuid, labels);
         AtlasEntity tblEntity = getEntityFromStore(tblEntityGuid);
-        Assert.assertNotNull(tblEntity.getLabels());
+        assertNotNull(tblEntity.getLabels());
         Assert.assertEquals(tblEntity.getLabels().size(), 1);
 
         labels.clear();
         labels.add("label_4_add");
         entityStore.removeLabels(tblEntityGuid, labels);
         tblEntity = getEntityFromStore(tblEntityGuid);
-        Assert.assertNotNull(tblEntity.getLabels());
+        assertNotNull(tblEntity.getLabels());
         Assert.assertEquals(tblEntity.getLabels().size(), 1);
 
         labels.clear();
@@ -1321,4 +1333,51 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         Assert.fail();
     }
 
+    @Test
+    public void testGetTemplate() {
+        try {
+            String bMHeaderListAsString = FileUtils.getBusinessMetadataHeaders();
+
+            assertNotNull(bMHeaderListAsString);
+            assertEquals(bMHeaderListAsString, "EntityType,EntityUniqueAttributeValue,BusinessAttributeName,BusinessAttributeValue,EntityUniqueAttributeName[optional]");
+        } catch (Exception e) {
+            fail("The Template for BussinessMetadata Attributes should've been a success : ", e);
+        }
+    }
+
+    @Test
+    public void testEmptyFileException() {
+        InputStream inputStream = getFile(CSV_FILES, "empty.csv");
+
+        try {
+            entityStore.bulkCreateOrUpdateBusinessAttributes(inputStream, "empty.csv");
+            fail("Error occurred : Failed to recognize the empty file.");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getMessage(), "No data found in the uploaded file");
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (Exception e) {
+                }
+            }
+        }
+    }
+
+    @Test(dependsOnMethods = "testCreate")
+    public void testBulkAddOrUpdateBusinessAttributes() {
+        try {
+            AtlasEntity hive_db_1 = getEntityFromStore(dbEntityGuid);
+            String dbName = (String) hive_db_1.getAttribute("name");
+            String data = TestUtilsV2.getFileData(CSV_FILES, "template_2.csv");
+            data = data.replaceAll("hive_db_1", dbName);
+            InputStream inputStream1 = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
+            BulkImportResponse bulkImportResponse = entityStore.bulkCreateOrUpdateBusinessAttributes(inputStream1, "template_2.csv");
+            assertEquals(CollectionUtils.isEmpty(bulkImportResponse.getSuccessImportInfoList()), false);
+            assertEquals(CollectionUtils.isEmpty(bulkImportResponse.getFailedImportInfoList()), true);
+
+        } catch (Exception e) {
+            fail("The BusinessMetadata Attribute should have been assigned " +e);
+        }
+    }
 }

@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -36,12 +37,19 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.apache.atlas.repository.Constants.GlossaryImportSupportedFileExtensions.*;
+import static org.apache.atlas.repository.Constants.SupportedFileExtensions.*;
 
 public class FileUtils {
     public static final String PIPE_CHARACTER   = "|";
     public static final String COLON_CHARACTER  = ":";
     public static final String ESCAPE_CHARACTER = "\\";
+
+    //BusinessMetadata attributes association uploads
+    public static final int TYPENAME_COLUMN_INDEX = 0;
+    public static final int UNIQUE_ATTR_VALUE_COLUMN_INDEX = 1;
+    public static final int BM_ATTR_NAME_COLUMN_INDEX = 2;
+    public static final int BM_ATTR_VALUE_COLUMN_INDEX = 3;
+    public static final int UNIQUE_ATTR_NAME_COLUMN_INDEX = 4;
 
     public static List<String[]> readFileData(String fileName, InputStream inputStream) throws IOException, AtlasBaseException {
         List<String[]>                        ret;
@@ -122,5 +130,17 @@ public class FileUtils {
         }
 
         return true;
+    }
+
+    public static String getBusinessMetadataHeaders() {
+        List<String> bMHeader = new ArrayList<>();
+
+        bMHeader.add("EntityType");
+        bMHeader.add("EntityUniqueAttributeValue");
+        bMHeader.add("BusinessAttributeName");
+        bMHeader.add("BusinessAttributeValue");
+        bMHeader.add("EntityUniqueAttributeName[optional]");
+
+        return StringUtils.join(bMHeader, ",");
     }
 }

@@ -35,8 +35,17 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -66,7 +75,7 @@ import static org.apache.atlas.type.AtlasTypeUtil.createBusinessMetadataDef;
  * Test utility class.
  */
 public final class TestUtilsV2 {
-
+    private static final Logger LOG = LoggerFactory.getLogger(TestUtilsV2.class);
     public static final long TEST_DATE_IN_LONG = 1418265358440L;
 
     public static final String TEST_USER   = "testUser";
@@ -1544,5 +1553,36 @@ public final class TestUtilsV2 {
     public static void populateSystemAttributes(AtlasBaseTypeDef typeDef) {
         typeDef.setCreatedBy(TestUtilsV2.TEST_USER);
         typeDef.setUpdatedBy(TestUtilsV2.TEST_USER);
+    }
+
+    public static InputStream getFile(String subDir, String fileName){
+        final String userDir  = System.getProperty("user.dir");
+        String filePath = getTestFilePath(userDir, subDir, fileName);
+        File file = new File(filePath);
+        InputStream  fs       = null;
+
+        try {
+            fs = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            LOG.error("File could not be found at: {}", filePath, e);
+        }
+
+        return fs;
+    }
+
+    public static String getFileData(String subDir, String fileName)throws IOException {
+        final String userDir  = System.getProperty("user.dir");
+        String       filePath = getTestFilePath(userDir, subDir, fileName);
+        File f        = new File(filePath);
+        String ret = FileUtils.readFileToString(f, "UTF-8");
+        return ret;
+    }
+
+    private static String getTestFilePath(String startPath, String subDir, String fileName) {
+        if (StringUtils.isNotEmpty(subDir)) {
+            return startPath + "/src/test/resources/" + subDir + "/" + fileName;
+        } else {
+            return startPath + "/src/test/resources/" + fileName;
+        }
     }
 }
