@@ -273,6 +273,7 @@ public class EntityGraphMapper {
                 mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
                 mapAttributes(createdEntity, entityType, vertex, CREATE, context);
+                setCustomAttributes(vertex,createdEntity);
 
                 resp.addEntity(CREATE, constructHeader(createdEntity, entityType, vertex));
                 addClassifications(context, guid, createdEntity.getClassifications());
@@ -292,6 +293,7 @@ public class EntityGraphMapper {
                 mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
 
                 mapAttributes(updatedEntity, entityType, vertex, UPDATE, context);
+                setCustomAttributes(vertex,updatedEntity);
 
                 if (isPartialUpdate) {
                     resp.addEntity(PARTIAL_UPDATE, constructHeader(updatedEntity, entityType, vertex));
