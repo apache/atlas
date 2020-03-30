@@ -1070,7 +1070,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-    private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
+        private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
         }
@@ -1273,8 +1273,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                         requestContext.recordEntityGuidUpdate(entity, guid);
                     }
-
-                    entityGraphMapper.setCustomAttributes(vertex, entity);
 
                     context.addUpdated(guid, entity, entityType, vertex);
                 } else {
