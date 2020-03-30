@@ -42,13 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
@@ -109,12 +103,13 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         /* If classification's attributes can be applied index filter, we can use direct index
          * to query classification index as well.
          */
-        final boolean useIndexSearchForClassification = (classificationType != MATCH_ALL_WILDCARD_CLASSIFICATION &&
-                                                        classificationType != MATCH_ALL_CLASSIFIED &&
-                                                        classificationType != MATCH_ALL_NOT_CLASSIFIED && !isWildcardSearch) &&
+        final boolean useIndexSearchForClassification = (!isBuiltInType && !isWildcardSearch) &&
                                                         (typeAndSubTypesQryStr.length() <= MAX_QUERY_STR_LENGTH_TAGS) &&
-                                                        CollectionUtils.isEmpty(graphAttributes) &&
+                                                        CollectionUtils.isNotEmpty(indexAttributes) &&
                                                         canApplyIndexFilter(classificationType, filterCriteria, false);
+
+        traitPredicate    = buildTraitPredict(classificationType);
+        isEntityPredicate = SearchPredicateUtil.generateIsEntityVertexPredicate(context.getTypeRegistry());
 
         AtlasGraph graph = context.getGraph();
 
@@ -148,15 +143,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             indexQuery              = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
 
             LOG.debug("Using query string  '{}'.", indexQuery);
-
-            isEntityPredicate = SearchPredicateUtil.generateIsEntityVertexPredicate(context.getTypeRegistry());
-            traitPredicate    = buildTraitPredict(classificationType);
-            inMemoryPredicate = inMemoryPredicate == null ? traitPredicate : PredicateUtils.andPredicate(inMemoryPredicate, traitPredicate);
-
         } else {
-            indexQuery     = null;
-            traitPredicate = null;
-            isEntityPredicate = null;
+            indexQuery = null;
         }
 
         // index query directly on classification
@@ -286,25 +274,27 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                     getVerticesFromIndexQueryResult(queryResult, entityVertices);
                     isLastResultPage = entityVertices.size() < limit;
 
-                    if (isEntityPredicate != null) {
-                        // Do in-memory filtering
-                        CollectionUtils.filter(entityVertices, isEntityPredicate);
-                    }
+                    // Do in-memory filtering
+                    CollectionUtils.filter(entityVertices, traitPredicate);
+                    CollectionUtils.filter(entityVertices, isEntityPredicate);
+
                 } else {
-                    if (classificationIndexQuery != null) {
+                    if (tagGraphQueryWithAttributes != null) {
+
+                        Iterator<AtlasVertex> queryResult = tagGraphQueryWithAttributes.vertices(qryOffset, limit).iterator();
+
+                        getVertices(queryResult, classificationVertices);
+
+                        isLastResultPage = classificationVertices.size() < limit;
+
+                    } else if (classificationIndexQuery != null){
+
                         Iterator<AtlasIndexQuery.Result> queryResult = classificationIndexQuery.vertices(qryOffset, limit);
 
                         getVerticesFromIndexQueryResult(queryResult, classificationVertices);
 
                         // Do in-memory filtering before the graph query
                         CollectionUtils.filter(classificationVertices, inMemoryPredicate);
-
-                    } else if (context.getSearchParameters().getTagFilters() != null) {
-                        Iterator<AtlasVertex> queryResult = tagGraphQueryWithAttributes.vertices(qryOffset, limit).iterator();
-
-                        getVertices(queryResult, classificationVertices);
-
-                        isLastResultPage = classificationVertices.size() < limit;
                     }
                 }
 
@@ -333,6 +323,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                 if (whiteSpaceFilter) {
                     filterWhiteSpaceClassification(entityVertices);
                 }
+                    // Do in-memory filtering
+                CollectionUtils.filter(entityVertices, isEntityPredicate);
 
                 super.filter(entityVertices);
 
@@ -358,7 +350,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> ClassificationSearchProcessor.filter({})", entityVertices.size());
         }
-
+        //in case of classification type + graph attributes
         if (gremlinTagFilterQuery != null && gremlinQueryBindings != null) {
             // Now filter on the tag attributes
             Set<String> guids = getGuids(entityVertices);
@@ -381,8 +373,43 @@ public class ClassificationSearchProcessor extends SearchProcessor {
                     LOG.warn(e.getMessage(), e);
                 }
             }
-        } else if (traitPredicate != null) {
+        } else if (inMemoryPredicate != null) {
+            //in case of classification type + index attributes
             CollectionUtils.filter(entityVertices, traitPredicate);
+
+            //filter attributes (filterCriteria). Find classification vertex(typeName = classification) from entity vertex (traitName = classification)
+            final Set<String> processedGuids = new HashSet<>();
+            List<AtlasVertex> matchEntityVertices = new ArrayList<>();
+            if (CollectionUtils.isNotEmpty(entityVertices)) {
+                for (AtlasVertex entityVertex : entityVertices) {
+                    Iterable<AtlasEdge> edges = entityVertex.getEdges(AtlasEdgeDirection.OUT, Constants.CLASSIFICATION_LABEL);
+
+                    for (AtlasEdge edge : edges) {
+                        AtlasVertex classificationVertex = edge.getInVertex();
+
+                        AtlasVertex matchVertex = (AtlasVertex) CollectionUtils.find(Collections.singleton(classificationVertex), inMemoryPredicate);
+                        if (matchVertex != null) {
+                            String guid = AtlasGraphUtilsV2.getIdFromVertex(entityVertex);
+
+                            if (processedGuids.contains(guid)) {
+                                continue;
+                            }
+
+                            matchEntityVertices.add(entityVertex);
+                            processedGuids.add(guid);
+                            break;
+
+                        }
+                    }
+                }
+            }
+            entityVertices.clear();
+            entityVertices.addAll(matchEntityVertices);
+
+        } else {
+            //in case of only classsification type
+            CollectionUtils.filter(entityVertices, traitPredicate);
+            CollectionUtils.filter(entityVertices, isEntityPredicate);
         }
 
         super.filter(entityVertices);
