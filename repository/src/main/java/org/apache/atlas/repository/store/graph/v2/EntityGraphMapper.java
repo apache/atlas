@@ -284,6 +284,8 @@ public class EntityGraphMapper {
             }
         }
 
+        EntityOperation updateType = isPartialUpdate ? PARTIAL_UPDATE : UPDATE;
+
         if (CollectionUtils.isNotEmpty(updatedEntities)) {
             for (AtlasEntity updatedEntity : updatedEntities) {
                 String          guid       = updatedEntity.getGuid();
@@ -292,14 +294,10 @@ public class EntityGraphMapper {
 
                 mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
 
-                mapAttributes(updatedEntity, entityType, vertex, UPDATE, context);
+                mapAttributes(updatedEntity, entityType, vertex, updateType, context);
                 setCustomAttributes(vertex,updatedEntity);
 
-                if (isPartialUpdate) {
-                    resp.addEntity(PARTIAL_UPDATE, constructHeader(updatedEntity, entityType, vertex));
-                } else {
-                    resp.addEntity(UPDATE, constructHeader(updatedEntity, entityType, vertex));
-                }
+                resp.addEntity(updateType, constructHeader(updatedEntity, entityType, vertex));
 
                 if (replaceClassifications) {
                     deleteClassifications(guid);
@@ -325,12 +323,7 @@ public class EntityGraphMapper {
         }
 
         for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
-            if (isPartialUpdate) {
-                resp.addEntity(PARTIAL_UPDATE, entity);
-            }
-            else {
-                resp.addEntity(UPDATE, entity);
-            }
+            resp.addEntity(updateType, entity);
         }
 
         RequestContext.get().endMetricRecord(metric);
@@ -623,7 +616,7 @@ public class EntityGraphMapper {
                     mapAttribute(attribute, attrValue, vertex, op, context);
                 }
 
-            } else if (op.equals(UPDATE)) {
+            } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
                 for (String attrName : struct.getAttributes().keySet()) {
                     AtlasAttribute attribute = structType.getAttribute(attrName);
 
@@ -665,7 +658,7 @@ public class EntityGraphMapper {
                     mapAttribute(attribute, attrValue, vertex, op, context);
                 }
 
-            } else if (op.equals(UPDATE)) {
+            } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
                 // relationship attributes mapping
                 for (String attrName : entityType.getRelationshipAttributes().keySet()) {
                     if (entity.hasRelationshipAttribute(attrName)) {
@@ -1251,6 +1244,22 @@ public class EntityGraphMapper {
         boolean             isReference = isReference(mapType.getValueType());
         boolean             isSoftReference = ctx.getAttribute().getAttributeDef().isSoftReferenced();
 
+        if (PARTIAL_UPDATE.equals(ctx.getOp()) && attribute.getAttributeDef().isAppendOnPartialUpdate() && MapUtils.isNotEmpty(currentMap)) {
+            if (MapUtils.isEmpty(newVal)) {
+                newVal = new HashMap<>(currentMap);
+            } else {
+                Map<Object, Object> mergedVal = new HashMap<>(currentMap);
+
+                for (Map.Entry<Object, Object> entry : newVal.entrySet()) {
+                    String newKey = entry.getKey().toString();
+
+                    mergedVal.put(newKey, entry.getValue());
+                }
+
+                newVal = mergedVal;
+            }
+        }
+
         boolean isNewValNull = newVal == null;
 
         if (isNewValNull) {
@@ -1334,13 +1343,26 @@ public class EntityGraphMapper {
         Cardinality    cardinality         = attribute.getAttributeDef().getCardinality();
         List<Object>   newElementsCreated  = new ArrayList<>();
         List<Object>   currentElements;
-        boolean isNewElementsNull          = newElements == null;
 
         if (isReference && !isSoftReference) {
             currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute);
         } else {
             currentElements = (List) getArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty());
         }
+
+        if (PARTIAL_UPDATE.equals(ctx.getOp()) && attribute.getAttributeDef().isAppendOnPartialUpdate() && CollectionUtils.isNotEmpty(currentElements)) {
+            if (CollectionUtils.isEmpty(newElements)) {
+                newElements = new ArrayList<>(currentElements);
+            } else {
+                List<Object> mergedVal = new ArrayList<>(currentElements);
+
+                mergedVal.addAll(newElements);
+
+                newElements = mergedVal;
+            }
+        }
+
+        boolean isNewElementsNull = newElements == null;
 
         if (isNewElementsNull) {
             newElements = new ArrayList();

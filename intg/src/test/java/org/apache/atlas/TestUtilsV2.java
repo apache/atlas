@@ -627,6 +627,13 @@ public final class TestUtilsV2 {
     }
 
     public static AtlasTypesDef defineSimpleAttrType() {
+        AtlasAttributeDef attrPuArray = new AtlasAttributeDef("puArray", "array<string>", true, SINGLE, 1, 1, false, false, false, null);
+        AtlasAttributeDef attrPuMap   = new AtlasAttributeDef("puMap", "map<string,string>",  true, SINGLE, 1,1, false, false, false, null);
+
+        attrPuArray.setOption(AtlasAttributeDef.ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE, "true");
+        attrPuMap.setOption(AtlasAttributeDef.ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE, "true");
+
+
         AtlasEntityDef simpleAttributesEntityType =
             createClassTypeDef(ENTITY_TYPE_WITH_SIMPLE_ATTR, ENTITY_TYPE_WITH_SIMPLE_ATTR + "_description", null,
                 createUniqueRequiredAttrDef("name", "string"),
@@ -641,7 +648,11 @@ public final class TestUtilsV2 {
                     false, false, false, null),
 
                 new AtlasAttributeDef("mapOfStrings", "map<string,string>",
-                    true, SINGLE, 1,1, false, false, false, null)
+                    true, SINGLE, 1,1, false, false, false, null),
+
+                attrPuArray,
+
+                attrPuMap
             );
 
         AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(Collections.<AtlasEnumDef>emptyList(),
@@ -659,6 +670,8 @@ public final class TestUtilsV2 {
         entity.setAttribute("stringAtrr", "DummyThree");
         entity.setAttribute("arrayOfStrings", Arrays.asList("DummyOne", "DummyTwo"));
         entity.setAttribute("mapOfStrings", Collections.singletonMap("one", "DummyString"));
+        entity.setAttribute("puArray", Arrays.asList("DummyOne", "DummyTwo"));
+        entity.setAttribute("puMap", Collections.singletonMap("one", "DummyString"));
 
         return new AtlasEntityWithExtInfo(entity);
     }
