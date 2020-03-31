@@ -49,7 +49,10 @@
           "cardinality": "SINGLE",
           "isIndexable": false,
           "isOptional": true,
-          "isUnique": false
+          "isUnique": false,
+          "options": {
+            "isAppendOnPartialUpdate": "true"
+          }
         },
         {
           "name": "createTime",
@@ -93,7 +96,10 @@
           "cardinality": "SINGLE",
           "isIndexable": false,
           "isOptional": true,
-          "isUnique": false
+          "isUnique": false,
+          "options": {
+            "isAppendOnPartialUpdate": "true"
+          }
         },
         {
           "name": "defaultCpuMillicores",
@@ -209,7 +215,10 @@
           "cardinality": "SINGLE",
           "isIndexable": false,
           "isOptional": true,
-          "isUnique": false
+          "isUnique": false,
+          "options": {
+            "isAppendOnPartialUpdate": "true"
+          }
         },
         {
           "name": "modelEndpointURL",
