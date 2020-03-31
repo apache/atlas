@@ -19,7 +19,9 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
+import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
@@ -69,6 +71,9 @@ public class AtlasBusinessMetadataDefStoreV2Test {
     private String businessMetadataName;
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
+        RequestContext.clear();
+        RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
+
         loadBaseModel(typeDefStore, typeRegistry);
         loadFsModel(typeDefStore, typeRegistry);
         loadHiveModel(typeDefStore, typeRegistry);
@@ -402,6 +407,9 @@ public class AtlasBusinessMetadataDefStoreV2Test {
                 AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
         addBusinessAttribute(businessMetadataDef1, "test_businessMetadata_attribute2", Collections.singleton("hive_table"), "int",
                 AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+
+        TestUtilsV2.populateSystemAttributes(businessMetadataDef1);
+
         return businessMetadataDef1;
     }
 
@@ -418,7 +426,9 @@ public class AtlasBusinessMetadataDefStoreV2Test {
         List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
         businessMetadataDefs.add(createBusinessMetadataDef(businessMetadataName));
         typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
-        typeDefStore.createTypesDef(typesDefs);
+        AtlasTypesDef createdTypesDef = typeDefStore.createTypesDef(typesDefs);
+
+        Assert.assertEquals(createdTypesDef.getBusinessMetadataDefs(), businessMetadataDefs, "Data integrity issue while persisting");
     }
 
     private void addBusinessAttribute(AtlasBusinessMetadataDef businessMetadataDef, String name, Set<String> applicableEntityTypes,
@@ -431,7 +441,10 @@ public class AtlasBusinessMetadataDefStoreV2Test {
             attributeDef.setOption(ATTR_MAX_STRING_LENGTH, "20");
         }
         attributeDef.setIsOptional(true);
+        attributeDef.setValuesMinCount(0);
+        attributeDef.setValuesMaxCount(1);
         attributeDef.setIsUnique(false);
+        attributeDef.setDisplayName(name);
 
         businessMetadataDef.addAttribute(attributeDef);
     }

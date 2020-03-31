@@ -546,6 +546,8 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
             attribInfo.put("options", AtlasType.toJson(attributeDef.getOptions()));
         }
 
+        attribInfo.put("displayName", attributeDef.getDisplayName());
+
         final int lower;
         final int upper;
 
@@ -590,6 +592,8 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         if(attribInfo.get("options") != null) {
             ret.setOptions(AtlasType.fromJson((String) attribInfo.get("options"), Map.class));
         }
+
+        ret.setDisplayName((String) attribInfo.get("displayName"));
 
         if ((Boolean)attribInfo.get("isComposite")) {
             ret.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
