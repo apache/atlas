@@ -209,6 +209,11 @@ public class EntityMutationResponse {
     }
 
     @JsonIgnore
+    public AtlasEntityHeader getFirstPartialUpdatedEntityByTypeName(String typeName) {
+        return getFirstEntityByType(getEntitiesByOperation(EntityOperation.PARTIAL_UPDATE), typeName);
+    }
+
+    @JsonIgnore
     public void addEntity(EntityOperation op, AtlasEntityHeader header) {
         // if an entity is already included in CREATE, ignore subsequent UPDATE, PARTIAL_UPDATE
         if (op == EntityOperation.UPDATE || op == EntityOperation.PARTIAL_UPDATE) {

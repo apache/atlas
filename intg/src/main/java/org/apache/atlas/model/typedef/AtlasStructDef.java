@@ -263,10 +263,11 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public static final int       DEFAULT_SEARCHWEIGHT          = -1;
 
 
-        public static final String    SEARCH_WEIGHT_ATTR_NAME       = "searchWeight";
-        public static final String    INDEX_TYPE_ATTR_NAME          = "indexType";
-        public static final String    ATTRDEF_OPTION_SOFT_REFERENCE = "isSoftReference";
-        private final String          STRING_TRUE                   = "true";
+        public static final String    SEARCH_WEIGHT_ATTR_NAME                 = "searchWeight";
+        public static final String    INDEX_TYPE_ATTR_NAME                    = "indexType";
+        public static final String    ATTRDEF_OPTION_SOFT_REFERENCE           = "isSoftReference";
+        public static final String    ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE = "isAppendOnPartialUpdate";
+        private final String          STRING_TRUE                             = "true";
 
         /**
          * single-valued attribute or multi-valued attribute.
@@ -517,6 +518,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             return this.options != null &&
                     getOptions().containsKey(AtlasAttributeDef.ATTRDEF_OPTION_SOFT_REFERENCE) &&
                     getOptions().get(AtlasAttributeDef.ATTRDEF_OPTION_SOFT_REFERENCE).equals(STRING_TRUE);
+        }
+
+        @JsonIgnore
+        public boolean isAppendOnPartialUpdate() {
+            String val = getOption(AtlasAttributeDef.ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE);
+
+            return val != null && Boolean.valueOf(val);
         }
 
         @JsonIgnore
