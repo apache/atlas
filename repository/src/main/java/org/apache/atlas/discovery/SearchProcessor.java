@@ -738,52 +738,48 @@ public abstract class SearchProcessor {
                     operator                         = processedCriteria.getOperator();
                 }
 
-                try {
-                    final String qualifiedName = type.getQualifiedAttributeName(attrName);
+                final String qualifiedName           =  type.getAttribute(attrName).getVertexPropertyName();
 
-                    switch (operator) {
-                        case LT:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN, attrValue);
-                            break;
-                        case LTE:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN_EQUAL, attrValue);
-                            break;
-                        case GT:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, attrValue);
-                            break;
-                        case GTE:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN_EQUAL, attrValue);
-                            break;
-                        case EQ:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, attrValue);
-                            break;
-                        case NEQ:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, attrValue);
-                            break;
-                        case LIKE:
-                            query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, attrValue);
-                            break;
-                        case CONTAINS:
-                            query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getContainsRegex(attrValue));
-                            break;
-                        case STARTS_WITH:
-                            query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.PREFIX, attrValue);
-                            break;
-                        case ENDS_WITH:
-                            query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getSuffixRegex(attrValue));
-                            break;
-                        case IS_NULL:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, null);
-                            break;
-                        case NOT_NULL:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, null);
-                            break;
-                        default:
-                            LOG.warn("{}: unsupported operator. Ignored", operator);
-                            break;
-                    }
-                } catch (AtlasBaseException e) {
-                    LOG.error("toGraphFilterQuery(): failed for attrName=" + attrName + "; operator=" + operator + "; attrValue=" + attrValue, e);
+                switch (operator) {
+                    case LT:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN, attrValue);
+                        break;
+                    case LTE:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN_EQUAL, attrValue);
+                        break;
+                    case GT:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, attrValue);
+                        break;
+                    case GTE:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN_EQUAL, attrValue);
+                        break;
+                    case EQ:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, attrValue);
+                        break;
+                    case NEQ:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, attrValue);
+                        break;
+                    case LIKE:
+                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, attrValue);
+                        break;
+                    case CONTAINS:
+                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getContainsRegex(attrValue));
+                        break;
+                    case STARTS_WITH:
+                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.PREFIX, attrValue);
+                        break;
+                    case ENDS_WITH:
+                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getSuffixRegex(attrValue));
+                        break;
+                    case IS_NULL:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, null);
+                        break;
+                    case NOT_NULL:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, null);
+                        break;
+                    default:
+                        LOG.warn("{}: unsupported operator. Ignored", operator);
+                        break;
                 }
             }
         }
