@@ -170,6 +170,9 @@ define(['require',
                     if (collectionJSON) {
                         this.name = Utils.getName(collectionJSON);
                         if (collectionJSON.attributes) {
+                            if (collectionJSON.typeName) {
+                                collectionJSON.attributes.typeName = _.escape(collectionJSON.typeName);
+                            }
                             if (this.name && collectionJSON.typeName) {
                                 this.name = this.name + ' (' + _.escape(collectionJSON.typeName) + ')';
                             }
@@ -244,6 +247,9 @@ define(['require',
                         })(),
                         editEntity: this.editEntity || false
                     }
+                    obj["renderAuditTableLayoutView"] = function() {
+                        that.renderAuditTableLayoutView(obj);
+                    };
                     this.renderEntityDetailTableLayoutView(obj);
                     this.renderEntityUserDefineView(obj);
                     this.renderEntityLabelDefineView(obj);
