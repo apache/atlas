@@ -163,7 +163,7 @@ define(['require',
                         editable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return model.get('name');
+                                return _.escape(model.get('name'));
                             }
                         })
                     },
@@ -174,6 +174,39 @@ define(['require',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
                                 return _.escape(model.get('typeName'));
+                            }
+                        })
+                    },
+                    searchWeight: {
+                        label: "Search Weight",
+                        cell: "String",
+                        editable: false
+                    },
+                    enableMultipleValue: {
+                        label: "Enable Multivalues",
+                        cell: "html",
+                        editable: false,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var enableMultipleValue = '';
+                                if (model.get('typeName').indexOf('array<') > -1) {
+                                    enableMultipleValue = 'checked';
+                                }
+                                return '<input type="checkbox" class="form-check-input multi-value-select" data-id="multiValueSelectStatus" ' + enableMultipleValue + ' disabled="disabled">';
+                            }
+                        })
+                    },
+                    maxStrLength: {
+                        label: "Max Length",
+                        cell: "html",
+                        editable: false,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var maxString = "NA";
+                                if (model.get('typeName').indexOf('string') > -1) {
+                                    maxString = model.get('options').maxStrLength || maxString;
+                                }
+                                return maxString;
                             }
                         })
                     },

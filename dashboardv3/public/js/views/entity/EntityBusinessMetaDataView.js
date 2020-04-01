@@ -215,7 +215,8 @@ define([
             this.collection.unshift(modelObj);
         },
         renderBusinessMetadata: function() {
-            var li = ""
+            var that = this,
+                li = ""
             this.actualCollection.forEach(function(obj) {
                 var attrLi = "";
                 _.each(obj.attributes, function(val, key) {
@@ -236,12 +237,19 @@ define([
                         attrLi += "<tr><td>" + _.escape(key) + " (" + _.escape(val.typeName) + ")</td><td>" + _.escape(newVal) + "</td></tr>";
                     }
                 });
-                li += "<ul class='business-metadata-tree-parent'><li class='table'>" + _.escape(obj.get("__internal_UI_businessMetadataName")) + "</li>" +
-                    "<li class='business-metadata-tree-child entity-detail-table'>" +
-                    "<table class='table'>" + attrLi + "</table>" +
-                    "</li></ul>";
+                li += that.associateAttributePanel(obj, attrLi);
             });
             this.ui.businessMetadataTree.html(li);
+        },
+        associateAttributePanel: function(obj, tableBody) {
+            return '<div class="panel panel-default custom-panel expand_collapse_panel-icon no-border business-metadata-detail-attr">' +
+                '<div class="panel-heading" data-toggle="collapse" href="#' + _.escape(obj.get("__internal_UI_businessMetadataName")) + '" aria-expanded="true" style="width: 70%;">' +
+                '<h4 class="panel-title"> <a>' + _.escape(obj.get("__internal_UI_businessMetadataName")) + '</a></h4>' +
+                '<div class="btn-group pull-left"> <button type="button" title="Collapse"><i class="ec-icon fa"></i></button></div>' +
+                '</div>' +
+                '<div id="' + _.escape(obj.get("__internal_UI_businessMetadataName")) + '" class="panel-collapse collapse in">' +
+                '<div class="panel-body"><table class="table">' + tableBody + '</table></div>' +
+                '</div></div>';
         },
         onRender: function() {
             this.panelOpenClose();
