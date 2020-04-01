@@ -359,7 +359,9 @@ define(['require',
                 });
                 if (this.showDefaultTableSorted) {
                     this.grid.render();
-                    this.grid.sort(this.sortOpts.sortColumn, this.sortOpts.sortDirection);
+                    if (this.collection.fullCollection.length > 1) {
+                        this.grid.sort(this.sortOpts.sortColumn, this.sortOpts.sortDirection);
+                    }
                     this.rTableList.show(this.grid);
                 } else {
                     this.rTableList.show(this.grid);
