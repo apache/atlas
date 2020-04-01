@@ -55,7 +55,7 @@ define(['require',
         },
         initialize: function(options) {
             var self = this;
-            _.extend(this, _.pick(options, 'entity', 'customFilter'));
+            _.extend(this, _.pick(options, 'entity', 'customFilter', 'renderAuditTableLayoutView'));
             this.swapItem = false, this.saveLabels = false;
             this.readOnlyEntity = this.customFilter === undefined ? Enums.entityStateReadOnly[this.entity.status] : this.customFilter;
             this.entityModel = new VEntity(this.entity);
@@ -164,6 +164,9 @@ define(['require',
                         that.swapItem = false;
                         that.saveLabels = false;
                         that.render();
+                        if (that.renderAuditTableLayoutView) {
+                            that.renderAuditTableLayoutView();
+                        }
                     },
                     error: function(e) {
                         that.ui.saveLabels && that.ui.saveLabels.length > 0 && that.ui.saveLabels[0].setAttribute("disabled", false);

@@ -53,7 +53,7 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'entity', 'customFilter'));
+            _.extend(this, _.pick(options, 'entity', 'customFilter', 'renderAuditTableLayoutView'));
             this.userDefineAttr = this.entity && this.entity.customAttributes || [];
             this.initialCall = false;
             this.swapItem = false, this.saveAttrItems = false;
@@ -136,6 +136,9 @@ define(['require',
                     that.swapItem = false;
                     that.saveAttrItems = false;
                     that.render();
+                    if (that.renderAuditTableLayoutView) {
+                        that.renderAuditTableLayoutView();
+                    }
                 },
                 error: function(e) {
                     that.initialCall = false;
