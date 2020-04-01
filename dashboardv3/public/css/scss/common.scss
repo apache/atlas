@@ -287,36 +287,23 @@ pre {
 
 }
 
-.button-loader:after {
-    content: "\f021";
-    position: absolute;
-    left: -6px;
-    bottom: 4px;
-    font-family: FontAwesome;
-    background: transparent;
-    height: 34px;
-    width: 38px;
-    line-height: 34px;
-    text-align: center;
-    animation: spin 1000ms infinite linear;
-}
+.button-loader {
+    position: relative;
+    padding-left: 22px !important;
 
-@-webkit-keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(359deg);
-    }
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(359deg);
+    &:after {
+        content: "\f021";
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        left: 0px;
+        top: 0px;
+        font-family: FontAwesome;
+        background: transparent;
+        height: 100%;
+        width: 26px;
+        font-size: 11px;
+        animation: spin 1000ms infinite linear;
     }
 }

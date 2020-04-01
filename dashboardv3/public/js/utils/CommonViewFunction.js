@@ -24,18 +24,25 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         require(['models/VTag'], function(VTag) {
             if (options && options.guid && options.tagName) {
                 var tagModel = new VTag(),
+                    noticeRef = null,
                     notifyObj = {
                         modal: true,
+                        okCloses: false,
+                        okShowLoader: true,
                         text: options.msg,
                         title: options.titleMessage,
                         okText: options.okText,
-                        ok: function(argument) {
+                        ok: function(notice) {
+                            noticeRef = notice;
                             if (options.showLoader) {
                                 options.showLoader();
                             }
                             tagModel.deleteAssociation(options.guid, options.tagName, options.associatedGuid, {
                                 defaultErrorMessage: options.tagName + Messages.deleteErrorMessage,
                                 success: function(data) {
+                                    if (noticeRef) {
+                                        noticeRef.remove();
+                                    }
                                     Utils.notifySuccess({
                                         content: "Classification " + options.tagName + Messages.getAbbreviationMsg(false, 'removeSuccessMessage')
                                     });
@@ -48,6 +55,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
 
                                 },
                                 cust_error: function(model, response) {
+                                    if (noticeRef) {
+                                        noticeRef.hideButtonLoader();
+                                    }
                                     if (options.hideLoader) {
                                         options.hideLoader();
                                     }
@@ -809,8 +819,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 collection = options.collection,
                 model = options.model,
                 newModel = new options.collection.model(),
+                noticeRef = null,
                 ajaxOptions = {
                     success: function(rModel, response) {
+                        if (noticeRef) {
+                            noticeRef.remove();
+                        }
                         Utils.notifySuccess({
                             content: ((isCategoryView || isEntityView ? "Term" : "Category") + " association is removed successfully")
                         });
@@ -819,6 +833,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         }
                     },
                     cust_error: function() {
+                        if (noticeRef) {
+                            noticeRef.hideButtonLoader();
+                        }
                         if (options.hideLoader) {
                             options.hideLoader();
                         }
@@ -826,10 +843,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 },
                 notifyObj = {
                     modal: true,
+                    okCloses: false,
+                    okShowLoader: true,
                     text: options.msg,
                     title: options.titleMessage,
                     okText: options.buttonText,
-                    ok: function(argument) {
+                    ok: function(notice) {
+                        noticeRef = notice;
                         if (options.showLoader) {
                             options.showLoader();
                         }
@@ -852,7 +872,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             }));
                         }
                     },
-                    cancel: function(argument) {}
+                    cancel: function() {}
                 };
             Utils.notifyConfirm(notifyObj);
         }
