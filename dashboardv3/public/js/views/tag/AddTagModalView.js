@@ -125,6 +125,7 @@ define(['require',
                     cancelText: "Cancel",
                     mainClass: 'modal-lg',
                     allowCancel: true,
+                    okCloses: false
                 };
             if (this.tagModel) {
                 modalObj.title = 'Edit Classification';
@@ -134,6 +135,7 @@ define(['require',
             this.modal.open();
             this.modal.$el.find('button.ok').attr("disabled", true);
             this.on('ok', function() {
+                that.modal.$el.find('button.ok').showButtonLoader();
                 var tagName = this.tagModel ? this.tagModel.typeName : this.ui.addTagOptions.val(),
                     tagAttributes = {},
                     tagAttributeNames = this.$(".attrName"),
@@ -453,8 +455,10 @@ define(['require',
                     if (that.callback) {
                         that.callback();
                     }
+                    that.modal.close();
                 },
                 cust_error: function(model, response) {
+                    that.modal.$el.find('button.ok').hideButtonLoader();
                     if (that.hideLoader) {
                         that.hideLoader();
                     }

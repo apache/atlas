@@ -184,7 +184,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 confirm: true,
                 buttons: [{
                         text: options.cancelText || 'Cancel',
-                        addClass: 'btn-action btn-md',
+                        addClass: 'btn-action btn-md cancel',
                         click: function(notice) {
                             options.cancel(notice);
                             notice.remove();
@@ -192,10 +192,24 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     },
                     {
                         text: options.okText || 'Ok',
-                        addClass: 'btn-atlas btn-md',
+                        addClass: 'btn-atlas btn-md ok',
                         click: function(notice) {
-                            options.ok(notice);
-                            notice.remove();
+                            if (options.ok) {
+                                options.ok($.extend({}, notice, {
+                                    hideButtonLoader: function() {
+                                        notice.container.find("button.ok").hideButtonLoader();
+                                    },
+                                    showButtonLoader: function() {
+                                        notice.container.find("button.ok").showButtonLoader();
+                                    }
+                                }));
+                            }
+                            if (options.okShowLoader) {
+                                notice.container.find("button.ok").showButtonLoader();
+                            }
+                            if (options.okCloses !== false) {
+                                notice.remove();
+                            }
                         }
                     }
                 ]
@@ -872,7 +886,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         }
     }
     $.fn.showButtonLoader = function() {
-        $(this).css({ "position": "relative" }).attr("disabled", "true").addClass('button-loader');
+        $(this).attr("disabled", "true").addClass('button-loader');
     }
     $.fn.hideButtonLoader = function() {
         $(this).removeClass('button-loader').removeAttr("disabled");
