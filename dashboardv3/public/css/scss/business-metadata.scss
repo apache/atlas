@@ -173,3 +173,27 @@
         display: none;
     }
 }
+
+.business-metadata-detail-attr {
+    margin-bottom: 0px;
+    box-shadow: none;
+
+    .panel-heading {
+        color: #686868 !important;
+        font-size: 13px;
+        padding: 0;
+
+        .panel-title {
+            font-size: 14px;
+
+            a:hover {
+                color: #686868 !important;
+                opacity: 1 !important;
+            }
+        }
+    }
+
+    .btn-group>button {
+        color: #686868 !important;
+    }
+}

@@ -172,8 +172,8 @@ define(['require',
                 this.ui.entityTypeSelector.on('select2:open', function(e) { // to make selected option disable in dropdown added remove-from-list class
                     $('.select2-dropdown--below').addClass('remove-from-list');
                 });
-                if (this.model.get("searchWeight") && this.model.get("searchWeight") != -1) {
-                    searchWeightValue = this.model.get("searchWeight");
+                if (this.model.get("searchWeight")) {
+                    searchWeightValue = this.model.get("searchWeight") === -1 ? 0 : this.model.get("searchWeight");
                 }
                 if (this.model.get("options")) {
                     stringLengthValue = this.model.get("options").maxStrLength || '50';
