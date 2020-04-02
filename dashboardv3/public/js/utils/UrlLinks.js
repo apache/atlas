@@ -104,7 +104,7 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         },
         entitiesBusinessMetadataApiUrl: function(guid) {
             if (guid) {
-                return this.baseUrlV2 + '/entity/guid/' + guid + '/businessmetata?isOverwrite=true';
+                return this.baseUrlV2 + '/entity/guid/' + guid + '/businessmetadata?isOverwrite=true';
             }
         },
         entityCollectionaudit: function(guid) {
