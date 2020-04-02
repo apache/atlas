@@ -55,6 +55,8 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
 
+    public static final String OPTION_DISPLAY_TEXT_ATTRIBUTE = "displayTextAttribute";
+
     private Set<String> superTypes;
 
     // this is a read-only field, any value provided during create & update operation is ignored

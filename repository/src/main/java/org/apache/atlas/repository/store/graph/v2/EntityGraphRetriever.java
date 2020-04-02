@@ -704,8 +704,7 @@ public class EntityGraphRetriever {
                 }
             }
 
-            Object name        = ret.getAttribute(NAME);
-            Object displayText = name != null ? name : ret.getAttribute(QUALIFIED_NAME);
+            Object displayText = getDisplayText(entityVertex, entityType);
 
             if (displayText != null) {
                 ret.setDisplayText(displayText.toString());
@@ -1484,18 +1483,29 @@ public class EntityGraphRetriever {
     }
 
     private Object getDisplayText(AtlasVertex entityVertex, String entityTypeName) throws AtlasBaseException {
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
-        Object          ret        = null;
+        return getDisplayText(entityVertex, typeRegistry.getEntityTypeByName(entityTypeName));
+    }
+
+    private Object getDisplayText(AtlasVertex entityVertex, AtlasEntityType entityType) throws AtlasBaseException {
+        Object ret = null;
 
         if (entityType != null) {
-            ret = getVertexAttribute(entityVertex, entityType.getAttribute(NAME));
+            String displayTextAttribute = entityType.getDisplayTextAttribute();
 
-            if (ret == null) {
-                ret = getVertexAttribute(entityVertex, entityType.getAttribute(DISPLAY_NAME));
+            if (displayTextAttribute != null) {
+                ret = getVertexAttribute(entityVertex, entityType.getAttribute(displayTextAttribute));
             }
 
             if (ret == null) {
-                ret = getVertexAttribute(entityVertex, entityType.getAttribute(QUALIFIED_NAME));
+                ret = getVertexAttribute(entityVertex, entityType.getAttribute(NAME));
+
+                if (ret == null) {
+                    ret = getVertexAttribute(entityVertex, entityType.getAttribute(DISPLAY_NAME));
+
+                    if (ret == null) {
+                        ret = getVertexAttribute(entityVertex, entityType.getAttribute(QUALIFIED_NAME));
+                    }
+                }
             }
         }
 

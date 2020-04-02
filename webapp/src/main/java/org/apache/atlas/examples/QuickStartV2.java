@@ -278,6 +278,8 @@ public class QuickStartV2 {
                 createRequiredAttrDef("queryId", "string"),
                 createRequiredAttrDef("queryGraph", "string"));
 
+        processExecutionTypeDef.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "queryText");
+
         AtlasEntityDef viewTypeDef    = createClassTypeDef(VIEW_TYPE, VIEW_TYPE, VERSION_1, Collections.singleton("DataSet"));
 
         // Relationship-Definitions

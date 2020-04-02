@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -219,7 +220,7 @@ public class TestAtlasTypeRegistry {
     }
 
     /*
-     *             L0
+     *             L0        L0_1
      *          /      \
      *         /         \
      *      L1_1----      L1_2
@@ -230,6 +231,7 @@ public class TestAtlasTypeRegistry {
     @Test
     public void testEntityDefValidHierarchy() throws AtlasBaseException {
         AtlasEntityDef entL0   = new AtlasEntityDef("L0");
+        AtlasEntityDef entL0_1 = new AtlasEntityDef("L0-1");
         AtlasEntityDef entL1_1 = new AtlasEntityDef("L1-1");
         AtlasEntityDef entL1_2 = new AtlasEntityDef("L1-2");
         AtlasEntityDef entL2_1 = new AtlasEntityDef("L2-1");
@@ -253,9 +255,16 @@ public class TestAtlasTypeRegistry {
         entL2_3.addAttribute(new AtlasAttributeDef("L2-3_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
         entL2_4.addAttribute(new AtlasAttributeDef("L2-4_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
 
+        // set displayNames in L0, L1_1, L2_1
+        entL0.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "L0_a1");
+        entL1_1.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "L1-1_a1");
+        entL2_1.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "L2-1_a1");
+        entL2_4.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "non-existing-attr");
+
         AtlasTypesDef typesDef = new AtlasTypesDef();
 
         typesDef.getEntityDefs().add(entL0);
+        typesDef.getEntityDefs().add(entL0_1);
         typesDef.getEntityDefs().add(entL1_1);
         typesDef.getEntityDefs().add(entL1_2);
         typesDef.getEntityDefs().add(entL2_1);
@@ -312,6 +321,15 @@ public class TestAtlasTypeRegistry {
         validateAttributeNames(typeRegistry, "L2-2", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1", "L2-2_a1")));
         validateAttributeNames(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1", "L1-2_a1", "L2-3_a1")));
         validateAttributeNames(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L0_a1", "L1-2_a1", "L2-4_a1")));
+
+        validateDisplayNameAttribute(typeRegistry, "L0", "L0_a1");     // directly assigned for this type
+        validateDisplayNameAttribute(typeRegistry, "L0-1");            // not assigned for this type
+        validateDisplayNameAttribute(typeRegistry, "L1-1", "L1-1_a1"); // directly assigned for this type
+        validateDisplayNameAttribute(typeRegistry, "L1-2", "L0_a1");   // inherits from L0
+        validateDisplayNameAttribute(typeRegistry, "L2-1", "L2-1_a1"); // directly assigned for this type
+        validateDisplayNameAttribute(typeRegistry, "L2-2", "L1-1_a1"); // inherits from L1-1
+        validateDisplayNameAttribute(typeRegistry, "L2-3", "L1-1_a1"); // inherits from L1-1 or L0
+        validateDisplayNameAttribute(typeRegistry, "L2-4", "L0_a1");   // invalid-name ignored, inherits from L0
     }
 
     @Test
@@ -677,5 +695,17 @@ public class TestAtlasTypeRegistry {
 
         assertNotNull(attributes);
         assertEquals(attributes.keySet(), attributeNames);
+    }
+
+    private void validateDisplayNameAttribute(AtlasTypeRegistry typeRegistry, String entityTypeName, String... displayNameAttributes) {
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
+
+        if (displayNameAttributes == null || displayNameAttributes.length == 0) {
+            assertNull(entityType.getDisplayTextAttribute());
+        } else {
+            List<String> validValues = Arrays.asList(displayNameAttributes);
+
+            assertTrue(validValues.contains(entityType.getDisplayTextAttribute()), entityTypeName + ": invalid displayNameAttribute " + entityType.getDisplayTextAttribute() + ". Valid values: " + validValues);
+        }
     }
 }
