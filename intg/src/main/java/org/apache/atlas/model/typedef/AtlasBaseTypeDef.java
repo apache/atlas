@@ -18,6 +18,7 @@
 package org.apache.atlas.model.typedef;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.TypeCategory;
@@ -305,6 +306,24 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         } else {
             this.options = null;
         }
+    }
+
+    @JsonIgnore
+    public String getOption(String optionName) {
+        Map<String, String> options = this.options;
+
+        return options != null ? options.get(optionName) : null;
+    }
+
+    @JsonIgnore
+    public void setOption(String optionName, String value) {
+        Map<String, String> options = this.options;
+
+        if (options == null) {
+            this.options = options = new HashMap<>();
+        }
+
+        options.put(optionName, value);
     }
 
     public StringBuilder toString(StringBuilder sb) {

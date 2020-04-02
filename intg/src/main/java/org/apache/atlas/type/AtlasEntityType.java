@@ -86,6 +86,7 @@ public class AtlasEntityType extends AtlasStructType {
     private Map<String, Map<String, AtlasAttribute>>         relationshipAttributes     = Collections.emptyMap();
     private Map<String, Map<String, AtlasBusinessAttribute>> businessAttributes         = Collections.emptyMap();
     private List<AtlasAttribute>                             ownedRefAttributes         = Collections.emptyList();
+    private String                                           displayTextAttribute       = null;
     private String                                           typeAndAllSubTypesQryStr   = "";
     private boolean                                          isInternalType             = false;
     private Map<String, AtlasAttribute>                      headerAttributes           = Collections.emptyMap();
@@ -98,15 +99,17 @@ public class AtlasEntityType extends AtlasStructType {
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef);
 
-        this.entityDef  = entityDef;
-        this.typeQryStr = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.entityDef            = entityDef;
+        this.typeQryStr           = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.displayTextAttribute = entityDef.getOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE);
     }
 
     public AtlasEntityType(AtlasEntityDef entityDef, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super(entityDef);
 
-        this.entityDef  = entityDef;
-        this.typeQryStr = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.entityDef            = entityDef;
+        this.typeQryStr           = AtlasAttribute.escapeIndexQueryValue(Collections.singleton(getTypeName()));
+        this.displayTextAttribute = entityDef.getOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE);
 
         resolveReferences(typeRegistry);
     }
@@ -178,6 +181,29 @@ public class AtlasEntityType extends AtlasStructType {
 
                 if (schemaAttribute != null) {
                     this.minInfoAttributes.put(schemaAttributeName, schemaAttribute);
+                }
+            }
+        }
+
+        if (this.displayTextAttribute != null) {
+            if (getAttribute(this.displayTextAttribute) == null) {
+                LOG.warn("{}: ignoring option {}, as attribute {} does not exist", getTypeName(), AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, this.displayTextAttribute);
+
+                this.displayTextAttribute = null;
+            }
+        }
+
+        if (this.displayTextAttribute == null) { // find displayTextAttribute in direct superTypes
+            for (AtlasEntityType superType : superTypes) {
+                // read from superType's entityDef; not from superType.getDisplayTextAttribute(), as that might have been resolved to its superType
+                this.displayTextAttribute = superType.getEntityDef().getOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE);
+
+                if (this.displayTextAttribute != null) {
+                    if (getAttribute(this.displayTextAttribute) == null) { // if displayTextAttribute in superType is invalid, ignore
+                        this.displayTextAttribute = null;
+                    } else {
+                        break;
+                    }
                 }
             }
         }
@@ -321,6 +347,18 @@ public class AtlasEntityType extends AtlasStructType {
 
         entityDef.setBusinessAttributeDefs(bmAttributeDefs);
 
+        if (this.displayTextAttribute == null) {
+            for (String superTypeName : allSuperTypes) { // find displayTextAttribute in all superTypes
+                AtlasEntityType superType = typeRegistry.getEntityTypeByName(superTypeName);
+
+                this.displayTextAttribute = superType.getDisplayTextAttribute();
+
+                if (this.displayTextAttribute != null) {
+                    break;
+                }
+            }
+        }
+
         this.parsedTemplates = parseDynAttributeTemplates();
 
         populateDynFlagsInfo();
@@ -411,6 +449,10 @@ public class AtlasEntityType extends AtlasStructType {
 
     public List<AtlasAttribute> getOwnedRefAttributes() {
         return ownedRefAttributes;
+    }
+
+    public String getDisplayTextAttribute() {
+        return displayTextAttribute;
     }
 
     public List<AtlasAttribute> getDynEvalAttributes() { return dynAttributes; }

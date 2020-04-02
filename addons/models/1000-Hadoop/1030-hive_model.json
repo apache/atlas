@@ -464,7 +464,7 @@
                 "ProcessExecution"
             ],
             "serviceType": "hive",
-            "typeVersion" : "1.0",
+            "typeVersion" : "1.1",
             "attributeDefs" : [
                 {
                     "name": "startTime",
@@ -530,7 +530,10 @@
                     "isOptional": false,
                     "isUnique": false
                 }
-            ]
+            ],
+            "options": {
+                "displayTextAttribute": "queryText"
+            }
         },
         {
             "name": "hive_db_ddl",
