@@ -857,7 +857,7 @@ public class EntityREST {
     }
 
     @POST
-    @Path("/guid/{guid}/businessmetata")
+    @Path("/guid/{guid}/businessmetadata")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     public void addOrUpdateBusinessAttributes(@PathParam("guid") final String guid, @QueryParam("isOverwrite") @DefaultValue("false") boolean isOverwrite, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
@@ -875,7 +875,7 @@ public class EntityREST {
     }
 
     @DELETE
-    @Path("/guid/{guid}/businessmetata")
+    @Path("/guid/{guid}/businessmetadata")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     public void removeBusinessAttributes(@PathParam("guid") final String guid, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
@@ -893,7 +893,7 @@ public class EntityREST {
     }
 
     @POST
-    @Path("/guid/{guid}/businessmetata/{bmName}")
+    @Path("/guid/{guid}/businessmetadata/{bmName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     public void addOrUpdateBusinessAttributes(@PathParam("guid") final String guid, @PathParam("bmName") final String bmName, Map<String, Object> businessAttributes) throws AtlasBaseException {
@@ -911,7 +911,7 @@ public class EntityREST {
     }
 
     @DELETE
-    @Path("/guid/{guid}/businessmetata/{bmName}")
+    @Path("/guid/{guid}/businessmetadata/{bmName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     public void removeBusinessAttributes(@PathParam("guid") final String guid, @PathParam("bmName") final String bmName, Map<String, Object> businessAttributes) throws AtlasBaseException {
