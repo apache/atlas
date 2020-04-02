@@ -36,6 +36,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -225,7 +226,7 @@ public final class GraphHelper {
 
                 while (edges.hasNext()) {
                     AtlasEdge edge = edges.next();
-                    if (edge.getOutVertex().equals(outVertex)) {
+                    if (edge.getOutVertex().getId().equals(outVertex.getId())) {
                         Id.EntityState edgeState = getState(edge);
                         if (edgeState == null || edgeState == Id.EntityState.ACTIVE) {
                             return edge;
@@ -318,43 +319,18 @@ public final class GraphHelper {
     //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
     //So traversing all the edges
     public static Iterator<AtlasEdge> getAdjacentEdgesByLabel(AtlasVertex instanceVertex, AtlasEdgeDirection direction, final String edgeLabel) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getAdjacentEdgesByLabel");
         if (LOG.isDebugEnabled()) {
             LOG.debug("Finding edges for {} with label {}", string(instanceVertex), edgeLabel);
         }
 
+        Iterator<AtlasEdge> ret = null;
         if(instanceVertex != null && edgeLabel != null) {
-            final Iterator<AtlasEdge> iterator = instanceVertex.getEdges(direction).iterator();
-            return new Iterator<AtlasEdge>() {
-                private AtlasEdge edge = null;
-
-                @Override
-                public boolean hasNext() {
-                    while (edge == null && iterator.hasNext()) {
-                        AtlasEdge localEdge = iterator.next();
-                        if (localEdge.getLabel().equals(edgeLabel)) {
-                            edge = localEdge;
-                        }
-                    }
-                    return edge != null;
-                }
-
-                @Override
-                public AtlasEdge next() {
-                    if (hasNext()) {
-                        AtlasEdge localEdge = edge;
-                        edge = null;
-                        return localEdge;
-                    }
-                    return null;
-                }
-
-                @Override
-                public void remove() {
-                    throw new IllegalStateException("Not handled");
-                }
-            };
+            ret = instanceVertex.getEdges(direction, edgeLabel).iterator();
         }
-        return null;
+
+        RequestContext.get().endMetricRecord(metric);
+        return ret;
     }
 
     public static boolean isPropagationEnabled(AtlasVertex classificationVertex) {
@@ -1449,7 +1425,9 @@ public final class GraphHelper {
 
     private static void sortCollectionElements(AtlasAttribute attribute, List<AtlasEdge> edges) {
         // sort array elements based on edge index
-        if (attribute.getAttributeType() instanceof AtlasArrayType && CollectionUtils.isNotEmpty(edges)) {
+        if (attribute.getAttributeType() instanceof AtlasArrayType &&
+                CollectionUtils.isNotEmpty(edges) &&
+                edges.get(0).getProperty(ATTRIBUTE_INDEX_PROPERTY_KEY, Integer.class) != null) {
             Collections.sort(edges, (e1, e2) -> {
                 Integer e1Index = getIndexValue(e1);
                 Integer e2Index = getIndexValue(e2);
