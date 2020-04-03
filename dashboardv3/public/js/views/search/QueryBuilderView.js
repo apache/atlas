@@ -66,7 +66,10 @@ define(['require',
                 if (type === "string") {
                     obj.operators = ['=', '!=', 'contains', 'begins_with', 'ends_with'];
                 }
-                if (type === "date" || type === "int" || type === "byte" || type === "short" || type === "long" || type === "float" || type === "double") {
+                if (type === "date") {
+                    obj.operators = ['>', '<'];
+                }
+                if (type === "int" || type === "byte" || type === "short" || type === "long" || type === "float" || type === "double") {
                     obj.operators = ['=', '!=', '>', '<', '>=', '<='];
                 }
                 if (type === "enum" || type === "boolean") {
@@ -354,10 +357,10 @@ define(['require',
                     if (this.type) {
                         var pushBusinessMetadataFilter = function(sortedAttributes, businessMetadataKey) {
                             _.each(sortedAttributes, function(attrDetails) {
-                                var returnObj = that.getObjDef(attrDetails, rules_widgets, isGroupView, 'Business Metadata Attribute', true);
+                                var returnObj = that.getObjDef(attrDetails, rules_widgets, isGroupView, "Business Attributes: " + businessMetadataKey);
                                 if (returnObj) {
                                     returnObj.id = businessMetadataKey + "." + returnObj.id;
-                                    returnObj.label = businessMetadataKey + ": " + returnObj.label;
+                                    returnObj.label = returnObj.label;
                                     returnObj.data = { 'entityType': "businessMetadata" };
                                     filters.push(returnObj);
                                 }
