@@ -677,17 +677,18 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             superTypes = [];
 
         var getData = function(data, collection) {
-            superTypes = superTypes.concat(data.superTypes);
-
-            if (data.superTypes && data.superTypes.length) {
-                _.each(data.superTypes, function(superTypeName) {
-                    if (collection.fullCollection) {
-                        var collectionData = collection.fullCollection.findWhere({ name: superTypeName }).toJSON();
-                    } else {
-                        var collectionData = collection.findWhere({ name: superTypeName }).toJSON();
-                    }
-                    return getData(collectionData, collection);
-                });
+            if (data) {
+                superTypes = superTypes.concat(data.superTypes);
+                if (data.superTypes && data.superTypes.length) {
+                    _.each(data.superTypes, function(superTypeName) {
+                        if (collection.fullCollection) {
+                            var collectionData = collection.fullCollection.findWhere({ name: superTypeName }).toJSON();
+                        } else {
+                            var collectionData = collection.findWhere({ name: superTypeName }).toJSON();
+                        }
+                        getData(collectionData, collection);
+                    });
+                }
             }
         }
         getData(data, collection);
@@ -935,9 +936,11 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
     }
     $.fn.showButtonLoader = function() {
         $(this).attr("disabled", "true").addClass('button-loader');
+        $(this).siblings("button.cancel").prop("disabled", true);
     }
     $.fn.hideButtonLoader = function() {
         $(this).removeClass('button-loader').removeAttr("disabled");
+        $(this).siblings("button.cancel").prop("disabled", false);
     }
     return Utils;
 });
