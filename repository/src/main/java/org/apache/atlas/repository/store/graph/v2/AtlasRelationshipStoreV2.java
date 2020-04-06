@@ -781,7 +781,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             if (edge != null) {
                 Status status = graphHelper.getStatus(edge);
 
-                if ((status == null || status == ACTIVE) && edge.getOutVertex().equals(fromVertex)) {
+                if ((status == null || status == ACTIVE) && edge.getOutVertex().getId().equals(fromVertex.getId())) {
                     ret = edge;
                     break;
                 }
