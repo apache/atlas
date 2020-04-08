@@ -49,6 +49,7 @@ public class AtlasAuditEntry extends AtlasBaseModelObject implements Serializabl
     private Date endTime;
     private String clientId;
     private String result;
+    private long resultCount;
 
     public AtlasAuditEntry() {
     }
@@ -115,6 +116,14 @@ public class AtlasAuditEntry extends AtlasBaseModelObject implements Serializabl
         this.result = result;
     }
 
+    public long getResultCount() {
+        return resultCount;
+    }
+
+    public void setResultCount(long resultCount) {
+        this.resultCount = resultCount;
+    }
+
     @Override
     public StringBuilder toString(StringBuilder sb) {
         sb.append(", userName: ").append(userName);
@@ -124,6 +133,7 @@ public class AtlasAuditEntry extends AtlasBaseModelObject implements Serializabl
         sb.append(", startTime: ").append(startTime);
         sb.append(", endTime: ").append(endTime);
         sb.append(", result: ").append(result);
+        sb.append(", resultCount: ").append(resultCount);
 
         return sb;
     }

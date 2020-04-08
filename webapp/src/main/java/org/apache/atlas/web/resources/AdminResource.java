@@ -479,7 +479,7 @@ public class AdminResource {
 
                 auditService.add(AtlasAuthorizationUtils.getCurrentUserName(), AuditOperation.PURGE,
                         clientId != null ? clientId : "", startTime, endTime, guids.toString(),
-                        resp.getPurgedEntitiesIds());
+                        resp.getPurgedEntitiesIds(), resp.getPurgedEntities().size());
             }
 
             return resp;

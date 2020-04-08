@@ -35,18 +35,19 @@ import java.util.Arrays;
 @Component
 public class AtlasAuditEntryDTO extends AbstractDataTransferObject<AtlasAuditEntry> {
 
-    public static final String ATTRIBUTE_USER_NAME  = "userName";
-    public static final String ATTRIBUTE_OPERATION  = "operation";
-    public static final String ATTRIBUTE_PARAMS     = "params";
-    public static final String ATTRIBUTE_START_TIME = "startTime";
-    public static final String ATTRIBUTE_END_TIME   = "endTime";
-    public static final String ATTRIBUTE_CLIENT_ID  = "clientId";
-    public static final String ATTRIBUTE_RESULT     = "result";
+    public static final String ATTRIBUTE_USER_NAME    = "userName";
+    public static final String ATTRIBUTE_OPERATION    = "operation";
+    public static final String ATTRIBUTE_PARAMS       = "params";
+    public static final String ATTRIBUTE_START_TIME   = "startTime";
+    public static final String ATTRIBUTE_END_TIME     = "endTime";
+    public static final String ATTRIBUTE_CLIENT_ID    = "clientId";
+    public static final String ATTRIBUTE_RESULT       = "result";
+    public static final String ATTRIBUTE_RESULT_COUNT = "resultCount";
 
     private static final Set<String> ATTRIBUTE_NAMES = new HashSet<>(Arrays.asList(ATTRIBUTE_USER_NAME,
             ATTRIBUTE_OPERATION, ATTRIBUTE_PARAMS,
             ATTRIBUTE_START_TIME, ATTRIBUTE_END_TIME,
-            ATTRIBUTE_CLIENT_ID, ATTRIBUTE_RESULT));
+            ATTRIBUTE_CLIENT_ID, ATTRIBUTE_RESULT, ATTRIBUTE_RESULT_COUNT));
 
     @Inject
     public AtlasAuditEntryDTO(AtlasTypeRegistry typeRegistry) {
@@ -69,6 +70,7 @@ public class AtlasAuditEntryDTO extends AbstractDataTransferObject<AtlasAuditEnt
         entry.setEndTime((Date) attributes.get(ATTRIBUTE_END_TIME));
         entry.setClientId((String) attributes.get(ATTRIBUTE_CLIENT_ID));
         entry.setResult((String) attributes.get(ATTRIBUTE_RESULT));
+        entry.setResultCount((long) attributes.get(ATTRIBUTE_RESULT_COUNT));
 
         return entry;
     }
@@ -94,6 +96,7 @@ public class AtlasAuditEntryDTO extends AbstractDataTransferObject<AtlasAuditEnt
         entity.setAttribute(ATTRIBUTE_END_TIME, obj.getEndTime());
         entity.setAttribute(ATTRIBUTE_CLIENT_ID, obj.getClientId());
         entity.setAttribute(ATTRIBUTE_RESULT, obj.getResult());
+        entity.setAttribute(ATTRIBUTE_RESULT_COUNT, obj.getResultCount());
 
         return entity;
     }
