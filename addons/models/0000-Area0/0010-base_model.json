@@ -479,6 +479,14 @@
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false
+        },
+        {
+          "name": "resultCount",
+          "typeName": "long",
+          "cardinality": "SINGLE",
+          "isIndexable": true,
+          "isOptional": true,
+          "isUnique": false
         }
       ]
     },

@@ -134,7 +134,7 @@ public class AdminPurgeTest extends AtlasTestBase {
 
         auditService.add(DEFAULT_USER, AtlasAuditEntry.AuditOperation.PURGE,
                 CLIENT_HOST, startTimestamp, new Date(), guids.toString(),
-                response.getPurgedEntitiesIds());
+                response.getPurgedEntitiesIds(), response.getPurgedEntities().size());
 
         AuditSearchParameters auditParameterNull = createAuditParameter("audit-search-parameter-without-filter");
         assertAuditEntry(auditService, auditParameterNull);

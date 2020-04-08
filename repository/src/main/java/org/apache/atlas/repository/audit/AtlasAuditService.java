@@ -62,7 +62,7 @@ public class AtlasAuditService {
     }
 
     public void add(String userName, AuditOperation operation, String clientId, Date startTime,
-                    Date endTime, String params, String result) throws AtlasBaseException {
+                    Date endTime, String params, String result, long resultCount) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasAuditService.add()");
         }
@@ -76,6 +76,7 @@ public class AtlasAuditService {
         entry.setEndTime(endTime);
         entry.setParams(params);
         entry.setResult(result);
+        entry.setResultCount(resultCount);
 
         save(entry);
 
