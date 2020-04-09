@@ -44,8 +44,8 @@ define([
             refreshTree: '[data-id="refreshTree"]',
             groupOrFlatTree: '[data-id="groupOrFlatTreeView"]',
             customFilterSearchTree: '[data-id="customFilterSearchTree"]',
-            showCustomFilter: '[data-id="showCustomFilter"]'
-
+            showCustomFilter: '[data-id="showCustomFilter"]',
+            customFilterTreeLoader: '[data-id="customFilterTreeLoader"]'
         },
         templateHelpers: function() {
             return {
@@ -55,8 +55,9 @@ define([
         events: function() {
             var events = {},
                 that = this;
-            // refresh individual tree
             events["click " + this.ui.refreshTree] = function(e) {
+                that.changeLoaderState(true);
+                that.ui.refreshTree.attr("disabled", true).tooltip("hide");
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.refreshCustomFilterTree();
@@ -66,6 +67,7 @@ define([
                 this.customFilterSwitchBtnUpdate();
             };
             events["click " + this.ui.groupOrFlatTree] = function(e) {
+                that.changeLoaderState(true);
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 this.isGroupView = !this.isGroupView;
@@ -74,7 +76,7 @@ define([
                 this.ui.groupOrFlatTree.find("i").toggleClass("group-tree-deactivate");
                 this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
                 that.ui[type + "SearchTree"].jstree(true).destroy();
-                that.renderCustomFilter();
+                that.fetchCustomFilter();
             };
 
             return events;
@@ -133,6 +135,18 @@ define([
             this.saveSearchCollection = new VSearchList();
             this.saveSearchAdvanceCollection = new VSearchList();
             this.saveSearchCollection.url = UrlLinks.saveSearchApiUrl();
+            this.saveSearchBaiscCollection.fullCollection.comparator = function(model) {
+                return getModelName(model);
+            }
+            this.saveSearchAdvanceCollection.fullCollection.comparator = function(model) {
+                return getModelName(model);
+            }
+
+            function getModelName(model) {
+                if (model.get('name')) {
+                    return model.get('name').toLowerCase();
+                }
+            };
             this.bindEvents();
             this.customFilterData = null;
             this.isBasic = true;
@@ -140,7 +154,17 @@ define([
             this.isGroupView = true;
         },
         onRender: function() {
-            this.renderCustomFilter();
+            this.changeLoaderState(true);
+            this.fetchCustomFilter();
+        },
+        changeLoaderState: function(showLoader) {
+            if (showLoader) {
+                this.ui.customFilterSearchTree.hide();
+                this.ui.customFilterTreeLoader.show();
+            } else {
+                this.ui.customFilterSearchTree.show();
+                this.ui.customFilterTreeLoader.hide();
+            }
         },
         manualRender: function(options) {
             _.extend(this.options, options);
@@ -160,25 +184,14 @@ define([
             });
             this.createCustomFilterAction();
         },
-        renderCustomFilter: function() {
+        fetchCustomFilter: function() {
             var that = this;
-            this.saveSearchBaiscCollection.fullCollection.comparator = function(model) {
-                return getModelName(model);
-            }
-            this.saveSearchAdvanceCollection.fullCollection.comparator = function(model) {
-                return getModelName(model);
-            }
-
-            function getModelName(model) {
-                if (model.get('name')) {
-                    return model.get('name').toLowerCase();
-                }
-            };
-
             this.saveSearchCollection.fetch({
                 success: function(collection, data) {
                     that.saveSearchBaiscCollection.fullCollection.reset(_.where(data, { searchType: "BASIC" }));
                     that.saveSearchAdvanceCollection.fullCollection.reset(_.where(data, { searchType: "ADVANCED" }));
+                    that.changeLoaderState(false);
+                    that.ui.refreshTree.attr("disabled", false);
                 },
                 silent: true
             });
@@ -245,12 +258,14 @@ define([
                 var aFilter = that.$("#" + str.node.a_attr.id),
                     filterOffset = aFilter.find(">.jstree-icon").offset();
                 that.$(".tree-tooltip").removeClass("show");
-                if (filterOffset.top && filterOffset.left) {
-                    aFilter.find(">span.tree-tooltip").css({
-                        top: "calc(" + filterOffset.top + "px - 45px)",
-                        left: "24px"
-                    }).addClass("show");
-                }
+                setTimeout(function() {
+                    if (aFilter.hasClass("jstree-hovered") && filterOffset.top && filterOffset.left) {
+                        aFilter.find(">span.tree-tooltip").css({
+                            top: "calc(" + filterOffset.top + "px - 45px)",
+                            left: "24px"
+                        }).addClass("show");
+                    }
+                }, 1200);
             }).on("dehover_node.jstree", function(nodes, str, res) {
                 that.$(".tree-tooltip").removeClass("show");
             });
@@ -354,15 +369,18 @@ define([
                             entityDefCollection: that.entityDefCollection
                         });
                     searchType === 'ADVANCED' ? that.isBasic = false : that.isBasic = true;
-                    _.extend({}, this.options.value, params),
+                    _.extend({}, this.options.value, params);
+                    // Utils.notifyInfo({
+                    //     content: "Saved values are selected."
+                    // })
 
-                        Utils.setUrl({
-                            url: '#!/search/searchResult',
-                            urlParams: _.extend({}, { 'searchType': that.isBasic ? 'basic' : 'dsl', 'isCF': true }, params),
-                            mergeBrowserUrl: false,
-                            trigger: true,
-                            updateTabState: true
-                        });
+                    Utils.setUrl({
+                        url: '#!/search/searchResult',
+                        urlParams: _.extend({}, { 'searchType': that.isBasic ? 'basic' : 'dsl', 'isCF': true }, params),
+                        mergeBrowserUrl: false,
+                        trigger: true,
+                        updateTabState: true
+                    });
                 }
 
             } else {
@@ -398,9 +416,7 @@ define([
                 require([
                     'views/search/save/SaveModalLayoutView'
                 ], function(SaveModalLayoutView) {
-
-                    new SaveModalLayoutView({ 'selectedModel': options.model.clone(), 'collection': that.isBasic ? that.saveSearchBaiscCollection.fullCollection : that.saveSearchAdvanceCollection.fullCollection, 'getValue': that.getValue, 'isBasic': that.isBasic });
-
+                    new SaveModalLayoutView({ 'rename': true, 'selectedModel': options.model.clone(), 'collection': that.isBasic ? that.saveSearchBaiscCollection.fullCollection : that.saveSearchAdvanceCollection.fullCollection, 'getValue': that.getValue, 'isBasic': that.isBasic });
                 });
             }
         },
@@ -447,11 +463,18 @@ define([
             var value = this.getValue();
             if (value && (value.type || value.tag || value.query || value.term)) {
                 value.searchType == "basic" ? this.isBasic = true : this.isBasic = false;
+                var urlObj = Utils.getUrlState.getQueryParams();
+                if (urlObj) {
+                    // includeDE value in because we need to send "true","false" to the server.
+                    urlObj.includeDE = urlObj.includeDE == "true" ? true : false;
+                    urlObj.excludeSC = urlObj.excludeSC == "true" ? true : false;
+                    urlObj.excludeST = urlObj.excludeST == "true" ? true : false;
+                }
                 this.customFilterSwitchBtnUpdate();
                 this.callSaveModalLayoutView({
                     'collection': this.isBasic ? this.saveSearchBaiscCollection.fullCollection : this.saveSearchAdvanceCollection.fullCollection,
                     getValue: function() {
-                        return value
+                        return _.extend({}, value, urlObj);
                     },
                     'isBasic': this.isBasic
                 });
@@ -462,7 +485,7 @@ define([
             }
         },
         refreshCustomFilterTree: function() {
-            this.ui.customFilterSearchTree.jstree(true).refresh();
+            this.fetchCustomFilter();
         }
 
     });

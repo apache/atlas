@@ -35,6 +35,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
@@ -47,6 +48,7 @@ import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -66,6 +68,7 @@ import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -85,6 +88,7 @@ import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_EXPRE
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_SOURCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STATUS;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_STEWARD;
+import static org.apache.atlas.model.instance.AtlasRelationship.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasRelationship.Status.DELETED;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER;
@@ -97,6 +101,9 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_INT;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_SHORT;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.NONE;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VALIDITY_PERIODS_KEY;
@@ -214,6 +221,41 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public Map<String, Map<String, Object>> getBusinessMetadata(AtlasVertex entityVertex) throws AtlasBaseException {
+        Map<String, Map<String, Object>>                         ret             = null;
+        String                                                   entityTypeName  = getTypeName(entityVertex);
+        AtlasEntityType                                          entityType      = typeRegistry.getEntityTypeByName(entityTypeName);
+        Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBm    = entityType != null ? entityType.getBusinessAttributes() : null;
+
+        if (MapUtils.isNotEmpty(entityTypeBm)) {
+            for (Map.Entry<String, Map<String, AtlasBusinessAttribute>> entry : entityTypeBm.entrySet()) {
+                String                                      bmName        = entry.getKey();
+                Map<String, AtlasBusinessAttribute> bmAttributes  = entry.getValue();
+                Map<String, Object>                         entityBmAttrs = null;
+
+                for (AtlasBusinessAttribute bmAttribute : bmAttributes.values()) {
+                    Object bmAttrValue = mapVertexToAttribute(entityVertex, bmAttribute, null, false, false);
+
+                    if (bmAttrValue != null) {
+                        if (ret == null) {
+                            ret = new HashMap<>();
+                        }
+
+                        if (entityBmAttrs == null) {
+                            entityBmAttrs = new HashMap<>();
+
+                            ret.put(bmName, entityBmAttrs);
+                        }
+
+                        entityBmAttrs.put(bmAttribute.getName(), bmAttrValue);
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
     public Object getEntityAttribute(AtlasVertex entityVertex, AtlasAttribute attribute) {
         Object ret = null;
 
@@ -277,20 +319,27 @@ public class EntityGraphRetriever {
     }
 
     public AtlasClassification toAtlasClassification(AtlasVertex classificationVertex) throws AtlasBaseException {
-        AtlasClassification ret = new AtlasClassification(getTypeName(classificationVertex));
+        AtlasClassification ret                = null;
+        String              classificationName = getTypeName(classificationVertex);
 
-        ret.setEntityGuid(AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
-        ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
-        ret.setPropagate(isPropagationEnabled(classificationVertex));
-        ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
+        if (StringUtils.isEmpty(classificationName)) {
+            LOG.warn("Ignoring invalid classification vertex: {}", AtlasGraphUtilsV2.toString(classificationVertex));
+        } else {
+            ret = new AtlasClassification(classificationName);
 
-        String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
+            ret.setEntityGuid(AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
+            ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
+            ret.setPropagate(isPropagationEnabled(classificationVertex));
+            ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
 
-        if (strValidityPeriods != null) {
-            ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
+            String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
+
+            if (strValidityPeriods != null) {
+                ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
+            }
+
+            mapAttributes(classificationVertex, ret, null);
         }
-
-        mapAttributes(classificationVertex, ret, null);
 
         return ret;
     }
@@ -390,6 +439,141 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public void evaluateClassificationPropagation(AtlasVertex classificationVertex, List<AtlasVertex> entitiesToAddPropagation, List<AtlasVertex> entitiesToRemovePropagation) {
+        if (classificationVertex != null) {
+            String            entityGuid         = getClassificationEntityGuid(classificationVertex);
+            AtlasVertex       entityVertex       = AtlasGraphUtilsV2.findByGuid(entityGuid);
+            String            classificationId   = classificationVertex.getIdForDisplay();
+            List<AtlasVertex> propagatedEntities = getAllPropagatedEntityVertices(classificationVertex);
+            List<AtlasVertex> impactedEntities   = getImpactedVerticesV2(entityVertex, null, classificationId);
+
+            List<AtlasVertex> entityVertices = (List<AtlasVertex>) CollectionUtils.subtract(propagatedEntities, impactedEntities);
+
+            if (CollectionUtils.isNotEmpty(entityVertices)) {
+                entitiesToRemovePropagation.addAll(entityVertices);
+            }
+
+            entityVertices = (List<AtlasVertex>) CollectionUtils.subtract(impactedEntities, propagatedEntities);
+
+            if (CollectionUtils.isNotEmpty(entityVertices)) {
+                entitiesToAddPropagation.addAll(entityVertices);
+            }
+        }
+    }
+
+    public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices) {
+        return getClassificationPropagatedEntitiesMapping(classificationVertices, null);
+    }
+
+    public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices, String relationshipGuidToExclude) {
+        Map<AtlasVertex, List<AtlasVertex>> ret = new HashMap<>();
+
+        if (CollectionUtils.isNotEmpty(classificationVertices)) {
+            for (AtlasVertex classificationVertex : classificationVertices) {
+                String            classificationId      = classificationVertex.getIdForDisplay();
+                String            sourceEntityId        = getClassificationEntityGuid(classificationVertex);
+                AtlasVertex       sourceEntityVertex    = AtlasGraphUtilsV2.findByGuid(sourceEntityId);
+                List<AtlasVertex> entitiesPropagatingTo = getImpactedVerticesV2(sourceEntityVertex, relationshipGuidToExclude, classificationId);
+
+                ret.put(classificationVertex, entitiesPropagatingTo);
+            }
+        }
+
+        return ret;
+    }
+
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex) {
+        return getImpactedVerticesV2(entityVertex, null);
+    }
+
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, new HashSet<>(), ret);
+
+        return ret;
+    }
+
+    public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
+        List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
+
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, new HashSet<>(), ret);
+
+        return ret;
+    }
+
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId) {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, new HashSet<>(), ret);
+
+        return ret;
+    }
+
+    private void traverseImpactedVertices(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, Set<String> visitedVertices, List<AtlasVertex> result) {
+        visitedVertices.add(entityVertex.getIdForDisplay());
+
+        AtlasEntityType entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
+        String[]        tagPropagationEdges = entityType != null ? entityType.getTagPropagationEdgesArray() : null;
+
+        if (tagPropagationEdges != null) {
+            Iterable<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges);
+
+            for (AtlasEdge propagationEdge : propagationEdges) {
+                if (getEdgeStatus(propagationEdge) != ACTIVE) {
+                    continue;
+                }
+
+                PropagateTags tagPropagation = getPropagateTags(propagationEdge);
+
+                if (tagPropagation == null || tagPropagation == NONE) {
+                    continue;
+                } else if (tagPropagation == TWO_TO_ONE)  {
+                    if (isOutVertex(entityVertex, propagationEdge)) {
+                        continue;
+                    }
+                } else if (tagPropagation == ONE_TO_TWO) {
+                    if (!isOutVertex(entityVertex, propagationEdge)) {
+                        continue;
+                    }
+                }
+
+                if (relationshipGuidToExclude != null) {
+                    if (StringUtils.equals(getRelationshipGuid(propagationEdge), relationshipGuidToExclude)) {
+                        continue;
+                    }
+                }
+
+                if (classificationId != null) {
+                    List<String> blockedClassificationIds = getBlockedClassificationIds(propagationEdge);
+
+                    if (CollectionUtils.isNotEmpty(blockedClassificationIds) && blockedClassificationIds.contains(classificationId)) {
+                        continue;
+                    }
+                }
+
+                AtlasVertex adjacentVertex = getOtherVertex(propagationEdge, entityVertex);
+
+                if (!visitedVertices.contains(adjacentVertex.getIdForDisplay())) {
+                    result.add(adjacentVertex);
+
+                    traverseImpactedVertices(adjacentVertex, relationshipGuidToExclude, classificationId, visitedVertices, result);
+                }
+            }
+        }
+    }
+
+    private boolean isOutVertex(AtlasVertex vertex, AtlasEdge edge) {
+        return StringUtils.equals(vertex.getIdForDisplay(), edge.getOutVertex().getIdForDisplay());
+    }
+
+    private AtlasVertex getOtherVertex(AtlasEdge edge, AtlasVertex vertex) {
+        AtlasVertex outVertex = edge.getOutVertex();
+        AtlasVertex inVertex  = edge.getInVertex();
+
+        return StringUtils.equals(outVertex.getIdForDisplay(), vertex.getIdForDisplay()) ? inVertex : outVertex;
+    }
+
     private AtlasVertex getEntityVertex(AtlasObjectId objId) throws AtlasBaseException {
         AtlasVertex ret = null;
 
@@ -437,6 +621,8 @@ public class EntityGraphRetriever {
             }
 
             mapSystemAttributes(entityVertex, entity);
+
+            mapBusinessAttributes(entityVertex, entity);
 
             mapAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo, includeReferences);
 
@@ -518,8 +704,7 @@ public class EntityGraphRetriever {
                 }
             }
 
-            Object name        = ret.getAttribute(NAME);
-            Object displayText = name != null ? name : ret.getAttribute(QUALIFIED_NAME);
+            Object displayText = getDisplayText(entityVertex, entityType);
 
             if (displayText != null) {
                 ret.setDisplayText(displayText.toString());
@@ -527,21 +712,26 @@ public class EntityGraphRetriever {
 
             if (CollectionUtils.isNotEmpty(attributes)) {
                 for (String attrName : attributes) {
-                    String nonQualifiedAttrName = toNonQualifiedName(attrName);
-                    if (ret.hasAttribute(attrName)) {
-                        continue;
-                    }
-
-                    AtlasAttribute attribute = entityType.getAttribute(nonQualifiedAttrName);
+                    AtlasAttribute attribute = entityType.getAttribute(attrName);
 
                     if (attribute == null) {
-                        attribute = entityType.getRelationshipAttribute(nonQualifiedAttrName, null);
+                        attrName = toNonQualifiedName(attrName);
+
+                        if (ret.hasAttribute(attrName)) {
+                            continue;
+                        }
+
+                        attribute = entityType.getAttribute(attrName);
+
+                        if (attribute == null) {
+                            attribute = entityType.getRelationshipAttribute(attrName, null);
+                        }
                     }
 
                     Object attrValue = getVertexAttribute(entityVertex, attribute);
 
                     if (attrValue != null) {
-                        ret.setAttribute(nonQualifiedAttrName, attrValue);
+                        ret.setAttribute(attrName, attrValue);
                     }
                 }
             }
@@ -613,6 +803,10 @@ public class EntityGraphRetriever {
         }
     }
 
+    private void mapBusinessAttributes(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
+        entity.setBusinessAttributes(getBusinessMetadata(entityVertex));
+    }
+
     public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
         List<AtlasClassification> ret   = new ArrayList<>();
         Iterable                  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
@@ -621,10 +815,12 @@ public class EntityGraphRetriever {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
             while (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
+                AtlasEdge           classificationEdge   = iterator.next();
+                AtlasVertex         classificationVertex = classificationEdge != null ? classificationEdge.getInVertex() : null;
+                AtlasClassification classification       = toAtlasClassification(classificationVertex);
 
-                if (edge != null) {
-                    ret.add(toAtlasClassification(edge.getInVertex()));
+                if (classification != null) {
+                    ret.add(classification);
                 }
             }
         }
@@ -711,12 +907,15 @@ public class EntityGraphRetriever {
         List<AtlasEdge> edges = getAllClassificationEdges(entityVertex);
 
         if (CollectionUtils.isNotEmpty(edges)) {
-            List<AtlasClassification> allClassifications                 = new ArrayList<>();
+            List<AtlasClassification> allClassifications = new ArrayList<>();
 
             for (AtlasEdge edge : edges) {
-                AtlasVertex classificationVertex = edge.getInVertex();
+                AtlasVertex         classificationVertex = edge.getInVertex();
+                AtlasClassification classification       = toAtlasClassification(classificationVertex);
 
-                allClassifications.add(toAtlasClassification(classificationVertex));
+                if (classification != null) {
+                    allClassifications.add(classification);
+                }
             }
 
             entity.setClassifications(allClassifications);
@@ -1284,18 +1483,29 @@ public class EntityGraphRetriever {
     }
 
     private Object getDisplayText(AtlasVertex entityVertex, String entityTypeName) throws AtlasBaseException {
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
-        Object          ret        = null;
+        return getDisplayText(entityVertex, typeRegistry.getEntityTypeByName(entityTypeName));
+    }
+
+    private Object getDisplayText(AtlasVertex entityVertex, AtlasEntityType entityType) throws AtlasBaseException {
+        Object ret = null;
 
         if (entityType != null) {
-            ret = getVertexAttribute(entityVertex, entityType.getAttribute(NAME));
+            String displayTextAttribute = entityType.getDisplayTextAttribute();
 
-            if (ret == null) {
-                ret = getVertexAttribute(entityVertex, entityType.getAttribute(DISPLAY_NAME));
+            if (displayTextAttribute != null) {
+                ret = getVertexAttribute(entityVertex, entityType.getAttribute(displayTextAttribute));
             }
 
             if (ret == null) {
-                ret = getVertexAttribute(entityVertex, entityType.getAttribute(QUALIFIED_NAME));
+                ret = getVertexAttribute(entityVertex, entityType.getAttribute(NAME));
+
+                if (ret == null) {
+                    ret = getVertexAttribute(entityVertex, entityType.getAttribute(DISPLAY_NAME));
+
+                    if (ret == null) {
+                        ret = getVertexAttribute(entityVertex, entityType.getAttribute(QUALIFIED_NAME));
+                    }
+                }
             }
         }
 
@@ -1378,7 +1588,7 @@ public class EntityGraphRetriever {
     }
 
     private void readClassificationsFromEdge(AtlasEdge edge, AtlasRelationshipWithExtInfo relationshipWithExtInfo, boolean extendedInfo) throws AtlasBaseException {
-        List<AtlasVertex>        classificationVertices    = getClassificationVertices(edge);
+        List<AtlasVertex>        classificationVertices    = getPropagatableClassifications(edge);
         List<String>             blockedClassificationIds  = getBlockedClassificationIds(edge);
         AtlasRelationship        relationship              = relationshipWithExtInfo.getRelationship();
         Set<AtlasClassification> propagatedClassifications = new HashSet<>();
@@ -1387,7 +1597,10 @@ public class EntityGraphRetriever {
         for (AtlasVertex classificationVertex : classificationVertices) {
             String              classificationId = classificationVertex.getIdForDisplay();
             AtlasClassification classification   = toAtlasClassification(classificationVertex);
-            String              entityGuid       = classification.getEntityGuid();
+
+            if (classification == null) {
+                continue;
+            }
 
             if (blockedClassificationIds.contains(classificationId)) {
                 blockedClassifications.add(classification);
@@ -1397,7 +1610,7 @@ public class EntityGraphRetriever {
 
             // add entity headers to referred entities
             if (extendedInfo) {
-                addToReferredEntities(relationshipWithExtInfo, entityGuid);
+                addToReferredEntities(relationshipWithExtInfo, classification.getEntityGuid());
             }
         }
 

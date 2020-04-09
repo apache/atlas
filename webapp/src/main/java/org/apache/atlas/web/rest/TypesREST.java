@@ -20,6 +20,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -317,6 +318,43 @@ public class TypesREST {
 
         return ret;
     }
+
+    /**
+     * Get the businessMetadata definition for the given guid
+     * @param guid businessMetadata guid
+     * @return businessMetadata definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the businessMetadata definition by it's guid
+     * @HTTP 404 On Failed lookup for the given guid
+     */
+    @GET
+    @Path("/businessmetadatadef/guid/{guid}")
+    public AtlasBusinessMetadataDef getBusinessMetadataDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
+        AtlasBusinessMetadataDef ret = typeDefStore.getBusinessMetadataDefByGuid(guid);
+
+        return ret;
+    }
+
+    /**
+     * Get the businessMetadata definition by it's name (unique)
+     * @param name businessMetadata name
+     * @return businessMetadata definition
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful lookup of the the businessMetadata definition by it's name
+     * @HTTP 404 On Failed lookup for the given name
+     */
+    @GET
+    @Path("/businessmetadatadef/name/{name}")
+    public AtlasBusinessMetadataDef getBusinessMetadataDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("name", name);
+
+        AtlasBusinessMetadataDef ret = typeDefStore.getBusinessMetadataDefByName(name);
+
+        return ret;
+    }
+
     /* Bulk API operation */
 
     /**

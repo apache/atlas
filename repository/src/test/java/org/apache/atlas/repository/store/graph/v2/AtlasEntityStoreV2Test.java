@@ -92,6 +92,8 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineDeptEmployeeTypes(),
                                                               TestUtilsV2.defineHiveTypes(),
                                                               TestUtilsV2.defineTypeWithNestedCollectionAttributes(),
+                                                              TestUtilsV2.defineEnumTypes(),
+                                                              TestUtilsV2.defineBusinessMetadataTypes()
                                                             };
         createTypesDef(testTypesDefs);
 
@@ -145,7 +147,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         assertEquals(cost,30);
     }
 
-    @Test
+    @Test(priority = -1)
     public void testCreate() throws Exception {
         init();
 
@@ -1229,4 +1231,94 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         tblEntity = getEntityFromStore(tblEntityGuid);
         Assert.assertTrue(tblEntity.getLabels().isEmpty());
     }
+
+    @Test
+    public void testAddBusinessAttributesStringMaxLengthCheck() throws Exception {
+        Map<String, Map<String, Object>> bmMapReq = new HashMap<>();
+        Map<String, Object> bmAttrMapReq = new HashMap<>();
+        bmAttrMapReq.put("attr8", "01234567890123456789");
+        bmMapReq.put("bmWithAllTypes", bmAttrMapReq);
+        entityStore.addOrUpdateBusinessAttributes(dbEntity.getEntity().getGuid(), bmMapReq, false);
+        AtlasEntityWithExtInfo entity = entityStore.getById(dbEntity.getEntity().getGuid());
+        Map<String, Map<String, Object>> bmMapRes = entity.getEntity().getBusinessAttributes();
+        Assert.assertEquals(bmMapReq, bmMapRes);
+    }
+
+    @Test
+    public void testAddBusinessAttributesStringMaxLengthCheck_2() throws Exception {
+        Map<String, Map<String, Object>> bmMapReq = new HashMap<>();
+        Map<String, Object> bmAttrMapReq = new HashMap<>();
+        bmAttrMapReq.put("attr8", "012345678901234567890");
+        bmMapReq.put("bmWithAllTypes", bmAttrMapReq);
+        try {
+            entityStore.addOrUpdateBusinessAttributes(dbEntity.getEntity().getGuid(), bmMapReq, false);
+        } catch (AtlasBaseException e) {
+            Assert.assertEquals(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, e.getAtlasErrorCode());
+            return;
+        }
+        Assert.fail();
+    }
+
+    @Test(dependsOnMethods = "testAddBusinessAttributesStringMaxLengthCheck")
+    public void testUpdateBusinessAttributesStringMaxLengthCheck() throws Exception {
+        Map<String, Map<String, Object>> bmMapReq = new HashMap<>();
+        Map<String, Object> bmAttrMapReq = new HashMap<>();
+        bmAttrMapReq.put("attr8", "0123456789");
+        bmMapReq.put("bmWithAllTypes", bmAttrMapReq);
+
+        entityStore.addOrUpdateBusinessAttributes(dbEntity.getEntity().getGuid(), bmMapReq, true);
+        AtlasEntityWithExtInfo entity = entityStore.getById(dbEntity.getEntity().getGuid());
+        Map<String, Map<String, Object>> bmMapRes = entity.getEntity().getBusinessAttributes();
+        Assert.assertEquals(bmMapReq, bmMapRes);
+    }
+
+    @Test(dependsOnMethods = "testAddBusinessAttributesStringMaxLengthCheck")
+    public void testUpdateBusinessAttributesStringMaxLengthCheck_2() throws Exception {
+        Map<String, Map<String, Object>> bmMapReq = new HashMap<>();
+        Map<String, Object> bmAttrMapReq = new HashMap<>();
+        bmAttrMapReq.put("attr8", "012345678901234567890");
+        bmMapReq.put("bmWithAllTypes", bmAttrMapReq);
+        try {
+            entityStore.addOrUpdateBusinessAttributes(dbEntity.getEntity().getGuid(), bmMapReq, true);
+        } catch (AtlasBaseException e) {
+            Assert.assertEquals(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, e.getAtlasErrorCode());
+            return;
+        }
+        Assert.fail();
+    }
+
+    @Test(dependsOnMethods = "testAddBusinessAttributesStringMaxLengthCheck")
+    public void testUpdateBusinessAttributesStringMaxLengthCheck_3() throws Exception {
+        Map<String, Map<String, Object>> bmAttrMapReq = new HashMap<>();
+        Map<String, Object> attrValueMapReq = new HashMap<>();
+        List<String> stringList = new ArrayList<>();
+        stringList.add("0123456789");
+        stringList.add("0123456789");
+        attrValueMapReq.put("attr18", stringList);
+        bmAttrMapReq.put("bmWithAllTypesMV", attrValueMapReq);
+        entityStore.addOrUpdateBusinessAttributes(dbEntity.getEntity().getGuid(), bmAttrMapReq, true);
+
+        AtlasEntityWithExtInfo entity = entityStore.getById(dbEntity.getEntity().getGuid());
+        Map<String, Map<String, Object>> bmAttrMapRes = entity.getEntity().getBusinessAttributes();
+        Assert.assertEquals(bmAttrMapReq, bmAttrMapRes);
+    }
+
+    @Test(dependsOnMethods = "testAddBusinessAttributesStringMaxLengthCheck")
+    public void testUpdateBusinessAttributesStringMaxLengthCheck_4() throws Exception {
+        Map<String, Map<String, Object>> bmAttrMapReq = new HashMap<>();
+        Map<String, Object> attrValueMapReq = new HashMap<>();
+        List<String> stringList = new ArrayList<>();
+        stringList.add("0123456789");
+        stringList.add("012345678901234567890");
+        attrValueMapReq.put("attr18", stringList);
+        bmAttrMapReq.put("bmWithAllTypesMV", attrValueMapReq);
+        try {
+            entityStore.addOrUpdateBusinessAttributes(dbEntity.getEntity().getGuid(), bmAttrMapReq, true);
+        } catch (AtlasBaseException e) {
+            Assert.assertEquals(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, e.getAtlasErrorCode());
+            return;
+        }
+        Assert.fail();
+    }
+
 }

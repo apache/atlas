@@ -24,9 +24,10 @@ define(['require',
     'utils/UrlLinks',
     'platform',
     'models/VSearch',
+    "collection/VSearchList",
     'utils/CommonViewFunction',
     'utils/Messages'
-], function(require, Backbone, SaveModalLayoutViewTmpl, Utils, Modal, UrlLinks, platform, VSearch, CommonViewFunction, Messages) {
+], function(require, Backbone, SaveModalLayoutViewTmpl, Utils, Modal, UrlLinks, platform, VSearch, VSearchList, CommonViewFunction, Messages) {
 
 
     var SaveModalLayoutView = Backbone.Marionette.LayoutView.extend({
@@ -38,7 +39,8 @@ define(['require',
         },
         templateHelpers: function() {
             return {
-                selectedModel: this.selectedModel ? this.selectedModel.toJSON() : null
+                selectedModel: this.selectedModel ? this.selectedModel.toJSON() : null,
+                rename: this.rename
             };
         },
         events: function() {
@@ -47,20 +49,32 @@ define(['require',
         },
         initialize: function(options) {
             var that = this;
-            _.extend(this, _.pick(options, 'selectedModel', 'collection', 'getValue', 'isBasic', 'saveObj'));
+            _.extend(this, _.pick(options, 'rename', 'selectedModel', 'collection', 'getValue', 'isBasic', 'saveObj'));
             this.model = new VSearch();
+            this.saveSearchCollection = new VSearchList();
+            this.saveSearchCollection.url = UrlLinks.saveSearchApiUrl();
+            this.saveSearchCollection.fullCollection.comparator = function(model) {
+                return getModelName(model);
+            }
+
+            function getModelName(model) {
+                if (model.get('name')) {
+                    return model.get('name').toLowerCase();
+                }
+            };
             if (this.saveObj) {
                 this.onCreateButton();
             } else {
-                var modal = new Modal({
+                this.modal = modal = new Modal({
                     titleHtml: true,
-                    title: '<span>' + (this.selectedModel ? 'Rename' : 'Save') + (this.isBasic ? " Basic" : " Advanced") + ' Custom Filter</span>',
+                    title: '<span>' + (this.selectedModel && this.rename ? 'Rename' : 'Save') + (this.isBasic ? " Basic" : " Advanced") + ' Custom Filter</span>',
                     content: this,
                     cancelText: "Cancel",
                     okCloses: false,
                     okText: this.selectedModel ? 'Update' : 'Save',
                     allowCancel: true
-                }).open();
+                });
+                this.modal.open();
                 modal.$el.find('button.ok').attr("disabled", "true");
                 this.ui.saveAsName.on('keyup', function(e) {
                     modal.$el.find('button.ok').removeAttr("disabled");
@@ -72,27 +86,84 @@ define(['require',
                 });
                 modal.on('ok', function() {
                     modal.$el.find('button.ok').attr("disabled", "true");
-                    that.onCreateButton(modal);
+                    that.onCreateButton();
                 });
                 modal.on('closeModal', function() {
                     modal.trigger('cancel');
                 });
             }
         },
-        onCreateButton: function(modal) {
+        hideLoader: function() {
+            this.$el.find("form").removeClass("hide");
+            this.$el.find(".fontLoader").removeClass("show");
+        },
+        onRender: function() {
+            if (this.rename == true) {
+                this.hideLoader();
+            } else {
+                var that = this;
+                this.saveSearchCollection.fetch({
+                    success: function(collection, data) {
+                        that.saveSearchCollection.fullCollection.reset(_.where(data, { searchType: that.isBasic ? "BASIC" : "ADVANCED" }));
+                        var options = "";
+                        that.saveSearchCollection.fullCollection.each(function(model) {
+                            options += '<option value="' + model.get("name") + '">' + model.get("name") + '</option>';
+                        })
+                        that.ui.saveAsName.append(options);
+                        that.ui.saveAsName.val("");
+                        that.ui.saveAsName.select2({
+                            placeholder: "Enter filter name ",
+                            allowClear: false,
+                            tags: true,
+                            multiple: false,
+                            templateResult: function(state) {
+                                if (!state.id) {
+                                    return state.text;
+                                }
+                                if (!state.element) {
+                                    return $("<span><span class='option-title-light'>New:</span> <strong>" + _.escape(state.text) + "</strong></span>");
+                                } else {
+                                    return $("<span><span class='option-title-light'>Update:</span> <strong>" + _.escape(state.text) + "</strong></span>");
+                                }
+                            }
+                        }).on("change", function() {
+                            var val = that.ui.saveAsName.val();
+                            if (val.length) {
+                                that.selectedModel = that.saveSearchCollection.fullCollection.find({ name: val });
+                                if (that.selectedModel) {
+                                    that.modal.$el.find('button.ok').text("Save As");
+                                } else {
+                                    that.modal.$el.find('button.ok').text("Save");
+                                }
+                                that.modal.$el.find('button.ok').removeAttr("disabled");
+                            } else {
+                                that.modal.$el.find('button.ok').attr("disabled", "true");
+                                that.selectedModel = null;
+                            }
+                        });
+                    },
+                    silent: true
+                });
+                this.hideLoader();
+            }
+        },
+        onCreateButton: function() {
             var that = this,
-                obj = { name: this.ui.saveAsName.val ? this.ui.saveAsName.val() : null };
+                obj = { name: this.ui.saveAsName.val() || null, value: this.getValue() };
+            if (this.saveObj) {
+                // Save search Filter
+                _.extend(obj, this.saveObj);
+            }
+            var saveObj = CommonViewFunction.generateObjectForSaveSearchApi(obj);
             if (this.selectedModel) {
                 // Update Name only.
-                var saveObj = this.selectedModel.toJSON();
-                saveObj.name = obj.name;
-            } else {
-                obj.value = this.getValue();
-                if (this.saveObj) {
-                    // Save search Filter
-                    _.extend(obj, this.saveObj);
+                var selectedModel = this.selectedModel.toJSON();
+                if (this.rename !== true) {
+                    _.extend(selectedModel.searchParameters, saveObj.searchParameters);
                 }
-                var saveObj = CommonViewFunction.generateObjectForSaveSearchApi(obj);
+                selectedModel.name = obj.name;
+                saveObj = selectedModel;
+            } else {
                 if (this.isBasic) {
                     saveObj['searchType'] = "BASIC";
                 } else {
@@ -125,8 +196,8 @@ define(['require',
 
                 }
             });
-            if (modal) {
-                modal.trigger('cancel');
+            if (this.modal) {
+                this.modal.trigger('cancel');
             }
         }
     });

@@ -24,6 +24,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
@@ -103,12 +104,14 @@ class ExportTypeProcessor {
             addEntityType((AtlasEntityType)type, context);
         } else if (type instanceof AtlasClassificationType) {
             addClassificationType((AtlasClassificationType)type, context);
+        } else if (type instanceof AtlasRelationshipType) {
+            addRelationshipType(type.getTypeName(), context);
+        } else if (type instanceof AtlasBusinessMetadataType) {
+            addBusinessMetadataType((AtlasBusinessMetadataType) type, context);
         } else if (type instanceof AtlasStructType) {
             addStructType((AtlasStructType)type, context);
         } else if (type instanceof AtlasEnumType) {
             addEnumType((AtlasEnumType)type, context);
-        } else if (type instanceof AtlasRelationshipType) {
-            addRelationshipType(type.getTypeName(), context);
         }
     }
 
@@ -166,6 +169,14 @@ class ExportTypeProcessor {
                 addEntityType(relationshipType.getEnd1Type(), context);
                 addEntityType(relationshipType.getEnd2Type(), context);
             }
+        }
+    }
+
+    private void addBusinessMetadataType(AtlasBusinessMetadataType businessMetadataType, ExportService.ExportContext context) {
+        if (!context.businessMetadataTypes.contains(businessMetadataType.getTypeName())) {
+            context.businessMetadataTypes.add(businessMetadataType.getTypeName());
+
+            addAttributeTypes(businessMetadataType, context);
         }
     }
 

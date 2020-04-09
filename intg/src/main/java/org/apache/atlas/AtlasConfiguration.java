@@ -54,6 +54,9 @@ public enum AtlasConfiguration {
     GRAPHSTORE_INDEXED_STRING_SAFE_LENGTH("atlas.graphstore.indexed.string.safe.length", Short.MAX_VALUE),  // based on org.apache.hadoop.hbase.client.Mutation.checkRow()
 
     RELATIONSHIP_WARN_NO_RELATIONSHIPS("atlas.relationships.warnOnNoRelationships", false),
+    ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES("atlas.entity.change.notify.ignore.relationship.attributes", true),
+
+    CLASSIFICATION_PROPAGATION_DEFAULT("atlas.classification.propagation.default", true),
 
     //search configuration
     SEARCH_MAX_LIMIT("atlas.search.maxlimit", 10000),
@@ -62,7 +65,11 @@ public enum AtlasConfiguration {
     CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH("atlas.custom.attribute.key.max.length", 50),
     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH("atlas.custom.attribute.value.max.length", 500),
     LABEL_MAX_LENGTH("atlas.entity.label.max.length", 50),
-    IMPORT_TEMP_DIRECTORY("atlas.import.temp.directory", "");
+    IMPORT_TEMP_DIRECTORY("atlas.import.temp.directory", ""),
+    MIGRATION_IMPORT_START_POSITION("atlas.migration.import.start.position", 0),
+    LINEAGE_USING_GREMLIN("atlas.lineage.query.use.gremlin", false),
+
+    HTTP_HEADER_SERVER_VALUE("atlas.http.header.server.value","Apache Atlas");
 
     private static final Configuration APPLICATION_PROPERTIES;
 

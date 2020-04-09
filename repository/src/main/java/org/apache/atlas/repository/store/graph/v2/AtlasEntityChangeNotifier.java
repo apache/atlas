@@ -66,7 +66,7 @@ import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
 
 
 @Component
-public class AtlasEntityChangeNotifier {
+public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityChangeNotifier.class);
 
     private final Set<EntityChangeListener>   entityChangeListeners;
@@ -91,6 +91,7 @@ public class AtlasEntityChangeNotifier {
         this.isV2EntityNotificationEnabled = AtlasRepositoryConfiguration.isV2EntityNotificationEnabled();
     }
 
+    @Override
     public void onEntitiesMutated(EntityMutationResponse entityMutationResponse, boolean isImport) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(entityChangeListeners)) {
             return;
@@ -102,6 +103,7 @@ public class AtlasEntityChangeNotifier {
         List<AtlasEntityHeader> updatedEntities          = entityMutationResponse.getUpdatedEntities();
         List<AtlasEntityHeader> partiallyUpdatedEntities = entityMutationResponse.getPartialUpdatedEntities();
         List<AtlasEntityHeader> deletedEntities          = entityMutationResponse.getDeletedEntities();
+        List<AtlasEntityHeader> purgedEntities           = entityMutationResponse.getPurgedEntities();
 
         // complete full text mapping before calling toReferenceables(), from notifyListners(), to
         // include all vertex updates in the current graph-transaction
@@ -113,10 +115,12 @@ public class AtlasEntityChangeNotifier {
         notifyListeners(updatedEntities, EntityOperation.UPDATE, isImport);
         notifyListeners(partiallyUpdatedEntities, EntityOperation.PARTIAL_UPDATE, isImport);
         notifyListeners(deletedEntities, EntityOperation.DELETE, isImport);
+        notifyListeners(purgedEntities, EntityOperation.PURGE, isImport);
 
         notifyPropagatedEntities();
     }
 
+    @Override
     public void notifyRelationshipMutation(AtlasRelationship relationship, EntityNotification.EntityNotificationV2.OperationType operationType) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(entityChangeListeners)) {
             return;
@@ -135,6 +139,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onClassificationAddedToEntity(AtlasEntity entity, List<AtlasClassification> addedClassifications) throws AtlasBaseException {
         if (isV2EntityNotificationEnabled) {
             doFullTextMapping(entity.getGuid());
@@ -149,7 +154,7 @@ public class AtlasEntityChangeNotifier {
                 Referenceable entityRef = toReferenceable(entity.getGuid());
                 List<Struct>  traits    = toStruct(addedClassifications);
 
-                if (entity == null || CollectionUtils.isEmpty(traits)) {
+                if (entityRef == null || CollectionUtils.isEmpty(traits)) {
                     return;
                 }
 
@@ -164,6 +169,43 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
+    public void onClassificationsAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications) throws AtlasBaseException {
+        if (isV2EntityNotificationEnabled) {
+            doFullTextMappingHelper(entities);
+
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                listener.onClassificationsAdded(entities, addedClassifications);
+            }
+        } else {
+            updateFullTextMapping(entities, addedClassifications);
+
+            if (instanceConverter != null) {
+                List<Struct> traits = toStruct(addedClassifications);
+
+                if (!CollectionUtils.isEmpty(traits)) {
+                    for(AtlasEntity entity : entities) {
+                        Referenceable entityRef = toReferenceable(entity.getGuid());
+
+                        if (entityRef == null) {
+                            LOG.warn("EntityRef with guid {} not found while adding classifications {} ", entity.getGuid(), addedClassifications);
+                            continue;
+                        }
+
+                        for (EntityChangeListener listener : entityChangeListeners) {
+                            try {
+                                listener.onTraitsAdded(entityRef, traits);
+                            } catch (AtlasException e) {
+                                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitAdd");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException {
         doFullTextMapping(entity.getGuid());
 
@@ -191,6 +233,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
         doFullTextMapping(entity.getGuid());
 
@@ -218,6 +261,41 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
+    public void onClassificationsDeletedFromEntities(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
+        doFullTextMappingHelper(entities);
+
+        if (isV2EntityNotificationEnabled) {
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                listener.onClassificationsDeleted(entities, deletedClassifications);
+            }
+        } else {
+            if (instanceConverter != null) {
+                List<Struct> traits = toStruct(deletedClassifications);
+
+                if(!CollectionUtils.isEmpty(deletedClassifications)) {
+                    for(AtlasEntity entity : entities) {
+                        Referenceable entityRef = toReferenceable(entity.getGuid());
+
+                        if (entityRef == null) {
+                            LOG.warn("EntityRef with guid {} not found while deleting classifications {} ", entity.getGuid(), deletedClassifications);
+                            continue;
+                        }
+
+                        for (EntityChangeListener listener : entityChangeListeners) {
+                            try {
+                                listener.onTraitsDeleted(entityRef, traits);
+                            } catch (AtlasException e) {
+                                throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitDelete");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public void onTermAddedToEntities(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException {
         // listeners notified on term-entity association only if v2 notifications are enabled
         if (isV2EntityNotificationEnabled) {
@@ -237,6 +315,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onTermDeletedFromEntities(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException {
         // listeners notified on term-entity disassociation only if v2 notifications are enabled
         if (isV2EntityNotificationEnabled) {
@@ -256,6 +335,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onLabelsUpdatedFromEntity(String entityGuid, Set<String> addedLabels, Set<String> deletedLabels) throws AtlasBaseException {
         doFullTextMapping(entityGuid);
 
@@ -269,6 +349,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void notifyPropagatedEntities() throws AtlasBaseException {
         RequestContext                         context             = RequestContext.get();
         Map<String, List<AtlasClassification>> addedPropagations   = context.getAddedPropagations();
@@ -340,7 +421,7 @@ public class AtlasEntityChangeNotifier {
 
 
     private void notifyV1Listeners(List<AtlasEntityHeader> entityHeaders, EntityOperation operation, boolean isImport) throws AtlasBaseException {
-        if (instanceConverter != null) {
+        if (operation != EntityOperation.PURGE && instanceConverter != null) {
             List<Referenceable> typedRefInsts = toReferenceables(entityHeaders, operation);
 
             for (EntityChangeListener listener : entityChangeListeners) {
@@ -381,6 +462,10 @@ public class AtlasEntityChangeNotifier {
                 case DELETE:
                     listener.onEntitiesDeleted(entities, isImport);
                     break;
+
+                case PURGE:
+                    listener.onEntitiesPurged(entities);
+                    break;
             }
         }
     }
@@ -398,6 +483,9 @@ public class AtlasEntityChangeNotifier {
                     break;
                 case DELETE:
                     listener.onRelationshipsDeleted(relationships, isImport);
+                    break;
+                case PURGE:
+                    listener.onRelationshipsPurged(relationships);
                     break;
             }
         }
@@ -485,7 +573,7 @@ public class AtlasEntityChangeNotifier {
                 final AtlasEntity entity;
 
                 // delete notifications don't need all attributes. Hence the special handling for delete operation
-                if (operation == EntityOperation.DELETE) {
+                if (operation == EntityOperation.DELETE || operation == EntityOperation.PURGE) {
                     entity = new AtlasEntity(entityHeader);
                 } else {
                     String entityGuid = entityHeader.getGuid();
@@ -566,6 +654,12 @@ public class AtlasEntityChangeNotifier {
         RequestContext.get().endMetricRecord(metric);
     }
 
+    private void updateFullTextMapping(List<AtlasEntity> entities, List<AtlasClassification> classifications) {
+        for (AtlasEntity entity : entities) {
+            updateFullTextMapping(entity.getGuid(), classifications);
+        }
+    }
+
     private void doFullTextMapping(String guid) {
         if(AtlasRepositoryConfiguration.isFreeTextSearchEnabled() || !AtlasRepositoryConfiguration.isFullTextSearchEnabled()) {
             return;
@@ -577,6 +671,12 @@ public class AtlasEntityChangeNotifier {
         doFullTextMapping(Collections.singletonList(entityHeader));
     }
 
+    private void doFullTextMappingHelper(List<AtlasEntity> entities) {
+        for (AtlasEntity entity : entities) {
+            doFullTextMapping(entity.getGuid());
+        }
+    }
+
     private void pruneResponse(EntityMutationResponse resp) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> pruneResponse()");
@@ -586,11 +686,22 @@ public class AtlasEntityChangeNotifier {
         List<AtlasEntityHeader> updatedEntities        = resp.getUpdatedEntities();
         List<AtlasEntityHeader> partialUpdatedEntities = resp.getPartialUpdatedEntities();
         List<AtlasEntityHeader> deletedEntities        = resp.getDeletedEntities();
+        List<AtlasEntityHeader> purgedEntities        = resp.getPurgedEntities();
 
         // remove entities with DELETED status from created & updated lists
         purgeDeletedEntities(createdEntities);
         purgeDeletedEntities(updatedEntities);
         purgeDeletedEntities(partialUpdatedEntities);
+
+        // remove entities purged in this mutation from created & updated lists
+        if (purgedEntities != null) {
+            for (AtlasEntityHeader entity : purgedEntities) {
+                purgeEntity(entity.getGuid(), deletedEntities);
+                purgeEntity(entity.getGuid(), createdEntities);
+                purgeEntity(entity.getGuid(), updatedEntities);
+                purgeEntity(entity.getGuid(), partialUpdatedEntities);
+            }
+        }
 
         // remove entities deleted in this mutation from created & updated lists
         if (deletedEntities != null) {

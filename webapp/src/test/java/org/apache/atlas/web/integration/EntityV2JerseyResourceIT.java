@@ -21,22 +21,21 @@ package org.apache.atlas.web.integration;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
 import com.sun.jersey.api.client.ClientResponse;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.model.TimeBoundary;
-import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.audit.AtlasAuditEntry;
+import org.apache.atlas.model.audit.AuditSearchParameters;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.util.StringUtils;
@@ -49,9 +48,10 @@ import org.testng.annotations.Test;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.testng.Assert.*;
-
 
 /**
  * Integration tests for Entity Jersey Resource.
@@ -59,6 +59,8 @@ import static org.testng.Assert.*;
 public class EntityV2JerseyResourceIT extends BaseResourceIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityV2JerseyResourceIT.class);
+
+    private static final String ENTITY_NOTIFICATION_VERSION_PROPERTY = "atlas.notification.entity.version";
 
     private final String DATABASE_NAME = "db" + randomString();
     private final String TABLE_NAME = "table" + randomString();
@@ -755,20 +757,8 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
     @Test
     public void testDeleteEntities() throws Exception {
         // Create 2 database entities
-        AtlasEntity db1 = new AtlasEntity(DATABASE_TYPE_V2);
-        String dbName1 = randomString();
-        db1.setAttribute("name", dbName1);
-        db1.setAttribute(NAME, dbName1);
-        db1.setAttribute("clusterName", randomString());
-        db1.setAttribute("description", randomString());
-        AtlasEntityHeader entity1Header = createEntity(db1);
-        AtlasEntity db2 = new AtlasEntity(DATABASE_TYPE_V2);
-        String dbName2 = randomString();
-        db2.setAttribute("name", dbName2);
-        db2.setAttribute(NAME, dbName2);
-        db2.setAttribute("clusterName", randomString());
-        db2.setAttribute("description", randomString());
-        AtlasEntityHeader entity2Header = createEntity(db2);
+        AtlasEntityHeader entity1Header = createRandomDatabaseEntity();
+        AtlasEntityHeader entity2Header = createRandomDatabaseEntity();
 
         // Delete the database entities
         EntityMutationResponse deleteResponse = atlasClientV2.deleteEntitiesByGuids(Arrays.asList(entity1Header.getGuid(), entity2Header.getGuid()));
@@ -779,6 +769,56 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         assertEquals(deleteResponse.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE).size(), 2);
 
         // Verify entities were deleted from the repository.
+    }
+
+    @Test
+    public void testPurgeEntities() throws Exception {
+        // Create 2 database entities
+        AtlasEntityHeader entity1Header = createRandomDatabaseEntity();
+        AtlasEntityHeader entity2Header = createRandomDatabaseEntity();
+
+        ApplicationProperties.get().setProperty(ENTITY_NOTIFICATION_VERSION_PROPERTY, "v2");
+
+        // Delete the database entities
+        EntityMutationResponse deleteResponse = atlasClientV2.deleteEntitiesByGuids(Arrays.asList(entity1Header.getGuid(), entity2Header.getGuid()));
+
+        // Verify that deleteEntities() response has database entity guids
+        assertNotNull(deleteResponse);
+        assertNotNull(deleteResponse.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE));
+        assertEquals(deleteResponse.getEntitiesByOperation(EntityMutations.EntityOperation.DELETE).size(), 2);
+
+        //Wait for delete operation
+        Thread.sleep(5000);
+
+        // Purge the database entities
+        Set<String> guids = Stream.of(entity1Header.getGuid(), entity2Header.getGuid()).collect(Collectors.toSet());
+        EntityMutationResponse purgeResponse = atlasClientV2.purgeEntitiesByGuids(guids);
+
+        // Verify that purgeEntities() response has database entity guids
+        assertNotNull(purgeResponse);
+        assertNotNull(purgeResponse.getEntitiesByOperation(EntityMutations.EntityOperation.PURGE));
+        assertEquals(purgeResponse.getEntitiesByOperation(EntityMutations.EntityOperation.PURGE).size(), 2);
+
+        AuditSearchParameters auditSearchParameters = TestResourceFileUtils.readObjectFromJson("audit-search-parameter-purge",
+                AuditSearchParameters.class);
+        List<AtlasAuditEntry> res = atlasClientV2.getAtlasAuditByOperation(auditSearchParameters);
+        // Verify that the audit entry is set
+        assertNotNull(res);
+    }
+
+    @Test
+    public void testPurgeEntitiesWithoutDelete() throws Exception {
+        // Create 2 database entities
+        AtlasEntityHeader entity1Header = createRandomDatabaseEntity();
+        AtlasEntityHeader entity2Header = createRandomDatabaseEntity();
+
+        // Purge the database entities without delete
+        Set<String> guids = Stream.of(entity1Header.getGuid(), entity2Header.getGuid()).collect(Collectors.toSet());
+        EntityMutationResponse purgeResponse = atlasClientV2.purgeEntitiesByGuids(guids);
+
+        // Verify that purgeEntities() response has database entity guids
+        assertNotNull(purgeResponse);
+        assertNull(purgeResponse.getEntitiesByOperation(EntityMutations.EntityOperation.PURGE));
     }
 
     @Test
@@ -801,5 +841,15 @@ public class EntityV2JerseyResourceIT extends BaseResourceIT {
         return new HashMap<String, String>() {{
             put(name, value);
         }};
+    }
+
+    private AtlasEntityHeader createRandomDatabaseEntity() {
+        AtlasEntity db = new AtlasEntity(DATABASE_TYPE_V2);
+        String dbName = randomString();
+        db.setAttribute("name", dbName);
+        db.setAttribute(NAME, dbName);
+        db.setAttribute("clusterName", randomString());
+        db.setAttribute("description", randomString());
+        return createEntity(db);
     }
 }

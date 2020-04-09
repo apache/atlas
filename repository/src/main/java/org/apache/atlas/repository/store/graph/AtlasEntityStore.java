@@ -72,6 +72,9 @@ public interface AtlasEntityStore {
      */
     AtlasEntityHeader getHeaderById(String guid) throws AtlasBaseException;
 
+
+    public AtlasEntityHeader getEntityHeaderByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException;
+
     /**
      * Batch GET to retrieve entities by their ID
      * @param guid
@@ -147,6 +150,14 @@ public interface AtlasEntityStore {
     EntityMutationResponse createOrUpdateForImport(EntityStream entityStream) throws AtlasBaseException;
 
     /**
+     * Create or update  entities with parameters necessary for import process without commit. Caller will have to do take care of commit.
+     * @param entityStream AtlasEntityStream
+     * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
+     * @throws AtlasBaseException
+     */
+    EntityMutationResponse createOrUpdateForImportNoCommit(EntityStream entityStream) throws AtlasBaseException;
+
+    /**
      * Update a single entity
      * @param objectId     ID of the entity
      * @param updatedEntityInfo updated entity information
@@ -203,10 +214,16 @@ public interface AtlasEntityStore {
      */
 
     String getGuidByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException;
+
     /*
      * Return list of deleted entity guids
      */
     EntityMutationResponse deleteByIds(List<String> guid) throws AtlasBaseException;
+
+    /*
+     * Return list of purged entity guids
+     */
+    EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException;
 
     /**
      * Add classification(s)
@@ -237,6 +254,23 @@ public interface AtlasEntityStore {
      * Set labels to given entity, if labels is null/empty, existing labels will all be removed.
      */
     void setLabels(String guid, Set<String> labels) throws AtlasBaseException;
+
+    /**
+     *
+     * @param guid
+     * @param businessAttrbutes
+     * @param isOverwrite
+     * @throws AtlasBaseException
+     */
+    void addOrUpdateBusinessAttributes(String guid, Map<String, Map<String, Object>> businessAttrbutes, boolean isOverwrite) throws AtlasBaseException;
+
+    /**
+     *
+     * @param guid
+     * @param businessAttributes
+     * @throws AtlasBaseException
+     */
+    void removeBusinessAttributes(String guid, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException;
 
     /**
      * Remove given labels, if labels is null/empty, no labels will be removed. If any labels in

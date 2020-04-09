@@ -55,10 +55,20 @@ define(['require',
                 osCard: "[data-id='os-card']",
                 runtimeCard: "[data-id='runtime-card']",
                 memoryCard: "[data-id='memory-card']",
-                memoryPoolUsage: "[data-id='memory-pool-usage-card']"
+                memoryPoolUsage: "[data-id='memory-pool-usage-card']",
+                statisticsRefresh: "[data-id='statisticsRefresh']",
+                notificationDetails: "[data-id='notificationDetails']"
             },
             /** ui events hash */
-            events: function() {},
+            events: function() {
+                var events = {};
+                events["click " + this.ui.statisticsRefresh] = function(e) {
+                    this.$('.statsContainer,.statsNotificationContainer,.statisticsRefresh').addClass('hide');
+                    this.$('.statsLoader,.statsNotificationLoader').addClass('show');
+                    this.fetchMetricData();
+                };
+                return events;
+            },
             /**
              * intialize a new AboutAtlasView Layout
              * @constructs
@@ -67,39 +77,43 @@ define(['require',
                 _.extend(this, options);
                 var that = this;
                 this.DATA_MAX_LENGTH = 25;
-                var modal = new Modal({
-                    title: 'Statistics',
-                    content: this,
-                    okCloses: true,
-                    okText: "Close",
-                    showFooter: true,
-                    allowCancel: false,
-                    width: "60%",
-                    headerButtons: [{
-                        title: "Refresh Data",
-                        btnClass: "fa fa-refresh",
-                        onClick: function() {
-                            modal.$el.find('.header-button .fa-refresh').tooltip('hide').prop('disabled', true).addClass('fa-spin');
-                            that.fetchMetricData({ update: true });
-                        }
-                    }]
-                }).open();
+                if (this.isMigrationView !== true) {
+                    var modal = new Modal({
+                        title: 'Statistics',
+                        content: this,
+                        okCloses: true,
+                        okText: "Close",
+                        showFooter: true,
+                        allowCancel: false,
+                        width: "60%",
+                        headerButtons: [{
+                            title: "Refresh Data",
+                            btnClass: "fa fa-refresh",
+                            onClick: function() {
+                                modal.$el.find('.header-button .fa-refresh').tooltip('hide').prop('disabled', true).addClass('fa-spin');
+                                that.fetchMetricData({ update: true });
+                            }
+                        }]
+                    }).open();
 
-                modal.on('closeModal', function() {
-                    modal.trigger('cancel');
-                });
-                this.modal = modal;
+                    modal.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
+                    this.modal = modal;
+                }
+
             },
             bindEvents: function() {
                 var that = this;
-                this.$el.on('click', '.linkClicked', function() {
-                    that.modal.close();
-                })
+                if (this.modal) {
+                    this.$el.on('click', '.linkClicked', function() {
+                        that.modal.close();
+                    })
+                }
             },
             fetchMetricData: function(options) {
                 var that = this;
                 this.metricCollection.fetch({
-                    skipDefaultError: true,
                     success: function(data) {
                         var data = _.first(data.toJSON());
                         that.renderStats({ valueObject: data.general.stats, dataObject: data.general });
@@ -107,9 +121,14 @@ define(['require',
                         that.renderSystemDeatils({ data: data });
                         that.renderClassifications({ data: data });
                         that.$('.statsContainer,.statsNotificationContainer').removeClass('hide');
+                        if (that.isMigrationView) {
+                            that.$('.statisticsRefresh').removeClass('hide');
+                        }
                         that.$('.statsLoader,.statsNotificationLoader').removeClass('show');
                         if (options && options.update) {
-                            that.modal.$el.find('.header-button .fa-refresh').prop('disabled', false).removeClass('fa-spin');
+                            if (that.modal) {
+                                that.modal.$el.find('.header-button .fa-refresh').prop('disabled', false).removeClass('fa-spin');
+                            }
                             Utils.notifySuccess({
                                 content: "Metric data is refreshed"
                             })
@@ -274,7 +293,7 @@ define(['require',
                         });
                         return tableBody;
                     };
-                if (data.Notification) {
+                if (!that.isMigrationView && data.Notification) {
                     var tableCol = [{
                                 label: "Total <br> (from " + (that.getValue({
                                     "value": data.Server["startTimeStamp"],
@@ -342,6 +361,7 @@ define(['require',
                             }
                         })
                     )
+                    that.ui.notificationDetails.removeClass('hide');
                 }
 
                 if (data.Server) {
@@ -382,6 +402,7 @@ define(['require',
                 if (!_.isEmpty(systemMemoryData)) {
                     var memoryTable = CommonViewFunction.propertyTable({
                         scope: this,
+                        formatStringVal: true,
                         valueObject: systemMemoryData
                     });
                     that.ui.memoryCard.html(

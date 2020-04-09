@@ -226,7 +226,7 @@ in more detail. Depending on the configuration of Apache Kafka, sometimes you mi
 using Apache Atlas. To do so, Apache Atlas provides a script =bin/atlas_kafka_setup.py= which can be run from Apache Atlas server. In some
 environments, the hooks might start getting used first before Apache Atlas server itself is setup. In such cases, the topics
 can be run on the hosts where hooks are installed using a similar script `hook-bin/atlas_kafka_setup_hook.py`. Both these
-use configuration in `atlas-application.properties` for setting up the topics. Please refer to the [Configuration](#/Configuration])
+use configuration in `atlas-application.properties` for setting up the topics. Please refer to the [Configuration](#/Configuration)
 for these details.
 
 #### Setting up Apache Atlas

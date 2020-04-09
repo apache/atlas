@@ -54,6 +54,7 @@
     <link href="js/libs/jQueryQueryBuilder/css/query-builder.default.min.css?bust=<%- bust %>" rel="stylesheet" />
     <link href="js/libs/bootstrap-daterangepicker/css/daterangepicker.css?bust=<%- bust %>" rel="stylesheet" />
     <link rel="stylesheet" href="js/libs/nvd3/css/nv.d3.min.css?bust=<%- bust %>" />
+    <link href="js/libs/dropzone/css/dropzone.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/jstree/css/default/default-theme.min.css?bust=<%- bust %>" rel="stylesheet" />
     <link href="js/libs/pretty-checkbox/css/pretty-checkbox.min.css?bust=<%- bust %>" rel="stylesheet" />
     <link href="css/style.css?bust=<%- bust %>" rel="stylesheet" />
@@ -116,10 +117,8 @@
                 </div>
             </div>
         </div>
-        <div class="footer-content">
-            <a href="javascript:void(0)" id="sUI">Switch to Classic UI</a>
-        </div>
     </div>
+    <div class="module-loader"></div>
     <!-- build:js scripts/main.js -->
     <script data-main="js/main.js?bust=<%- bust %>" src="js/libs/requirejs/require.js?bust=<%- bust %>"></script>
     <!-- endbuild -->

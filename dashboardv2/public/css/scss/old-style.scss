@@ -38,6 +38,7 @@
         //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
         border-radius: 0;
     }
+
     &:last-child {
         //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
         border-radius: 0;
@@ -142,6 +143,7 @@
     height: 330px;
     overflow-y: auto;
     margin-bottom: 0;
+
     i.fa {
         margin-right: 5px;
     }

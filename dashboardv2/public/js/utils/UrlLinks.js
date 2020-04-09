@@ -40,11 +40,18 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         enumDefApiUrl: function(name) {
             return this.getDefApiUrl('enum', name);
         },
-        metricsApiUrl: function(){
+        metricsApiUrl: function() {
             return this.baseUrl + '/admin/metrics'
         },
+        rootEntityDefUrl: function(name) {
+            return this.baseUrlV2 + '/types/entitydef/name/' + name;
+        },
+        rootClassificationDefUrl: function(name) {
+            return this.baseUrlV2 + '/types/classificationdef/name/' + name;
+        },
         getDefApiUrl: function(type, name) {
-            var defApiUrl = this.typedefsUrl(), defUrl;
+            var defApiUrl = this.typedefsUrl(),
+                defUrl;
             if (name) {
                 defUrl = defApiUrl.def + '/name/' + name;
             } else {
@@ -177,6 +184,12 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
             } else {
                 return glossaryUrl;
             }
+        },
+        glossaryImportTempUrl: function() {
+            return this.glossaryApiUrl() + '/import/template';
+        },
+        glossaryImportUrl: function() {
+            return this.glossaryApiUrl() + '/import';
         },
         categoryApiUrl: function(options) {
             var guid = options && options.guid,

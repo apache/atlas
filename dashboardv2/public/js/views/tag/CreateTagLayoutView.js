@@ -127,7 +127,7 @@ define(['require',
                     "valuesMinCount": 0,
                     "valuesMaxCount": 1,
                     "isUnique": false,
-                    "isIndexable": false
+                    "isIndexable": true
                 }));
             },
             onClickAddAttriBtn: function() {

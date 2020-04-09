@@ -55,6 +55,8 @@ public abstract class EntityPreprocessor {
     public static final String ATTRIBUTE_INDEXES        = "indexes";
     public static final String ATTRIBUTE_FOREIGN_KEYS   = "foreign_keys";
     public static final String ATTRIBUTE_INSTANCE       = "instance";
+    public static final String ATTRIBUTE_START_TIME     = "startTime";
+    public static final String ATTRIBUTE_END_TIME       = "endTime";
 
     public static final char   QNAME_SEP_CLUSTER_NAME = '@';
     public static final char   QNAME_SEP_ENTITY_NAME  = '.';

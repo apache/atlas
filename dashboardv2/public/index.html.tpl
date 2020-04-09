@@ -56,6 +56,7 @@
     <link rel="stylesheet" href="js/libs/nvd3/css/nv.d3.min.css?bust=<%- bust %>">
     <link href="js/libs/jstree/css/default-dark/default-dark-theme.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/pretty-checkbox/css/pretty-checkbox.min.css?bust=<%- bust %>" rel="stylesheet">
+    <link href="js/libs/dropzone/css/dropzone.css?bust=<%- bust %>" rel="stylesheet">
     <link href="js/libs/jstree/css/default/default-theme.min.css?bust=<%- bust %>" rel="stylesheet">
     <link href="css/style.css?bust=<%- bust %>" rel="stylesheet">
 </head>
@@ -72,9 +73,6 @@
                     <div class="initialLoading"></div>
                 </div>
             </div>
-        </div>
-        <div class="footer-content">
-            <a href="javascript:void(0)" id="sUI">Switch to Beta UI</a>
         </div>
     </div>
     <!-- build:js scripts/main.js -->

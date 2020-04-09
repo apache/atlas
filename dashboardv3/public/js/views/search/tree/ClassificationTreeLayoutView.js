@@ -25,8 +25,9 @@ define([
     "utils/CommonViewFunction",
     "collection/VSearchList",
     "collection/VGlossaryList",
+    "utils/Enums",
     "jstree"
-], function(require, ClassificationTreeLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList) {
+], function(require, ClassificationTreeLayoutViewTmpl, Utils, Messages, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList, Enums) {
     "use strict";
 
     var ClassificationTreeLayoutView = Marionette.LayoutView.extend({
@@ -51,7 +52,9 @@ define([
             wildCardClick: '[data-id="wildCardClick"]',
             wildCardSearch: '[data-id="wildCardSearch"]',
             wildCardValue: '[data-id="wildCardValue"]',
-            clearWildCard: '[data-id="clearWildCard"]'
+            wildCardContainer: '[data-id="wildCardContainer"]',
+            clearWildCard: '[data-id="clearWildCard"]',
+            classificationTreeLoader: '[data-id="classificationTreeLoader"]'
         },
         templateHelpers: function() {
             return {
@@ -61,14 +64,16 @@ define([
         events: function() {
             var events = {},
                 that = this;
-            // refresh individual tree
             events["click " + this.ui.refreshTree] = function(e) {
+                that.changeLoaderState(true);
+                that.ui.refreshTree.attr("disabled", true).tooltip("hide");
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.refresh({ type: type });
             };
 
-            events["click " + this.ui.createTag] = function() {
+            events["click " + this.ui.createTag] = function(e) {
+                e.stopPropagation();
                 that.onClickCreateTag();
             };
 
@@ -95,7 +100,9 @@ define([
             events["click " + this.ui.wildCardSearch] = function(e) {
                 e.stopPropagation();
                 var tagValue = this.ui.wildCardValue.val();
-                that.findSearchResult(tagValue);
+                if (tagValue.indexOf("*") != -1) {
+                    that.findSearchResult(tagValue);
+                }
             };
             events["click " + this.ui.wildCardValue] = function(e) {
                 e.stopPropagation();
@@ -103,8 +110,12 @@ define([
             events["click " + this.ui.clearWildCard] = function(e) {
                 e.stopPropagation();
                 that.ui.wildCardValue.val("");
+                that.ui.clearWildCard.addClass('hide-icon');
             }
-            events["keyup " + this.ui.wildCardValue] = function(e) {
+            events["click " + this.ui.wildCardContainer] = function(e) {
+                e.stopPropagation();
+            }
+            events["keydown " + this.ui.wildCardValue] = function(e) {
                 e.stopPropagation();
                 var code = e.which;
                 if (this.ui.wildCardValue.val().length > 0) {
@@ -113,14 +124,17 @@ define([
                     this.ui.clearWildCard.addClass('hide-icon');
                 }
                 if (code == 13) {
+                    e.preventDefault();
                     var tagValue = this.ui.wildCardValue.val();
-                    if(tagValue.indexOf("*")!= -1 ){
+                    if (tagValue.indexOf("*") != -1) {
                         that.findSearchResult(tagValue);
                     }
-
                 }
             };
-
+            events["keyup " + this.ui.wildCardValue] = function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+            };
             return events;
         },
         initialize: function(options) {
@@ -141,15 +155,27 @@ define([
             );
             this.bindEvents();
             this.entityCountObj = _.first(this.metricCollection.toJSON());
-            this.isEmptyClassification = true;
+            this.isEmptyClassification = false;
             this.entityTreeData = {};
             this.tagId = null;
             this.isGroupView = true;
         },
         onRender: function() {
+            this.changeLoaderState(true);
             this.renderClassificationTree();
             this.createClassificationAction();
             this.ui.clearWildCard.addClass('hide-icon');
+            this.changeLoaderState(false);
+        },
+        changeLoaderState: function(showLoader) {
+            if (showLoader) {
+                this.ui.classificationSearchTree.hide();
+                this.ui.classificationTreeLoader.show();
+            } else {
+                this.ui.classificationSearchTree.show();
+                this.ui.classificationTreeLoader.hide();
+            }
+
         },
         bindEvents: function() {
             var that = this;
@@ -170,20 +196,23 @@ define([
                 that[$(this).find('a').data('fn') + "Classification"](e)
             });
             this.searchVent.on("Classification:Count:Update", function(options) {
+                that.changeLoaderState(true);
                 var opt = options || {};
                 if (opt && !opt.metricData) {
                     that.metricCollection.fetch({
-                        skipDefaultError: true,
                         complete: function() {
                             that.entityCountObj = _.first(that.metricCollection.toJSON());
                             that.classificationTreeUpdate = true;
                             that.ui.classificationSearchTree.jstree(true).refresh();
+                            that.changeLoaderState(false);
                         }
                     });
                 } else {
                     that.entityCountObj = opt.metricData;
                     that.ui.classificationSearchTree.jstree(true).refresh();
+                    that.changeLoaderState(false);
                 }
+
             });
         },
         findSearchResult: function(tagValue) {
@@ -226,7 +255,7 @@ define([
                     selector: '.classificationPopover',
                     content: function() {
                         var type = $(this).data('detail'),
-                            liString = "<li><i class='fa fa-list-alt'></i><a href='javascript:void(0)' data-fn='onViewEdit'>View/Edit</a></li><li><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='onDelete'>Delete</a></li><li><i class='fa fa-search'></i><a href='javascript:void(0)' data-fn='onSelectedSearch'>Search</a></li>"
+                            liString = " <li><i class='fa fa-plus'></i><a href='javascript:void(0)' data-fn='onClickCreateTag'>Create Sub-classification</a></li><li><i class='fa fa-list-alt'></i><a href='javascript:void(0)' data-fn='onViewEdit'>View/Edit</a></li><li><i class='fa fa-trash-o'></i><a href='javascript:void(0)' data-fn='onDelete'>Delete</a></li><li><i class='fa fa-search'></i><a href='javascript:void(0)' data-fn='onSelectedSearch'>Search</a></li>"
                         return "<ul>" + liString + "</ul>";
                     }
                 }
@@ -247,17 +276,30 @@ define([
                 this.ui.classificationSearchTree.jstree(true).deselect_all();
                 this.tagId = null;
             } else {
-                var dataFound = this.classificationDefCollection.fullCollection.find(function(obj) {
-                    return obj.get("name") === that.options.value.tag
-                });
-                if (dataFound) {
-                    if ((this.tagId && this.tagId !== dataFound.get("guid")) || this.tagId === null) {
-                        if (this.tagId) {
-                            this.ui.classificationSearchTree.jstree(true).deselect_node(this.tagId);
+                if ((that.options.value.tag === "_ALL_CLASSIFICATION_TYPES" && this.tagId !== "_ALL_CLASSIFICATION_TYPES") || (that.options.value.tag === "_NOT_CLASSIFIED" && this.tagId !== "_NOT_CLASSIFIED") || (that.options.value.tag === "_CLASSIFIED" && this.tagId !== "_CLASSIFIED")) {
+                    this.fromManualRender = true;
+                    if (this.tagId) {
+                        this.ui.classificationSearchTree.jstree(true).deselect_node(this.tagId);
+                    }
+                    this.tagId = Globals[that.options.value.tag].guid;
+                    this.ui.classificationSearchTree.jstree(true).select_node(this.tagId);
+                } else if ((this.tagId !== "_ALL_CLASSIFICATION_TYPES" && that.options.value.tag !== this.tagId) || (this.tagId !== "_NOT_CLASSIFIED" && that.options.value.tag !== this.tagId) || (this.tagId !== "_CLASSIFIED" && that.options.value.tag !== this.tagId)) {
+                    if ((that.options.value.tag.indexOf('*') != -1)) {
+                        that.ui.classificationSearchTree.jstree(true).deselect_all();
+                        that.ui.wildCardValue.val(that.options.value.tag);
+                    }
+                    var dataFound = this.classificationDefCollection.fullCollection.find(function(obj) {
+                        return obj.get("name") === that.options.value.tag
+                    });
+                    if (dataFound) {
+                        if ((this.tagId && this.tagId !== dataFound.get("guid")) || this.tagId === null) {
+                            if (this.tagId) {
+                                this.ui.classificationSearchTree.jstree(true).deselect_node(this.tagId);
+                            }
+                            this.fromManualRender = true;
+                            this.tagId = dataFound.get("guid");
+                            this.ui.classificationSearchTree.jstree(true).select_node(dataFound.get("guid"));
                         }
-                        this.fromManualRender = true;
-                        this.tagId = dataFound.get("guid");
-                        this.ui.classificationSearchTree.jstree(true).select_node(dataFound.get("guid"));
                     }
                 }
             }
@@ -338,10 +380,11 @@ define([
                         that.classificationDefCollection.fullCollection.sort({ silent: true });
                         that.classificationTreeUpdate = true
                         that.ui.classificationSearchTree.jstree(true).refresh();
+                        that.changeLoaderState(false);
+                        that.ui.refreshTree.attr("disabled", false);
                     }
                 };
             this.classificationDefCollection.fetch({
-                skipDefaultError: true,
                 silent: true,
                 complete: function() {
                     --apiCount;
@@ -349,7 +392,6 @@ define([
                 }
             });
             this.metricCollection.fetch({
-                skipDefaultError: true,
                 complete: function() {
                     --apiCount;
                     that.entityCountObj = _.first(that.metricCollection.toJSON());
@@ -404,8 +446,8 @@ define([
                                     that.tagId = isSelectedChild ? child.get("guid") : null;
                                 }
                             }
-                            var modelJSON = child.toJSON();
                             if (child) {
+                                var modelJSON = child.toJSON();
                                 var nodeDetails = {
                                         name: _.escape(name),
                                         model: modelJSON,
@@ -485,8 +527,33 @@ define([
             });
             var classificationTreeData = that.isEmptyClassification ? listWithEmptyParents : listOfParents;
             var flatViewClassificaton = that.isEmptyClassification ? listWithEmptyParentsFlatView : flatViewList;
-            var classificationData = that.isGroupView ? classificationTreeData : flatViewClassificaton;
+            var classificationData = that.isGroupView ?
+                that.pushRootClassificationToJstree.call(that, classificationTreeData) :
+                that.pushRootClassificationToJstree.call(that, flatViewClassificaton);
             return classificationData;
+        },
+        pushRootClassificationToJstree: function(data) {
+            var that = this;
+            _.each(Enums.addOnClassification, function(addOnClassification) {
+                var rootClassification = Globals[addOnClassification];
+                var isSelected = that.options.value && that.options.value.tag ? that.options.value.tag == rootClassification.name : false;
+                var rootClassificationNode = {
+                    text: _.escape(rootClassification.name),
+                    name: rootClassification.name,
+                    type: rootClassification.category,
+                    gType: "Classification",
+                    guid: rootClassification.guid,
+                    id: rootClassification.guid,
+                    model: rootClassification,
+                    children: [],
+                    icon: "fa fa-tag",
+                    state: {
+                        selected: isSelected
+                    }
+                }
+                data.push(rootClassificationNode);
+            });
+            return data;
         },
         generateSearchTree: function(options) {
             var $el = options && options.$el,
@@ -553,20 +620,23 @@ define([
                 var aTag = that.$("#" + str.node.a_attr.id),
                     tagOffset = aTag.find(">.jstree-icon").offset();
                 that.$(".tree-tooltip").removeClass("show");
-                if (tagOffset.top && tagOffset.left) {
-                    aTag.find(">span.tree-tooltip").css({
-                        top: "calc(" + tagOffset.top + "px - 45px)",
-                        left: "24px"
-                    }).addClass("show");
-                }
+                setTimeout(function() {
+                    if (aTag.hasClass("jstree-hovered") && tagOffset.top && tagOffset.left) {
+                        aTag.find(">span.tree-tooltip").css({
+                            top: "calc(" + tagOffset.top + "px - 45px)",
+                            left: "24px"
+                        }).addClass("show");
+                    }
+                }, 1200);
             }).on("dehover_node.jstree", function(nodes, str, res) {
                 that.$(".tree-tooltip").removeClass("show");
             });
         },
-        onClickCreateTag: function(e) {
+
+        onClickCreateTag: function(tagName) {
             var that = this;
             require(["views/tag/CreateTagLayoutView", "modules/Modal"], function(CreateTagLayoutView, Modal) {
-                var view = new CreateTagLayoutView({ tagCollection: that.options.classificationDefCollection, enumDefCollection: enumDefCollection }),
+                var view = new CreateTagLayoutView({ tagCollection: that.options.classificationDefCollection, enumDefCollection: enumDefCollection, selectedTag: tagName }),
                     modal = new Modal({
                         title: "Create a new classification",
                         content: view,
@@ -592,7 +662,7 @@ define([
                     });
                 });
                 modal.on("ok", function() {
-                    modal.$el.find("button.ok").attr("disabled", "true");
+                    modal.$el.find("button.ok").showButtonLoader();
                     that.onCreateTagButton(view, modal);
                 });
                 modal.on("closeModal", function() {
@@ -619,6 +689,7 @@ define([
                 Utils.notifyInfo({
                     content: "Please fill the attributes or delete the input box"
                 });
+                modal.$el.find("button.ok").hideButtonLoader();
                 return;
             }
 
@@ -677,6 +748,7 @@ define([
                     }
                     notifyObj["text"] = text;
                     Utils.notifyConfirm(notifyObj);
+                    modal.$el.find("button.ok").hideButtonLoader();
                     return false;
                 }
             }
@@ -711,11 +783,19 @@ define([
                         content: "Classification " + name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
                     });
                     modal.trigger("cancel");
+                    modal.$el.find("button.ok").showButtonLoader();
                     that.typeHeaders.fetch({ reset: true });
-                    var url = "#!/tag/tagAttribute/" + name;
-                    this.onClassificationUpdate(url);
+                },
+                complete: function() {
+                    modal.$el.find("button.ok").hideButtonLoader();
                 }
             });
+        },
+        onClickCreateTagClassification: function(e) {
+            var selectedNode = this.ui.classificationSearchTree.jstree("get_selected", true);
+            if (selectedNode && selectedNode[0]) {
+                this.onClickCreateTag(selectedNode[0].original.name);
+            }
         },
         onViewEditClassification: function() {
             var selectedNode = this.ui.classificationSearchTree.jstree("get_selected", true);

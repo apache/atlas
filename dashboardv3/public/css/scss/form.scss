@@ -30,6 +30,7 @@
         @extend .control-label-sm;
         padding-right: 10px;
     }
+
 }
 
 .form-group {
@@ -106,8 +107,16 @@ label {
     font-weight: 600;
 }
 
-button:focus {
-    outline: none !important;
+button {
+    &:focus {
+        outline: none !important;
+    }
+
+    &[disabled] {
+        .fa {
+            opacity: .65;
+        }
+    }
 }
 
 .btn {
@@ -245,6 +254,10 @@ button:focus {
         padding: 2px 6px;
     }
 
+    &.btn-xs {
+        padding: 0px 5px;
+    }
+
     &.btn-md {
         padding: 6px 10px;
     }
@@ -303,6 +316,10 @@ button:focus {
 
     &.btn-sm {
         padding: 2px 6px;
+    }
+
+    &.btn-xs {
+        padding: 0px 5px;
     }
 
     &.btn-md {
@@ -459,7 +476,7 @@ button:focus {
     border-color: $color_mountain_mist_approx;
     color: $color_mountain_mist_approx;
     cursor: default;
-    margin: 5px 10px;
+    margin: 0px 10px;
 
     &:hover {
         border-color: $color_mountain_mist_approx;

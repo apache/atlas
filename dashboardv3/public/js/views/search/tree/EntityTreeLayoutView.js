@@ -24,8 +24,9 @@ define([
     "utils/CommonViewFunction",
     "collection/VSearchList",
     "collection/VGlossaryList",
+    'utils/Enums',
     "jstree"
-], function(require, EntityLayoutViewTmpl, Utils, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList) {
+], function(require, EntityLayoutViewTmpl, Utils, Globals, UrlLinks, CommonViewFunction, VSearchList, VGlossaryList, Enums) {
     "use strict";
 
     var EntityTreeLayoutview = Marionette.LayoutView.extend({
@@ -41,7 +42,8 @@ define([
             entitySearchTree: '[data-id="entitySearchTree"]',
 
             // Show/hide empty values in tree
-            showEmptyServiceType: '[data-id="showEmptyServiceType"]'
+            showEmptyServiceType: '[data-id="showEmptyServiceType"]',
+            entityTreeLoader: '[data-id="entityTreeLoader"]'
         },
         templateHelpers: function() {
             return {
@@ -51,8 +53,9 @@ define([
         events: function() {
             var events = {},
                 that = this;
-            // refresh individual tree
             events["click " + this.ui.refreshTree] = function(e) {
+                that.changeLoaderState(true);
+                this.ui.refreshTree.attr("disabled", true).tooltip("hide");
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.ui[type + "SearchTree"].jstree(true).destroy();
@@ -73,7 +76,6 @@ define([
                 this.ui.groupOrFlatTree.tooltip('hide');
                 this.ui.groupOrFlatTree.find("i").toggleClass("fa-sitemap fa-list-ul");
                 this.ui.groupOrFlatTree.find("span").html(this.isGroupView ? "Show flat tree" : "Show group tree");
-
                 that.ui[type + "SearchTree"].jstree(true).destroy();
                 that.renderEntityTree();
             };
@@ -87,18 +89,20 @@ define([
                 that[$(this).find('a').data('fn') + "Entity"](e)
             });
             this.searchVent.on("Entity:Count:Update", function(options) {
+                that.changeLoaderState(true);
                 var opt = options || {};
                 if (opt && !opt.metricData) {
                     that.metricCollection.fetch({
-                        skipDefaultError: true,
                         complete: function() {
                             that.entityCountObj = _.first(that.metricCollection.toJSON());
                             that.ui.entitySearchTree.jstree(true).refresh();
+                            that.changeLoaderState(false);
                         }
                     });
                 } else {
                     that.entityCountObj = opt.metricData;
                     that.ui.entitySearchTree.jstree(true).refresh();
+                    that.changeLoaderState(false);
                 }
             });
         },
@@ -126,8 +130,19 @@ define([
             this.isGroupView = true;
         },
         onRender: function() {
+            this.changeLoaderState(true);
             this.renderEntityTree();
             this.createEntityAction();
+            this.changeLoaderState(false);
+        },
+        changeLoaderState: function(showLoader) {
+            if (showLoader) {
+                this.ui.entitySearchTree.hide();
+                this.ui.entityTreeLoader.show();
+            } else {
+                this.ui.entitySearchTree.show();
+                this.ui.entityTreeLoader.hide();
+            }
         },
         createEntityAction: function() {
             var that = this;
@@ -171,17 +186,26 @@ define([
                 this.ui.entitySearchTree.jstree(true).deselect_all();
                 this.typeId = null;
             } else {
-                var dataFound = this.typeHeaders.fullCollection.find(function(obj) {
-                    return obj.get("name") === that.options.value.type
-                });
-                if (dataFound) {
-                    if ((this.typeId && this.typeId !== dataFound.get("guid")) || this.typeId === null) {
-                        if (this.typeId) {
-                            this.ui.entitySearchTree.jstree(true).deselect_node(this.typeId);
+                if (that.options.value.type === "_ALL_ENTITY_TYPES" && this.typeId !== "_ALL_ENTITY_TYPES") {
+                    this.fromManualRender = true;
+                    if (this.typeId) {
+                        this.ui.entitySearchTree.jstree(true).deselect_node(this.typeId);
+                    }
+                    this.typeId = Globals[that.options.value.type].guid;
+                    this.ui.entitySearchTree.jstree(true).select_node(this.typeId);
+                } else if (this.typeId !== "_ALL_ENTITY_TYPES" && that.options.value.type !== this.typeId) {
+                    var dataFound = this.typeHeaders.fullCollection.find(function(obj) {
+                        return obj.get("name") === that.options.value.type
+                    });
+                    if (dataFound) {
+                        if ((this.typeId && this.typeId !== dataFound.get("guid")) || this.typeId === null) {
+                            if (this.typeId) {
+                                this.ui.entitySearchTree.jstree(true).deselect_node(this.typeId);
+                            }
+                            this.fromManualRender = true;
+                            this.typeId = dataFound.get("guid");
+                            this.ui.entitySearchTree.jstree(true).select_node(dataFound.get("guid"));
                         }
-                        this.fromManualRender = true;
-                        this.typeId = dataFound.get("guid");
-                        this.ui.entitySearchTree.jstree(true).select_node(dataFound.get("guid"));
                     }
                 }
             }
@@ -282,10 +306,8 @@ define([
                         }
                         if (categoryType == "ENTITY") {
                             var entityCount =
-                                that.entityCountObj.entity.entityActive[model.get("name")] +
-                                (that.entityCountObj.entity.entityDeleted[model.get("name")] ?
-                                    that.entityCountObj.entity.entityDeleted[model.get("name")] :
-                                    0),
+                                (that.entityCountObj.entity.entityActive[model.get("name")] || 0) +
+                                (that.entityCountObj.entity.entityDeleted[model.get("name")] || 0),
                                 modelname = entityCount ? model.get("name") + " (" + _.numberFormatWithComa(entityCount) + ")" : model.get("name");
                             if (that.options.value) {
                                 isSelected = that.options.value.type ? that.options.value.type == model.get("name") : false;
@@ -298,14 +320,14 @@ define([
                                 text: _.escape(modelname),
                                 name: model.get("name"),
                                 type: model.get("category"),
-                                gType: "serviceType",
+                                gType: "Entity",
                                 guid: model.get("guid"),
                                 id: model.get("guid"),
                                 model: model,
                                 parent: "#",
                                 icon: "fa fa-file-o",
                                 state: {
-                                    disabled: entityCount == 0 ? true : false,
+                                    disabled: false,
                                     selected: isSelected
                                 },
                             };
@@ -320,10 +342,39 @@ define([
 
                     var serviceTypeData = that.isEmptyServicetype ? serviceTypeWithEmptyEntity : serviceTypeArr;
                     if (that.isGroupView) {
-                        return getParentsData.call(that, serviceTypeData);
+                        var serviceDataWithRootEntity = pushRootEntityToJstree.call(that, 'group', serviceTypeData);
+                        return getParentsData.call(that, serviceDataWithRootEntity);
                     } else {
-                        return serviceTypeData;
+                        return pushRootEntityToJstree.call(that, null, serviceTypeData);
                     }
+                },
+                pushRootEntityToJstree = function(type, data) {
+                    var rootEntity = Globals[Enums.addOnEntities[0]];
+                    var isSelected = this.options.value && this.options.value.type ? this.options.value.type == rootEntity.name : false;
+                    var rootEntityNode = {
+                        text: _.escape(rootEntity.name),
+                        name: rootEntity.name,
+                        type: rootEntity.category,
+                        gType: "Entity",
+                        guid: rootEntity.guid,
+                        id: rootEntity.guid,
+                        model: rootEntity,
+                        parent: "#",
+                        icon: "fa fa-file-o",
+                        state: {
+                            // disabled: entityCount == 0 ? true : false,
+                            selected: isSelected
+                        },
+                    };
+                    if (type === 'group') {
+                        if (data.other_types === undefined) {
+                            data.other_types = { name: "other_types", children: [] };
+                        }
+                        data.other_types.children.push(rootEntityNode);
+                    } else {
+                        data.push(rootEntityNode);
+                    }
+                    return data;
                 },
                 getParentsData = function(data) {
                     var parents = Object.keys(data),
@@ -357,7 +408,7 @@ define([
                             parent = {
                                 icon: "fa fa-folder-o",
                                 type: type,
-                                gType: "serviceType",
+                                gType: "ServiceType",
                                 children: getParrent.children,
                                 text: _.escape(textName),
                                 name: data[parents[i]].name,
@@ -440,7 +491,7 @@ define([
             ).on("open_node.jstree", function(e, data) {
                 that.isTreeOpen = true;
             }).on("select_node.jstree", function(e, data) {
-                if (that.fromManualRender !== true) {
+                if (!that.fromManualRender) {
                     that.onNodeSelect(data);
                 } else {
                     that.fromManualRender = false;
@@ -456,12 +507,14 @@ define([
                 var aType = that.$("#" + str.node.a_attr.id),
                     typeOffset = aType.find(">.jstree-icon").offset();
                 that.$(".tree-tooltip").removeClass("show");
-                if (typeOffset.top && typeOffset.left) {
-                    aType.find(">span.tree-tooltip").css({
-                        top: "calc(" + typeOffset.top + "px - 45px)",
-                        left: "24px"
-                    }).addClass("show");
-                }
+                setTimeout(function() {
+                    if (aType.hasClass("jstree-hovered") && typeOffset.top && typeOffset.left) {
+                        aType.find(">span.tree-tooltip").css({
+                            top: "calc(" + typeOffset.top + "px - 45px)",
+                            left: "24px"
+                        }).addClass("show");
+                    }
+                }, 1200);
             }).on("dehover_node.jstree", function(nodes, str, res) {
                 that.$(".tree-tooltip").removeClass("show");
             });
@@ -472,10 +525,11 @@ define([
                 renderTree = function() {
                     if (apiCount === 0) {
                         that.renderEntityTree();
+                        that.changeLoaderState(false);
+                        that.ui.refreshTree.attr("disabled", false);
                     }
                 };
             this.entityDefCollection.fetch({
-                skipDefaultError: true,
                 complete: function() {
                     that.entityDefCollection.fullCollection.comparator = function(model) {
                         return model.get('name').toLowerCase();
@@ -487,7 +541,6 @@ define([
             });
 
             this.metricCollection.fetch({
-                skipDefaultError: true,
                 complete: function() {
                     --apiCount;
                     that.entityCountObj = _.first(that.metricCollection.toJSON());
@@ -496,7 +549,6 @@ define([
             });
 
             this.typeHeaders.fetch({
-                skipDefaultError: true,
                 complete: function() {
                     that.typeHeaders.fullCollection.comparator = function(model) {
                         return model.get('name').toLowerCase();

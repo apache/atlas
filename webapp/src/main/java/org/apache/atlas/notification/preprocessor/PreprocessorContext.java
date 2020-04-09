@@ -59,6 +59,7 @@ public class PreprocessorContext {
     private final List<String>                        hiveDummyDatabasesToIgnore;
     private final List<String>                        hiveDummyTablesToIgnore;
     private final List<String>                        hiveTablePrefixesToIgnore;
+    private final boolean                             updateHiveProcessNameWithQualifiedName;
     private final boolean                             hiveTypesRemoveOwnedRefAttrs;
     private final boolean                             rdbmsTypesRemoveOwnedRefAttrs;
     private final boolean                             isHivePreProcessEnabled;
@@ -70,17 +71,18 @@ public class PreprocessorContext {
     private final Map<String, String>                 guidAssignments        = new HashMap<>();
     private       List<AtlasEntity>                   postUpdateEntities     = null;
 
-    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, AtlasTypeRegistry typeRegistry, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, List<String> hiveDummyDatabasesToIgnore, List<String> hiveDummyTablesToIgnore, List<String> hiveTablePrefixesToIgnore, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs) {
-        this.kafkaMessage                  = kafkaMessage;
-        this.typeRegistry                  = typeRegistry;
-        this.hiveTablesToIgnore            = hiveTablesToIgnore;
-        this.hiveTablesToPrune             = hiveTablesToPrune;
-        this.hiveTablesCache               = hiveTablesCache;
-        this.hiveDummyDatabasesToIgnore    = hiveDummyDatabasesToIgnore;
-        this.hiveDummyTablesToIgnore       = hiveDummyTablesToIgnore;
-        this.hiveTablePrefixesToIgnore     = hiveTablePrefixesToIgnore;
-        this.hiveTypesRemoveOwnedRefAttrs  = hiveTypesRemoveOwnedRefAttrs;
-        this.rdbmsTypesRemoveOwnedRefAttrs = rdbmsTypesRemoveOwnedRefAttrs;
+    public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, AtlasTypeRegistry typeRegistry, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, List<String> hiveDummyDatabasesToIgnore, List<String> hiveDummyTablesToIgnore, List<String> hiveTablePrefixesToIgnore, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs, boolean updateHiveProcessNameWithQualifiedName) {
+        this.kafkaMessage                           = kafkaMessage;
+        this.typeRegistry                           = typeRegistry;
+        this.hiveTablesToIgnore                     = hiveTablesToIgnore;
+        this.hiveTablesToPrune                      = hiveTablesToPrune;
+        this.hiveTablesCache                        = hiveTablesCache;
+        this.hiveDummyDatabasesToIgnore             = hiveDummyDatabasesToIgnore;
+        this.hiveDummyTablesToIgnore                = hiveDummyTablesToIgnore;
+        this.hiveTablePrefixesToIgnore              = hiveTablePrefixesToIgnore;
+        this.hiveTypesRemoveOwnedRefAttrs           = hiveTypesRemoveOwnedRefAttrs;
+        this.rdbmsTypesRemoveOwnedRefAttrs          = rdbmsTypesRemoveOwnedRefAttrs;
+        this.updateHiveProcessNameWithQualifiedName = updateHiveProcessNameWithQualifiedName;
 
         final HookNotification  message = kafkaMessage.getMessage();
 
@@ -98,7 +100,7 @@ public class PreprocessorContext {
             break;
         }
 
-        this.isHivePreProcessEnabled = hiveTypesRemoveOwnedRefAttrs || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty();
+        this.isHivePreProcessEnabled = hiveTypesRemoveOwnedRefAttrs || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty() || updateHiveProcessNameWithQualifiedName;
     }
 
     public AtlasKafkaMessage<HookNotification> getKafkaMessage() {
@@ -112,6 +114,8 @@ public class PreprocessorContext {
     public int getKafkaPartition() {
         return kafkaMessage.getPartition();
     }
+
+    public boolean updateHiveProcessNameWithQualifiedName() { return updateHiveProcessNameWithQualifiedName; }
 
     public boolean getHiveTypesRemoveOwnedRefAttrs() { return hiveTypesRemoveOwnedRefAttrs; }
 

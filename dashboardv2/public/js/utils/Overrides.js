@@ -37,9 +37,7 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
         return oldBackboneSync.apply(this, [method, model,
             _.extend(options, {
                 error: function(response) {
-                    if (!options.skipDefaultError) {
-                        Utils.defaultErrorHandler(that, response);
-                    }
+                    Utils.defaultErrorHandler(that, response, options);
                     that.trigger("error", that, response);
                     if (options.cust_error) {
                         options.cust_error(that, response);
@@ -57,7 +55,10 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
         return this.charAt(0).toUpperCase() + this.slice(1);
     }
 
-
+    /*
+     * Overriding default sortType
+     */
+    Backgrid.Column.prototype.defaults.sortType = "toggle";
 
     /*
      * Overriding Cell for adding custom className to Cell i.e <td>
@@ -206,7 +207,7 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
     var HeaderDecodeCell = Backgrid.HeaderHTMLDecodeCell = Backgrid.HeaderCell.extend({
         initialize: function(options) {
             Backgrid.HeaderCell.prototype.initialize.apply(this, arguments);
-            this.name = _.unescape(this.column.get("name"))
+            this.name = _.unescape(this.column.get("label"))
             // Add class
             this.$el.addClass(this.name);
         },

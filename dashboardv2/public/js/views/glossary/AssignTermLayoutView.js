@@ -84,7 +84,8 @@ define(['require',
                     "okText": "Assign",
                     "allowCancel": true,
                     "showFooter": this.isAttributeRelationView ? false : true,
-                    "mainClass": "wizard-modal"
+                    "mainClass": "wizard-modal",
+                    "okCloses": false
                 });
                 this.modal.open();
                 this.modal.$el.find('button.ok').attr("disabled", true);
@@ -145,6 +146,7 @@ define(['require',
                 }
             },
             assignTerm: function() {
+                this.modal.$el.find('button.ok').showButtonLoader();
                 this.assignTermError = false;
                 var that = this,
                     data = [],
@@ -163,6 +165,7 @@ define(['require',
                             }
                         },
                         cust_error: function() {
+                            that.modal.$el.find('button.ok').hideButtonLoader();
                             that.assignTermError = true;
                         }
                     },

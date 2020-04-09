@@ -316,7 +316,7 @@ public class HBaseAtlasHook extends AtlasHook {
         if (metadataNamespace == null || nameSpace == null || tableName == null || columnFamily == null) {
             return null;
         } else {
-            return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), stripNameSpace(tableName.toLowerCase()), columnFamily.toLowerCase(), metadataNamespace);
+            return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace, stripNameSpace(tableName), columnFamily, metadataNamespace);
         }
     }
 
@@ -332,7 +332,7 @@ public class HBaseAtlasHook extends AtlasHook {
         if (metadataNamespace == null || nameSpace == null || tableName == null) {
             return null;
         } else {
-            return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace.toLowerCase(), stripNameSpace(tableName.toLowerCase()), metadataNamespace);
+            return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace, stripNameSpace(tableName), metadataNamespace);
         }
     }
 
@@ -347,7 +347,7 @@ public class HBaseAtlasHook extends AtlasHook {
         if (metadataNamespace == null || nameSpace == null) {
             return null;
         } else {
-            return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace.toLowerCase(), metadataNamespace);
+            return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace, metadataNamespace);
         }
     }
 

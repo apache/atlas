@@ -29,6 +29,10 @@ import java.util.Collections;
 public class AtlasSimpleAuthorizerTest {
     private static Logger LOG = LoggerFactory.getLogger(AtlasSimpleAuthorizerTest.class);
 
+    private static final String USER_DATA_SCIENTIST = "dataScientist1";
+    private static final String USER_DATA_STEWARD   = "dataSteward1";
+
+
     private String          originalConf;
     private AtlasAuthorizer authorizer;
 
@@ -98,6 +102,69 @@ public class AtlasSimpleAuthorizerTest {
             boolean isAccessAllowed = authorizer.isAccessAllowed(request);
 
             AssertJUnit.assertEquals(false, isAccessAllowed);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test(enabled = true)
+    public void testLabels() {
+        try {
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_ADD_LABEL);
+
+            request.setUser(USER_DATA_SCIENTIST, Collections.emptySet());
+
+            boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertEquals("user " + USER_DATA_SCIENTIST + " shouldn't be allowed to add label", false, isAccessAllowed);
+
+
+            request.setUser(USER_DATA_STEWARD, Collections.emptySet());
+
+            isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertEquals("user " + USER_DATA_STEWARD + " should be allowed to add label", true, isAccessAllowed);
+
+
+            request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_REMOVE_LABEL);
+
+            request.setUser(USER_DATA_SCIENTIST, Collections.emptySet());
+
+            isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertEquals("user " + USER_DATA_SCIENTIST + " shouldn't be allowed to remove label", false, isAccessAllowed);
+
+
+            request.setUser(USER_DATA_STEWARD, Collections.emptySet());
+
+            isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertEquals("user " + USER_DATA_STEWARD + " should be allowed to remove label", true, isAccessAllowed);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
+
+            AssertJUnit.fail();
+        }
+    }
+
+    @Test(enabled = true)
+    public void testBusinessMetadata() {
+        try {
+            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
+
+            request.setUser(USER_DATA_SCIENTIST, Collections.emptySet());
+
+            boolean isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertEquals("user " + USER_DATA_SCIENTIST + " shouldn't be allowed to update business-metadata", false, isAccessAllowed);
+
+            request.setUser(USER_DATA_STEWARD, Collections.emptySet());
+
+            isAccessAllowed = authorizer.isAccessAllowed(request);
+
+            AssertJUnit.assertEquals("user " + USER_DATA_STEWARD + " should be allowed to update business-metadata", true, isAccessAllowed);
         } catch (AtlasAuthorizationException e) {
             LOG.error("Exception in AtlasSimpleAuthorizerTest", e);
 

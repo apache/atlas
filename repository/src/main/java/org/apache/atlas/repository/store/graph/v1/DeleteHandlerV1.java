@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
-
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -25,7 +24,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
@@ -37,15 +35,9 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasClassificationType;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -59,20 +51,11 @@ import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_STATUS;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAME_DELIMITER;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
-import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromEdge;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getQualifiedAttributePropertyKey;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 public abstract class DeleteHandlerV1 {
@@ -99,18 +82,21 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
-        RequestContext   requestContext            = RequestContext.get();
-        Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
+        final RequestContext   requestContext            = RequestContext.get();
+        final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
+        final boolean          isPurgeRequested          = requestContext.isPurgeRequested();
 
         for (AtlasVertex instanceVertex : instanceVertices) {
-            String              guid = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
-            AtlasEntity.Status state = getState(instanceVertex);
+            final String             guid  = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
 
-            if (state == DELETED || requestContext.isDeletedEntity(guid)) {
+            if (skipVertexForDelete(instanceVertex)) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Skipping deletion of {} as it is already deleted", guid);
+                    if (isPurgeRequested) {
+                        LOG.debug("Skipping purging of entity={} as it is active or already purged", guid);
+                    } else {
+                        LOG.debug("Skipping deletion of entity={} as it is already deleted", guid);
+                    }
                 }
-
                 continue;
             }
 
@@ -147,12 +133,19 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasBaseException
      */
     public void deleteRelationships(Collection<AtlasEdge> edges, final boolean forceDelete) throws AtlasBaseException {
+        final boolean isPurgeRequested = RequestContext.get().isPurgeRequested();
+
         for (AtlasEdge edge : edges) {
             boolean isInternal = isInternalType(edge.getInVertex()) && isInternalType(edge.getOutVertex());
+            boolean needToSkip = !isInternal && (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED));
 
-            if (!isInternal && getState(edge) == DELETED) {
+            if (needToSkip) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Skipping deletion of {} as it is already deleted", getIdFromEdge(edge));
+                    if(isPurgeRequested) {
+                        LOG.debug("Skipping purging of edge={} as it is active or already purged", getIdFromEdge(edge));
+                    } else{
+                        LOG.debug("Skipping deletion of edge={} as it is already deleted", getIdFromEdge(edge));
+                    }
                 }
 
                 continue;
@@ -174,8 +167,9 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     public Collection<GraphHelper.VertexInfo> getOwnedVertices(AtlasVertex entityVertex) throws AtlasBaseException {
-        Map<String, GraphHelper.VertexInfo> vertexInfoMap = new HashMap<>();
-        Stack<AtlasVertex>                  vertices      = new Stack<>();
+        final Map<String, GraphHelper.VertexInfo> vertexInfoMap    = new HashMap<>();
+        final Stack<AtlasVertex>                  vertices         = new Stack<>();
+        final boolean                             isPurgeRequested = RequestContext.get().isPurgeRequested();
 
         vertices.push(entityVertex);
 
@@ -183,8 +177,9 @@ public abstract class DeleteHandlerV1 {
             AtlasVertex        vertex = vertices.pop();
             AtlasEntity.Status state  = getState(vertex);
 
-            if (state == DELETED) {
-                //If the reference vertex is marked for deletion, skip it
+            //In case of purge If the reference vertex is active then skip it or else
+            //If the vertex marked for deletion, skip it
+            if (state == (isPurgeRequested ? ACTIVE : DELETED)) {
                 continue;
             }
 
@@ -221,7 +216,7 @@ public abstract class DeleteHandlerV1 {
                     } else {
                         AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
 
-                        if (edge == null || getState(edge) == DELETED) {
+                        if (edge == null || (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED))) {
                             continue;
                         }
 
@@ -274,7 +269,7 @@ public abstract class DeleteHandlerV1 {
 
                         if (CollectionUtils.isNotEmpty(edges)) {
                             for (AtlasEdge edge : edges) {
-                                if (edge == null || getState(edge) == DELETED) {
+                                if (edge == null || (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED))) {
                                     continue;
                                 }
 
@@ -381,7 +376,7 @@ public abstract class DeleteHandlerV1 {
 
     private void addTagPropagation(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasEdge edge) throws AtlasBaseException {
         final List<AtlasVertex> classificationVertices   = getPropagationEnabledClassificationVertices(fromVertex);
-        final List<AtlasVertex> propagatedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? graphHelper.getIncludedImpactedVerticesWithReferences(toVertex, getRelationshipGuid(edge)) : null;
+        final List<AtlasVertex> propagatedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? entityRetriever.getIncludedImpactedVerticesV2(toVertex, getRelationshipGuid(edge)) : null;
 
         if (CollectionUtils.isNotEmpty(propagatedEntityVertices)) {
             if (LOG.isDebugEnabled()) {
@@ -469,9 +464,9 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
-        List<AtlasVertex>                   currentClassificationVertices = getClassificationVertices(edge);
-        Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
-        Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
+        List<AtlasVertex>                   currentClassificationVertices = getPropagatableClassifications(edge);
+        Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
+        Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
         Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
 
         if (MapUtils.isNotEmpty(currentClassificationsMap) && MapUtils.isEmpty(updatedClassificationsMap)) {
@@ -577,7 +572,7 @@ public abstract class DeleteHandlerV1 {
 
     private void removeTagPropagation(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasEdge edge) throws AtlasBaseException {
         final List<AtlasVertex> classificationVertices = getPropagationEnabledClassificationVertices(fromVertex);
-        final List<AtlasVertex> impactedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? graphHelper.getIncludedImpactedVerticesWithReferences(toVertex, getRelationshipGuid(edge)) : null;
+        final List<AtlasVertex> impactedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? entityRetriever.getIncludedImpactedVerticesV2(toVertex, getRelationshipGuid(edge)) : null;
 
         if (CollectionUtils.isNotEmpty(impactedEntityVertices)) {
             if (LOG.isDebugEnabled()) {
@@ -587,7 +582,7 @@ public abstract class DeleteHandlerV1 {
             for (AtlasVertex classificationVertex : classificationVertices) {
                 String            classificationName     = getTypeName(classificationVertex);
                 AtlasVertex       associatedEntityVertex = getAssociatedEntityVertex(classificationVertex);
-                List<AtlasVertex> referrals              = graphHelper.getIncludedImpactedVerticesWithReferences(associatedEntityVertex, getRelationshipGuid(edge));
+                List<AtlasVertex> referrals              = entityRetriever.getIncludedImpactedVerticesV2(associatedEntityVertex, getRelationshipGuid(edge));
 
                 for (AtlasVertex impactedEntityVertex : impactedEntityVertices) {
                     if (referrals.contains(impactedEntityVertex)) {
@@ -834,16 +829,11 @@ public abstract class DeleteHandlerV1 {
             LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex), attribute.getName());
         }
 
-        final String typeName = GraphHelper.getTypeName(outVertex);
-        final String outId    = GraphHelper.getGuid(outVertex);
-        final Status state    = getState(outVertex);
-
-        if (state == DELETED || (outId != null && RequestContext.get().isDeletedEntity(outId))) {
-            //If the reference vertex is marked for deletion, skip updating the reference
+        if (skipVertexForDelete(outVertex)) {
             return;
         }
 
-        AtlasStructType   parentType   = (AtlasStructType) typeRegistry.getType(typeName);
+        AtlasStructType   parentType   = (AtlasStructType) typeRegistry.getType(GraphHelper.getTypeName(outVertex));
         String            propertyName = getQualifiedAttributePropertyKey(parentType, attribute.getName());
         String            edgeLabel    = attribute.getRelationshipEdgeLabel();
         AtlasEdge         edge         = null;
@@ -932,7 +922,8 @@ public abstract class DeleteHandlerV1 {
         if (edge != null) {
             deleteEdge(edge, isInternalType(inVertex) && isInternalType(outVertex));
 
-            RequestContext requestContext = RequestContext.get();
+            final RequestContext requestContext = RequestContext.get();
+            final String         outId          = GraphHelper.getGuid(outVertex);
 
             if (! requestContext.isUpdatedEntity(outId)) {
                 AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
@@ -949,12 +940,14 @@ public abstract class DeleteHandlerV1 {
         }
 
         // Delete external references to this vertex - incoming edges from lineage or glossary term edges
-        Iterable<AtlasEdge> incomingEdges = instanceVertex.getEdges(AtlasEdgeDirection.IN);
+        final Iterable<AtlasEdge> incomingEdges    = instanceVertex.getEdges(AtlasEdgeDirection.IN);
+        final boolean             isPurgeRequested = RequestContext.get().isPurgeRequested();
 
         for (AtlasEdge edge : incomingEdges) {
-            Status edgeState = getState(edge);
+            AtlasEntity.Status edgeStatus = getStatus(edge);
+            boolean            isProceed   = edgeStatus == (isPurgeRequested ? DELETED : ACTIVE);
 
-            if (edgeState == ACTIVE) {
+            if (isProceed) {
                 if (isRelationshipEdge(edge)) {
                     deleteRelationship(edge);
                 } else {
@@ -1051,5 +1044,29 @@ public abstract class DeleteHandlerV1 {
 
             deleteEdgeReference(edge, CLASSIFICATION, false, false, instanceVertex);
         }
+    }
+
+    private boolean skipVertexForDelete(AtlasVertex vertex) {
+        boolean ret = true;
+
+        if(vertex != null) {
+            try {
+                final RequestContext reqContext = RequestContext.get();
+                final String guid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+                if(guid != null && !reqContext.isDeletedEntity(guid)) {
+                    final AtlasEntity.Status vertexState = getState(vertex);
+                    if (reqContext.isPurgeRequested()) {
+                        ret = vertexState == ACTIVE; // skip purging ACTIVE vertices
+                    } else {
+                        ret = vertexState == DELETED; // skip deleting DELETED vertices
+                    }
+                }
+            } catch (IllegalStateException excp) {
+                LOG.warn("skipVertexForDelete(): failed guid/state for the vertex", excp);
+            }
+        }
+
+        return ret;
     }
 }

@@ -33,9 +33,11 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasSuggestionsResult {
     private List<String> suggestions;
     private String       prefixString;
+    private String       fieldName;
 
-    public AtlasSuggestionsResult(String prefixString) {
+    public AtlasSuggestionsResult(String prefixString, String fieldName) {
         this.prefixString = prefixString;
+        this.fieldName    = fieldName;
     }
 
     public List<String> getSuggestions() {
@@ -52,5 +54,13 @@ public class AtlasSuggestionsResult {
 
     public void setPrefixString(String prefixString) {
         this.prefixString = prefixString;
+    }
+
+    public String getFieldName() {
+        return fieldName;
+    }
+
+    public void setFieldName(String fieldName) {
+        this.fieldName = fieldName;
     }
 }

@@ -99,7 +99,6 @@ define(['require',
             fetchMetricData: function(options) {
                 var that = this;
                 this.metricCollection.fetch({
-                    skipDefaultError: true,
                     success: function(data) {
                         var data = _.first(data.toJSON());
                         that.renderStats({ valueObject: data.general.stats, dataObject: data.general });
@@ -382,6 +381,7 @@ define(['require',
                 if (!_.isEmpty(systemMemoryData)) {
                     var memoryTable = CommonViewFunction.propertyTable({
                         scope: this,
+                        formatStringVal: true,
                         valueObject: systemMemoryData
                     });
                     that.ui.memoryCard.html(

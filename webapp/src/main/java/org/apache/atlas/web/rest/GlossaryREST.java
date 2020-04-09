@@ -17,10 +17,13 @@
  */
 package org.apache.atlas.web.rest;
 
+import com.sun.jersey.core.header.FormDataContentDisposition;
+import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.glossary.GlossaryService;
+import org.apache.atlas.glossary.GlossaryTermUtils;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
@@ -35,8 +38,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.StreamingOutput;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -934,4 +951,40 @@ public class GlossaryREST {
         return ret;
     }
 
+    /**
+     * Get sample template for uploading/creating bulk AtlasGlossaryTerm
+     *
+     * @return Template File
+     * @HTTP 400 If the provided fileType is not supported
+     */
+    @GET
+    @Path("/import/template")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public StreamingOutput produceTemplate() {
+        return new StreamingOutput() {
+            @Override
+            public void write(OutputStream outputStream) throws IOException, WebApplicationException {
+                outputStream.write(GlossaryTermUtils.getGlossaryTermHeaders().getBytes());
+            }
+        };
+    }
+
+    /**
+     * Upload glossary file for creating AtlasGlossaryTerms in bulk
+     *
+     * @param inputStream InputStream of file
+     * @param fileDetail  FormDataContentDisposition metadata of file
+     * @return
+     * @throws AtlasBaseException
+     * @HTTP 200 If glossary term creation was successful
+     * @HTTP 400 If Glossary term definition has invalid or missing information
+     * @HTTP 409 If Glossary term already exists (duplicate qualifiedName)
+     */
+    @POST
+    @Path("/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public List<AtlasGlossaryTerm> importGlossaryData(@FormDataParam("file") InputStream inputStream,
+                                                      @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
+        return glossaryService.importGlossaryData(inputStream, fileDetail.getFileName());
+    }
 }

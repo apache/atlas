@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment'], function(require, Utils, Modal, Messages, Enums, moment) {
+define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enums', 'moment', 'utils/Globals'], function(require, Utils, Modal, Messages, Enums, moment, Globals) {
     'use strict';
 
     var CommonViewFunction = {};
@@ -24,20 +24,27 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         require(['models/VTag'], function(VTag) {
             if (options && options.guid && options.tagName) {
                 var tagModel = new VTag(),
+                    noticeRef = null,
                     notifyObj = {
                         modal: true,
+                        okCloses: false,
+                        okShowLoader: true,
                         text: options.msg,
                         title: options.titleMessage,
                         okText: options.okText,
-                        ok: function(argument) {
+                        ok: function(notice) {
+                            noticeRef = notice;
                             if (options.showLoader) {
                                 options.showLoader();
                             }
                             tagModel.deleteAssociation(options.guid, options.tagName, options.associatedGuid, {
-                                skipDefaultError: true,
+                                defaultErrorMessage: options.tagName + Messages.deleteErrorMessage,
                                 success: function(data) {
+                                    if (noticeRef) {
+                                        noticeRef.remove();
+                                    }
                                     Utils.notifySuccess({
-                                        content: "Classification " + options.tagName + Messages.getAbbreviationMsg(abbrev, 'removeSuccessMessage')
+                                        content: "Classification " + options.tagName + Messages.getAbbreviationMsg(false, 'removeSuccessMessage')
                                     });
                                     if (options.callback) {
                                         options.callback();
@@ -48,16 +55,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
 
                                 },
                                 cust_error: function(model, response) {
-                                    var message = options.tagName + Messages.deleteErrorMessage;
-                                    if (response && response.responseJSON) {
-                                        message = response.responseJSON.errorMessage;
+                                    if (noticeRef) {
+                                        noticeRef.hideButtonLoader();
                                     }
                                     if (options.hideLoader) {
                                         options.hideLoader();
                                     }
-                                    Utils.notifyError({
-                                        content: message
-                                    });
                                 }
                             });
                         },
@@ -81,6 +84,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             formatIntVal = options.formatIntVal,
             showListCount = options.showListCount || true,
             highlightString = options.highlightString,
+            formatStringVal = options.formatStringVal,
             numberFormat = options.numberFormat || _.numberFormatWithComa;
 
         var table = "",
@@ -102,7 +106,16 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                     if ((_.isNumber(val) || !_.isNaN(parseInt(val))) && formatIntVal) {
                         return numberFormat(val);
                     } else {
-                        return getHighlightedString(val);
+                        var newVal = val;
+                        if (formatStringVal) {
+                            newVal = parseInt(val);
+                            if (newVal === NaN) {
+                                newVal = val;
+                            } else {
+                                newVal = numberFormat(newVal);
+                            }
+                        }
+                        return getHighlightedString(newVal);
                     }
                 } else {
                     return "N/A";
@@ -248,7 +261,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
             if (defEntity && defEntity.typeName) {
                 var defEntityType = defEntity.typeName.toLocaleLowerCase();
                 if (defEntityType === 'date') {
-                    keyValue = new Date(keyValue);
+                    keyValue = keyValue > 0 ? new Date(keyValue) : "";
                 } else if (_.isObject(keyValue)) {
                     keyValue = extractObject({ "keyValue": keyValue, "key": key, 'defEntity': defEntity });
                 }
@@ -362,6 +375,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         return '<div class="tagList btn-inline btn-fixed-width">' + termHtml + addTerm + '</div>';
     }
     CommonViewFunction.generateQueryOfFilter = function(value) {
+        value = Utils.getUrlState.getQueryParams();
         var entityFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.entityFilters, "formatDate": true }),
             tagFilters = CommonViewFunction.attributeFilter.extractUrl({ "value": value.tagFilters, "formatDate": true }),
             queryArray = [];
@@ -371,7 +385,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 if (_.has(obj, 'condition')) {
                     return '&nbsp<span class="operator">' + obj.condition + '</span>&nbsp' + '(' + objToString(obj) + ')';
                 } else {
-                    return '<span class="key">' + _.escape(obj.id) + '</span>&nbsp<span class="operator">' + _.escape(obj.operator) + '</span>&nbsp<span class="value">' + _.escape(obj.value) + "</span>";
+                    return '<span class="key">' + (Enums.systemAttributes[obj.id] ? Enums.systemAttributes[obj.id] : _.escape(obj.id)) + '</span>&nbsp<span class="operator">' + _.escape(obj.operator) + '</span>&nbsp<span class="value">' + (Enums[obj.id] ? Enums[obj.id][obj.value] : _.escape(obj.value)) + "</span>";
                 }
             });
             return generatedQuery;
@@ -456,22 +470,34 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 val = val.join(',');
                             } else if (k == "tagFilters") {
                                 if (classificationDefCollection) {
-                                    var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification })
-                                    attributeDefs = Utils.getNestedSuperTypeObj({
-                                        collection: classificationDefCollection,
-                                        attrMerge: true,
-                                        data: classificationDef.toJSON()
-                                    });
+                                    var classificationDef = classificationDefCollection.fullCollection.findWhere({ 'name': value[skey].classification }),
+                                        attributeDefs = [];
+                                    if (classificationDef) {
+                                        Utils.getNestedSuperTypeObj({
+                                            collection: classificationDefCollection,
+                                            attrMerge: true,
+                                            data: classificationDef.toJSON()
+                                        });
+                                    }
+                                    if (Globals[value[skey].typeName]) {
+                                        attributeDefs = Globals[value[skey].typeName].attributeDefs;
+                                    }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
                             } else if (k == "entityFilters") {
                                 if (entityDefCollection) {
                                     var entityDef = entityDefCollection.fullCollection.findWhere({ 'name': value[skey].typeName }),
-                                        attributeDefs = Utils.getNestedSuperTypeObj({
+                                        attributeDefs = [];
+                                    if (entityDef) {
+                                        Utils.getNestedSuperTypeObj({
                                             collection: entityDefCollection,
                                             attrMerge: true,
                                             data: entityDef.toJSON()
                                         });
+                                    }
+                                    if (Globals[value[skey].typeName]) {
+                                        attributeDefs = Globals[value[skey].typeName].attributeDefs;
+                                    }
                                 }
                                 val = CommonViewFunction.attributeFilter.generateUrl({ "value": val, "attributeDefs": attributeDefs });
                             } else if (_.contains(["includeDE", "excludeST", "excludeSC"], k)) {
@@ -680,7 +706,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
             });
             modal.on('ok', function() {
-                modal.$el.find('button.ok').attr("disabled", true);
+                modal.$el.find('button.ok').showButtonLoader();
                 CommonViewFunction.createEditGlossaryCategoryTermSubmit(_.extend({ "ref": view, "modal": modal }, options));
             });
             modal.on('closeModal', function() {
@@ -726,7 +752,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 modal.trigger('closeModal');
             },
             cust_error: function() {
-                modal.$el.find('button.ok').attr("disabled", false);
+                modal.$el.find('button.ok').hideButtonLoader();
             }
         }
         if (model) {
@@ -773,8 +799,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 collection = options.collection,
                 model = options.model,
                 newModel = new options.collection.model(),
+                noticeRef = null,
                 ajaxOptions = {
                     success: function(rModel, response) {
+                        if (noticeRef) {
+                            noticeRef.remove();
+                        }
                         Utils.notifySuccess({
                             content: ((isCategoryView || isEntityView ? "Term" : "Category") + " association is removed successfully")
                         });
@@ -783,6 +813,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                         }
                     },
                     cust_error: function() {
+                        if (noticeRef) {
+                            noticeRef.hideButtonLoader();
+                        }
                         if (options.hideLoader) {
                             options.hideLoader();
                         }
@@ -790,10 +823,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 },
                 notifyObj = {
                     modal: true,
+                    okCloses: false,
+                    okShowLoader: true,
                     text: options.msg,
                     title: options.titleMessage,
                     okText: options.buttonText,
-                    ok: function(argument) {
+                    ok: function(notice) {
+                        noticeRef = notice;
                         if (options.showLoader) {
                             options.showLoader();
                         }
@@ -816,7 +852,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             }));
                         }
                     },
-                    cancel: function(argument) {}
+                    cancel: function() {}
                 };
             Utils.notifyConfirm(notifyObj);
         }
@@ -868,7 +904,15 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                             CommonViewFunction.restCsrfCustomHeader = header;
                             CommonViewFunction.restCsrfMethodsToIgnore = {};
                             methods.map(function(method) { CommonViewFunction.restCsrfMethodsToIgnore[method] = true; });
+                            var statusCodeErrorFn = function(error) {
+                                Utils.defaultErrorHandler(null, error)
+                            }
                             Backbone.$.ajaxSetup({
+                                statusCode: {
+                                    401: statusCodeErrorFn,
+                                    419: statusCodeErrorFn,
+                                    403: statusCodeErrorFn
+                                },
                                 beforeSend: CommonViewFunction.addRestCsrfCustomHeader
                             });
                         }
@@ -940,5 +984,45 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
         });
         return list.join(',');
     }
+    CommonViewFunction.fetchRootEntityAttributes = function(options) {
+            $.ajax({
+                url: options.url,
+                methods: 'GET',
+                dataType: 'json',
+                delay: 250,
+                cache: true,
+                success: function(response) {
+                    if (response) {
+                        var entity = Object.assign(response, { name: options.entity });
+                        Globals[options.entity] = entity;
+                    }
+                },
+                complete: function(response) {
+                    if (options.callback) {
+                        options.callback(response);
+                    }
+                }
+            });
+        },
+        CommonViewFunction.fetchRootClassificationAttributes = function(options) {
+            $.ajax({
+                url: options.url,
+                methods: 'GET',
+                dataType: 'json',
+                delay: 250,
+                cache: true,
+                success: function(response) {
+                    if (response) {
+                        var classification = Object.assign(response, { name: options.classification });
+                        Globals[options.classification] = classification;
+                    }
+                },
+                complete: function(response) {
+                    if (options.callback) {
+                        options.callback(response);
+                    }
+                }
+            });
+        }
     return CommonViewFunction;
 });

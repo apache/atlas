@@ -61,6 +61,8 @@ public class SearchParameters implements Serializable {
     public static final String WILDCARD_CLASSIFICATIONS = "*";
     public static final String ALL_CLASSIFICATIONS      = "_CLASSIFIED";
     public static final String NO_CLASSIFICATIONS       = "_NOT_CLASSIFIED";
+    public static final String ALL_ENTITY_TYPES         = "_ALL_ENTITY_TYPES";
+    public static final String ALL_CLASSIFICATION_TYPES = "_ALL_CLASSIFICATION_TYPES";
 
     /**
      * @return The type of query
@@ -453,6 +455,7 @@ public class SearchParameters implements Serializable {
         STARTS_WITH(new String[]{"startsWith", "STARTSWITH", "begins_with", "BEGINS_WITH"}),
         ENDS_WITH(new String[]{"endsWith", "ENDSWITH", "ends_with", "ENDS_WITH"}),
         CONTAINS(new String[]{"contains", "CONTAINS"}),
+        NOT_CONTAINS(new String[]{"not_contains", "NOT_CONTAINS"}),
         CONTAINS_ANY(new String[]{"containsAny", "CONTAINSANY", "contains_any", "CONTAINS_ANY"}),
         CONTAINS_ALL(new String[]{"containsAll", "CONTAINSALL", "contains_all", "CONTAINS_ALL"}),
         IS_NULL(new String[]{"isNull", "ISNULL", "is_null", "IS_NULL"}),

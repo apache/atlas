@@ -128,11 +128,13 @@
 
     .panel-title {
         font-weight: normal;
+
         a:hover {
             color: $color_jungle_green_approx;
             opacity: 0.7;
         }
     }
+
     .btn-group {
         margin-top: 4px;
     }
@@ -141,6 +143,7 @@
 .panel-default.custom-panel>.panel-actions {
     float: right;
     margin-top: 15px;
+
     button {
         margin-right: 10px;
         margin-top: -4px;
@@ -150,6 +153,7 @@
 .panel-default.custom-panel>.panel-collapse>.panel-body {
     border-top: none;
 }
-.panel-default.custom-panel>.panel-heading > .btn-group > button {
+
+.panel-default.custom-panel>.panel-heading>.btn-group>button {
     color: $color_jungle_green_approx;
 }

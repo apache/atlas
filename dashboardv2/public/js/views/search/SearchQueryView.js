@@ -21,7 +21,9 @@ define(['require',
     'modules/Modal',
     'utils/Utils',
     'hbs!tmpl/search/SearchQuery_tmpl',
-], function(require, Backbone, Modal, Utils, SearchQuery_Tmpl) {
+    'utils/Globals',
+    'utils/Enums'
+], function(require, Backbone, Modal, Utils, SearchQuery_Tmpl, Globals, Enums) {
 
     var SearchQueryView = Backbone.Marionette.LayoutView.extend(
         /** @lends SearchQueryView */
@@ -57,7 +59,7 @@ define(['require',
                     title: 'Attribute Filter',
                     content: this,
                     allowCancel: true,
-                    mainClass : 'modal-lg',
+                    mainClass: 'modal-lg',
                     okCloses: false,
                     buttons: [{
                             text: 'Cancel',
@@ -87,7 +89,8 @@ define(['require',
                     entityDefCollection: this.entityDefCollection,
                     enumDefCollection: this.enumDefCollection,
                     classificationDefCollection: this.classificationDefCollection,
-                    searchTableFilters: this.searchTableFilters
+                    searchTableFilters: this.searchTableFilters,
+                    typeHeaders: this.typeHeaders
                 }
 
                 if (this.tag) {
@@ -100,6 +103,9 @@ define(['require',
                             attrMerge: true,
                         });
                     }
+                    if (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]]) {
+                        obj['systemAttrArr'] = (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]]).attributeDefs;
+                    }
                 } else {
                     obj['type'] = true;
                     obj['attrObj'] = this.entityDefCollection.fullCollection.find({ name: this.value.type });
@@ -109,6 +115,9 @@ define(['require',
                             collection: this.entityDefCollection,
                             attrMerge: true
                         });
+                    }
+                    if (Globals[this.value.type] || Globals[Enums.addOnEntities[0]]) {
+                        obj['systemAttrArr'] = (Globals[this.value.type] || Globals[Enums.addOnEntities[0]]).attributeDefs;
                     }
                 }
                 this.renderQueryBuilder(obj);

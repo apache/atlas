@@ -41,7 +41,7 @@ define(['require',
             return events;
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'collection', 'typeHeaders', 'applyValue', 'fetchFavioriteCollection', 'isBasic', 'classificationDefCollection', 'entityDefCollection','searchTypeObj'));
+            _.extend(this, _.pick(options, 'collection', 'typeHeaders', 'applyValue', 'fetchFavioriteCollection', 'isBasic', 'classificationDefCollection', 'entityDefCollection', 'searchTypeObj'));
             this.model.id = this.model.get('guid');
             this.model.idAttribute = 'guid';
         },

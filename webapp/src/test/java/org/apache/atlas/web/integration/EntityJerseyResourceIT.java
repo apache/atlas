@@ -881,6 +881,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         values.put("position", 0);
         values.put("description", "col1");
         values.put("table", tableId); //table is a required reference, can't be null
+        values.put("userDescription", null);
+        values.put("displayName", null);
 
         Referenceable ref = new Referenceable(BaseResourceIT.COLUMN_TYPE_BUILTIN, values);
         columns.add(ref);
@@ -932,6 +934,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         values.put("position", 0);
         values.put("description", "col1");
         values.put("table", tableId); //table is a required reference, can't be null
+        values.put("userDescription", null);
+        values.put("displayName", null);
 
         Referenceable ref = new Referenceable(BaseResourceIT.COLUMN_TYPE_BUILTIN, values);
         columns.add(ref);
@@ -983,7 +987,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         values1.put("position", 0);
         values1.put("description", "col3");
         values1.put("table", tableId);
-
+        values1.put("userDescription", null);
+        values1.put("displayName", null);
 
         Map<String, Object> values2 = new HashMap<>();
         values2.put(NAME, "col4");
@@ -994,6 +999,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         values2.put("position", 1);
         values2.put("description", "col4");
         values2.put("table", tableId);
+        values2.put("userDescription", null);
+        values2.put("displayName", null);
 
         Referenceable ref1 = new Referenceable(BaseResourceIT.COLUMN_TYPE_BUILTIN, values1);
         Referenceable ref2 = new Referenceable(BaseResourceIT.COLUMN_TYPE_BUILTIN, values2);

@@ -69,8 +69,7 @@ import java.util.UUID;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
-import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.*;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.HOME_ID_KEY;
 import static org.apache.atlas.repository.Constants.PROVENANCE_TYPE_KEY;
@@ -83,7 +82,7 @@ import static org.apache.atlas.AtlasConfiguration.NOTIFICATION_RELATIONSHIPS_ENA
 import static org.apache.atlas.repository.graph.GraphHelper.getBlockedClassificationIds;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationName;
-import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertices;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
 import static org.apache.atlas.repository.graph.GraphHelper.getIncomingEdgesByLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagateTags;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
@@ -100,10 +99,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     private final EntityGraphRetriever      entityRetriever;
     private final DeleteHandlerDelegate     deleteDelegate;
     private final GraphHelper               graphHelper = GraphHelper.getInstance();
-    private final AtlasEntityChangeNotifier entityChangeNotifier;
+    private final IAtlasEntityChangeNotifier entityChangeNotifier;
 
     @Inject
-    public AtlasRelationshipStoreV2(AtlasTypeRegistry typeRegistry, DeleteHandlerDelegate deleteDelegate, AtlasEntityChangeNotifier entityChangeNotifier) {
+    public AtlasRelationshipStoreV2(AtlasTypeRegistry typeRegistry, DeleteHandlerDelegate deleteDelegate, IAtlasEntityChangeNotifier entityChangeNotifier) {
         this.typeRegistry         = typeRegistry;
         this.entityRetriever      = new EntityGraphRetriever(typeRegistry);
         this.deleteDelegate       = deleteDelegate;
@@ -453,60 +452,53 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         return entityRetriever.mapEdgeToAtlasRelationship(relationshipEdge);
     }
 
-    private void handleBlockedClassifications(AtlasEdge edge, Set<AtlasClassification> blockedPropagatedClassifications) throws AtlasBaseException {
-        if (blockedPropagatedClassifications != null) {
-            List<AtlasVertex> propagatedClassificationVertices               = getClassificationVertices(edge);
-            List<String>      currentClassificationIds                       = getBlockedClassificationIds(edge);
-            List<AtlasVertex> currentBlockedPropagatedClassificationVertices = getBlockedClassificationVertices(propagatedClassificationVertices, currentClassificationIds);
-            List<AtlasVertex> updatedBlockedPropagatedClassificationVertices = new ArrayList<>();
-            List<String>      updatedClassificationIds                       = new ArrayList<>();
+    private void handleBlockedClassifications(AtlasEdge edge, Set<AtlasClassification> blockedClassifications) throws AtlasBaseException {
+        if (blockedClassifications != null) {
+            List<AtlasVertex> propagatableClassifications  = getPropagatableClassifications(edge);
+            List<String>      currBlockedClassificationIds = getBlockedClassificationIds(edge);
+            List<AtlasVertex> currBlockedClassifications   = getVerticesForIds(propagatableClassifications, currBlockedClassificationIds);
+            List<AtlasVertex> classificationsToBlock       = new ArrayList<>();
+            List<String>      classificationIdsToBlock     = new ArrayList<>();
 
-            for (AtlasClassification classification : blockedPropagatedClassifications) {
-                AtlasVertex classificationVertex = validateBlockedPropagatedClassification(propagatedClassificationVertices, classification);
+            for (AtlasClassification blockedClassification : blockedClassifications) {
+                AtlasVertex classificationVertex = validateBlockedPropagatedClassification(propagatableClassifications, blockedClassification);
 
-                // ignore invalid blocked propagated classification
-                if (classificationVertex == null) {
-                    continue;
+                if (classificationVertex != null) {
+                    classificationsToBlock.add(classificationVertex);
+                    classificationIdsToBlock.add(classificationVertex.getIdForDisplay());
+                }
+            }
+
+            setBlockedClassificationIds(edge, classificationIdsToBlock);
+
+            List<AtlasVertex> propagationChangedClassifications = (List<AtlasVertex>) CollectionUtils.disjunction(classificationsToBlock, currBlockedClassifications);
+
+            for (AtlasVertex classificationVertex : propagationChangedClassifications) {
+                List<AtlasVertex> propagationsToRemove = new ArrayList<>();
+                List<AtlasVertex> propagationsToAdd    = new ArrayList<>();
+
+                entityRetriever.evaluateClassificationPropagation(classificationVertex, propagationsToAdd, propagationsToRemove);
+
+                if (CollectionUtils.isNotEmpty(propagationsToAdd)) {
+                    deleteDelegate.getHandler().addTagPropagation(classificationVertex, propagationsToAdd);
                 }
 
-                updatedBlockedPropagatedClassificationVertices.add(classificationVertex);
-
-                String classificationId = classificationVertex.getIdForDisplay();
-
-                updatedClassificationIds.add(classificationId);
-            }
-
-            addToBlockedClassificationIds(edge, updatedClassificationIds);
-
-            // remove propagated tag for added entry
-            List<AtlasVertex> addedBlockedClassifications = (List<AtlasVertex>) CollectionUtils.subtract(updatedBlockedPropagatedClassificationVertices, currentBlockedPropagatedClassificationVertices);
-
-            for (AtlasVertex classificationVertex : addedBlockedClassifications) {
-                List<AtlasVertex> removePropagationFromVertices = graphHelper.getPropagatedEntityVertices(classificationVertex);
-
-                deleteDelegate.getHandler().removeTagPropagation(classificationVertex, removePropagationFromVertices);
-            }
-
-            // add propagated tag for removed entry
-            List<AtlasVertex> removedBlockedClassifications = (List<AtlasVertex>) CollectionUtils.subtract(currentBlockedPropagatedClassificationVertices, updatedBlockedPropagatedClassificationVertices);
-
-            for (AtlasVertex classificationVertex : removedBlockedClassifications) {
-                List<AtlasVertex> addPropagationToVertices = graphHelper.getPropagatedEntityVertices(classificationVertex);
-
-                deleteDelegate.getHandler().addTagPropagation(classificationVertex, addPropagationToVertices);
+                if (CollectionUtils.isNotEmpty(propagationsToRemove)) {
+                    deleteDelegate.getHandler().removeTagPropagation(classificationVertex, propagationsToRemove);
+                }
             }
         }
     }
 
-    private List<AtlasVertex> getBlockedClassificationVertices(List<AtlasVertex> classificationVertices, List<String> blockedClassificationIds) {
+    private List<AtlasVertex> getVerticesForIds(List<AtlasVertex> vertices, List<String> vertexIds) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        if (CollectionUtils.isNotEmpty(blockedClassificationIds)) {
-            for (AtlasVertex classificationVertex : classificationVertices) {
-                String classificationId = classificationVertex.getIdForDisplay();
+        if (CollectionUtils.isNotEmpty(vertexIds)) {
+            for (AtlasVertex vertex : vertices) {
+                String vertexId = vertex.getIdForDisplay();
 
-                if (blockedClassificationIds.contains(classificationId)) {
-                    ret.add(classificationVertex);
+                if (vertexIds.contains(vertexId)) {
+                    ret.add(vertex);
                 }
             }
         }
@@ -515,7 +507,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     // propagated classifications should contain blocked propagated classification
-
     private AtlasVertex validateBlockedPropagatedClassification(List<AtlasVertex> classificationVertices, AtlasClassification classification) {
         AtlasVertex ret = null;
 
@@ -531,7 +522,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         return ret;
     }
-    private void addToBlockedClassificationIds(AtlasEdge edge, List<String> classificationIds) {
+
+    private void setBlockedClassificationIds(AtlasEdge edge, List<String> classificationIds) {
         if (edge != null) {
             if (classificationIds.isEmpty()) {
                 edge.removeProperty(Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY);
@@ -546,15 +538,15 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         PropagateTags newTagPropagation = relationship.getPropagateTags();
 
         if (newTagPropagation != oldTagPropagation) {
-            List<AtlasVertex>                   currentClassificationVertices = getClassificationVertices(edge);
-            Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
+            List<AtlasVertex>                   currentClassificationVertices = getPropagatableClassifications(edge);
+            Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
 
             // Update propagation edge
             AtlasGraphUtilsV2.setEncodedProperty(edge, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, newTagPropagation.name());
 
-            List<AtlasVertex>                   updatedClassificationVertices = getClassificationVertices(edge);
+            List<AtlasVertex>                   updatedClassificationVertices = getPropagatableClassifications(edge);
             List<AtlasVertex>                   classificationVerticesUnion   = (List<AtlasVertex>) CollectionUtils.union(currentClassificationVertices, updatedClassificationVertices);
-            Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = graphHelper.getClassificationPropagatedEntitiesMapping(classificationVerticesUnion);
+            Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(classificationVerticesUnion);
 
             // compute add/remove propagations list
             Map<AtlasVertex, List<AtlasVertex>> addPropagationsMap    = new HashMap<>();
@@ -665,6 +657,34 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_RELATIONSHIP_END_TYPE, relationshipName, relationshipType.getEnd2Type().getTypeName(), end1TypeName);
         }
 
+        PropagateTags typePropagation = relationshipType.getRelationshipDef().getPropagateTags();
+        PropagateTags edgePropagation = relationship.getPropagateTags();
+
+        if (typePropagation == null) {
+            typePropagation = NONE;
+        }
+
+        if (edgePropagation == null) {
+            edgePropagation = NONE;
+        }
+
+        /*
+          +-------------+----------------------------------------+
+          |     type    |                edge                    |
+          +-------------+-------+------------+------------+------+
+          |             | NONE  | ONE_TO_TWO | TWO_TO_ONE | BOTH |
+          |-------------+-------+------------+------------+------|
+          | NONE        |   Y   |     N      |      N     |   N  |
+          | ONE_TO_TWO  |   Y   |     Y      |      N     |   N  |
+          | TWO_TO_ONE  |   Y   |     N      |      Y     |   N  |
+          | BOTH        |   Y   |     Y      |      Y     |   Y  |
+          +-------------+-------+------------+------------+------+
+         */
+
+        if (edgePropagation != NONE && typePropagation != BOTH && edgePropagation != typePropagation) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PROPAGATION_TYPE, edgePropagation.toString(), relationshipName, typePropagation.toString());
+        }
+
         List<String>      messages     = new ArrayList<>();
 
         relationshipType.validateValue(relationship, relationshipName, messages);
@@ -761,7 +781,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             if (edge != null) {
                 Status status = graphHelper.getStatus(edge);
 
-                if ((status == null || status == ACTIVE) && edge.getOutVertex().equals(fromVertex)) {
+                if ((status == null || status == ACTIVE) && edge.getOutVertex().getId().equals(fromVertex.getId())) {
                     ret = edge;
                     break;
                 }

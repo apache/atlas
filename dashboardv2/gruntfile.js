@@ -17,6 +17,7 @@
  */
 
 'use strict';
+var sass = require('node-sass');
 module.exports = function(grunt) {
     var buildTime = new Date().getTime(),
         distPath = './dist',
@@ -62,6 +63,7 @@ module.exports = function(grunt) {
                 proxies: [{
                     context: '/api', // the context of the data service
                     host: '127.0.0.1',
+                    auth: "admin:admin",
                     port: 21000, // the port that the data service is running on
                     https: false
                 }],
@@ -107,7 +109,8 @@ module.exports = function(grunt) {
                     'jquery.sparkline.min.js': { 'jquery-sparkline': 'sparkline' },
                     'table-dragger.js': { 'table-dragger/dist': 'table-dragger' },
                     'jstree.min.js': { 'jstree/dist': 'jstree' },
-                    'jquery.steps.min.js': { 'jquery-steps/build': 'jquery-steps' }
+                    'jquery.steps.min.js': { 'jquery-steps/build': 'jquery-steps' },
+                    'dropzone-amd-module.js': { 'dropzone/dist': "dropzone/js" }
                 }
 
             },
@@ -145,7 +148,8 @@ module.exports = function(grunt) {
                     'query-builder.default.min.css': { 'jQuery-QueryBuilder/dist/css': 'jQueryQueryBuilder/css' },
                     'daterangepicker.css': { 'bootstrap-daterangepicker': 'bootstrap-daterangepicker/css' },
                     'nv.d3.min.css': { 'nvd3/build': 'nvd3/css' },
-                    'pretty-checkbox.min.css': { 'pretty-checkbox/dist': 'pretty-checkbox/css' }
+                    'pretty-checkbox.min.css': { 'pretty-checkbox/dist': 'pretty-checkbox/css' },
+                    'dropzone.css': { 'dropzone/dist': "dropzone/css" }
                 }
 
             },
@@ -198,9 +202,14 @@ module.exports = function(grunt) {
             }
         },
         sass: {
+            options: {
+                implementation: sass,
+                sourceMap: false
+            },
             build: {
                 files: {
                     [distPath + '/css/style.css']: modulesPath + 'css/scss/style.scss',
+                    [distPath + '/css/migration-style.css']: modulesPath + 'css/scss/migration-style.scss',
                     [distPath + '/css/login.css']: modulesPath + 'css/scss/login.scss'
                 }
             }
@@ -279,7 +288,8 @@ module.exports = function(grunt) {
                     }
                 },
                 files: {
-                    [distPath + '/index.html']: [modulesPath + 'index.html.tpl']
+                    [distPath + '/index.html']: [modulesPath + 'index.html.tpl'],
+                    [distPath + '/migration-status.html']: [modulesPath + 'migration-status.html.tpl']
                 }
             }
         }

@@ -149,6 +149,20 @@ define(['require',
 
             includeAtlasTableSorting: false,
 
+            showDefaultTableSorted: false,
+
+            /**
+             * [updateFullCollectionManually  If collection was updated using silent true
+             * then need to update FullCollection Manually for correct sorting experience]
+             * @type {Boolean}
+             */
+            updateFullCollectionManually: false,
+
+            sortOpts: {
+                sortColumn: "name",
+                sortDirection: "ascending"
+            },
+
 
             /** ui events hash */
             events: function() {
@@ -183,26 +197,29 @@ define(['require',
             initialize: function(options) {
                 this.limit = 25;
                 this.offset = 0;
-                _.extend(this, _.omit(options, 'gridOpts', 'atlasPaginationOpts'));
+                _.extend(this, _.omit(options, 'gridOpts', 'sortOpts', 'atlasPaginationOpts'));
                 _.extend(this, options.atlasPaginationOpts);
                 _.extend(this.gridOpts, options.gridOpts, { collection: this.collection, columns: this.columns });
+                _.extend(this.sortOpts, options.sortOpts);
                 if (this.includeAtlasTableSorting) {
                     var oldSortingRef = this.collection.setSorting;
                     this.collection.setSorting = function() {
                         this.state.pageSize = this.length
                         var val = oldSortingRef.apply(this, arguments);
-                        val.fullCollection.models.sort();
+                        val.fullCollection.sort();
                         this.comparator = function(next, previous, data) {
                             var getValue = function(options) {
-
                                 var next = options.next,
                                     previous = options.previous,
                                     order = options.order;
-
-                                if (order === -1) {
-                                    return next < previous ? -1 : 1;
+                                if (next === previous) {
+                                    return null;
                                 } else {
-                                    return next < previous ? 1 : -1;
+                                    if (order === -1) {
+                                        return next < previous ? -1 : 1;
+                                    } else {
+                                        return next < previous ? 1 : -1;
+                                    }
                                 }
                             }
                             if (val.state && (!_.isNull(val.state.sortKey))) {
@@ -263,11 +280,14 @@ define(['require',
                 removeCellDirection function - removes "ascending" and "descending"
                 which in turn removes chevrons from every 'sortable' header-cells*/
                 this.listenTo(this.collection, "backgrid:sorted", function(column, direction, collection) {
+                    // backgrid:sorted fullCollection trigger required for icon chage
                     this.collection.fullCollection.trigger("backgrid:sorted", column, direction, collection)
+                    if (this.includeAtlasTableSorting && this.updateFullCollectionManually) {
+                        this.collection.fullCollection.reset(collection.toJSON(), { silent: true });
+                    }
                 }, this);
                 this.listenTo(this, "grid:refresh", function() {
                     if (this.grid) {
-                        this.grid.collection.fullCollection.reset(this.collection.entities, { silent: true });
                         this.grid.trigger("backgrid:refresh");
                     }
                 });
@@ -337,8 +357,15 @@ define(['require',
                 this.grid = new Backgrid.Grid(this.gridOpts).on('backgrid:rendered', function() {
                     that.trigger('backgrid:manual:rendered', this)
                 });
-
-                this.rTableList.show(this.grid);
+                if (this.showDefaultTableSorted) {
+                    this.grid.render();
+                    if (this.collection.fullCollection.length > 1) {
+                        this.grid.sort(this.sortOpts.sortColumn, this.sortOpts.sortDirection);
+                    }
+                    this.rTableList.show(this.grid);
+                } else {
+                    this.rTableList.show(this.grid);
+                }
             },
             onShow: function() {
                 if (this.includeSizeAbleColumns) {

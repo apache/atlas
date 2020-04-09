@@ -32,6 +32,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.commons.lang.time.DateUtils;
+import org.locationtech.jts.util.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -212,6 +213,8 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         createdSimpleEntity.setAttribute("stringAtrr", null);
         createdSimpleEntity.setAttribute("mapOfStrings", Collections.emptyMap());
         createdSimpleEntity.setAttribute("arrayOfStrings", Collections.emptyList());
+        createdSimpleEntity.setAttribute("puArray", Collections.emptyList());
+        createdSimpleEntity.setAttribute("puMap", Collections.emptyMap());
         EntityMutationResponse responseUpdated      = entityStore.createOrUpdate(new AtlasEntityStream(createdSimpleEntity), false);
         AtlasEntityHeader simpleEntityUpdatedHeader = responseUpdated.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
         AtlasEntity updatedSimpleEntity             = getEntityFromStore(simpleEntityUpdatedHeader);
@@ -219,10 +222,14 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         assertNull(updatedSimpleEntity.getAttribute("stringAtrr"));
         assertEquals(updatedSimpleEntity.getAttribute("mapOfStrings"), Collections.emptyMap());
         assertEquals(updatedSimpleEntity.getAttribute("arrayOfStrings"), Collections.emptyList());
+        assertEquals(updatedSimpleEntity.getAttribute("puArray"), Collections.emptyList());
+        assertEquals(updatedSimpleEntity.getAttribute("puMap"), Collections.emptyMap());
 
         updatedSimpleEntity.setAttribute("stringAtrr", "");
         updatedSimpleEntity.setAttribute("mapOfStrings", null);
         updatedSimpleEntity.setAttribute("arrayOfStrings", null);
+        updatedSimpleEntity.setAttribute("puArray", null);
+        updatedSimpleEntity.setAttribute("puMap", null);
         EntityMutationResponse responseUpdatedAgain      = entityStore.createOrUpdate(new AtlasEntityStream(updatedSimpleEntity), false);
         AtlasEntityHeader simpleEntityUpdatedAgainHeader = responseUpdatedAgain.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
         AtlasEntity updatedAgainSimpleEntity             = getEntityFromStore(simpleEntityUpdatedAgainHeader);
@@ -230,10 +237,14 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         assertEquals(updatedAgainSimpleEntity.getAttribute("stringAtrr"), "");
         assertNull(updatedAgainSimpleEntity.getAttribute("arrayOfStrings"));
         assertNull(updatedAgainSimpleEntity.getAttribute("mapOfStrings"));
+        assertNull(updatedAgainSimpleEntity.getAttribute("puArray"));
+        assertNull(updatedAgainSimpleEntity.getAttribute("puMap"));
 
         updatedAgainSimpleEntity.setAttribute("stringAtrr", "Dummy String Test 3");
         updatedAgainSimpleEntity.setAttribute("mapOfStrings", Collections.singletonMap("key1", "val1"));
         updatedAgainSimpleEntity.setAttribute("arrayOfStrings", Arrays.asList("DummyTest3", "DummyTest4"));
+        updatedAgainSimpleEntity.setAttribute("puArray", Arrays.asList("1"));
+        updatedAgainSimpleEntity.setAttribute("puMap", Collections.singletonMap("1", "1"));
         EntityMutationResponse updateRes   = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), false);
         AtlasEntityHeader updateHeader = updateRes.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
         AtlasEntity updateEntity = getEntityFromStore(updateHeader);
@@ -241,6 +252,94 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         assertEquals(updateEntity.getAttribute("stringAtrr"), "Dummy String Test 3");
         assertEquals(updateEntity.getAttribute("arrayOfStrings"), Arrays.asList("DummyTest3", "DummyTest4"));
         assertEquals(updateEntity.getAttribute("mapOfStrings"), Collections.singletonMap("key1", "val1"));
+        assertEquals(updateEntity.getAttribute("puArray"), Arrays.asList("1"));
+        assertEquals(updateEntity.getAttribute("puMap"), Collections.singletonMap("1", "1"));
+
+        // full-update puArray and puMap; existing values should be replaced
+        updatedAgainSimpleEntity.setAttribute("stringAtrr", "Dummy String Test 3");
+        updatedAgainSimpleEntity.setAttribute("mapOfStrings", Collections.singletonMap("key1", "val1"));
+        updatedAgainSimpleEntity.setAttribute("arrayOfStrings", Arrays.asList("DummyTest3", "DummyTest4"));
+        updatedAgainSimpleEntity.setAttribute("puArray", Arrays.asList("10"));
+        updatedAgainSimpleEntity.setAttribute("puMap", Collections.singletonMap("10", "10"));
+        updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), false);
+        updateHeader = updateRes.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        updateEntity = getEntityFromStore(updateHeader);
+
+        assertEquals(updateEntity.getAttribute("stringAtrr"), "Dummy String Test 3");
+        assertEquals(updateEntity.getAttribute("arrayOfStrings"), Arrays.asList("DummyTest3", "DummyTest4"));
+        assertEquals(updateEntity.getAttribute("mapOfStrings"), Collections.singletonMap("key1", "val1"));
+        assertEquals(updateEntity.getAttribute("puArray"), Arrays.asList("10"));
+        assertEquals(updateEntity.getAttribute("puMap"), Collections.singletonMap("10", "10"));
+
+        // partial-update tests
+        // set puArray and puMap to null
+        updatedAgainSimpleEntity.setAttribute("stringAtrr", "Dummy String Test 3");
+        updatedAgainSimpleEntity.setAttribute("mapOfStrings", Collections.singletonMap("key1", "val1"));
+        updatedAgainSimpleEntity.setAttribute("arrayOfStrings", Arrays.asList("DummyTest3", "DummyTest4"));
+        updatedAgainSimpleEntity.setAttribute("puArray", null);
+        updatedAgainSimpleEntity.setAttribute("puMap", null);
+        updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), false);
+        updateHeader = updateRes.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        updateEntity = getEntityFromStore(updateHeader);
+
+        assertEquals(updateEntity.getAttribute("stringAtrr"), "Dummy String Test 3");
+        assertEquals(updateEntity.getAttribute("arrayOfStrings"), Arrays.asList("DummyTest3", "DummyTest4"));
+        assertEquals(updateEntity.getAttribute("mapOfStrings"), Collections.singletonMap("key1", "val1"));
+        assertNull(updateEntity.getAttribute("puArray"));
+        assertNull(updateEntity.getAttribute("puMap"));
+
+        List<String>        puArray = new ArrayList<>();
+        Map<String, String> puMap   = new HashMap<>();
+
+        // partial-update: current value as null
+        updatedAgainSimpleEntity.getAttributes().clear();
+        updatedAgainSimpleEntity.setAttribute("puArray", Collections.singletonList("1"));
+        updatedAgainSimpleEntity.setAttribute("puMap", Collections.singletonMap("1", "1"));
+        updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), true);
+        updateHeader = updateRes.getFirstPartialUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        updateEntity = getEntityFromStore(updateHeader);
+
+        puArray.addAll(Collections.singletonList("1"));
+        puMap.putAll(Collections.singletonMap("1", "1"));
+
+        Assert.equals(updateEntity.getAttribute("puArray"), puArray);
+        Assert.equals(updateEntity.getAttribute("puMap"), puMap);
+
+        // partial-update: append to existing value
+        updatedAgainSimpleEntity.getAttributes().clear();
+        updatedAgainSimpleEntity.setAttribute("puArray", Collections.singletonList("2"));
+        updatedAgainSimpleEntity.setAttribute("puMap", Collections.singletonMap("2", "2"));
+        updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), true);
+        updateHeader = updateRes.getFirstPartialUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        updateEntity = getEntityFromStore(updateHeader);
+
+        puArray.addAll(Collections.singletonList("2"));
+        puMap.putAll(Collections.singletonMap("2", "2"));
+
+        Assert.equals(updateEntity.getAttribute("puArray"), puArray);
+        Assert.equals(updateEntity.getAttribute("puMap"), puMap);
+
+        //  partial-update: with null value; existing value should be retained
+        updatedAgainSimpleEntity.getAttributes().clear();
+        updatedAgainSimpleEntity.setAttribute("puArray", null);
+        updatedAgainSimpleEntity.setAttribute("puMap", null);
+        updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), true);
+        updateHeader = updateRes.getFirstPartialUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        updateEntity = getEntityFromStore(updateHeader);
+
+        Assert.equals(updateEntity.getAttribute("puArray"), puArray);
+        Assert.equals(updateEntity.getAttribute("puMap"), puMap);
+
+        //  partial-update: with empty value; existing value should be retained
+        updatedAgainSimpleEntity.getAttributes().clear();
+        updatedAgainSimpleEntity.setAttribute("puArray", Collections.emptyList());
+        updatedAgainSimpleEntity.setAttribute("puMap", Collections.emptyMap());
+        updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), true);
+        updateHeader = updateRes.getFirstPartialUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        updateEntity = getEntityFromStore(updateHeader);
+
+        Assert.equals(updateEntity.getAttribute("puArray"), puArray);
+        Assert.equals(updateEntity.getAttribute("puMap"), puMap);
     }
 
     @Test(dependsOnMethods = "testCreateComplexAttributeEntity")

@@ -94,7 +94,8 @@ public class HiveMetastoreHookImpl extends MetaStoreEventListener {
             context.setOperation(ALTERTABLE_RENAME);
         } else if (isColumnRename(oldTable, newTable, context)) {
             context.setOperation(ALTERTABLE_RENAMECOL);
-        } else {
+        } else if(isAlterTableProperty(tableEvent, "last_modified_time") ||
+                isAlterTableProperty(tableEvent, "transient_lastDdlTime")) {
             context.setOperation(ALTERTABLE_PROPERTIES); // map other alter table operations to ALTERTABLE_PROPERTIES
         }
 
@@ -189,5 +190,21 @@ public class HiveMetastoreHookImpl extends MetaStoreEventListener {
         }
 
         return isColumnRename;
+    }
+
+    private boolean isAlterTableProperty(AlterTableEvent tableEvent, String propertyToCheck) {
+        final boolean ret;
+        String        oldTableModifiedTime = tableEvent.getOldTable().getParameters().get(propertyToCheck);
+        String        newTableModifiedTime = tableEvent.getNewTable().getParameters().get(propertyToCheck);
+
+
+        if (oldTableModifiedTime == null) {
+            ret = newTableModifiedTime != null;
+        } else {
+            ret = !oldTableModifiedTime.equals(newTableModifiedTime);
+        }
+
+        return ret;
+
     }
 }

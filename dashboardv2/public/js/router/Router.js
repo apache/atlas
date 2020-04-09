@@ -24,8 +24,9 @@ define([
     'utils/Globals',
     'utils/Utils',
     'utils/UrlLinks',
+    'utils/Enums',
     'collection/VGlossaryList'
-], function($, _, Backbone, App, Globals, Utils, UrlLinks, VGlossaryList) {
+], function($, _, Backbone, App, Globals, Utils, UrlLinks, Enums, VGlossaryList) {
     var AppRouter = Backbone.Router.extend({
         routes: {
             // Define some URL routes
@@ -44,7 +45,6 @@ define([
         initialize: function(options) {
             _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'metricCollection'));
             this.showRegions();
-            this.bindFooterEvent();
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
             this.searchVent = new Backbone.Wreqr.EventAggregator();
@@ -71,15 +71,6 @@ define([
                     entityFilters: {}
                 }
             }
-        },
-        bindFooterEvent: function() {
-            $("body").on("click", "#sUI", function() {
-                var path = Utils.getBaseUrl(window.location.pathname) + "/n/index.html";
-                if (window.location.hash.length > 2) {
-                    path += window.location.hash;
-                }
-                window.location.href = path;
-            });
         },
         bindCommonEvents: function() {
             var that = this;
@@ -295,8 +286,9 @@ define([
                         }, that.preFetchedCollectionLists, that.sharedObj)
                     ));
                 } else {
-                    App.rNContent.$el.html("");
-                    App.rNContent.destroy();
+                    if (App.rNContent.currentView) {
+                        App.rNContent.currentView.destroy();
+                    }
                 }
             });
         },
@@ -320,6 +312,11 @@ define([
                                         isTagPresent = true;
                                     }
                                 }
+                            }
+                        });
+                        _.each(Enums.addOnClassification, function(classificationName) {
+                            if (classificationName === tagValidate) {
+                                isTagPresent = true;
                             }
                         });
                         if (!isTagPresent) {

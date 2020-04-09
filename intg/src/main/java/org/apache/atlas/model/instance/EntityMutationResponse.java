@@ -22,21 +22,16 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -115,6 +110,28 @@ public class EntityMutationResponse {
     }
 
     @JsonIgnore
+    public List<AtlasEntityHeader> getPurgedEntities() {
+        if ( mutatedEntities != null) {
+            return mutatedEntities.get(EntityOperation.PURGE);
+        }
+        return null;
+    }
+
+    @JsonIgnore
+    public String getPurgedEntitiesIds() {
+        String                  ret = null;
+        List<AtlasEntityHeader> purgedEntities = getPurgedEntities();
+
+        if (CollectionUtils.isNotEmpty(purgedEntities)) {
+            List<String> entityIds = purgedEntities.stream().map(entity -> entity.getGuid()).collect(Collectors.toList());
+
+            ret = String.join(",", entityIds);
+        }
+
+        return  ret;
+    }
+
+    @JsonIgnore
     public AtlasEntityHeader getFirstEntityCreated() {
         final List<AtlasEntityHeader> entitiesByOperation = getEntitiesByOperation(EntityOperation.CREATE);
         if ( entitiesByOperation != null && entitiesByOperation.size() > 0) {
@@ -189,6 +206,11 @@ public class EntityMutationResponse {
     @JsonIgnore
     public AtlasEntityHeader getFirstUpdatedEntityByTypeName(String typeName) {
         return getFirstEntityByType(getEntitiesByOperation(EntityOperation.UPDATE), typeName);
+    }
+
+    @JsonIgnore
+    public AtlasEntityHeader getFirstPartialUpdatedEntityByTypeName(String typeName) {
+        return getFirstEntityByType(getEntitiesByOperation(EntityOperation.PARTIAL_UPDATE), typeName);
     }
 
     @JsonIgnore

@@ -19,6 +19,8 @@ package org.apache.atlas.util;
 
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.lang.StringUtils;
@@ -537,6 +539,43 @@ public class SearchPredicateUtil {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getContainsPredicateGenerator");
+        }
+
+        return ret;
+    }
+
+    public static VertexAttributePredicateGenerator getNotContainsPredicateGenerator() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getNotContainsPredicateGenerator");
+        }
+
+        VertexAttributePredicateGenerator ret = new VertexAttributePredicateGenerator() {
+            @Override
+            public Predicate generatePredicate(final String attrName, final Object attrVal, final Class attrClass) {
+                final Predicate ret;
+
+                if (attrName == null || attrClass == null || attrVal == null) {
+                    ret = ALWAYS_FALSE;
+                } else if (String.class.isAssignableFrom(attrClass)) {
+                    ret = StringPredicate.getNotContainsPredicate(attrName, attrClass, (String) attrVal);
+                } else if (Collection.class.isAssignableFrom(attrClass)) {
+                    // Check if the provided value is present in the list of stored values
+                    ret = new VertexAttributePredicate(attrName, attrClass) {
+                        @Override
+                        protected boolean compareValue(final Object vertexAttrVal) {
+                            return !((Collection) vertexAttrVal).contains(attrVal);
+                        }
+                    };
+                } else {
+                    ret = ALWAYS_FALSE;
+                }
+
+                return ret;
+            }
+        };
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getNotContainsPredicateGenerator");
         }
 
         return ret;
@@ -1293,6 +1332,14 @@ public class SearchPredicateUtil {
             };
         }
 
+        static VertexAttributePredicate getNotContainsPredicate(String attrName, Class attrClass, String value) {
+            return new StringPredicate(attrName, attrClass, value) {
+                protected boolean compareValue(Object vertexAttrVal) {
+                    return !((String) vertexAttrVal).contains(value);
+                }
+            };
+        }
+
         static VertexAttributePredicate getStartsWithPredicate(String attrName, Class attrClass, String value) {
             return new StringPredicate(attrName, attrClass, value) {
                 protected boolean compareValue(Object vertexAttrVal) {
@@ -1309,4 +1356,38 @@ public class SearchPredicateUtil {
             };
         }
     }
+
+    public static Predicate generateIsEntityVertexPredicate(AtlasTypeRegistry typeRegistry) {
+        return new IsEntityVertexPredicate(typeRegistry);
+    }
+
+
+    static class IsEntityVertexPredicate implements Predicate {
+        final AtlasTypeRegistry typeRegistry;
+
+
+        public IsEntityVertexPredicate(AtlasTypeRegistry typeRegistry) {
+            this.typeRegistry = typeRegistry;
+        }
+
+        @Override
+        public boolean evaluate(final Object object) {
+            final boolean ret;
+
+            AtlasVertex vertex = (object instanceof AtlasVertex) ? (AtlasVertex) object : null;
+
+            if (vertex != null) {
+                String typeName            = AtlasGraphUtilsV2.getTypeName(vertex);
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+                ret = entityType != null && !entityType.isInternalType();
+            } else {
+                ret = false;
+            }
+
+            return ret;
+        }
+
+    }
+
 }

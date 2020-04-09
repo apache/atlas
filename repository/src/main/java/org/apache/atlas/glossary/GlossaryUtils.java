@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.glossary;
 
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
@@ -43,6 +42,10 @@ public abstract class GlossaryUtils {
     static final String ATLAS_GLOSSARY_TYPENAME          = "AtlasGlossary";
     static final String ATLAS_GLOSSARY_TERM_TYPENAME     = "AtlasGlossaryTerm";
     static final String ATLAS_GLOSSARY_CATEGORY_TYPENAME = "AtlasGlossaryCategory";
+
+    public static final String NAME                         = "name";
+    public static final String QUALIFIED_NAME_ATTR          = "qualifiedName";
+    public static final char[] invalidNameChars             = {'@', '.'};
 
     // Relation name constants
     protected static final String ATLAS_GLOSSARY_PREFIX          = ATLAS_GLOSSARY_TYPENAME;

@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.notification.preprocessor;
 
+import com.google.common.base.Strings;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.commons.lang.StringUtils;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 public class HivePreprocessor {
     private static final Logger LOG = LoggerFactory.getLogger(HivePreprocessor.class);
@@ -161,13 +163,35 @@ public class HivePreprocessor {
 
         @Override
         public void preprocess(AtlasEntity entity, PreprocessorContext context) {
+            if (context.updateHiveProcessNameWithQualifiedName()) {
+                Object name          = entity.getAttribute(ATTRIBUTE_NAME);
+                Object qualifiedName = entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+
+                if (!Objects.equals(name, qualifiedName)) {
+                    LOG.info("setting {}.name={}. topic-offset={}, partition={}", entity.getTypeName(), qualifiedName, context.getKafkaMessageOffset(), context.getKafkaPartition());
+
+                    entity.setAttribute(ATTRIBUTE_NAME, qualifiedName);
+                }
+            }
+
             if (context.isIgnoredEntity(entity.getGuid())) {
                 context.addToIgnoredEntities(entity); // so that this will be logged with typeName and qualifiedName
             } else {
                 Object inputs       = entity.getAttribute(ATTRIBUTE_INPUTS);
                 Object outputs      = entity.getAttribute(ATTRIBUTE_OUTPUTS);
-                int    inputsCount  = getCollectionSize(inputs);
-                int    outputsCount = getCollectionSize(outputs);
+                String startTime    = String.valueOf(entity.getAttribute(ATTRIBUTE_START_TIME));
+                String endTime      = String.valueOf(entity.getAttribute(ATTRIBUTE_END_TIME));
+
+                if (Strings.isNullOrEmpty(startTime) || "null".equals(startTime)) {
+                    entity.setAttribute(ATTRIBUTE_START_TIME, System.currentTimeMillis());
+                }
+
+                if (Strings.isNullOrEmpty(endTime) || "null".equals(endTime)) {
+                    entity.setAttribute(ATTRIBUTE_END_TIME, System.currentTimeMillis());
+                }
+
+                int inputsCount  = getCollectionSize(inputs);
+                int outputsCount = getCollectionSize(outputs);
 
                 removeIgnoredObjectIds(inputs, context);
                 removeIgnoredObjectIds(outputs, context);

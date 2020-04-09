@@ -26,6 +26,10 @@ header.atlas-header {
     background-color: $white;
     border-bottom: 1px $color_mystic_approx solid;
 
+    table {
+        width: 100%;
+    }
+
     .navbar-nav {
         display: table;
 
@@ -123,6 +127,10 @@ header.atlas-header {
             border: 1px solid #666363;
             overflow: hidden;
             @include clearfix();
+        }
+
+        .tab-content>.tab-pane.active {
+            padding: 18px;
         }
     }
 }
@@ -599,5 +607,27 @@ td.searchTableName:hover {
         position: absolute;
         z-index: 1;
         left: calc(50% - 8px);
+    }
+}
+
+.dropzone {
+    border-radius: 10px;
+    border: 2px dashed $color_havelock_blue_approx;
+
+    .dz-default.dz-message {
+        font-weight: 500;
+        font-size: 20px;
+    }
+
+    &.single-file-center {
+        .dz-file-preview {
+            margin-left: calc(50% - 68px);
+        }
+    }
+}
+
+.dropzone-modal {
+    .modal-body {
+        background: $color_white_lilac_approx;
     }
 }

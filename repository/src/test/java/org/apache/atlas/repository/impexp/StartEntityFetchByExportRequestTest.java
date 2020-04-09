@@ -22,6 +22,7 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
@@ -43,7 +44,7 @@ import static org.apache.atlas.repository.impexp.StartEntityFetchByExportRequest
 import static org.testng.Assert.assertEquals;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class StartEntityFetchByExportRequestTest extends ExportImportTestBase {
+public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
 
     @Inject
     private AtlasGraph atlasGraph;

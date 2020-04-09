@@ -36,8 +36,11 @@ define(['require'], function(require) {
         ENTITY_IMPORT_DELETE: "Entity Deleted by import",
         TERM_ADD: "Term Added",
         TERM_DELETE: "Term Deleted",
-        LABEL_ADD: "Label Added",
-        LABEL_DELETE: "Label Deleted"
+        LABEL_ADD: "Label(s) Added",
+        LABEL_DELETE: "Label(s) Deleted",
+        ENTITY_PURGE: "Entity Purged",
+        BUSINESS_ATTRIBUTE_ADD: "Business Attribute(s) Added",
+        BUSINESS_ATTRIBUTE_DELETE: "Business Attribute(s) Deleted"
     }
 
     Enums.entityStateReadOnly = {
@@ -136,7 +139,8 @@ define(['require'], function(require) {
         validValues: getTermRelationAttributes(),
         validValuesFor: getTermRelationAttributes()
     }
-    Enums.addOnClassification = ["_CLASSIFIED", "_NOT_CLASSIFIED"];
+    Enums.addOnClassification = ["_ALL_CLASSIFICATION_TYPES", "_CLASSIFIED", "_NOT_CLASSIFIED"];
+    Enums.addOnEntities = ["_ALL_ENTITY_TYPES"];
 
     Enums.stats = {
         generalData: {
@@ -190,6 +194,24 @@ define(['require'], function(require) {
             "processedMessageCount": "number",
             "failedMessageCount": "number"
         }
+    };
+    Enums.systemAttributes = {
+        "__classificationNames": "Classification(s)",
+        "__createdBy": "Created By User",
+        "__customAttributes": "User-defined Properties",
+        "__guid": "Guid",
+        "__isIncomplete": "IsIncomplete",
+        "__labels": "Label(s)",
+        "__modificationTimestamp": "Last Modified Timestamp",
+        "__modifiedBy": "Last Modified User",
+        "__propagatedClassificationNames": "Propagated Classification(s)",
+        "__state": "Status",
+        "__timestamp": "Created Timestamp",
+        "__typeName": "Type Name"
+    };
+    Enums.__isIncomplete = {
+        0: "false",
+        1: "true"
     };
     return Enums;
 });

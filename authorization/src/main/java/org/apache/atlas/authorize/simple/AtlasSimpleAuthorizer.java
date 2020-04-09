@@ -238,8 +238,9 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
 
             if (permissions != null) {
                 for (AtlasEntityPermission permission : permissions) {
-                    // match entity-type/entity-id/attribute
-                    if (isMatchAny(entityTypes, permission.getEntityTypes()) && isMatch(entityId, permission.getEntityIds()) && isMatch(attribute, permission.getAttributes())) {
+                    // match entity-type/entity-id/label/business-metadata/attribute
+                    if (isMatchAny(entityTypes, permission.getEntityTypes()) && isMatch(entityId, permission.getEntityIds()) && isMatch(attribute, permission.getAttributes())
+                         && isLabelMatch(request, permission) && isBusinessMetadataMatch(request, permission)) {
                         // match permission/classification
                         if (!hasEntityAccess) {
                             if (isMatch(action, permission.getPrivileges()) && isMatch(classification, permission.getClassifications())) {
@@ -457,6 +458,14 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
                 scrubEntityHeader(entity);
             }
         }
+    }
+
+    private boolean isLabelMatch(AtlasEntityAccessRequest request, AtlasEntityPermission permission) {
+        return (AtlasPrivilege.ENTITY_ADD_LABEL.equals(request.getAction()) || AtlasPrivilege.ENTITY_REMOVE_LABEL.equals(request.getAction())) ? isMatch(request.getLabel(), permission.getLabels()) : true;
+    }
+
+    private boolean isBusinessMetadataMatch(AtlasEntityAccessRequest request, AtlasEntityPermission permission) {
+        return AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction()) ? isMatch(request.getBusinessMetadata(), permission.getBusinessMetadata()) : true;
     }
 }
 

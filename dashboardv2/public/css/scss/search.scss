@@ -57,7 +57,7 @@ $color_celeste_approx: #1D1F2B;
         background-color: $color_jungle_green_approx;
         border-radius: 10px;
         box-shadow: inset 0 1px rgba(black, .02);
-        @include transition(inherit)
+        @include transition(inherit);
     }
 
     .switch-input:checked~& {
@@ -228,10 +228,59 @@ hr.hr-filter {
 
 
 
-.searchTable{
-    &.noData{
-        .labelShowRecord,.inline[data-id="colManager"],.row.searach-result-pagination,table thead{
+.searchTable {
+    &.noData {
+
+        .labelShowRecord,
+        .inline[data-id="colManager"],
+        .row.searach-result-pagination,
+        table thead {
             display: none !important;
+        }
+    }
+}
+
+.query-builder {
+    .rule-container {
+        &.user-define {
+            .values-box {
+                display: flex;
+                flex-wrap: wrap;
+
+                .rule-filter-container {
+                    width: 200px;
+                }
+
+                .rule-value-container {
+                    width: 100%;
+                    padding: 7px 0px 0px 0px;
+                }
+            }
+        }
+
+        .rule-value-container {
+            &>table.custom-table {
+                tr {
+                    display: none;
+
+                    &.custom-tr {
+                        display: table-row;
+
+                        td.custom-col-1 {
+                            width: 48%;
+
+                            .errorMsg {
+                                display: none;
+                            }
+                        }
+                    }
+                }
+
+                input,
+                textarea {
+                    width: 100% !important;
+                }
+            }
         }
     }
 }

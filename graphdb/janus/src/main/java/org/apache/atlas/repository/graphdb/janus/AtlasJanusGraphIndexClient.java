@@ -28,6 +28,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -55,6 +56,8 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     private static final FreqComparator FREQ_COMPARATOR          = new FreqComparator();
     private static final int            DEFAULT_SUGGESTION_COUNT = 5;
     private static final int            MIN_FACET_COUNT_REQUIRED = 1;
+    private static final String         TERMS_PREFIX             = "terms.prefix";
+    private static final String         TERMS_FIELD              = "terms.fl";
 
     private final Configuration configuration;
 
@@ -269,7 +272,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     }
 
     @Override
-    public List<String> getSuggestions(String prefixString) {
+    public List<String> getSuggestions(String prefixString, String indexFieldName) {
         SolrClient solrClient = null;
 
         try {
@@ -284,8 +287,12 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             SolrQuery solrQuery = new SolrQuery();
 
             solrQuery.setRequestHandler(Constants.TERMS_REQUEST_HANDLER)
-                     .setParam("terms.prefix", prefixString)
+                     .setParam(TERMS_PREFIX, prefixString)
                      .setParam(CommonParams.OMIT_HEADER, true);
+
+            if (StringUtils.isNotEmpty(indexFieldName)) {
+                solrQuery.setParam(TERMS_FIELD, indexFieldName);
+            }
 
             QueryResponse queryResponse = solrClient.query(VERTEX_INDEX, solrQuery);
             TermsResponse termsResponse = queryResponse == null? null: queryResponse.getTermsResponse();

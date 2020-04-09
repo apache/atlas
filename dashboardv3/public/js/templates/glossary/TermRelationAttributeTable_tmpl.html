@@ -47,7 +47,7 @@
                                 <td>{{@key}}</td>
                                 {{#if ../../editMode}}
                                 <td>
-                                    <input data-id="attributeUpdate" class="form-control" type="text" data-name="{{@key}}" data-termguid="{{../../this.termGuid}}" " value="{{lookup ../../this @key ''}} ">
+                                    <input data-id="attributeUpdate" class="form-control" type="text" data-name="{{@key}}" data-termguid="{{../../this.termGuid}}" " value=" {{lookup ../../this @key ''}} ">
                                 </td>{{else}}
                                 <td>{{lookup ../../this @key "- "}}</td>
                                 {{/if}}
@@ -59,8 +59,8 @@
             </td>
         </tr>
         {{/each}}{{else}}
-        <tr class="empty text-center ">
-            <td colspan="3 "><span>No records found!</span></td>
+        <tr class=" empty text-center ">
+            <td colspan=" 3 "><span>No records found!</span></td>
         </tr>{{/if}} {{/if}}
     </tbody>
 </table>

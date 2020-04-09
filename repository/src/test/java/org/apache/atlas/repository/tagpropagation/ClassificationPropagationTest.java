@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.tagpropagation;
 
 import com.vividsolutions.jts.util.Assert;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.discovery.AtlasLineageService;
@@ -35,7 +36,6 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.ZipFileResourceTestUtils;
-import org.apache.atlas.repository.impexp.ZipSource;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.runner.LocalSolrRunner;
@@ -49,7 +49,6 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -67,7 +66,7 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.NONE;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadModelFromJson;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -320,20 +319,16 @@ public class ClassificationPropagationTest {
         // validate tag2 is propagated to employees_union
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, tag2);
 
-        //update propagation to BOTH for edge process3 --> employee_union
+        //update propagation to BOTH for edge process3 --> employee_union. This should fail
         AtlasRelationship process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
         assertEquals(process3_employee_union_relationship.getPropagateTags(), ONE_TO_TWO);
         process3_employee_union_relationship.setPropagateTags(BOTH);
-        relationshipStore.update(process3_employee_union_relationship);
 
-        // process3 should get 'tag4' from employee_union and employee_union should get tag3 from process3 (BOTH)
-        assertClassificationExistInEntity(EMPLOYEES_UNION_PROCESS, tag4);
-        assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, tag3);
-
-        //update propagation to ONE_TO_TWO for edge process3 --> employee_union
-        process3_employee_union_relationship.setPropagateTags(ONE_TO_TWO);
-        relationshipStore.update(process3_employee_union_relationship);
-        assertClassificationNotExistInEntity(EMPLOYEES_UNION_PROCESS, tag4);
+        try {
+            relationshipStore.update(process3_employee_union_relationship);
+        } catch (AtlasBaseException ex) {
+            assertEquals(ex.getAtlasErrorCode(), AtlasErrorCode.INVALID_PROPAGATION_TYPE);
+        }
 
         //cleanup
         deleteClassification(hdfs_employees, tag1);

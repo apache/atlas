@@ -17,25 +17,24 @@
  */
 package org.apache.atlas.repository.patches;
 
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.pc.WorkItemManager;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer.UniqueKind;
-import org.apache.atlas.repository.graphdb.AtlasCardinality;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
-import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Iterator;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
@@ -66,43 +65,43 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
     }
 
     public static class UniqueAttributePatchProcessor extends ConcurrentPatchProcessor {
-        private static final String NUM_WORKERS_PROPERTY = "atlas.patch.unique_attribute_patch.numWorkers";
-        private static final String BATCH_SIZE_PROPERTY  = "atlas.patch.unique_attribute_patch.batchSize";
-        private static final String ATLAS_SOLR_SHARDS    = "ATLAS_SOLR_SHARDS";
-        private static final int    NUM_WORKERS;
-        private static final int    BATCH_SIZE;
-
-        static {
-            int numWorkers = 3;
-            int batchSize  = 300;
-
-            try {
-                numWorkers = ApplicationProperties.get().getInt(NUM_WORKERS_PROPERTY, getDefaultNumWorkers());
-                batchSize  = ApplicationProperties.get().getInt(BATCH_SIZE_PROPERTY, 300);
-
-                LOG.info("UniqueAttributePatch: {}={}, {}={}", NUM_WORKERS_PROPERTY, numWorkers, BATCH_SIZE_PROPERTY, batchSize);
-            } catch (Exception e) {
-                LOG.error("Error retrieving configuration.", e);
-            }
-
-            NUM_WORKERS = numWorkers;
-            BATCH_SIZE  = batchSize;
-        }
-
         public UniqueAttributePatchProcessor(PatchContext context) {
             super(context);
-        }
-
-        @Override
-        protected void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
-            //process the vertex
-            processItem(vertexId, vertex, typeName, entityType);
         }
 
         @Override
         protected void prepareForExecution() {
             //create the new attribute for all unique attributes.
             createIndexForUniqueAttributes();
+        }
+
+        @Override
+        public void submitVerticesToUpdate(WorkItemManager manager) {
+            AtlasTypeRegistry typeRegistry = getTypeRegistry();
+            AtlasGraph        graph        = getGraph();
+
+            for (AtlasEntityType entityType : typeRegistry.getAllEntityTypes()) {
+                LOG.info("finding entities of type {}", entityType.getTypeName());
+
+                Iterable<Object> iterable = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType.getTypeName()).vertexIds();
+                int              count    = 0;
+
+                for (Iterator<Object> iter = iterable.iterator(); iter.hasNext(); ) {
+                    Object vertexId = iter.next();
+
+                    manager.checkProduce((Long) vertexId);
+
+                    count++;
+                }
+
+                LOG.info("found {} entities of type {}", count, entityType.getTypeName());
+            }
+        }
+
+        @Override
+        protected void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
+            //process the vertex
+            processItem(vertexId, vertex, typeName, entityType);
         }
 
         private void createIndexForUniqueAttributes() {
@@ -155,10 +154,6 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
             } catch (IndexException e) {
                 LOG.error("Error creating index: type: {}", typeName, e);
             }
-        }
-
-        private static int getDefaultNumWorkers() throws AtlasException {
-            return ApplicationProperties.get().getInt(ATLAS_SOLR_SHARDS, 1) * 3;
         }
 
         protected void processItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {

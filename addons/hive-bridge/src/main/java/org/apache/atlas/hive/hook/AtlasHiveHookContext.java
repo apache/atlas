@@ -168,6 +168,10 @@ public class AtlasHiveHookContext {
         return hook.isConvertHdfsPathToLowerCase();
     }
 
+    public boolean isAwsS3AtlasModelVersionV2() {
+        return hook.isAwsS3AtlasModelVersionV2();
+    }
+
     public boolean getSkipHiveColumnLineageHive20633() {
         return hook.getSkipHiveColumnLineageHive20633();
     }
@@ -234,6 +238,10 @@ public class AtlasHiveHookContext {
         if (knownObjects != null && tblQualifiedName != null) {
             knownObjects.removeFromKnownTable(tblQualifiedName);
         }
+    }
+
+    public boolean isHiveProcessPopulateDeprecatedAttributes() {
+        return hook.isHiveProcessPopulateDeprecatedAttributes();
     }
 
     private void init() {

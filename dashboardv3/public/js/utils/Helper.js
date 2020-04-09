@@ -112,9 +112,89 @@ define(['require',
     $("body").on('click', '.dropdown-menu.dropdown-changetitle li a', function() {
         $(this).parents('li').find(".btn:first-child").html($(this).text() + ' <span class="caret"></span>');
     });
+    $("body").on('click', '.dropdown-menu.multi-level .dropdown-submenu>a', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+    });
     $("body").on('click', '.btn', function() {
         $(this).blur();
     });
+
+    $.fn.select2.amd.define("TagHideDeleteButtonAdapter", [
+            "select2/utils",
+            "select2/selection/multiple",
+            "select2/selection/placeholder",
+            "select2/selection/eventRelay",
+            "select2/selection/search",
+        ],
+        function(Utils, MultipleSelection, Placeholder, EventRelay, SelectionSearch) {
+
+            // Decorates MultipleSelection with Placeholder
+
+            var adapter = Utils.Decorate(MultipleSelection, Placeholder);
+            adapter = Utils.Decorate(adapter, SelectionSearch);
+            adapter = Utils.Decorate(adapter, EventRelay);
+
+            adapter.prototype.render = function() {
+                // Use selection-box from SingleSelection adapter
+                // This implementation overrides the default implementation
+                var $search = $(
+                    '<li class="select2-search select2-search--inline">' +
+                    '<input class="select2-search__field" type="search" tabindex="-1"' +
+                    ' autocomplete="off" autocorrect="off" autocapitalize="none"' +
+                    ' spellcheck="false" role="textbox" aria-autocomplete="list" />' +
+                    '</li>'
+                );
+
+                this.$searchContainer = $search;
+                this.$search = $search.find('input');
+                var $selection = MultipleSelection.prototype.render.call(this);
+                this._transferTabIndex();
+                return $selection;
+            };
+
+            adapter.prototype.update = function(data) {
+                // copy and modify SingleSelection adapter
+                var that = this;
+                this.clear();
+                if (data.length === 0) {
+                    this.$selection.find('.select2-selection__rendered')
+                        .append(this.$searchContainer);
+                    this.$search.attr('placeholder', this.options.get("placeholder"));
+                    return;
+                }
+                this.$search.attr('placeholder', '');
+                var $rendered = this.$selection.find('.select2-selection__rendered'),
+                    $selectionContainer = [];
+                if (data.length > 0) {
+                    _.each(data, function(obj) {
+                        var $container = $('<li class="select2-selection__choice"></li>'),
+                            formatted = that.display(obj, $rendered),
+                            $remove = $('<span class="select2-selection__choice__remove" role="presentation">&times;</span>'),
+                            allowRemoveAttr = $(obj.element).data("allowremove"),
+                            allowRemove = obj.allowRemove === undefined ? allowRemoveAttr : obj.allowRemove;
+                        if (allowRemove === undefined || allowRemove !== false) {
+                            $container.append($remove);
+                        }
+                        $container.data("data", obj);
+                        $container.append(formatted);
+                        $selectionContainer.push($container);
+                    });
+                    Utils.appendMany($rendered, $selectionContainer);
+                }
+
+
+                var searchHadFocus = this.$search[0] == document.activeElement;
+                this.$search.attr('placeholder', '');
+                this.$selection.find('.select2-selection__rendered')
+                    .append(this.$searchContainer);
+                this.resizeSearch();
+                if (searchHadFocus) {
+                    this.$search.focus();
+                }
+            };
+            return adapter;
+        });
 
     $.fn.select2.amd.define("ServiceTypeFilterDropdownAdapter", [
             "select2/utils",
@@ -132,16 +212,20 @@ define(['require',
 
             dropdownWithSearch.prototype.render = function() {
                 // Copy and modify default search render method
-                var $rendered = Dropdown.prototype.render.call(this);
+                var $rendered = Dropdown.prototype.render.call(this),
+                    dropdownCssClass = this.options.get("dropdownCssClass")
+                if (dropdownCssClass) {
+                    $rendered.addClass(dropdownCssClass);
+                }
 
                 // Add ability for a placeholder in the search box
                 var placeholder = this.options.get("placeholderForSearch") || "";
                 var $search = $(
-                    '<span class="select2-search select2-search--dropdown"><div class="row">' +
-                    '<div class="col-md-10"><input class="select2-search__field" placeholder="' + placeholder + '" type="search"' +
+                    '<span class="select2-search select2-search--dropdown"><div class="clearfix">' +
+                    '<div class="col-md-10 no-padding" style="width: calc(100% - 30px);"><input class="select2-search__field" placeholder="' + placeholder + '" type="search"' +
                     ' tabindex="-1" autocomplete="off" autocorrect="off" autocapitalize="off"' +
                     ' spellcheck="false" role="textbox" /></div>' +
-                    '<div class="col-md-2"><button type="button" style="margin-left: -20px" class="btn btn-action btn-sm filter " title="Type Filter"><i class="fa fa-filter"></i></button></div>' +
+                    '<div class="col-md-2 no-padding" style="width: 30px;"><button type="button" style="padding: 3px 6px;margin: 0px 4px;" class="btn btn-action btn-sm filter " title="Type Filter"><i class="fa fa-filter"></i></button></div>' +
                     '</div></span>'
                 );
                 if (!this.options.options.getFilterBox) {

@@ -127,7 +127,7 @@ define(['require',
                     view = "search";
                 if (queryParams && queryParams.from) {
                     if (queryParams.from == "classification") {
-                        view = "tag";
+                        view = "classification";
                     } else if (queryParams.from == "glossary") {
                         view = "glossary";
                     }

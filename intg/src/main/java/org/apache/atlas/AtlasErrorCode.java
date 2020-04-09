@@ -147,19 +147,27 @@ public enum AtlasErrorCode {
     ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-081", "{0}.{1}: invalid attribute type. Attribute cannot be of type classification"),
     MISSING_CATEGORY_DISPLAY_NAME(400, "ATLAS-400-00-082", "Category name is empty/null"),
     INVALID_DISPLAY_NAME(400, "ATLAS-400-00-083", "name cannot contain following special chars ('@', '.')"),
-    TERM_HAS_ENTITY_ASSOCIATION(400, "ATLAS-400-00-086", "Term (guid={0}) can't be deleted as it has been assigned to {1} entities."),
-    INVALID_TIMEBOUNDRY_TIMEZONE(400, "ATLAS-400-00-87A", "Invalid timezone {0}"),
-    INVALID_TIMEBOUNDRY_START_TIME(400, "ATLAS-400-00-87B", "Invalid startTime {0}"),
-    INVALID_TIMEBOUNDRY_END_TIME(400, "ATLAS-400-00-87C", "Invalid endTime {0}"),
-    INVALID_TIMEBOUNDRY_DATERANGE(400, "ATLAS-400-00-87D", "Invalid dateRange: startTime {0} must be before endTime {1}"),
-    PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED(400, "ATLAS-400-00-87E", "Removal of classification {0}, which is propagated from entity {1}, is not supported"),
-    IMPORT_ATTEMPTING_EMPTY_ZIP(400, "ATLAS-400-00-87F", "Attempting to import empty ZIP file."),
-    PATCH_MISSING_RELATIONSHIP_LABEL(400, "ATLAS-400-00-88", "{0} - must include relationship label for type {1}"),
-    INVALID_CUSTOM_ATTRIBUTE_KEY_LENGTH(400, "ATLAS-400-00-89", "Invalid key: {0} in custom attribute, key size should not be greater than 50"),
-    INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS(400, "ATLAS-400-00-90", "Invalid key: {0} in custom attribute, key should only contain alphanumeric characters, '_' or '-'"),
-    INVALID_CUSTOM_ATTRIBUTE_VALUE(400, "ATLAS-400-00-9A", "Invalid value: {0} in custom attribute, value length is greater than {1}"),
-    INVALID_LABEL_LENGTH(400, "ATLAS-400-00-9B", "Invalid label: {0}, label size should not be greater than {1}"),
-    INVALID_LABEL_CHARACTERS(400, "ATLAS-400-00-9C", "Invalid label: {0}, label should contain alphanumeric characters, '_' or '-'"),
+    TERM_HAS_ENTITY_ASSOCIATION(400, "ATLAS-400-00-084", "Term (guid={0}) can't be deleted as it has been assigned to {1} entities."),
+    INVALID_TIMEBOUNDRY_TIMEZONE(400, "ATLAS-400-00-085", "Invalid timezone {0}"),
+    INVALID_TIMEBOUNDRY_START_TIME(400, "ATLAS-400-00-086", "Invalid startTime {0}"),
+    INVALID_TIMEBOUNDRY_END_TIME(400, "ATLAS-400-00-087", "Invalid endTime {0}"),
+    INVALID_TIMEBOUNDRY_DATERANGE(400, "ATLAS-400-00-088", "Invalid dateRange: startTime {0} must be before endTime {1}"),
+    PROPAGATED_CLASSIFICATION_REMOVAL_NOT_SUPPORTED(400, "ATLAS-400-00-089", "Removal of classification {0}, which is propagated from entity {1}, is not supported"),
+    IMPORT_ATTEMPTING_EMPTY_ZIP(400, "ATLAS-400-00-08A", "Attempting to import empty ZIP file."),
+    PATCH_MISSING_RELATIONSHIP_LABEL(400, "ATLAS-400-00-08B", "{0} - must include relationship label for type {1}"),
+    INVALID_CUSTOM_ATTRIBUTE_KEY_LENGTH(400, "ATLAS-400-00-08C", "Invalid key: {0} in custom attribute, key size should not be greater than 50"),
+    INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS(400, "ATLAS-400-00-08D", "Invalid key: {0} in custom attribute, key should only contain alphanumeric characters, '_' or '-'"),
+    INVALID_CUSTOM_ATTRIBUTE_VALUE(400, "ATLAS-400-00-08E", "Invalid value: {0} in custom attribute, value length is greater than {1}"),
+    INVALID_LABEL_LENGTH(400, "ATLAS-400-00-08F", "Invalid label: {0}, label size should not be greater than {1}"),
+    INVALID_LABEL_CHARACTERS(400, "ATLAS-400-00-090", "Invalid label: {0}, label should contain alphanumeric characters, '_' or '-'"),
+    INVALID_PROPAGATION_TYPE(400, "ATLAS-400-00-091", "Invalid propagation {0} for relationship-type={1}. Default value is {2}"),
+    DUPLICATE_BUSINESS_METADATA_ATTRIBUTE(400, "ATLAS-400-00-092", "Duplicate business-metadata attributes: {0} not allowed within the same business-metadata: {1}"),
+    APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED(400, "ATLAS-400-00-093", "Cannot remove applicableEntityTypes in Attribute Def: {0}, defined in business-metadata: {1}"),
+    BUSINESS_METADATA_DEF_ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-094", "{0}.{1}: invalid attribute type. Business-metadata attribute cannot be of type entity/classification/struct/business-metadata"),
+    INVALID_BUSINESS_METADATA_NAME_FOR_ENTITY_TYPE(400, "ATLAS-400-00-095", "Invalid business-metadata: {0} specified for entity, applicable business-metadata: {1}"),
+    BUSINESS_METADATA_ATTRIBUTE_DOES_NOT_EXIST(400, "ATLAS-400-00-096", "Business-metadata attribute does not exist in entity: {0}"),
+    BUSINESS_METADATA_ATTRIBUTE_ALREADY_EXISTS(400, "ATLAS-400-00-097", "Business-metadata attribute already exists in entity: {0}"),
+    INVALID_FILE_TYPE(400, "ATLAS-400-00-98", "The provided file type {0} is not supported."),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
@@ -183,6 +191,7 @@ public enum AtlasErrorCode {
     INVALID_LINEAGE_ENTITY_TYPE(404, "ATLAS-404-00-011", "Given instance guid {0} with type {1} is not a valid lineage entity type."),
     INSTANCE_GUID_DELETED(404, "ATLAS-404-00-012", "Given instance guid {0} has been deleted"),
     NO_PROPAGATED_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-013", "No propagated classifications associated with entity: {0}"),
+    NO_DATA_FOUND(404, "ATLAS-404-00-014", "No data found in the uploaded file"),
 
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
@@ -214,7 +223,9 @@ public enum AtlasErrorCode {
     HIVE_HOOK(500, "ATLAS-500-00-010", "HiveHook: {0}"),
     HIVE_HOOK_METASTORE_BRIDGE(500, "ATLAS-500-00-011", "HiveHookMetaStoreBridge: {0}"),
     DATA_ACCESS_LOAD_FAILED(500, "ATLAS-500-00-013", "Load failed: {0}"),
-    ENTITY_NOTIFICATION_FAILED(500, "ATLAS-500-00-014", "Notification failed for operation: {0} : {1}");
+    ENTITY_NOTIFICATION_FAILED(500, "ATLAS-500-00-014", "Notification failed for operation: {0} : {1}"),
+    FAILED_TO_UPLOAD(500, "ATLAS-500-00-015", "Error occurred while uploading the file: {0}"),
+    FAILED_TO_CREATE_GLOSSARY_TERM(500, "ATLAS-500-00-016", "Error occurred while creating glossary term: {0}");
 
     private String errorCode;
     private String errorMessage;

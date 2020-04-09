@@ -37,6 +37,10 @@ WORKDIR /root
 # Pull down Atlas and build it into /root/atlas-bin.
 RUN git clone https://github.com/apache/atlas.git -b master
 
+RUN echo 'package-lock=false' >> ./atlas/.npmrc
+
+RUN echo 'package-lock.json' >> ./atlas/.gitignore
+
 # Memory requirements
 ENV MAVEN_OPTS "-Xms2g -Xmx2g"
 # RUN export MAVEN_OPTS="-Xms2g -Xmx2g"

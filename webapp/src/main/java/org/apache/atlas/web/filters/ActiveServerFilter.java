@@ -50,6 +50,8 @@ import java.io.IOException;
 public class ActiveServerFilter implements Filter {
 
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);
+    private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
+
     private final ActiveInstanceState activeInstanceState;
     private ServiceState serviceState;
 
@@ -88,6 +90,9 @@ public class ActiveServerFilter implements Filter {
             LOG.error("Instance in transition. Service may not be ready to return a result");
             httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
         } else if (serviceState.isInstanceInMigration()) {
+            if (isRootURI(servletRequest)) {
+                handleMigrationRedirect(servletRequest, servletResponse);
+            }
             HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
             LOG.error("Instance in migration. Service may not be ready to return a result");
             httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
@@ -123,8 +128,28 @@ public class ActiveServerFilter implements Filter {
         }
     }
 
+    private boolean isRootURI(ServletRequest servletRequest) {
+        HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
+        String requestURI = httpServletRequest.getRequestURI();
+        return requestURI.equals("/");
+    }
+
     boolean isInstanceActive() {
         return serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE;
+    }
+
+    private void handleMigrationRedirect(ServletRequest servletRequest, ServletResponse servletResponse) throws IOException {
+
+        HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+        HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
+
+        String redirectLocation = httpServletRequest.getRequestURL() + MIGRATION_STATUS_STATIC_PAGE;
+        if (isUnsafeHttpMethod(httpServletRequest)) {
+            httpServletResponse.setHeader(HttpHeaders.LOCATION, redirectLocation);
+            httpServletResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
+        } else {
+            httpServletResponse.sendRedirect(redirectLocation);
+        }
     }
 
     private void handleRedirect(HttpServletRequest servletRequest, HttpServletResponse httpServletResponse,

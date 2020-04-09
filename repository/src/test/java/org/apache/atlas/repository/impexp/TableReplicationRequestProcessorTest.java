@@ -24,6 +24,7 @@ import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.runner.LocalSolrRunner;
@@ -55,7 +56,7 @@ import static org.testng.Assert.assertNotNull;
 
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class TableReplicationRequestProcessorTest extends ExportImportTestBase {
+public class TableReplicationRequestProcessorTest extends AtlasTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(TableReplicationRequestProcessorTest.class);
 
     private static final String ENTITY_GUID_REPLICATED = "718a6d12-35a8-4731-aff8-3a64637a43a3";

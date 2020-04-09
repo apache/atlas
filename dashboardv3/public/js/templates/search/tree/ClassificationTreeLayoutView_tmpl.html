@@ -22,7 +22,7 @@
             <button type="button" class="typeRefresh drop-down-menu-view" data-id="refreshTree" data-type="classification" title="Refresh">
                 <i class="fa fa-refresh"></i>
             </button>
-            <button type="button" class="typeRefresh drop-down-menu-view" data-id="showEmptyClassifications" title="Show unused classification">
+            <button type="button" class="typeRefresh drop-down-menu-view" data-id="showEmptyClassifications" title="Hide unused classification">
                 <i class="fa fa-toggle-off"></i>
             </button>
             <button type="button" class="typeRefresh dropdown">
@@ -34,18 +34,25 @@
                     </li>
                     <li data-id="createTag" data-type="classification"> <i class="fa fa-plus"></i><span>Create Classification</span>
                     </li>
-                    <li data-id="wildCardClick" data-type="classification">
+                    <li class="wildcard-search" data-type="classification" data-id="wildCardContainer">
                         <div class="has-feedback align-left-right-icon search-box">
-                            <input type="text" class="form-control" name="wildcard search" placeholder="Wildcard search" data-id="wildCardValue" />
-                            <span class="fa fa-times clear-icon" data-id="clearWildCard"> </span>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="wildcard search" placeholder="Wildcard search" data-id="wildCardValue" />
+                                <span class="fa fa-times clear-icon" data-id="clearWildCard"> </span>
+                                <div class="input-group-btn">
+                                    <span class="btn  btn-md wildcard-btn btn-action" data-id="wildCardSearch" data-original-title="Wildcard Search"><i class="fa fa-search"></i></span>
+                                </div>
+                            </div>
                         </div>
                     </li>
-            </button>
-            </ul>
+                </ul>
             </button>
         </div>
     </div>
     <div id="c_classfication" class="panel-collapse collapse jstree-with-action in">
         <div data-id="classificationSearchTree"></div>
+        <div class="text-center" data-id="classificationTreeLoader">
+            <i class="fa fa-refresh fa-spin-custom"></i>
+        </div>
     </div>
 </div>

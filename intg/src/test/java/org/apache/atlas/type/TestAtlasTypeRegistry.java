@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -47,7 +48,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testClassificationDefValidHierarchy() {
+    public void testClassificationDefValidHierarchy() throws AtlasBaseException {
         AtlasClassificationDef classifiL0   = new AtlasClassificationDef("L0");
         AtlasClassificationDef classifiL1_1 = new AtlasClassificationDef("L1-1");
         AtlasClassificationDef classifiL1_2 = new AtlasClassificationDef("L1-2");
@@ -135,7 +136,7 @@ public class TestAtlasTypeRegistry {
     }
 
     @Test
-    public void testClassificationDefInvalidHierarchy_Self() {
+    public void testClassificationDefInvalidHierarchy_Self() throws AtlasBaseException {
         AtlasClassificationDef classifiDef1 = new AtlasClassificationDef("classifiDef-1");
 
         classifiDef1.addSuperType(classifiDef1.getName());
@@ -171,7 +172,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testClassificationDefInvalidHierarchy_CircularRef() {
+    public void testClassificationDefInvalidHierarchy_CircularRef() throws AtlasBaseException {
         AtlasClassificationDef classifiL0   = new AtlasClassificationDef("L0");
         AtlasClassificationDef classifiL1_1 = new AtlasClassificationDef("L1-1");
         AtlasClassificationDef classifiL1_2 = new AtlasClassificationDef("L1-2");
@@ -219,7 +220,7 @@ public class TestAtlasTypeRegistry {
     }
 
     /*
-     *             L0
+     *             L0        L0_1
      *          /      \
      *         /         \
      *      L1_1----      L1_2
@@ -228,8 +229,9 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testEntityDefValidHierarchy() {
+    public void testEntityDefValidHierarchy() throws AtlasBaseException {
         AtlasEntityDef entL0   = new AtlasEntityDef("L0");
+        AtlasEntityDef entL0_1 = new AtlasEntityDef("L0-1");
         AtlasEntityDef entL1_1 = new AtlasEntityDef("L1-1");
         AtlasEntityDef entL1_2 = new AtlasEntityDef("L1-2");
         AtlasEntityDef entL2_1 = new AtlasEntityDef("L2-1");
@@ -253,9 +255,16 @@ public class TestAtlasTypeRegistry {
         entL2_3.addAttribute(new AtlasAttributeDef("L2-3_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
         entL2_4.addAttribute(new AtlasAttributeDef("L2-4_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
 
+        // set displayNames in L0, L1_1, L2_1
+        entL0.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "L0_a1");
+        entL1_1.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "L1-1_a1");
+        entL2_1.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "L2-1_a1");
+        entL2_4.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "non-existing-attr");
+
         AtlasTypesDef typesDef = new AtlasTypesDef();
 
         typesDef.getEntityDefs().add(entL0);
+        typesDef.getEntityDefs().add(entL0_1);
         typesDef.getEntityDefs().add(entL1_1);
         typesDef.getEntityDefs().add(entL1_2);
         typesDef.getEntityDefs().add(entL2_1);
@@ -312,10 +321,19 @@ public class TestAtlasTypeRegistry {
         validateAttributeNames(typeRegistry, "L2-2", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1", "L2-2_a1")));
         validateAttributeNames(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1", "L1-2_a1", "L2-3_a1")));
         validateAttributeNames(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L0_a1", "L1-2_a1", "L2-4_a1")));
+
+        validateDisplayNameAttribute(typeRegistry, "L0", "L0_a1");     // directly assigned for this type
+        validateDisplayNameAttribute(typeRegistry, "L0-1");            // not assigned for this type
+        validateDisplayNameAttribute(typeRegistry, "L1-1", "L1-1_a1"); // directly assigned for this type
+        validateDisplayNameAttribute(typeRegistry, "L1-2", "L0_a1");   // inherits from L0
+        validateDisplayNameAttribute(typeRegistry, "L2-1", "L2-1_a1"); // directly assigned for this type
+        validateDisplayNameAttribute(typeRegistry, "L2-2", "L1-1_a1"); // inherits from L1-1
+        validateDisplayNameAttribute(typeRegistry, "L2-3", "L1-1_a1"); // inherits from L1-1 or L0
+        validateDisplayNameAttribute(typeRegistry, "L2-4", "L0_a1");   // invalid-name ignored, inherits from L0
     }
 
     @Test
-    public void testEntityDefInvalidHierarchy_Self() {
+    public void testEntityDefInvalidHierarchy_Self() throws AtlasBaseException {
         AtlasEntityDef entDef1 = new AtlasEntityDef("entDef-1");
 
         entDef1.addSuperType(entDef1.getName());
@@ -351,7 +369,7 @@ public class TestAtlasTypeRegistry {
      *   L2_1  L2_2   L2_3   L2_4
      */
     @Test
-    public void testEntityDefInvalidHierarchy_CircularRef() {
+    public void testEntityDefInvalidHierarchy_CircularRef() throws AtlasBaseException {
         AtlasEntityDef entL0   = new AtlasEntityDef("L0");
         AtlasEntityDef entL1_1 = new AtlasEntityDef("L1-1");
         AtlasEntityDef entL1_2 = new AtlasEntityDef("L1-2");
@@ -399,7 +417,7 @@ public class TestAtlasTypeRegistry {
     }
 
     @Test
-    public void testNestedUpdates() {
+    public void testNestedUpdates() throws AtlasBaseException {
         AtlasTypeRegistry          typeRegistry = new AtlasTypeRegistry();
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
@@ -436,7 +454,7 @@ public class TestAtlasTypeRegistry {
     }
 
     @Test
-    public void testParallelUpdates() {
+    public void testParallelUpdates() throws AtlasBaseException {
         final int    numOfThreads         =  3;
         final int    numOfTypesPerKind    = 30;
         final String enumTypePrefix       = "testEnum-";
@@ -503,7 +521,7 @@ public class TestAtlasTypeRegistry {
      * verify that after the update failure, the registry still has correct super-type/sub-type information for L0 and L1
      */
     @Test
-    public void testRegistryValidityOnInvalidUpdate() {
+    public void testRegistryValidityOnInvalidUpdate() throws AtlasBaseException {
         AtlasEntityDef entL0 = new AtlasEntityDef("L0");
         AtlasEntityDef entL1 = new AtlasEntityDef("L1");
 
@@ -677,5 +695,17 @@ public class TestAtlasTypeRegistry {
 
         assertNotNull(attributes);
         assertEquals(attributes.keySet(), attributeNames);
+    }
+
+    private void validateDisplayNameAttribute(AtlasTypeRegistry typeRegistry, String entityTypeName, String... displayNameAttributes) {
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
+
+        if (displayNameAttributes == null || displayNameAttributes.length == 0) {
+            assertNull(entityType.getDisplayTextAttribute());
+        } else {
+            List<String> validValues = Arrays.asList(displayNameAttributes);
+
+            assertTrue(validValues.contains(entityType.getDisplayTextAttribute()), entityTypeName + ": invalid displayNameAttribute " + entityType.getDisplayTextAttribute() + ". Valid values: " + validValues);
+        }
     }
 }

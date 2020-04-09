@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,6 +54,7 @@ public class GremlinQueryComposer {
     private static final Logger LOG                 = LoggerFactory.getLogger(GremlinQueryComposer.class);
     private static final String ISO8601_FORMAT      = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private static final String ISO8601_DATE_FORMAT = "yyyy-MM-dd";
+    private static final String REGEX_ALPHA_NUMERIC_PATTERN = "[a-zA-Z0-9]+";
 
     private static final ThreadLocal<DateFormat[]> DSL_DATE_FORMAT = ThreadLocal.withInitial(() -> {
         final String formats[] = {ISO8601_FORMAT, ISO8601_DATE_FORMAT};
@@ -117,9 +119,9 @@ public class GremlinQueryComposer {
             if (ia.isTrait()) {
                 String traitName = ia.get();
 
-                if (traitName.equalsIgnoreCase(ALL_CLASSIFICATIONS)) {
+                if (traitName.equals(ALL_CLASSIFICATIONS)) {
                     addTrait(GremlinClause.ANY_TRAIT, ia);
-                } else if (traitName.equalsIgnoreCase(NO_CLASSIFICATIONS)) {
+                } else if (traitName.equals(NO_CLASSIFICATIONS)) {
                     addTrait(GremlinClause.NO_TRAIT, ia);
                 } else {
                     addTrait(GremlinClause.TRAIT, ia);
@@ -197,7 +199,7 @@ public class GremlinQueryComposer {
             final AtlasStructType.AtlasAttribute attribute = context.getActiveEntityType().getAttribute(lhsI.getAttributeName());
             final AtlasStructDef.AtlasAttributeDef.IndexType indexType = attribute.getAttributeDef().getIndexType();
 
-            if (indexType == AtlasStructDef.AtlasAttributeDef.IndexType.STRING) {
+            if (indexType == AtlasStructDef.AtlasAttributeDef.IndexType.STRING || !containsNumberAndLettersOnly(rhs)) {
                 add(GremlinClause.STRING_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
             } else {
                 add(GremlinClause.TEXT_CONTAINS, getPropertyForClause(lhsI), IdentifierHelper.getFixedRegEx(rhs));
@@ -215,6 +217,10 @@ public class GremlinQueryComposer {
             add(GremlinClause.IN, org.getEdgeLabel());
             context.registerActive(currentType);
         }
+    }
+
+    private boolean containsNumberAndLettersOnly(String rhs) {
+        return Pattern.matches(REGEX_ALPHA_NUMERIC_PATTERN, IdentifierHelper.removeWildcards(rhs));
     }
 
     private String parseNumber(String rhs, Context context) {

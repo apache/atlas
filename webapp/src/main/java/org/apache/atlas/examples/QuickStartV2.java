@@ -19,7 +19,6 @@
 package org.apache.atlas.examples;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
@@ -38,12 +37,14 @@ import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.Constants;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.collections.CollectionUtils;
@@ -55,6 +56,7 @@ import java.util.*;
 
 import static java.util.Arrays.asList;
 import static org.apache.atlas.AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME;
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory.AGGREGATION;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory.COMPOSITION;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
@@ -276,6 +278,8 @@ public class QuickStartV2 {
                 createRequiredAttrDef("queryId", "string"),
                 createRequiredAttrDef("queryGraph", "string"));
 
+        processExecutionTypeDef.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "queryText");
+
         AtlasEntityDef viewTypeDef    = createClassTypeDef(VIEW_TYPE, VIEW_TYPE, VERSION_1, Collections.singleton("DataSet"));
 
         // Relationship-Definitions
@@ -316,7 +320,25 @@ public class QuickStartV2 {
         List<AtlasRelationshipDef>   relationshipDefs   = asList(tableDatabaseTypeDef, viewDatabaseTypeDef, viewTablesTypeDef, tableColumnsTypeDef, tableStorageDescTypeDef, processProcessExecutionTypeDef);
         List<AtlasClassificationDef> classificationDefs = asList(dimClassifDef, factClassifDef, piiClassifDef, metricClassifDef, etlClassifDef, jdbcClassifDef, logClassifDef);
 
-        return new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, entityDefs, relationshipDefs);
+        // BusinessMetadata definitions
+        AtlasAttributeDef bmAttrDef1 = new AtlasAttributeDef("attr1", "int");
+        AtlasAttributeDef bmAttrDef2 = new AtlasAttributeDef("attr2", "int");
+
+        bmAttrDef1.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(Collections.singleton(TABLE_TYPE)));
+        bmAttrDef1.setIsOptional(true);
+        bmAttrDef1.setIsUnique(false);
+
+        bmAttrDef2.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(Collections.singleton(TABLE_TYPE)));
+        bmAttrDef2.setIsOptional(true);
+        bmAttrDef2.setIsUnique(false);
+
+        AtlasBusinessMetadataDef testBusinessMetadataDef = new AtlasBusinessMetadataDef("test_businessMetadata", "test_description", VERSION_1);
+
+        testBusinessMetadataDef.setAttributeDefs(Arrays.asList(bmAttrDef1, bmAttrDef2));
+
+        List<AtlasBusinessMetadataDef> businessMetadataDefs  = asList(testBusinessMetadataDef);
+
+        return new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, entityDefs, relationshipDefs, businessMetadataDefs);
     }
 
     void createEntities() throws Exception {

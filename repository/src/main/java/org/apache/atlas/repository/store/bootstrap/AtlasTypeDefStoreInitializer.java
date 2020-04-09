@@ -30,6 +30,7 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -40,7 +41,6 @@ import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
@@ -55,7 +55,6 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.jute.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -253,6 +252,14 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             }
         }
 
+        if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
+            for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
+                if (!typeRegistry.isRegisteredType(businessMetadataDef.getName())) {
+                    typesToCreate.getBusinessMetadataDefs().add(businessMetadataDef);
+                }
+            }
+        }
+
         return typesToCreate;
     }
 
@@ -333,6 +340,20 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
                 if (updateTypeAttributes(oldRelationshipDef, relationshipDef, checkTypeVersion)) {
                     typesToUpdate.getRelationshipDefs().add(relationshipDef);
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
+            for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
+                AtlasBusinessMetadataDef oldDef = typeRegistry.getBusinessMetadataDefByName(businessMetadataDef.getName());
+
+                if (oldDef == null) {
+                    continue;
+                }
+
+                if (updateTypeAttributes(oldDef, businessMetadataDef, checkTypeVersion)) {
+                    typesToUpdate.getBusinessMetadataDefs().add(businessMetadataDef);
                 }
             }
         }

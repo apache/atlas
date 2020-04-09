@@ -30,6 +30,7 @@ public class DataTypes {
         STRUCT,
         TRAIT,
         CLASS,
-        RELATIONSHIP
+        RELATIONSHIP,
+        BUSINESS_METADATA
     }
 }

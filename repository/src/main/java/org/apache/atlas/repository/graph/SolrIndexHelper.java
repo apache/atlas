@@ -23,6 +23,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
+import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -67,7 +68,7 @@ public class SolrIndexHelper implements IndexChangeListener {
     @Override
     public void onChange(ChangedTypeDefs changedTypeDefs) {
         if (!AtlasRepositoryConfiguration.isFreeTextSearchEnabled() ||
-            changedTypeDefs == null || !changedTypeDefs.hasEntityDef()) { // nothing to do if there are no changes to entity-defs
+            changedTypeDefs == null || !(changedTypeDefs.hasEntityDef() || changedTypeDefs.hasBusinessMetadataDef())) { // nothing to do if there are no changes to entity-defs
             return;
         }
         if(initializationCompleted) {
@@ -119,6 +120,7 @@ public class SolrIndexHelper implements IndexChangeListener {
     private Map<String, Integer> geIndexFieldNamesWithSearchWeights() {
         Map<String, Integer>        ret         = new HashMap<>();
         Collection<AtlasEntityType> entityTypes = typeRegistry.getAllEntityTypes();
+        Collection<AtlasBusinessMetadataType> businessMetadataTypes = typeRegistry.getAllBusinessMetadataTypes();
 
         //the following properties are specially added manually.
         //as, they don't come in the entity definitions as attributes.
@@ -128,7 +130,7 @@ public class SolrIndexHelper implements IndexChangeListener {
         ret.put(typeRegistry.getIndexFieldName(CUSTOM_ATTRIBUTES_PROPERTY_KEY), SEARCHWEIGHT_FOR_CUSTOM_ATTRS);
         ret.put(typeRegistry.getIndexFieldName(TYPE_NAME_PROPERTY_KEY), SEARCHWEIGHT_FOR_TYPENAME);
 
-        if (!CollectionUtils.isNotEmpty(entityTypes)) {
+        if (!CollectionUtils.isNotEmpty(entityTypes) && CollectionUtils.isEmpty(businessMetadataTypes)) {
             return ret;
         }
 
@@ -140,7 +142,23 @@ public class SolrIndexHelper implements IndexChangeListener {
             processEntityType(ret, entityType);
         }
 
+        for(AtlasBusinessMetadataType businessMetadataType : businessMetadataTypes){
+            processBusinessMetadataType(ret, businessMetadataType);
+        }
+
         return ret;
+    }
+
+    private void processBusinessMetadataType(Map<String, Integer> indexFieldNameWithSearchWeights, AtlasBusinessMetadataType businessMetadataType) {
+        List<AtlasAttributeDef> attributes = businessMetadataType.getBusinessMetadataDef().getAttributeDefs();
+
+        if (CollectionUtils.isNotEmpty(attributes)) {
+            for (AtlasAttributeDef attribute : attributes) {
+                processAttribute(indexFieldNameWithSearchWeights, businessMetadataType.getAttribute(attribute.getName()));
+            }
+        } else {
+            LOG.debug("No attributes are defined for BusinessMetadata {}", businessMetadataType.getTypeName());
+        }
     }
 
     private void processEntityType(Map<String, Integer> indexFieldNameWithSearchWeights, AtlasEntityType entityType) {

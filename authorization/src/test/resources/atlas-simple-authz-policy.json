@@ -25,14 +25,14 @@
       ],
       "relationshipPermissions": [
         {
-          "privileges":     [ ".*" ],
-          "relationshipTypes": [ ".*" ],
-          "endOneEntityType":      [ ".*" ],
-          "endOneEntityId":      [ ".*" ],
-          "endOneEntityClassification":      [ ".*" ],
-          "endTwoEntityType":      [ ".*" ],
-          "endTwoEntityId":      [ ".*" ],
-          "endTwoEntityClassification":      [ ".*" ]
+          "privileges":                 [ ".*" ],
+          "relationshipTypes":          [ ".*" ],
+          "endOneEntityType":           [ ".*" ],
+          "endOneEntityId":             [ ".*" ],
+          "endOneEntityClassification": [ ".*" ],
+          "endTwoEntityType":           [ ".*" ],
+          "endTwoEntityId":             [ ".*" ],
+          "endTwoEntityClassification": [ ".*" ]
         }
       ]
     },
@@ -40,10 +40,12 @@
     "DATA_SCIENTIST": {
       "entityPermissions": [
         {
-          "privileges":      [ "entity-read", "entity-read-classification" ],
-          "entityTypes":     [ ".*" ],
-          "entityIds":       [ ".*" ],
-          "classifications": [ ".*" ]
+          "privileges":       [ "entity-read", "entity-read-classification" ],
+          "entityTypes":      [ ".*" ],
+          "entityIds":        [ ".*" ],
+          "classifications":  [ ".*" ],
+          "labels":           [ ".*" ],
+          "businessMetadata": [ ".*" ]
         }
       ]
     },
@@ -51,18 +53,22 @@
     "DATA_STEWARD": {
       "entityPermissions": [
         {
-          "privileges":      [ "entity-read", "entity-create", "entity-update", "entity-read-classification", "entity-add-classification", "entity-update-classification", "entity-remove-classification" ],
-          "entityTypes":     [ ".*" ],
-          "entityIds":       [ ".*" ],
-          "classifications": [ ".*" ]
+          "privileges":       [ "entity-read", "entity-create", "entity-update", "entity-read-classification", "entity-add-classification", "entity-update-classification", "entity-remove-classification", "entity-add-label", "entity-remove-label", "entity-update-business-metadata" ],
+          "entityTypes":      [ ".*" ],
+          "entityIds":        [ ".*" ],
+          "classifications":  [ ".*" ],
+          "labels":           [ ".*" ],
+          "businessMetadata": [ ".*" ]
         }
       ]
     }
   },
 
   "userRoles": {
-    "admin": [ "ROLE_ADMIN" ],
-    "rangertagsync": [ "DATA_SCIENTIST" ]
+    "admin":          [ "ROLE_ADMIN" ],
+    "rangertagsync":  [ "DATA_SCIENTIST" ],
+    "dataScientist1": [ "DATA_SCIENTIST"],
+    "dataSteward1":   [ "DATA_STEWARD"]
   },
 
   "groupRoles": {

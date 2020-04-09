@@ -19,8 +19,10 @@
 
 .atlast-tabbable {
     margin: 25px 0;
+
     .nav-tabs {
         border-bottom: 1px solid $color_mystic_approx;
+
         >li {
             >a {
                 padding: 15px 30px;
@@ -28,13 +30,16 @@
                 letter-spacing: 1px; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
                 border-radius: 2px 2px 0 0;
             }
+
             &.active>a {
                 border: 1px solid $color_mystic_approx;
                 border-bottom-color: transparent;
+
                 &:focus {
                     border: 1px solid $color_mystic_approx;
                     border-bottom-color: transparent;
                 }
+
                 &:hover {
                     border: 1px solid $color_mystic_approx;
                     border-bottom-color: transparent;
@@ -42,6 +47,7 @@
             }
         }
     }
+
     .tab-content {
         background-color: $white;
         padding: 35px;
@@ -60,6 +66,7 @@ ul.tabs li.tab {
     height: 0;
     padding: 0px;
     overflow: hidden;
+
     &.active {
         padding: 25px;
         opacity: 1;
@@ -70,9 +77,11 @@ ul.tabs li.tab {
 
 .tagsList .atlast-tabbable {
     margin: 0;
+
     .tab-content {
         padding: 10px 22px;
     }
+
     .nav-tabs>li>a {
         padding: 10px 20px;
     }
@@ -86,6 +95,7 @@ ul.tabs li.tab {
     white-space: nowrap;
     padding: 0;
     transition: color 0.28s ease;
+
     .indicator {
         position: absolute;
         bottom: 0;
@@ -93,6 +103,7 @@ ul.tabs li.tab {
         background-color: $color_keppel_approx;
         will-change: left, right;
     }
+
     li.tab {
         display: block;
         float: left;
@@ -104,6 +115,7 @@ ul.tabs li.tab {
         text-transform: uppercase;
         letter-spacing: 0.8px;
         border-bottom: 1px solid $color_mirage_approx;
+
         a {
             font-size: 14px;
             font-weight: 600;
@@ -130,8 +142,10 @@ ul.tabs li.tab {
 
 .atlast-tabbable {
     margin: 25px 0;
+
     .nav-tabs {
         border-bottom: 1px solid $color_mystic_approx;
+
         >li {
             >a {
                 padding: 15px 30px;
@@ -139,13 +153,16 @@ ul.tabs li.tab {
                 letter-spacing: 1px; //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
                 border-radius: 2px 2px 0 0;
             }
+
             &.active>a {
                 border: 1px solid $color_mystic_approx;
                 border-bottom-color: transparent;
+
                 &:focus {
                     border: 1px solid $color_mystic_approx;
                     border-bottom-color: transparent;
                 }
+
                 &:hover {
                     border: 1px solid $color_mystic_approx;
                     border-bottom-color: transparent;
@@ -153,6 +170,7 @@ ul.tabs li.tab {
             }
         }
     }
+
     .tab-content {
         background-color: $white;
         padding: 35px;
@@ -169,6 +187,7 @@ ul.tabs li.tab {
                     color: $color_jungle_green_approx;
                 }
             }
+
             >a {
                 color: $black;
             }

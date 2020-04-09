@@ -24,6 +24,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.slf4j.Logger;
@@ -52,11 +53,11 @@ public class FreeTextSearchProcessor extends SearchProcessor {
 
         queryString.append(searchParameters.getQuery());
 
-        if (StringUtils.isNotEmpty(context.getEntityTypesQryStr()) && context.getEntityTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+        if (CollectionUtils.isNotEmpty(context.getEntityTypes()) && context.getEntityTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
             queryString.append(AND_STR).append(context.getEntityTypesQryStr());
         }
 
-        if (StringUtils.isNotEmpty(context.getClassificationTypesQryStr()) && context.getClassificationTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
+        if (CollectionUtils.isNotEmpty(context.getClassificationTypes()) && context.getClassificationTypesQryStr().length() <= MAX_QUERY_STR_LENGTH_TYPES) {
             queryString.append(AND_STR).append(context.getClassificationTypesQryStr());
         }
 

@@ -25,6 +25,7 @@ import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -32,6 +33,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
+import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.util.SearchPredicateUtil.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
@@ -45,6 +47,17 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
+import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_WILDCARD_CLASSIFICATION;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAME_DELIMITER;
+import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.util.SearchPredicateUtil.*;
 
 public abstract class SearchProcessor {
@@ -62,7 +75,11 @@ public abstract class SearchProcessor {
     public static final String  SPACE_STRING               = " ";
     public static final String  BRACE_OPEN_STR             = "(";
     public static final String  BRACE_CLOSE_STR            = ")";
-
+    public static final String  ALL_TYPE_QUERY             = "[* TO *]";
+    public static final char    CUSTOM_ATTR_SEPARATOR      = '=';
+    public static final String  CUSTOM_ATTR_SEARCH_FORMAT  = "\"\\\"%s\\\":\\\"%s\\\"\"";
+    public static final String  CUSTOM_ATTR_SEARCH_FORMAT_GRAPH = "\"%s\":\"%s\"";
+    public static final String  WILDCARD_CHAR                   = "*";
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
     private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
 
@@ -101,6 +118,8 @@ public abstract class SearchProcessor {
         OPERATOR_MAP.put(SearchParameters.Operator.CONTAINS, INDEX_SEARCH_PREFIX + "\"%s\": (*%s*)");
         OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.CONTAINS, getContainsPredicateGenerator());
 
+        OPERATOR_PREDICATE_MAP.put(SearchParameters.Operator.NOT_CONTAINS, getNotContainsPredicateGenerator());
+
         // TODO: Add contains any, contains all mappings here
 
         OPERATOR_MAP.put(SearchParameters.Operator.IS_NULL, "(*:* NOT " + INDEX_SEARCH_PREFIX + "\"%s\":[* TO *])");
@@ -131,6 +150,25 @@ public abstract class SearchProcessor {
     public abstract List<AtlasVertex> execute();
     public abstract long getResultCount();
 
+    protected boolean isEntityRootType() {
+        return context.getEntityType() == SearchContext.MATCH_ALL_ENTITY_TYPES;
+    }
+
+    protected boolean isClassificationRootType() {
+        return context.getClassificationType() == SearchContext.MATCH_ALL_CLASSIFICATION_TYPES;
+    }
+
+    protected boolean isSystemAttribute(String attrName) {
+        return AtlasEntityType.getEntityRoot().hasAttribute(attrName) || AtlasClassificationType.getClassificationRoot().hasAttribute(attrName);
+    }
+
+    protected boolean isPipeSeparatedSystemAttribute(String attrName) {
+        return StringUtils.equals(attrName, CLASSIFICATION_NAMES_KEY) ||
+               StringUtils.equals(attrName, PROPAGATED_CLASSIFICATION_NAMES_KEY) ||
+               StringUtils.equals(attrName, LABELS_PROPERTY_KEY) ||
+               StringUtils.equals(attrName, CUSTOM_ATTRIBUTES_PROPERTY_KEY);
+    }
+
     protected int collectResultVertices(final List<AtlasVertex> ret, final int startIdx, final int limit, int resultIdx, final List<AtlasVertex> entityVertices) {
         for (AtlasVertex entityVertex : entityVertices) {
             resultIdx++;
@@ -155,6 +193,26 @@ public abstract class SearchProcessor {
         }
     }
 
+    protected Predicate buildTraitPredict(AtlasClassificationType classificationType) {
+        Predicate traitPredicate;
+        if (classificationType == MATCH_ALL_WILDCARD_CLASSIFICATION || classificationType == MATCH_ALL_CLASSIFIED || classificationType == MATCH_ALL_CLASSIFICATION_TYPES) {
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
+                SearchPredicateUtil.getNotEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
+        } else if (classificationType == MATCH_ALL_NOT_CLASSIFIED) {
+            traitPredicate = PredicateUtils.andPredicate(SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
+                SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
+        } else if (context.isWildCardSearch()) {
+            String wildcardName = context.getClassificationName();
+            wildcardName = wildcardName.replace(WILDCARD_CHAR,"");
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsPredicateGenerator().generatePredicate(CLASSIFICATION_NAMES_KEY, wildcardName, String.class),
+                    SearchPredicateUtil.getContainsPredicateGenerator().generatePredicate(PROPAGATED_CLASSIFICATION_NAMES_KEY, wildcardName, String.class));
+        } else {
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypes(), List.class),
+                SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypes(), List.class));
+        }
+        return traitPredicate;
+    }
+
 
     protected void processSearchAttributes(AtlasStructType structType, FilterCriteria filterCriteria, Set<String> indexFiltered, Set<String> graphFiltered, Set<String> allAttributes) {
         if (structType == null || filterCriteria == null) {
@@ -169,9 +227,43 @@ public abstract class SearchProcessor {
                 processSearchAttributes(structType, criteria, indexFiltered, graphFiltered, allAttributes);
             }
         } else if (StringUtils.isNotEmpty(filterCriteria.getAttributeName())) {
-            try {
-                String attributeName = filterCriteria.getAttributeName();
+            String attributeName = filterCriteria.getAttributeName();
 
+            if (StringUtils.equals(attributeName, Constants.IS_INCOMPLETE_PROPERTY_KEY)) {
+                // when entity is incomplete (i.e. shell entity):
+                //   vertex property IS_INCOMPLETE_PROPERTY_KEY will be set to INCOMPLETE_ENTITY_VALUE
+                // when entity is not incomplete (i.e. not a shell entity):
+                //   vertex property IS_INCOMPLETE_PROPERTY_KEY will not be set
+
+                String attributeValue = filterCriteria.getAttributeValue();
+
+                switch (filterCriteria.getOperator()) {
+                    case EQ:
+                        if (attributeValue == null || StringUtils.equals(attributeValue, "0") || StringUtils.equalsIgnoreCase(attributeValue, "false")) {
+                            filterCriteria.setOperator(SearchParameters.Operator.IS_NULL);
+                        } else {
+                            filterCriteria.setOperator(SearchParameters.Operator.EQ);
+                            filterCriteria.setAttributeValue(Constants.INCOMPLETE_ENTITY_VALUE.toString());
+                        }
+                    break;
+
+                    case NEQ:
+                        if (attributeValue == null || StringUtils.equals(attributeValue, "0") || StringUtils.equalsIgnoreCase(attributeValue, "false")) {
+                            filterCriteria.setOperator(SearchParameters.Operator.EQ);
+                            filterCriteria.setAttributeValue(Constants.INCOMPLETE_ENTITY_VALUE.toString());
+                        } else {
+                            filterCriteria.setOperator(SearchParameters.Operator.IS_NULL);
+                        }
+                    break;
+
+                    case NOT_NULL:
+                        filterCriteria.setOperator(SearchParameters.Operator.EQ);
+                        filterCriteria.setAttributeValue(Constants.INCOMPLETE_ENTITY_VALUE.toString());
+                    break;
+                }
+            }
+
+            try {
                 if (isIndexSearchable(filterCriteria, structType)) {
                     indexFiltered.add(attributeName);
                 } else {
@@ -180,7 +272,7 @@ public abstract class SearchProcessor {
                     graphFiltered.add(attributeName);
                 }
 
-                if (structType instanceof AtlasEntityType) {
+                if (structType instanceof AtlasEntityType && !isSystemAttribute(attributeName)) {
                     // Capture the entity attributes
                     context.getEntityAttributes().add(attributeName);
                 }
@@ -204,7 +296,7 @@ public abstract class SearchProcessor {
     //      (AND (OR idx-att1=x idx-attr1=y) non-idx-attr=z (AND idx-attr2=xyz idx-attr2=abc))
     //
     protected boolean canApplyIndexFilter(AtlasStructType structType, FilterCriteria filterCriteria, boolean insideOrCondition) {
-        if (filterCriteria == null) {
+        if (!context.hasAttributeFilter(filterCriteria)) {
             return true;
         }
 
@@ -250,7 +342,7 @@ public abstract class SearchProcessor {
                 List<String> classificationNames = AtlasGraphUtilsV2.getClassificationNames(entityVertex);
 
                 if (CollectionUtils.isNotEmpty(classificationNames)) {
-                    if (CollectionUtils.containsAny(classificationNames, typeAndSubTypes)) {
+                    if (typeAndSubTypes.isEmpty() || CollectionUtils.containsAny(classificationNames, typeAndSubTypes)) {
                         continue;
                     }
                 }
@@ -258,7 +350,7 @@ public abstract class SearchProcessor {
                 List<String> propagatedClassificationNames = AtlasGraphUtilsV2.getPropagatedClassificationNames(entityVertex);
 
                 if (CollectionUtils.isNotEmpty(propagatedClassificationNames)) {
-                    if (CollectionUtils.containsAny(propagatedClassificationNames, typeAndSubTypes)) {
+                    if (typeAndSubTypes.isEmpty() || CollectionUtils.containsAny(propagatedClassificationNames, typeAndSubTypes)) {
                         continue;
                     }
                 }
@@ -359,7 +451,7 @@ public abstract class SearchProcessor {
                     }
 
                     ret = false;
-                } else if (hasIndexQuerySpecialChar(filterCriteria.getAttributeValue())) {
+                } else if (hasIndexQuerySpecialChar(filterCriteria.getAttributeValue()) && !isPipeSeparatedSystemAttribute(filterCriteria.getAttributeName())) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("special characters found in filter value {}, deferring to in-memory or graph query (might cause poor performance)", filterCriteria.getAttributeValue());
                     }
@@ -433,11 +525,62 @@ public abstract class SearchProcessor {
                     return PredicateUtils.anyPredicate(predicates);
                 }
             }
-        } else if (indexAttributes.contains(criteria.getAttributeName())){
-            return toInMemoryPredicate(type, criteria.getAttributeName(), criteria.getOperator(), criteria.getAttributeValue());
+        } else if (indexAttributes.contains(criteria.getAttributeName())) {
+            String                    attrName  = criteria.getAttributeName();
+            String                    attrValue = criteria.getAttributeValue();
+            SearchParameters.Operator operator  = criteria.getOperator();
+
+            //process attribute value and attribute operator for pipeSeperated fields
+            if (isPipeSeparatedSystemAttribute(attrName)) {
+                FilterCriteria processedCriteria = processPipeSeperatedSystemAttribute(attrName, operator, attrValue);
+                attrValue                        = processedCriteria.getAttributeValue();
+                operator                         = processedCriteria.getOperator();
+            }
+
+            return toInMemoryPredicate(type, attrName, operator, attrValue);
         }
 
         return null;
+    }
+
+    private FilterCriteria processPipeSeperatedSystemAttribute(String attrName, SearchParameters.Operator op, String attrVal) {
+
+        FilterCriteria ret = new FilterCriteria();
+
+        if (op != null && attrVal != null) {
+            switch (op) {
+                case STARTS_WITH:
+                    attrVal = CLASSIFICATION_NAME_DELIMITER + attrVal;
+                    op      = SearchParameters.Operator.CONTAINS;
+                    break;
+                case ENDS_WITH:
+                    attrVal = attrVal + CLASSIFICATION_NAME_DELIMITER;
+                    op      = SearchParameters.Operator.CONTAINS;
+                    break;
+                case EQ:
+                    attrVal = GraphHelper.getDelimitedClassificationNames(Collections.singleton(attrVal));
+                    op      = SearchParameters.Operator.CONTAINS;
+                    break;
+                case NEQ:
+                    attrVal = GraphHelper.getDelimitedClassificationNames(Collections.singleton(attrVal));
+                    op      = SearchParameters.Operator.NOT_CONTAINS;
+                    break;
+                case CONTAINS:
+                    if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY)) {
+                        attrVal = getCustomAttributeIndexQueryValue(attrVal, true);
+                    }
+                    break;
+                default:
+                    LOG.warn("{}: unsupported operator. Ignored", op);
+                    break;
+            }
+        }
+
+        ret.setAttributeName(attrName);
+        ret.setOperator(op);
+        ret.setAttributeValue(attrVal);
+
+        return ret;
     }
 
     private String toIndexExpression(AtlasStructType type, String attrName, SearchParameters.Operator op, String attrVal) {
@@ -448,10 +591,38 @@ public abstract class SearchProcessor {
                 String qualifiedName         = type.getQualifiedAttributeName(attrName);
                 String escapeIndexQueryValue = AtlasAttribute.escapeIndexQueryValue(attrVal);
 
-                ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue);
+                // map '__customAttributes' 'CONTAINS' operator to 'EQ' operator (solr limitation for json serialized string search)
+                // map '__customAttributes' value from 'key1=value1' to '\"key1\":\"value1\"' (escape special characters and surround with quotes)
+                if (attrName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY) && op == SearchParameters.Operator.CONTAINS) {
+                    ret = String.format(OPERATOR_MAP.get(op), qualifiedName, getCustomAttributeIndexQueryValue(escapeIndexQueryValue, false));
+                } else {
+                    ret = String.format(OPERATOR_MAP.get(op), qualifiedName, escapeIndexQueryValue);
+                }
             }
         } catch (AtlasBaseException ex) {
             LOG.warn(ex.getMessage());
+        }
+
+        return ret;
+    }
+
+    private String getCustomAttributeIndexQueryValue(String attrValue, boolean forGraphQuery) {
+        String ret = null;
+
+        if (StringUtils.isNotEmpty(attrValue)) {
+            int    separatorIdx = attrValue.indexOf(CUSTOM_ATTR_SEPARATOR);
+            String key          = separatorIdx != -1 ? attrValue.substring(0, separatorIdx) : null;
+            String value        = key != null ? attrValue.substring(separatorIdx + 1) : null;
+
+            if (key != null && value != null) {
+                if (forGraphQuery) {
+                    ret = String.format(CUSTOM_ATTR_SEARCH_FORMAT_GRAPH, key, value);
+                } else {
+                    ret = String.format(CUSTOM_ATTR_SEARCH_FORMAT, key, value);
+                }
+            } else {
+                ret = attrValue;
+            }
         }
 
         return ret;
@@ -560,52 +731,55 @@ public abstract class SearchProcessor {
                 String                    attrValue = criteria.getAttributeValue();
                 SearchParameters.Operator operator  = criteria.getOperator();
 
-                try {
-                    final String qualifiedName = type.getQualifiedAttributeName(attrName);
+                //process attribute value and attribute operator for pipeSeperated fields
+                if (isPipeSeparatedSystemAttribute(attrName)) {
+                    FilterCriteria processedCriteria = processPipeSeperatedSystemAttribute(attrName, operator, attrValue);
+                    attrValue                        = processedCriteria.getAttributeValue();
+                    operator                         = processedCriteria.getOperator();
+                }
 
-                    switch (operator) {
-                        case LT:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN, attrValue);
-                            break;
-                        case LTE:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN_EQUAL, attrValue);
-                            break;
-                        case GT:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, attrValue);
-                            break;
-                        case GTE:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN_EQUAL, attrValue);
-                            break;
-                        case EQ:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, attrValue);
-                            break;
-                        case NEQ:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, attrValue);
-                            break;
-                        case LIKE:
-                            query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, attrValue);
-                            break;
-                        case CONTAINS:
-                            query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getContainsRegex(attrValue));
-                            break;
-                        case STARTS_WITH:
-                            query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.PREFIX, attrValue);
-                            break;
-                        case ENDS_WITH:
-                            query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getSuffixRegex(attrValue));
-                            break;
-                        case IS_NULL:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, null);
-                            break;
-                        case NOT_NULL:
-                            query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, null);
-                            break;
-                        default:
-                            LOG.warn("{}: unsupported operator. Ignored", operator);
-                            break;
-                    }
-                } catch (AtlasBaseException e) {
-                    LOG.error("toGraphFilterQuery(): failed for attrName=" + attrName + "; operator=" + operator + "; attrValue=" + attrValue, e);
+                final String qualifiedName           =  type.getAttribute(attrName).getVertexPropertyName();
+
+                switch (operator) {
+                    case LT:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN, attrValue);
+                        break;
+                    case LTE:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.LESS_THAN_EQUAL, attrValue);
+                        break;
+                    case GT:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, attrValue);
+                        break;
+                    case GTE:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.GREATER_THAN_EQUAL, attrValue);
+                        break;
+                    case EQ:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, attrValue);
+                        break;
+                    case NEQ:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, attrValue);
+                        break;
+                    case LIKE:
+                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, attrValue);
+                        break;
+                    case CONTAINS:
+                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getContainsRegex(attrValue));
+                        break;
+                    case STARTS_WITH:
+                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.PREFIX, attrValue);
+                        break;
+                    case ENDS_WITH:
+                        query.has(qualifiedName, AtlasGraphQuery.MatchingOperator.REGEX, getSuffixRegex(attrValue));
+                        break;
+                    case IS_NULL:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.EQUAL, null);
+                        break;
+                    case NOT_NULL:
+                        query.has(qualifiedName, AtlasGraphQuery.ComparisionOperator.NOT_EQUAL, null);
+                        break;
+                    default:
+                        LOG.warn("{}: unsupported operator. Ignored", operator);
+                        break;
                 }
             }
         }

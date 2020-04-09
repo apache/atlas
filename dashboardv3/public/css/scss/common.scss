@@ -188,7 +188,7 @@ pre {
     }
 }
 
-.panel-body .memory-details{
+.panel-body .memory-details {
     pre {
         &.code-block {
             &.shrink {
@@ -228,7 +228,6 @@ pre {
         .custom-col-1,
         .custom-col-2 {
             vertical-align: top;
-            display: inline-block;
 
             textarea {
                 resize: vertical;
@@ -248,12 +247,19 @@ pre {
 
         .custom-col-1 {
             width: 39%;
+            margin-bottom: 10px;
         }
 
         .custom-col-2 {
             text-align: center;
             width: 17%;
-            margin-left: 1%;
+            padding-left: 1%;
+            margin-bottom: 10px;
+
+            &>button {
+                padding: 7px 10px;
+                margin-bottom: 10px;
+            }
         }
     }
 }
@@ -270,4 +276,34 @@ pre {
     margin-bottom: 5px;
     margin-left: 5px;
     float: left;
+}
+
+.errorValidate {
+    border-color: red !important;
+}
+
+.errorValidate+span .select2-selection {
+    border-color: red !important;
+
+}
+
+.button-loader {
+    position: relative;
+    padding-left: 22px !important;
+
+    &:after {
+        content: "\f021";
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        left: 0px;
+        top: 0px;
+        font-family: FontAwesome;
+        background: transparent;
+        height: 100%;
+        width: 26px;
+        font-size: 11px;
+        animation: spin 1000ms infinite linear;
+    }
 }

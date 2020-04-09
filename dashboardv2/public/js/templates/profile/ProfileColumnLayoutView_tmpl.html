@@ -18,24 +18,30 @@
     <div class="">
         <div class="col-sm-3 rowValue">
             <div><span class="graphkey">Rows</span></div>
-            <div><span class="graphval"><div class="value-loader"></div></span></div>
+            <div><span class="graphval">
+                    <div class="value-loader"></div>
+                </span></div>
         </div>
         <div class="col-sm-3 table_created">
             <div><span class="graphkey">Date Created</span></div>
-            <div><span class="graphval"><div class="value-loader"></div></span></div>
+            <div><span class="graphval">
+                    <div class="value-loader"></div>
+                </span></div>
         </div>
         <div class="col-sm-6 table_name">
             <div><span class="graphkey">Table</span></div>
-            <div><span class="graphval"><div class="value-loader"></div></span></div>
+            <div><span class="graphval">
+                    <div class="value-loader"></div>
+                </span></div>
         </div>
     </div>
 </div>
-<hr/>
+<hr />
 <div class="row">
     <h4 class="col-sm-12">{{typeObject.label}}</h4>
 </div>
 <div class="row">
-    <a href="javascript:void(0);" data-id="backToYear" style="display: none"><i class="fa fa-chevron-left"></i>  Back To Year</a>
+    <a href="javascript:void(0);" data-id="backToYear" style="display: none"><i class="fa fa-chevron-left"></i> Back To Year</a>
 </div>
 </br>
 <div class="row">
@@ -49,37 +55,37 @@
                 <div><span class="graphkey">Cardinality</span></div>
                 <div title="{{profileData.cardinality}}"><span class="graphval text-right"><b>{{profileData.cardinality}}</b></span></div>
             </div>
-            <hr/>
+            <hr />
             <div class="">
                 <div><span class="graphkey">% NonNull</span></div>
                 <div title="{{profileData.nonNullData}}%"><span class="graphval text-right"><b>{{profileData.nonNullData}}%</b></span></div>
             </div>
-            <hr/> {{#ifCond typeObject.type "==" "string"}}
+            <hr /> {{#ifCond typeObject.type "==" "string"}}
             <div class="">
                 <div><span class="graphkey">Average Length</span></div>
                 <div title="{{profileData.averageLength}}"><span class="graphval text-right"><b>{{profileData.averageLength}}</b></span></div>
             </div>
-            <hr/>
+            <hr />
             <div class="">
                 <div><span class="graphkey">Max Length</span></div>
                 <div title="{{profileData.maxLength}}"><span class="graphval text-right"><b>{{profileData.maxLength}}</b></span></div>
             </div>
-            <hr/> {{/ifCond}} {{#ifCond typeObject.type "==" "numeric"}}
+            <hr /> {{/ifCond}} {{#ifCond typeObject.type "==" "numeric"}}
             <div class="">
                 <div><span class="graphkey">Min</span></div>
                 <div title="{{profileData.minValue}}"><span class="graphval text-right"><b>{{profileData.minValue}}</b></span></div>
             </div>
-            <hr/>
+            <hr />
             <div class="">
                 <div><span class="graphkey">Max</span></div>
                 <div title="{{profileData.maxValue}}"><span class="graphval text-right"><b>{{profileData.maxValue}}</b></span></div>
             </div>
-            <hr/>
+            <hr />
             <div class="">
                 <div><span class="graphkey">Mean</span></div>
                 <div title="{{profileData.meanValue}}"><span class="graphval text-right"><b>{{profileData.meanValue}}</b></span></div>
             </div>
-            <hr/>
+            <hr />
             <div class="">
                 <div><span class="graphkey">Median</span></div>
                 <div title="{{profileData.medianValue}}"><span class="graphval text-right"><b>{{profileData.medianValue}}</b></span></div>

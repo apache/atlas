@@ -24,8 +24,9 @@ define(['require',
     'collection/VTagList',
     'models/VTag',
     'utils/Messages',
-    'utils/UrlLinks'
-], function(require, Backbone, TagAttributeDetailLayoutViewTmpl, Utils, AddTagAttributeView, VTagList, VTag, Messages, UrlLinks) {
+    'utils/UrlLinks',
+    "utils/Globals",
+], function(require, Backbone, TagAttributeDetailLayoutViewTmpl, Utils, AddTagAttributeView, VTagList, VTag, Messages, UrlLinks, Globals) {
     'use strict';
 
     var TagAttributeDetailLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -96,6 +97,9 @@ define(['require',
             onRender: function() {
                 Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.$('.tagDetail'));
                 if (this.collection.models.length && !this.model) {
+                    if (Globals[this.tag]) {
+                        this.collection.fullCollection.push(Globals[this.tag]);
+                    }
                     this.model = this.collection.fullCollection.findWhere({ name: this.tag });
                     this.renderTagDetail();
                 }

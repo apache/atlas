@@ -21,6 +21,7 @@ package org.apache.atlas.repository.impexp;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
+import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -32,14 +33,14 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.List;
 
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.loadBaseModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadBaseModel;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class ExportImportAuditServiceTest extends ExportImportTestBase {
+public class ExportImportAuditServiceTest extends AtlasTestBase {
     @Inject
     AtlasTypeRegistry typeRegistry;
 

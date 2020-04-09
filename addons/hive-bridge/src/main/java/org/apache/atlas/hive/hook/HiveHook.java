@@ -60,6 +60,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String HOOK_NAME_CACHE_DATABASE_COUNT      = CONF_PREFIX + "name.cache.database.count";
     public static final String HOOK_NAME_CACHE_TABLE_COUNT         = CONF_PREFIX + "name.cache.table.count";
     public static final String HOOK_NAME_CACHE_REBUID_INTERVAL_SEC = CONF_PREFIX + "name.cache.rebuild.interval.seconds";
+    public static final String HOOK_AWS_S3_ATLAS_MODEL_VERSION     = CONF_PREFIX + "aws_s3.atlas.model.version";
+    public static final String HOOK_AWS_S3_ATLAS_MODEL_VERSION_V2  = "v2";
+    public static final String HOOK_HIVE_PROCESS_POPULATE_DEPRECATED_ATTRIBUTES          = CONF_PREFIX + "hive_process.populate.deprecated.attributes";
     public static final String HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633                  = CONF_PREFIX + "skip.hive_column_lineage.hive-20633";
     public static final String HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD = CONF_PREFIX + "skip.hive_column_lineage.hive-20633.inputs.threshold";
     public static final String HOOK_HIVE_TABLE_IGNORE_PATTERN                            = CONF_PREFIX + "hive_table.ignore.pattern";
@@ -74,6 +77,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final int     nameCacheDatabaseMaxCount;
     private static final int     nameCacheTableMaxCount;
     private static final int     nameCacheRebuildIntervalSeconds;
+    private static final boolean isAwsS3AtlasModelVersionV2;
 
     private static final boolean                       skipHiveColumnLineageHive20633;
     private static final int                           skipHiveColumnLineageHive20633InputsThreshold;
@@ -83,7 +87,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final List                          ignoreDummyDatabaseName;
     private static final List                          ignoreDummyTableName;
     private static final String                        ignoreValuesTmpTableNamePrefix;
-
+    private static final boolean                       hiveProcessPopulateDeprecatedAttributes;
     private static HiveHookObjectNamesCache knownObjects = null;
     private static String hostName;
 
@@ -97,9 +101,10 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         nameCacheDatabaseMaxCount       = atlasProperties.getInt(HOOK_NAME_CACHE_DATABASE_COUNT, 10000);
         nameCacheTableMaxCount          = atlasProperties.getInt(HOOK_NAME_CACHE_TABLE_COUNT, 10000);
         nameCacheRebuildIntervalSeconds = atlasProperties.getInt(HOOK_NAME_CACHE_REBUID_INTERVAL_SEC, 60 * 60); // 60 minutes default
+        isAwsS3AtlasModelVersionV2      = StringUtils.equalsIgnoreCase(atlasProperties.getString(HOOK_AWS_S3_ATLAS_MODEL_VERSION, HOOK_AWS_S3_ATLAS_MODEL_VERSION_V2), HOOK_AWS_S3_ATLAS_MODEL_VERSION_V2);
         skipHiveColumnLineageHive20633                = atlasProperties.getBoolean(HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false);
         skipHiveColumnLineageHive20633InputsThreshold = atlasProperties.getInt(HOOK_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
-
+        hiveProcessPopulateDeprecatedAttributes       = atlasProperties.getBoolean(HOOK_HIVE_PROCESS_POPULATE_DEPRECATED_ATTRIBUTES, false);
         String[] patternHiveTablesToIgnore = atlasProperties.getStringArray(HOOK_HIVE_TABLE_IGNORE_PATTERN);
         String[] patternHiveTablesToPrune  = atlasProperties.getStringArray(HOOK_HIVE_TABLE_PRUNE_PATTERN);
 
@@ -201,7 +206,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 case EXPORT:
                 case IMPORT:
                 case QUERY:
-                    event = new CreateHiveProcess(context);
+                    event = new CreateHiveProcess(context, true);
                 break;
 
                 case ALTERTABLE_FILEFORMAT:
@@ -252,6 +257,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return convertHdfsPathToLowerCase;
     }
 
+    public boolean isAwsS3AtlasModelVersionV2() { return isAwsS3AtlasModelVersionV2; }
+
     public boolean getSkipHiveColumnLineageHive20633() {
         return skipHiveColumnLineageHive20633;
     }
@@ -270,6 +277,10 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     public  String getIgnoreValuesTmpTableNamePrefix() {
         return ignoreValuesTmpTableNamePrefix;
+    }
+
+    public boolean isHiveProcessPopulateDeprecatedAttributes() {
+        return hiveProcessPopulateDeprecatedAttributes;
     }
 
     public PreprocessAction getPreprocessActionForHiveTable(String qualifiedName) {

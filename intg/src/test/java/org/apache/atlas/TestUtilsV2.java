@@ -24,6 +24,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -58,6 +59,7 @@ import static org.apache.atlas.type.AtlasTypeUtil.createRequiredAttrDef;
 import static org.apache.atlas.type.AtlasTypeUtil.createStructTypeDef;
 import static org.apache.atlas.type.AtlasTypeUtil.createUniqueRequiredAttrDef;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
+import static org.apache.atlas.type.AtlasTypeUtil.createBusinessMetadataDef;
 
 
 /**
@@ -548,7 +550,7 @@ public final class TestUtilsV2 {
 
     public static final String PII = "PII";
     public static final String PHI = "PHI";
-    public static final String SUPER_TYPE_NAME = "Base";
+    public static final String SUPER_TYPE_NAME = "Referenceable";
     public static final String STORAGE_DESC_TYPE = "hive_storagedesc";
     public static final String PARTITION_STRUCT_TYPE = "partition_struct_type";
     public static final String PARTITION_CLASS_TYPE = "partition_class_type";
@@ -625,6 +627,13 @@ public final class TestUtilsV2 {
     }
 
     public static AtlasTypesDef defineSimpleAttrType() {
+        AtlasAttributeDef attrPuArray = new AtlasAttributeDef("puArray", "array<string>", true, SINGLE, 1, 1, false, false, false, null);
+        AtlasAttributeDef attrPuMap   = new AtlasAttributeDef("puMap", "map<string,string>",  true, SINGLE, 1,1, false, false, false, null);
+
+        attrPuArray.setOption(AtlasAttributeDef.ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE, "true");
+        attrPuMap.setOption(AtlasAttributeDef.ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE, "true");
+
+
         AtlasEntityDef simpleAttributesEntityType =
             createClassTypeDef(ENTITY_TYPE_WITH_SIMPLE_ATTR, ENTITY_TYPE_WITH_SIMPLE_ATTR + "_description", null,
                 createUniqueRequiredAttrDef("name", "string"),
@@ -639,7 +648,11 @@ public final class TestUtilsV2 {
                     false, false, false, null),
 
                 new AtlasAttributeDef("mapOfStrings", "map<string,string>",
-                    true, SINGLE, 1,1, false, false, false, null)
+                    true, SINGLE, 1,1, false, false, false, null),
+
+                attrPuArray,
+
+                attrPuMap
             );
 
         AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(Collections.<AtlasEnumDef>emptyList(),
@@ -657,8 +670,74 @@ public final class TestUtilsV2 {
         entity.setAttribute("stringAtrr", "DummyThree");
         entity.setAttribute("arrayOfStrings", Arrays.asList("DummyOne", "DummyTwo"));
         entity.setAttribute("mapOfStrings", Collections.singletonMap("one", "DummyString"));
+        entity.setAttribute("puArray", Arrays.asList("DummyOne", "DummyTwo"));
+        entity.setAttribute("puMap", Collections.singletonMap("one", "DummyString"));
 
         return new AtlasEntityWithExtInfo(entity);
+    }
+
+    public static AtlasTypesDef defineEnumTypes() {
+        String _description = "_description";
+        AtlasEnumDef myEnum =
+                new AtlasEnumDef("ENUM_1", "ENUM_1" + _description, "1.0",
+                        Arrays.asList(
+                                new AtlasEnumElementDef("USER", "Element" + _description, 1),
+                                new AtlasEnumElementDef("ROLE", "Element" + _description, 2),
+                                new AtlasEnumElementDef("GROUP", "Element" + _description, 3)
+                        ));
+
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(Collections.singletonList(myEnum),
+                new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+
+        populateSystemAttributes(ret);
+
+        return ret;
+    }
+
+    public static AtlasTypesDef defineBusinessMetadataTypes() {
+        String _description = "_description";
+        Map<String, String> options = new HashMap<>();
+        options.put("maxStrLength", "20");
+
+        AtlasBusinessMetadataDef bmNoApplicableTypes = createBusinessMetadataDef("bmNoApplicableTypes", _description, "1.0",
+                createOptionalAttrDef("attr0", "string", options, _description));
+
+        AtlasBusinessMetadataDef bmNoAttributes = createBusinessMetadataDef("bmNoAttributes", _description, "1.0", null);
+
+        options.put("applicableEntityTypes", "[\"" + DATABASE_TYPE + "\",\"" + TABLE_TYPE + "\"]");
+
+        AtlasBusinessMetadataDef bmWithAllTypes = createBusinessMetadataDef("bmWithAllTypes", _description, "1.0",
+                createOptionalAttrDef("attr1", AtlasBusinessMetadataDef.ATLAS_TYPE_BOOLEAN, options, _description),
+                createOptionalAttrDef("attr2", AtlasBusinessMetadataDef.ATLAS_TYPE_BYTE, options, _description),
+                createOptionalAttrDef("attr3", AtlasBusinessMetadataDef.ATLAS_TYPE_SHORT, options, _description),
+                createOptionalAttrDef("attr4", AtlasBusinessMetadataDef.ATLAS_TYPE_INT, options, _description),
+                createOptionalAttrDef("attr5", AtlasBusinessMetadataDef.ATLAS_TYPE_LONG, options, _description),
+                createOptionalAttrDef("attr6", AtlasBusinessMetadataDef.ATLAS_TYPE_FLOAT, options, _description),
+                createOptionalAttrDef("attr7", AtlasBusinessMetadataDef.ATLAS_TYPE_DOUBLE, options, _description),
+                createOptionalAttrDef("attr8", AtlasBusinessMetadataDef.ATLAS_TYPE_STRING, options, _description),
+                createOptionalAttrDef("attr9", AtlasBusinessMetadataDef.ATLAS_TYPE_DATE, options, _description),
+                createOptionalAttrDef("attr10", "ENUM_1", options, _description));
+
+        AtlasBusinessMetadataDef bmWithAllTypesMV = createBusinessMetadataDef("bmWithAllTypesMV", _description, "1.0",
+                createOptionalAttrDef("attr11", "array<boolean>", options, _description),
+                createOptionalAttrDef("attr12", "array<byte>", options, _description),
+                createOptionalAttrDef("attr13", "array<short>", options, _description),
+                createOptionalAttrDef("attr14", "array<int>", options, _description),
+                createOptionalAttrDef("attr15", "array<long>", options, _description),
+                createOptionalAttrDef("attr16", "array<float>", options, _description),
+                createOptionalAttrDef("attr17", "array<double>", options, _description),
+                createOptionalAttrDef("attr18", "array<string>", options, _description),
+                createOptionalAttrDef("attr19", "array<date>", options, _description),
+                createOptionalAttrDef("attr20", "array<ENUM_1>", options, _description));
+
+        AtlasTypesDef ret = AtlasTypeUtil.getTypesDef(new ArrayList<>(),
+                new ArrayList<>(), new ArrayList<>(),
+                new ArrayList<>(), new ArrayList<>(),
+                Arrays.asList(bmNoApplicableTypes, bmNoAttributes, bmWithAllTypes, bmWithAllTypesMV));
+
+        populateSystemAttributes(ret);
+
+        return ret;
     }
 
     public static AtlasTypesDef defineHiveTypes() {
@@ -786,7 +865,7 @@ public final class TestUtilsV2 {
                         createUniqueRequiredAttrDef("name", "string"),
                         createOptionalAttrDef("description", "string"),
                         createRequiredAttrDef("type", "string"),
-                        createOptionalAttrDef("created", "date"),
+                        createOptionalAttrDef("created", "string"),
                         // enum
                         new AtlasAttributeDef("tableType", "tableType", false,
                                 SINGLE, 1, 1,
@@ -1451,6 +1530,7 @@ public final class TestUtilsV2 {
         populateSystemAttributes(typesDef.getClassificationDefs());
         populateSystemAttributes(typesDef.getEntityDefs());
         populateSystemAttributes(typesDef.getRelationshipDefs());
+        populateSystemAttributes(typesDef.getBusinessMetadataDefs());
     }
 
     public static void populateSystemAttributes(List<? extends AtlasBaseTypeDef> typeDefs) {

@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,20 +31,23 @@ import java.util.Collections;
 public class SuggestionsProviderImpl implements SuggestionsProvider {
     private static final Logger LOG = LoggerFactory.getLogger(SuggestionsProviderImpl.class);
 
-    private final AtlasGraph graph;
+    private final AtlasGraph        graph;
+    private final AtlasTypeRegistry typeRegistry;
 
-    public SuggestionsProviderImpl(AtlasGraph graph) {
-        this.graph = graph;
+    public SuggestionsProviderImpl(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
+        this.graph        = graph;
+        this.typeRegistry = typeRegistry;
     }
 
     @Override
-    public AtlasSuggestionsResult getSuggestions(String prefixString) {
-        AtlasSuggestionsResult result = new AtlasSuggestionsResult(prefixString);
+    public AtlasSuggestionsResult getSuggestions(String prefixString, String fieldName) {
+        AtlasSuggestionsResult result = new AtlasSuggestionsResult(prefixString, fieldName);
 
         try {
             AtlasGraphIndexClient graphIndexClient = graph.getGraphIndexClient();
+            String                indexFieldName   = (fieldName == null) ? null : typeRegistry.getIndexFieldName(fieldName);
 
-            result.setSuggestions(graphIndexClient.getSuggestions(prefixString));
+            result.setSuggestions(graphIndexClient.getSuggestions(prefixString, indexFieldName));
         } catch (AtlasException e) {
             LOG.error("Error encountered in performing quick suggestions. Will return no suggestions.", e);
 

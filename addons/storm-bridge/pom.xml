@@ -48,11 +48,6 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>hdfs-model</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>hive-bridge</artifactId>
         </dependency>
 
@@ -231,11 +226,6 @@
                                         <artifactItem>
                                             <groupId>${project.groupId}</groupId>
                                             <artifactId>atlas-common</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>hdfs-model</artifactId>
                                             <version>${project.version}</version>
                                         </artifactItem>
                                         <artifactItem>

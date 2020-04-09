@@ -227,12 +227,12 @@ define(['require',
                                 _.extend(this.query[this.type], temp);
                             } else if (isBasicSearch) {
                                 // Initial loading handle.
-                                if (filterType) {
-                                    var filterObj = this.searchTableFilters[filterType];
-                                    if (filterObj && this.value[key]) {
-                                        this.searchTableFilters[filterType][this.value[key]] = this.value[filterType] ? this.value[filterType] : null;
-                                    }
-                                }
+                                // if (filterType) {
+                                //     var filterObj = this.searchTableFilters[filterType];
+                                //     if (filterObj && this.value[key]) {
+                                //         this.searchTableFilters[filterType][this.value[key]] = this.value[filterType] ? this.value[filterType] : null;
+                                //     }
+                                // }
 
                                 if (this.value.type) {
                                     if (this.value.attributes) {
@@ -487,6 +487,7 @@ define(['require',
                     placeholder: "Select Type",
                     dropdownAdapter: $.fn.select2.amd.require("ServiceTypeFilterDropdownAdapter"),
                     allowClear: true,
+                    dropdownCssClass: "searchLayoutView",
                     getFilterBox: this.getFilterBox.bind(this),
                     onFilterSubmit: function(options) {
                         that.filterTypeSelected = options.filterVal;

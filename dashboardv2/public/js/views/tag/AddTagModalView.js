@@ -125,6 +125,7 @@ define(['require',
                     cancelText: "Cancel",
                     mainClass: 'modal-lg',
                     allowCancel: true,
+                    okCloses: false
                 };
             if (this.tagModel) {
                 modalObj.title = 'Edit Classification';
@@ -134,6 +135,7 @@ define(['require',
             this.modal.open();
             this.modal.$el.find('button.ok').attr("disabled", true);
             this.on('ok', function() {
+                that.modal.$el.find('button.ok').showButtonLoader();
                 var tagName = this.tagModel ? this.tagModel.typeName : this.ui.addTagOptions.val(),
                     tagAttributes = {},
                     tagAttributeNames = this.$(".attrName"),
@@ -439,9 +441,9 @@ define(['require',
                 this.showLoader();
             }
             this.entityModel.saveTraitsEntity(this.tagModel ? options.guid : null, {
-                skipDefaultError: true,
                 data: JSON.stringify(json),
                 type: this.tagModel ? 'PUT' : 'POST',
+                defaultErrorMessage: "Tag " + tagName + " could not be added",
                 success: function(data) {
                     var addupdatetext = that.tagModel ? 'updated successfully to ' : 'added to ';
                     Utils.notifySuccess({
@@ -453,15 +455,10 @@ define(['require',
                     if (that.callback) {
                         that.callback();
                     }
+                    that.modal.close();
                 },
                 cust_error: function(model, response) {
-                    var message = "Tag " + tagName + " could not be added";
-                    if (response && response.responseJSON) {
-                        message = response.responseJSON.errorMessage;
-                    }
-                    Utils.notifyError({
-                        content: message
-                    });
+                    that.modal.$el.find('button.ok').hideButtonLoader();
                     if (that.hideLoader) {
                         that.hideLoader();
                     }

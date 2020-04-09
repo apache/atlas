@@ -26,23 +26,23 @@
         </div>
         <div class="panel-actions">
             <div class="pretty p-switch p-fill" style="margin-right: 20px">
-                <input type="checkbox" data-id="noValueToggle" title="Show Empty Values"/>
+                <input type="checkbox" data-id="noValueToggle" title="Show Empty Values" />
                 <div class="state p-primary">
                     <label></label>
                 </div>
             </div>
             {{#ifCond editEntity "===" true}}
-                <button data-id="editButton" title="Edit Entity" class="btn btn-action btn-sm pull-right">Edit</button>
+            <button data-id="editButton" title="Edit Entity" class="btn btn-action btn-sm pull-right">Edit</button>
             {{/ifCond}}
         </div>
         <div id="collapse1" class="panel-collapse collapse in">
             <div class="panel-body">
-                    <div class="entity-detail-table">
-                        <table class="table">
-                            <tbody data-id="detailValue" class="hide-empty-value">
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="entity-detail-table">
+                    <table class="table">
+                        <tbody data-id="detailValue" class="hide-empty-value">
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

@@ -176,6 +176,7 @@ require.config({
         'table-dragger': 'libs/table-dragger/table-dragger',
         'jstree': 'libs/jstree/jstree.min',
         'jquery-steps': 'libs/jquery-steps/jquery.steps.min',
+        'dropzone': 'libs/dropzone/js/dropzone-amd-module'
     },
 
     /**
@@ -195,13 +196,14 @@ require(['App',
     'utils/UrlLinks',
     'collection/VEntityList',
     'collection/VTagList',
+    'utils/Enums',
     'utils/Overrides',
     'bootstrap',
     'd3',
     'select2'
-], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList) {
+], function(App, Router, Helper, CommonViewFunction, Globals, UrlLinks, VEntityList, VTagList, Enums) {
     var that = this;
-    this.asyncFetchCounter = 6;
+    this.asyncFetchCounter = 6 + (Enums.addOnEntities.length + 1);
     this.entityDefCollection = new VEntityList();
     this.entityDefCollection.url = UrlLinks.entitiesDefApiUrl();
     this.typeHeaders = new VTagList();
@@ -251,13 +253,15 @@ require(['App',
                         }
                     }
                 }
+                if (response['atlas.ui.default.version'] !== undefined) {
+                    Globals.DEFAULT_UI = response['atlas.ui.default.version'];
+                }
             }
             --that.asyncFetchCounter;
             startApp();
         }
     });
     this.entityDefCollection.fetch({
-        skipDefaultError: true,
         complete: function() {
             that.entityDefCollection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
@@ -268,7 +272,6 @@ require(['App',
         }
     });
     this.typeHeaders.fetch({
-        skipDefaultError: true,
         complete: function() {
             that.typeHeaders.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
@@ -279,7 +282,6 @@ require(['App',
         }
     });
     this.enumDefCollection.fetch({
-        skipDefaultError: true,
         complete: function() {
             that.enumDefCollection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
@@ -290,7 +292,6 @@ require(['App',
         }
     });
     this.classificationDefCollection.fetch({
-        skipDefaultError: true,
         complete: function() {
             that.classificationDefCollection.fullCollection.comparator = function(model) {
                 return model.get('name').toLowerCase();
@@ -302,8 +303,27 @@ require(['App',
     });
 
     this.metricCollection.fetch({
-        skipDefaultError: true,
         complete: function() {
+            --that.asyncFetchCounter;
+            startApp();
+        }
+    });
+
+    Enums.addOnEntities.forEach(function(addOnEntity) {
+        CommonViewFunction.fetchRootEntityAttributes({
+            url: UrlLinks.rootEntityDefUrl(addOnEntity),
+            entity: addOnEntity,
+            callback: function() {
+                --that.asyncFetchCounter;
+                startApp();
+            }
+        });
+    });
+
+    CommonViewFunction.fetchRootClassificationAttributes({
+        url: UrlLinks.rootClassificationDefUrl(Enums.addOnClassification[0]),
+        classification: Enums.addOnClassification[0],
+        callback: function() {
             --that.asyncFetchCounter;
             startApp();
         }

@@ -306,6 +306,34 @@
       ]
     },
     {
+      "name": "spark_application",
+      "superTypes": [
+        "Process"
+      ],
+      "serviceType": "spark",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "currentUser",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "isUnique": false,
+          "isIndexable": true,
+          "searchWeight": 10
+        },
+        {
+          "name": "remoteUser",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "isUnique": false,
+          "isIndexable": true,
+          "searchWeight": 10
+        }
+      ]
+    },
+    {
       "name": "spark_process",
       "superTypes": [
         "Process"
@@ -357,6 +385,14 @@
           "isIndexable": false
         }
       ]
+    },
+    {
+      "name" : "spark_column_lineage",
+      "superTypes" : [
+        "Process"
+      ],
+      "serviceType": "spark",
+      "typeVersion" : "1.0"
     },
     {
       "name": "spark_ml_pipeline",
@@ -467,6 +503,77 @@
         "type": "spark_ml_directory",
         "name": "pipeline",
         "isContainer": false,
+        "cardinality": "SINGLE"
+      },
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "spark_process_column_lineages",
+      "serviceType": "spark",
+      "typeVersion": "1.0",
+      "relationshipCategory": "AGGREGATION",
+      "endDef1": {
+        "type": "spark_column_lineage",
+        "name": "process",
+        "isContainer": false,
+        "cardinality": "SINGLE"
+      },
+      "endDef2": {
+        "type": "spark_process",
+        "name": "columnLineages",
+        "isContainer": true,
+        "cardinality": "SET"
+      },
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "spark_application_processes",
+      "serviceType": "spark",
+      "typeVersion": "1.0",
+      "relationshipCategory": "AGGREGATION",
+      "endDef1": {
+        "type": "spark_application",
+        "name": "processes",
+        "cardinality": "SET",
+        "isContainer": true
+      },
+      "endDef2": {
+        "type": "spark_process",
+        "name": "application",
+        "cardinality": "SINGLE"
+      },
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "spark_ml_model_dataset",
+      "serviceType": "spark",
+      "typeVersion": "1.0",
+      "relationshipCategory": "ASSOCIATION",
+      "endDef1": {
+        "type": "spark_ml_model",
+        "name": "dataset",
+        "cardinality": "SINGLE"
+      },
+      "endDef2": {
+        "type": "DataSet",
+        "name": "model",
+        "cardinality": "SINGLE"
+      },
+      "propagateTags": "NONE"
+    },
+    {
+      "name": "spark_ml_pipeline_dataset",
+      "serviceType": "spark",
+      "typeVersion": "1.0",
+      "relationshipCategory": "ASSOCIATION",
+      "endDef1": {
+        "type": "spark_ml_pipeline",
+        "name": "dataset",
+        "cardinality": "SINGLE"
+      },
+      "endDef2": {
+        "type": "DataSet",
+        "name": "pipeline",
         "cardinality": "SINGLE"
       },
       "propagateTags": "NONE"

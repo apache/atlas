@@ -88,9 +88,7 @@ define(["require",
                 var that = this;
                 $("body").on("click", function(e) {
                     if (!that.isDestroyed && that.$(e.target).data("id") !== "detailSearch") {
-                        if ($(e.target).hasClass("modal") || $(e.target).parents(".modal-backdrop").length != 0 || $(e.target).parents(".modal").length != 0) {
-                            // console.log("modal");
-                        } else if ($(e.target).parents(".searchLayoutView").length === 0 && that.ui.searchLayoutView.hasClass("open")) {
+                        if ($(e.target).parents(".searchLayoutView").length === 0 && that.ui.searchLayoutView.hasClass("open")) {
                             that.ui.searchLayoutView.removeClass("open");
                         }
                     }
@@ -304,7 +302,7 @@ define(["require",
                                             var span = $("<span>" + getHighlightedTerm(item.itemText) + "</span>").prepend(img);
                                             li = $("<li class='with-icon'>").append(span);
                                         } else {
-                                            li = $("<li>").append("<span>" + getHighlightedTerm(item) + "</span>");
+                                            li = $("<li>").append("<span>" + getHighlightedTerm(_.escape(item)) + "</span>");
                                         }
                                         li.data("ui-autocomplete-item", item);
                                         if (searchItem.category) {

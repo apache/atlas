@@ -36,6 +36,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.web.rest.EntityREST;
+import org.apache.commons.lang.time.DateUtils;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -46,12 +47,7 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Guice(modules = {TestModules.TestOnlyModule.class})
 public class TestEntityREST {
@@ -72,6 +68,10 @@ public class TestEntityREST {
     public void setUp() throws Exception {
         AtlasTypesDef typesDef = TestUtilsV2.defineHiveTypes();
         typeStore.createTypesDef(typesDef);
+        AtlasTypesDef enumDef =  TestUtilsV2.defineEnumTypes();
+        typeStore.createTypesDef(enumDef);
+        AtlasTypesDef metadataDef = TestUtilsV2.defineBusinessMetadataTypes();
+        typeStore.createTypesDef(metadataDef);
     }
 
     @AfterClass
@@ -108,6 +108,55 @@ public class TestEntityREST {
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.getEntity());
         TestEntitiesREST.verifyAttributes(response.getEntity().getAttributes(), dbEntity.getAttributes());
+    }
+
+    @Test
+    public void testGetEntityHeaderByUniqueAttributes() throws Exception {
+        createTestEntity();
+
+        String[] attrVal = {String.valueOf(dbEntity.getAttribute("name"))};
+
+        Map<String, String[]> paramMap = new HashMap<>();
+        paramMap.put("attr:name", attrVal);
+
+        HttpServletRequest mockRequest = Mockito.mock(HttpServletRequest.class);
+        Mockito.when(mockRequest.getParameterMap()).thenReturn(paramMap);
+
+        AtlasEntityHeader response = entityREST.getEntityHeaderByUniqueAttributes(dbEntity.getTypeName(), mockRequest);
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(dbEntity.getAttribute("name"), response.getAttribute("name"));
+        Assert.assertEquals(dbEntity.getAttribute("description"), response.getAttribute("description"));
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testGetEntityHeaderByUniqueAttributes_2() throws Exception {
+        createTestEntity();
+
+        String[] attrVal = {String.valueOf(dbEntity.getAttribute("name") + "_2")};
+
+        Map<String, String[]> paramMap = new HashMap<>();
+        paramMap.put("attr:name", attrVal);
+
+        HttpServletRequest mockRequest = Mockito.mock(HttpServletRequest.class);
+        Mockito.when(mockRequest.getParameterMap()).thenReturn(paramMap);
+
+        entityREST.getEntityHeaderByUniqueAttributes(dbEntity.getTypeName(), mockRequest);
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testGetEntityHeaderByUniqueAttributes_3() throws Exception {
+        createTestEntity();
+
+        String[] attrVal = {String.valueOf(dbEntity.getAttribute("description"))};
+
+        Map<String, String[]> paramMap = new HashMap<>();
+        paramMap.put("attr:description", attrVal);
+
+        HttpServletRequest mockRequest = Mockito.mock(HttpServletRequest.class);
+        Mockito.when(mockRequest.getParameterMap()).thenReturn(paramMap);
+
+        entityREST.getEntityHeaderByUniqueAttributes(dbEntity.getTypeName(), mockRequest);
     }
 
     @Test(dependsOnMethods = "testGetEntityById")
@@ -419,4 +468,256 @@ public class TestEntityREST {
     private void deleteClassification(String guid, String classificationName) throws AtlasBaseException {
         entityREST.deleteClassification(guid, classificationName, null);
     }
+
+    private Map<String, Map<String, Object>> populateBusinessMetadataAttributeMap(Map<String, Map<String, Object>> bmAttrMapReq) {
+        if (bmAttrMapReq == null) {
+            bmAttrMapReq = new HashMap<>();
+        }
+        Map<String, Object> attrValueMapReq = new HashMap<>();
+        attrValueMapReq.put("attr1", true);
+        attrValueMapReq.put("attr2", Byte.MAX_VALUE);
+        attrValueMapReq.put("attr3", Short.MAX_VALUE);
+        attrValueMapReq.put("attr4", Integer.MAX_VALUE);
+        attrValueMapReq.put("attr5", Long.MAX_VALUE);
+        attrValueMapReq.put("attr6", Float.MAX_VALUE);
+        attrValueMapReq.put("attr7", Double.MAX_VALUE);
+        attrValueMapReq.put("attr8", "value8");
+        attrValueMapReq.put("attr9", new Date());
+        attrValueMapReq.put("attr10", "USER");
+
+        bmAttrMapReq.put("bmWithAllTypes", attrValueMapReq);
+        return bmAttrMapReq;
+    }
+
+    private Map<String, Map<String, Object>> populateMultivaluedBusinessMetadataAttributeMap(Map<String, Map<String, Object>> bmAttrMapReq) {
+        if (bmAttrMapReq == null) {
+            bmAttrMapReq = new HashMap<>();
+        }
+        Map<String, Object> attrValueMapReq = new HashMap<>();
+
+        List<Boolean> booleanList = new ArrayList<>();
+        booleanList.add(false);
+        booleanList.add(true);
+        attrValueMapReq.put("attr11", booleanList);
+
+
+        List<Byte> byteList = new ArrayList<>();
+        byteList.add(Byte.MIN_VALUE);
+        byteList.add(Byte.MAX_VALUE);
+        attrValueMapReq.put("attr12", byteList);
+
+        List<Short> shortList = new ArrayList<>();
+        shortList.add(Short.MIN_VALUE);
+        shortList.add(Short.MAX_VALUE);
+        attrValueMapReq.put("attr13", shortList);
+
+        List<Integer> integerList = new ArrayList<>();
+        integerList.add(Integer.MIN_VALUE);
+        integerList.add(Integer.MAX_VALUE);
+        attrValueMapReq.put("attr14", integerList);
+
+        List<Long> longList = new ArrayList<>();
+        longList.add(Long.MIN_VALUE);
+        longList.add(Long.MAX_VALUE);
+        attrValueMapReq.put("attr15", longList);
+
+        List<Float> floatList = new ArrayList<>();
+        floatList.add(Float.MIN_VALUE);
+        floatList.add(Float.MAX_VALUE);
+        attrValueMapReq.put("attr16", floatList);
+
+        List<Double> doubleList = new ArrayList<>();
+        doubleList.add(Double.MIN_VALUE);
+        doubleList.add(Double.MAX_VALUE);
+        attrValueMapReq.put("attr17", doubleList);
+
+        List<String> stringList = new ArrayList<>();
+        stringList.add("value-1");
+        stringList.add("value-2");
+        attrValueMapReq.put("attr18", stringList);
+
+        List<Date> dateList = new ArrayList<>();
+        Date date = new Date();
+        dateList.add(date);
+        dateList.add(DateUtils.addDays(date, 2));
+        attrValueMapReq.put("attr19", dateList);
+
+        List<String> enumList = new ArrayList<>();
+        enumList.add("ROLE");
+        enumList.add("GROUP");
+        attrValueMapReq.put("attr20", enumList);
+
+        bmAttrMapReq.put("bmWithAllTypesMV", attrValueMapReq);
+
+        return bmAttrMapReq;
+    }
+
+    @Test
+    public void testAddOrUpdateBusinessMetadataAttributes_1() throws Exception {
+        createTestEntity();
+        Map<String, Map<String, Object>> bmAttrMapReq = populateBusinessMetadataAttributeMap(null);
+        bmAttrMapReq = populateMultivaluedBusinessMetadataAttributeMap(bmAttrMapReq);
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), false, bmAttrMapReq);
+
+        AtlasEntityWithExtInfo entityWithExtInfo = entityREST.getById(dbEntity.getGuid(), false, false);
+        AtlasEntity atlasEntity = entityWithExtInfo.getEntity();
+        Map<String, Map<String, Object>> bmAttrMapRes = atlasEntity.getBusinessAttributes();
+
+        Assert.assertEquals(bmAttrMapReq, bmAttrMapRes);
+    }
+
+    @Test
+    public void testAddOrUpdateBusinessMetadataAttributes_2() throws Exception {
+        createTestEntity();
+
+        Map<String, Map<String, Object>> bmAttrMapReq = populateBusinessMetadataAttributeMap(null);
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), false, bmAttrMapReq);
+
+        bmAttrMapReq = populateMultivaluedBusinessMetadataAttributeMap(null);
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), true, bmAttrMapReq);
+
+        AtlasEntityWithExtInfo entityWithExtInfo = entityREST.getById(dbEntity.getGuid(), false, false);
+        AtlasEntity atlasEntity = entityWithExtInfo.getEntity();
+        Map<String, Map<String, Object>> bmAttrMapRes = atlasEntity.getBusinessAttributes();
+
+        Assert.assertNull(bmAttrMapRes.get("bmWithAllTypes"));
+        Assert.assertNotNull(bmAttrMapRes.get("bmWithAllTypesMV"));
+    }
+
+    @Test
+    public void testAddOrUpdateBusinessMetadataAttributes_3() throws Exception {
+        createTestEntity();
+
+        Map<String, Map<String, Object>> bmAttrMapReq = populateBusinessMetadataAttributeMap(null);
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), false, bmAttrMapReq);
+
+        AtlasEntityWithExtInfo entityWithExtInfo = entityREST.getById(dbEntity.getGuid(), false, false);
+        AtlasEntity atlasEntity = entityWithExtInfo.getEntity();
+        Map<String, Map<String, Object>> bmAttrMapRes = atlasEntity.getBusinessAttributes();
+
+        Assert.assertEquals(bmAttrMapReq, bmAttrMapRes);
+
+        Map<String, Object> attrValueMapReq = new HashMap<>();
+        bmAttrMapReq = new HashMap<>();
+        attrValueMapReq.put("attr8", "value8-updated");
+        bmAttrMapReq.put("bmWithAllTypes", attrValueMapReq);
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), true, bmAttrMapReq);
+
+        entityWithExtInfo = entityREST.getById(dbEntity.getGuid(), false, false);
+        atlasEntity = entityWithExtInfo.getEntity();
+        bmAttrMapRes = atlasEntity.getBusinessAttributes();
+
+        Assert.assertNull(bmAttrMapRes.get("bmWithAllTypes").get("attr1"));
+        Assert.assertNull(bmAttrMapRes.get("bmWithAllTypes").get("attr2"));
+        Assert.assertNull(bmAttrMapRes.get("bmWithAllTypes").get("attr3"));
+        Assert.assertNull(bmAttrMapRes.get("bmWithAllTypes").get("attr4"));
+        Assert.assertNull(bmAttrMapRes.get("bmWithAllTypes").get("attr5"));
+        Assert.assertNull(bmAttrMapRes.get("bmWithAllTypes").get("attr6"));
+        Assert.assertNull(bmAttrMapRes.get("bmWithAllTypes").get("attr7"));
+        Assert.assertNull(bmAttrMapRes.get("bmWithAllTypes").get("attr9"));
+        Assert.assertNull(bmAttrMapRes.get("bmWithAllTypes").get("attr10"));
+        Assert.assertEquals(bmAttrMapRes.get("bmWithAllTypes").get("attr8"), "value8-updated");
+    }
+
+    @Test
+    public void testAddOrUpdateBusinessAttributes_4() throws Exception {
+        createTestEntity();
+
+        Map<String, Map<String, Object>> bmAttrMapReq = populateBusinessMetadataAttributeMap(null);
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), false, bmAttrMapReq);
+
+        AtlasEntityWithExtInfo entityWithExtInfo = entityREST.getById(dbEntity.getGuid(), false, false);
+        AtlasEntity atlasEntity = entityWithExtInfo.getEntity();
+        Map<String, Map<String, Object>> bmAttrMapRes = atlasEntity.getBusinessAttributes();
+
+        Assert.assertEquals(bmAttrMapReq, bmAttrMapRes);
+
+        Map<String, Object> attrValueMapReq_2 = new HashMap<>();
+        Map<String, Map<String, Object>> bmAttrMapReq_2 = new HashMap<>();
+        attrValueMapReq_2.put("attr8", "value8-updated");
+        bmAttrMapReq_2.put("bmWithAllTypes", attrValueMapReq_2);
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), false, bmAttrMapReq_2);
+
+        entityWithExtInfo = entityREST.getById(dbEntity.getGuid(), false, false);
+        atlasEntity = entityWithExtInfo.getEntity();
+        Map<String, Map<String, Object>> bmAttrMapRes_2 = atlasEntity.getBusinessAttributes();
+
+        Assert.assertEquals(bmAttrMapRes.get("bmWithAllTypes").get("attr1"), bmAttrMapRes_2.get("bmWithAllTypes").get("attr1"));
+        Assert.assertEquals(bmAttrMapRes.get("bmWithAllTypes").get("attr2"), bmAttrMapRes_2.get("bmWithAllTypes").get("attr2"));
+        Assert.assertEquals(bmAttrMapRes.get("bmWithAllTypes").get("attr3"), bmAttrMapRes_2.get("bmWithAllTypes").get("attr3"));
+        Assert.assertEquals(bmAttrMapRes.get("bmWithAllTypes").get("attr4"), bmAttrMapRes_2.get("bmWithAllTypes").get("attr4"));
+        Assert.assertEquals(bmAttrMapRes.get("bmWithAllTypes").get("attr5"), bmAttrMapRes_2.get("bmWithAllTypes").get("attr5"));
+        Assert.assertEquals(bmAttrMapRes.get("bmWithAllTypes").get("attr6"), bmAttrMapRes_2.get("bmWithAllTypes").get("attr6"));
+        Assert.assertEquals(bmAttrMapRes.get("bmWithAllTypes").get("attr7"), bmAttrMapRes_2.get("bmWithAllTypes").get("attr7"));
+        Assert.assertEquals(bmAttrMapRes.get("bmWithAllTypes").get("attr9"), bmAttrMapRes_2.get("bmWithAllTypes").get("attr9"));
+        Assert.assertEquals(bmAttrMapRes.get("bmWithAllTypes").get("attr10"), bmAttrMapRes_2.get("bmWithAllTypes").get("attr10"));
+        Assert.assertEquals(bmAttrMapRes_2.get("bmWithAllTypes").get("attr8"), "value8-updated");
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testAddOrUpdateBusinessAttributes_5() throws Exception {
+        createTestEntity();
+
+        Map<String, Map<String, Object>> bmAttrMapReq = new HashMap<>();
+        Map<String, Object> attrValueMapReq = new HashMap<>();
+        attrValueMapReq.put("attr2", "value2");
+        bmAttrMapReq.put("bmWithAllTypes", attrValueMapReq);
+
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), false, bmAttrMapReq);
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testAddOrUpdateBusinessAttributes_6() throws Exception {
+        createTestEntity();
+
+        Map<String, Map<String, Object>> bmAttrMapReq = new HashMap<>();
+        Map<String, Object> attrValueMapReq = new HashMap<>();
+        attrValueMapReq.put("attr14", 14);
+        bmAttrMapReq.put("bmWithAllTypesMV", attrValueMapReq);
+
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), false, bmAttrMapReq);
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testAddOrUpdateBusinessAttributes_7() throws Exception {
+        createTestEntity();
+
+        Map<String, Map<String, Object>> bmAttrMapReq = new HashMap<>();
+        Map<String, Object> attrValueMapReq = new HashMap<>();
+        List<String> stringList = new ArrayList<>();
+        stringList.add("value-1");
+        stringList.add("value-2");
+        attrValueMapReq.put("attr16", stringList);
+        bmAttrMapReq.put("bmWithAllTypesMV", attrValueMapReq);
+
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), false, bmAttrMapReq);
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testAddOrUpdateBusinessAttributes_8() throws Exception {
+        createTestEntity();
+
+        Map<String, Map<String, Object>> bmAttrMapReq = new HashMap<>();
+        Map<String, Object> attrValueMapReq = new HashMap<>();
+        attrValueMapReq.put("attr10", "USER123");
+        bmAttrMapReq.put("bmWithAllTypes", attrValueMapReq);
+
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), false, bmAttrMapReq);
+    }
+
+    @Test(expectedExceptions = AtlasBaseException.class)
+    public void testAddOrUpdateBusinessAttributes_9() throws Exception {
+        createTestEntity();
+
+        Map<String, Map<String, Object>> bmAttrMapReq = new HashMap<>();
+        Map<String, Object> attrValueMapReq = new HashMap<>();
+        List<String> stringList = new ArrayList<>();
+        stringList.add("USER123");
+        stringList.add("ROLE123");
+        attrValueMapReq.put("attr20", stringList);
+        bmAttrMapReq.put("bmWithAllTypesMV", attrValueMapReq);
+
+        entityREST.addOrUpdateBusinessAttributes(dbEntity.getGuid(), false, bmAttrMapReq);
+    }
+
 }

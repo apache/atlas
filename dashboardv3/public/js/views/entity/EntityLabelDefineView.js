@@ -23,8 +23,9 @@ define(['require',
     'utils/Utils',
     'utils/Messages',
     'utils/Enums',
+    'utils/UrlLinks',
     'utils/CommonViewFunction',
-], function(require, Backbone, EntityLabelDefineView_tmpl, VEntity, Utils, Messages, Enums, CommonViewFunction) {
+], function(require, Backbone, EntityLabelDefineView_tmpl, VEntity, Utils, Messages, Enums, UrlLinks, CommonViewFunction) {
     'use strict';
 
     return Backbone.Marionette.LayoutView.extend({
@@ -54,7 +55,7 @@ define(['require',
         },
         initialize: function(options) {
             var self = this;
-            _.extend(this, _.pick(options, 'entity', 'customFilter'));
+            _.extend(this, _.pick(options, 'entity', 'customFilter', 'renderAuditTableLayoutView'));
             this.swapItem = false, this.saveLabels = false;
             this.readOnlyEntity = this.customFilter === undefined ? Enums.entityStateReadOnly[this.entity.status] : this.customFilter;
             this.entityModel = new VEntity(this.entity);
@@ -72,16 +73,49 @@ define(['require',
                     return "<option selected > " + label + " </option>";
                 });
             this.ui.addLabelOptions.html(str);
+            var getLabelData = function(data, selectedData) {
+                if (data.suggestions.length) {
+                    return _.map(data.suggestions, function(name, index) {
+                        var findValue = _.find(selectedData, { id: name })
+                        if (findValue) {
+                            return findValue;
+                        } else {
+                            return {
+                                id: name,
+                                text: name
+                            }
+                        }
+                    });
+                } else {
+                    var findValue = _.find(selectedData, { id: data.prefixString })
+                    return findValue ? [findValue] : [];
+                }
+            };
             this.ui.addLabelOptions.select2({
                 placeholder: "Select Label",
                 allowClear: false,
                 tags: true,
                 multiple: true,
-                matcher: function(params, data) {
-                    if (params.term === data.text) {
-                        return data;
+                ajax: {
+                    url: UrlLinks.searchApiUrl('suggestions'),
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            prefixString: _.escape(params.term), // search term
+                            fieldName: '__labels'
+                        };
+                    },
+                    processResults: function(data, params) {
+                        return { results: getLabelData(data, this.$element.select2("data")) };
+                    },
+                    cache: true
+                },
+                createTag: function(data) {
+                    var found = _.find(this.$element.select2("data"), { id: data.term });
+                    if (!found) {
+                        return { id: data.term, text: data.term };
                     }
-                    return null;
                 },
                 templateResult: this.formatResultSearch
             });
@@ -91,7 +125,7 @@ define(['require',
                 return state.text;
             }
             if (!state.element) {
-                return $("<span>Add<strong> '" + state.text + "'</strong></span>");
+                return $("<span>Add<strong> '" + _.escape(state.text) + "'</strong></span>");
             }
         },
         onChangeLabelChange: function() {
@@ -130,6 +164,9 @@ define(['require',
                         that.swapItem = false;
                         that.saveLabels = false;
                         that.render();
+                        if (that.renderAuditTableLayoutView) {
+                            that.renderAuditTableLayoutView();
+                        }
                     },
                     error: function(e) {
                         that.ui.saveLabels.attr("disabled", false);

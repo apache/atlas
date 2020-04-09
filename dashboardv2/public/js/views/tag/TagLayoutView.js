@@ -47,7 +47,9 @@ define(['require',
                 treeLov: "[data-id='treeLov']",
                 refreshTag: '[data-id="refreshTag"]',
                 tagView: 'input[name="tagView"]',
-                expandArrow: '[data-id="expandArrow"]'
+                expandArrow: '[data-id="expandArrow"]',
+                tagTreeLoader: '[data-id="tagTreeLoader"]',
+                tagTreeView: '[data-id="tagTreeView"]'
             },
             /** ui events hash */
             events: function() {
@@ -96,10 +98,22 @@ define(['require',
             },
             onRender: function() {
                 var that = this;
+                this.changeLoaderState(true);
                 this.bindEvents();
                 this.tagsGenerator();
             },
+            changeLoaderState: function(showLoader) {
+                if (showLoader) {
+                    this.ui.tagTreeLoader.show();
+                    this.ui.tagTreeView.hide();
+                } else {
+                    this.ui.tagTreeLoader.hide();
+                    this.ui.tagTreeView.show();
+                }
+            },
             fetchCollections: function() {
+                this.changeLoaderState(true);
+                this.ui.refreshTag.attr("disabled", true);
                 this.collection.fetch({ reset: true });
                 this.ui.offLineSearchTag.val("");
             },
@@ -229,7 +243,10 @@ define(['require',
                     if (this.createTag) {
                         this.createTag = false;
                     }
+
                 }
+                this.changeLoaderState(false);
+                this.ui.refreshTag.attr("disabled", false);
             },
             getTagTreeList: function(options) {
                 var that = this,
@@ -276,7 +293,7 @@ define(['require',
                         return '<li class="parent-node" data-id="tags">' +
                             '<div><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div>' +
                             (hasChild ? '<i class="fa toggleArrow fa-angle-right" data-id="expandArrow" data-name="' + name + '"></i>' : '') +
-                            '<a href="#!/tag/tagAttribute/' + name + '?viewType=' + (isTree ? 'tree' : 'flat') + '"  data-name="' + name + '">' + name + '</a></div>' +
+                            '<a href="#!/tag/tagAttribute/' + name + '?viewType=' + (isTree ? 'tree' : 'flat') + '&searchType=basic"  data-name="' + name + '">' + name + '</a></div>' +
                             (isTree && hasChild ? '<ul class="child hide">' + that.generateTree({ 'data': options.children, 'isTree': isTree }) + '</ul>' : '') + '</li>';
                     };
                 if (isTree) {
@@ -373,7 +390,8 @@ define(['require',
                         });
                     });
                     modal.on('ok', function() {
-                        modal.$el.find('button.ok').attr("disabled", "true");
+                        // modal.$el.find('button.ok').attr("disabled", "true");
+                        modal.$el.find('button.ok').showButtonLoader();
                         that.onCreateButton(view, modal);
                     });
                     modal.on('closeModal', function() {
@@ -401,9 +419,9 @@ define(['require',
                     Utils.notifyInfo({
                         content: "Please fill the attributes or delete the input box"
                     });
+                    modal.$el.find('button.ok').hideButtonLoader();
                     return;
                 }
-
                 this.name = ref.ui.tagName.val();
                 this.description = ref.ui.description.val();
                 var superTypes = [];
@@ -459,6 +477,7 @@ define(['require',
                         }
                         notifyObj['text'] = text;
                         Utils.notifyConfirm(notifyObj);
+                        modal.$el.find('button.ok').hideButtonLoader();
                         return false;
                     }
                 }
@@ -476,6 +495,7 @@ define(['require',
                 };
                 new this.collection.model().set(this.json).save(null, {
                     success: function(model, response) {
+                        that.changeLoaderState(true);
                         var classificationDefs = model.get('classificationDefs');
                         that.ui.createTag.removeAttr("disabled");
                         that.createTag = true;
@@ -496,7 +516,12 @@ define(['require',
                             content: "Classification " + that.name + Messages.getAbbreviationMsg(false, 'addSuccessMessage')
                         });
                         modal.trigger('cancel');
+                        modal.$el.find('button.ok').hideButtonLoader();
+                        that.changeLoaderState(false);
                         that.typeHeaders.fetch({ reset: true });
+                    },
+                    complete: function() {
+                        modal.$el.find("button.ok").hideButtonLoader();
                     }
                 });
             },
@@ -570,6 +595,7 @@ define(['require',
             onNotifyOk: function(data) {
                 var that = this,
                     deleteTagData = this.collection.fullCollection.findWhere({ name: this.tag });
+                that.changeLoaderState(true);
                 deleteTagData.deleteTag({
                     typeName: that.tag,
                     success: function() {

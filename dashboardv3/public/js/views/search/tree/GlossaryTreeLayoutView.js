@@ -37,25 +37,31 @@ define([
             refreshTree: '[data-id="refreshTree"]',
             termSearchTree: '[data-id="termSearchTree"]',
             createGlossary: '[data-id="createGlossary"]',
-            showGlossaryType: '[data-id="showGlossaryType"]'
+            showGlossaryType: '[data-id="showGlossaryType"]',
+            importGlossary: "[data-id='importGlossary']",
+            downloadTemplate: "[data-id='downloadTemplate']",
+            glossaryTreeLoader: ".glossary-tree-loader"
         },
         templateHelpers: function() {
             return {
-                apiBaseUrl: UrlLinks.apiBaseUrl
+                apiBaseUrl: UrlLinks.apiBaseUrl,
+                importTmplUrl: UrlLinks.glossaryImportTempUrl()
             };
         },
         events: function() {
             var events = {},
                 that = this;
             events["click " + this.ui.refreshTree] = function(e) {
+                that.changeLoaderState(true);
+                that.ui.refreshTree.attr("disabled", true).tooltip("hide");
                 var type = $(e.currentTarget).data("type");
                 e.stopPropagation();
                 that.refresh({ type: type });
-
             };
 
             events["click " + this.ui.createGlossary] = function(e) {
                 var that = this;
+                e.stopPropagation();
                 CommonViewFunction.createEditGlossaryCategoryTerm({
                     isGlossaryView: true,
                     collection: that.glossaryCollection,
@@ -72,6 +78,13 @@ define([
                 this.isTermView = !this.isTermView;
                 this.glossarySwitchBtnUpdate();
             };
+            events["click " + this.ui.importGlossary] = function(e) {
+                e.stopPropagation();
+                that.onClickImportGlossary();
+            };
+            events['click ' + this.ui.downloadTemplate] = function(e) {
+                e.stopPropagation();
+            };
             return events;
         },
         bindEvents: function() {
@@ -84,6 +97,8 @@ define([
                     } else {
                         this.renderGlossaryTree();
                     }
+                    that.changeLoaderState();
+                    that.ui.refreshTree.attr("disabled", false);
                 },
                 this
             );
@@ -132,9 +147,18 @@ define([
             this.bindEvents();
         },
         onRender: function() {
+            this.changeLoaderState(true);
             this.fetchGlossary();
         },
-
+        changeLoaderState: function(showLoader) {
+            if (showLoader) {
+                this.ui.termSearchTree.hide();
+                this.ui.glossaryTreeLoader.show();
+            } else {
+                this.ui.termSearchTree.show();
+                this.ui.glossaryTreeLoader.hide();
+            }
+        },
         onBeforeDestroy: function() {
             this.options.categoryEvent.off("Success:TermRename")
         },
@@ -580,7 +604,8 @@ define([
                     gId: glossaryId,
                     guid: getSelectedParent,
                     gType: that.isTermView ? 'term' : 'category',
-                    viewType: that.isTermView ? 'term' : 'category'
+                    viewType: that.isTermView ? 'term' : 'category',
+                    searchType: "basic"
                 }
                 var serachUrl = '#!/glossary/' + guid;
                 this.triggerSearch(params, serachUrl);
@@ -664,12 +689,14 @@ define([
                     var aTerm = that.$("#" + str.node.a_attr.id),
                         termOffset = aTerm.find(">.jstree-icon").offset();
                     that.$(".tree-tooltip").removeClass("show");
-                    if (termOffset.top && termOffset.left) {
-                        aTerm.find(">span.tree-tooltip").css({
-                            top: "calc(" + termOffset.top + "px - 45px)",
-                            left: "24px"
-                        }).addClass("show");
-                    }
+                    setTimeout(function() {
+                        if (aTerm.hasClass("jstree-hovered") && termOffset.top && termOffset.left) {
+                            aTerm.find(">span.tree-tooltip").css({
+                                top: "calc(" + termOffset.top + "px - 45px)",
+                                left: "24px"
+                            }).addClass("show");
+                        }
+                    }, 1200);
                 }).on("dehover_node.jstree", function(nodes, str, res) {
                     that.$(".tree-tooltip").removeClass("show");
                 });
@@ -680,6 +707,18 @@ define([
         refresh: function(options) {
             this.glossaryTermId = null;
             this.fetchGlossary();
+        },
+        onClickImportGlossary: function() {
+            var that = this;
+            require([
+                'views/glossary/ImportGlossaryLayoutView'
+            ], function(ImportGlossaryLayoutView) {
+                var view = new ImportGlossaryLayoutView({
+                    callback: function() {
+                        that.refresh();
+                    }
+                });
+            });
         }
     });
     return GlossaryTreeLayoutView;

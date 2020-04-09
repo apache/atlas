@@ -89,11 +89,12 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Date    updateTime     = null;
     private Long    version        = 0L;
 
-    private Map<String, Object>             relationshipAttributes;
-    private List<AtlasClassification>       classifications;
-    private List<AtlasTermAssignmentHeader> meanings;
-    private Map<String, String>             customAttributes;
-    private Set<String>                     labels;
+    private Map<String, Object>              relationshipAttributes;
+    private List<AtlasClassification>        classifications;
+    private List<AtlasTermAssignmentHeader>  meanings;
+    private Map<String, String>              customAttributes;
+    private Map<String, Map<String, Object>> businessAttributes;
+    private Set<String>                      labels;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -217,6 +218,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setRelationshipAttributes(other.getRelationshipAttributes());
             setMeanings(other.getMeanings());
             setCustomAttributes(other.getCustomAttributes());
+            setBusinessAttributes(other.getBusinessAttributes());
             setLabels(other.getLabels());
         }
     }
@@ -348,6 +350,41 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.customAttributes = customAttributes;
     }
 
+    public Map<String, Map<String, Object>> getBusinessAttributes() {
+        return businessAttributes;
+    }
+
+    public void setBusinessAttributes(Map<String, Map<String, Object>> businessAttributes) {
+        this.businessAttributes = businessAttributes;
+    }
+
+    public void setBusinessAttribute(String nsName, String nsAttrName, Object nsValue) {
+        Map<String, Map<String, Object>> businessAttributes = this.businessAttributes;
+
+        if (businessAttributes == null) {
+            businessAttributes = new HashMap<>();
+
+            this.businessAttributes = businessAttributes;
+        }
+
+        Map<String, Object> businessAttributeMap = businessAttributes.get(nsName);
+
+        if (businessAttributeMap == null) {
+            businessAttributeMap = new HashMap<>();
+
+            businessAttributes.put(nsName, businessAttributeMap);
+        }
+
+        businessAttributeMap.put(nsAttrName, nsValue);
+    }
+
+    public Object getBusinessAttribute(String bmName, String bmAttrName) {
+        Map<String, Map<String, Object>> businessAttributes   = this.businessAttributes;
+        Map<String, Object>              businessAttributeMap = businessAttributes == null ? null : businessAttributes.get(bmName);
+
+        return businessAttributeMap == null ? null : businessAttributeMap.get(bmAttrName);
+    }
+
     public Set<String> getLabels() {
         return labels;
     }
@@ -404,6 +441,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setClassifications(null);
         setMeanings(null);
         setCustomAttributes(null);
+        setBusinessAttributes(null);
         setLabels(null);
     }
 
@@ -442,6 +480,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append(", customAttributes=[");
         dumpObjects(customAttributes, sb);
         sb.append("]");
+        sb.append(", businessAttributes=[");
+        dumpObjects(businessAttributes, sb);
+        sb.append("]");
         sb.append(", labels=[");
         dumpObjects(labels, sb);
         sb.append("]");
@@ -470,14 +511,15 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                 Objects.equals(version, that.version) &&
                 Objects.equals(relationshipAttributes, that.relationshipAttributes) &&
                 Objects.equals(customAttributes, that.customAttributes) &&
+                Objects.equals(businessAttributes, that.businessAttributes) &&
                 Objects.equals(labels, that.labels) &&
                 Objects.equals(classifications, that.classifications);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, homeId, isProxy, isIncomplete, provenanceType, status, createdBy,
-                updatedBy, createTime, updateTime, version, relationshipAttributes, classifications, customAttributes, labels);
+        return Objects.hash(super.hashCode(), guid, homeId, isProxy, isIncomplete, provenanceType, status, createdBy, updatedBy,
+                createTime, updateTime, version, relationshipAttributes, classifications, customAttributes, businessAttributes, labels);
     }
 
     @Override

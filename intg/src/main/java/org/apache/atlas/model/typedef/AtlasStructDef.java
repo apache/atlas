@@ -263,10 +263,11 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public static final int       DEFAULT_SEARCHWEIGHT          = -1;
 
 
-        public static final String    SEARCH_WEIGHT_ATTR_NAME       = "searchWeight";
-        public static final String    INDEX_TYPE_ATTR_NAME          = "indexType";
-        public static final String    ATTRDEF_OPTION_SOFT_REFERENCE = "isSoftReference";
-        private final String          STRING_TRUE                   = "true";
+        public static final String    SEARCH_WEIGHT_ATTR_NAME                 = "searchWeight";
+        public static final String    INDEX_TYPE_ATTR_NAME                    = "indexType";
+        public static final String    ATTRDEF_OPTION_SOFT_REFERENCE           = "isSoftReference";
+        public static final String    ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE = "isAppendOnPartialUpdate";
+        private final String          STRING_TRUE                             = "true";
 
         /**
          * single-valued attribute or multi-valued attribute.
@@ -290,14 +291,24 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private String                   description;
         private int                      searchWeight = DEFAULT_SEARCHWEIGHT;
         private IndexType                indexType    = null;
-
         private List<AtlasConstraintDef> constraints;
         private Map<String, String>      options;
+        private String                   displayName;
 
         public AtlasAttributeDef() { this(null, null); }
 
         public AtlasAttributeDef(String name, String typeName) {
             this(name, typeName, DEFAULT_SEARCHWEIGHT);
+        }
+
+        public AtlasAttributeDef(String name, String typeName, boolean isUnique, boolean isIndexable) {
+            this(name, typeName, false, Cardinality.SINGLE, COUNT_NOT_SET, COUNT_NOT_SET, isUnique, isIndexable,
+                false, null,null, null, null, DEFAULT_SEARCHWEIGHT, null);
+        }
+
+        public AtlasAttributeDef(String name, String typeName, Cardinality cardinality, boolean isUnique, boolean isIndexable) {
+            this(name, typeName, false, cardinality, COUNT_NOT_SET, COUNT_NOT_SET, isUnique, isIndexable,
+                false, null,null, null, null, DEFAULT_SEARCHWEIGHT, null);
         }
 
         public AtlasAttributeDef(String name, String typeName, int searchWeight) {
@@ -363,7 +374,16 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setDescription((other.getDescription()));
                 setSearchWeight(other.getSearchWeight());
                 setIndexType(other.getIndexType());
+                setDisplayName(other.getDisplayName());
             }
+        }
+
+        public void setDisplayName(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
         }
 
         public int getSearchWeight() {
@@ -500,6 +520,29 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     getOptions().get(AtlasAttributeDef.ATTRDEF_OPTION_SOFT_REFERENCE).equals(STRING_TRUE);
         }
 
+        @JsonIgnore
+        public boolean isAppendOnPartialUpdate() {
+            String val = getOption(AtlasAttributeDef.ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE);
+
+            return val != null && Boolean.valueOf(val);
+        }
+
+        @JsonIgnore
+        public void setOption(String name, String value) {
+            if (this.options == null) {
+                this.options = new HashMap<>();
+            }
+
+            this.options.put(name, value);
+        }
+
+        @JsonIgnore
+        public String getOption(String name) {
+            Map<String, String> option = this.options;
+
+            return option != null ? option.get(name) : null;
+        }
+
         public String getDescription() {
             return description;
         }
@@ -528,6 +571,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", options='").append(options).append('\'');
             sb.append(", searchWeight='").append(searchWeight).append('\'');
             sb.append(", indexType='").append(indexType).append('\'');
+            sb.append(", displayName='").append(displayName).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -564,12 +608,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(constraints, that.constraints) &&
                     Objects.equals(options, that.options) &&
                     Objects.equals(searchWeight, that.searchWeight) &&
-                    Objects.equals(indexType, that.indexType);
+                    Objects.equals(indexType, that.indexType) &&
+                    Objects.equals(displayName, that.displayName);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName);
         }
 
         @Override

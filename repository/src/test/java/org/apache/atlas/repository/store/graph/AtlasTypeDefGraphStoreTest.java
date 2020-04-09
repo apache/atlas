@@ -24,7 +24,6 @@ import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
-import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -32,6 +31,8 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.slf4j.Logger;
@@ -692,5 +693,21 @@ public class AtlasTypeDefGraphStoreTest {
       assertFalse(getBackFromCache.getAttributeDefs().get(0).getIsIndexable());
       assertEquals(guid, getBackFromCache.getGuid());
       assertEquals(createdTime, getBackFromCache.getCreateTime());
+    }
+
+    @Test
+    public void testGetOnAllEntityTypes() throws AtlasBaseException {
+        AtlasEntityDef entityDefByName = typeDefStore.getEntityDefByName("_ALL_ENTITY_TYPES");
+
+        assertNotNull(entityDefByName);
+        assertEquals(entityDefByName, AtlasEntityType.getEntityRoot().getEntityDef());
+    }
+
+    @Test
+    public void testGetOnAllClassificationTypes() throws AtlasBaseException {
+        AtlasClassificationDef classificationTypeDef = typeDefStore.getClassificationDefByName("_ALL_CLASSIFICATION_TYPES");
+
+        assertNotNull(classificationTypeDef);
+        assertEquals(classificationTypeDef, AtlasClassificationType.getClassificationRoot().getClassificationDef());
     }
 }

@@ -62,11 +62,6 @@
             <artifactId>atlas-notification</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>hdfs-model</artifactId>
-        </dependency>
-
         <!-- to bring up atlas server for integration tests -->
 
         <dependency>

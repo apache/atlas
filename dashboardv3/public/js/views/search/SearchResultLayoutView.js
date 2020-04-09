@@ -30,8 +30,9 @@ define(['require',
     'utils/Messages',
     'utils/Enums',
     'utils/UrlLinks',
+    'moment',
     'platform'
-], function(require, Backbone, tableDragger, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks, platform) {
+], function(require, Backbone, tableDragger, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks, moment, platform) {
     'use strict';
 
     var SearchResultLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -162,6 +163,7 @@ define(['require',
                 this.multiSelectEntity = [];
                 this.searchType = 'Basic Search';
                 this.columnOrder = null;
+                this.defaultColumns = ["selected", "name", "description", "typeName", "owner", "tag", "term"];
                 if (this.value) {
                     if (this.value.searchType && this.value.searchType == 'dsl') {
                         this.searchType = 'Advanced Search';
@@ -208,12 +210,7 @@ define(['require',
                             });
                         }
                     });
-
-                    if (this.multiSelectEntity.length > 0) {
-                        this.$('.multiSelectTag,.multiSelectTerm').show();
-                    } else {
-                        this.$('.multiSelectTag,.multiSelectTerm').hide();
-                    }
+                    this.updateMultiSelect();
                 });
                 this.listenTo(this.searchCollection, "error", function(model, response) {
                     this.hideLoader({ type: 'error' });
@@ -231,7 +228,7 @@ define(['require',
                         this.updateColumnList(state);
                         var excludeDefaultColumn = [];
                         if (this.value && this.value.type) {
-                            excludeDefaultColumn = _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag", "term");
+                            excludeDefaultColumn = _.difference(this.searchTableColumns[this.value.type], this.defaultColumns);
                             if (this.searchTableColumns[this.value.type] === null) {
                                 this.ui.columnEmptyInfo.show();
                             } else {
@@ -267,6 +264,8 @@ define(['require',
                     includeSizeAbleColumns: false,
                     includeTableLoader: false,
                     includeAtlasTableSorting: true,
+                    showDefaultTableSorted: true,
+                    updateFullCollectionManually: true,
                     columnOpts: {
                         opts: {
                             initialColumnsVisible: null,
@@ -347,6 +346,13 @@ define(['require',
                     updateTabState: true
                 }, options));
             },
+            updateMultiSelect: function() {
+                if (this.multiSelectEntity.length > 0) {
+                    this.$('.multiSelectTag,.multiSelectTerm').show();
+                } else {
+                    this.$('.multiSelectTag,.multiSelectTerm').hide();
+                }
+            },
             updateColumnList: function(updatedList) {
                 if (updatedList) {
                     var listOfColumns = [];
@@ -362,7 +368,7 @@ define(['require',
                         this.searchTableColumns[this.value.type] = listOfColumns.length ? listOfColumns : null;
                     }
                 } else if (this.value && this.value.type && this.searchTableColumns && this.value.attributes) {
-                    this.searchTableColumns[this.value.type] = this.value.attributes.split(",");
+                    this.searchTableColumns[this.value.type] = this.value.entityFilters ? this.value.attributes.split(",") : this.value.attributes.replace("businessMetadata,", "").split(",");
                 }
             },
             fetchCollection: function(value, options) {
@@ -377,7 +383,7 @@ define(['require',
                 }
 
                 if (isPostMethod && isSearchTab) {
-                    var excludeDefaultColumn = this.value.type && this.searchTableColumns ? _.without(this.searchTableColumns[this.value.type], "selected", "name", "description", "typeName", "owner", "tag") : null,
+                    var excludeDefaultColumn = this.value.type && this.searchTableColumns ? _.difference(this.searchTableColumns[this.value.type], this.defaultColumns) : null,
                         filterObj = {
                             'entityFilters': entityFilters,
                             'tagFilters': tagFilters,
@@ -396,13 +402,13 @@ define(['require',
                         if (that.isDestroyed) {
                             return;
                         }
-                        that.ui.gotoPage.val('');
-                        that.ui.gotoPage.parent().removeClass('has-error');
-                        that.ui.gotoPagebtn.prop("disabled", true);
                         Globals.searchApiCallRef = undefined;
                         var isFirstPage = that.offset === 0,
                             dataLength = 0,
                             goToPage = that.ui.gotoPage.val();
+                        that.ui.gotoPage.val('');
+                        that.ui.gotoPage.parent().removeClass('has-error');
+                        that.ui.gotoPagebtn.prop("disabled", true);
                         if (!(that.ui.pageRecordText instanceof jQuery)) {
                             return;
                         }
@@ -422,6 +428,7 @@ define(['require',
                                 pageNumber = goToPage;
                                 that.offset = (that.activePage - 1) * that.limit;
                             } else {
+                                that.finalPage = that.activePage;
                                 that.ui.nextData.attr('disabled', true);
                                 that.offset = that.offset - that.limit;
                             }
@@ -440,9 +447,8 @@ define(['require',
                                 attributeObject: dataOrCollection.entities,
                                 referredEntities: dataOrCollection.referredEntities
                             });
-                            that.searchCollection.referredEntities = dataOrCollection.referredEntities;
-                            that.searchCollection.entities = dataOrCollection.entities;
                             that.searchCollection.reset(dataOrCollection.entities, { silent: true });
+                            that.searchCollection.fullCollection.reset(dataOrCollection.entities, { silent: true });
                         }
 
 
@@ -483,6 +489,8 @@ define(['require',
                         that.ui.activePage.attr('title', "Page " + that.activePage);
                         that.ui.activePage.text(that.activePage);
                         that.renderTableLayoutView();
+                        that.multiSelectEntity = [];
+                        that.updateMultiSelect();
 
                         if (dataLength > 0) {
                             that.$('.searchTable').removeClass('noData')
@@ -535,6 +543,7 @@ define(['require',
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
                 } else {
+                    _.extend(this.searchCollection.queryParams, { 'limit': this.limit, 'offset': this.offset });
                     if (isPostMethod) {
                         apiObj['data'] = _.extend(checkBoxValue, filterObj, _.pick(this.searchCollection.queryParams, 'query', 'excludeDeletedEntities', 'limit', 'offset', 'typeName', 'classification', 'termName'));
                         Globals.searchApiCallRef = this.searchCollection.getBasicRearchResult(apiObj);
@@ -546,15 +555,6 @@ define(['require',
                         Globals.searchApiCallRef = this.searchCollection.fetch(apiObj);
                     }
                 }
-            },
-            renderSearchQueryView: function() {
-                var that = this;
-                require(['views/search/SearchQueryView'], function(SearchQueryView) {
-                    that.RSearchQuery.show(new SearchQueryView({
-                        value: that.value,
-                        searchVent: that.searchVent
-                    }));
-                });
             },
             tableRender: function(options) {
                 var that = this,
@@ -583,6 +583,9 @@ define(['require',
                 }
                 if (!that.REntityTableLayoutView) {
                     return;
+                }
+                if (!that.value) {
+                    that.value = that.options.value;
                 }
                 that.REntityTableLayoutView.show(table);
                 if (that.value.searchType !== "dsl") {
@@ -648,10 +651,10 @@ define(['require',
                     nameCheck = 0,
                     columnToShow = null,
                     col = {};
+                this.value = Utils.getUrlState.getQueryParams() || this.value;
                 if (this.value && this.value.searchType === "basic" && this.searchTableColumns && (this.searchTableColumns[this.value.type] !== undefined)) {
                     columnToShow = this.searchTableColumns[this.value.type] == null ? [] : this.searchTableColumns[this.value.type];
                 }
-
                 col['Check'] = {
                     name: "selected",
                     label: "Select",
@@ -792,15 +795,65 @@ define(['require',
                             }
                         })
                     };
+                    col['businessMetadata'] = {
+                        label: "Business Metadata",
+                        cell: "Html",
+                        editable: false,
+                        resizeable: true,
+                        orderable: true,
+                        alwaysVisible: true, //Backgrid.ColumnManager.js -> render() to hide the name in dropdownlist
+                        renderable: _.contains(columnToShow, 'businessMetadata'),
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var obj = model.toJSON(),
+                                    businessMetadataStr = '';
+                                if (obj && obj.attributes) {
+                                    _.each(obj.attributes, function(businessMetadataValue, attributeName) {
+                                        if (attributeName.indexOf('.') != -1) {
+                                            var isDate = false,
+                                                businessMetadata = that.options.businessMetadataDefCollection.fullCollection.find({ "name": attributeName.split('.')[0] });
+                                            if (businessMetadata) {
+                                                var getAttributes = businessMetadata.get('attributeDefs');
+                                                getAttributes.every(function(attrTypeCheck) {
+                                                    if (attributeName.split('.')[1] === attrTypeCheck.name && attrTypeCheck.typeName.indexOf("date") > -1) {
+                                                        isDate = true;
+                                                    }
+                                                    return !isDate;
+                                                });
+                                            }
+                                            if (isDate) {
+                                                businessMetadataValue = moment(businessMetadataValue).format("MM/DD/YYYY")
+                                            }
+                                            businessMetadataStr += '<label class="btn btn-action btn-xs btn-blue no-pointer">' + attributeName + ': ' + businessMetadataValue + '</label>';
+                                        }
+                                    })
+                                    return businessMetadataStr;
+                                }
+                            }
+                        })
+                    };
                     this.getTagCol({ 'col': col, 'columnToShow': columnToShow });
                     if ((!_.contains(["glossary"], this.fromView))) {
                         this.getTermCol({ 'col': col, 'columnToShow': columnToShow });
                     }
 
                     if (this.value && this.value.searchType === "basic") {
-                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type });
-                        if (def) {
-                            var attrObj = Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true });
+                        var def = this.entityDefCollection.fullCollection.find({ name: this.value.type }),
+                            systemAttr = [];
+                        if (def || Globals[this.value.type] || (
+                                this.value.tag ?
+                                Globals[this.value.tag] ?
+                                Globals[this.value.tag] :
+                                Globals[Enums.addOnClassification[0]] :
+                                undefined)) {
+                            var attrObj = def ? Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.entityDefCollection, attrMerge: true }) : [];
+                            if (this.value.type && (Globals[this.value.type] || Globals[Enums.addOnEntities[0]])) {
+                                systemAttr = (Globals[this.value.type] || Globals[Enums.addOnEntities[0]]).attributeDefs;
+                            }
+                            if (this.value.tag && (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]])) {
+                                systemAttr = (Globals[this.value.tag] || Globals[Enums.addOnClassification[0]]).attributeDefs;
+                            }
+                            attrObj = attrObj.concat(systemAttr);
                             _.each(attrObj, function(obj, key) {
                                 var key = obj.name,
                                     isRenderable = _.contains(columnToShow, key),
@@ -811,8 +864,11 @@ define(['require',
                                     }
                                     return;
                                 }
+                                if (key == "__historicalGuids" || key == "__classificationsText" || key == "__classificationNames" || key == "__propagatedClassificationNames") {
+                                    return;
+                                }
                                 col[obj.name] = {
-                                    label: _.escape(obj.name).capitalize(),
+                                    label: Enums.systemAttributes[obj.name] ? Enums.systemAttributes[obj.name] : _.escape(obj.name).capitalize(),
                                     cell: "Html",
                                     headerCell: Backgrid.HeaderHTMLDecodeCell,
                                     editable: false,
@@ -830,6 +886,28 @@ define(['require',
                                                     'valueObject': {},
                                                     'isTable': false
                                                 };
+                                                if (key == "__labels") {
+                                                    var values = modelObj.attributes[key] ? modelObj.attributes[key].split("|") : null,
+                                                        valueOfArray = [];
+                                                    if (values) {
+                                                        if (values[values.length - 1] === "") { values.pop(); }
+                                                        if (values[0] === "") { values.shift(); }
+                                                        _.each(values, function(names) {
+                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span title="" data-original-title="' + names + '" >' + names + '</span></a></span>');
+                                                        });
+                                                        return valueOfArray.join(' ');
+                                                    }
+                                                }
+                                                if (key == "__customAttributes") {
+                                                    var customAttributes = modelObj.attributes[key] ? JSON.parse(modelObj.attributes[key]) : null,
+                                                        valueOfArray = [];
+                                                    if (customAttributes) {
+                                                        _.each(Object.keys(customAttributes), function(value, index) {
+                                                            valueOfArray.push('<span class="json-string"><a class="btn btn-action btn-sm btn-blue btn-icon" ><span title="" data-original-title="' + value + ' : ' + Object.values(customAttributes)[index] + '" ><span>' + value + '</span> : <span>' + Object.values(customAttributes)[index] + '</span></span></a></span>');
+                                                        });
+                                                        return valueOfArray.join(' ');
+                                                    }
+                                                }
                                                 tempObj.valueObject[key] = modelObj.attributes[key];
                                                 var tablecolumn = CommonViewFunction.propertyTable(tempObj);
                                                 if (_.isArray(modelObj.attributes[key])) {
@@ -1201,6 +1279,13 @@ define(['require',
                 var that = this;
                 var goToPage = parseInt(this.ui.gotoPage.val());
                 if (!(_.isNaN(goToPage) || goToPage <= -1)) {
+                    if (this.finalPage && this.finalPage < goToPage) {
+                        Utils.notifyInfo({
+                            html: true,
+                            content: Messages.search.noRecordForPage + '<b>' + Utils.getNumberSuffix({ number: goToPage, sup: true }) + '</b> page'
+                        });
+                        return;
+                    }
                     this.offset = (goToPage - 1) * this.limit;
                     if (this.offset <= -1) {
                         this.offset = 0;

@@ -103,7 +103,7 @@ define(['require',
                 }).open();
                 this.modal.$el.find('button.ok').attr("disabled", true);
                 this.modal.on('ok', function(e) {
-                    that.modal.$el.find('button.ok, button.cancel').attr("disabled", true);
+                    that.modal.$el.find('button.ok').showButtonLoader();
                     that.okButton();
                 });
                 this.modal.on('closeModal', function() {
@@ -688,6 +688,7 @@ define(['require',
                                     $(this).addClass('errorClass');
                                 }
                                 that.hideLoader();
+                                that.modal.$el.find('button.ok').hideButtonLoader();
                                 throw new Error("Please fill the required fields");
                                 return;
                             }
@@ -763,6 +764,7 @@ define(['require',
                         data: JSON.stringify(entityJson),
                         type: "POST",
                         success: function(model, response) {
+                            that.modal.$el.find('button.ok').hideButtonLoader();
                             that.modal.close();
                             var msgType = that.guid ? 'editSuccessMessage' : 'addSuccessMessage';
                             Utils.notifySuccess({
@@ -784,7 +786,7 @@ define(['require',
                             that.hideLoader({
                                 editVisiblityOfEntitySelectionBox: true
                             });
-                            that.modal.$el.find('button.ok, button.cancel').attr("disabled", false);
+                            that.modal.$el.find('button.ok').hideButtonLoader();
                         }
                     });
 

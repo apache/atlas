@@ -64,6 +64,7 @@ public class RequestContext {
     private String       clientIPAddress;
     private List<String> forwardedAddresses;
     private DeleteType   deleteType   = DeleteType.DEFAULT;
+    private boolean     isPurgeRequested = false;
     private int         maxAttempts  = 1;
     private int         attemptCount = 1;
     private boolean     isImportInProgress = false;
@@ -179,6 +180,10 @@ public class RequestContext {
         isImportInProgress = importInProgress;
     }
 
+    public boolean isPurgeRequested() { return isPurgeRequested; }
+
+    public void setPurgeRequested(boolean isPurgeRequested) { this.isPurgeRequested = isPurgeRequested; }
+
     public boolean isInNotificationProcessing() {
         return isInNotificationProcessing;
     }
@@ -214,7 +219,6 @@ public class RequestContext {
             entitiesToSkipUpdate.add(guid);
         }
     }
-
 
     public void recordEntityDelete(AtlasEntityHeader entity) {
         if (entity != null && entity.getGuid() != null) {
@@ -328,8 +332,6 @@ public class RequestContext {
     public boolean isDeletedEntity(String guid) {
         return deletedEntities.containsKey(guid);
     }
-
-
 
     public MetricRecorder startMetricRecord(String name) { return metrics != null ? metrics.getMetricRecorder(name) : null; }
 

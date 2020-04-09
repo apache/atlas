@@ -23,6 +23,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
@@ -31,6 +32,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -38,6 +40,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.BOTH;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory.AGGREGATION;
@@ -141,11 +144,25 @@ public final class TestRelationshipUtilsV2 {
                                                         new AtlasRelationshipEndDef(PERSON_TYPE, "sibling", SINGLE),
                                                         new AtlasRelationshipEndDef(PERSON_TYPE, "sibling", SINGLE));
 
+        AtlasStructDef.AtlasAttributeDef nsAttr1 = new AtlasStructDef.AtlasAttributeDef("attr1", "int");
+        AtlasStructDef.AtlasAttributeDef nsAttr2 = new AtlasStructDef.AtlasAttributeDef("attr2", "int");
+
+        nsAttr1.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(Collections.singleton(DEPARTMENT_TYPE)));
+        nsAttr1.setIsOptional(true);
+        nsAttr1.setIsUnique(false);
+
+        nsAttr2.setOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES, AtlasType.toJson(Collections.singleton(DEPARTMENT_TYPE)));
+        nsAttr2.setIsOptional(true);
+        nsAttr2.setIsUnique(false);
+
+        AtlasBusinessMetadataDef businessMetadataDef = new AtlasBusinessMetadataDef("test_businessMetadata", "test_description", DEFAULT_VERSION, Arrays.asList(nsAttr1, nsAttr2));
+
         return new AtlasTypesDef(Collections.singletonList(orgLevelType),
                                  Collections.singletonList(addressType),
                                  Collections.singletonList(securityClearanceType),
                                  Arrays.asList(personType, employeeType, departmentType, managerType),
-                                 Arrays.asList(employeeDepartmentType, employeeManagerType, employeeMentorsType, employeeFriendsType, personSiblingType));
+                                 Arrays.asList(employeeDepartmentType, employeeManagerType, employeeMentorsType, employeeFriendsType, personSiblingType),
+                                 Collections.singletonList(businessMetadataDef));
     }
 
     public static AtlasEntitiesWithExtInfo getDepartmentEmployeeInstances() {
@@ -278,7 +295,7 @@ public final class TestRelationshipUtilsV2 {
                                                         new AtlasRelationshipEndDef(TYPE_A, "mapToB", SET));
 
         return new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(), Collections.<AtlasStructDef>emptyList(), Collections.<AtlasClassificationDef>emptyList(),  Arrays.asList(aType, bType),
-                                 Arrays.asList(relationshipType1, relationshipType2, relationshipType3, relationshipType4));
+                                 Arrays.asList(relationshipType1, relationshipType2, relationshipType3, relationshipType4), Collections.<AtlasBusinessMetadataDef>emptyList());
     }
 
     private static List<AtlasEnumElementDef> getOrgLevelElements() {

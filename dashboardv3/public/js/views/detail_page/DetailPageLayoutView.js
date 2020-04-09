@@ -46,7 +46,8 @@ define(['require',
                 RProfileLayoutView: "#r_profileLayoutView",
                 RRelationshipLayoutView: "#r_relationshipLayoutView",
                 REntityUserDefineView: "#r_entityUserDefineView",
-                REntityLabelDefineView: "#r_entityLabelDefineView"
+                REntityLabelDefineView: "#r_entityLabelDefineView",
+                REntityBusinessMetadataView: "#r_entityBusinessMetadataView"
             },
             /** ui selector cache */
             ui: {
@@ -120,7 +121,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection', 'searchVent'));
+                _.extend(this, _.pick(options, 'value', 'collection', 'id', 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'glossaryCollection', 'businessMetadataDefCollection', 'searchVent'));
                 $('body').addClass("detail-page");
             },
             bindEvents: function() {
@@ -175,6 +176,9 @@ define(['require',
                     if (collectionJSON) {
                         this.name = Utils.getName(collectionJSON);
                         if (collectionJSON.attributes) {
+                            if (collectionJSON.typeName) {
+                                collectionJSON.attributes.typeName = _.escape(collectionJSON.typeName);
+                            }
                             if (this.name && collectionJSON.typeName) {
                                 this.name = this.name + ' (' + _.escape(collectionJSON.typeName) + ')';
                             }
@@ -244,15 +248,22 @@ define(['require',
                         enumDefCollection: this.enumDefCollection,
                         classificationDefCollection: this.classificationDefCollection,
                         glossaryCollection: this.glossaryCollection,
+                        businessMetadataCollection: this.activeEntityDef.get('businessAttributeDefs'),
                         searchVent: this.searchVent,
                         attributeDefs: (function() {
                             return that.getEntityDef(collectionJSON);
                         })(),
                         editEntity: this.editEntity || false
                     }
+                    obj["renderAuditTableLayoutView"] = function() {
+                        that.renderAuditTableLayoutView(obj);
+                    };
                     this.renderEntityDetailTableLayoutView(obj);
                     this.renderEntityUserDefineView(obj);
                     this.renderEntityLabelDefineView(obj);
+                    if (obj.businessMetadataCollection) {
+                        this.renderEntityBusinessMetadataView(obj);
+                    }
                     this.renderRelationshipLayoutView(obj);
                     this.renderAuditTableLayoutView(obj);
                     this.renderTagTableLayoutView(obj);
@@ -414,10 +425,10 @@ define(['require',
                     val.entityGuid === that.id ? tag['self'].push(val) : tag['propagated'].push(val);
                 });
                 _.each(tag.self, function(val) {
-                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span title=' + val.typeName + ' >' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Tag"></i></span>';
+                    tagData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="tagClick"><span title=' + val.typeName + ' >' + val.typeName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag" title="Remove Classification"></i></span>';
                 });
                 _.each(tag.propagated, function(val) {
-                    var crossButton = '<i class="fa fa-close" data-id="deleteTag" data-entityguid="' + val.entityGuid + '" data-type="tag" title="Remove Tag"></i>';
+                    var crossButton = '<i class="fa fa-close" data-id="deleteTag" data-entityguid="' + val.entityGuid + '" data-type="tag" title="Remove Classification"></i>';
                     propagatedTagListData += '<span class="btn btn-action btn-sm btn-icon btn-blue" title=' + val.typeName + ' data-id="tagClick"><span>' + val.typeName + '</span>' + ((that.id !== val.entityGuid && val.entityStatus === "DELETED") ? crossButton : "") + '</span>';
                 });
                 propagatedTagListData !== "" ? this.ui.propagatedTagDiv.show() : this.ui.propagatedTagDiv.hide();
@@ -432,7 +443,7 @@ define(['require',
                     termData = "";
                 _.each(data, function(val) {
                     // if (val.relationshipStatus == "ACTIVE") {
-                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span title=' + _.escape(val.displayText) + '>' + _.escape(val.displayText) + '</span><i class="'+(val.relationshipStatus == "ACTIVE" ? 'fa fa-close': "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
+                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick"><span title=' + _.escape(val.displayText) + '>' + _.escape(val.displayText) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
                     // }
                 });
                 this.ui.termList.find("span.btn").remove();
@@ -510,6 +521,12 @@ define(['require',
                 var that = this;
                 require(['views/entity/EntityLabelDefineView'], function(EntityLabelDefineView) {
                     that.REntityLabelDefineView.show(new EntityLabelDefineView(obj));
+                });
+            },
+            renderEntityBusinessMetadataView: function(obj) {
+                var that = this;
+                require(['views/entity/EntityBusinessMetaDataView'], function(EntityBusinessMetaDataView) {
+                    that.REntityBusinessMetadataView.show(new EntityBusinessMetaDataView(obj));
                 });
             },
             renderTagTableLayoutView: function(obj) {

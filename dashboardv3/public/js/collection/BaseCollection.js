@@ -103,17 +103,17 @@ define(['require',
                 return this.hasPreviousPage();
             },
             hasNext: function(options) {
-                    return this.hasNextPage();
-                }
-                /////////////////////////////
-                // End overriding methods //
-                /////////////////////////////
+                return this.hasNextPage();
+            }
+            /////////////////////////////
+            // End overriding methods //
+            /////////////////////////////
 
         },
         /** BaseCollection's Static Attributes */
         {
             // Static functions
-            getTableCols: function(cols, collection) {
+            getTableCols: function(cols, collection, defaultSortDirection) {
                 var retCols = _.map(cols, function(v, k, l) {
                     var defaults = collection.constructor.tableCols[k];
                     if (!defaults) {
@@ -121,7 +121,8 @@ define(['require',
                         defaults = {};
                     }
                     return _.extend({
-                        'name': k
+                        'name': k,
+                        direction: defaultSortDirection ? defaultSortDirection : null,
                     }, defaults, v);
                 });
                 return retCols;
@@ -129,6 +130,9 @@ define(['require',
             nonCrudOperation: function(url, requestMethod, options) {
                 var that = this;
                 options['beforeSend'] = CommonViewFunction.addRestCsrfCustomHeader;
+                if (options.data && typeof options.data === "object") {
+                    options.data = JSON.stringify(options.data);
+                }
                 return Backbone.sync.call(this, null, this, _.extend({
                     url: url,
                     type: requestMethod

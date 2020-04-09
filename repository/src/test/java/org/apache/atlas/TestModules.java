@@ -36,21 +36,24 @@ import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.repository.audit.EntityAuditListener;
 import org.apache.atlas.repository.audit.EntityAuditListenerV2;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.graph.FullTextMapperV2;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graph.IFullTextMapper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.graphdb.janus.migration.GraphDBGraphSONMigrator;
 import org.apache.atlas.repository.impexp.ExportService;
+import org.apache.atlas.repository.ogm.AtlasAuditEntryDTO;
 import org.apache.atlas.repository.ogm.AtlasServerDTO;
-import org.apache.atlas.repository.ogm.ExportImportAuditEntryDTO;
-import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
-import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
 import org.apache.atlas.repository.ogm.DTORegistry;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.ogm.DataTransferObject;
+import org.apache.atlas.repository.ogm.ExportImportAuditEntryDTO;
 import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryCategoryDTO;
 import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryDTO;
 import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryTermDTO;
+import org.apache.atlas.repository.ogm.profiles.AtlasSavedSearchDTO;
+import org.apache.atlas.repository.ogm.profiles.AtlasUserProfileDTO;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.BulkImporter;
@@ -60,6 +63,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2;
 import org.apache.atlas.repository.store.graph.v2.BulkImporterImpl;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
+import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -143,6 +147,8 @@ public class TestModules {
 
             bind(AtlasEntityStore.class).to(AtlasEntityStoreV2.class);
             bind(AtlasRelationshipStore.class).to(AtlasRelationshipStoreV2.class);
+            bind(IAtlasEntityChangeNotifier.class).to(AtlasEntityChangeNotifier.class);
+            bind(IFullTextMapper.class).to(FullTextMapperV2.class);
 
             // bind the DiscoveryService interface to an implementation
             bind(AtlasDiscoveryService.class).to(EntityDiscoveryService.class).asEagerSingleton();
@@ -169,6 +175,7 @@ public class TestModules {
             availableDTOs.addBinding().to(AtlasGlossaryCategoryDTO.class);
             availableDTOs.addBinding().to(AtlasServerDTO.class);
             availableDTOs.addBinding().to(ExportImportAuditEntryDTO.class);
+            availableDTOs.addBinding().to(AtlasAuditEntryDTO.class);
 
             bind(DTORegistry.class).asEagerSingleton();
             bind(DataAccess.class).asEagerSingleton();

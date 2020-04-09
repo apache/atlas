@@ -44,6 +44,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,7 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_CREATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_UPDATE;
@@ -133,6 +135,23 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
+    public void onEntitiesPurged(List<AtlasEntity> entities) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
+        List<EntityAuditEventV2> events = new ArrayList<>();
+
+        for (AtlasEntity entity : entities) {
+            EntityAuditEventV2 event = createEvent(entity, ENTITY_PURGE, "Purged entity");
+
+            events.add(event);
+        }
+
+        auditRepository.putEventsV2(events);
+
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+    @Override
     public void onClassificationsAdded(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
@@ -144,6 +163,28 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                     events.add(createEvent(entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification)));
                 } else {
                     events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification)));
+                }
+            }
+
+            auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    public void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(classifications)) {
+            MetricRecorder           metric = RequestContext.get().startMetricRecord("entityAudit");
+            List<EntityAuditEventV2> events = Collections.synchronizedList(new ArrayList<>());
+
+            for (AtlasClassification classification : classifications) {
+                for (AtlasEntity entity : entities) {
+                    if (entity.getGuid().equals(classification.getEntityGuid())) {
+                        events.add(createEvent(entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification)));
+                    } else {
+                        events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification)));
+                    }
                 }
             }
 
@@ -193,6 +234,28 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                     events.add(createEvent(entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName()));
                 } else {
                     events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName()));
+                }
+            }
+
+            auditRepository.putEventsV2(events);
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(classifications) && CollectionUtils.isNotEmpty(entities)) {
+            MetricRecorder           metric = RequestContext.get().startMetricRecord("entityAudit");
+            List<EntityAuditEventV2> events = Collections.synchronizedList(new ArrayList<>());
+
+            for (AtlasClassification classification : classifications) {
+                for (AtlasEntity entity : entities) {
+                    if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
+                        events.add(createEvent(entity, CLASSIFICATION_DELETE, "Deleted classification: " + classification.getTypeName()));
+                    } else {
+                        events.add(createEvent(entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + classification.getTypeName()));
+                    }
                 }
             }
 
@@ -470,6 +533,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             case ENTITY_DELETE:
                 ret = "Deleted: ";
                 break;
+            case ENTITY_PURGE:
+                ret = "Purged: ";
+                break;
             case CLASSIFICATION_ADD:
                 ret = "Added classification: ";
                 break;
@@ -519,6 +585,13 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Relationship(s) deleted from repository(" + relationships.size() + ")");
+        }
+    }
+
+    @Override
+    public void onRelationshipsPurged(List<AtlasRelationship> relationships) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Relationship(s) purged from repository(" + relationships.size() + ")");
         }
     }
 }

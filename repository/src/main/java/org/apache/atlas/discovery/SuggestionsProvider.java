@@ -20,5 +20,5 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
 
 public interface SuggestionsProvider {
-    AtlasSuggestionsResult getSuggestions(String prefixString);
+    AtlasSuggestionsResult getSuggestions(String prefixString, String indexFieldName);
 }

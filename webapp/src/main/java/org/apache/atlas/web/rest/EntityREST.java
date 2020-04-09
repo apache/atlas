@@ -64,6 +64,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,6 +144,47 @@ public class EntityREST {
             }
 
             return entitiesStore.getHeaderById(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Fetch AtlasEntityHeader given its type and unique attribute.
+     *
+     * In addition to the typeName path parameter, attribute key-value pair(s) can be provided in the following format
+     *
+     * attr:<attrName>=<attrValue>
+     *
+     * NOTE: The attrName and attrValue should be unique across entities, eg. qualifiedName
+     *
+     * The REST request would look something like this
+     *
+     * GET /v2/entity/uniqueAttribute/type/aType/header?attr:aTypeAttribute=someValue
+     *
+     * @param typeName
+     * @return AtlasEntityHeader
+     * @throws AtlasBaseException
+     */
+    @GET
+    @Path("/uniqueAttribute/type/{typeName}/header")
+    public AtlasEntityHeader getEntityHeaderByUniqueAttributes(@PathParam("typeName") String typeName,
+                                                               @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            Map<String, Object> attributes = getAttributes(servletRequest);
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getEntityHeaderByUniqueAttributes(" + typeName + "," + attributes + ")");
+            }
+
+            AtlasEntityType entityType = ensureEntityType(typeName);
+
+            validateUniqueAttribute(entityType, attributes);
+
+            return entitiesStore.getEntityHeaderByUniqueAttributes(entityType, attributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -809,6 +851,78 @@ public class EntityREST {
 
             ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore);
             return associator.setClassifications(entityHeaders.getGuidHeaderMap());
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("/guid/{guid}/businessmetadata")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void addOrUpdateBusinessAttributes(@PathParam("guid") final String guid, @QueryParam("isOverwrite") @DefaultValue("false") boolean isOverwrite, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addOrUpdateBusinessAttributes(" + guid + ", isOverwrite=" + isOverwrite + ")");
+            }
+
+            entitiesStore.addOrUpdateBusinessAttributes(guid, businessAttributes, isOverwrite);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @DELETE
+    @Path("/guid/{guid}/businessmetadata")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void removeBusinessAttributes(@PathParam("guid") final String guid, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.removeBusinessAttributes(" + guid + ")");
+            }
+
+            entitiesStore.removeBusinessAttributes(guid, businessAttributes);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("/guid/{guid}/businessmetadata/{bmName}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void addOrUpdateBusinessAttributes(@PathParam("guid") final String guid, @PathParam("bmName") final String bmName, Map<String, Object> businessAttributes) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addOrUpdateBusinessAttributes(" + guid + ", " + bmName + ")");
+            }
+
+            entitiesStore.addOrUpdateBusinessAttributes(guid, Collections.singletonMap(bmName, businessAttributes), false);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @DELETE
+    @Path("/guid/{guid}/businessmetadata/{bmName}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    public void removeBusinessAttributes(@PathParam("guid") final String guid, @PathParam("bmName") final String bmName, Map<String, Object> businessAttributes) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.removeBusinessAttributes(" + guid + ", " + bmName + ")");
+            }
+
+            entitiesStore.removeBusinessAttributes(guid, Collections.singletonMap(bmName, businessAttributes));
         } finally {
             AtlasPerfTracer.log(perf);
         }

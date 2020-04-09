@@ -39,19 +39,20 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import java.security.MessageDigest;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.util.StringUtils;
 
 
 @Repository
 public class UserDao {
-
-    private static final String DEFAULT_USER_CREDENTIALS_PROPERTIES = "users-credentials.properties";
-
     private static final Logger LOG = LoggerFactory.getLogger(UserDao.class);
 
-    private Properties userLogins;
+    private static final String             DEFAULT_USER_CREDENTIALS_PROPERTIES = "users-credentials.properties";
+    private static final ShaPasswordEncoder sha256Encoder                       = new ShaPasswordEncoder(256);
+    private static       boolean            v1ValidationEnabled = true;
+    private static       boolean            v2ValidationEnabled = true;
 
-    private static final ShaPasswordEncoder sha256Encoder = new ShaPasswordEncoder(256);
+    private Properties userLogins = new Properties();
 
     @PostConstruct
     public void init() {
@@ -59,49 +60,61 @@ public class UserDao {
     }
 
     void loadFileLoginsDetails() {
+        userLogins.clear();
+
         InputStream inStr = null;
+
         try {
             Configuration configuration = ApplicationProperties.get();
+
+            v1ValidationEnabled = configuration.getBoolean("atlas.authentication.method.file.v1-validation.enabled", true);
+            v2ValidationEnabled = configuration.getBoolean("atlas.authentication.method.file.v2-validation.enabled", true);
+
             inStr = ApplicationProperties.getFileAsInputStream(configuration, "atlas.authentication.method.file.filename", DEFAULT_USER_CREDENTIALS_PROPERTIES);
-            userLogins = new Properties();
+
             userLogins.load(inStr);
         } catch (IOException | AtlasException e) {
             LOG.error("Error while reading user.properties file", e);
+
             throw new RuntimeException(e);
         } finally {
-            if(inStr != null) {
+            if (inStr != null) {
                 try {
                     inStr.close();
-                } catch(Exception excp) {
+                } catch (Exception excp) {
                     // ignore
                 }
             }
         }
     }
 
-    public User loadUserByUsername(final String username)
-            throws AuthenticationException {
+    public User loadUserByUsername(final String username) throws AuthenticationException {
         String userdetailsStr = userLogins.getProperty(username);
+
         if (userdetailsStr == null || userdetailsStr.isEmpty()) {
-            throw new UsernameNotFoundException("Username not found."
-                    + username);
+            throw new UsernameNotFoundException("Username not found." + username);
         }
-        String password = "";
-        String role = "";
-        String dataArr[] = userdetailsStr.split("::");
+
+        String   password = "";
+        String   role     = "";
+        String[] dataArr  = userdetailsStr.split("::");
+
         if (dataArr != null && dataArr.length == 2) {
-            role = dataArr[0];
+            role     = dataArr[0];
             password = dataArr[1];
         } else {
             LOG.error("User role credentials is not set properly for {}", username);
+
             throw new AtlasAuthenticationException("User role credentials is not set properly for " + username );
         }
 
         List<GrantedAuthority> grantedAuths = new ArrayList<>();
+
         if (StringUtils.hasText(role)) {
             grantedAuths.add(new SimpleGrantedAuthority(role));
         } else {
             LOG.error("User role credentials is not set properly for {}", username);
+
             throw new AtlasAuthenticationException("User role credentials is not set properly for " + username );
         }
 
@@ -115,25 +128,109 @@ public class UserDao {
         this.userLogins = userLogins;
     }
 
-    public static String getSha256Hash(String base) throws AtlasAuthenticationException {
+    public static String encrypt(String password) {
+        String ret = null;
+
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(base.getBytes("UTF-8"));
-            StringBuffer hexString = new StringBuffer();
+            ret = BCrypt.hashpw(password, BCrypt.gensalt());
+        } catch (Throwable excp) {
+            LOG.warn("UserDao.encrypt(): failed", excp);
+        }
+
+        return ret;
+    }
+
+    public static boolean checkEncrypted(String password, String encryptedPwd, String userName) {
+        boolean ret = checkPasswordBCrypt(password, encryptedPwd);
+
+        if (!ret && v2ValidationEnabled) {
+            ret = checkPasswordSHA256WithSalt(password, encryptedPwd, userName);
+        }
+
+        if (!ret && v1ValidationEnabled) {
+            ret = checkPasswordSHA256(password, encryptedPwd);
+        }
+
+        return ret;
+    }
+
+    private static boolean checkPasswordBCrypt(String password, String encryptedPwd) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("checkPasswordBCrypt()");
+        }
+
+        boolean ret = false;
+
+        try {
+            ret = BCrypt.checkpw(password, encryptedPwd);
+        } catch (Throwable excp) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("checkPasswordBCrypt(): failed", excp);
+            }
+        }
+
+        return ret;
+    }
+
+    private static boolean checkPasswordSHA256WithSalt(String password, String encryptedPwd, String salt) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("checkPasswordSHA256WithSalt()");
+        }
+
+        boolean ret = false;
+
+        try {
+            String hash = sha256Encoder.encodePassword(password, salt);
+
+            ret = hash != null && hash.equals(encryptedPwd);
+        } catch (Throwable excp) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("checkPasswordSHA256WithSalt(): failed", excp);
+            }
+        }
+
+        return ret;
+    }
+
+    private static boolean checkPasswordSHA256(String password, String encryptedPwd) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("checkPasswordSHA256()");
+        }
+
+        boolean ret = false;
+
+        try {
+            String hash = getSha256Hash(password);
+
+            ret = hash != null && hash.equals(encryptedPwd);
+        } catch (Throwable excp) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("checkPasswordSHA256(): failed", excp);
+            }
+        }
+
+        return ret;
+    }
+
+    private static String getSha256Hash(String base) throws AtlasAuthenticationException {
+        try {
+            MessageDigest digest    = MessageDigest.getInstance("SHA-256");
+            byte[]        hash      = digest.digest(base.getBytes("UTF-8"));
+            StringBuffer  hexString = new StringBuffer();
 
             for (byte aHash : hash) {
                 String hex = Integer.toHexString(0xff & aHash);
-                if (hex.length() == 1) hexString.append('0');
+
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+
                 hexString.append(hex);
             }
-            return hexString.toString();
 
+            return hexString.toString();
         } catch (Exception ex) {
             throw new AtlasAuthenticationException("Exception while encoding password.", ex);
         }
-    }
-
-    public static String encrypt(String password, String salt) {
-           return sha256Encoder.encodePassword(password, salt);
     }
 }
