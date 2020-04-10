@@ -980,22 +980,9 @@ public class AtlasTypeRegistry {
                                 new Exception().fillInStackTrace());
                     } else if (typeRegistryUpdateLock.getHoldCount() == 1) {
                         if (ttr != null && commitUpdates) {
-                            // copy indexName for entity attributes from current typeRegistry to new one
-                            for (AtlasEntityType ttrEntityType : ttr.getAllEntityTypes()) {
-                                AtlasEntityType currEntityType = typeRegistry.getEntityTypeByName(ttrEntityType.getTypeName());
-
-                                if (currEntityType != null) { // ttrEntityType could be a new type introduced
-                                    for (AtlasAttribute attribute : ttrEntityType.getAllAttributes().values()) {
-                                        if (StringUtils.isEmpty(attribute.getIndexFieldName())) {
-                                            AtlasAttribute currAttribute = currEntityType.getAttribute(attribute.getName());
-
-                                            if (currAttribute != null) {
-                                                attribute.setIndexFieldName(currAttribute.getIndexFieldName());
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            // copy indexName for attributes from current typeRegistry to new one
+                            copyIndexNameFromCurrent(ttr.getAllEntityTypes());
+                            copyIndexNameFromCurrent(ttr.getAllBusinessMetadataTypes());
 
                             typeRegistry.registryData = ttr.registryData;
                         }
@@ -1018,6 +1005,34 @@ public class AtlasTypeRegistry {
             LOG.debug("<== releaseTypeRegistryForUpdate()");
         }
 
+        private void copyIndexNameFromCurrent(Collection<? extends AtlasStructType> ttrTypes) {
+            for (AtlasStructType ttrType : ttrTypes) {
+                final AtlasStructType currType;
+
+                if (ttrType instanceof AtlasEntityType) {
+                    currType = typeRegistry.getEntityTypeByName(ttrType.getTypeName());
+                } else if (ttrType instanceof AtlasBusinessMetadataType) {
+                    currType = typeRegistry.getBusinessMetadataTypeByName(ttrType.getTypeName());
+                } else {
+                    currType = null;
+                }
+
+                if (currType == null) { // ttrType could be a new type introduced
+                    continue;
+                }
+
+                for (AtlasAttribute ttrAttribute : ttrType.getAllAttributes().values()) {
+                    if (StringUtils.isEmpty(ttrAttribute.getIndexFieldName())) {
+                        AtlasAttribute currAttribute = currType.getAttribute(ttrAttribute.getName());
+
+                        if (currAttribute != null) {
+                            ttrAttribute.setIndexFieldName(currAttribute.getIndexFieldName());
+                        }
+                    }
+                }
+            }
+
+        }
     }
 }
 
