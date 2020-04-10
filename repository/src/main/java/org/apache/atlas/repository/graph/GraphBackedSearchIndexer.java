@@ -209,14 +209,18 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             LOG.debug("Type definition load completed. Informing the completion to IndexChangeListeners.");
         }
 
-        Collection<AtlasEntityDef> entityDefs      = typeRegistry.getAllEntityDefs();
-        ChangedTypeDefs            changedTypeDefs = new ChangedTypeDefs(null, new ArrayList<>(entityDefs), null);
-        AtlasGraphManagement       management      = null;
+        ChangedTypeDefs      changedTypeDefs = null;
+        AtlasGraphManagement management      = null;
 
         try {
             management = provider.get().getManagementSystem();
 
             //resolve index fields names for the new entity attributes.
+            changedTypeDefs = new ChangedTypeDefs(null, new ArrayList<>(typeRegistry.getAllEntityDefs()), null);
+            resolveIndexFieldNames(management, changedTypeDefs);
+
+            //resolve index fields names for the new business metadata attributes.
+            changedTypeDefs = new ChangedTypeDefs(null, new ArrayList<>(typeRegistry.getAllBusinessMetadataDefs()), null);
             resolveIndexFieldNames(management, changedTypeDefs);
 
             //Commit indexes
@@ -382,19 +386,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
                 resolveIndexFieldNames(managementSystem, businessMetadataType);
             } else {
-                LOG.debug("Ignoring the non-entity type definition {}", baseTypeDef.getName());
+                LOG.debug("Ignoring type definition {}", baseTypeDef.getName());
             }
         }
     }
 
-    private void resolveIndexFieldNames(AtlasGraphManagement managementSystem, AtlasEntityType entityType) {
-        for(AtlasAttribute attribute: entityType.getAllAttributes().values()) {
-            resolveIndexFieldName(managementSystem, attribute);
-        }
-    }
-
-    private void resolveIndexFieldNames(AtlasGraphManagement managementSystem, AtlasBusinessMetadataType businessMetadataType) {
-        for (AtlasAttribute attribute : businessMetadataType.getAllAttributes().values()) {
+    private void resolveIndexFieldNames(AtlasGraphManagement managementSystem, AtlasStructType structType) {
+        for(AtlasAttribute attribute: structType.getAllAttributes().values()) {
             resolveIndexFieldName(managementSystem, attribute);
         }
     }

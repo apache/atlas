@@ -92,7 +92,7 @@ public class ChangedTypeDefs {
     }
 
     public boolean hasBusinessMetadataDef() {
-        return hasBusinessMetadataDef(createdTypeDefs) || hasEntityDef(updatedTypeDefs) || hasEntityDef(deletedTypeDefs);
+        return hasBusinessMetadataDef(createdTypeDefs) || hasBusinessMetadataDef(updatedTypeDefs) || hasBusinessMetadataDef(deletedTypeDefs);
     }
 
     private boolean hasBusinessMetadataDef(List<? extends AtlasBaseTypeDef> typeDefs) {
