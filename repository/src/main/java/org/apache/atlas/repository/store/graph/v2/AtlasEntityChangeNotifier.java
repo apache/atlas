@@ -66,7 +66,7 @@ import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
 
 
 @Component
-public class AtlasEntityChangeNotifier {
+public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityChangeNotifier.class);
 
     private final Set<EntityChangeListener>   entityChangeListeners;
@@ -91,6 +91,7 @@ public class AtlasEntityChangeNotifier {
         this.isV2EntityNotificationEnabled = AtlasRepositoryConfiguration.isV2EntityNotificationEnabled();
     }
 
+    @Override
     public void onEntitiesMutated(EntityMutationResponse entityMutationResponse, boolean isImport) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(entityChangeListeners)) {
             return;
@@ -119,6 +120,7 @@ public class AtlasEntityChangeNotifier {
         notifyPropagatedEntities();
     }
 
+    @Override
     public void notifyRelationshipMutation(AtlasRelationship relationship, EntityNotification.EntityNotificationV2.OperationType operationType) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(entityChangeListeners)) {
             return;
@@ -137,6 +139,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onClassificationAddedToEntity(AtlasEntity entity, List<AtlasClassification> addedClassifications) throws AtlasBaseException {
         if (isV2EntityNotificationEnabled) {
             doFullTextMapping(entity.getGuid());
@@ -166,6 +169,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onClassificationsAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications) throws AtlasBaseException {
         if (isV2EntityNotificationEnabled) {
             doFullTextMappingHelper(entities);
@@ -201,6 +205,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException {
         doFullTextMapping(entity.getGuid());
 
@@ -228,6 +233,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
         doFullTextMapping(entity.getGuid());
 
@@ -255,6 +261,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onClassificationsDeletedFromEntities(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
         doFullTextMappingHelper(entities);
 
@@ -288,6 +295,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onTermAddedToEntities(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException {
         // listeners notified on term-entity association only if v2 notifications are enabled
         if (isV2EntityNotificationEnabled) {
@@ -307,6 +315,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onTermDeletedFromEntities(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException {
         // listeners notified on term-entity disassociation only if v2 notifications are enabled
         if (isV2EntityNotificationEnabled) {
@@ -326,6 +335,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void onLabelsUpdatedFromEntity(String entityGuid, Set<String> addedLabels, Set<String> deletedLabels) throws AtlasBaseException {
         doFullTextMapping(entityGuid);
 
@@ -339,6 +349,7 @@ public class AtlasEntityChangeNotifier {
         }
     }
 
+    @Override
     public void notifyPropagatedEntities() throws AtlasBaseException {
         RequestContext                         context             = RequestContext.get();
         Map<String, List<AtlasClassification>> addedPropagations   = context.getAddedPropagations();
@@ -347,6 +358,18 @@ public class AtlasEntityChangeNotifier {
         notifyPropagatedEntities(addedPropagations, PROPAGATED_CLASSIFICATION_ADD);
         notifyPropagatedEntities(removedPropagations, PROPAGATED_CLASSIFICATION_DELETE);
     }
+
+    @Override
+    public void onBusinessAttributesUpdated(String entityGuid, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException{
+        if (isV2EntityNotificationEnabled) {
+            AtlasEntity entity = instanceConverter.getAndCacheEntity(entityGuid);
+
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                listener.onBusinessAttributesUpdated(entity, updatedBusinessAttributes);
+            }
+        }
+    }
+
 
     private void notifyPropagatedEntities(Map<String, List<AtlasClassification>> entityPropagationMap, EntityAuditActionV2 action) throws AtlasBaseException {
         if (MapUtils.isEmpty(entityPropagationMap) || action == null) {
@@ -752,5 +775,4 @@ public class AtlasEntityChangeNotifier {
             }
         }
     }
-
 }
