@@ -316,4 +316,9 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     public void onRelationshipsPurged(List<AtlasRelationship> relationships) throws AtlasBaseException {
         // do nothing -> notification not sent out for term purged from entities as its been sent in case of delete
     }
+
+    @Override
+    public void onBusinessAttributesUpdated(AtlasEntity entity, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException{
+        // do nothing -> notification not sent out for business metadata attribute updation from entities
+    }
 }

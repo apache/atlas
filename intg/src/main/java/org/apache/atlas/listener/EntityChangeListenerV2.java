@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -173,4 +174,12 @@ public interface EntityChangeListenerV2 {
      * @throws AtlasBaseException if the listener notification fails
      */
     void onLabelsDeleted(AtlasEntity entity, Set<String> labels) throws AtlasBaseException;
+
+    /**
+     *
+     * @param entity the entity
+     * @param updatedBusinessAttributes business metadata attribute
+     * @throws AtlasBaseException if the listener notification fails
+     */
+    void onBusinessAttributesUpdated(AtlasEntity entity, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException;
 }

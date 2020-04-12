@@ -50,7 +50,8 @@ public class EntityAuditEventV2 implements Serializable {
         ENTITY_IMPORT_CREATE, ENTITY_IMPORT_UPDATE, ENTITY_IMPORT_DELETE,
         CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE,
         PROPAGATED_CLASSIFICATION_ADD, PROPAGATED_CLASSIFICATION_DELETE, PROPAGATED_CLASSIFICATION_UPDATE,
-        TERM_ADD, TERM_DELETE, LABEL_ADD, LABEL_DELETE, ENTITY_PURGE;
+        TERM_ADD, TERM_DELETE, LABEL_ADD, LABEL_DELETE, ENTITY_PURGE,
+        BUSINESS_ATTRIBUTE_UPDATE;
 
         public static EntityAuditActionV2 fromString(String strValue) {
             switch (strValue) {
@@ -91,6 +92,8 @@ public class EntityAuditEventV2 implements Serializable {
                     return LABEL_ADD;
                 case "LABEL_DELETE":
                     return LABEL_DELETE;
+                case "BUSINESS_ATTRIBUTE_UPDATE":
+                    return BUSINESS_ATTRIBUTE_UPDATE;
             }
 
             throw new IllegalArgumentException("No enum constant " + EntityAuditActionV2.class.getCanonicalName() + "." + strValue);

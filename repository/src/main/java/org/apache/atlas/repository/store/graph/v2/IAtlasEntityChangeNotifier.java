@@ -27,6 +27,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.notification.EntityNotification;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface IAtlasEntityChangeNotifier {
@@ -51,4 +52,6 @@ public interface IAtlasEntityChangeNotifier {
     void notifyPropagatedEntities() throws AtlasBaseException;
 
     void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException;
+
+    void onBusinessAttributesUpdated(String entityGuid, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException;
 }

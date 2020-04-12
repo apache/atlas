@@ -399,24 +399,6 @@ public class EntityGraphMapper {
         }
     }
 
-    private void updateLabels(AtlasVertex vertex, Set<String> labels) {
-        if (CollectionUtils.isNotEmpty(labels)) {
-            AtlasGraphUtilsV2.setEncodedProperty(vertex, LABELS_PROPERTY_KEY, getLabelString(labels));
-        } else {
-            vertex.removeProperty(LABELS_PROPERTY_KEY);
-        }
-    }
-
-    private String getLabelString(Collection<String> labels) {
-        String ret = null;
-
-        if (!labels.isEmpty()) {
-            ret = LABEL_NAME_DELIMITER + String.join(LABEL_NAME_DELIMITER, labels) + LABEL_NAME_DELIMITER;
-        }
-
-        return ret;
-    }
-
     /*
      * reset/overwrite business attributes of the entity with given values
      */
@@ -426,6 +408,7 @@ public class EntityGraphMapper {
         }
 
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
+        Map<String, Map<String, Object>>                 updatedBusinessAttributes    = new HashMap<>();
 
         for (Map.Entry<String, Map<String, AtlasBusinessAttribute>> entry : entityTypeBusinessAttributes.entrySet()) {
             String                              bmName             = entry.getKey();
@@ -444,6 +427,8 @@ public class EntityGraphMapper {
                         }
 
                         mapAttribute(bmAttribute, bmAttrNewValue, entityVertex, CREATE, new EntityMutationContext());
+
+                        addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrNewValue);
                     }
                 } else {
                     if (bmAttrNewValue != null) {
@@ -453,6 +438,8 @@ public class EntityGraphMapper {
                             }
 
                             mapAttribute(bmAttribute, bmAttrNewValue, entityVertex, UPDATE, new EntityMutationContext());
+
+                            addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrNewValue);
                         }
                     } else {
                         if (LOG.isDebugEnabled()) {
@@ -460,9 +447,15 @@ public class EntityGraphMapper {
                         }
 
                         entityVertex.removeProperty(bmAttribute.getVertexPropertyName());
+
+                        addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrNewValue);
                     }
                 }
             }
+        }
+
+        if (MapUtils.isNotEmpty(updatedBusinessAttributes)) {
+            entityChangeNotifier.onBusinessAttributesUpdated(AtlasGraphUtilsV2.getIdFromVertex(entityVertex), updatedBusinessAttributes);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -479,6 +472,7 @@ public class EntityGraphMapper {
         }
 
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
+        Map<String, Map<String, Object>>                 updatedBusinessAttributes    = new HashMap<>();
 
         if (MapUtils.isNotEmpty(entityTypeBusinessAttributes) && MapUtils.isNotEmpty(businessAttributes)) {
             for (Map.Entry<String, Map<String, AtlasBusinessAttribute>> entry : entityTypeBusinessAttributes.entrySet()) {
@@ -503,14 +497,22 @@ public class EntityGraphMapper {
                     if (existingValue == null) {
                         if (bmAttrValue != null) {
                             mapAttribute(bmAttribute, bmAttrValue, entityVertex, CREATE, new EntityMutationContext());
+
+                            addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrValue);
                         }
                     } else {
                         if (!Objects.equals(existingValue, bmAttrValue)) {
                             mapAttribute(bmAttribute, bmAttrValue, entityVertex, UPDATE, new EntityMutationContext());
+
+                            addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrValue);
                         }
                     }
                 }
             }
+        }
+
+        if (MapUtils.isNotEmpty(updatedBusinessAttributes)) {
+            entityChangeNotifier.onBusinessAttributesUpdated(AtlasGraphUtilsV2.getIdFromVertex(entityVertex), updatedBusinessAttributes);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -521,12 +523,13 @@ public class EntityGraphMapper {
     /*
      * remove the given business attributes from the entity
      */
-    public void removeBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes) {
+    public void removeBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> removeBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
         }
 
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
+        Map<String, Map<String, Object>>                 updatedBusinessAttributes    = new HashMap<>();
 
         if (MapUtils.isNotEmpty(entityTypeBusinessAttributes) && MapUtils.isNotEmpty(businessAttributes)) {
             for (Map.Entry<String, Map<String, AtlasBusinessAttribute>> entry : entityTypeBusinessAttributes.entrySet()) {
@@ -539,14 +542,20 @@ public class EntityGraphMapper {
 
                 Map<String, Object> entityBmAttributes = businessAttributes.get(bmName);
 
-                for (AtlasBusinessAttribute bmttribute : bmAttributes.values()) {
+                for (AtlasBusinessAttribute bmAttribute : bmAttributes.values()) {
                     // if (entityBmAttributes is empty) remove all attributes in this business-metadata
                     // else remove the attribute only if its given in entityBmAttributes
-                    if (MapUtils.isEmpty(entityBmAttributes) || entityBmAttributes.containsKey(bmttribute.getName())) {
-                        entityVertex.removeProperty(bmttribute.getVertexPropertyName());
+                    if (MapUtils.isEmpty(entityBmAttributes) || entityBmAttributes.containsKey(bmAttribute.getName())) {
+                        entityVertex.removeProperty(bmAttribute.getVertexPropertyName());
+
+                        addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, null);
                     }
                 }
             }
+        }
+
+        if (MapUtils.isNotEmpty(updatedBusinessAttributes)) {
+            entityChangeNotifier.onBusinessAttributesUpdated(AtlasGraphUtilsV2.getIdFromVertex(entityVertex), updatedBusinessAttributes);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -2558,5 +2567,36 @@ public class EntityGraphMapper {
         }
 
         return propagatedEntities;
+    }
+
+    private void updateLabels(AtlasVertex vertex, Set<String> labels) {
+        if (CollectionUtils.isNotEmpty(labels)) {
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, LABELS_PROPERTY_KEY, getLabelString(labels));
+        } else {
+            vertex.removeProperty(LABELS_PROPERTY_KEY);
+        }
+    }
+
+    private String getLabelString(Collection<String> labels) {
+        String ret = null;
+
+        if (!labels.isEmpty()) {
+            ret = LABEL_NAME_DELIMITER + String.join(LABEL_NAME_DELIMITER, labels) + LABEL_NAME_DELIMITER;
+        }
+
+        return ret;
+    }
+
+    private void addToUpdatedBusinessAttributes(Map<String, Map<String, Object>> updatedBusinessAttributes, AtlasBusinessAttribute bmAttribute, Object attrValue) {
+        String              bmName     = bmAttribute.getDefinedInType().getTypeName();
+        Map<String, Object> attributes = updatedBusinessAttributes.get(bmName);
+
+        if(attributes == null){
+            attributes = new HashMap<>();
+
+            updatedBusinessAttributes.put(bmName, attributes);
+        }
+
+        attributes.put(bmAttribute.getName(), attrValue);
     }
 }

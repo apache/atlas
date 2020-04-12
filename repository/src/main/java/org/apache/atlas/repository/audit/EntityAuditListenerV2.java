@@ -28,11 +28,13 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -50,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.BUSINESS_ATTRIBUTE_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_UPDATE;
@@ -341,6 +344,57 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
     }
 
+    @Override
+    public void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("New relationship(s) added to repository(" + relationships.size() + ")");
+        }
+    }
+
+    @Override
+    public void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Relationship(s) updated(" + relationships.size() + ")");
+        }
+    }
+
+    @Override
+    public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Relationship(s) deleted from repository(" + relationships.size() + ")");
+        }
+    }
+
+    @Override
+    public void onRelationshipsPurged(List<AtlasRelationship> relationships) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Relationship(s) purged from repository(" + relationships.size() + ")");
+        }
+    }
+
+    @Override
+    public void onBusinessAttributesUpdated(AtlasEntity entity, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException {
+        if (MapUtils.isNotEmpty(updatedBusinessAttributes)) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+
+            List<EntityAuditEventV2> auditEvents = new ArrayList<>();
+
+            for (Map.Entry<String, Map<String, Object>> entry : updatedBusinessAttributes.entrySet()) {
+                String              bmName     = entry.getKey();
+                Map<String, Object> attributes = entry.getValue();
+                String              details    = AtlasJson.toJson(new AtlasStruct(bmName, attributes));
+                EntityAuditEventV2  auditEvent = createEvent(entity, BUSINESS_ATTRIBUTE_UPDATE, "Updated business attributes: " + details);
+
+                auditEvents.add(auditEvent);
+            }
+
+            auditRepository.putEventsV2(auditEvents);
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+
     private EntityAuditEventV2 createEvent(AtlasEntity entity, EntityAuditActionV2 action, String details) {
         return new EntityAuditEventV2(entity.getGuid(), RequestContext.get().getRequestTime(),
                                       RequestContext.get().getUser(), action, details, entity);
@@ -565,33 +619,5 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
-    }
-
-    @Override
-    public void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("New relationship(s) added to repository(" + relationships.size() + ")");
-        }
-    }
-
-    @Override
-    public void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Relationship(s) updated(" + relationships.size() + ")");
-        }
-    }
-
-    @Override
-    public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Relationship(s) deleted from repository(" + relationships.size() + ")");
-        }
-    }
-
-    @Override
-    public void onRelationshipsPurged(List<AtlasRelationship> relationships) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Relationship(s) purged from repository(" + relationships.size() + ")");
-        }
     }
 }

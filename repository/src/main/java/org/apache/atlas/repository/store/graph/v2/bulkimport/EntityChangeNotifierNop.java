@@ -28,6 +28,7 @@ import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class EntityChangeNotifierNop implements IAtlasEntityChangeNotifier {
@@ -83,6 +84,11 @@ public class EntityChangeNotifierNop implements IAtlasEntityChangeNotifier {
 
     @Override
     public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException {
+
+    }
+
+    @Override
+    public void onBusinessAttributesUpdated(String entityGuid, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException {
 
     }
 }
