@@ -21,6 +21,7 @@ package org.apache.atlas.model.audit;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.AtlasBaseModelObject;
 
 import java.io.Serializable;
@@ -36,10 +37,33 @@ public class AtlasAuditEntry extends AtlasBaseModelObject implements Serializabl
     private static final long serialVersionUID = 1L;
 
     public enum AuditOperation {
-        PURGE,
-        EXPORT,
-        IMPORT,
-        IMPORT_DELETE_REPL
+        PURGE("PURGE"),
+        EXPORT("EXPORT"),
+        IMPORT("IMPORT"),
+        IMPORT_DELETE_REPL("IMPORT_DELETE_REPL");
+
+        private final String type;
+
+        AuditOperation(String type) {
+            this.type = type;
+        }
+
+        public EntityAuditEventV2.EntityAuditActionV2 toEntityAuditActionV2() throws AtlasBaseException {
+            switch (this.type) {
+                case "PURGE":
+                    return EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE;
+                default:
+                    try {
+                        return EntityAuditEventV2.EntityAuditActionV2.fromString(this.type);
+                    } catch (IllegalArgumentException e) {
+                        throw new AtlasBaseException("Invalid operation for Entity Audit Event V2: " + this.type);
+                    }
+            }
+        }
+
+        public String getType() {
+            return type;
+        }
     }
 
     private String userName;

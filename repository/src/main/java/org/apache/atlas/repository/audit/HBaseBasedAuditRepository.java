@@ -42,8 +42,10 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.filter.BinaryComparator;
 import org.apache.hadoop.hbase.filter.BinaryPrefixComparator;
 import org.apache.hadoop.hbase.filter.CompareFilter;
+import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.io.compress.Compression;
@@ -105,6 +107,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
     private static final String  FIELD_SEPARATOR = ":";
     private static final long    ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE = 1024 * 1024;
     private static Configuration APPLICATION_PROPERTIES = null;
+    private static final int     DEFAULT_CACHING = 200;
 
     private static boolean       persistEntityDefinition;
 
@@ -223,10 +226,9 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         }
     }
 
-    @Override
-    public List<EntityAuditEventV2> listEventsV2(String entityId, String startKey, short n) throws AtlasBaseException {
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditActionV2 auditAction, String startKey, short maxResultCount) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Listing events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, n);
+            LOG.debug("Listing events for entity id {}, operation {}, starting key{}, maximum result count {}", entityId, auditAction.toString(), startKey, maxResultCount);
         }
 
         Table         table   = null;
@@ -238,14 +240,30 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             /**
              * Scan Details:
              * In hbase, the events are stored in increasing order of timestamp. So, doing reverse scan to get the latest event first
-             * Page filter is set to limit the number of results returned.
+             * Page filter is set to limit the number of results returned if needed
              * Stop row is set to the entity id to avoid going past the current entity while scanning
-             * small is set to true to optimise RPC calls as the scanner is created per request
+             * SingleColumnValueFilter is been used to match the operation at COLUMN_FAMILY->COLUMN_ACTION
+             * Small is set to true to optimise RPC calls as the scanner is created per request
+             * setCaching(DEFAULT_CACHING) will increase the payload size to DEFAULT_CACHING rows per remote call and
+             *  both types of next() take these settings into account.
              */
-            Scan scan = new Scan().setReversed(true).setFilter(new PageFilter(n))
-                                  .setStopRow(Bytes.toBytes(entityId))
-                                  .setCaching(n)
-                                  .setSmall(true);
+            Scan scan = new Scan().setReversed(true)
+                    .setCaching(DEFAULT_CACHING)
+                    .setSmall(true);
+
+            if(maxResultCount > -1) {
+                scan.setFilter(new PageFilter(maxResultCount));
+            }
+
+            if (auditAction != null) {
+                Filter filterAction = new SingleColumnValueFilter(COLUMN_FAMILY,
+                        COLUMN_ACTION, CompareFilter.CompareOp.EQUAL, new BinaryComparator(Bytes.toBytes(auditAction.toString())));
+                scan.setFilter(filterAction);
+            }
+
+            if(StringUtils.isNotBlank(entityId)) {
+                scan.setStopRow(Bytes.toBytes(entityId));
+            }
 
             if (StringUtils.isEmpty(startKey)) {
                 //Set start row to entity id + max long value
@@ -260,13 +278,14 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
             Result result;
 
-            //PageFilter doesn't ensure n results are returned. The filter is per region server.
-            //So, adding extra check on n here
-            while ((result = scanner.next()) != null && events.size() < n) {
+            //PageFilter doesn't ensure maxResultCount results are returned. The filter is per region server.
+            //So, adding extra check on maxResultCount
+            while ((result = scanner.next()) != null && (maxResultCount == -1 || events.size() < maxResultCount)) {
+
                 EntityAuditEventV2 event = fromKeyV2(result.getRow());
 
-                //In case the user sets random start key, guarding against random events
-                if (!event.getEntityId().equals(entityId)) {
+                //In case the user sets random start key, guarding against random events if entityId is provided
+                if (StringUtils.isNotBlank(entityId) && !event.getEntityId().equals(entityId)) {
                     continue;
                 }
 
@@ -286,7 +305,8 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             }
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Got events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, events.size());
+                LOG.debug("Got events for entity id {}, operation {}, starting key{}, maximum result count {}, #records returned {}",
+                        entityId, auditAction.toString(), startKey, maxResultCount, events.size());
             }
 
             return events;
@@ -304,7 +324,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     @Override
     public List<Object> listEvents(String entityId, String startKey, short maxResults) throws AtlasBaseException {
-        List ret = listEventsV2(entityId, startKey, maxResults);
+        List ret = listEventsV2(entityId, null, startKey, maxResults);
 
         try {
             if (CollectionUtils.isEmpty(ret)) {

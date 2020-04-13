@@ -25,6 +25,7 @@ import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -796,6 +797,7 @@ public class EntityREST {
     @GET
     @Path("{guid}/audit")
     public List<EntityAuditEventV2> getAuditEvents(@PathParam("guid") String guid, @QueryParam("startKey") String startKey,
+                                                   @QueryParam("auditAction") EntityAuditActionV2 auditAction,
                                                    @QueryParam("count") @DefaultValue("100") short count) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -804,16 +806,21 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
             }
 
-            List                     events = auditRepository.listEvents(guid, startKey, count);
-            List<EntityAuditEventV2> ret    = new ArrayList<>();
+            List<EntityAuditEventV2> ret = new ArrayList<>();
 
-            for (Object event : events) {
-                if (event instanceof EntityAuditEventV2) {
-                    ret.add((EntityAuditEventV2) event);
-                } else if (event instanceof EntityAuditEvent) {
-                    ret.add(instanceConverter.toV2AuditEvent((EntityAuditEvent) event));
-                } else {
-                    LOG.warn("unknown entity-audit event type {}. Ignored", event != null ? event.getClass().getCanonicalName() : "null");
+            if(auditAction != null) {
+                ret = auditRepository.listEventsV2(guid, auditAction, startKey, count);
+            } else {
+                List events = auditRepository.listEvents(guid, startKey, count);
+
+                for (Object event : events) {
+                    if (event instanceof EntityAuditEventV2) {
+                        ret.add((EntityAuditEventV2) event);
+                    } else if (event instanceof EntityAuditEvent) {
+                        ret.add(instanceConverter.toV2AuditEvent((EntityAuditEvent) event));
+                    } else {
+                        LOG.warn("unknown entity-audit event type {}. Ignored", event != null ? event.getClass().getCanonicalName() : "null");
+                    }
                 }
             }
 

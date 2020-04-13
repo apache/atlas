@@ -144,8 +144,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         List<EntityAuditEventV2> events = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
-            EntityAuditEventV2 event = createEvent(entity, ENTITY_PURGE, "Purged entity");
-
+            EntityAuditEventV2 event = createEvent(entity, ENTITY_PURGE);
             events.add(event);
         }
 

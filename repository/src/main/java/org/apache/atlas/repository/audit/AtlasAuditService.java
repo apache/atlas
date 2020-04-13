@@ -28,6 +28,7 @@ import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
 import org.apache.atlas.model.audit.AuditSearchParameters;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.ogm.AtlasAuditEntryDTO;
 import org.apache.atlas.repository.ogm.DataAccess;
@@ -104,14 +105,25 @@ public class AtlasAuditService {
         searchParameters.setAttributes(getAuditEntityAttributes());
 
         AtlasSearchResult result = discoveryService.searchWithParameters(searchParameters);
-        return toAtlasAuditEntry(result);
+        return toAtlasAuditEntries(result);
+    }
+
+    public AtlasAuditEntry toAtlasAuditEntry(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
+        AtlasAuditEntry ret = null;
+
+        if(entityWithExtInfo != null && entityWithExtInfo.getEntity() != null) {
+            ret = AtlasAuditEntryDTO.from(entityWithExtInfo.getEntity().getGuid(),
+                    entityWithExtInfo.getEntity().getAttributes());
+        }
+
+        return ret;
     }
 
     private Set<String> getAuditEntityAttributes() {
         return AtlasAuditEntryDTO.getAttributes();
     }
 
-    private List<AtlasAuditEntry> toAtlasAuditEntry(AtlasSearchResult result) {
+    private List<AtlasAuditEntry> toAtlasAuditEntries(AtlasSearchResult result) {
         List<AtlasAuditEntry> ret = new ArrayList<>();
 
         if(CollectionUtils.isNotEmpty(result.getEntities())) {

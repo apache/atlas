@@ -102,7 +102,7 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
     }
 
     @Override
-    public List<EntityAuditEventV2> listEventsV2(String entityId, String startKey, short maxResults) {
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResults) {
         List<EntityAuditEventV2> events     = new ArrayList<>();
         String                   myStartKey = startKey;
 
@@ -137,7 +137,7 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
 
     @Override
     public List<Object> listEvents(String entityId, String startKey, short maxResults) {
-        List events = listEventsV2(entityId, startKey, maxResults);
+        List events = listEventsV2(entityId, null, startKey, maxResults);
 
         if (CollectionUtils.isEmpty(events)) {
             events = listEventsV1(entityId, startKey, maxResults);

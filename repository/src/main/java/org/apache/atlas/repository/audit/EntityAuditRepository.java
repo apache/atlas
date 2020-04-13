@@ -71,12 +71,13 @@ public interface EntityAuditRepository {
     /**
      * List events for the given entity id in decreasing order of timestamp, from the given timestamp. Returns n results
      * @param entityId entity id
+     * @param auditAction operation to be used for search at HBase column
      * @param startKey key for the first event to be returned, used for pagination
-     * @param n        number of events to be returned
+     * @param maxResultCount  Max numbers of events to be returned
      * @return list of events
      * @throws AtlasBaseException
      */
-    List<EntityAuditEventV2> listEventsV2(String entityId, String startKey, short n) throws AtlasBaseException;
+    List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResultCount) throws AtlasBaseException;
 
     /***
      * List events for given time range where classifications have been added, deleted or updated.
