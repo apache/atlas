@@ -114,7 +114,7 @@ public class AuditRepositoryTestBase {
 
         eventRepository.putEventsV2(event);
 
-        List<EntityAuditEventV2> events = eventRepository.listEventsV2(event.getEntityId(), null, (short) 10);
+        List<EntityAuditEventV2> events = eventRepository.listEventsV2(event.getEntityId(), null, null, (short) 10);
 
         assertEquals(events.size(), 1);
         assertEventV2Equals(events.get(0), event);
@@ -140,14 +140,14 @@ public class AuditRepositoryTestBase {
         }
 
         //Use ts for which there is no event - ts + 2
-        List<EntityAuditEventV2> events = eventRepository.listEventsV2(id2, null, (short) 3);
+        List<EntityAuditEventV2> events = eventRepository.listEventsV2(id2, null, null, (short) 3);
         assertEquals(events.size(), 3);
         assertEventV2Equals(events.get(0), expectedEvents.get(0));
         assertEventV2Equals(events.get(1), expectedEvents.get(1));
         assertEventV2Equals(events.get(2), expectedEvents.get(2));
 
         //Use last event's timestamp for next list(). Should give only 1 event and shouldn't include events from other id
-        events = eventRepository.listEventsV2(id2, events.get(2).getEventKey(), (short) 3);
+        events = eventRepository.listEventsV2(id2, null, events.get(2).getEventKey(), (short) 3);
         assertEquals(events.size(), 1);
         assertEventV2Equals(events.get(0), expectedEvents.get(2));
     }

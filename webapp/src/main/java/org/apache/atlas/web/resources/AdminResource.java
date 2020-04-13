@@ -32,6 +32,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
 import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
 import org.apache.atlas.model.audit.AuditSearchParameters;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
@@ -46,6 +48,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.repository.audit.AtlasAuditService;
+import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.impexp.AtlasServerService;
 import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.impexp.ExportService;
@@ -94,6 +97,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -151,6 +155,7 @@ public class AdminResource {
     private final  AtlasPatchManager        patchManager;
     private final  AtlasAuditService        auditService;
     private final  String                   defaultUIVersion;
+    private final  EntityAuditRepository    auditRepository;
 
     static {
         try {
@@ -166,7 +171,7 @@ public class AdminResource {
                          MigrationProgressService migrationProgressService,
                          AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
-                         AtlasPatchManager patchManager, AtlasAuditService auditService) {
+                         AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -180,6 +185,8 @@ public class AdminResource {
         this.importExportOperationLock = new ReentrantLock();
         this.patchManager              = patchManager;
         this.auditService              = auditService;
+        this.auditRepository           = auditRepository;
+
         if (atlasProperties != null) {
             defaultUIVersion = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
         } else {
@@ -588,10 +595,53 @@ public class AdminResource {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "getAtlasAudit(" + auditSearchParameters + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAtlasAudits(" + auditSearchParameters + ")");
             }
 
             return auditService.get(auditSearchParameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+
+    @GET
+    @Path("/audit/{auditGuid}/details")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<AtlasEntityHeader> getAuditDetails(@PathParam("auditGuid") String auditGuid,
+                                    @QueryParam("limit") @DefaultValue("10") int limit,
+                                    @QueryParam("offset") @DefaultValue("0") int offset) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAuditDetails(" + auditGuid + ", " + limit + ", " + offset + ")");
+            }
+
+            List<AtlasEntityHeader> ret = new ArrayList<>();
+
+            AtlasAuditEntry auditEntry = auditService.toAtlasAuditEntry(entityStore.getById(auditGuid, false, true));
+
+            if(auditEntry != null && StringUtils.isNotEmpty(auditEntry.getResult())) {
+                String[] listOfResultGuid = auditEntry.getResult().split(",");
+                EntityAuditActionV2 auditAction = auditEntry.getOperation().toEntityAuditActionV2();
+
+                if(offset <= listOfResultGuid.length) {
+                    for(int index=offset; index < listOfResultGuid.length && index < (offset + limit); index++) {
+                        List<EntityAuditEventV2> events = auditRepository.listEventsV2(listOfResultGuid[index], auditAction, null, (short)1);
+
+                        for (EntityAuditEventV2 event : events) {
+                            AtlasEntityHeader entityHeader = event.getEntityHeader();
+                            if(entityHeader != null) {
+                                ret.add(entityHeader);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return ret;
         } finally {
             AtlasPerfTracer.log(perf);
         }

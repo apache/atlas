@@ -63,7 +63,7 @@ public class NoopEntityAuditRepository implements EntityAuditRepository {
     }
 
     @Override
-    public List<EntityAuditEventV2> listEventsV2(String entityId, String startKey, short n) {
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResultCount) {
         return Collections.emptyList();
     }
 

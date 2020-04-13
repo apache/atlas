@@ -22,7 +22,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.lang.StringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -241,5 +243,27 @@ public class EntityAuditEventV2 implements Serializable {
         sb.append('}');
 
         return sb.toString();
+    }
+
+    @JsonIgnore
+    public AtlasEntityHeader getEntityHeader() {
+        AtlasEntityHeader ret = null;
+        String jsonPartFromDetails = getJsonPartFromDetails();
+        if(StringUtils.isNotEmpty(jsonPartFromDetails)) {
+            ret = AtlasType.fromJson(jsonPartFromDetails, AtlasEntityHeader.class);
+        }
+        return ret;
+    }
+
+    private String getJsonPartFromDetails() {
+        String ret = null;
+        if(StringUtils.isNotEmpty(details)) {
+            int bracketStartPosition = details.indexOf("{");
+            if(bracketStartPosition != -1) {
+                ret = details.substring(bracketStartPosition);
+            }
+        }
+
+        return ret;
     }
 }

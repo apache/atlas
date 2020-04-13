@@ -162,7 +162,7 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   }
 
   @Override
-  public List<EntityAuditEventV2> listEventsV2(String entityId, String startKey, short maxResults) throws AtlasBaseException {
+  public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResults) throws AtlasBaseException {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Listing events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, maxResults);
     }

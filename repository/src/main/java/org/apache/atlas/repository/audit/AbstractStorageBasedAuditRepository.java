@@ -86,7 +86,7 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
 
   @Override
   public List<Object> listEvents(String entityId, String startKey, short maxResults) throws AtlasBaseException {
-    List ret = listEventsV2(entityId, startKey, maxResults);
+    List ret = listEventsV2(entityId, null, startKey, maxResults);
 
     try {
       if (CollectionUtils.isEmpty(ret)) {
