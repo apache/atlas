@@ -188,7 +188,7 @@ public class QuickStartV2 {
                 quickStartV2.closeConnection();
             }
         }
-        
+
     }
 
     static String[] getServerUrl(String[] args) throws AtlasException {
@@ -351,56 +351,56 @@ public class QuickStartV2 {
 
         // Table entities
         AtlasEntity salesFact = createTable(SALES_FACT_TABLE, "sales fact table", salesDB, "Joe", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(PRODUCT_ID_COLUMN, "int", "product id"),
-                                                                      createColumn(CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
-                                                                      createColumn(SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
+                                                        Arrays.asList(createColumn(SALES_DB, SALES_FACT_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                                                                      createColumn(SALES_DB, SALES_FACT_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
+                                                                      createColumn(SALES_DB, SALES_FACT_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
+                                                                      createColumn(SALES_DB, SALES_FACT_TABLE, SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
                                                         FACT_CLASSIFICATION);
 
         AtlasEntity productDim = createTable(PRODUCT_DIM_TABLE, "product dimension table", salesDB, "John Doe", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(PRODUCT_ID_COLUMN, "int", "product id"),
-                                                                      createColumn(PRODUCT_NAME_COLUMN, "string", "product name"),
-                                                                      createColumn(BRAND_NAME_COLUMN, "int", "brand name")),
+                                                        Arrays.asList(createColumn(SALES_DB, PRODUCT_DIM_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
+                                                                      createColumn(SALES_DB, PRODUCT_DIM_TABLE, PRODUCT_NAME_COLUMN, "string", "product name"),
+                                                                      createColumn(SALES_DB, PRODUCT_DIM_TABLE, BRAND_NAME_COLUMN, "int", "brand name")),
                                                         DIMENSION_CLASSIFICATION);
 
         AtlasEntity customerDim = createTable(CUSTOMER_DIM_TABLE, "customer dimension table", salesDB, "fetl", EXTERNAL_TABLE,
-                                                        Arrays.asList(createColumn(CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
-                                                                      createColumn(NAME_COLUMN, "string", "customer name", PII_CLASSIFICATION),
-                                                                      createColumn(ADDRESS_COLUMN, "string", "customer address", PII_CLASSIFICATION)),
+                                                        Arrays.asList(createColumn(SALES_DB, CUSTOMER_DIM_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
+                                                                      createColumn(SALES_DB, CUSTOMER_DIM_TABLE, NAME_COLUMN, "string", "customer name", PII_CLASSIFICATION),
+                                                                      createColumn(SALES_DB, CUSTOMER_DIM_TABLE, ADDRESS_COLUMN, "string", "customer address", PII_CLASSIFICATION)),
                                                         DIMENSION_CLASSIFICATION);
 
         AtlasEntity timeDim = createTable(TIME_DIM_TABLE, "time dimension table", salesDB, "John Doe", EXTERNAL_TABLE,
-                                                        Arrays.asList(createColumn(TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(DAY_OF_YEAR_COLUMN, "int", "day Of Year"),
-                                                                      createColumn(WEEKDAY_COLUMN, "int", "week Day")),
+                                                        Arrays.asList(createColumn(SALES_DB, TIME_DIM_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                                                                      createColumn(SALES_DB, TIME_DIM_TABLE, DAY_OF_YEAR_COLUMN, "int", "day Of Year"),
+                                                                      createColumn(SALES_DB, TIME_DIM_TABLE, WEEKDAY_COLUMN, "int", "week Day")),
                                                         DIMENSION_CLASSIFICATION);
 
         AtlasEntity loggingFactDaily = createTable(LOG_FACT_DAILY_MV_TABLE, "log fact daily materialized view", logDB, "Tim ETL", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(APP_ID_COLUMN, "int", "app id"),
-                                                                      createColumn(MACHINE_ID_COLUMN, "int", "machine id"),
-                                                                      createColumn(LOG_COLUMN, "string", "log data", LOGDATA_CLASSIFICATION)),
+                                                        Arrays.asList(createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                                                                      createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, APP_ID_COLUMN, "int", "app id"),
+                                                                      createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, MACHINE_ID_COLUMN, "int", "machine id"),
+                                                                      createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, LOG_COLUMN, "string", "log data", LOGDATA_CLASSIFICATION)),
                                                         LOGDATA_CLASSIFICATION);
 
         AtlasEntity loggingFactMonthly = createTable(LOG_FACT_MONTHLY_MV_TABLE, "logging fact monthly materialized view", logDB, "Tim ETL", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(APP_ID_COLUMN, "int", "app id"),
-                                                                      createColumn(MACHINE_ID_COLUMN, "int", "machine id"),
-                                                                      createColumn(LOG_COLUMN, "string", "log data", LOGDATA_CLASSIFICATION)),
+                                                        Arrays.asList(createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                                                                      createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, APP_ID_COLUMN, "int", "app id"),
+                                                                      createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, MACHINE_ID_COLUMN, "int", "machine id"),
+                                                                      createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, LOG_COLUMN, "string", "log data", LOGDATA_CLASSIFICATION)),
                                                         LOGDATA_CLASSIFICATION);
 
         AtlasEntity salesFactDaily = createTable(SALES_FACT_DAILY_MV_TABLE, "sales fact daily materialized view", reportingDB, "Joe BI", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(PRODUCT_ID_COLUMN, "int", "product id"),
-                                                                      createColumn(CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
-                                                                      createColumn(SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
+                                                        Arrays.asList(createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                                                                      createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
+                                                                      createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
+                                                                      createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
                                                         METRIC_CLASSIFICATION);
 
         AtlasEntity salesFactMonthly = createTable(SALES_FACT_MONTHLY_MV_TABLE, "sales fact monthly materialized view", reportingDB, "Jane BI", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(PRODUCT_ID_COLUMN, "int", "product id"),
-                                                                      createColumn(CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
-                                                                      createColumn(SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
+                                                        Arrays.asList(createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                                                                      createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
+                                                                      createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
+                                                                      createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
                                                         METRIC_CLASSIFICATION);
 
         // View entities
@@ -503,12 +503,12 @@ public class QuickStartV2 {
         return ret;
     }
 
-    AtlasEntity createColumn(String name, String dataType, String comment, String... classificationNames) {
+    AtlasEntity createColumn(String databaseName, String tableName, String columnName, String dataType, String comment, String... classificationNames) {
         AtlasEntity ret = new AtlasEntity(COLUMN_TYPE);
 
         // set attributes
-        ret.setAttribute("name", name);
-        ret.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, name + CLUSTER_SUFFIX);
+        ret.setAttribute("name", columnName);
+        ret.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, databaseName + "." + tableName + "." + columnName + CLUSTER_SUFFIX);
         ret.setAttribute("dataType", dataType);
         ret.setAttribute("comment", comment);
 
