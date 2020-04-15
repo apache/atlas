@@ -31,7 +31,6 @@ import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
@@ -209,18 +208,18 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             LOG.debug("Type definition load completed. Informing the completion to IndexChangeListeners.");
         }
 
-        ChangedTypeDefs      changedTypeDefs = null;
+        Collection<AtlasBaseTypeDef> typeDefs = new ArrayList<>();
+
+        typeDefs.addAll(typeRegistry.getAllEntityDefs());
+        typeDefs.addAll(typeRegistry.getAllBusinessMetadataDefs());
+
+        ChangedTypeDefs      changedTypeDefs = new ChangedTypeDefs(null, new ArrayList<>(typeDefs), null);
         AtlasGraphManagement management      = null;
 
         try {
             management = provider.get().getManagementSystem();
 
-            //resolve index fields names for the new entity attributes.
-            changedTypeDefs = new ChangedTypeDefs(null, new ArrayList<>(typeRegistry.getAllEntityDefs()), null);
-            resolveIndexFieldNames(management, changedTypeDefs);
-
-            //resolve index fields names for the new business metadata attributes.
-            changedTypeDefs = new ChangedTypeDefs(null, new ArrayList<>(typeRegistry.getAllBusinessMetadataDefs()), null);
+            //resolve index fields names
             resolveIndexFieldNames(management, changedTypeDefs);
 
             //Commit indexes

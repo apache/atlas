@@ -68,10 +68,16 @@ public class SolrIndexHelper implements IndexChangeListener {
 
     @Override
     public void onChange(ChangedTypeDefs changedTypeDefs) {
-        if (!AtlasRepositoryConfiguration.isFreeTextSearchEnabled() ||
-            changedTypeDefs == null || !(changedTypeDefs.hasEntityDef() || changedTypeDefs.hasBusinessMetadataDef())) { // nothing to do if there are no changes to entity-defs
+        if (!AtlasRepositoryConfiguration.isFreeTextSearchEnabled()) {
             return;
         }
+
+        if (changedTypeDefs == null || !(changedTypeDefs.hasEntityDef() || changedTypeDefs.hasBusinessMetadataDef())) {
+            LOG.info("SolrIndexHelper.onChange(): no change in entity/business-metadata types. No updates needed.");
+
+            return;
+        }
+
         if(initializationCompleted) {
             try {
                 AtlasGraph            graph                          = AtlasGraphProvider.getGraphInstance();
