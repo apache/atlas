@@ -23,6 +23,7 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
@@ -82,6 +83,19 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         }
 
         return ret;
+    }
+
+    @Override
+    public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
+        super.validateType(typeDef);
+        AtlasBusinessMetadataDef businessMetadataDef = (AtlasBusinessMetadataDef) typeDef;
+        if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
+            for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
+                if (!isValidName(attributeDef.getName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_INVALID_CHARS, attributeDef.getName());
+                }
+            }
+        }
     }
 
     @Override
