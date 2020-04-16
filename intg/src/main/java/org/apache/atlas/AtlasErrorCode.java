@@ -167,8 +167,9 @@ public enum AtlasErrorCode {
     INVALID_BUSINESS_METADATA_NAME_FOR_ENTITY_TYPE(400, "ATLAS-400-00-095", "Invalid business-metadata: {0} specified for entity, applicable business-metadata: {1}"),
     BUSINESS_METADATA_ATTRIBUTE_DOES_NOT_EXIST(400, "ATLAS-400-00-096", "Business-metadata attribute does not exist in entity: {0}"),
     BUSINESS_METADATA_ATTRIBUTE_ALREADY_EXISTS(400, "ATLAS-400-00-097", "Business-metadata attribute already exists in entity: {0}"),
-    INVALID_FILE_TYPE(400, "ATLAS-400-00-98", "The provided file type {0} is not supported."),
-    INVALID_BUSINESS_ATTRIBUTES_IMPORT_DATA(400, "ATLAS-400-00-99","The uploaded file was not processed due to following errors : {0}"),
+    INVALID_FILE_TYPE(400, "ATLAS-400-00-098", "The provided file type {0} is not supported."),
+    INVALID_BUSINESS_ATTRIBUTES_IMPORT_DATA(400, "ATLAS-400-00-099","The uploaded file was not processed due to following errors : {0}"),
+    ATTRIBUTE_NAME_INVALID_CHARS(400, "ATLAS-400-00-09A", "{0}: invalid name. Attribute names must begin with a letter followed by a sequence of letters, numbers, or '_' characters"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
