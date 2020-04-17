@@ -48,6 +48,16 @@
 
     .label {
         fill: $color_suva_gray_approx;
+
+        &.highlight {
+            cursor: pointer;
+            fill: $color_havelock_blue_approx;
+            text-decoration: underline;
+
+            tspan {
+                font-weight: 400;
+            }
+        }
     }
 
     circle {
