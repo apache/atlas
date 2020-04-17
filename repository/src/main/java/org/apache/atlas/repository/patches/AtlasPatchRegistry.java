@@ -25,8 +25,6 @@ import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2;
@@ -47,8 +45,10 @@ import java.util.Map;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.EQUAL;
+import static org.apache.atlas.repository.patches.AtlasPatchHandler.JAVA_PATCH_TYPE;
+import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.TYPEDEF_PATCH_TYPE;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getEncodedProperty;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIndexSearchPrefix;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 import static org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2.getCurrentUser;
 
@@ -168,17 +168,21 @@ public class AtlasPatchRegistry {
     }
 
     private static AtlasPatches getAllPatches(AtlasGraph graph) {
-        List<AtlasPatch> ret            = new ArrayList<>();
-        String           idxQueryString = getIndexSearchPrefix() + "\"" + PATCH_ID_PROPERTY_KEY + "\" : (*)";
-        AtlasIndexQuery  idxQuery       = graph.indexQuery(VERTEX_INDEX, idxQueryString);
+        List<AtlasGraphQuery> orConditions = new ArrayList<>();
+        List<AtlasPatch> ret = new ArrayList<>();
+        AtlasGraphQuery query = graph.query();
+
+        orConditions.add(query.createChildQuery().has(PATCH_TYPE_PROPERTY_KEY, EQUAL, TYPEDEF_PATCH_TYPE));
+        orConditions.add(query.createChildQuery().has(PATCH_TYPE_PROPERTY_KEY, EQUAL, JAVA_PATCH_TYPE));
+
+        query.or(orConditions);
 
         try {
-            Iterator<Result<Object, Object>> results = idxQuery.vertices();
+            Iterator<AtlasVertex> results = query.vertices().iterator();
 
             while (results != null && results.hasNext()) {
-                AtlasVertex patchVertex = results.next().getVertex();
-                AtlasPatch patch        = toAtlasPatch(patchVertex);
-
+                AtlasVertex patchVertex = results.next();
+                AtlasPatch patch = toAtlasPatch(patchVertex);
                 ret.add(patch);
             }
 
