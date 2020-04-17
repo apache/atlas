@@ -656,8 +656,8 @@
         <jersey.version>1.19</jersey.version>
         <jsr.version>1.1</jsr.version>
 
-        <janus.version>0.4.1</janus.version>
-        <tinkerpop.version>3.4.4</tinkerpop.version>
+        <janus.version>0.5.1</janus.version>
+        <tinkerpop.version>3.4.6</tinkerpop.version>
         <lucene-solr.version>7.3.0</lucene-solr.version>
 
         <hadoop.version>3.1.1</hadoop.version>
