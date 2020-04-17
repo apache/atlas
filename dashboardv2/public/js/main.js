@@ -42,7 +42,7 @@ require.config({
      * @default 7 seconds
      * @type {Number}
      */
-    'waitSeconds': 30,
+    'waitSeconds': 0,
 
     'shim': {
         'backbone': {

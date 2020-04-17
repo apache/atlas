@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-define(['require'], function(require) {
+define(['require', 'utils/Utils'], function(require, Utils) {
     'use strict';
-    var LinegaeUtils = {};
-    LinegaeUtils.DragNode = function(options) {
+    var LineageUtils = {};
+    LineageUtils.DragNode = function(options) {
         var that = this,
             g = options.g,
             svg = options.svg,
@@ -99,7 +99,7 @@ define(['require'], function(require) {
                         }
                     }
                 });
-                LinegaeUtils.refreshGraphForIE({ "edgeEl": edgePathEl })
+                LineageUtils.refreshGraphForIE({ "edgeEl": edgePathEl })
             },
             translateEdge: function(e, dx, dy) {
                 e.points.forEach(function(p) {
@@ -158,7 +158,7 @@ define(['require'], function(require) {
             },
         }
     }
-    LinegaeUtils.refreshGraphForSafari = function(options) {
+    LineageUtils.refreshGraphForSafari = function(options) {
         var edgePathEl = options.edgeEl,
             IEGraphRenderDone = 0;
         edgePathEl.each(function(argument) {
@@ -169,7 +169,7 @@ define(['require'], function(require) {
             }, 500);
         });
     }
-    LinegaeUtils.refreshGraphForIE = function(options) {
+    LineageUtils.refreshGraphForIE = function(options) {
         var edgePathEl = options.edgeEl,
             IEGraphRenderDone = 0;
         edgePathEl.each(function(argument) {
@@ -187,7 +187,7 @@ define(['require'], function(require) {
             }, 1000);
         });
     }
-    LinegaeUtils.centerNode = function(options) {
+    LineageUtils.centerNode = function(options) {
         var nodeID = options.guid,
             svg = options.svg,
             g = options.g,
@@ -232,12 +232,12 @@ define(['require'], function(require) {
                 zoom.scale(scale);
                 afterCenterZoomed({ newScale: scale, newTranslate: [xa, ya] });
                 if (platform.name === "IE") {
-                    LinegaeUtils.refreshGraphForIE({ "edgeEl": edgePathEl })
+                    LineageUtils.refreshGraphForIE({ "edgeEl": edgePathEl })
                 }
             }
         }
     }
-    LinegaeUtils.onHoverFade = function(options) {
+    LineageUtils.onHoverFade = function(options) {
         var opacity = options.opacity,
             d = options.selectedNode,
             nodesToHighlight = options.highlight,
@@ -271,7 +271,7 @@ define(['require'], function(require) {
         }
 
     }
-    LinegaeUtils.base64Encode = function(options) {
+    LineageUtils.base64Encode = function(options) {
         var str = options.data,
             CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
             out = "",
@@ -302,5 +302,235 @@ define(['require'], function(require) {
         }
         return out;
     }
-    return LinegaeUtils;
+    LineageUtils.imgShapeRender = function(parent, bbox, node, viewOptions) {
+        var LineageUtilsRef = this,
+            imageIconPath = Utils.getEntityIconPath({ entityData: node }),
+            imgName = imageIconPath.split("/").pop(),
+            viewGuid = viewOptions.guid,
+            dagreD3 = viewOptions.dagreD3,
+            imageObject = viewOptions.imageObject,
+            $defs = viewOptions.$defs;
+        if (node.isDeleted) {
+            imgName = "deleted_" + imgName;
+        }
+        if (node.id == viewGuid) {
+            var currentNode = true
+        }
+        var shapeSvg = parent.append('circle')
+            .attr('fill', 'url(#img_' + imgName + ')')
+            .attr('r', '24px')
+            .attr('data-stroke', node.id)
+            .attr('stroke-width', "2px")
+            .attr("class", "nodeImage " + (currentNode ? "currentNode" : (node.isProcess ? "process" : "node")));
+        if (currentNode) {
+            shapeSvg.attr("stroke", "#fb4200")
+        }
+
+        if (node.isIncomplete === true) {
+            parent.attr("class", "node isIncomplete show");
+            parent.insert("foreignObject")
+                .attr("x", "-25")
+                .attr("y", "-25")
+                .attr("width", "50")
+                .attr("height", "50")
+                .append("xhtml:div")
+                .insert("i")
+                .attr("class", "fa fa-hourglass-half");
+        }
+
+        if ($defs.select('pattern[id="img_' + imgName + '"]').empty()) {
+            var $pattern = $defs.append("pattern")
+                .attr("x", "0%")
+                .attr("y", "0%")
+                .attr("patternUnits", "objectBoundingBox")
+                .attr("id", "img_" + imgName)
+                .attr("width", "100%")
+                .attr("height", "100%")
+                .append('image')
+                .attr("href", function(d) {
+                    var that = this;
+                    if (node) {
+                        var getImageData = function(options) {
+                            var imagePath = options.imagePath,
+                                ajaxOptions = {
+                                    "url": imagePath,
+                                    "method": "get",
+                                    "cache": true
+                                }
+
+                            if (platform.name !== "IE") {
+                                ajaxOptions["mimeType"] = "text/plain; charset=x-user-defined";
+                            }
+                            shapeSvg.attr("data-iconpath", imagePath);
+                            $.ajax(ajaxOptions)
+                                .always(function(data, status, xhr) {
+                                    if (data.status == 404) {
+                                        getImageData({
+                                            "imagePath": Utils.getEntityIconPath({ entityData: node, errorUrl: imagePath })
+                                        });
+                                    } else if (data) {
+                                        if (platform.name !== "IE") {
+                                            imageObject[imageIconPath] = 'data:image/png;base64,' + LineageUtilsRef.base64Encode({ "data": data });
+                                        } else {
+                                            imageObject[imageIconPath] = imagePath;
+                                        }
+                                        d3.select(that).attr("xlink:href", imageObject[imageIconPath]);
+                                        if (imageIconPath !== shapeSvg.attr("data-iconpath")) {
+                                            shapeSvg.attr("data-iconpathorigin", imageIconPath);
+                                        }
+                                    }
+                                });
+                        }
+                        getImageData({
+                            "imagePath": imageIconPath
+                        });
+                    }
+                })
+                .attr("x", "4")
+                .attr("y", currentNode ? "3" : "4").attr("width", "40")
+                .attr("height", "40");
+
+        }
+
+        node.intersect = function(point) {
+            return dagreD3.intersect.circle(node, currentNode ? 24 : 21, point);
+        };
+        return shapeSvg;
+    }
+    LineageUtils.arrowPointRender = function(parent, id, edge, type, viewOptions) {
+        var node = parent.node(),
+            parentNode = node ? node.parentNode : parent,
+            dagreD3 = viewOptions.dagreD3;
+        d3.select(parentNode).select('path.path').attr('marker-end', "url(#" + id + ")");
+        var marker = parent.append("marker")
+            .attr("id", id)
+            .attr("viewBox", "0 0 10 10")
+            .attr("refX", 8)
+            .attr("refY", 5)
+            .attr("markerUnits", "strokeWidth")
+            .attr("markerWidth", 4)
+            .attr("markerHeight", 4)
+            .attr("orient", "auto");
+
+        var path = marker.append("path")
+            .attr("d", "M 0 0 L 10 5 L 0 10 z")
+            .style("fill", edge.styleObj.stroke);
+        dagreD3.util.applyStyle(path, edge[type + "Style"]);
+    }
+    LineageUtils.BezierCurve = function(context) {
+        return {
+            lineStart: function() {
+                this.data = [];
+            },
+            point: function(x, y) {
+                this.data.push([x, y]);
+            },
+            lineEnd: function() {
+                var x0 = this.data[0][0],
+                    y0 = this.data[0][1],
+                    cp1x = this.data[1][0],
+                    cp1y = this.data[1][1],
+                    cp2Obj = this.data[this.data.length - 2],
+                    cp2x = cp2Obj[0],
+                    cp2y = cp2Obj[1],
+                    axisObj = this.data[this.data.length - 1],
+                    x1 = axisObj[0],
+                    y1 = axisObj[1];
+                context.moveTo(x0, y0);
+                context.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x1, y1);
+            }
+        }
+    }
+    LineageUtils.SaveSvg = function(e, viewOptions) {
+        var that = this,
+            svg = viewOptions.svg,
+            svgWidth = viewOptions.svgWidth,
+            svgHeight = viewOptions.svgHeight,
+            downloadFileName = viewOptions.downloadFileName,
+            toggleLoader = viewOptions.toggleLoader,
+            svgClone = svg.cloneNode(true),
+            scaleFactor = 1;
+        setTimeout(function() {
+            if (platform.name === "Firefox") {
+                svgClone.setAttribute('width', svgWidth);
+                svgClone.setAttribute('height', svgHeight);
+            }
+            $('.hidden-svg').html(svgClone);
+            $(svgClone).find('>g').attr("transform", "scale(" + scaleFactor + ")");
+            $(svgClone).find("foreignObject").remove();
+            var canvasOffset = { x: 150, y: 150 },
+                setWidth = (svgClone.getBBox().width + (canvasOffset.x)),
+                setHeight = (svgClone.getBBox().height + (canvasOffset.y)),
+                xAxis = svgClone.getBBox().x,
+                yAxis = svgClone.getBBox().y;
+            svgClone.attributes.viewBox.value = xAxis + "," + yAxis + "," + setWidth + "," + setHeight;
+
+            var createCanvas = document.createElement('canvas');
+            createCanvas.id = "canvas";
+            createCanvas.style.display = 'none';
+
+            var body = $('body').append(createCanvas),
+                canvas = $('canvas')[0];
+            canvas.width = (svgClone.getBBox().width * scaleFactor) + canvasOffset.x;
+            canvas.height = (svgClone.getBBox().height * scaleFactor) + canvasOffset.y;
+
+            var ctx = canvas.getContext('2d'),
+                data = (new XMLSerializer()).serializeToString(svgClone),
+                DOMURL = window.URL || window.webkitURL || window;
+
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            var img = new Image(canvas.width, canvas.height);
+            var svgBlob = new Blob([data], { type: 'image/svg+xml;base64' });
+            if (platform.name === "Safari") {
+                svgBlob = new Blob([data], { type: 'image/svg+xml' });
+            }
+            var url = DOMURL.createObjectURL(svgBlob);
+
+            img.onload = function() {
+                try {
+                    var a = document.createElement("a");
+                    a.download = downloadFileName;
+                    document.body.appendChild(a);
+                    ctx.drawImage(img, 50, 50, canvas.width, canvas.height);
+                    canvas.toBlob(function(blob) {
+                        if (!blob) {
+                            Utils.notifyError({
+                                content: "There was an error in downloading Lineage!"
+                            });
+                            toggleLoader();
+                            return;
+                        }
+                        a.href = DOMURL.createObjectURL(blob);
+                        if (blob.size > 10000000) {
+                            Utils.notifyWarn({
+                                content: "The Image size is huge, please open the image in a browser!"
+                            });
+                        }
+                        a.click();
+                        toggleLoader();
+                        if (platform.name === 'Safari') {
+                            that.refreshGraphForSafari({
+                                edgeEl: that.$('svg g.node')
+                            });
+                        }
+                    }, 'image/png');
+                    $('.hidden-svg').html('');
+                    createCanvas.remove();
+
+                } catch (err) {
+                    Utils.notifyError({
+                        content: "There was an error in downloading Lineage!"
+                    });
+                    toggleLoader();
+                }
+
+            };
+            img.src = url;
+        }, 0);
+    }
+    return LineageUtils;
 });

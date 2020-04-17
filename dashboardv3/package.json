@@ -32,7 +32,7 @@
     "bootstrap-daterangepicker": "2.1.25",
     "d3": "3.5.17",
     "d3-tip": "0.6.8",
-    "dagre-d3": "0.4.17",
+    "dagre-d3": "0.6.4",
     "dropzone": "5.7.0",
     "font-awesome": "4.7.0",
     "jQuery-QueryBuilder": "2.4.3",
