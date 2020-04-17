@@ -236,9 +236,6 @@ define(['require',
                 entityId = that.ui.propagationOptions.attr('entity-id'),
                 PropagationValue = this.$("input[name='propagateRelation']:checked").val(),
                 relationshipProp = {};
-            if (PropagationValue === this.ui.propagationOptions.attr("propagation")) {
-                return;
-            }
             this.ui.propagationOptions.attr("propagation", PropagationValue);
             if (this.viewType == "flow") {
                 relationshipProp = {
@@ -306,11 +303,12 @@ define(['require',
             this.ui.PropagatedClassificationTable.append(_.isEmpty(propagationStringValue) ? "No Records Found." : classificationTableValue);
         },
         showLoader: function() {
-            this.modal.$el.find('button.ok').attr("disabled", true);
+            this.modal.$el.find('button.ok').showButtonLoader();
             this.$('.overlay').removeClass('hide').addClass('show');
         },
         hideLoader: function(options) {
             var buttonDisabled = options && options.buttonDisabled;
+            this.modal.$el.find('button.ok').hideButtonLoader();
             this.modal.$el.find('button.ok').attr("disabled", buttonDisabled ? buttonDisabled : false);
             this.$('.overlay').removeClass('show').addClass('hide');
         },
