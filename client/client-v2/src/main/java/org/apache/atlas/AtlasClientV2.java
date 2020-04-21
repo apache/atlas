@@ -597,7 +597,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 CREATE_ENTITIES             = new API_V2(ENTITY_BULK_API, HttpMethod.POST, Response.Status.OK);
         public static final API_V2 UPDATE_ENTITIES             = new API_V2(ENTITY_BULK_API, HttpMethod.POST, Response.Status.OK);
         public static final API_V2 DELETE_ENTITIES_BY_GUIDS    = new API_V2(ENTITY_BULK_API, HttpMethod.DELETE, Response.Status.OK);
-        public static final API_V2 PURGE_ENTITIES_BY_GUIDS     = new API_V2(ENTITY_PURGE_API, HttpMethod.DELETE, Response.Status.OK);
+        public static final API_V2 PURGE_ENTITIES_BY_GUIDS     = new API_V2(ENTITY_PURGE_API, HttpMethod.PUT, Response.Status.OK);
         public static final API_V2 GET_CLASSIFICATIONS         = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.GET, Response.Status.OK);
         public static final API_V2 ADD_CLASSIFICATIONS         = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.POST, Response.Status.NO_CONTENT);
         public static final API_V2 UPDATE_CLASSIFICATIONS      = new API_V2(ENTITY_API + "guid/%s/classifications", HttpMethod.PUT, Response.Status.NO_CONTENT);
