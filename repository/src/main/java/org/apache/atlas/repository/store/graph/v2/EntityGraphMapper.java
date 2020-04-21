@@ -119,6 +119,8 @@ public class EntityGraphMapper {
     private static final String  SOFT_REF_FORMAT                   = "%s:%s";
     private static final int     INDEXED_STR_SAFE_LEN              = AtlasConfiguration.GRAPHSTORE_INDEXED_STRING_SAFE_LENGTH.getInt();
     private static final boolean WARN_ON_NO_RELATIONSHIP           = AtlasConfiguration.RELATIONSHIP_WARN_NO_RELATIONSHIPS.getBoolean();
+    private static final String  CUSTOM_ATTRIBUTE_KEY_SPECIAL_PREFIX = AtlasConfiguration.CUSTOM_ATTRIBUTE_KEY_SPECIAL_PREFIX.getString();
+
     private static final String  CLASSIFICATION_NAME_DELIMITER     = "|";
     private static final Pattern CUSTOM_ATTRIBUTE_KEY_REGEX        = Pattern.compile("^[a-zA-Z0-9_-]*$");
     private static final Pattern LABEL_REGEX                       = Pattern.compile("^[a-zA-Z0-9_-]*$");
@@ -2519,6 +2521,10 @@ public class EntityGraphMapper {
 
                 if (!matcher.matches()) {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_CUSTOM_ATTRIBUTE_KEY_CHARACTERS, key);
+                }
+
+                if (StringUtils.isNotEmpty(CUSTOM_ATTRIBUTE_KEY_SPECIAL_PREFIX) && key.startsWith(CUSTOM_ATTRIBUTE_KEY_SPECIAL_PREFIX)) {
+                    continue;
                 }
 
                 if (value.length() > CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH) {
