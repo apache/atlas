@@ -77,7 +77,7 @@ public class GraphIndexQueryBuilder {
                 if (indexQuery.length() != 0) {
                     indexQuery.append(" AND ");
                 }
-                indexQuery.append("(").append("-").append(INDEX_SEARCH_PREFIX).append("\"").append(CLASSIFICATION_NAMES_KEY)
+                indexQuery.append("( *:* ").append("-").append(INDEX_SEARCH_PREFIX).append("\"").append(CLASSIFICATION_NAMES_KEY)
                     .append("\"").append(":" + "[* TO *]").append(" AND ").append("-")
                     .append(INDEX_SEARCH_PREFIX).append("\"").append(PROPAGATED_CLASSIFICATION_NAMES_KEY)
                     .append("\"").append(":" + "[* TO *]").append(")");
