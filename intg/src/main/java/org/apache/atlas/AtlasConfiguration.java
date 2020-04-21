@@ -64,6 +64,8 @@ public enum AtlasConfiguration {
 
     CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH("atlas.custom.attribute.key.max.length", 50),
     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH("atlas.custom.attribute.value.max.length", 500),
+    CUSTOM_ATTRIBUTE_KEY_SPECIAL_PREFIX("atlas.custom.attribute.special.prefix", ""),
+
     LABEL_MAX_LENGTH("atlas.entity.label.max.length", 50),
     IMPORT_TEMP_DIRECTORY("atlas.import.temp.directory", ""),
     MIGRATION_IMPORT_START_POSITION("atlas.migration.import.start.position", 0),
