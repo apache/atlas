@@ -60,7 +60,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String  LDAP_TYPE                       =  "atlas.authentication.method.ldap.type";
     public static final String  LDAP_AD_BIND_PASSWORD           =  "atlas.authentication.method.ldap.ad.bind.password";
     public static final String  LDAP_BIND_PASSWORD              =  "atlas.authentication.method.ldap.bind.password";
-    public static final String  MASK_LDAP_PASSWORD              =  "*****";
+    public static final String  MASK_LDAP_PASSWORD              =  "********";
     public static final String  DEFAULT_GRAPHDB_BACKEND         = GRAPHBD_BACKEND_JANUS;
     public static final boolean DEFAULT_SOLR_WAIT_SEARCHER      = true;
     public static final boolean DEFAULT_INDEX_MAP_NAME          = false;
