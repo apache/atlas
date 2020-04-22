@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class SearchPredicateUtil {
     private static final Logger LOG = LoggerFactory.getLogger(SearchPredicateUtil.class);
@@ -415,6 +417,35 @@ public class SearchPredicateUtil {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getINPredicateGenerator");
+        }
+
+        return ret;
+    }
+
+    public static VertexAttributePredicateGenerator getRegexPredicateGenerator() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> getRegexPredicateGenerator");
+        }
+
+        VertexAttributePredicateGenerator ret = new VertexAttributePredicateGenerator() {
+            @Override
+            public Predicate generatePredicate(final String attrName, final Object attrVal, final Class attrClass) {
+                final Predicate ret;
+
+                if (attrName == null || attrClass == null || attrVal == null) {
+                    ret = ALWAYS_FALSE;
+                } else if (String.class.isAssignableFrom(attrClass)) {
+                    ret = StringPredicate.getRegexPredicate(attrName, attrClass, (String) attrVal);
+                } else {
+                    ret = ALWAYS_FALSE;
+                }
+
+                return ret;
+            }
+        };
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== getRegexPredicateGenerator");
         }
 
         return ret;
@@ -1352,6 +1383,16 @@ public class SearchPredicateUtil {
             return new StringPredicate(attrName, attrClass, value) {
                 protected boolean compareValue(Object vertexAttrVal) {
                     return ((String) vertexAttrVal).endsWith(value);
+                }
+            };
+        }
+
+        static VertexAttributePredicate getRegexPredicate(String attrName, Class attrClass, String value) {
+            return new StringPredicate(attrName, attrClass, value) {
+                protected boolean compareValue(Object vertexAttrVal) {
+                    Pattern pattern = Pattern.compile(value, Pattern.CASE_INSENSITIVE);
+                    Matcher matcher = pattern.matcher((String) vertexAttrVal);
+                    return matcher.matches();
                 }
             };
         }

@@ -79,7 +79,6 @@ public abstract class SearchProcessor {
     public static final char    CUSTOM_ATTR_SEPARATOR      = '=';
     public static final String  CUSTOM_ATTR_SEARCH_FORMAT  = "\"\\\"%s\\\":\\\"%s\\\"\"";
     public static final String  CUSTOM_ATTR_SEARCH_FORMAT_GRAPH = "\"%s\":\"%s\"";
-    public static final String  WILDCARD_CHAR                   = "*";
     private static final Map<SearchParameters.Operator, String>                            OPERATOR_MAP           = new HashMap<>();
     private static final Map<SearchParameters.Operator, VertexAttributePredicateGenerator> OPERATOR_PREDICATE_MAP = new HashMap<>();
 
@@ -202,10 +201,11 @@ public abstract class SearchProcessor {
             traitPredicate = PredicateUtils.andPredicate(SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, null, List.class),
                 SearchPredicateUtil.getIsNullOrEmptyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, null, List.class));
         } else if (context.isWildCardSearch()) {
-            String wildcardName = context.getClassificationName();
-            wildcardName = wildcardName.replace(WILDCARD_CHAR,"");
-            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsPredicateGenerator().generatePredicate(CLASSIFICATION_NAMES_KEY, wildcardName, String.class),
-                    SearchPredicateUtil.getContainsPredicateGenerator().generatePredicate(PROPAGATED_CLASSIFICATION_NAMES_KEY, wildcardName, String.class));
+            //For wildcard search __classificationNames which of String type is taken instead of _traitNames which is of Array type
+            //No need to escape, as classification Names only support letters,numbers,space and underscore
+            String regexString = getRegexString("\\|" + context.getClassificationName() + "\\|");
+            traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getRegexPredicateGenerator().generatePredicate(CLASSIFICATION_NAMES_KEY, regexString, String.class),
+                    SearchPredicateUtil.getRegexPredicateGenerator().generatePredicate(PROPAGATED_CLASSIFICATION_NAMES_KEY, regexString, String.class));
         } else {
             traitPredicate = PredicateUtils.orPredicate(SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypes(), List.class),
                 SearchPredicateUtil.getContainsAnyPredicateGenerator().generatePredicate(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, context.getClassificationTypes(), List.class));
@@ -847,6 +847,10 @@ public abstract class SearchProcessor {
 
     private static String getContainsRegex(String attributeValue) {
         return ".*" + escapeRegExChars(attributeValue) + ".*";
+    }
+
+    private static String getRegexString(String value) {
+        return ".*" + value.replace("*", ".*") + ".*";
     }
 
     private static String getSuffixRegex(String attributeValue) {
