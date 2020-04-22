@@ -33,6 +33,17 @@
     <title>Atlas</title>
     <meta name="description" content="" />
     <meta name="viewport" content="width=device-width" />
+    <script type="text/javascript">
+    var isHtmlInPath = window.location.pathname.indexOf("index.html");
+    if (isHtmlInPath === -1) {
+        var pathname = window.location.pathname.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, ''),
+            indexpath = pathname + "/index.html";
+        if (location.hash.length > 2) {
+            indexpath += location.hash;
+        }
+        window.location.replace(indexpath);
+    }
+    </script>
     <link rel="shortcut icon" href="img/favicon.ico?bust=<%- bust %>" type="image/x-icon" />
     <link rel="icon" href="img/favicon.ico?bust=<%- bust %>" type="image/x-icon" />
     <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
