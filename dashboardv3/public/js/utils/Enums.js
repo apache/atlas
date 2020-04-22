@@ -40,6 +40,7 @@ define(['require'], function(require) {
         LABEL_DELETE: "Label(s) Deleted",
         ENTITY_PURGE: "Entity Purged",
         BUSINESS_ATTRIBUTE_ADD: "Business Attribute(s) Added",
+        BUSINESS_ATTRIBUTE_UPDATE: "Business Attribute(s) Updated",
         BUSINESS_ATTRIBUTE_DELETE: "Business Attribute(s) Deleted"
     }
 
@@ -48,6 +49,10 @@ define(['require'], function(require) {
         DELETED: true,
         STATUS_ACTIVE: false,
         STATUS_DELETED: true
+    }
+
+    Enums.isEntityPurged = {
+        PURGED: true
     }
 
     Enums.lineageUrlType = {
