@@ -57,7 +57,7 @@ function doLogin() {
             j_username: userName,
             j_password: passwd
         },
-        url: baseUrl + "j_spring_security_check",
+        url: baseUrl + "/j_spring_security_check",
         type: "POST",
         headers: {
             "cache-control": "no-cache"
@@ -103,18 +103,18 @@ function redirect(baseUrl) {
                 PRIMARY_UI = data["atlas.ui.default.version"];
             }
             if (PRIMARY_UI !== "v2") {
-                indexpath = "index.html";
+                indexpath = "/index.html";
             }
             if (window.localStorage.last_ui_load === "v1") {
-                indexpath = "index.html";
+                indexpath = "/index.html";
             } else if (window.localStorage.last_ui_load === "v2") {
                 indexpath = "/n/index.html";
             }
+            indexpath = baseUrl + indexpath;
             if (location.hash.length > 2) {
-                window.location.replace(indexpath + location.hash);
-            } else {
-                window.location.replace(indexpath);
+                indexpath += location.hash;
             }
+            window.location.replace(indexpath);
         },
         error: function() {
             window.location.replace("index.html");
@@ -123,20 +123,7 @@ function redirect(baseUrl) {
 }
 
 function getBaseUrl() {
-    if (!window.location.origin) {
-        window.location.origin =
-            window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "");
-    }
-    var baseUrl = window.location.origin + window.location.pathname.substring(window.location.pathname.indexOf("/", 2) + 1, 0);
-
-    if (baseUrl.lastIndexOf("/") != baseUrl.length - 1) {
-        if (baseUrl) {
-            baseUrl = baseUrl + "/";
-        } else {
-            baseUrl = "/";
-        }
-    }
-    return baseUrl;
+    return window.location.pathname.replace(/\/[\w-]+.(jsp|html)|\/+$/ig, '')
 }
 
 $(function() {
