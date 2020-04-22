@@ -98,6 +98,7 @@ define(['require', 'utils/Utils', 'marionette', 'backgrid', 'asBreadcrumbs', 'jq
                 if (modelValue.get('width')) that.$el.find('.' + modelValue.get('name')).css('min-width', modelValue.get('width') + 'px');
                 if (modelValue.get('fixWidth')) that.$el.find('.' + modelValue.get('name')).css('width', modelValue.get('fixWidth') + 'px');
                 if (modelValue.get('toolTip')) that.$el.find('.' + modelValue.get('name')).attr('title', modelValue.get('toolTip'));
+                if (modelValue.get('headerClassName')) that.$el.find('.' + modelValue.get('name').replace(".", "\\.")).addClass(modelValue.get('headerClassName'));
             });
             return this;
         }

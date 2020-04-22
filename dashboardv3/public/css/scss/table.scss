@@ -199,6 +199,10 @@ tr.empty {
             font-size: 14px;
             letter-spacing: 0.25px;
             color: #6a6a6a;
+
+            &.no-capitalize {
+                text-transform: none !important;
+            }
         }
 
         >td {
