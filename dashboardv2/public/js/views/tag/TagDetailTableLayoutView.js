@@ -22,8 +22,9 @@ define(['require',
     'utils/CommonViewFunction',
     'utils/Utils',
     'collection/VTagList',
-    'utils/Messages'
-], function(require, Backbone, TagDetailTableLayoutView_tmpl, CommonViewFunction, Utils, VTagList, Messages) {
+    'utils/Messages',
+    'utils/Enums'
+], function(require, Backbone, TagDetailTableLayoutView_tmpl, CommonViewFunction, Utils, VTagList, Messages, Enums) {
     'use strict';
 
     var TagDetailTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -123,7 +124,8 @@ define(['require',
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
                                     if (that.guid !== model.get('entityGuid')) {
-                                        var propagtedFrom = ' <span class="btn btn-action btn-sm btn-icon btn-blue" title="Propagated From" data-guid=' + model.get('entityGuid') + ' data-id="propagatedFromClick"><span> Propagated From </span></span>';
+                                        var purgeEntityBtn = (Enums.isEntityPurged[model.get('entityStatus')]) ? ' title="Entity not available" disabled' : ' title="Propagated From" data-id="propagatedFromClick"',
+                                            propagtedFrom = ' <span class="btn btn-action btn-sm btn-icon btn-blue" data-guid=' + model.get('entityGuid') + purgeEntityBtn + '><span> Propagated From </span></span>';
                                         return '<a title="" href="#!/tag/tagAttribute/' + model.get('typeName') + '">' + model.get('typeName') + '</a>' + propagtedFrom;
                                     } else {
                                         return '<a title="' + model.get('typeName') + '" href="#!/tag/tagAttribute/' + model.get('typeName') + '">' + model.get('typeName') + '</a>';
