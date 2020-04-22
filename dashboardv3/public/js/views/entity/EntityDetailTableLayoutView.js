@@ -51,6 +51,8 @@ define(['require',
             events: function() {
                 var events = {};
                 events["click " + this.ui.noValueToggle] = function() {
+                    this.showAllProperties = !this.showAllProperties;
+                    this.ui.noValueToggle.attr("data-original-title", (this.showAllProperties ? "Hide" : "Show") + " empty values");
                     Utils.togglePropertyRelationshipTableEmptyValues({
                         "inputType": this.ui.noValueToggle,
                         "tableEl": this.ui.detailValue
@@ -66,6 +68,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'entity', 'typeHeaders', 'attributeDefs', 'attributes', 'editEntity', 'guid', 'entityDefCollection', 'searchVent', 'fetchCollection'));
                 this.entityModel = new VEntity({});
+                this.showAllProperties = false;
             },
             bindEvents: function() {},
             onRender: function() {
