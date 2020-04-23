@@ -25,6 +25,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes;
@@ -68,13 +69,13 @@ public class FullTextMapperV2 implements IFullTextMapper {
 
 
     @Inject
-    public FullTextMapperV2(AtlasTypeRegistry typeRegistry, Configuration configuration) {
+    public FullTextMapperV2(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, Configuration configuration) {
         this.typeRegistry  = typeRegistry;
         this.configuration = configuration;
 
         followReferences = this.configuration != null && this.configuration.getBoolean(FULL_TEXT_FOLLOW_REFERENCES, false);
         // If followReferences = false then ignore relationship attr loading
-        entityGraphRetriever = new EntityGraphRetriever(typeRegistry, !followReferences);
+        entityGraphRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry, !followReferences);
     }
 
     /**

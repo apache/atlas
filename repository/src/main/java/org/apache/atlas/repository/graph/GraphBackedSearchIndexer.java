@@ -30,8 +30,11 @@ import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
@@ -41,8 +44,12 @@ import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -192,6 +199,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             //resolve index fields names for the new entity attributes.
             resolveIndexFieldNames(management, changedTypeDefs);
+
+            createEdgeLabels(management, changedTypeDefs.getCreatedTypeDefs());
+            createEdgeLabels(management, changedTypeDefs.getUpdatedTypeDefs());
+
             //Commit indexes
             commit(management);
         } catch (RepositoryException | IndexException e) {
@@ -348,6 +359,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             // create fulltext indexes
             createFullTextIndex(management, ENTITY_TEXT_PROPERTY_KEY, String.class, SINGLE);
+
+            createPropertyKey(management, IS_PROXY_KEY, Boolean.class, SINGLE);
+            createPropertyKey(management, PROVENANCE_TYPE_KEY, Integer.class, SINGLE);
+            createPropertyKey(management, HOME_ID_KEY, String.class, SINGLE);
+
+            createEdgeLabel(management, Constants.TERM_ASSIGNMENT_LABEL);
+            createEdgeLabel(management, Constants.CLASSIFICATION_LABEL);
 
             commit(management);
 
@@ -689,6 +707,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
         String label = Constants.INTERNAL_PROPERTY_KEY_PREFIX + propertyName;
 
+        createEdgeLabelUsingLabelName(management, label);
+    }
+
+    private void createEdgeLabelUsingLabelName(final AtlasGraphManagement management, final String label) {
+        if (StringUtils.isEmpty(label)) {
+            return;
+        }
+
         org.apache.atlas.repository.graphdb.AtlasEdgeLabel edgeLabel = management.getEdgeLabel(label);
 
         if (edgeLabel == null) {
@@ -999,4 +1025,47 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
+
+    private void createEdgeLabels(AtlasGraphManagement management, List<? extends AtlasBaseTypeDef> typeDefs) {
+        if (CollectionUtils.isEmpty(typeDefs)) {
+            return;
+        }
+
+        for (AtlasBaseTypeDef typeDef : typeDefs) {
+            if (typeDef instanceof AtlasEntityDef) {
+                AtlasEntityDef entityDef = (AtlasEntityDef) typeDef;
+                createEdgeLabelsForStruct(management, entityDef);
+            } else if (typeDef instanceof AtlasRelationshipDef) {
+                createEdgeLabels(management, (AtlasRelationshipDef) typeDef);
+            }
+        }
+    }
+
+    private void createEdgeLabelsForStruct(AtlasGraphManagement management, AtlasEntityDef entityDef) {
+        try {
+            AtlasType type = typeRegistry.getType(entityDef.getName());
+            if (!(type instanceof AtlasEntityType)) {
+                return;
+            }
+
+            AtlasEntityType entityType = (AtlasEntityType) type;
+            for (AtlasAttributeDef attributeDef : entityDef.getAttributeDefs()) {
+                AtlasAttribute attribute = entityType.getAttribute(attributeDef.getName());
+                if (attribute.getAttributeType().getTypeCategory() == TypeCategory.STRUCT) {
+                    String relationshipLabel = attribute.getRelationshipEdgeLabel();
+                    createEdgeLabelUsingLabelName(management, relationshipLabel);
+                }
+            }
+        } catch (AtlasBaseException e) {
+            LOG.error("Error fetching type: {}", entityDef.getName(), e);
+        }
+    }
+
+    private void createEdgeLabels(AtlasGraphManagement management, AtlasRelationshipDef relationshipDef) {
+        String relationshipTypeName = relationshipDef.getName();
+        AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
+        String relationshipLabel = relationshipType.getRelationshipLabel();
+
+        createEdgeLabelUsingLabelName(management, relationshipLabel);
+    }
 }

@@ -20,15 +20,13 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.TestResourceFileUtils;
@@ -37,7 +35,6 @@ import org.elasticsearch.common.util.CollectionUtils;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -65,13 +62,13 @@ public class ClassificationAssociatorTest {
     private class ClassificationAssociatorUpdaterForSpy extends ClassificationAssociator.Updater {
         private final String entityFileName;
 
-        public ClassificationAssociatorUpdaterForSpy(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
-            super(typeRegistry, entitiesStore);
+        public ClassificationAssociatorUpdaterForSpy(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
+            super(atlasGraph, typeRegistry, entitiesStore);
             this.entityFileName = StringUtils.EMPTY;
         }
 
-        public ClassificationAssociatorUpdaterForSpy(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, String entityFileName) {
-            super(typeRegistry, entitiesStore);
+        public ClassificationAssociatorUpdaterForSpy(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, String entityFileName) {
+            super(atlasGraph, typeRegistry, entitiesStore);
             this.entityFileName = entityFileName;
         }
 
@@ -142,7 +139,8 @@ public class ClassificationAssociatorTest {
         AtlasTypeRegistry typeRegistry = mock(AtlasTypeRegistry.class);
         when(typeRegistry.getEntityTypeByName(anyString())).thenReturn(null);
 
-        ClassificationAssociator.Updater updater = new ClassificationAssociator.Updater(typeRegistry, entitiesStore);
+        AtlasGraph atlasGraph = mock(AtlasGraph.class);
+        ClassificationAssociator.Updater updater = new ClassificationAssociator.Updater(atlasGraph, typeRegistry, entitiesStore);
         String summary = updater.setClassifications(entityHeaderMap.getGuidHeaderMap());
 
         assertTrue(summary.contains("hive_"));
@@ -155,11 +153,12 @@ public class ClassificationAssociatorTest {
         AtlasEntityType hiveTable = mock(AtlasEntityType.class);
         AtlasEntityStore entitiesStore = mock(AtlasEntityStore.class);
         AtlasTypeRegistry typeRegistry = mock(AtlasTypeRegistry.class);
+        AtlasGraph atlasGraph = mock(AtlasGraph.class);
 
         when(typeRegistry.getEntityTypeByName(anyString())).thenReturn(hiveTable);
         when(hiveTable.getTypeName()).thenReturn("hive_column");
 
-        ClassificationAssociatorUpdaterForSpy updater = new ClassificationAssociatorUpdaterForSpy(typeRegistry, entitiesStore);
+        ClassificationAssociatorUpdaterForSpy updater = new ClassificationAssociatorUpdaterForSpy(atlasGraph, typeRegistry, entitiesStore);
         String summary = updater.setClassifications(entityHeaderMap.getGuidHeaderMap());
 
         TypeReference<String[]> typeReference = new TypeReference<String[]>() {};
@@ -178,8 +177,9 @@ public class ClassificationAssociatorTest {
         AtlasTypeRegistry typeRegistry = new AtlasTypeRegistry();
         AtlasTypeRegistry.AtlasTransientTypeRegistry ttr = typeRegistry.lockTypeRegistryForUpdate();
         ttr.addTypes(CollectionUtils.newSingletonArrayList(ed));
+        AtlasGraph atlasGraph = mock(AtlasGraph.class);
 
-        ClassificationAssociatorUpdaterForSpy updater = new ClassificationAssociatorUpdaterForSpy(ttr, entitiesStore, "col-entity-PII");
+        ClassificationAssociatorUpdaterForSpy updater = new ClassificationAssociatorUpdaterForSpy(atlasGraph, ttr, entitiesStore, "col-entity-PII");
         String summary = updater.setClassifications(entityHeaderMap.getGuidHeaderMap());
 
         TypeReference<String[]> typeReference = new TypeReference<String[]>() {};
@@ -233,11 +233,12 @@ public class ClassificationAssociatorTest {
         AtlasEntityType hiveTable = mock(AtlasEntityType.class);
         AtlasEntityStore entitiesStore = mock(AtlasEntityStore.class);
         AtlasTypeRegistry typeRegistry = mock(AtlasTypeRegistry.class);
+        AtlasGraph atlasGraph = mock(AtlasGraph.class);
 
         when(typeRegistry.getEntityTypeByName(anyString())).thenReturn(hiveTable);
         when(hiveTable.getTypeName()).thenReturn("hive_column");
 
-        ClassificationAssociatorUpdaterForSpy updater = new ClassificationAssociatorUpdaterForSpy(typeRegistry, entitiesStore, entityFileName);
+        ClassificationAssociatorUpdaterForSpy updater = new ClassificationAssociatorUpdaterForSpy(atlasGraph, typeRegistry, entitiesStore, entityFileName);
         String summary = updater.setClassifications(entityHeaderMap.getGuidHeaderMap());
 
         TypeReference<String[]> typeReference = new TypeReference<String[]>() {};

@@ -32,6 +32,7 @@ import org.apache.atlas.repository.graph.AtlasEdgeLabel;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -62,15 +63,17 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 
 public abstract class DeleteHandlerV1 {
     public static final Logger LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
-    protected static final GraphHelper graphHelper = GraphHelper.getInstance();
+
+    protected final GraphHelper graphHelper;
     private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityRetriever;
     private final boolean              shouldUpdateInverseReferences;
     private final boolean              softDelete;
 
-    public DeleteHandlerV1(AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete) {
+    public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete) {
         this.typeRegistry                  = typeRegistry;
-        this.entityRetriever               = new EntityGraphRetriever(typeRegistry);
+        this.graphHelper                   = new GraphHelper(graph);
+        this.entityRetriever               = new EntityGraphRetriever(graph, typeRegistry);
         this.shouldUpdateInverseReferences = shouldUpdateInverseReference;
         this.softDelete                    = softDelete;
     }
@@ -210,7 +213,7 @@ public abstract class DeleteHandlerV1 {
                     if (attributeInfo.getAttributeDef().isSoftReferenced()) {
                         String        softRefVal = vertex.getProperty(attributeInfo.getVertexPropertyName(), String.class);
                         AtlasObjectId refObjId   = AtlasEntityUtil.parseSoftRefValue(softRefVal);
-                        AtlasVertex   refVertex  = refObjId != null ? AtlasGraphUtilsV2.findByGuid(refObjId.getGuid()) : null;
+                        AtlasVertex   refVertex  = refObjId != null ? AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid()) : null;
 
                         if (refVertex != null) {
                             vertices.push(refVertex);
@@ -244,7 +247,7 @@ public abstract class DeleteHandlerV1 {
 
                             if (CollectionUtils.isNotEmpty(refObjIds)) {
                                 for (AtlasObjectId refObjId : refObjIds) {
-                                    AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(refObjId.getGuid());
+                                    AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
 
                                     if (refVertex != null) {
                                         vertices.push(refVertex);
@@ -257,7 +260,7 @@ public abstract class DeleteHandlerV1 {
 
                             if (MapUtils.isNotEmpty(refObjIds)) {
                                 for (AtlasObjectId refObjId : refObjIds.values()) {
-                                    AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(refObjId.getGuid());
+                                    AtlasVertex refVertex = AtlasGraphUtilsV2.findByGuid(this.graphHelper.getGraph(), refObjId.getGuid());
 
                                     if (refVertex != null) {
                                         vertices.push(refVertex);

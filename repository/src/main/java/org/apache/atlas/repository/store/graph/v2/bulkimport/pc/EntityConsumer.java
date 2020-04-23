@@ -30,7 +30,9 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStreamForImport;
 import org.apache.atlas.repository.store.graph.v2.BulkImporterImpl;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
@@ -49,23 +51,30 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
     private AtomicLong counter = new AtomicLong(1);
     private AtomicLong currentBatch = new AtomicLong(1);
 
-    private final AtlasGraph atlasGraph;
-    private final AtlasEntityStore entityStoreV2;
+    private AtlasGraph atlasGraph;
+    private final AtlasEntityStore entityStore;
+    private final AtlasGraph atlasGraphBulk;
+    private final AtlasEntityStore entityStoreBulk;
     private final AtlasTypeRegistry typeRegistry;
-    private final EntityGraphRetriever entityGraphRetriever;
+    private final EntityGraphRetriever entityRetrieverBulk;
 
     private List<AtlasEntity.AtlasEntityWithExtInfo> entityBuffer = new ArrayList<>();
     private List<EntityMutationResponse> localResults = new ArrayList<>();
 
-    public EntityConsumer(AtlasGraph atlasGraph, AtlasEntityStore entityStore,
-                          EntityGraphRetriever entityGraphRetriever, AtlasTypeRegistry typeRegistry,
+    public EntityConsumer(AtlasTypeRegistry typeRegistry,
+                          AtlasGraph atlasGraph, AtlasEntityStore entityStore,
+                          AtlasGraph atlasGraphBulk, AtlasEntityStore entityStoreBulk, EntityGraphRetriever entityRetrieverBulk,
                           BlockingQueue queue, int batchSize) {
         super(queue);
+        this.typeRegistry = typeRegistry;
 
         this.atlasGraph = atlasGraph;
-        this.entityStoreV2 = entityStore;
-        this.entityGraphRetriever = entityGraphRetriever;
-        this.typeRegistry = typeRegistry;
+        this.entityStore = entityStore;
+
+        this.atlasGraphBulk = atlasGraphBulk;
+        this.entityStoreBulk = entityStoreBulk;
+        this.entityRetrieverBulk = entityRetrieverBulk;
+
         this.batchSize = batchSize;
     }
 
@@ -77,7 +86,6 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
 
         long currentCount = counter.addAndGet(delta);
         currentBatch.addAndGet(delta);
-        entityBuffer.add(entityWithExtInfo);
 
         try {
             processEntity(entityWithExtInfo, currentCount);
@@ -88,24 +96,68 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
     }
 
     private void processEntity(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, long currentCount) {
+        RequestContext.get().setImportInProgress(true);
+        RequestContext.get().setCreateShellEntityForNonExistingReference(true);
+
         try {
-            RequestContext.get().setImportInProgress(true);
-            RequestContext.get().setCreateShellEntityForNonExistingReference(true);
-
-            AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, null);
-
             LOG.debug("Processing: {}", currentCount);
-            EntityMutationResponse result = entityStoreV2.createOrUpdateForImportNoCommit(oneEntityStream);
-            localResults.add(result);
+            importUsingBulkEntityStore(entityWithExtInfo);
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            LOG.warn("{}: {} - {}", e.getClass().getSimpleName(), entityWithExtInfo.getEntity().getTypeName(), entityWithExtInfo.getEntity().getGuid(), e);
+            importUsingRegularEntityStore(entityWithExtInfo, e);
         } catch (AtlasBaseException e) {
-            addResult(entityWithExtInfo.getEntity().getGuid());
-            LOG.warn("Exception: {}", entityWithExtInfo.getEntity().getGuid(), e);
+            LOG.warn("AtlasBaseException: {} - {}", entityWithExtInfo.getEntity().getTypeName(), entityWithExtInfo.getEntity().getGuid(), e);
         } catch (AtlasSchemaViolationException e) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Entity: {}", entityWithExtInfo.getEntity().getGuid(), e);
             }
 
-            BulkImporterImpl.updateVertexGuid(typeRegistry, entityGraphRetriever, entityWithExtInfo.getEntity());
+            BulkImporterImpl.updateVertexGuid(this.atlasGraphBulk, typeRegistry, entityRetrieverBulk, entityWithExtInfo.getEntity());
+        }
+    }
+
+    private void importUsingBulkEntityStore(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+        EntityStream oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, null);
+        EntityMutationResponse result = entityStoreBulk.createOrUpdateForImportNoCommit(oneEntityStream);
+        localResults.add(result);
+        entityBuffer.add(entityWithExtInfo);
+    }
+
+    private void importUsingRegularEntityStore(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, Exception ex) {
+        commitValidatedEntities(ex);
+        performRegularImport(entityWithExtInfo);
+    }
+
+    private void performRegularImport(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
+        synchronized (atlasGraph) {
+            try {
+                LOG.info("Regular: EntityStore: {}: Starting...", this.counter.get());
+                AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, null);
+                EntityMutationResponse result = this.entityStore.createOrUpdateForImportNoCommit(oneEntityStream);
+                atlasGraph.commit();
+                localResults.add(result);
+                dispatchResults();
+            } catch (Exception e) {
+                atlasGraph.rollback();
+                LOG.error("Regular: EntityStore: Rollback!: Entity creation using regular (non-bulk) failed! Please correct entity and re-submit!", e);
+            } finally {
+                LOG.info("Regular: EntityStore: {}: Commit: Done!", this.counter.get());
+                atlasGraph.commit();
+                addResult(entityWithExtInfo.getEntity().getGuid());
+                clear();
+                LOG.info("Regular: EntityStore: {}: Done!", this.counter.get());
+            }
+        }
+    }
+
+    private void commitValidatedEntities(Exception ex) {
+        try {
+            LOG.info("Validated Entities: Commit: Starting...");
+            rollbackPauseRetry(1, ex);
+            doCommit();
+        }
+        finally {
+            LOG.info("Validated Entities: Commit: Done!");
         }
     }
 
@@ -137,8 +189,10 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
     }
 
     private boolean commitWithRetry(int retryCount) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("commitWithRetry");
+
         try {
-            atlasGraph.commit();
+            atlasGraphBulk.commit();
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Commit: Done!: Buffer: {}: Batch: {}: Counter: {}", entityBuffer.size(), currentBatch.get(), counter.get());
             }
@@ -148,14 +202,15 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
         } catch (Exception ex) {
             rollbackPauseRetry(retryCount, ex);
             return false;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
     private void rollbackPauseRetry(int retryCount, Exception ex) {
-        atlasGraph.rollback();
-        clearCache();
+        bulkGraphRollback(retryCount);
 
-        LOG.error("Rollback: Done! Buffer: {}: Counter: {}: Retry count: {}", entityBuffer.size(), counter.get(), retryCount);
+        LOG.warn("Rollback: Done! Buffer: {}: Counter: {}: Retry count: {}", entityBuffer.size(), counter.get(), retryCount);
         pause(retryCount);
         String exceptionClass = ex.getClass().getSimpleName();
         if (!exceptionClass.equals("JanusGraphException") && !exceptionClass.equals("PermanentLockingException")) {
@@ -164,14 +219,27 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
         retryProcessEntity(retryCount);
     }
 
+    private void bulkGraphRollback(int retryCount) {
+        try {
+            atlasGraphBulk.rollback();
+            clearCache();
+        } catch (Exception e) {
+            LOG.error("Rollback: Exception! Buffer: {}: Counter: {}: Retry count: {}", entityBuffer.size(), counter.get(), retryCount);
+        }
+    }
+
     private void retryProcessEntity(int retryCount) {
         if (LOG.isDebugEnabled() || retryCount > 1) {
             LOG.info("Replaying: Starting!: Buffer: {}: Retry count: {}", entityBuffer.size(), retryCount);
         }
 
-        for (AtlasEntity.AtlasEntityWithExtInfo e : entityBuffer) {
+        List<AtlasEntity.AtlasEntityWithExtInfo> localBuffer = new ArrayList<>(entityBuffer);
+        entityBuffer.clear();
+
+        for (AtlasEntity.AtlasEntityWithExtInfo e : localBuffer) {
             processEntity(e, counter.get());
         }
+
         LOG.info("Replaying: Done!: Buffer: {}: Retry count: {}", entityBuffer.size(), retryCount);
     }
 

@@ -23,6 +23,8 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.type.AtlasEntityType;
@@ -49,9 +51,13 @@ public class ClassificationAssociator {
         private final EntityAuditRepository auditRepository;
         private final EntityGraphRetriever entityRetriever;
 
-        public Retriever(AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository) {
-            this.entityRetriever = new EntityGraphRetriever(typeRegistry);
+        public Retriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository) {
+            this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
             this.auditRepository = auditRepository;
+        }
+
+        public Retriever(AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository) {
+            this(AtlasGraphProvider.getGraphInstance(), typeRegistry, auditRepository);
         }
 
         Retriever(EntityGraphRetriever entityGraphRetriever, EntityAuditRepository auditRepository) {
@@ -104,16 +110,21 @@ public class ClassificationAssociator {
         static final String PROCESS_DELETE = "Delete";
         static final String JSONIFY_STRING_FORMAT = "\"%s\",";
 
+        private final AtlasGraph graph;
         private final AtlasTypeRegistry typeRegistry;
         private final AtlasEntityStore entitiesStore;
         private final EntityGraphRetriever entityRetriever;
-        private StringBuilder actionSummary = new StringBuilder();
-        private Map<String, String> typeNameUniqueAttributeNameMap = new HashMap<>();
+        private final StringBuilder actionSummary = new StringBuilder();
 
-        public Updater(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
+        public Updater(AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
+            this.graph = graph;
             this.typeRegistry = typeRegistry;
             this.entitiesStore = entitiesStore;
-            entityRetriever = new EntityGraphRetriever(typeRegistry);
+            entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
+        }
+
+        public Updater(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
+            this(AtlasGraphProvider.getGraphInstance(), typeRegistry, entitiesStore);
         }
 
         public String setClassifications(Map<String, AtlasEntityHeader> map) {
@@ -246,7 +257,7 @@ public class ClassificationAssociator {
 
         AtlasEntityHeader getByUniqueAttributes(AtlasEntityType entityType, String qualifiedName, Map<String, Object> attrValues) {
             try {
-                AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(entityType, attrValues);
+                AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, attrValues);
                 if (vertex == null) {
                     return null;
                 }

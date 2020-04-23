@@ -56,7 +56,7 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
     private JanusGraphQuery<?> query;
 
     public NativeJanusGraphQuery(AtlasJanusGraph graph) {
-        this.query = AtlasJanusGraphDatabase.getGraphInstance().query();
+        this.query = graph.getGraph().query();
         this.graph = graph;
     }
 

@@ -133,25 +133,33 @@ public class MigrationBaseAsserts {
         return iterator.hasNext() ? iterator.next() : null;
     }
 
-    protected void assertEdges(String typeName, String assetName, AtlasEdgeDirection edgeDirection, int startIdx, int expectedItems, String edgeTypeName) {
-        assertEdges(getVertex(typeName, assetName).getEdges(edgeDirection).iterator(),startIdx, expectedItems, edgeTypeName);
+    protected void assertEdges(String typeName, String assetName, AtlasEdgeDirection edgeDirection, int expectedItems, String edgeTypeName) {
+        Iterator edgeIterator = getVertex(typeName, assetName).getEdges(edgeDirection).iterator();
+        assertEdges(edgeIterator, expectedItems, edgeTypeName);
     }
 
-    protected void assertEdges(Iterator<AtlasEdge> results, int startIdx, int expectedItems, String edgeTypeName) {
+    protected void assertEdges(Iterator<AtlasEdge> results, int expectedItems, String edgeTypeNameExpected) {
         int count = 0;
         AtlasEdge e = null;
-        for (Iterator<AtlasEdge> it = results; it.hasNext() && count < startIdx; count++) {
+        boolean searchedEdgeFound = false;
+        for (Iterator<AtlasEdge> it = results; it.hasNext();) {
             e = it.next();
+            String typeName = AtlasGraphUtilsV2.getEncodedProperty(e, TYPE_NAME_PROPERTY, String.class);
+            searchedEdgeFound = StringUtils.isEmpty(edgeTypeNameExpected) || typeName.equals(edgeTypeNameExpected);
+            if (searchedEdgeFound) {
+                count++;
+                break;
+            }
         }
 
         assertNotNull(AtlasGraphUtilsV2.getEncodedProperty(e, R_GUID_PROPERTY_NAME, Object.class));
         assertNotNull(AtlasGraphUtilsV2.getEncodedProperty(e, "tagPropagation", Object.class));
 
-        if(StringUtils.isNotEmpty(edgeTypeName)) {
-            assertEquals(AtlasGraphUtilsV2.getEncodedProperty(e, TYPE_NAME_PROPERTY, Object.class), edgeTypeName, edgeTypeName);
+        if(StringUtils.isNotEmpty(edgeTypeNameExpected)) {
+            assertTrue(searchedEdgeFound, edgeTypeNameExpected);
         }
 
-        assertEquals(count, expectedItems, String.format("%s", edgeTypeName));
+        assertEquals(count, expectedItems, String.format("%s", edgeTypeNameExpected));
     }
 
     protected void assertEdgesWithLabel(Iterator<AtlasEdge> results, int startIdx, String edgeTypeName) {

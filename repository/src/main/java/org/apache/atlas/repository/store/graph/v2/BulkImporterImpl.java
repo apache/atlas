@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.BulkImporter;
@@ -51,10 +52,12 @@ public class BulkImporterImpl implements BulkImporter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2.class);
 
     private final AtlasEntityStore entityStore;
+    private final AtlasGraph atlasGraph;
     private AtlasTypeRegistry typeRegistry;
 
     @Inject
-    public BulkImporterImpl(AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
+    public BulkImporterImpl(AtlasGraph atlasGraph, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
+        this.atlasGraph = atlasGraph;
         this.entityStore = entityStore;
         this.typeRegistry = typeRegistry;
     }
@@ -65,9 +68,9 @@ public class BulkImporterImpl implements BulkImporter {
 
         if (importResult.getRequest().getOptions() != null &&
                 importResult.getRequest().getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION)) {
-            importStrategy = new MigrationImport(new AtlasGraphProvider(), this.typeRegistry);
+            importStrategy = new MigrationImport(this.atlasGraph, new AtlasGraphProvider(), this.typeRegistry);
         } else {
-            importStrategy = new RegularImport(this.entityStore, this.typeRegistry);
+            importStrategy = new RegularImport(this.atlasGraph, this.entityStore, this.typeRegistry);
         }
 
         LOG.info("BulkImportImpl: {}", importStrategy.getClass().getSimpleName());
@@ -121,14 +124,14 @@ public class BulkImporterImpl implements BulkImporter {
         }
     }
 
-    public static void updateVertexGuid(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityGraphRetriever, AtlasEntity entity) {
+    public static void updateVertexGuid(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityGraphRetriever, AtlasEntity entity) {
         String entityGuid = entity.getGuid();
         AtlasObjectId objectId = entityGraphRetriever.toAtlasObjectIdWithoutGuid(entity);
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
         String vertexGuid = null;
         try {
-            vertexGuid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(entityType, objectId.getUniqueAttributes());
+            vertexGuid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(atlasGraph, entityType, objectId.getUniqueAttributes());
         } catch (AtlasBaseException e) {
             LOG.warn("Entity: {}: Does not exist!", objectId);
             return;
@@ -138,7 +141,7 @@ public class BulkImporterImpl implements BulkImporter {
             return;
         }
 
-        AtlasVertex v = AtlasGraphUtilsV2.findByGuid(vertexGuid);
+        AtlasVertex v = AtlasGraphUtilsV2.findByGuid(atlasGraph, vertexGuid);
         if (v == null) {
             return;
         }

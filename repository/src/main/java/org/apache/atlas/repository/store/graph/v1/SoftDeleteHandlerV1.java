@@ -22,6 +22,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -36,8 +37,8 @@ import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Inject
-    public SoftDeleteHandlerV1(AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, false, true);
+    public SoftDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
+        super(graph, typeRegistry, false, true);
     }
 
     @Override

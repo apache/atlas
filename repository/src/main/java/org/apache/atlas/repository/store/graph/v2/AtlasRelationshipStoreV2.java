@@ -40,6 +40,7 @@ import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -91,20 +92,23 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getTy
 @Component
 public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipStoreV2.class);
-
     private static final Long DEFAULT_RELATIONSHIP_VERSION = 0L;
+
+    private final AtlasGraph graph;
     private boolean notificationsEnabled = NOTIFICATION_RELATIONSHIPS_ENABLED.getBoolean();
 
     private final AtlasTypeRegistry         typeRegistry;
     private final EntityGraphRetriever      entityRetriever;
     private final DeleteHandlerDelegate     deleteDelegate;
-    private final GraphHelper               graphHelper = GraphHelper.getInstance();
+    private final GraphHelper               graphHelper;
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
 
     @Inject
-    public AtlasRelationshipStoreV2(AtlasTypeRegistry typeRegistry, DeleteHandlerDelegate deleteDelegate, IAtlasEntityChangeNotifier entityChangeNotifier) {
+    public AtlasRelationshipStoreV2(AtlasGraph graph, AtlasTypeRegistry typeRegistry, DeleteHandlerDelegate deleteDelegate, IAtlasEntityChangeNotifier entityChangeNotifier) {
+        this.graph                = graph;
         this.typeRegistry         = typeRegistry;
-        this.entityRetriever      = new EntityGraphRetriever(typeRegistry);
+        this.graphHelper          = new GraphHelper(graph);
+        this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.deleteDelegate       = deleteDelegate;
         this.entityChangeNotifier = entityChangeNotifier;
     }
@@ -274,7 +278,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
         }
 
-        String            relationShipType = GraphHelper.getTypeName(edge);
+        String            relationShipType = graphHelper.getTypeName(edge);
         AtlasEntityHeader end1Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
         AtlasEntityHeader end2Entity       = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
 
@@ -721,7 +725,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             String              guid             = end.getGuid();
             String              typeName         = end.getTypeName();
             Map<String, Object> uniqueAttributes = end.getUniqueAttributes();
-            AtlasVertex         endVertex        = AtlasGraphUtilsV2.findByGuid(guid);
+            AtlasVertex         endVertex        = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
 
             if (!AtlasTypeUtil.isValidGuid(guid) || endVertex == null) {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
@@ -729,7 +733,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             } else if (MapUtils.isNotEmpty(uniqueAttributes)) {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
-                if (AtlasGraphUtilsV2.findByUniqueAttributes(entityType, uniqueAttributes) == null) {
+                if (AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, uniqueAttributes) == null) {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, uniqueAttributes.toString());
                 }
             } else {
@@ -801,11 +805,11 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasVertex ret = null;
 
         if (StringUtils.isNotEmpty(endPoint.getGuid())) {
-            ret = AtlasGraphUtilsV2.findByGuid(endPoint.getGuid());
+            ret = AtlasGraphUtilsV2.findByGuid(this.graph, endPoint.getGuid());
         } else if (StringUtils.isNotEmpty(endPoint.getTypeName()) && MapUtils.isNotEmpty(endPoint.getUniqueAttributes())) {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(endPoint.getTypeName());
 
-            ret = AtlasGraphUtilsV2.findByUniqueAttributes(entityType, endPoint.getUniqueAttributes());
+            ret = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, endPoint.getUniqueAttributes());
         }
 
         return ret;
@@ -888,7 +892,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         String typeName = objectId.getTypeName();
 
         if (StringUtils.isBlank(typeName)) {
-            typeName = AtlasGraphUtilsV2.getTypeNameFromGuid(objectId.getGuid());
+            typeName = AtlasGraphUtilsV2.getTypeNameFromGuid(this.graph, objectId.getGuid());
         }
 
         return typeName;

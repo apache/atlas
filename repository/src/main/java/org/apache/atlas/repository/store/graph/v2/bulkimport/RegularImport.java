@@ -31,6 +31,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -57,15 +58,18 @@ import static org.apache.atlas.repository.store.graph.v2.BulkImporterImpl.update
 public class RegularImport extends ImportStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(RegularImport.class);
     private static final int MAX_ATTEMPTS = 3;
+
+    private final AtlasGraph graph;
     private final AtlasEntityStore entityStore;
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityGraphRetriever;
     private boolean directoryBasedImportConfigured;
 
-    public RegularImport(AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
+    public RegularImport(AtlasGraph graph, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
+        this.graph       = graph;
         this.entityStore = entityStore;
         this.typeRegistry = typeRegistry;
-        this.entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
+        this.entityGraphRetriever = new EntityGraphRetriever(graph, typeRegistry);
         this.directoryBasedImportConfigured = StringUtils.isNotEmpty(AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
     }
 
@@ -156,7 +160,7 @@ public class RegularImport extends ImportStrategy {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
         String vertexGuid = null;
         try {
-            vertexGuid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(entityType, objectId.getUniqueAttributes());
+            vertexGuid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(this.graph, entityType, objectId.getUniqueAttributes());
         } catch (AtlasBaseException e) {
             LOG.warn("Entity: {}: Does not exist!", objectId);
             return;
@@ -166,7 +170,7 @@ public class RegularImport extends ImportStrategy {
             return;
         }
 
-        AtlasVertex v = AtlasGraphUtilsV2.findByGuid(vertexGuid);
+        AtlasVertex v = AtlasGraphUtilsV2.findByGuid(this.graph, vertexGuid);
         if (v == null) {
             return;
         }

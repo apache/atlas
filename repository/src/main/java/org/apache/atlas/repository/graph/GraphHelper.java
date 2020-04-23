@@ -95,18 +95,13 @@ public final class GraphHelper {
     public static final String RETRY_DELAY = "atlas.graph.storage.retry.sleeptime.ms";
     public static final String DEFAULT_REMOVE_PROPAGATIONS_ON_ENTITY_DELETE = "atlas.graph.remove.propagations.default";
 
-    private final AtlasGremlinQueryProvider queryProvider = AtlasGremlinQueryProvider.INSTANCE;
-
-    private static volatile GraphHelper INSTANCE;
-
     private AtlasGraph graph;
 
-    private static int     maxRetries;
-    private static long    retrySleepTimeMillis;
-    private static boolean removePropagations;
+    private int     maxRetries = 3;
+    private long    retrySleepTimeMillis = 1000;
+    private boolean removePropagations = false;
 
-    @VisibleForTesting
-    GraphHelper(AtlasGraph graph) {
+    public GraphHelper(AtlasGraph graph) {
         this.graph = graph;
         try {
             maxRetries           = ApplicationProperties.get().getInt(RETRY_COUNT, 3);
@@ -117,67 +112,8 @@ public final class GraphHelper {
         }
     }
 
-    public static GraphHelper getInstance() {
-        if ( INSTANCE == null) {
-            synchronized (GraphHelper.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new GraphHelper(AtlasGraphProvider.getGraphInstance());
-                }
-            }
-        }
-        return INSTANCE;
-    }
-
-    @VisibleForTesting
-    static GraphHelper getInstance(AtlasGraph graph) {
-        if ( INSTANCE == null) {
-            synchronized (GraphHelper.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new GraphHelper(graph);
-                }
-            }
-        }
-        return INSTANCE;
-    }
-
     public static boolean isTermEntityEdge(AtlasEdge edge) {
         return StringUtils.equals(edge.getLabel(), TERM_ASSIGNMENT_LABEL);
-    }
-
-    public AtlasVertex createVertexWithIdentity(Referenceable typedInstance, Set<String> superTypeNames) {
-        final String guid = UUID.randomUUID().toString();
-
-        final AtlasVertex vertexWithIdentity = createVertexWithoutIdentity(typedInstance.getTypeName(),
-                new Id(guid, 0, typedInstance.getTypeName()), superTypeNames);
-
-        // add identity
-        AtlasGraphUtilsV2.setEncodedProperty(vertexWithIdentity, Constants.GUID_PROPERTY_KEY, guid);
-
-        // add version information
-        AtlasGraphUtilsV2.setEncodedProperty(vertexWithIdentity, Constants.VERSION_PROPERTY_KEY, Long.valueOf(typedInstance.getId().getVersion()));
-
-        return vertexWithIdentity;
-    }
-
-    public AtlasVertex createVertexWithoutIdentity(String typeName, Id typedInstanceId, Set<String> superTypeNames) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Creating AtlasVertex for type {} id {}", typeName, typedInstanceId != null ? typedInstanceId._getId() : null);
-        }
-
-        final AtlasVertex ret = graph.addVertex();
-
-        AtlasGraphUtilsV2.setEncodedProperty(ret, ENTITY_TYPE_PROPERTY_KEY, typeName);
-        AtlasGraphUtilsV2.setEncodedProperty(ret, STATE_PROPERTY_KEY, ACTIVE.name());
-        AtlasGraphUtilsV2.setEncodedProperty(ret, TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        AtlasGraphUtilsV2.setEncodedProperty(ret, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        AtlasGraphUtilsV2.setEncodedProperty(ret, CREATED_BY_KEY, RequestContext.get().getUser());
-        AtlasGraphUtilsV2.setEncodedProperty(ret, MODIFIED_BY_KEY, RequestContext.get().getUser());
-
-        for (String superTypeName : superTypeNames) {
-            AtlasGraphUtilsV2.addEncodedProperty(ret, SUPER_TYPES_PROPERTY_KEY, superTypeName);
-        }
-
-        return ret;
     }
 
     public AtlasEdge addClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex, boolean isPropagated) {
@@ -1193,6 +1129,14 @@ public final class GraphHelper {
         return ret;
     }
 
+    public AtlasGraph getGraph() {
+        return this.graph;
+    }
+
+    public Boolean getDefaultRemovePropagations() {
+        return this.removePropagations;
+    }
+
     /**
      * Guid and AtlasVertex combo
      */
@@ -1661,10 +1605,6 @@ public final class GraphHelper {
 
     private static boolean verticesEquals(AtlasVertex vertexA, AtlasVertex vertexB) {
         return StringUtils.equals(getGuid(vertexB), getGuid(vertexA));
-    }
-
-    public static boolean getDefaultRemovePropagations() {
-        return removePropagations;
     }
 
     public static String getDelimitedClassificationNames(Collection<String> classificationNames) {

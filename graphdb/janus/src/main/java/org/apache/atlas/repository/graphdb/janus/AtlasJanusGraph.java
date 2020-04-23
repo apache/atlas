@@ -319,8 +319,8 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
     }
 
-    private JanusGraph getGraph() {
-        return getGraphInstance();
+    public JanusGraph getGraph() {
+        return this.janusGraph;
     }
 
     @Override
