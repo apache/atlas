@@ -99,7 +99,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                            SearchTracker searchTracker,
                            UserProfileService userProfileService) throws AtlasException {
         this.graph                    = graph;
-        this.entityRetriever          = new EntityGraphRetriever(typeRegistry);
+        this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
         this.searchTracker            = searchTracker;
         this.gremlinQueryProvider     = AtlasGremlinQueryProvider.INSTANCE;

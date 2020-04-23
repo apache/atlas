@@ -22,6 +22,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.EntityResolver;
@@ -35,12 +36,12 @@ import org.slf4j.LoggerFactory;
 public class IDBasedEntityResolver implements EntityResolver {
     private static final Logger LOG = LoggerFactory.getLogger(IDBasedEntityResolver.class);
 
+    private final AtlasGraph        graph;
     private final AtlasTypeRegistry typeRegistry;
-    private final EntityGraphMapper entityGraphMapper;
 
-    public IDBasedEntityResolver(AtlasTypeRegistry typeRegistry, EntityGraphMapper entityGraphMapper) {
+    public IDBasedEntityResolver(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
+        this.graph             = graph;
         this.typeRegistry      = typeRegistry;
-        this.entityGraphMapper = entityGraphMapper;
     }
 
     public EntityGraphDiscoveryContext resolveEntityReferences(EntityGraphDiscoveryContext context) throws AtlasBaseException {
@@ -52,7 +53,7 @@ public class IDBasedEntityResolver implements EntityResolver {
 
         for (String guid : context.getReferencedGuids()) {
             boolean isAssignedGuid = AtlasTypeUtil.isAssignedGuid(guid);
-            AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV2.findByGuid(guid) : null;
+            AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV2.findByGuid(this.graph, guid) : null;
 
             if (vertex == null && !RequestContext.get().isImportInProgress()) { // if not found in the store, look if the entity is present in the stream
                 AtlasEntity entity = entityStream.getByGuid(guid);
@@ -64,7 +65,7 @@ public class IDBasedEntityResolver implements EntityResolver {
                         throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
                     }
 
-                    vertex = AtlasGraphUtilsV2.findByUniqueAttributes(entityType, entity.getAttributes());
+                    vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, entity.getAttributes());
                 } else if (!isAssignedGuid) { // for local-guids, entity must be in the stream
                     throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
                 }

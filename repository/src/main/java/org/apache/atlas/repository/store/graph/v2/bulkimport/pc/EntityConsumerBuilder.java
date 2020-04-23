@@ -22,6 +22,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.pc.WorkItemBuilder;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
@@ -30,21 +31,33 @@ import java.util.concurrent.BlockingQueue;
 public class EntityConsumerBuilder implements WorkItemBuilder<EntityConsumer, AtlasEntity.AtlasEntityWithExtInfo> {
     private AtlasGraph atlasGraph;
     private AtlasEntityStore entityStore;
-    private final EntityGraphRetriever entityGraphRetriever;
+    private AtlasGraph atlasGraphBulk;
+    private AtlasEntityStore entityStoreBulk;
+    private final EntityGraphRetriever entityRetriever;
     private final AtlasTypeRegistry typeRegistry;
+    private EntityGraphRetriever entityRetrieverBulk;
     private int batchSize;
 
-    public EntityConsumerBuilder(AtlasGraph atlasGraph, AtlasEntityStore entityStore,
-                                 EntityGraphRetriever entityGraphRetriever, AtlasTypeRegistry typeRegistry, int batchSize) {
+    public EntityConsumerBuilder(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, AtlasEntityStoreV2 entityStore, EntityGraphRetriever entityRetriever,
+                                 AtlasGraph atlasGraphBulk, AtlasEntityStoreV2 entityStoreBulk, EntityGraphRetriever entityRetrieverBulk,
+                                 int batchSize) {
+        this.typeRegistry = typeRegistry;
+
         this.atlasGraph = atlasGraph;
         this.entityStore = entityStore;
-        this.entityGraphRetriever = entityGraphRetriever;
-        this.typeRegistry = typeRegistry;
+        this.entityRetriever = entityRetriever;
+
+        this.atlasGraphBulk = atlasGraphBulk;
+        this.entityStoreBulk = entityStoreBulk;
+        this.entityRetrieverBulk = entityRetrieverBulk;
+
         this.batchSize = batchSize;
     }
 
     @Override
     public EntityConsumer build(BlockingQueue<AtlasEntity.AtlasEntityWithExtInfo> queue) {
-        return new EntityConsumer(atlasGraph, entityStore, entityGraphRetriever, typeRegistry, queue, this.batchSize);
+        return new EntityConsumer(typeRegistry, atlasGraph, entityStore,
+                atlasGraphBulk, entityStoreBulk, entityRetrieverBulk,
+                queue, this.batchSize);
     }
 }

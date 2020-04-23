@@ -24,6 +24,7 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.EntityResolver;
@@ -56,11 +57,13 @@ import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.valid
 public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityGraphDiscoveryV2.class);
 
+    private final AtlasGraph                  graph;
     private final AtlasTypeRegistry           typeRegistry;
     private final EntityGraphDiscoveryContext discoveryContext;
     private final EntityGraphMapper           entityGraphMapper;
 
-    public AtlasEntityGraphDiscoveryV2(AtlasTypeRegistry typeRegistry, EntityStream entityStream, EntityGraphMapper entityGraphMapper) {
+    public AtlasEntityGraphDiscoveryV2(AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityStream entityStream, EntityGraphMapper entityGraphMapper) {
+        this.graph             = graph;
         this.typeRegistry      = typeRegistry;
         this.discoveryContext  = new EntityGraphDiscoveryContext(typeRegistry, entityStream);
         this.entityGraphMapper = entityGraphMapper;
@@ -189,8 +192,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     protected void resolveReferences() throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("resolveReferences");
 
-        EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(typeRegistry, entityGraphMapper),
-                                                                  new UniqAttrBasedEntityResolver(typeRegistry, entityGraphMapper)
+        EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(this.graph, typeRegistry),
+                                                                  new UniqAttrBasedEntityResolver(this.graph, typeRegistry, entityGraphMapper)
                                                                 };
 
         for (EntityResolver resolver : entityResolvers) {

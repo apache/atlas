@@ -28,13 +28,13 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -55,13 +55,15 @@ import static org.apache.atlas.repository.graph.GraphHelper.getDelimitedClassifi
 public final class EntityStateChecker {
     private static final Logger LOG = LoggerFactory.getLogger(EntityStateChecker.class);
 
+    private final AtlasGraph           graph;
     private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityRetriever;
 
     @Inject
-    public EntityStateChecker(AtlasTypeRegistry typeRegistry) {
+    public EntityStateChecker(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
+        this.graph           = graph;
         this.typeRegistry    = typeRegistry;
-        this.entityRetriever = new EntityGraphRetriever(typeRegistry);
+        this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
     }
 
 
@@ -140,7 +142,7 @@ public final class EntityStateChecker {
      * @throws AtlasBaseException
      */
     public AtlasEntityState checkEntityState(String guid, boolean fixIssues, AtlasCheckStateResult result) throws AtlasBaseException {
-        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(guid);
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);

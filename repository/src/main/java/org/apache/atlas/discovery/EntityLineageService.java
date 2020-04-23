@@ -94,7 +94,7 @@ public class EntityLineageService implements AtlasLineageService {
     EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) {
         this.graph = atlasGraph;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
-        this.entityRetriever = new EntityGraphRetriever(typeRegistry);
+        this.entityRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry);
         this.atlasTypeRegistry = typeRegistry;
     }
 
@@ -259,7 +259,7 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         if (isDataSet) {
-            AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(guid);
+            AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
 
             if (direction == INPUT || direction == BOTH) {
                 traverseEdges(datasetVertex, true, depth, ret);
@@ -269,7 +269,7 @@ public class EntityLineageService implements AtlasLineageService {
                 traverseEdges(datasetVertex, false, depth, ret);
             }
         } else  {
-            AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(guid);
+            AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
 
             // make one hop to the next dataset vertices from process vertex and traverse with 'depth = depth - 1'
             if (direction == INPUT || direction == BOTH) {

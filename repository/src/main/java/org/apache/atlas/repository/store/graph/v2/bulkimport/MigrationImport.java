@@ -28,7 +28,6 @@ import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.migration.DataMigrationStatusService;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
@@ -46,15 +45,14 @@ import org.slf4j.LoggerFactory;
 public class MigrationImport extends ImportStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(MigrationImport.class);
 
+    private final AtlasGraph graph;
+    private final AtlasGraphProvider graphProvider;
     private final AtlasTypeRegistry typeRegistry;
-    private AtlasGraph atlasGraph;
-    private EntityGraphRetriever entityGraphRetriever;
-    private EntityGraphMapper entityGraphMapper;
-    private AtlasEntityStore entityStore;
 
-    public MigrationImport(AtlasGraphProvider atlasGraphProvider, AtlasTypeRegistry typeRegistry) {
+    public MigrationImport(AtlasGraph graph, AtlasGraphProvider graphProvider, AtlasTypeRegistry typeRegistry) {
+        this.graph = graph;
+        this.graphProvider = graphProvider;
         this.typeRegistry = typeRegistry;
-        setupEntityStore(atlasGraphProvider, typeRegistry);
         LOG.info("MigrationImport: Using bulkLoading...");
     }
 
@@ -72,7 +70,7 @@ public class MigrationImport extends ImportStrategy {
         long index = 0;
         int streamSize = entityStream.size();
         EntityMutationResponse ret = new EntityMutationResponse();
-        EntityCreationManager creationManager = createEntityCreationManager(atlasGraph, importResult, dataMigrationStatusService);
+        EntityCreationManager creationManager = createEntityCreationManager(importResult, dataMigrationStatusService);
 
         try {
             LOG.info("Migration Import: Size: {}: Starting...", streamSize);
@@ -95,16 +93,24 @@ public class MigrationImport extends ImportStrategy {
         return dataMigrationStatusService;
     }
 
-    private EntityCreationManager createEntityCreationManager(AtlasGraph threadedAtlasGraph,
-                                                              AtlasImportResult importResult,
+    private EntityCreationManager createEntityCreationManager(AtlasImportResult importResult,
                                                               DataMigrationStatusService dataMigrationStatusService) {
-        atlasGraph = threadedAtlasGraph;
+        AtlasGraph graphBulk = graphProvider.getBulkLoading();
+
+        EntityGraphRetriever entityGraphRetriever = new EntityGraphRetriever(this.graph, typeRegistry);
+        EntityGraphRetriever entityGraphRetrieverBulk = new EntityGraphRetriever(graphBulk, typeRegistry);
+
+        AtlasEntityStoreV2 entityStore = createEntityStore(this.graph, typeRegistry);
+        AtlasEntityStoreV2 entityStoreBulk = createEntityStore(graphBulk, typeRegistry);
+
         int batchSize = importResult.getRequest().getOptionKeyBatchSize();
         int numWorkers = getNumWorkers(importResult.getRequest().getOptionKeyNumWorkers());
 
         EntityConsumerBuilder consumerBuilder =
-                new EntityConsumerBuilder(threadedAtlasGraph, entityStore, entityGraphRetriever, typeRegistry, batchSize);
+                new EntityConsumerBuilder(typeRegistry, this.graph, entityStore, entityGraphRetriever, graphBulk,
+                        entityStoreBulk, entityGraphRetrieverBulk, batchSize);
 
+        LOG.info("MigrationImport: EntityCreationManager: Created!");
         return new EntityCreationManager(consumerBuilder, batchSize, numWorkers, importResult, dataMigrationStatusService);
     }
 
@@ -114,17 +120,17 @@ public class MigrationImport extends ImportStrategy {
         return ret;
     }
 
-    private void setupEntityStore(AtlasGraphProvider atlasGraphProvider, AtlasTypeRegistry typeRegistry) {
-        this.entityGraphRetriever = new EntityGraphRetriever(typeRegistry);
-        this.atlasGraph = atlasGraphProvider.getBulkLoading();
-        DeleteHandlerDelegate deleteDelegate = new DeleteHandlerDelegate(typeRegistry);
-
+    private AtlasEntityStoreV2 createEntityStore(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
+        FullTextMapperV2Nop fullTextMapperV2 = new FullTextMapperV2Nop();
         IAtlasEntityChangeNotifier entityChangeNotifier = new EntityChangeNotifierNop();
-        AtlasRelationshipStore relationshipStore = new AtlasRelationshipStoreV2(typeRegistry, deleteDelegate, entityChangeNotifier);
+        DeleteHandlerDelegate deleteDelegate = new DeleteHandlerDelegate(graph, typeRegistry);
         AtlasFormatConverters formatConverters = new AtlasFormatConverters(typeRegistry);
-        AtlasInstanceConverter instanceConverter = new AtlasInstanceConverter(typeRegistry, formatConverters);
-        this.entityGraphMapper = new EntityGraphMapper(deleteDelegate, typeRegistry, atlasGraph, relationshipStore, entityChangeNotifier, instanceConverter, new FullTextMapperV2Nop());
-        this.entityStore = new AtlasEntityStoreV2(deleteDelegate, typeRegistry, entityChangeNotifier, entityGraphMapper);
+
+        AtlasInstanceConverter instanceConverter = new AtlasInstanceConverter(graph, typeRegistry, formatConverters);
+        AtlasRelationshipStore relationshipStore = new AtlasRelationshipStoreV2(graph, typeRegistry, deleteDelegate, entityChangeNotifier);
+        EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteDelegate, typeRegistry, graph, relationshipStore, entityChangeNotifier, instanceConverter, fullTextMapperV2);
+
+        return new AtlasEntityStoreV2(graph, deleteDelegate, typeRegistry, entityChangeNotifier, entityGraphMapper);
     }
 
     private void shutdownEntityCreationManager(EntityCreationManager creationManager) {

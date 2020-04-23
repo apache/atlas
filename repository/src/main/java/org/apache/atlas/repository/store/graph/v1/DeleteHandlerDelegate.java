@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.store.DeleteType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
@@ -37,11 +38,13 @@ public class DeleteHandlerDelegate {
     private final SoftDeleteHandlerV1 softDeleteHandler;
     private final HardDeleteHandlerV1 hardDeleteHandler;
     private final DeleteHandlerV1     defaultHandler;
+    private final AtlasGraph atlasGraph;
 
     @Inject
-    public DeleteHandlerDelegate(AtlasTypeRegistry typeRegistry) {
-        this.softDeleteHandler = new SoftDeleteHandlerV1(typeRegistry);
-        this.hardDeleteHandler = new HardDeleteHandlerV1(typeRegistry);
+    public DeleteHandlerDelegate(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry) {
+        this.atlasGraph = atlasGraph;
+        this.softDeleteHandler = new SoftDeleteHandlerV1(atlasGraph, typeRegistry);
+        this.hardDeleteHandler = new HardDeleteHandlerV1(atlasGraph, typeRegistry);
         this.defaultHandler    = getDefaultConfiguredHandler(typeRegistry);
     }
 
@@ -74,7 +77,7 @@ public class DeleteHandlerDelegate {
 
             LOG.info("Default delete handler set to: {}", handlerFromProperties.getName());
 
-            ret = (DeleteHandlerV1) handlerFromProperties.getConstructor(AtlasTypeRegistry.class).newInstance(typeRegistry);
+            ret = (DeleteHandlerV1) handlerFromProperties.getConstructor(AtlasGraph.class, AtlasTypeRegistry.class).newInstance(this.atlasGraph, typeRegistry);
         } catch (Exception ex) {
             LOG.error("Error instantiating default delete handler. Defaulting to: {}", softDeleteHandler.getClass().getName(), ex);
 

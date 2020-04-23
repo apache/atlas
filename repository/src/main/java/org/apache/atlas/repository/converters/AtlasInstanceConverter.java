@@ -34,6 +34,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.model.legacy.EntityResult;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
@@ -68,11 +69,11 @@ public class AtlasInstanceConverter {
     private final EntityGraphRetriever  entityGraphRetrieverIgnoreRelationshipAttrs;
 
     @Inject
-    public AtlasInstanceConverter(AtlasTypeRegistry typeRegistry, AtlasFormatConverters instanceFormatters) {
+    public AtlasInstanceConverter(AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasFormatConverters instanceFormatters) {
         this.typeRegistry                                = typeRegistry;
         this.instanceFormatters                          = instanceFormatters;
-        this.entityGraphRetriever                        = new EntityGraphRetriever(typeRegistry);
-        this.entityGraphRetrieverIgnoreRelationshipAttrs = new EntityGraphRetriever(typeRegistry, true);
+        this.entityGraphRetriever                        = new EntityGraphRetriever(graph, typeRegistry);
+        this.entityGraphRetrieverIgnoreRelationshipAttrs = new EntityGraphRetriever(graph, typeRegistry, true);
     }
 
     public Referenceable[] getReferenceables(Collection<AtlasEntity> entities) throws AtlasBaseException {

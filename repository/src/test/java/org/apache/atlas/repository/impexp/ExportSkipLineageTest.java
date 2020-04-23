@@ -26,6 +26,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.AtlasTestBase;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
@@ -66,6 +67,9 @@ public class ExportSkipLineageTest extends AtlasTestBase {
     @Inject
     ExportService exportService;
 
+    @Inject
+    AtlasGraph atlasGraph;
+
     private DeleteHandlerDelegate deleteDelegate = mock(DeleteHandlerDelegate.class);
     private AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
     private AtlasEntityStoreV2 entityStore;
@@ -76,7 +80,7 @@ public class ExportSkipLineageTest extends AtlasTestBase {
         loadHiveModel(typeDefStore, typeRegistry);
         RequestContext.get().setImportInProgress(true);
 
-        entityStore = new AtlasEntityStoreV2(deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
+        entityStore = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
         createEntities(entityStore, ENTITIES_SUB_DIR, new String[]{"db", "table-columns", "table-view", "table-table-lineage"});
         final String[] entityGuids = {DB_GUID, TABLE_GUID, TABLE_TABLE_GUID, TABLE_VIEW_GUID};
         verifyCreatedEntities(entityStore, entityGuids, 4);

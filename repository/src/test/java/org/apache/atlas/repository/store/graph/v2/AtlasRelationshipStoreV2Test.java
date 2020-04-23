@@ -32,6 +32,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -86,6 +87,9 @@ public abstract class AtlasRelationshipStoreV2Test {
     @Inject
     AtlasEntityChangeNotifier entityNotifier;
 
+    @Inject
+    AtlasGraph atlasGraph;
+
     AtlasEntityStore          entityStore;
     AtlasRelationshipStore    relationshipStore;
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
@@ -124,8 +128,8 @@ public abstract class AtlasRelationshipStoreV2Test {
 
     @BeforeTest
     public void init() throws Exception {
-        entityStore       = new AtlasEntityStoreV2(deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
-        relationshipStore = new AtlasRelationshipStoreV2(typeRegistry, deleteDelegate, entityNotifier);
+        entityStore       = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, typeRegistry, mockChangeNotifier, graphMapper);
+        relationshipStore = new AtlasRelationshipStoreV2(atlasGraph, typeRegistry, deleteDelegate, entityNotifier);
 
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);

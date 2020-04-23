@@ -51,9 +51,9 @@ public class HiveParititionTest extends  MigrationBaseAsserts {
 
         assertTypeCountNameGuid("hive_db", 1, "parts_db", "ae30d78b-51b4-42ab-9436-8d60c8f68b95");
         assertTypeCountNameGuid("hive_process", 1, "", "");
-        assertEdges("hive_db", "parts_db", AtlasEdgeDirection.IN,1, 1, "");
-        assertEdges("hive_table", "t1", AtlasEdgeDirection.OUT, 1, 1, "hive_table_db");
-        assertEdges("hive_table", "tv1", AtlasEdgeDirection.OUT, 1, 1, "hive_table_db");
+        assertEdges("hive_db", "parts_db", AtlasEdgeDirection.IN, 1, "");
+        assertEdges("hive_table", "t1", AtlasEdgeDirection.OUT, 1, "hive_table_db");
+        assertEdges("hive_table", "tv1", AtlasEdgeDirection.OUT, 1, "hive_table_db");
 
         assertMigrationStatus(EXPECTED_TOTAL_COUNT);
     }
