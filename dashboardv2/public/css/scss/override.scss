@@ -72,64 +72,23 @@
     }
 }
 
+.modal-full-screen {
+    width: 80%;
+    height: 80vh;
+
+    .modal-content {
+        height: inherit;
+        width: 100%;
+    }
+
+}
+
 .switch.pull-left {
     margin-right: 8px;
 }
 
 .modal-content {
     border-radius: 10px;
-}
-
-.table-quickMenu {
-    border: thin $lightGrey solid;
-    border-collapse: separate;
-    border-radius: 6px;
-    box-shadow: 0px 0px 4px #d8d8d8;
-    overflow: scroll !important;
-    max-height: 500px;
-    width: 100%;
-
-    .resizeHandler {
-        &.grid-draggable {
-            background-color: $color_jungle_green_approx !important;
-        }
-
-        &:hover {
-            border-left: 1px solid #d2d2d2;
-        }
-    }
-
-    >thead>tr>th {
-        border-width: thin;
-        border-color: $color_jungle_green_approx;
-        border-bottom-style: solid;
-        box-shadow: none;
-        padding: 20px 15px;
-        background-color: transparent;
-        text-align: left;
-        font-weight: 800;
-        border-top: 0;
-        font-size: 14px;
-        letter-spacing: 0.25px;
-        color: rgba(52, 52, 52, 1);
-    }
-
-    >tbody>tr>td {
-        border-color: $color_gallery_approx;
-        color: #333333;
-        font-weight: 100;
-        padding: 10px 15px;
-    }
-}
-
-td {
-
-    div.scroll-y,
-    pre.scroll-y {
-        max-height: 200px;
-        overflow-y: auto;
-        word-break: break-word;
-    }
 }
 
 
@@ -262,7 +221,7 @@ td {
 }
 
 .popover {
-    z-index: 99;
+    z-index: 1000;
 }
 
 .popover-content {
@@ -284,6 +243,7 @@ td {
 
 .tab-content>.tab-pane.active {
     overflow-x: hidden;
+    overflow: initial;
 }
 
 .advancedInfo {
@@ -404,6 +364,10 @@ div.columnmanager-visibilitycontrol {
 }
 
 div.columnmanager-dropdown-container {
+    .columnmanager-dropdown-item {
+        padding: 2px 13px;
+    }
+
     &.open {
         overflow: auto;
         width: auto;
@@ -496,4 +460,34 @@ div.columnmanager-dropdown-container {
 
 .w30 {
     width: 30% !important;
+}
+
+.query-builder .error-container {
+    cursor: pointer;
+}
+
+.renderable {
+    .glyphicon {
+        color: $color_jungle_green_approx;
+        font-size: large;
+        font-weight: bold;
+    }
+}
+
+.backgrid-internal-table {
+
+    th,
+    td {
+        display: table-cell;
+    }
+}
+
+.table-hover>tbody>tr:hover {
+    background-color: #fafafa;
+}
+
+.input-group {
+    .form-control {
+        z-index: 1;
+    }
 }

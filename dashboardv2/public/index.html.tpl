@@ -78,7 +78,7 @@
             <div id="sideNav-wrapper"></div>
         </div>
         <div id="page-content-wrapper" class="page-content-wrapper">
-            <header id="new-header" class="clearfix"></header>
+            <div id="new-header" class="clearfix"></div>
             <div id="new-page-wrapper">
                 <div>
                     <div class="initialLoading"></div>

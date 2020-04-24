@@ -274,6 +274,15 @@ pre {
     float: left;
 }
 
+.errorValidate {
+    border-color: red !important;
+}
+
+.errorValidate+span .select2-selection {
+    border-color: red !important;
+
+}
+
 .button-loader {
     position: relative;
     padding-left: 22px !important;

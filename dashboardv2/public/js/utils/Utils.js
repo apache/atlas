@@ -352,6 +352,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     urlUpdate['searchUrl'] = options.url;
                 } else if (Utils.getUrlState.isGlossaryTab(options.url)) {
                     urlUpdate['glossaryUrl'] = options.url;
+                } else if (Utils.getUrlState.isAdministratorTab(options.url)) {
+                    urlUpdate['administratorUrl'] = options.url;
                 }
                 $.extend(Globals.saveApplicationState.tabState, urlUpdate);
             }
@@ -387,10 +389,20 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                 matchString: "tag"
             });
         },
+        isBSDetail: function(url) {
+            var quey = this.getQueryUrl(url);
+            return (quey.queyParams[0].indexOf("administrator/businessMetadata")) > -1 ? true : false;
+        },
         isSearchTab: function(url) {
             return this.checkTabUrl({
                 url: url,
                 matchString: "search"
+            });
+        },
+        isAdministratorTab: function(url) {
+            return this.checkTabUrl({
+                url: url,
+                matchString: "administrator"
             });
         },
         isGlossaryTab: function(url) {
@@ -552,6 +564,27 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         }
 
     }
+
+    Utils.backButtonClick = function() {
+        var queryParams = Utils.getUrlState.getQueryParams(),
+            urlPath = "searchUrl";
+        if (queryParams && queryParams.from) {
+            if (queryParams.from == "classification") {
+                urlPath = "tagUrl";
+            } else if (queryParams.from == "glossary") {
+                urlPath = "glossaryUrl";
+            } else if (queryParams.from == "bm") {
+                urlPath = "administratorUrl";
+            }
+        }
+        Utils.setUrl({
+            url: Globals.saveApplicationState.tabState[urlPath],
+            mergeBrowserUrl: false,
+            trigger: true,
+            updateTabState: true
+        });
+    }
+
     Utils.showTitleLoader = function(loaderEl, titleBoxEl) {
         loaderEl.css ? loaderEl.css({
             'display': 'block',

@@ -124,11 +124,7 @@ define(['require',
                                         relationshipAttributes = parseDetailsObject.relationshipAttributes;
                                     if (attributesDetails) {
                                         that.ui.attributeDetails.removeClass('hide');
-                                        if (that.action.includes("Classification") || that.action.includes("Business Attribute") != -1) {
-                                            that.ui.panelAttrHeading.html("Properties ");
-                                        } else {
-                                            that.ui.panelAttrHeading.html("Technical properties ");
-                                        }
+                                        that.action.indexOf("Classification") === -1 ? that.ui.panelAttrHeading.html("Technical properties ") : that.ui.panelAttrHeading.html("Properties ");
                                         var attrTable = that.createTableWithValues(attributesDetails);
                                         that.ui.attributeCard.html(
                                             attrTable);

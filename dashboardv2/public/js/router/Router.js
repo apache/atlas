@@ -30,20 +30,27 @@ define([
     var AppRouter = Backbone.Router.extend({
         routes: {
             // Define some URL routes
-            '': 'defaultAction',
-            '!/': 'tagAttributePageLoad',
-            '!/tag/tagAttribute/(*name)': 'tagAttributePageLoad',
-            '!/search/searchResult': 'searchResult',
-            '!/detailPage/:id': 'detailPage',
-            '!/tag': 'commonAction',
-            '!/search': 'commonAction',
-            '!/glossary': 'commonAction',
-            '!/glossary/:id': 'glossaryDetailPage',
+            "": "defaultAction",
+            "!/": "tagAttributePageLoad",
+            // Search
+            "!/search": "commonAction",
+            "!/search/searchResult": "searchResult",
+            // Tag
+            "!/tag": "commonAction",
+            "!/tag/tagAttribute/(*name)": "tagAttributePageLoad",
+            // Glossary
+            "!/glossary": "commonAction",
+            "!/glossary/:id": "glossaryDetailPage",
+            // Details
+            "!/detailPage/:id": "detailPage",
+            //Administrator page
+            '!/administrator': 'administrator',
+            '!/administrator/businessMetadata/:id': 'businessMetadataDetailPage',
             // Default
             '*actions': 'defaultAction'
         },
         initialize: function(options) {
-            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'metricCollection'));
+            _.extend(this, _.pick(options, 'entityDefCollection', 'typeHeaders', 'enumDefCollection', 'classificationDefCollection', 'metricCollection', 'businessMetadataDefCollection'));
             this.showRegions();
             this.bindCommonEvents();
             this.listenTo(this, 'route', this.postRouteExecute, this);
@@ -59,7 +66,8 @@ define([
                 'enumDefCollection': this.enumDefCollection,
                 'classificationDefCollection': this.classificationDefCollection,
                 'glossaryCollection': this.glossaryCollection,
-                'metricCollection': this.metricCollection
+                'metricCollection': this.metricCollection,
+                'businessMetadataDefCollection': this.businessMetadataDefCollection
             }
             this.sharedObj = {
                 searchTableColumns: {},
@@ -290,6 +298,69 @@ define([
                         App.rNContent.currentView.destroy();
                     }
                 }
+            });
+        },
+        administrator: function() {
+            var that = this;
+            require(["views/site/Header", "views/site/SideNavLayoutView", 'views/administrator/AdministratorLayoutView'], function(Header, SideNavLayoutView, AdministratorLayoutView) {
+                var value = Utils.getUrlState.getQueryParams(),
+                    paramObj = Utils.getUrlState.getQueryParams();
+                that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                that.renderViewIfNotExists({
+                    view: App.rSideNav,
+                    manualRender: function() {
+                        this.view.currentView.selectTab();
+                        if (Utils.getUrlState.isTagTab()) {
+                            this.view.currentView.RTagLayoutView.currentView.manualRender();
+                        } else if (Utils.getUrlState.isGlossaryTab()) {
+                            this.view.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({ "isTrigger": true }, { "value": paramObj }));
+                        }
+                    },
+                    render: function() {
+                        return new SideNavLayoutView(
+                            _.extend({
+                                'searchVent': that.searchVent
+                            }, that.preFetchedCollectionLists, that.sharedObj)
+                        )
+                    }
+                });
+                paramObj = _.extend({ value: value, guid: null }, that.preFetchedCollectionLists, that.sharedObj);
+                App.rNContent.show(new AdministratorLayoutView(paramObj));
+            });
+        },
+        businessMetadataDetailPage: function(guid) {
+            var that = this;
+            require(["views/site/Header", "views/site/SideNavLayoutView", "views/business_metadata/BusinessMetadataContainerLayoutView", ], function(Header, SideNavLayoutView, BusinessMetadataContainerLayoutView) {
+                var paramObj = Utils.getUrlState.getQueryParams();
+                that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                var options = _.extend({
+                        guid: guid,
+                        value: paramObj,
+                        searchVent: that.searchVent,
+                        categoryEvent: that.categoryEvent
+                    },
+                    that.preFetchedCollectionLists,
+                    that.sharedObj
+                )
+                that.renderViewIfNotExists({
+                    view: App.rSideNav,
+                    manualRender: function() {
+                        this.view.currentView.selectTab();
+                        if (Utils.getUrlState.isTagTab()) {
+                            this.view.currentView.RTagLayoutView.currentView.manualRender();
+                        } else if (Utils.getUrlState.isGlossaryTab()) {
+                            this.view.currentView.RGlossaryLayoutView.currentView.manualRender(_.extend({ "isTrigger": true }, { "value": paramObj }));
+                        }
+                    },
+                    render: function() {
+                        return new SideNavLayoutView(
+                            _.extend({
+                                'searchVent': that.searchVent
+                            }, that.preFetchedCollectionLists, that.sharedObj)
+                        )
+                    }
+                });
+                App.rNContent.show(new BusinessMetadataContainerLayoutView(options));
             });
         },
         searchResult: function() {

@@ -95,6 +95,26 @@ define(['require',
                 dataType: 'json'
             }, options);
             return this.constructor.nonCrudOperation.call(this, url, "POST", options);
+        },
+        saveBusinessMetadata: function(options) {
+            var url = UrlLinks.businessMetadataDefApiUrl();
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+            return this.constructor.nonCrudOperation.call(this, url, '', options);
+        },
+        deleteBusinessMetadata: function(options) {
+            var url = UrlLinks.businessMetadataDefApiUrl(options.typeName);
+            return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
+        },
+        saveBusinessMetadataEntity: function(guid, options) {
+            var url = UrlLinks.entitiesBusinessMetadataApiUrl(guid);
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+            return this.constructor.nonCrudOperation.call(this, url, 'POST', options);
         }
     }, {});
     return VEntity;

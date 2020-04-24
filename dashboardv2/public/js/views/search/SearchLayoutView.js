@@ -90,10 +90,13 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'searchTableColumns', 'searchTableFilters', 'metricCollection'));
+                _.extend(this, _.pick(options, 'value', 'typeHeaders', 'searchVent', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'businessMetadataDefCollection', 'searchTableColumns', 'searchTableFilters', 'metricCollection'));
                 this.type = "basic";
                 this.entityCountObj = _.first(this.metricCollection.toJSON());
-                this.filterTypeSelected = [];
+                this.selectedFilter = {
+                    'basic': [],
+                    'dsl': []
+                }
                 var param = Utils.getUrlState.getQueryParams();
                 this.query = {
                     dsl: {
@@ -426,7 +429,9 @@ define(['require',
                         entityDefCollection: that.entityDefCollection,
                         enumDefCollection: that.enumDefCollection,
                         classificationDefCollection: that.classificationDefCollection,
-                        searchTableFilters: that.searchTableFilters
+                        businessMetadataDefCollection: that.businessMetadataDefCollection,
+                        searchTableFilters: that.searchTableFilters,
+
                     });
                     that.attrModal.on('ok', function(scope, e) {
                         that.okAttrFilterButton(e);
@@ -490,8 +495,9 @@ define(['require',
                         serviceArr.push(serviceType);
                     }
                 });
+
                 _.each(_.uniq(serviceArr), function(service) {
-                    serviceStr += '<li><div class="pretty p-switch p-fill"><input type="checkbox" class="pull-left" data-value="' + (service) + '" value="" ' + (_.contains(that.filterTypeSelected, service) ? "checked" : "") + '/><div class="state p-primary"><label>' + (service.toUpperCase()) + '</label></div></div></li>';
+                    serviceStr += '<li><div class="pretty p-switch p-fill"><input type="checkbox" class="pull-left" data-value="' + (service) + '" value="" ' + (_.contains(that.selectedFilter[that.type], service) ? "checked" : "") + '/><div class="state p-primary"><label>' + (service.toUpperCase()) + '</label></div></div></li>';
                 });
                 var templt = serviceStr + '<hr class="hr-filter"/><div class="text-right"><div class="divider"></div><button class="btn btn-action btn-sm filterDone">Done</button></div>';
                 return templt;
@@ -500,6 +506,9 @@ define(['require',
                 var that = this;
                 var serviceTypeToBefiltered = (options && options.filterList);
                 var isTypeOnly = options && options.isTypeOnly;
+                if (this.selectedFilter[this.type].length) {
+                    serviceTypeToBefiltered = this.selectedFilter[this.type];
+                }
                 this.ui.typeLov.empty();
                 var typeStr = '<option></option>',
                     tagStr = typeStr,
@@ -564,14 +573,14 @@ define(['require',
                     allowClear: true,
                     getFilterBox: this.getFilterBox.bind(this),
                     onFilterSubmit: function(options) {
-                        that.filterTypeSelected = options.filterVal;
+                        that.selectedFilter[that.type] = options.filterVal;
                         that.renderTypeTagList({ "filterList": options.filterVal, isTypeOnly: true })
                     }
                 });
                 typeLovSelect2.on("select2:close", function() {
                     typeLovSelect2.trigger("hideFilter");
                 });
-                if (typeLovSelect2 && serviceTypeToBefiltered) {
+                if (typeLovSelect2 && isTypeOnly) {
                     typeLovSelect2.select2('open').trigger("change", { 'manual': true });
                 }
                 if (that.setInitialEntityVal) {
@@ -778,7 +787,7 @@ define(['require',
                 }
             },
             clearSearchData: function() {
-                this.filterTypeSelected = [];
+                this.selectedFilter[this.type] = [];
                 this.renderTypeTagList();
                 this.updateQueryObject();
                 this.ui.typeLov.val("").trigger("change");

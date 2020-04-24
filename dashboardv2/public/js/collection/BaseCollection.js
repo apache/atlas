@@ -130,6 +130,9 @@ define(['require',
             nonCrudOperation: function(url, requestMethod, options) {
                 var that = this;
                 options['beforeSend'] = CommonViewFunction.addRestCsrfCustomHeader;
+                if (options.data && typeof options.data === "object") {
+                    options.data = JSON.stringify(options.data);
+                }
                 return Backbone.sync.call(this, null, this, _.extend({
                     url: url,
                     type: requestMethod

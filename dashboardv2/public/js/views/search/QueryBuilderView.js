@@ -54,18 +54,8 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options,
-                    'attrObj',
-                    'value',
-                    'typeHeaders',
-                    'entityDefCollection',
-                    'enumDefCollection',
-                    'classificationDefCollection',
-                    'tag',
-                    'searchTableFilters',
-                    'systemAttrArr'));
+                _.extend(this, _.pick(options, 'attrObj', 'value', 'typeHeaders', 'entityDefCollection', 'enumDefCollection', 'classificationDefCollection', 'businessMetadataDefCollection', 'tag', 'type', 'searchTableFilters', 'systemAttrArr', 'adminAttrFilters'));
                 this.attrObj = _.sortBy(this.attrObj, 'name');
-                //this.systemAttrArr = _.sortBy(this.systemAttrArr, 'name');
                 this.filterType = this.tag ? 'tagFilters' : 'entityFilters';
             },
             bindEvents: function() {},
@@ -75,6 +65,9 @@ define(['require',
                 }
                 if (type === "string") {
                     obj.operators = ['=', '!=', 'contains', 'begins_with', 'ends_with'];
+                    if (this.adminAttrFilters) {
+                        obj.operators = obj.operators.concat(['like', 'in']);
+                    }
                 }
                 if (type === "date") {
                     obj.operators = ['>', '<'];
@@ -289,12 +282,13 @@ define(['require',
                     _.extend(obj, this.getOperator(obj.type));
                     return obj;
                 }
+
                 if (this.isPrimitive(obj.type)) {
                     if (obj.type === "boolean") {
                         obj['input'] = 'select';
                         obj['values'] = ['true', 'false'];
                     }
-                    _.extend(obj, this.getOperator(obj.type));
+                    _.extend(obj, this.getOperator(obj.type, false));
                     if (_.has(Enums.regex.RANGE_CHECK, obj.type)) {
                         obj.validation = {
                             min: Enums.regex.RANGE_CHECK[obj.type].min,
@@ -324,49 +318,96 @@ define(['require',
             onRender: function() {
                 var that = this,
                     filters = [],
-                    isGroupView = false,
+                    isGroupView = true,
                     placeHolder = '--Select Attribute--';
-                if (this.attrObj.length > 0 && this.systemAttrArr.length > 0) {
-                    isGroupView = true;
-                } else if (this.attrObj.length === 0 || this.systemAttrArr.length === 0) {
-                    isGroupView = false;
-                }
-                if (this.attrObj.length === 0) {
-                    placeHolder = '--Select System Attribute--';
-                }
-                if (this.value) {
-                    var rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
-                }
-                _.each(this.attrObj, function(obj) {
-                    var type = that.tag ? 'Classification' : 'Entity';
-                    var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'Select ' + type + ' Attribute');
-                    if (returnObj) {
-                        filters.push(returnObj);
+                var rules_widgets = null;
+                if (this.adminAttrFilters) {
+                    var entityDef = this.entityDefCollection.fullCollection.find({ name: "__AtlasAuditEntry" }),
+                        auditEntryAttributeDefs = null;
+                    if (entityDef) {
+                        auditEntryAttributeDefs = $.extend(true, {}, entityDef.get("attributeDefs")) || null;
                     }
-                });
-                var sortMap = {
-                    "__guid": 1,
-                    "__typeName": 2,
-                    "__timestamp": 3,
-                    "__modificationTimestamp": 4,
-                    "__createdBy": 5,
-                    "__modifiedBy": 6,
-                    "__isIncomplete": 7,
-                    "__state": 8,
-                    "__classificationNames": 9,
-                    "__propagatedClassificationNames": 10,
-                    "__labels": 11,
-                    "__customAttributes": 12,
-                }
-                this.systemAttrArr = _.sortBy(this.systemAttrArr, function(obj) {
-                    return sortMap[obj.name]
-                })
-                _.each(this.systemAttrArr, function(obj) {
-                    var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'Select System Attribute', true);
-                    if (returnObj) {
-                        filters.push(returnObj);
+                    if (auditEntryAttributeDefs) {
+                        _.each(auditEntryAttributeDefs, function(attributes) {
+                            var returnObj = that.getObjDef(attributes, rules_widgets);
+                            if (returnObj) {
+                                filters.push(returnObj);
+                            }
+                        });
                     }
-                });
+                    rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters ? this.searchTableFilters["adminAttrFilters"] : null, "formatDate": true });;
+                } else {
+                    if (this.value) {
+                        var rules_widgets = CommonViewFunction.attributeFilter.extractUrl({ "value": this.searchTableFilters[this.filterType][(this.tag ? this.value.tag : this.value.type)], "formatDate": true });
+                    }
+                    _.each(this.attrObj, function(obj) {
+                        var type = that.tag ? that.value.tag : that.value.type;
+                        var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, (type + ' Attribute'));
+                        if (returnObj) {
+                            filters.push(returnObj);
+                        }
+                    });
+                    var sortMap = {
+                        "__guid": 1,
+                        "__typeName": 2,
+                        "__timestamp": 3,
+                        "__modificationTimestamp": 4,
+                        "__createdBy": 5,
+                        "__modifiedBy": 6,
+                        "__isIncomplete": 7,
+                        "__state": 8,
+                        "__classificationNames": 9,
+                        "__propagatedClassificationNames": 10,
+                        "__labels": 11,
+                        "__customAttributes": 12,
+                    }
+                    this.systemAttrArr = _.sortBy(this.systemAttrArr, function(obj) {
+                        return sortMap[obj.name]
+                    })
+                    _.each(this.systemAttrArr, function(obj) {
+                        var returnObj = that.getObjDef(obj, rules_widgets, isGroupView, 'System Attribute', true);
+                        if (returnObj) {
+                            filters.push(returnObj);
+                        }
+                    });
+                    if (this.type) {
+                        var pushBusinessMetadataFilter = function(sortedAttributes, businessMetadataKey) {
+                            _.each(sortedAttributes, function(attrDetails) {
+                                var returnObj = that.getObjDef(attrDetails, rules_widgets, isGroupView, "Business Attributes: " + businessMetadataKey);
+                                if (returnObj) {
+                                    returnObj.id = businessMetadataKey + "." + returnObj.id;
+                                    returnObj.label = returnObj.label;
+                                    returnObj.data = { 'entityType': "businessMetadata" };
+                                    filters.push(returnObj);
+                                }
+                            });
+                        };
+                        if (this.value.type == "_ALL_ENTITY_TYPES") {
+                            this.businessMetadataDefCollection.each(function(model) {
+                                var sortedAttributes = model.get('attributeDefs');
+                                sortedAttributes = _.sortBy(sortedAttributes, function(obj) {
+                                    return obj.name;
+                                });
+                                pushBusinessMetadataFilter(sortedAttributes, model.get('name'));
+                            })
+
+                        } else {
+                            var entityDef = this.entityDefCollection.fullCollection.find({ name: this.value.type }),
+                                businessMetadataAttributeDefs = null;
+                            if (entityDef) {
+                                businessMetadataAttributeDefs = entityDef.get("businessAttributeDefs");
+                            }
+                            if (businessMetadataAttributeDefs) {
+                                _.each(businessMetadataAttributeDefs, function(attributes, key) {
+                                    var sortedAttributes = _.sortBy(attributes, function(obj) {
+                                        return obj.name;
+                                    });
+                                    pushBusinessMetadataFilter(sortedAttributes, key);
+                                });
+                            }
+                        }
+                    }
+                }
                 filters = _.uniq(filters, 'id');
                 if (filters && !_.isEmpty(filters)) {
                     this.ui.builder.queryBuilder({
@@ -402,6 +443,8 @@ define(['require',
                             { type: '>=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
                             { type: '<=', nb_inputs: 1, multiple: false, apply_to: ['number', 'string', 'boolean'] },
                             { type: 'contains', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                            { type: 'like', nb_inputs: 1, multiple: false, apply_to: ['string'] },
+                            { type: 'in', nb_inputs: 1, multiple: false, apply_to: ['string'] },
                             { type: 'begins_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
                             { type: 'ends_with', nb_inputs: 1, multiple: false, apply_to: ['string'] },
                             { type: 'is_null', nb_inputs: false, multiple: false, apply_to: ['number', 'string', 'boolean', 'enum'] },

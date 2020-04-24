@@ -72,30 +72,28 @@
         {{/if}}
     </div>
 </div>
-<div class="container-fluid">
-    {{#if isTermView}}
-    <div class="tab-content">
-        <div id="tab-entities" role="entities" class="tab-pane active animated fadeIn">
-            <div id="r_searchResultLayoutView">
-                <div class="fontLoader-relative">
-                    <i class="fa fa-refresh fa-spin-custom"></i>
-                </div>
-            </div>
-        </div>
-        <div id="tab-tagTable" role="classification" class="tab-pane animated fadeIn">
-            <div id="r_tagTableLayoutView">
-                <div class="fontLoader-relative">
-                    <i class="fa fa-refresh fa-spin-custom"></i>
-                </div>
-            </div>
-        </div>
-        <div id="tab-relatedTerm" role="relatedTerm" class="tab-pane animated fadeIn">
-            <div id="r_relationLayoutView">
-                <div class="fontLoader-relative">
-                    <i class="fa fa-refresh fa-spin-custom"></i>
-                </div>
+{{#if isTermView}}
+<div class="tab-content">
+    <div id="tab-entities" role="entities" class="tab-pane active animated fadeIn">
+        <div id="r_searchResultLayoutView">
+            <div class="fontLoader-relative">
+                <i class="fa fa-refresh fa-spin-custom"></i>
             </div>
         </div>
     </div>
-    {{/if}}
+    <div id="tab-tagTable" role="classification" class="tab-pane animated fadeIn">
+        <div id="r_tagTableLayoutView">
+            <div class="fontLoader-relative">
+                <i class="fa fa-refresh fa-spin-custom"></i>
+            </div>
+        </div>
+    </div>
+    <div id="tab-relatedTerm" role="relatedTerm" class="tab-pane animated fadeIn">
+        <div id="r_relationLayoutView">
+            <div class="fontLoader-relative">
+                <i class="fa fa-refresh fa-spin-custom"></i>
+            </div>
+        </div>
+    </div>
 </div>
+{{/if}}
